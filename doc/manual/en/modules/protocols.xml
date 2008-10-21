@@ -36,12 +36,663 @@
 
         <section>
             <title>UDP</title>
+            
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>tos</entry>
+							<entry>
+								Traffic class for sending unicast and multicast
+								datagrams. Default is 8
+							</entry>
+						</row>
+						<row>
+							<entry>mcast_addr_name</entry>
+							<entry>
+								The multicast address used for sending and receiving
+								packets. Default is 228.8.8.8
+							</entry>
+						</row>
+						<row>
+							<entry>mcast_port</entry>
+							<entry>
+								The multicast port used for sending and receiving
+								packets. Default is 7600
+							</entry>
+						</row>
+						<row>
+							<entry>ip_mcast</entry>
+							<entry>
+								Multicast toggle. If false multiple unicast
+								datagrams are sent instead of one multicast. Default
+								is true
+							</entry>
+						</row>
+						<row>
+							<entry>ip_ttl</entry>
+							<entry>
+								The time-to-live (TTL) for multicast datagram
+								packets. Default is 8
+							</entry>
+						</row>
+						<row>
+							<entry>mcast_send_buf_size</entry>
+							<entry>
+								Send buffer size of the multicast datagram socket.
+								Default is 100'000 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>mcast_recv_buf_size</entry>
+							<entry>
+								Receive buffer size of the multicast datagram
+								socket. Default is 500'000 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>ucast_send_buf_size</entry>
+							<entry>
+								Send buffer size of the unicast datagram socket.
+								Default is 100'000 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>ucast_recv_buf_size</entry>
+							<entry>
+								Receive buffer size of the unicast datagram socket.
+								Default is 64'000 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>
+								The interface (NIC) which should be used by this
+								transport
+							</entry>
+						</row>
+						<row>
+							<entry>use_local_host</entry>
+							<entry>
+								Ignores all bind address parameters and let's the OS
+								return the local host address. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_on_all_interfaces</entry>
+							<entry>
+								If true, the transport should use all available
+								interfaces to receive multicast messages. Default is
+								false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_interfaces</entry>
+							<entry>
+								Comma delimited list of interfaces (IP addresses or
+								interface names) to receive multicasts on
+							</entry>
+						</row>
+						<row>
+							<entry>bind_port</entry>
+							<entry>
+								The port to which the transport binds. Default of 0
+								binds to any (ephemeral) port
+							</entry>
+						</row>
+						<row>
+							<entry>port_range</entry>
+							<entry />
+						</row>
+						<row>
+							<entry>prevent_port_reuse</entry>
+							<entry>TODO</entry>
+						</row>
+						<row>
+							<entry>loopback</entry>
+							<entry>
+								Messages to self are looped back immediately if
+								true. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>discard_incompatible_packets</entry>
+							<entry>
+								Discard packets with a different version if true.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>thread_naming_pattern</entry>
+							<entry>
+								Thread naming pattern for threads in this channel.
+								Default is cl
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for OOB messages.
+								Default true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for OOB messages. Default
+								is 2
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for OOB messages. Default
+								is 10
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								OOB pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming OOB messages. Default
+								is true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run. Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for regular messages.
+								Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for regular messages.
+								Default is 10
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								regular pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for regular
+								messages. Default true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming regular messages.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>num_timer_threads</entry>
+							<entry>
+								Number of threads to be used by the timer thread
+								pool. Default is 4
+							</entry>
+						</row>
+						<row>
+							<entry>enable_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger
+								ones. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>enable_unicast_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger ones
+								for unicast messages. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>enable_diagnostics</entry>
+							<entry>
+								Switch to enable diagnostic probing. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_addr</entry>
+							<entry>
+								Address for diagnostic probing. Default is
+								224.0.75.75
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_port</entry>
+							<entry>
+								Port for diagnostic probing. Default is 7500
+							</entry>
+						</row>
+						<row>
+							<entry>singleton_name</entry>
+							<entry>
+								If assigned enable this transport to be a singleton
+								(shared) transport
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports_file</entry>
+							<entry>
+								Path to a file to store currently used ports on this
+								machine.
+							</entry>
+						</row>
+						<row>
+							<entry>pm_expiry_time</entry>
+							<entry>
+								Timeout to expire ports used with PortManager.
+								Default is 30000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports</entry>
+							<entry>
+								Switch to enable tracking of currently used ports on
+								this machine. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			            
 
             <para></para>
         </section>
 
         <section>
             <title>TCP</title>
+
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>skip_suspected_members</entry>
+							<entry>
+								Should unicast messages to suspected members be
+								dropped. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>suspect_on_send_failure</entry>
+							<entry>
+								If cannot send a message to P (on an exception),
+								should SUSPECT message be raised. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>reaper_interval</entry>
+							<entry>
+								Reaper interval in msec. Default is 0 (no reaping)
+							</entry>
+						</row>
+						<row>
+							<entry>conn_expire_time</entry>
+							<entry>
+								Max time connection can be idle before being reaped
+							</entry>
+						</row>
+						<row>
+							<entry>use_send_queues</entry>
+							<entry>
+								Should separate send queues be used for each
+								connection. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>send_queue_size</entry>
+							<entry>
+								Max number of messages in a send queue. Default is
+								10000 messages
+							</entry>
+						</row>
+						<row>
+							<entry>recv_buf_size</entry>
+							<entry>
+								Receiver buffer size in bytes. Default is 150000
+								bytes
+							</entry>
+						</row>
+						<row>
+							<entry>send_buf_size</entry>
+							<entry>
+								Send buffer size in bytes. Default is 150000 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>sock_conn_timeout</entry>
+							<entry>
+								Max time allowed for a socket creation in
+								ConnectionTable. Default is 2000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>peer_addr_read_timeout</entry>
+							<entry>
+								Max time to block on reading of peer address.
+								Default is 1000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>tcp_nodelay</entry>
+							<entry>
+								Should TCP no delay flag be turned on. Default is
+								false
+							</entry>
+						</row>
+						<row>
+							<entry>linger</entry>
+							<entry>
+								SO_LINGER in msec. Default of -1 disables it
+							</entry>
+						</row>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>
+								The interface (NIC) which should be used by this
+								transport
+							</entry>
+						</row>
+						<row>
+							<entry>use_local_host</entry>
+							<entry>
+								Ignores all bind address parameters and let's the OS
+								return the local host address. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_on_all_interfaces</entry>
+							<entry>
+								If true, the transport should use all available
+								interfaces to receive multicast messages. Default is
+								false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_interfaces</entry>
+							<entry>
+								Comma delimited list of interfaces (IP addresses or
+								interface names) to receive multicasts on
+							</entry>
+						</row>
+						<row>
+							<entry>bind_port</entry>
+							<entry>
+								The port to which the transport binds. Default of 0
+								binds to any (ephemeral) port
+							</entry>
+						</row>
+						<row>
+							<entry>port_range</entry>
+							<entry />
+						</row>
+						<row>
+							<entry>prevent_port_reuse</entry>
+							<entry>TODO</entry>
+						</row>
+						<row>
+							<entry>loopback</entry>
+							<entry>
+								Messages to self are looped back immediately if
+								true. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>discard_incompatible_packets</entry>
+							<entry>
+								Discard packets with a different version if true.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>thread_naming_pattern</entry>
+							<entry>
+								Thread naming pattern for threads in this channel.
+								Default is cl
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for OOB messages.
+								Default true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for OOB messages. Default
+								is 2
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for OOB messages. Default
+								is 10
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								OOB pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming OOB messages. Default
+								is true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run. Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for regular messages.
+								Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for regular messages.
+								Default is 10
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								regular pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for regular
+								messages. Default true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming regular messages.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>num_timer_threads</entry>
+							<entry>
+								Number of threads to be used by the timer thread
+								pool. Default is 4
+							</entry>
+						</row>
+						<row>
+							<entry>enable_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger
+								ones. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>enable_unicast_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger ones
+								for unicast messages. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>enable_diagnostics</entry>
+							<entry>
+								Switch to enable diagnostic probing. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_addr</entry>
+							<entry>
+								Address for diagnostic probing. Default is
+								224.0.75.75
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_port</entry>
+							<entry>
+								Port for diagnostic probing. Default is 7500
+							</entry>
+						</row>
+						<row>
+							<entry>singleton_name</entry>
+							<entry>
+								If assigned enable this transport to be a singleton
+								(shared) transport
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports_file</entry>
+							<entry>
+								Path to a file to store currently used ports on this
+								machine.
+							</entry>
+						</row>
+						<row>
+							<entry>pm_expiry_time</entry>
+							<entry>
+								Timeout to expire ports used with PortManager.
+								Default is 30000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports</entry>
+							<entry>
+								Switch to enable tracking of currently used ports on
+								this machine. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
             <para></para>
         </section>
@@ -54,15 +705,279 @@
 
         <section>
             <title>TUNNEL</title>
+            
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>router_host</entry>
+							<entry>Router host address</entry>
+						</row>
+						<row>
+							<entry>router_port</entry>
+							<entry>Router port</entry>
+						</row>
+						<row>
+							<entry>reconnect_interval</entry>
+							<entry>
+								Interval in msec to attempt connecting back to
+								router in case of torn connection. Default is 5000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>
+								The interface (NIC) which should be used by this
+								transport
+							</entry>
+						</row>
+						<row>
+							<entry>use_local_host</entry>
+							<entry>
+								Ignores all bind address parameters and let's the OS
+								return the local host address. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_on_all_interfaces</entry>
+							<entry>
+								If true, the transport should use all available
+								interfaces to receive multicast messages. Default is
+								false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_interfaces</entry>
+							<entry>
+								Comma delimited list of interfaces (IP addresses or
+								interface names) to receive multicasts on
+							</entry>
+						</row>
+						<row>
+							<entry>bind_port</entry>
+							<entry>
+								The port to which the transport binds. Default of 0
+								binds to any (ephemeral) port
+							</entry>
+						</row>
+						<row>
+							<entry>port_range</entry>
+							<entry />
+						</row>
+						<row>
+							<entry>prevent_port_reuse</entry>
+							<entry>TODO</entry>
+						</row>
+						<row>
+							<entry>loopback</entry>
+							<entry>
+								Messages to self are looped back immediately if
+								true. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>discard_incompatible_packets</entry>
+							<entry>
+								Discard packets with a different version if true.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>thread_naming_pattern</entry>
+							<entry>
+								Thread naming pattern for threads in this channel.
+								Default is cl
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for OOB messages.
+								Default true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for OOB messages. Default
+								is 2
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for OOB messages. Default
+								is 10
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								OOB pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming OOB messages. Default
+								is true
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>oob_thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run. Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_min_threads</entry>
+							<entry>
+								Minimum thread pool size for regular messages.
+								Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_max_threads</entry>
+							<entry>
+								Maximum thread pool size for regular messages.
+								Default is 10
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_keep_alive_time</entry>
+							<entry>
+								Timeout in milliseconds to remove idle thread from
+								regular pool. Default is 30000
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_enabled</entry>
+							<entry>
+								Switch for enabling thread pool for regular
+								messages. Default true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_enabled</entry>
+							<entry>
+								Use queue to enqueue incoming regular messages.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_queue_max_size</entry>
+							<entry>
+								Maximum queue size for incoming OOB messages.
+								Default is 500
+							</entry>
+						</row>
+						<row>
+							<entry>thread_pool_rejection_policy</entry>
+							<entry>
+								Thread rejection policy. Possible values are Abort,
+								Discard, DiscardOldest and Run Default is Run
+							</entry>
+						</row>
+						<row>
+							<entry>num_timer_threads</entry>
+							<entry>
+								Number of threads to be used by the timer thread
+								pool. Default is 4
+							</entry>
+						</row>
+						<row>
+							<entry>enable_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger
+								ones. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>enable_unicast_bundling</entry>
+							<entry>
+								Enable bundling of smaller messages into bigger ones
+								for unicast messages. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>enable_diagnostics</entry>
+							<entry>
+								Switch to enable diagnostic probing. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_addr</entry>
+							<entry>
+								Address for diagnostic probing. Default is
+								224.0.75.75
+							</entry>
+						</row>
+						<row>
+							<entry>diagnostics_port</entry>
+							<entry>
+								Port for diagnostic probing. Default is 7500
+							</entry>
+						</row>
+						<row>
+							<entry>singleton_name</entry>
+							<entry>
+								If assigned enable this transport to be a singleton
+								(shared) transport
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports_file</entry>
+							<entry>
+								Path to a file to store currently used ports on this
+								machine.
+							</entry>
+						</row>
+						<row>
+							<entry>pm_expiry_time</entry>
+							<entry>
+								Timeout to expire ports used with PortManager.
+								Default is 30000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>persistent_ports</entry>
+							<entry>
+								Switch to enable tracking of currently used ports on
+								this machine. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+            
 
             <para></para>
-        </section>
-
-        <section>
-            <title>JMS</title>
-
-            <para></para>
-        </section>
+        </section>       
 
         <section>
             <title>LOOPBACK</title>
@@ -76,18 +991,249 @@
 
         <section>
             <title>PING</title>
+            
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>gossip_host</entry>
+							<entry>Gossip host</entry>
+						</row>
+						<row>
+							<entry>gossip_port</entry>
+							<entry>Gossip port</entry>
+						</row>
+						<row>
+							<entry>gossip_refresh</entry>
+							<entry>
+								Time in msecs after which the entry in GossipRouter
+								will be refreshed. Default is 20000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>port_range</entry>
+							<entry>
+								Number of ports to be probed for initial membership.
+								Default is 1
+							</entry>
+						</row>
+						<row>
+							<entry>socket_conn_timeout</entry>
+							<entry>
+								If socket is used for discovery, time in msecs to
+								wait until socket is connected. Default is 1000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to wait for the initial members. Default is
+								3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_members</entry>
+							<entry>
+								Minimum number of initial members to get a response
+								from. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_srv_members</entry>
+							<entry>
+								Minimum number of server responses
+								(PingRsp.isServer()=true). If this value is greater
+								than 0, we'll ignore num_initial_members
+							</entry>
+						</row>
+						<row>
+							<entry>break_on_coord_rsp</entry>
+							<entry>
+								Return from the discovery phase as soon as we have 1
+								coordinator response
+							</entry>
+						</row>
+						<row>
+							<entry>num_ping_requests</entry>
+							<entry>
+								Number of discovery requests to be sent distributed
+								over timeout. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>            
 
             <para></para>
         </section>
 
         <section>
             <title>TCPPING</title>
+            
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>port_range</entry>
+							<entry>
+								Number of ports to be probed for initial membership.
+								Default is 1
+							</entry>
+						</row>
+						<row>
+							<entry>hosts</entry>
+							<entry>
+								Comma delimeted list of hosts to be contacted for
+								initial membership
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to wait for the initial members. Default is
+								3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_members</entry>
+							<entry>
+								Minimum number of initial members to get a response
+								from. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_srv_members</entry>
+							<entry>
+								Minimum number of server responses
+								(PingRsp.isServer()=true). If this value is greater
+								than 0, we'll ignore num_initial_members
+							</entry>
+						</row>
+						<row>
+							<entry>break_on_coord_rsp</entry>
+							<entry>
+								Return from the discovery phase as soon as we have 1
+								coordinator response
+							</entry>
+						</row>
+						<row>
+							<entry>num_ping_requests</entry>
+							<entry>
+								Number of discovery requests to be sent distributed
+								over timeout. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>            
 
             <para></para>
         </section>
 
         <section>
             <title>TCPGOSSIP</title>
+            
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>gossip_refresh_rate</entry>
+							<entry>
+								Rate of continious refresh registering of underlying
+								gossip client with gossip server. Default is 20000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>sock_conn_timeout</entry>
+							<entry>
+								Max time for socket creation. Default is 1000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to wait for the initial members. Default is
+								3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_members</entry>
+							<entry>
+								Minimum number of initial members to get a response
+								from. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_srv_members</entry>
+							<entry>
+								Minimum number of server responses
+								(PingRsp.isServer()=true). If this value is greater
+								than 0, we'll ignore num_initial_members
+							</entry>
+						</row>
+						<row>
+							<entry>break_on_coord_rsp</entry>
+							<entry>
+								Return from the discovery phase as soon as we have 1
+								coordinator response
+							</entry>
+						</row>
+						<row>
+							<entry>num_ping_requests</entry>
+							<entry>
+								Number of discovery requests to be sent distributed
+								over timeout. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>            
 
             <para></para>
         </section>
@@ -95,6 +1241,134 @@
         <section>
             <title>MPING</title>
 
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>Bind address for multicast socket</entry>
+						</row>
+						<row>
+							<entry>ip_ttl</entry>
+							<entry>
+								Time to live for discovery packets. Default is 8
+							</entry>
+						</row>
+						<row>
+							<entry>mcast_port</entry>
+							<entry>
+								Multicast port for discovery packets. Default is
+								7555
+							</entry>
+						</row>
+						<row>
+							<entry>receive_on_all_interfaces</entry>
+							<entry>
+								If true, the transport should use all available
+								interfaces to receive multicast messages. Default is
+								false
+							</entry>
+						</row>
+						<row>
+							<entry>receive_interfaces</entry>
+							<entry>
+								List of interfaces to receive multicasts on
+							</entry>
+						</row>
+						<row>
+							<entry>send_on_all_interfaces</entry>
+							<entry>
+								Whether send messages are sent on all interfaces.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>send_interfaces</entry>
+							<entry>List of interfaces to send multicasts on</entry>
+						</row>
+						<row>
+							<entry>gossip_host</entry>
+							<entry>Gossip host</entry>
+						</row>
+						<row>
+							<entry>gossip_port</entry>
+							<entry>Gossip port</entry>
+						</row>
+						<row>
+							<entry>gossip_refresh</entry>
+							<entry>
+								Time in msecs after which the entry in GossipRouter
+								will be refreshed. Default is 20000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>port_range</entry>
+							<entry>
+								Number of ports to be probed for initial membership.
+								Default is 1
+							</entry>
+						</row>
+						<row>
+							<entry>socket_conn_timeout</entry>
+							<entry>
+								If socket is used for discovery, time in msecs to
+								wait until socket is connected. Default is 1000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to wait for the initial members. Default is
+								3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_members</entry>
+							<entry>
+								Minimum number of initial members to get a response
+								from. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>num_initial_srv_members</entry>
+							<entry>
+								Minimum number of server responses
+								(PingRsp.isServer()=true). If this value is greater
+								than 0, we'll ignore num_initial_members
+							</entry>
+						</row>
+						<row>
+							<entry>break_on_coord_rsp</entry>
+							<entry>
+								Return from the discovery phase as soon as we have 1
+								coordinator response
+							</entry>
+						</row>
+						<row>
+							<entry>num_ping_requests</entry>
+							<entry>
+								Number of discovery requests to be sent distributed
+								over timeout. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
             <para></para>
         </section>
     </section>
@@ -103,7 +1377,43 @@
         <title>Merging after a network partition</title>
 
         <section>
-            <title>MERGE2, MERGE3, MERGEFAST</title>
+            <title>MERGE2</title>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>min_interval</entry>
+							<entry>
+								Lower bound in msec to run merge protocol. Default
+								is 5000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>max_interval</entry>
+							<entry>
+								Upper bound in msec to run merge protocol. Default
+								is 20000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+            
 
             <para></para>
         </section>
@@ -143,63 +1453,43 @@
             </para>
 
             <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>timeout</entry>
-
-                            <entry>Max number of ms to wait for a response, e.g
-                                timeout="2500"
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>max_tries</entry>
-
-                            <entry>Max number of missed responses until a member is declare
-                                suspected., e.g.
-                                <code>max_tries="5"</code>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>shun</entry>
-
-                            <entry>Once a member is excluded from the group, and then
-                                rejoins (e.g. because it didn't crash, but was just slow, or a
-                                router that had crashed came back), it will be excluded
-                                (shunned) and then has to rejoin. JGroups allows to configure
-                                itself such that shunning leads to automatic rejoins and state
-                                transfer (default in JBoss), e.g.
-                                <code>shun="true"</code>.
-                                <para>Automatic rejoins can be enabled by setting channel option
-                                AUTO_RECONNECT to true:
-                                    <screen>
-                                    channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE).
-                                    </screen>
-                                Same
-                                for automatically fetching the state after automatic reconnection:
-                                    <screen>
-                                channel.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE).
-                                    </screen>
-                                </para>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to suspect a node P if neither a heartbeat
+								nor data were received from P. Default is 3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>shun</entry>
+							<entry>Shun switch. Default is true</entry>
+						</row>
+						<row>
+							<entry>max_tries</entry>
+							<entry>
+								Number of times to send heartbeat. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
         </section>
 
 
@@ -226,54 +1516,53 @@
 
 
             <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>timeout</entry>
-                            <entry>
-                                Max number of milliseconds until a member is suspected
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>interval</entry>
-                            <entry>
-                                Interval (in milliseconds) to multicast heartbeat messages to the cluster
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>msg_counts_as_heartbeat</entry>
-                            <entry>
-                                If this is true, we treat traffic from P as if P sent a heartbeat, ie. we set the
-                                timestamp for P to the current time. Default is true
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>shun</entry>
-
-                            <entry>Once a member is excluded from the group, and then
-                                rejoins (e.g. because it didn't crash, but was just slow, or a
-                                router that had crashed came back), it will be excluded
-                                (shunned) and then has to rejoin. JGroups allows to configure
-                                itself such that shunning leads to automatic rejoins and state
-                                transfer (default in JBoss). , e.g.
-                                <code>shun="true"</code>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>interval</entry>
+							<entry>
+								Interval in which a HEARTBEAT is sent to the
+								cluster. Default is 3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout after which a node P is suspected if neither
+								a heartbeat nor data were received from P. Default
+								is 5000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>msg_counts_as_heartbeat</entry>
+							<entry>
+								Treat messages received from members as heartbeats.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>shun</entry>
+							<entry>Shun switch. Default is true</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
             </table>
+
         </section>
 
 
@@ -291,39 +1580,62 @@
             (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
             Windows), but this is user configurable and can be replaced with any
             user-provided script or executable.
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>cmd</entry>
-
-                            <entry>The command to be executed, e.g. "/sbin/ping" (or "ping"
-                                if found on path)
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>verbose</entry>
-
-                            <entry>Whether or not to show the output of the command. Valid:
-                                "true" or "false"
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+ 
+ 
+			 <table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>cmd</entry>
+							<entry>
+								Command (script or executable) to ping a host: a
+								return value of 0 means success, anything else is a
+								failure. Default is ping
+							</entry>
+						</row>
+						<row>
+							<entry>verbose</entry>
+							<entry>
+								Write the stdout of the command to the log. Default
+								is true
+							</entry>
+						</row>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Timeout to suspect a node P if neither a heartbeat
+								nor data were received from P. Default is 3000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>shun</entry>
+							<entry>Shun switch. Default is true</entry>
+						</row>
+						<row>
+							<entry>max_tries</entry>
+							<entry>
+								Number of times to send heartbeat. Default is 2
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+ 
         </section>
 
 
@@ -400,37 +1712,128 @@
                 bind_addr property.
             </para>
 
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>bind_addr</entry>
-
-                            <entry>The network interface to be used for sending ICMP
-                                packets, e.g.
-                                <code>bind_addr="192.16.8.0.2"</code>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>
+								The NIC on which the ServerSocket should listen on
+							</entry>
+						</row>
+						<row>
+							<entry>get_cache_timeout</entry>
+							<entry>
+								Timeout for getting socket cache from coordinator.
+								Default is 1000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>suspect_msg_interval</entry>
+							<entry>
+								Interval for broadcasting suspect messages. Default
+								is 5000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_tries</entry>
+							<entry>
+								Number of attempts coordinator is solicited for
+								socket cache until we give up. Default is 3
+							</entry>
+						</row>
+						<row>
+							<entry>start_port</entry>
+							<entry>
+								Start port for server socket. Default value of 0
+								picks a random port
+							</entry>
+						</row>
+						<row>
+							<entry>keep_alive</entry>
+							<entry>
+								Whether to use KEEP_ALIVE on the ping socket or not.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>sock_conn_timeout</entry>
+							<entry>
+								Max time in millis to wait for ping Socket.connect()
+								to return
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
         </section>
 
 
         <section>
             <title>VERIFY_SUSPECT</title>
+            <table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Number of millisecs to wait for a response from a
+								suspected member
+							</entry>
+						</row>
+						<row>
+							<entry>num_msgs</entry>
+							<entry>
+								Number of verify heartbeats sent to a suspected
+								member
+							</entry>
+						</row>
+						<row>
+							<entry>use_icmp</entry>
+							<entry>
+								Use InetAddress.isReachable() to verify suspected
+								member instead of regular messages
+							</entry>
+						</row>
+						<row>
+							<entry>bind_addr</entry>
+							<entry>
+								Interface for ICMP pings. Used if use_icmp is true
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
             <para/>
         </section>
@@ -463,169 +1866,134 @@
                 they were sent.
             </para>
 
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>retransmit_timeout</entry>
-                            <entry>
-                                A comma-separated list of milliseconds, e.g. 100,200,400,800,1600. We ask for
-                                retransmission of a given message 100ms after it wasn't received, then 200ms, and so on,
-                                until we're at 1600ms. From then on, we will send retransmit requests for that message
-                                every 100ms, until the message is received, or the original sender crashed.
-                                <para>
-                                    Example: retransmit_timeout="300,600,1200,2400"
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>exponential_backoff</entry>
-                            <entry>
-                                Value in milliseconds. If greater than 0, exponential backoff for retransmission is
-                                enabled. The value is then the initial value, and we'll double it every time we ask
-                                for retransmission, until a max value of 15000ms.
-                                <para>
-                                    If the value is greater than 0, exponential backoff is enabled and retransmit_timeout
-                                    will be ignored.
-                                </para>
-                                <para>
-                                    Note that this property is experimental, and may be removed at any time.
-                                </para>
-                                <para>
-                                    Example: exponential_backoff="30"
-                                </para>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>use_stats_for_retransmission</entry>
-                            <entry>
-                                Boolean. If true, we ignore both retransmit_timeout and exponential_backoff, and use
-                                statistics that we collect during retransmission to compute the ideal retransmission
-                                times, based on actual retransmission times.
-                                <para>
-                                    Note that this property is experimental, and may be removed at any time.
-                                </para>
-                                <para>
-                                    Example: use_stats_for_retransmission="true"
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>use_mcast_xmit</entry>
-                            <entry>
-                                When we get a retransmission request from P for a message M, then we send the retransmitted
-                                M to P. However, assuming that many nodes lost M, we might as well send M to the entire
-                                cluster, so that we can satisfy many retransmit requests at the same time.
-                                <para>
-                                    Setting this option to true only makes sense for an IP multicast capable transport
-                                    (e.g. UDP), where we send the retransmitted message one time. Otherwise, e.g. if
-                                    we use TCP, we send the message N-1 times, one time for each node.
-                                </para>
-                                <para>
-                                    Example: <code>use_mcast_xmit="true"</code>
-                                </para>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>use_mcast_xmit_req</entry>
-                            <entry>
-                                Similar to use_mcast_xmit, but for requests: if enabled, we'll send a retransmit reuest
-                                via a multicast.
-                                <note>
-                                    Setting this option to true only makes sense for an IP multicast capable transport
-                                    (e.g. UDP), where we send the retransmit requests one time. Otherwise, e.g. if
-                                    we use TCP, we send the message N-1 times, one time for each node !
-                                </note>
-                                <para>
-                                    Example: <code>use_mcast_xmit_req="true"</code>
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>xmit_from_random_member</entry>
-                            <entry>
-                                Instead of sending all retransmit requests to the original sender of a message, we could
-                                also pick a random member of the cluster. Setting xmit_from_random_member="true" does this.
-                                The advantage is that the retransmission load is distributed more equally across the cluster.
-                                The down side is that a random member may or may not yet have received a given message,
-                                so it may not be able to satisfy the retransmission request. In this case, it may take
-                                a few retransmission requests to different members in the cluster to finally get the
-                                requested message.
-                                <para>
-                                    Note that <code>discard_delivered_msgs</code> must be set to false if this option is
-                                    enabled.
-                                </para>
-                                <para>
-                                    Example: <code>xmit_from_random_member="true"</code>
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>discard_delivered_msgs</entry>
-                            <entry>
-                                If set to true, messages received from other members are <emphasis>not</emphasis>
-                                buffered until stability purges them, but instead discarded immediately. This means that
-                                retransmission requests can only be satisfied by the original sender (and
-                                xmit_from_random_member won't work). However, since we don't have to wait for stability
-                                to kick in and purge messages seen by everyone, we conserve memory.
-                                <para>
-                                    Example: <code>discard_delivered_msgs="true"</code>
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>max_xmit_buf_size</entry>
-                            <entry>
-                                Number of entries to keep in the retransmission tables. Since messages are buffered
-                                in the retransmission tables, we have to wait for a given message M to be delivered
-                                until all messages preceeding M have been delivered as well. Using max_xmit_buf_size
-                                makes the retransmission tables <emphasis>bounded</emphasis>, and older messages
-                                will get discarded if they haven't been received when max_xmit_buf_size elements are
-                                exceeded.
-                                <para>
-                                    Note that setting this property to true will cause <emphasis>message loss</emphasis>
-                                    in the case where a message is lost and not retransmitted because the retransmission
-                                    buffer is full !
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>eager_lock_release</entry>
-                            <entry>
-                                By default, we release the lock on the sender in up() after the up() method call passed
-                                up the stack returns. However, with eager_lock_release enabled (default), we release the
-                                lock as soon as the application calls Channel.down() <emphasis>within</emphasis> the
-                                receive() callback. This leads to issues as the one described in
-                                http://jira.jboss.com/jira/browse/JGRP-656.
-
-                                <para>
-                                    Note that ordering is <emphasis>still correct </emphasis>, but messages from self
-                                    might get delivered concurrently. This can be turned off by setting eager_lock_release
-                                    to false.
-                                </para>
-                            </entry>
-                        </row>
-
-                    </tbody>
-                </tgroup>
-            </table>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>retransmit_timeouts</entry>
+							<entry>
+								Timeout before requesting retransmissions. Default
+								is 600, 1200, 2400, 4800
+							</entry>
+						</row>
+						<row>
+							<entry>enable_xmit_time_stats</entry>
+							<entry>
+								If true, retransmissions stats will be captured.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>gc_lag</entry>
+							<entry>
+								Garbage collection lag. Default is 20 msec
+							</entry>
+						</row>
+						<row>
+							<entry>use_mcast_xmit</entry>
+							<entry>
+								Retransmit messages using multicast rather than
+								unicast. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>use_mcast_xmit_req</entry>
+							<entry>
+								Use a multicast to request retransmission of missing
+								messages. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>xmit_from_random_member</entry>
+							<entry>
+								Ask a random member for retransmission of a missing
+								message. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>exponential_backoff</entry>
+							<entry>
+								The first value (in milliseconds) to use in the
+								exponential backoff. Enabled if greater than 0.
+								Default is 0
+							</entry>
+						</row>
+						<row>
+							<entry>use_stats_for_retransmission</entry>
+							<entry>
+								Use statistics gathered from actual retransmission
+								times to compute new retransmission times. Default
+								is false
+							</entry>
+						</row>
+						<row>
+							<entry>discard_delivered_msgs</entry>
+							<entry>
+								Should messages delivered to application be
+								discarded. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>eager_lock_release</entry>
+							<entry>
+								See http://jira.jboss.com/jira/browse/JGRP-656.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>max_xmit_buf_size</entry>
+							<entry>
+								If value is &gt; 0, the retransmit buffer is
+								bounded. If value &lt;= 0 unbounded buffers are
+								used. Default is 0
+							</entry>
+						</row>
+						<row>
+							<entry>xmit_history_max_size</entry>
+							<entry>
+								Size of retransmission history. Default is 50
+								entries
+							</entry>
+						</row>
+						<row>
+							<entry>max_rebroadcast_timeout</entry>
+							<entry>
+								Timeout to rebroadcast messages. Default is 2000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>print_stability_history_on_failed_xmit</entry>
+							<entry>
+								Should stability history be printed if we fail in
+								retransmission. Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>stats_list_size</entry>
+							<entry>
+								Size of send and receive history. Default is 20
+								entries
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
         </section>
 
@@ -653,80 +2021,58 @@
                  the stack even if TCP is used.
              </para>
 
-            <table>
-                <title>Properties</title>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>use_gms</entry>
+							<entry>
+								If GMS should be consulted for the membership on
+								retransmit. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>immediate_ack</entry>
+							<entry>
+								Acks a message before it is processed by the
+								application to limit unnecessary retransmits.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>loopback</entry>
+							<entry>
+								Whether to loop back messages sent to self. Default
+								is false
+							</entry>
+						</row>
+						<row>
+							<entry>eager_lock_release</entry>
+							<entry>
+								See http://jira.jboss.com/jira/browse/JGRP-656.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>retransmit_timeout</entry>
-                            <entry>
-                                A comma-separated list of milliseconds, e.g. 100,200,400,800,1600. We ask for
-                                retransmission of a given message 100ms after it wasn't received, then 200ms, and so on,
-                                until we're at 1600ms. From then on, we will send retransmit requests for that message
-                                every 100ms, until the message is received, or the original sender crashed.
-                                <para>
-                                    Example: retransmit_timeout="300,600,1200,2400"
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>eager_lock_release</entry>
-                            <entry>
-                                By default, we release the lock on the sender in up() after the up() method call passed
-                                up the stack returns. However, with eager_lock_release enabled (default), we release the
-                                lock as soon as the application calls Channel.down() <emphasis>within</emphasis> the
-                                receive() callback. This leads to issues as the one described in
-                                http://jira.jboss.com/jira/browse/JGRP-656.
-
-                                <para>
-                                    Note that ordering is <emphasis>still correct </emphasis>, but messages from self
-                                    might get delivered concurrently. This can be turned off by setting eager_lock_release
-                                    to false.
-                                </para>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry>immediate_ack (default: false)</entry>
-                            <entry>
-                                By default, we ack a message only aftre it has been delivered to the application. However,
-                                because UNICAST gets a lock per sender and only passes up a single message per sender at
-                                any time, we might have received a message (i.e, added to the received table), but not
-                                yet sent an ack because the message has not yet been processed. This leads to
-                                unnecessary retransmissison requests from the sender.
-                                <para>
-                                    Setting immediate_ack="true" sends an ack as soon as the message has been added to
-                                    the received table.
-                                </para>
-                                <para>
-                                    Note that the sender cannot really overwhelm the receiver because flow control (FC)
-                                    will throttle the sender should it send too many messages for the receiver to keep
-                                    up with.
-                                </para>
-                            </entry>
-                        </row>
-
-                    </tbody>
-                </tgroup>
-            </table>
-
-         </section>
-
-        <section>
-            <title>SMACK</title>
-
-            <para></para>
-        </section>
+         </section>       
     </section>
 
     <section>
@@ -736,6 +2082,42 @@
             <title>FRAG and FRAG2</title>
 
             <para></para>
+            
+            <table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>frag_size</entry>
+							<entry>
+								The max number of bytes in a message. Larger
+								messages will be fragmented. Default is 8192 bytes
+							</entry>
+						</row>
+						<row>
+							<entry>max_retained_buffer</entry>
+							<entry>
+								The max size in bytes for the byte array output
+								buffer
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
         </section>
     </section>
 
@@ -777,166 +2159,112 @@
         <section>
             <title>pbcast.GMS</title>
 
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>join_timeout</entry>
-
-                            <entry>Number of milliseconds to wait for a JOIN response from the
-                                coordinator, until we send a new JOIN request.
-                                Default=5000
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>join_retry_timeou</entry>
-
-                            <entry>Number of ms to wait before sending a new JOIN
-                                request
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>leave_timeout</entry>
-
-                            <entry>Number of ms to wait until a LEAVE response has been
-                                received from the coordinator. Once this time has elapsed, we
-                                leave anyway.
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>shun</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>merge_leader</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>print_local_addr</entry>
-
-                            <entry>Whether or not to print to stdout the local address of a
-                                newly started member. Default is "true". Example:
-                                <screen>
-                                    -------------------------------------------------------
-                                    GMS: address is 192.168.5.2:4682
-                                    -------------------------------------------------------
-                                </screen>
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>merge_timeout</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>digest_timeout</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>view_ack_collection_timeout</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>resume_task_timeout</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>disable_initial_coord</entry>
-                               This feature is deprecated and will be phased out in 3.0
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>handle_concurrent_startup</entry>
-
-                            <entry>Default: "true". Handles concurrent starting of N
-                                <emphasis>initial</emphasis>
-                                members. Setting it to false is only
-                                used for unit tests, where the correctness of the subsequent merge
-                                is tested, we don't recommend setting it to false.
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>num_prev_mbrs</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>use_flush</entry>
-
-                            <entry></entry>
-                        </row>
-
-                        <row>
-                            <entry>flush_timeout</entry>
-
-                            <entry></entry>
-                        </row>
-
-                         <row>
-                            <entry>reject_join_from_existing_member</entry>
-
-                            <entry> If we receive a JOIN request from P and P is already in the current membership,
-                                then we send back a JOIN response with an error message when this property is set
-                                to true (Channel.connect() will fail). Otherwise, we return the current view
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>view_bundling</entry>
-
-                            <entry>Whether to enable view bundling (default is true). View
-                                bundling means that multiple view-affecting requests to GNS, such
-                                as JOIN, LEAVE or SUSPECT, are bundled for a number of
-                                milliseconds in order to avoid having to generate one view per
-                                request.
-                                <para></para>
-                                This is especially interesting if we have
-                                many members joining or leaving a group at the same time.
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>max_bundling_time</entry>
-
-                            <entry>Max number of milliseconds to wait for subsequent
-                                JOIN/LEAVE/SUSPECT requests (default is 50). Therefore, when 5
-                                JOIN or LEAVE requests are received within 50ms, only 1 view will
-                                be generated
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>join_timeout</entry>
+							<entry>Join timeout. Default is 5000 msec</entry>
+						</row>
+						<row>
+							<entry>leave_timeout</entry>
+							<entry>Leave timeout. Default is 5000 msec</entry>
+						</row>
+						<row>
+							<entry>merge_timeout</entry>
+							<entry>
+								Timeout to complete merge. Default is 10000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>shun</entry>
+							<entry>Shunning toggle. Default is false</entry>
+						</row>
+						<row>
+							<entry>merge_leader</entry>
+							<entry>
+								If true this member is a designated merge leader.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>print_local_addr</entry>
+							<entry>
+								Print local address of this member after connect.
+								Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>disable_initial_coord</entry>
+							<entry>
+								If true this member can never become coordinator.
+								Default is false
+							</entry>
+						</row>
+						<row>
+							<entry>handle_concurrent_startup</entry>
+							<entry>
+								Temporary switch. Default is true and should not be
+								changed
+							</entry>
+						</row>
+						<row>
+							<entry>view_bundling</entry>
+							<entry>Should views be bundled? Default is true</entry>
+						</row>
+						<row>
+							<entry>max_bundling_time</entry>
+							<entry>
+								Max view bundling timeout if view bundling is turned
+								on. Default is 50 msec
+							</entry>
+						</row>
+						<row>
+							<entry>num_prev_mbrs</entry>
+							<entry>
+								Max number of old members to keep in history.
+								Default is 50
+							</entry>
+						</row>
+						<row>
+							<entry>view_ack_collection_timeout</entry>
+							<entry>
+								Time in ms to wait for all VIEW acks (0 == wait
+								forever. Default is 2000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>resume_task_timeout</entry>
+							<entry>
+								Timeout to resume ViewHandler. Default is 20000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>reject_join_from_existing_member</entry>
+							<entry>
+								Should repeated join requests from existing members
+								be treated as errors. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			            
 
             <section>
                 <title>Disabling the initial coordinator</title>
@@ -1031,6 +2359,92 @@
         <para></para>
         <section>
             <title>ENCRYPT</title>
+            
+            <table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>asymProvider</entry>
+							<entry>
+								Cryptographic Service Provider. Default is Bouncy
+								Castle Provider
+							</entry>
+						</row>
+						<row>
+							<entry>asymAlgorithm</entry>
+							<entry>
+								Cipher engine transformation for asymmetric
+								algorithm. Default is RSA
+							</entry>
+						</row>
+						<row>
+							<entry>symAlgorithm</entry>
+							<entry>
+								Cipher engine transformation for symmetric
+								algorithm. Default is AES
+							</entry>
+						</row>
+						<row>
+							<entry>asymInit</entry>
+							<entry>
+								Initial public/private key length. Default is 512
+							</entry>
+						</row>
+						<row>
+							<entry>symInit</entry>
+							<entry>
+								Initial key length for matching symmetric algorithm.
+								Default is 128
+							</entry>
+						</row>
+						<row>
+							<entry>keyStoreName</entry>
+							<entry>
+								File on classpath that contains keystore repository
+							</entry>
+						</row>
+						<row>
+							<entry>storePassword</entry>
+							<entry>
+								Password used to check the integrity/unlock the
+								keystore. Change the default
+							</entry>
+						</row>
+						<row>
+							<entry>keyPassword</entry>
+							<entry>
+								Password for recovering the key. Change the default
+							</entry>
+						</row>
+						<row>
+							<entry>alias</entry>
+							<entry>
+								Alias used for recovering the key. Change the
+								default
+							</entry>
+						</row>
+						<row>
+							<entry>encrypt_entire_message</entry>
+							<entry />
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
         </section>
 
         <section>
@@ -1228,75 +2642,61 @@
                     parameters:
                 </para>
 
-                <table>
-                    <title>Properties</title>
-
-                    <tgroup cols="2">
-                        <colspec align="left"/>
-
-                        <thead>
-                            <row>
-                                <entry align="center">Name</entry>
-
-                                <entry align="center">Description</entry>
-                            </row>
-                        </thead>
-
-                        <tbody>
-                            <row>
-                                <entry>bind_addr</entry>
-
-                                <entry>The network interface to be used for receiving of state
-                                    requests, e.g.
-                                    <code>bind_addr="192.16.8.0.2"</code>
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>start_port</entry>
-
-                                <entry>Port on the bind_addr network interface to be used for
-                                    receiving of state requests, e.g.
-                                    <code>start_port="4444"</code>
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>max_pool</entry>
-
-                                <entry>Maximum number of threads in the pool providing state
-                                    requests, default=5, e.g.
-                                    <code>max_pool="10"</code>
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>pool_thread_keep_alive</entry>
-
-                                <entry>Pool thread keep alive in msec, default=30000, e.g.
-                                    <code>pool_thread_keep_alive="60000"</code>
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>use_reading_thread</entry>
-
-                                <entry>Use separate thread for reading state, default=false,
-                                    e.g.
-                                    <code>use_reading_thread="true"</code>
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>socket_buffer_size</entry>
-
-                                <entry>Chunk size used for state transfer, default=8192 e.g.
-                                    <code>socket_buffer_size="32768"</code>
-                                </entry>
-                            </row>
-                        </tbody>
-                    </tgroup>
-                </table>
+				<table>
+					<title>Properties</title>
+					<tgroup cols="2">
+						<colspec align="left" />
+						<thead>
+							<row>
+								<entry align="center">Name</entry>
+								<entry align="center">Description</entry>
+							</row>
+						</thead>
+						<tbody>
+							<row>
+								<entry>bind_addr</entry>
+								<entry>
+									The interface (NIC) used to accept state requests
+								</entry>
+							</row>
+							<row>
+								<entry>bind_port</entry>
+								<entry>
+									The port listening for state requests. Default value
+									of 0 binds to any (ephemeral) port
+								</entry>
+							</row>
+							<row>
+								<entry>max_pool</entry>
+								<entry>
+									Maximum number of pool threads serving state
+									requests. Default is 5
+								</entry>
+							</row>
+							<row>
+								<entry>pool_thread_keep_alive</entry>
+								<entry>
+									Keep alive for pool threads serving state requests.
+									Default is 20000 msec
+								</entry>
+							</row>
+							<row>
+								<entry>socket_buffer_size</entry>
+								<entry>
+									Buffer size for state transfer sockets. Default is 8
+									KB
+								</entry>
+							</row>
+							<row>
+								<entry>stats</entry>
+								<entry>
+									Determines whether to collect statistics (and expose
+									them via JMX). Default is true
+								</entry>
+							</row>
+						</tbody>
+					</tgroup>
+				</table>
             </section>
 
             <section>
@@ -1351,70 +2751,60 @@
                 the sender. The threshold is defined by <code>min_bytes</code> or <code>min_threshold</code>.
             </para>
 
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row>
-                            <entry>max_credits</entry>
-                            <entry>Max number of bytes the sender is allowed to send before blocking until replenishments
-                                from the receivers are received</entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>min_credits</entry>
-                            <entry>Min credits in bytes. If the available credits for a sender drop below this
-                            value, a receiver will send a replenishment message to the sender</entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>min_threshold</entry>
-                            <entry>Same as min_credits, but expressed as a percentage of max_credits, e.g.
-                            <code>0.1</code> (10% of max_credits)</entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>max_block_time</entry>
-                            <entry>The maximum time in milliseconds a sender can be blocked. After this time has
-                            elapsed, and no replenishment has been received, the sender replenishes itself and
-                            continues sending. Set it to 0 to prevent this</entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>max_block_times</entry>
-                            <entry>
-                                A list of pairs KEY:VAL, separated by commas, where KEY is the number of bytes and
-                                VAL the max number of milliseconds to block. Compared to max_block_time, this
-                                property can be used to define the max number of milliseconds per message length to
-                                block if not enough credits are available. After that time, the message will be sent
-                                regardless of whether credits were received in the meantime.
-                                <para>
-                                    Example: max_block_times="50:2,500:5,1500:10,10000:20,100000:500"
-                                </para>
-                                <para>
-                                    This means that messages smaller than or equal to 50 bytes will block for 2 ms max (
-                                    or not block at all if enough credits are available, of course). Messages between
-                                    51 and 500 bytes will block a max time of 5 ms, and so on. All message larger than
-                                    100'000 bytes will block for a max time of 500 ms.
-                                </para>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>max_credits</entry>
+							<entry>
+								Max number of bytes to send per receiver until an
+								ack must be received to proceed. Default is 500000
+								bytes
+							</entry>
+						</row>
+						<row>
+							<entry>max_block_time</entry>
+							<entry>
+								Max time (in milliseconds) to block. Default is 5000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>min_threshold</entry>
+							<entry>
+								If credits fall below this limit, we send more
+								credits to the sender. Default is 0.25
+							</entry>
+						</row>
+						<row>
+							<entry>min_credits</entry>
+							<entry>
+								Computed as max_credits x min_theshold unless
+								explicitely set
+							</entry>
+						</row>
+						<row>
+							<entry>ignore_synchronous_response</entry>
+							<entry />
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
         </section>
 
@@ -1453,28 +2843,43 @@
                 with SFC blocking senders so that STABLE can catch up.
 
             </para>
-
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row>
-                            <entry>max_credits</entry>
-                            <entry>Max number of bytes the sender is allowed to send before blocking until replenishments
-                                from the receivers are received</entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+			
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>max_credits</entry>
+							<entry>
+								Max number of bytes to send per receiver until an
+								ack must be received to proceed. Default is 2000000
+								bytes
+							</entry>
+						</row>
+						<row>
+							<entry>max_block_time</entry>
+							<entry>
+								Max time (in milliseconds) to block. Default is 5000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
         </section>
         
     </section>
@@ -1505,86 +2910,54 @@
         <section>
             <title>STABLE</title>
 
-            <table>
-                <title>Properties</title>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>desired_avg_gossip</entry>
+							<entry>
+								Average time to send a STABLE message. Default is
+								20000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>stability_delay</entry>
+							<entry>
+								Delay before stability message is sent. Default is
+								6000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>max_bytes</entry>
+							<entry>
+								Maximum number of bytes received in all messages
+								before sending a STABLE message is triggered.
+								Default is 0 (disabled)
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row>
-                            <entry>desired_avg_gossip</entry>
-                            <entry>
-                                Interval in milliseconds at which a stable message is broadcast to the cluster. This
-                                is randomized to prevent all members from sending the message at the same time. If set
-                                to 0, it is disabled.
-                            </entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>max_bytes</entry>
-                            <entry>
-                                Maximum number of bytes received after which a stable message is broadcast to the cluster.
-                                A high number means fewer stability rounds which purge more messages. A smaller value
-                                means a higher frequency of stability rounds which purge fewer messages. This is
-                                similar to garbage collection in the JVM.
-                            </entry>
-                        </row>
-                    </tbody>
-                    <tbody>
-                        <row>
-                            <entry>stability_delay</entry>
-                            <entry>
-                                When sending a stability message, we wait a randomized time between 1 and stability_delay
-                                milliseconds before sending it. If, when about to send the message, a stability message
-                                is received, we cancel our own message. This is to prevent everyone from sending the
-                                message at the same time.
-                            </entry>
-                        </row>
-                    </tbody>
-
-                </tgroup>
-            </table>
 
         </section>
 
-    </section>
-
-
-    <section>
-        <title>Diagnostics</title>
-
-        <section>
-            <title>PERF</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>SIZE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>TRACE</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>PRINTOBJS</title>
-
-            <para></para>
-        </section>
-    </section>
+    </section>    
 
     <section>
         <title>Misc</title>
@@ -1652,41 +3025,63 @@
                 callback method.
             </para>
 
-            <table>
-                <title>Properties</title>
+			<table>
+				<title>Properties</title>
+				<tgroup cols="2">
+					<colspec align="left" />
+					<thead>
+						<row>
+							<entry align="center">Name</entry>
+							<entry align="center">Description</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>timeout</entry>
+							<entry>
+								Max time to keep channel blocked in flush. Default
+								is 8000 msec
+							</entry>
+						</row>
+						<row>
+							<entry>start_flush_timeout</entry>
+							<entry>
+								Timeout (per atttempr) to quiet the cluster during
+								the first flush phase. Default is 2500 msec
+							</entry>
+						</row>
+						<row>
+							<entry>retry_timeout</entry>
+							<entry>
+								Retry timeout after an unsuccessful attempt to quiet
+								the cluster (first flush phase). Default is 3000
+								msec
+							</entry>
+						</row>
+						<row>
+							<entry>enable_reconciliation</entry>
+							<entry>
+								Reconcilliation phase toggle. Default is true
+							</entry>
+						</row>
+						<row>
+							<entry>flush_retry_count</entry>
+							<entry>
+								Max number of attempts to quiet the cluster during
+								first flush phase. Default is 4
+							</entry>
+						</row>
+						<row>
+							<entry>stats</entry>
+							<entry>
+								Determines whether to collect statistics (and expose
+								them via JMX). Default is true
+							</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
 
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>timeout</entry>
-
-                            <entry>Maximum time that FLUSH.down() will be blocked before
-                                being unblocked. Should be sufficient enough to allow large
-                                state transfers,default=8000 msec
-                            </entry>
-                        </row>
-
-                        <row>
-                            <entry>block_timeout</entry>
-
-                            <entry>Maximum amount of time that FLUSH will be waiting for
-                                EVENT.BLOCK_OK once Event.BLOCK has been sent to application
-                                level, default=10000 msec
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
         </section>
     </section>
 
