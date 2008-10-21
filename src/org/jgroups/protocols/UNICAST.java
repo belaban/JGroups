@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.117 2008/10/10 13:46:12 vlada Exp $
+ * @version $Id: UNICAST.java,v 1.118 2008/10/21 08:19:08 vlada Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -62,7 +62,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     @Property(description="Acks a message before it is processed by the application to limit unnecessary retransmits. Default is false")
     private boolean immediate_ack=false;
 
-    @Property(description="whether to loop back messages sent to self (will be removed in the future, default=false")
+    @Property(description="Whether to loop back messages sent to self. Default is false")
     private boolean loopback=false;
     
     
