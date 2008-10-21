@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 import java.util.*;
@@ -17,7 +18,7 @@ import java.util.*;
  * @author Gianluca Collot
  *
  */
-
+@Unsupported
 public class SHUFFLE extends Protocol implements Runnable {
 
     @Property

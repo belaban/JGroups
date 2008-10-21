@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.22 2008/05/08 09:46:43 vlada Exp $
+// $Id: SIZE.java,v 1.23 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
@@ -20,6 +21,7 @@ import java.util.Vector;
  * 
  * @author Bela Ban June 13 2001
  */
+@Unsupported
 public class SIZE extends Protocol {
     final Vector members=new Vector();
     @Property

@@ -1,10 +1,11 @@
-// $Id: EXAMPLE.java,v 1.7 2007/01/12 14:19:38 belaban Exp $
+// $Id: EXAMPLE.java,v 1.8 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 import java.io.Serializable;
@@ -27,7 +28,7 @@ class ExampleHeader implements Serializable {
 /**
  * Example of a protocol layer. Contains no real functionality, can be used as a template.
  */
-
+@Unsupported
 public class EXAMPLE extends Protocol {
     final Vector members=new Vector();
 

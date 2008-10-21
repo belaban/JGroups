@@ -20,6 +20,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
@@ -36,7 +37,7 @@ import org.w3c.dom.Element;
  * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.1 2008/10/15 14:01:55 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.2 2008/10/21 12:10:31 vlada Exp $
  * 
  */
 public class PropertiesToXML {
@@ -81,7 +82,8 @@ public class PropertiesToXML {
                                                   TransformerException {
         boolean isConcreteClass=(clazz.getModifiers() & Modifier.ABSTRACT) == 0;
         boolean isExperimental=clazz.isAnnotationPresent(Experimental.class);
-        if(isConcreteClass && !isExperimental) {
+        boolean isUnsupported=clazz.isAnnotationPresent(Unsupported.class);
+        if(isConcreteClass && !isExperimental && !isUnsupported) {
             Class<?> protocol=clazz;
             Document xmldoc=null;
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
@@ -89,6 +91,7 @@ public class PropertiesToXML {
             DOMImplementation impl=builder.getDOMImplementation();
             xmldoc=impl.createDocument(null, "table", null);
             Element row=createXMLTree(xmldoc);
+            int propertyCount = 0;
 
             for(;clazz != null;clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
@@ -104,18 +107,22 @@ public class PropertiesToXML {
                         entry=xmldoc.createElement("entry");
                         entry.setTextContent(desc);
                         row.appendChild(entry);
+                        propertyCount++;
 
                         //System.out.println(protocol + "#" + property + "=" + desc);
                     }
                 }
             }
-            DOMSource domSource=new DOMSource(xmldoc);
-            StreamResult streamResult=new StreamResult(new File(protocol.getSimpleName() + ".xml"));
-            TransformerFactory tf=TransformerFactory.newInstance();
-            Transformer serializer=tf.newTransformer();
-            serializer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
-            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-            serializer.transform(domSource, streamResult);
+            //do we have more than one property (superclass Protocol has only one property (stats))
+            if(propertyCount > 1) {
+                DOMSource domSource=new DOMSource(xmldoc);
+                StreamResult streamResult=new StreamResult(new File(protocol.getSimpleName() + ".xml"));
+                TransformerFactory tf=TransformerFactory.newInstance();
+                Transformer serializer=tf.newTransformer();
+                serializer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
+                serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+                serializer.transform(domSource, streamResult);
+            }
         }
     }
 

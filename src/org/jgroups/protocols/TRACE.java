@@ -1,11 +1,12 @@
-// $Id: TRACE.java,v 1.6 2007/07/30 12:56:38 belaban Exp $
+// $Id: TRACE.java,v 1.7 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 
-
+@Unsupported
 public class TRACE extends Protocol {
 
     public TRACE() {}

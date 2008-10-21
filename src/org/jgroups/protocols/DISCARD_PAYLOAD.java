@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 /**
@@ -10,8 +11,9 @@ import org.jgroups.stack.Protocol;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.7 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.8 2008/10/21 12:10:30 vlada Exp $
  */
+@Unsupported
 public class DISCARD_PAYLOAD extends Protocol {
     @Property
     long seqno=3; // drop 3

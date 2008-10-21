@@ -3,14 +3,16 @@ package org.jgroups.protocols;
 import org.jgroups.stack.Protocol;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.3 2008/06/06 10:20:51 belaban Exp $
+ * @version $Id: DUPL.java,v 1.4 2008/10/21 12:10:30 vlada Exp $
  */
+@Unsupported
 public class DUPL extends Protocol {
 
     private static enum Direction {UP,DOWN};
