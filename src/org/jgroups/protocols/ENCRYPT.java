@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.47 2008/10/21 10:00:23 vlada Exp $
+// $Id: ENCRYPT.java,v 1.48 2008/10/21 10:03:52 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -130,22 +130,22 @@ public class ENCRYPT extends Protocol {
     static final String symProvider=null;
 
     @Property(name="asym_algorithm", description="Cipher engine transformation for asymmetric algorithm. Default is RSA")
-    private String asymAlgorithm="RSA";
+    String asymAlgorithm="RSA";
 
     @Property(name="sym_algorithm", description="Cipher engine transformation for symmetric algorithm. Default is AES")
-    private String symAlgorithm=DEFAULT_SYM_ALGO;
+    String symAlgorithm=DEFAULT_SYM_ALGO;
 
     @Property(name="asym_init", description="Initial public/private key length. Default is 512")
-    private int asymInit=512;
+    int asymInit=512;
 
     @Property(name="sym_init", description="Initial key length for matching symmetric algorithm. Default is 128")
-    private int symInit=128;
+    int symInit=128;
 
     // properties for functioning in supplied key mode
     private boolean suppliedKey=false;
 
     @Property(name="key_store_name", description="File on classpath that contains keystore repository")
-    private String keyStoreName;
+    String keyStoreName;
 
     @Property(name="store_password", description="Password used to check the integrity/unlock the keystore. Change the default")
     private String storePassword="changeit"; //JDK default
