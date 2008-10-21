@@ -26,7 +26,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.23 2008/10/21 12:16:15 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.24 2008/10/21 12:17:25 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -43,7 +43,7 @@ public class FD_ALL extends Protocol {
     @ManagedAttribute(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
     long timeout=5000;
     
-    @Property(description="Treat messages received from members as heartebeats. Default is true")
+    @Property(description="Treat messages received from members as heartbeats. Default is true")
     boolean msg_counts_as_heartbeat=true;
 
     @Property(description="Shun switch. Default is true")
