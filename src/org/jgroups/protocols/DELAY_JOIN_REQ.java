@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -12,8 +13,9 @@ import java.util.Date;
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.3 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: DELAY_JOIN_REQ.java,v 1.4 2008/10/21 12:10:30 vlada Exp $
  */
+@Unsupported
 public class DELAY_JOIN_REQ extends Protocol {
     
     @Property

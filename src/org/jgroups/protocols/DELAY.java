@@ -1,9 +1,10 @@
-// $Id: DELAY.java,v 1.11 2008/05/08 09:46:42 vlada Exp $
+// $Id: DELAY.java,v 1.12 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -15,6 +16,7 @@ import org.jgroups.util.Util;
  * This protocol should be inserted directly above the bottommost protocol (e.g. UDP).
  */
 
+@Unsupported
 public class DELAY extends Protocol {
     @Property
     int in_delay=0;

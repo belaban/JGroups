@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.24 2008/06/10 08:43:07 belaban Exp $
+// $Id: DISCARD.java,v 1.25 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,7 @@ import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -23,7 +24,7 @@ import java.util.Set;
  * of all up messages to be discarded. Setting 'down' or 'up' to 0 causes no loss, whereas 1 discards
  * all messages (not very useful).
  */
-
+@Unsupported
 public class DISCARD extends Protocol {
     @Property
     double up=0.0;    // probability of dropping up   msgs

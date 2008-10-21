@@ -1,10 +1,11 @@
-// $Id: DUMMY_TP.java,v 1.7 2007/01/15 15:59:26 belaban Exp $
+// $Id: DUMMY_TP.java,v 1.8 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 
@@ -12,8 +13,9 @@ import org.jgroups.stack.Protocol;
  * Dummy transport, returns a fake local address and responds to CONNECT.
  * Compared to LOOPBACK, this discards everything
  * @author Bela Ban
- * @version $Id: DUMMY_TP.java,v 1.7 2007/01/15 15:59:26 belaban Exp $
+ * @version $Id: DUMMY_TP.java,v 1.8 2008/10/21 12:10:30 vlada Exp $
  */
+@Unsupported
 public class DUMMY_TP extends Protocol {
     private Address local_addr=null;
 

@@ -1,10 +1,11 @@
-// $Id: HDRS.java,v 1.6 2007/06/20 10:41:02 belaban Exp $
+// $Id: HDRS.java,v 1.7 2008/10/21 12:10:30 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Header;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
 /**
  * Example of a protocol layer. Contains no real functionality, can be used as a template.
  */
+@Unsupported
 public class HDRS extends Protocol {
     public String  getName() {return "HDRS";}
 
