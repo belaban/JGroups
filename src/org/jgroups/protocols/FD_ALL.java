@@ -26,7 +26,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.22 2008/08/01 16:13:07 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.23 2008/10/21 12:16:15 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -35,18 +35,18 @@ public class FD_ALL extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Property
-    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster", writable=true)
+    @Property(description="Interval in which a HEARTBEAT is sent to the cluster. Default is 3000 msec")
+    @ManagedAttribute(description="Interval in which a HEARTBEAT is sent to the cluster. Default is 3000 msec", writable=true)
     long interval=3000;
 
-    @Property
-    @ManagedAttribute(description="Number of milliseconds after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
+    @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P. Default is 5000 msec")
+    @ManagedAttribute(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
     long timeout=5000;
     
     @Property(description="Treat messages received from members as heartebeats. Default is true")
     boolean msg_counts_as_heartbeat=true;
 
-    @Property
+    @Property(description="Shun switch. Default is true")
     @ManagedAttribute(description="Shun switch. Default is true", writable=true)
     boolean shun=true;
 
