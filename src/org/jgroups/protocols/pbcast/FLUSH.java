@@ -56,7 +56,7 @@ public class FLUSH extends Protocol {
     @Property(description="Max time to keep channel blocked in flush. Default is 8000 msec")
     private long timeout = 8000;
      
-    @Property(description="Timeout (per atttempr) to quiet the cluster during the first flush phase. Default is 2500 msec")
+    @Property(description="Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2500 msec")
     private long start_flush_timeout = 2500;
     
     @Property(description="Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
