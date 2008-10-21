@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.207 2008/10/10 13:46:12 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.208 2008/10/21 12:35:00 vlada Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -56,14 +56,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
 
     
-    @Property(name="retransmit_timeout", converter=PropertyConverters.LongArray.class, description="Timeout before requesting retransmissions")
+    @Property(name="retransmit_timeout", converter=PropertyConverters.LongArray.class, description="Timeout before requesting retransmissions. Default is 600, 1200, 2400, 4800")
     private long[] retransmit_timeouts= { 600, 1200, 2400, 4800 }; // time(s) to wait before requesting retransmission
 
     @Property(description="If true, retransmissions stats will be captured. Default is false")
     boolean enable_xmit_time_stats=false;
 
     @ManagedAttribute(description="Garbage collection lag", writable=true)
-    @Property
+    @Property(description="Garbage collection lag. Default is 20 msec")
     private int gc_lag=20; // number of msgs garbage collection lags behind    
 
     /**
@@ -94,7 +94,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * The first value (in milliseconds) to use in the exponential backoff
      * retransmission mechanism. Only enabled if the value is > 0
      */
-    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if freater than 0. Default is 0")
+    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if greater than 0. Default is 0")
     private long exponential_backoff=0;
 
     /**
@@ -114,7 +114,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * off, so we don't keep the message around, and don't need to wait for
      * garbage collection to remove them.
      */
-    @Property(description="Should messages delivere to application be discarded. Default is false")
+    @Property(description="Should messages delivered to application be discarded. Default is false")
     @ManagedAttribute(description="Discard delivered messages", writable=true)
     private boolean discard_delivered_msgs=false;
 
@@ -144,7 +144,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="Size of retransmission history. Default is 50 entries")
     private int xmit_history_max_size=50;
 
-    @Property
+    @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
     private long max_rebroadcast_timeout=2000;
 
     /**
