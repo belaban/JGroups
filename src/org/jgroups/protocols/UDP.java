@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.187 2008/10/20 10:47:10 belaban Exp $
+ * @version $Id: UDP.java,v 1.188 2008/10/21 08:22:03 vlada Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -82,7 +82,7 @@ public class UDP extends TP {
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600")
     private int mcast_port=7600;
 
-    @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. Default is tru")
+    @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. Default is true")
     private boolean ip_mcast=true;
 
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8")
