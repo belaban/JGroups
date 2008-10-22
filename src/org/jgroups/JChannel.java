@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.204 2008/10/10 10:18:51 belaban Exp $
+ * @version $Id: JChannel.java,v 1.205 2008/10/22 11:43:26 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -633,6 +633,11 @@ public class JChannel extends Channel {
                 retval.put("channel", tmp);
         }
         return retval;
+    }
+
+    @ManagedOperation
+    public Map<String,Object> dumpStats(String protocol_name) {
+        return prot_stack.dumpStats(protocol_name);
     }
 
     protected Map<String,Long> dumpChannelStats() {
@@ -1932,8 +1937,16 @@ public class JChannel extends Channel {
         public Map<String, String> handleProbe(String... keys) {
             HashMap<String, String> map=new HashMap<String, String>(2);
             for(String key: keys) {
-                if(key.equals("jmx")) {
-                    Map<String, Object> tmp_stats=dumpStats();
+                if(key.startsWith("jmx")) {
+                    Map<String, Object> tmp_stats;
+                    int index=key.indexOf("=");
+                    if(index > -1) {
+                        String value=key.substring(index +1);
+                        tmp_stats=dumpStats(value);
+                    }
+                    else
+                        tmp_stats=dumpStats();
+
                     map.put("jmx", tmp_stats != null? Util.mapToString(tmp_stats) : "null");
                     continue;
                 }
