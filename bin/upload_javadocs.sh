@@ -2,4 +2,4 @@
 #
 # Uploads the javadoc to SourceForge
 
-scp -r ../dist/javadoc/* belaban@shell.sf.net:/home/groups/j/ja/javagroups/htdocs/javagroupsnew/docs/javadoc/
+scp -r ../dist/javadoc/* belaban,javagroups@web.sourceforge.net:/home/groups/j/ja/javagroups/htdocs/javagroupsnew/docs/javadoc/
