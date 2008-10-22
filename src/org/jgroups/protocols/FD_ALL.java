@@ -1,14 +1,14 @@
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.util.*;
+import org.jgroups.annotations.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
+import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +16,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.io.*;
 
 /**
  * Failure detection based on simple heartbeat protocol. Every member
@@ -26,7 +25,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.24 2008/10/21 12:17:25 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.25 2008/10/22 10:29:15 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -43,8 +42,9 @@ public class FD_ALL extends Protocol {
     @ManagedAttribute(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
     long timeout=5000;
     
-    @Property(description="Treat messages received from members as heartbeats. Default is true")
-    boolean msg_counts_as_heartbeat=true;
+    @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
+            "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
+    boolean msg_counts_as_heartbeat=false;
 
     @Property(description="Shun switch. Default is true")
     @ManagedAttribute(description="Shun switch. Default is true", writable=true)
