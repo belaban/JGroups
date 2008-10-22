@@ -6,9 +6,9 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ThreadFactoryTest.java,v 1.1 2008/05/15 13:18:39 belaban Exp $
+ * @version $Id: ThreadFactoryTest.java,v 1.2 2008/10/22 09:04:42 vlada Exp $
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ThreadFactoryTest {
     private DefaultThreadFactory factory;
     private static final String BASE="base";
