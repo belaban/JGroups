@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.177 2008/10/10 09:29:16 belaban Exp $
+ * @version $Id: Util.java,v 1.178 2008/10/22 13:00:55 belaban Exp $
  */
 public class Util {
 
@@ -952,16 +952,34 @@ public class Util {
     }
 
 
-    public static void writeString(DataOutputStream out, String s) throws IOException {
-        out.write(s.getBytes());
-    }
-
     public static String readString(DataInputStream in) throws IOException {
         int b=in.read();
         if(b == 1)
             return in.readUTF();
         return null;
     }
+
+    public static void writeAsciiString(String str, DataOutputStream out) throws IOException {
+        if(str == null) {
+            out.write(-1);
+            return;
+        }
+        int length=str.length();
+        if(length > Byte.MAX_VALUE)
+            throw new IllegalArgumentException("string is > " + Byte.MAX_VALUE);
+        out.write(length);
+        out.writeBytes(str);
+    }
+
+    public static String readAsciiString(DataInputStream in) throws IOException {
+        byte length=(byte)in.read();
+        if(length == -1)
+            return null;
+        byte[] tmp=new byte[length];
+        in.read(tmp, 0, tmp.length);
+        return new String(tmp, 0, tmp.length);
+    }
+
 
     public static String parseString(DataInputStream in) {
         return parseString(in, false);
