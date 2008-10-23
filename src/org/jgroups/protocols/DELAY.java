@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.12 2008/10/21 12:10:30 vlada Exp $
+// $Id: DELAY.java,v 1.13 2008/10/23 16:59:41 rachmatowicz Exp $
 
 package org.jgroups.protocols;
 
@@ -30,6 +30,22 @@ public class DELAY extends Protocol {
         return "DELAY";
     } 
 
+    public int getInDelay() {
+    	return in_delay ;
+    }
+    
+    public void setInDelay(int in_delay) {
+    	this.in_delay=in_delay ;
+    }
+
+    public int getOutDelay() {
+    	return out_delay ;
+    }
+    
+    public void setOutDelay(int out_delay) {
+    	this.out_delay=out_delay ;
+    }
+    
     public Object up(Event evt) {
         int delay=in_delay > 0 ? computeDelay(in_delay) : 0;
 
@@ -71,3 +87,6 @@ public class DELAY extends Protocol {
 
 
 }
+
+
+
