@@ -15,9 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.Properties;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Iterator;
 import java.security.AccessControlException;
 
 /**
@@ -31,7 +29,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.24 2007/12/03 13:17:49 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.25 2008/10/23 15:14:35 vlada Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -417,7 +415,7 @@ public class ConfiguratorFactory {
             return input;
 
         if(properties instanceof Element) {
-            return getConfigStream((Element)properties);
+            return getConfigStream(properties);
         }
 
         return new ByteArrayInputStream(((String)properties).getBytes());
@@ -502,27 +500,20 @@ public class ConfiguratorFactory {
         }
     }
 
-    /** Replace variables of the form ${var:default} with the getProperty(var, default)
+    /**
+     * Replace variables of the form ${var:default} with the getProperty(var,
+     * default)
+     * 
      * @param configurator
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
-        ProtocolData[] protocols;
 
-        try {
-            protocols=configurator.getProtocolStack();
-        }
-        catch(Exception e) {
-            protocols=null;
-        }
-
-        if(protocols == null)
-            return;
-        for(int i=0; i < protocols.length; i++) {
-            ProtocolData protocol=protocols[i];
+        ProtocolData[] protocols=configurator.getProtocolStack();
+        for(ProtocolData protocol:protocols) {
             if(protocol != null) {
                 Map<String,ProtocolParameter> parms=protocol.getParameters();
                 ProtocolParameter parm;
-                for(Map.Entry<String,ProtocolParameter> entry: parms.entrySet()) {
+                for(Map.Entry<String,ProtocolParameter> entry:parms.entrySet()) {
                     parm=entry.getValue();
                     String val=parm.getValue();
                     String replacement=Util.substituteVariable(val);
@@ -532,8 +523,7 @@ public class ConfiguratorFactory {
                 }
             }
         }
-
-    }
+    }          
 }
 
 
