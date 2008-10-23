@@ -18,7 +18,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.12 2008/05/20 11:27:38 belaban Exp $
+ * @version $Id: Simulator.java,v 1.13 2008/10/23 01:09:52 rachmatowicz Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -122,13 +122,6 @@ public class Simulator {
         if(protStack == null)
             throw new Exception("protocol stack is null");
 
-        bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-        if(view != null) {
-            Event view_evt=new Event(Event.VIEW_CHANGE, view);
-            bottom.up(view_evt);
-            top.down(view_evt);
-        }
-
         for(int i=0; i < protStack.length; i++) {
             Protocol p=protStack[i];
             p.setProtocolStack(prot_stack);
@@ -142,6 +135,14 @@ public class Simulator {
         for(int i=0; i < protStack.length; i++) {
             Protocol p=protStack[i];
             p.start();
+        }
+
+		// moved event processing to follow stack init (JGRP-843)
+        bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        if(view != null) {
+            Event view_evt=new Event(Event.VIEW_CHANGE, view);
+            bottom.up(view_evt);
+            top.down(view_evt);
         }
 
 
