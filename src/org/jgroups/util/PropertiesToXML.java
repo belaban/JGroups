@@ -1,11 +1,17 @@
 package org.jgroups.util;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -37,7 +43,7 @@ import org.w3c.dom.Element;
  * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.3 2008/10/21 13:19:41 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.4 2008/10/24 12:03:05 vlada Exp $
  * 
  */
 public class PropertiesToXML {
@@ -45,11 +51,22 @@ public class PropertiesToXML {
     public static void main(String[] args) {
 
         try {
+
+            File f = new File("doc/manual/en/modules/protocols.xml");            
+            String s = fileToString(f);            
+            
             Set<Class<?>> classes=getClasses("org.jgroups.protocols", Protocol.class);
             classes.addAll(getClasses("org.jgroups.protocols.pbcast", Protocol.class));
+            Properties props = new Properties();
             for(Class<?> clazz:classes) {
-                classToXML(clazz);
-            }
+                classToXML(props,clazz);
+            }          
+            
+            String result = Util.replaceProperties(s, props);           
+            FileWriter fw = new FileWriter(f,false);
+            fw.write(result);
+            fw.flush();
+            fw.close();
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -78,8 +95,8 @@ public class PropertiesToXML {
         return classes;
     }
 
-    private static void classToXML(Class<?> clazz) throws ParserConfigurationException,
-                                                  TransformerException {
+    private static void classToXML(Properties props, Class<?> clazz) throws ParserConfigurationException,
+                                                  TransformerException {        
         boolean isConcreteClass=(clazz.getModifiers() & Modifier.ABSTRACT) == 0;
         boolean isExperimental=clazz.isAnnotationPresent(Experimental.class);
         boolean isUnsupported=clazz.isAnnotationPresent(Unsupported.class);
@@ -110,25 +127,52 @@ public class PropertiesToXML {
                         row.appendChild(entry);
                         propertyCount++;
                         
-                        tbody.appendChild(row);
-
-                        //System.out.println(protocol + "#" + property + "=" + desc);
-                    }
+                        tbody.appendChild(row);                       
+                    } 
                 }
             }
             //do we have more than one property (superclass Protocol has only one property (stats))
             if(propertyCount > 1) {
                 DOMSource domSource=new DOMSource(xmldoc);
-                StreamResult streamResult=new StreamResult(new File(protocol.getSimpleName() + ".xml"));
+                StringWriter sw = new StringWriter();
+                StreamResult streamResult=new StreamResult(sw);
                 TransformerFactory tf=TransformerFactory.newInstance();
                 Transformer serializer=tf.newTransformer();
                 serializer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
                 serializer.setOutputProperty(OutputKeys.INDENT, "yes");
                 serializer.transform(domSource, streamResult);
+                StringBuffer buffer=sw.getBuffer();                
+                buffer.delete(0, buffer.indexOf("table")-1);               
+                props.put(protocol.getSimpleName(), buffer.toString());                
             }
-        }
+        }        
+    }
+    
+    private static String fileToString(File f) throws Exception {
+        StringWriter output=new StringWriter();
+        FileReader input = new FileReader(f);        
+        char[] buffer=new char[8 * 1024];
+        int count=0;
+        int n=0;
+        while(-1 != (n=input.read(buffer))) {
+            output.write(buffer, 0, n);
+            count+=n;
+        }        
+        return output.toString();
     }
 
+    public static int copy(Reader input, Writer output) throws IOException {
+        char[] buffer=new char[8 * 1024];
+        int count=0;
+        int n=0;
+        while(-1 != (n=input.read(buffer))) {
+            output.write(buffer, 0, n);
+            count+=n;
+        }
+        return count;
+    }
+    
+    
     private static Element createXMLTree(Document xmldoc) throws ParserConfigurationException {
 
         Element root=xmldoc.getDocumentElement();
