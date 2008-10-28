@@ -14,18 +14,21 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.24 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: SharedTransportTest.java,v 1.25 2008/10/28 14:28:55 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -365,6 +368,84 @@ public class SharedTransportTest extends ChannelTestBase {
         assertSize(0, rec_a);
         assertSize(2, rec_b, rec_c);
     }
+    
+    /**
+     * Use a CountDownLatch to concurrently connect 3 channels; confirms
+     * the channels connect
+     * 
+     * @throws ChannelException
+     * @throws InterruptedException
+     */
+    public void testConcurrentCreation() throws ChannelException, InterruptedException
+    {
+       a=createSharedChannel(SINGLETON_1);
+       r1=new MyReceiver("a");
+       a.setReceiver(r1);
+
+       b=createSharedChannel(SINGLETON_1);
+       r2=new MyReceiver("b");
+       b.setReceiver(r2);
+
+       c=createSharedChannel(SINGLETON_1);
+       r3=new MyReceiver("c");
+       c.setReceiver(r3);
+       
+       CountDownLatch startLatch = new CountDownLatch(1);
+       CountDownLatch finishLatch = new CountDownLatch(3);
+       
+       ConnectTask connectA = new ConnectTask(a, "a", startLatch, finishLatch);
+       Thread threadA = new Thread(connectA);
+       threadA.setDaemon(true);
+       threadA.start();
+       
+       ConnectTask connectB = new ConnectTask(b, "b", startLatch, finishLatch);
+       Thread threadB = new Thread(connectB);
+       threadB.setDaemon(true);
+       threadB.start();
+       
+       ConnectTask connectC = new ConnectTask(c, "c", startLatch, finishLatch);
+       Thread threadC = new Thread(connectC);
+       threadC.setDaemon(true);
+       threadC.start();
+       
+       startLatch.countDown();
+       
+       try
+       {
+          boolean finished = finishLatch.await(20, TimeUnit.SECONDS);
+          
+          if (connectA.exception != null)
+          {
+             AssertJUnit.fail("connectA threw exception " + connectA.exception);
+          }
+          if (connectB.exception != null)
+          {
+             AssertJUnit.fail("connectB threw exception " + connectB.exception);
+          }
+          if (connectC.exception != null)
+          {
+             AssertJUnit.fail("connectC threw exception " + connectC.exception);
+          }
+          
+          if (!finished) {
+             if (threadA.isAlive())
+                AssertJUnit.fail("threadA did not finish");
+             if (threadB.isAlive())
+                AssertJUnit.fail("threadB did not finish");
+             if (threadC.isAlive())
+                AssertJUnit.fail("threadC did not finish");
+          }
+       }
+       finally
+       {
+          if (threadA.isAlive())
+             threadA.interrupt();
+          if (threadB.isAlive())
+             threadB.interrupt();
+          if (threadC.isAlive())
+             threadC.interrupt();
+       }
+    }
 
     private static void assertSize(int expected, MyReceiver... receivers) {
         for(MyReceiver recv: receivers) {
@@ -449,6 +530,43 @@ public class SharedTransportTest extends ChannelTestBase {
         public String toString() {
             return super.toString() + " (size=" + list.size() + ")";
         }
+    }
+    
+    private static class ConnectTask implements Runnable
+    {
+       private final Channel channel;
+       private final String clusterName;
+       private final CountDownLatch startLatch;
+       private final CountDownLatch finishLatch;
+       private Exception exception;
+       
+       ConnectTask(Channel channel, String clusterName, CountDownLatch startLatch, CountDownLatch finishLatch)
+       {
+          this.channel = channel;
+          this.clusterName = clusterName;
+          this.startLatch = startLatch;
+          this.finishLatch = finishLatch;
+       }
+       
+       public void run()
+       {          
+          try
+          {
+             startLatch.await();
+             channel.connect(clusterName);
+          }
+          catch (Exception e)
+          {
+             e.printStackTrace(System.out);
+             this.exception = e;
+          }
+          finally
+          {
+             finishLatch.countDown();
+          }
+         
+       }
+       
     }
 
 }
