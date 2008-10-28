@@ -6,9 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.*;
@@ -22,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.43 2008/10/20 06:46:30 belaban Exp $
+ * @version $Id: MPING.java,v 1.44 2008/10/28 09:16:56 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     
@@ -342,7 +340,7 @@ public class MPING extends PING implements Runnable {
             try {
                 mcast_sock.receive(packet);
                 data=packet.getData();
-                inp_stream=new ByteArrayInputStream(data, 0, data.length);
+                inp_stream=new ExposedByteArrayInputStream(data, 0, data.length);
                 inp=new DataInputStream(inp_stream);
                 msg=new Message();
                 msg.readFrom(inp);
@@ -355,16 +353,12 @@ public class MPING extends PING implements Runnable {
                 log.error("failed receiving packet (from " + packet.getSocketAddress() + ")", ex);
             }
             finally {
-                closeInputStream(inp);
-                closeInputStream(inp_stream);
+                Util.close(inp);
             }
         }
         if(log.isTraceEnabled())
             log.trace("receiver thread terminated");
     }
 
-    private static void closeInputStream(InputStream inp) {
-        if(inp != null)
-            try {inp.close();} catch(Throwable e) {}
-    }
+
 }
