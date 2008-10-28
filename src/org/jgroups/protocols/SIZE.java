@@ -1,10 +1,12 @@
-// $Id: SIZE.java,v 1.23 2008/10/21 12:10:30 vlada Exp $
+// $Id: SIZE.java,v 1.24 2008/10/28 08:50:17 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ExposedDataOutputStream;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
@@ -33,7 +35,8 @@ public class SIZE extends Protocol {
     @Property
     long min_size=0;
 
-    final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
+    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(65535);
+    final ExposedDataOutputStream out=new ExposedDataOutputStream(out_stream);
 
 
     /**
@@ -116,12 +119,11 @@ public class SIZE extends Protocol {
 
 
     int sizeOf(Message msg) {
-        DataOutputStream out=null;
 
         synchronized(out_stream) {
             try {
                 out_stream.reset();
-                out=new DataOutputStream(out_stream);
+                out.reset();
                 msg.writeTo(out);
                 out.flush();
                 return out_stream.size();
