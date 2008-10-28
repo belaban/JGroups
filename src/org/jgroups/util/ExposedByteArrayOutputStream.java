@@ -10,7 +10,7 @@ import java.util.Arrays;
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
  * toByteArray() which copies the internal buffer
  * @author Bela Ban
- * @version $Id: ExposedByteArrayOutputStream.java,v 1.2.14.3 2008/10/28 11:40:10 belaban Exp $
+ * @version $Id: ExposedByteArrayOutputStream.java,v 1.2.14.4 2008/10/28 14:02:01 belaban Exp $
  */
 public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
@@ -40,13 +40,16 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
         return buf.length;
     }
 
-    public  void write(int b) {
-        int newcount=count + 1;
-        if(newcount > buf.length) {
-            buf=Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
+
+    public void write(int b) {
+        int newcount = count + 1;
+        if (newcount > buf.length) {
+            byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
+            System.arraycopy(buf, 0, newbuf, 0, count);
+            buf = newbuf;
         }
-        buf[count]=(byte)b;
-        count=newcount;
+        buf[count] = (byte)b;
+        count = newcount;
     }
 
     /**
@@ -56,20 +59,21 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @param off the start offset in the data.
      * @param len the number of bytes to write.
      */
-    public  void write(byte b[], int off, int len) {
-        if((off < 0) || (off > b.length) || (len < 0) ||
+    public void write(byte b[], int off, int len) {
+        if ((off < 0) || (off > b.length) || (len < 0) ||
                 ((off + len) > b.length) || ((off + len) < 0)) {
             throw new IndexOutOfBoundsException();
-        }
-        else if(len == 0) {
+        } else if (len == 0) {
             return;
         }
-        int newcount=count + len;
-        if(newcount > buf.length) {
-            buf=Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
+        int newcount = count + len;
+        if (newcount > buf.length) {
+            byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
+            System.arraycopy(buf, 0, newbuf, 0, count);
+            buf = newbuf;
         }
         System.arraycopy(b, off, buf, count, len);
-        count=newcount;
+        count = newcount;
     }
 
     /**
@@ -79,7 +83,7 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @param out the output stream to which to write the data.
      * @throws java.io.IOException if an I/O error occurs.
      */
-    public  void writeTo(OutputStream out) throws IOException {
+    public synchronized void writeTo(OutputStream out) throws IOException {
         out.write(buf, 0, count);
     }
 
@@ -101,8 +105,10 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @return the current contents of this output stream, as a byte array.
      * @see java.io.ByteArrayOutputStream#size()
      */
-    public  byte toByteArray()[] {
-        return Arrays.copyOf(buf, count);
+    public synchronized byte toByteArray()[] {
+        byte newbuf[] = new byte[count];
+        System.arraycopy(buf, 0, newbuf, 0, count);
+        return newbuf;
     }
 
     /**
@@ -179,6 +185,7 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
     public  String toString(int hibyte) {
         return new String(buf, hibyte, 0, count);
     }
+
 
 
 
