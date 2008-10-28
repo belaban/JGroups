@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
  * Copied from TestNG (www.testng.org) and modified
  * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.12 2008/10/20 15:07:30 vlada Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.13 2008/10/28 18:23:26 rachmatowicz Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -49,6 +49,21 @@ public class JUnitXMLReporter extends TestListenerAdapter {
             this.type=type;
             if(type != 1 && type != 2)
                 throw new IllegalArgumentException("index has to be 1 or 2");
+        }
+        
+        public void write(final byte[] b) {
+        	String s = new String(b) ;
+        	append(s.trim(), false) ;
+        }
+
+        public void write(final byte[] b, final int off, final int len) {
+        	String s = new String(b, off, len) ;
+        	append(s.trim(), false) ;
+        }
+        
+        public void write(final int b) {
+        	Integer i = new Integer(b) ;
+        	append(i.toString(), false) ;
         }
 
         public void println(String s) {
