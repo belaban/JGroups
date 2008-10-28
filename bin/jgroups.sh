@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.6 2008/09/30 07:49:02 belaban Exp $
+# version: $Id: jgroups.sh,v 1.7 2008/10/28 12:19:28 belaban Exp $
 
 #!/bin/bash
 
@@ -17,7 +17,7 @@ done
 
 LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
 JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
-FLAGS="-server -Xmx600M -Xms600M"
+FLAGS="-server -Xmx600M -Xms600M -Xmn500M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64 -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
 FLAGS="$FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
