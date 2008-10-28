@@ -10,7 +10,7 @@ import java.util.Arrays;
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
  * toByteArray() which copies the internal buffer
  * @author Bela Ban
- * @version $Id: ExposedByteArrayOutputStream.java,v 1.5 2008/10/28 11:23:06 belaban Exp $
+ * @version $Id: ExposedByteArrayOutputStream.java,v 1.6 2008/10/28 12:18:40 belaban Exp $
  */
 public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
@@ -26,7 +26,7 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * Resets count and creates a new buf if the current buf is > max_size. This method is not synchronized
      */
     public void reset(int max_size) {
-        super.reset();
+        reset();
         if(buf == null || buf.length > max_size) {
             buf=new byte[max_size];
         }
