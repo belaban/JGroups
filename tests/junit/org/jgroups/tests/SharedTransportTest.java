@@ -9,12 +9,14 @@ import org.jgroups.util.Util;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.8 2008/05/21 10:24:01 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.9 2008/10/28 14:16:09 vlada Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -327,6 +329,77 @@ public class SharedTransportTest extends ChannelTestBase {
         assertSize(0, rec_a);
         assertSize(2, rec_b, rec_c);
     }
+    
+    public void testConcurrentCreation() throws ChannelException, InterruptedException
+    {
+       a=createSharedChannel(SINGLETON_1);
+       r1=new MyReceiver("a");
+       a.setReceiver(r1);
+
+       b=createSharedChannel(SINGLETON_1);
+       r2=new MyReceiver("b");
+       b.setReceiver(r2);
+
+       c=createSharedChannel(SINGLETON_1);
+       r3=new MyReceiver("c");
+       c.setReceiver(r3);
+       
+       CountDownLatch startLatch = new CountDownLatch(1);
+       CountDownLatch finishLatch = new CountDownLatch(3);
+       
+       ConnectTask connectA = new ConnectTask(a, "a", startLatch, finishLatch);
+       Thread threadA = new Thread(connectA);
+       threadA.setDaemon(true);
+       threadA.start();
+       
+       ConnectTask connectB = new ConnectTask(b, "b", startLatch, finishLatch);
+       Thread threadB = new Thread(connectB);
+       threadB.setDaemon(true);
+       threadB.start();
+       
+       ConnectTask connectC = new ConnectTask(c, "c", startLatch, finishLatch);
+       Thread threadC = new Thread(connectC);
+       threadC.setDaemon(true);
+       threadC.start();
+       
+       startLatch.countDown();
+       
+       try
+       {
+          boolean finished = finishLatch.await(20, TimeUnit.SECONDS);
+          
+          if (connectA.exception != null)
+          {
+             fail("connectA threw exception " + connectA.exception);
+          }
+          if (connectB.exception != null)
+          {
+             fail("connectB threw exception " + connectB.exception);
+          }
+          if (connectC.exception != null)
+          {
+             fail("connectC threw exception " + connectC.exception);
+          }
+          
+          if (!finished) {
+             if (threadA.isAlive())
+                fail("threadA did not finish");
+             if (threadB.isAlive())
+                fail("threadB did not finish");
+             if (threadC.isAlive())
+                fail("threadC did not finish");
+          }
+       }
+       finally
+       {
+          if (threadA.isAlive())
+             threadA.interrupt();
+          if (threadB.isAlive())
+             threadB.interrupt();
+          if (threadC.isAlive())
+             threadC.interrupt();
+       }
+    }
 
     private static void assertSize(int expected, MyReceiver... receivers) {
         for(MyReceiver recv: receivers) {
@@ -379,6 +452,43 @@ public class SharedTransportTest extends ChannelTestBase {
         public String toString() {
             return size() + " message(s)";
         }
+    }
+    
+    private static class ConnectTask implements Runnable
+    {
+       private final Channel channel;
+       private final String clusterName;
+       private final CountDownLatch startLatch;
+       private final CountDownLatch finishLatch;
+       private Exception exception;
+       
+       ConnectTask(Channel channel, String clusterName, CountDownLatch startLatch, CountDownLatch finishLatch)
+       {
+          this.channel = channel;
+          this.clusterName = clusterName;
+          this.startLatch = startLatch;
+          this.finishLatch = finishLatch;
+       }
+       
+       public void run()
+       {          
+          try
+          {
+             startLatch.await();
+             channel.connect(clusterName);
+          }
+          catch (Exception e)
+          {
+             e.printStackTrace(System.out);
+             this.exception = e;
+          }
+          finally
+          {
+             finishLatch.countDown();
+          }
+         
+       }
+       
     }
 
 }
