@@ -10,7 +10,7 @@ import java.util.Arrays;
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
  * toByteArray() which copies the internal buffer
  * @author Bela Ban
- * @version $Id: ExposedByteArrayOutputStream.java,v 1.6 2008/10/28 12:18:40 belaban Exp $
+ * @version $Id: ExposedByteArrayOutputStream.java,v 1.7 2008/10/28 14:29:02 belaban Exp $
  */
 public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
@@ -42,12 +42,14 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
 
     public void write(int b) {
-        int newcount=count + 1;
-        if(newcount > buf.length) {
-            buf=Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
+        int newcount = count + 1;
+        if (newcount > buf.length) {
+            byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
+            System.arraycopy(buf, 0, newbuf, 0, count);
+            buf = newbuf;
         }
-        buf[count]=(byte)b;
-        count=newcount;
+        buf[count] = (byte)b;
+        count = newcount;
     }
 
     /**
@@ -58,19 +60,20 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @param len the number of bytes to write.
      */
     public void write(byte b[], int off, int len) {
-        if((off < 0) || (off > b.length) || (len < 0) ||
+        if ((off < 0) || (off > b.length) || (len < 0) ||
                 ((off + len) > b.length) || ((off + len) < 0)) {
             throw new IndexOutOfBoundsException();
-        }
-        else if(len == 0) {
+        } else if (len == 0) {
             return;
         }
-        int newcount=count + len;
-        if(newcount > buf.length) {
-            buf=Arrays.copyOf(buf, Math.max(buf.length << 1, newcount));
+        int newcount = count + len;
+        if (newcount > buf.length) {
+            byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
+            System.arraycopy(buf, 0, newbuf, 0, count);
+            buf = newbuf;
         }
         System.arraycopy(b, off, buf, count, len);
-        count=newcount;
+        count = newcount;
     }
 
     /**
@@ -103,7 +106,9 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @see java.io.ByteArrayOutputStream#size()
      */
     public byte toByteArray()[] {
-        return Arrays.copyOf(buf, count);
+        byte newbuf[] = new byte[count];
+        System.arraycopy(buf, 0, newbuf, 0, count);
+        return newbuf;
     }
 
     /**
