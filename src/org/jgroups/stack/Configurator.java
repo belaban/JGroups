@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.7 2008/06/09 09:40:56 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.8 2008/10/29 08:31:05 belaban Exp $
  */
 public class Configurator {
 
@@ -78,48 +78,53 @@ public class Configurator {
         for(final Protocol prot: protocols) {
             if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
-            if(singleton_name != null && singleton_name.length() > 0 && cluster_name != null) {
-                TP transport=(TP)prot;
-                final Map<String, Protocol> up_prots=transport.getUpProtocols();
-                synchronized(up_prots) {
-                    Set<String> keys=up_prots.keySet();
-                    if(keys.contains(cluster_name))
-                        throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
-                                "transport: " + keys);
+                if(singleton_name != null && singleton_name.length() > 0 && cluster_name != null) {
+                    TP transport=(TP)prot;
+                    final Map<String, Protocol> up_prots=transport.getUpProtocols();
+                    synchronized(singletons) {
+                        synchronized(up_prots) {
+                            Set<String> keys=up_prots.keySet();
+                            if(keys.contains(cluster_name))
+                                throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
+                                        "transport: " + keys);
 
-                    for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
-                        Map.Entry<String,Protocol> entry=it.next();
-                        Protocol tmp=entry.getValue();
-                        if(tmp == above_prot) {
-                            it.remove();
+                            for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
+                                Map.Entry<String,Protocol> entry=it.next();
+                                Protocol tmp=entry.getValue();
+                                if(tmp == above_prot) {
+                                    it.remove();
+                                }
+                            }
+
+                            if(above_prot != null) {
+                                TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot,
+                                                                             transport.getThreadNamingPattern(),
+                                                                             transport.getLocalAddress());
+                                ad.setProtocolStack(above_prot.getProtocolStack());
+                                above_prot.setDownProtocol(ad);
+                                up_prots.put(cluster_name, ad);
+                            }
+                        }
+                        Tuple<TP,Short> val=singletons.get(singleton_name);
+                        if(val == null) {
+                            singletons.put(singleton_name, new Tuple<TP,Short>(transport,(short)1));
+                        }
+                        else {
+                            short num_starts=val.getVal2();
+                            val.setVal2((short)(num_starts +1));
+                            if(num_starts >= 1) {
+                                if(above_prot != null)
+                                    above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
+                                continue;
+                            }
+                            else {
+                                prot.start();
+                                above_prot=prot;
+                                continue;
+                            }
                         }
                     }
-
-                    if(above_prot != null) {
-                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot,
-                                                                         transport.getThreadNamingPattern(),
-                                                                         transport.getLocalAddress());
-                            ad.setProtocolStack(above_prot.getProtocolStack());
-                        above_prot.setDownProtocol(ad);
-                        up_prots.put(cluster_name, ad);
-                    }
                 }
-                synchronized(singletons) {
-                    Tuple<TP,Short> val=singletons.get(singleton_name);
-                    if(val == null) {
-                        singletons.put(singleton_name, new Tuple<TP,Short>(transport,(short)1));
-                    }
-                    else {
-                        short num_starts=val.getVal2();
-                        val.setVal2((short)(num_starts +1));
-                        if(num_starts >= 1) {
-                            if(above_prot != null)
-                                above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
-                            continue;
-                        }
-                    }
-                }
-            }
             }
             prot.start();
             above_prot=prot;
@@ -130,19 +135,19 @@ public class Configurator {
         for(final Protocol prot: protocols) {
             if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
-            if(singleton_name != null && singleton_name.length() > 0) {
-                TP transport=(TP)prot;
-                final Map<String, Protocol> up_prots=transport.getUpProtocols();
+                if(singleton_name != null && singleton_name.length() > 0) {
+                    TP transport=(TP)prot;
+                    final Map<String, Protocol> up_prots=transport.getUpProtocols();
 
-                synchronized(up_prots) {
-                    up_prots.remove(cluster_name);
-                }
+                    synchronized(up_prots) {
+                        up_prots.remove(cluster_name);
+                    }
 
-                synchronized(singletons) {
-                    Tuple<TP,Short> val=singletons.get(singleton_name);
-                    if(val != null) {
-                        short num_starts=(short)Math.max(val.getVal2() -1, 0);
-                        val.setVal2(num_starts);
+                    synchronized(singletons) {
+                        Tuple<TP,Short> val=singletons.get(singleton_name);
+                        if(val != null) {
+                            short num_starts=(short)Math.max(val.getVal2() -1, 0);
+                            val.setVal2(num_starts);
                         if(num_starts > 0) {
                             continue; // don't call TP.stop() if we still have references to the transport
                         }
