@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.189 2008/10/29 10:19:46 belaban Exp $
+ * @version $Id: UDP.java,v 1.190 2008/10/29 13:07:38 vlada Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -293,7 +293,7 @@ public class UDP extends TP {
     }
 
 
-    protected synchronized void handleConnect() throws Exception {
+    protected void handleConnect() throws Exception {
         if(isSingleton()) {
             if(connect_count == 0) {
                 startThreads();
@@ -304,7 +304,7 @@ public class UDP extends TP {
             startThreads();
     }
 
-    protected synchronized void handleDisconnect() {
+    protected void handleDisconnect() {
         if(isSingleton()) {
             super.handleDisconnect();
             if(connect_count == 0) {

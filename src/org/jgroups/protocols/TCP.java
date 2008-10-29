@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.56 2008/10/29 10:19:37 belaban Exp $
+// $Id: TCP.java,v 1.57 2008/10/29 13:07:38 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -88,7 +88,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     }
 
 
-    protected synchronized void handleConnect() throws Exception {
+    protected void handleConnect() throws Exception {
         if(isSingleton()) {
             if(connect_count == 0) {
                 ct.start();
@@ -99,7 +99,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
             ct.start();
     }
 
-    protected synchronized void handleDisconnect() {
+    protected void handleDisconnect() {
         if(isSingleton()) {
             super.handleDisconnect();
             if(connect_count == 0) {
