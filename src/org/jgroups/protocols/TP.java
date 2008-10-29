@@ -43,8 +43,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * The create() or start() method has to create a local address.<br>
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
- * @author staBela Ban
- * @version $Id: TP.java,v 1.236 2008/10/29 13:07:38 vlada Exp $
+ * @author Bela Ban
+ * @version $Id: TP.java,v 1.237 2008/10/29 15:13:34 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
