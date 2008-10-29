@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.22 2008/10/29 16:38:21 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.23 2008/10/29 16:48:26 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -541,27 +541,8 @@
         	<param name="testname.ext" value="tcp"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-        </antcall>
+        </antcall>   
     	
-        <antcall target="runtests">
-            <param name="testset" value="flush.tests"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp"/>
-            <param name="test.verbose" value="false"/>
-            <param name="testname.ext" value="mux-udp"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-        </antcall>
-    	
-        <antcall target="runtests">
-            <param name="testset" value="flush.tests"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp"/>
-			<param name="test.verbose" value="false"/>
-			<param name="testname.ext" value="mux-tcp"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-        </antcall>
     </target>
 	
 	
