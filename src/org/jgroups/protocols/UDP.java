@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.10 2008/09/18 16:19:31 belaban Exp $
+ * @version $Id: UDP.java,v 1.156.2.11 2008/10/29 10:11:20 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -391,7 +391,7 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    protected void handleConnect() throws Exception {
+    protected synchronized void handleConnect() throws Exception {
         if(singleton_name != null && singleton_name.length() > 0) {
             if(connect_count == 0) {
                 startThreads();
@@ -402,7 +402,7 @@ public class UDP extends TP implements Runnable {
             startThreads();
     }
 
-    protected void handleDisconnect() {
+    protected synchronized void handleDisconnect() {
         if(singleton_name != null && singleton_name.length() > 0) {
             super.handleDisconnect();
             if(connect_count == 0) {
