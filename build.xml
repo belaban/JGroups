@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.25 2008/10/30 14:35:07 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.26 2008/10/30 15:12:49 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -591,7 +591,7 @@
             <param name="channel.conf.flush" value="flush-udp.xml"/>
         	<param name="testname.ext" value="udp"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-            <param name="test.verbose" value="true"/>
+            <param name="test.verbose" value="false"/>
         </antcall>
     </target>
 
@@ -628,7 +628,7 @@
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
         	<param name="testname.ext" value="tcp"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-            <param name="test.verbose" value="true"/>
+            <param name="test.verbose" value="false"/>
         </antcall>
     </target>
 	
