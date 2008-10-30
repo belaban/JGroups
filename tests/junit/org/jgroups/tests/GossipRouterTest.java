@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.1.2.4 2008/10/30 11:03:55 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.1.2.5 2008/10/30 11:18:56 belaban Exp $
  */
 public class GossipRouterTest extends TestCase {
     final static String PROPS="tunnel.xml";
@@ -116,7 +116,7 @@ public class GossipRouterTest extends TestCase {
         PING ping=(PING)channel.getProtocolStack().findProtocol(PING.class);
         if(ping != null) {
             ping.setGossipRefresh(1000);
-        };
+        }
     }
 
     private static class MyReceiver extends ReceiverAdapter {
