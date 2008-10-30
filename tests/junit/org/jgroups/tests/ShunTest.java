@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.1.2.8 2008/02/14 06:38:47 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.1.2.9 2008/10/30 15:03:49 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -56,7 +56,7 @@ public class ShunTest extends ChannelTestBase {
     }
    
     
-    public long getCurrentTime() {
+    public static long getCurrentTime() {
         return System.currentTimeMillis();
     }
 
@@ -135,14 +135,7 @@ public class ShunTest extends ChannelTestBase {
     }
 
     protected void connectAndShun(int shunChannelIndex, boolean useDispatcher) {
-        String[] names = null;
-
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
+        String[] names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
 
@@ -172,13 +165,9 @@ public class ShunTest extends ChannelTestBase {
                Util.sleep(2000);                                                                                                          
             }           
 
-            // block until we all have a valid view         
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
-            
+            // block until we all have a valid view
+            blockUntilViewsReceived(channels, 60000);
+
             ShunChannel shun = channels[shunChannelIndex];
             log.info("Start shun attempt");
             addDiscardProtocol((JChannel)shun.getChannel());               
@@ -186,14 +175,9 @@ public class ShunTest extends ChannelTestBase {
             //allow shunning to kick in
             Util.sleep(20000);
             
-            //and then block until we all have a valid view  
-            // or fail with timeout
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
+            //and then block until we all have a valid view or fail with timeout
                 blockUntilViewsReceived(channels, 60000);
-            }
-            
+
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail(ex.getLocalizedMessage());
@@ -202,18 +186,10 @@ public class ShunTest extends ChannelTestBase {
                 channel.cleanup();
                 Util.sleep(2000); 
             }
-            
-            /* we sometimes have double BLOCK events for tcp stack
-             * TODO investigate why
-            for(ShunChannel channel:channels){
-                if(useBlocking() && channel.getChannel().flushSupported()){
-                    checkEventStateTransferSequence(channel);
-                }
-            }*/
         }
     }
     
-    private void modifyStack(JChannel ch) {
+    private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         try {
@@ -228,7 +204,7 @@ public class ShunTest extends ChannelTestBase {
         }       
     }
     
-    private void addDiscardProtocol(JChannel ch) throws Exception {
+    private static void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();

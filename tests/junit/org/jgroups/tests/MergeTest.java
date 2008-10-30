@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.12.4.5 2008/05/23 15:27:00 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.12.4.6 2008/10/30 15:03:49 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -28,21 +28,12 @@ public class MergeTest extends ChannelTestBase {
    
     public void testMerging2Members() {
         String[] names = null;
-        if(isMuxChannelUsed()){           
-            names = createMuxApplicationNames(1, 2);            
-        }else{
-            names = createApplicationNames(2);            
-        }
+        names = createApplicationNames(2);
         mergeHelper(names);
     }
     
     public void testMerging4Members() {
-        String[] names = null;
-        if(isMuxChannelUsed()){            
-            names = createMuxApplicationNames(1, 4);            
-        }else{
-            names = createApplicationNames(4);            
-        }
+        String[] names = createApplicationNames(4);
         mergeHelper(names);
     }
 

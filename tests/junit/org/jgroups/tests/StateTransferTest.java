@@ -1,10 +1,12 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.Channel;
+import org.jgroups.Message;
+import org.jgroups.util.Util;
+
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,20 +15,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.jgroups.Channel;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.util.Util;
-
 /**
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.18.2.5 2008/02/19 23:16:51 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.18.2.6 2008/10/30 15:03:49 belaban Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -67,9 +61,6 @@ public class StateTransferTest extends ChannelTestBase {
 
         int from = 0, to = MSG_SEND_COUNT;
         String[] names = createApplicationNames(APP_COUNT);
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(2, 2);
-        }
 
         for(int i = 0;i < apps.length;i++){
             apps[i] = new StateTransferApplication(semaphore, names[i], from, to);
@@ -85,12 +76,9 @@ public class StateTransferTest extends ChannelTestBase {
         }
         
         // Make sure everyone is in sync
-        if(isMuxChannelUsed()){
-            blockUntilViewsReceived(apps, getMuxFactoryCount(), 60000);
-        }else{
-            blockUntilViewsReceived(apps, 60000);
-        }
-        
+
+        blockUntilViewsReceived(apps, 60000);
+
         Util.sleep(1000);
 
         // Reacquire the semaphore tickets; when we have them all
@@ -122,10 +110,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
     }
 
-    protected int getMuxFactoryCount() {
-        // one MuxChannel per real Channel
-        return APP_COUNT;
-    }
+
 
     protected class StateTransferApplication extends PushChannelApplicationWithSemaphore {
         private final ReentrantLock mapLock = new ReentrantLock();
