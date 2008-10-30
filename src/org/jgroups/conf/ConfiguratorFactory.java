@@ -29,7 +29,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.25 2008/10/23 15:14:35 vlada Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.26 2008/10/30 09:34:56 vlada Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -508,20 +508,26 @@ public class ConfiguratorFactory {
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
 
-        ProtocolData[] protocols=configurator.getProtocolStack();
-        for(ProtocolData protocol:protocols) {
-            if(protocol != null) {
-                Map<String,ProtocolParameter> parms=protocol.getParameters();
-                ProtocolParameter parm;
-                for(Map.Entry<String,ProtocolParameter> entry:parms.entrySet()) {
-                    parm=entry.getValue();
-                    String val=parm.getValue();
-                    String replacement=Util.substituteVariable(val);
-                    if(!replacement.equals(val)) {
-                        parm.setValue(replacement);
+        ProtocolData[] protocols=null;
+        try {
+            protocols=configurator.getProtocolStack();
+
+            for(ProtocolData protocol:protocols) {
+                if(protocol != null) {
+                    Map<String,ProtocolParameter> parms=protocol.getParameters();
+                    ProtocolParameter parm;
+                    for(Map.Entry<String,ProtocolParameter> entry:parms.entrySet()) {
+                        parm=entry.getValue();
+                        String val=parm.getValue();
+                        String replacement=Util.substituteVariable(val);
+                        if(!replacement.equals(val)) {
+                            parm.setValue(replacement);
+                        }
                     }
                 }
             }
+        }
+        catch(Exception ignored) {
         }
     }          
 }
