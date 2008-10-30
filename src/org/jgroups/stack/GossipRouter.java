@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26 2007/09/25 08:41:00 belaban Exp $
+// $Id: GossipRouter.java,v 1.26.2.1 2008/10/30 14:02:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Router for TCP based group comunication (using layer TCP instead of UDP).
+ * Router for TCP based group communication (using layer TCP instead of UDP).
  * Instead of the TCP layer sending packets point-to-point to each other
  * member, it sends the packet to the router which - depending on the target
  * address - multicasts or unicasts it to the group / or single member.<p>
@@ -50,7 +50,7 @@ public class GossipRouter {
     public static final byte DUMP=8; // DUMP
     public static final byte SHUTDOWN=9;
 
-    public static final int PORT=8980;
+    public static final int PORT=12001;
     public static final long EXPIRY_TIME=30000;
     public static final long GOSSIP_REQUEST_TIMEOUT=1000;
     public static final long ROUTING_CLIENT_REPLY_TIMEOUT=120000;
@@ -78,6 +78,12 @@ public class GossipRouter {
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
+
+    /** Time (in millis) for setting SO_LINGER on sockets returned from accept(). 0 means don't set SO_LINGER */
+    private long linger_timeout=2000L;
+
+    /** Time (in millis) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT */
+    private long sock_read_timeout=3000L;
 
     private boolean up=true;
 
@@ -179,6 +185,21 @@ public class GossipRouter {
         this.discard_loopbacks=discard_loopbacks;
     }
 
+    public long getLingerTimeout() {
+        return linger_timeout;
+    }
+
+    public void setLingerTimeout(long linger_timeout) {
+        this.linger_timeout=linger_timeout;
+    }
+
+    public long getSocketReadTimeout() {
+        return sock_read_timeout;
+    }
+
+    public void setSocketReadTimeout(long sock_read_timeout) {
+        this.sock_read_timeout=sock_read_timeout;
+    }
 
     public static String type2String(int type) {
         switch(type) {
@@ -345,7 +366,15 @@ public class GossipRouter {
         while(up && srvSock != null) {
             try {
                 sock=srvSock.accept();
-                sock.setSoLinger(true, 500);
+                if(linger_timeout > 0) {
+                    int linger=(int)(linger_timeout / 1000);
+                    if(linger > 0)
+                        sock.setSoLinger(true, linger);
+                }
+                if(sock_read_timeout > 0) {
+                    sock.setSoTimeout((int)sock_read_timeout);
+                }
+
                 input=new DataInputStream(sock.getInputStream());
                 // if(log.isTraceEnabled())
                    // log.trace("accepted connection from " + sock);
@@ -431,6 +460,7 @@ public class GossipRouter {
                         break;
 
                     case GossipRouter.CONNECT:
+                        sock.setSoTimeout(0); // we have to disable this here
                         output=new DataOutputStream(sock.getOutputStream());
                         peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
                         logical_addr=req.getAddress();
@@ -695,7 +725,7 @@ public class GossipRouter {
                         sendToMember(null, dos, msg, sender);
                     }
                     catch(Exception e) {
-                        if(log.isWarnEnabled()) log.warn("cannot send to " + entry.logical_addr + ": " + e.getMessage());
+                        if(log.isTraceEnabled()) log.trace("cannot send to " + entry.logical_addr + ": " + e.getMessage());
                         entry.destroy(); // this closes the socket
                         i.remove();
                     }
