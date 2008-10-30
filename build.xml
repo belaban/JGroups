@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.24 2008/10/30 14:33:17 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.25 2008/10/30 14:35:07 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -448,11 +448,7 @@
         <testrunner set="${testset}">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
-            threadcount=${threadcount}
-            test.verbose=${test.verbose}
             testname.ext=${testname.ext}
-            formatter.class=${formatter.class}
-        	junit.excludes=${junit.excludes}
         </testrunner>
     </target>
 
