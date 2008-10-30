@@ -1,4 +1,3 @@
-// $Id: TUNNELDeadLockTest.java,v 1.11.4.1 2007/11/20 08:53:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,7 +8,7 @@ import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
-import org.jgroups.tests.stack.Utilities;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
 
 /**
@@ -17,7 +16,7 @@ import org.jgroups.util.Promise;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.11.4.1 $
+ * @version $Revision: 1.11.4.2 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -33,7 +32,7 @@ public class TUNNELDeadLockTest extends TestCase {
     // before declaring the test failed.
     private int mainTimeout=60000;
 
-    int routerPort=-1;
+    private GossipRouter router=null;
 
 
     public TUNNELDeadLockTest(String name) {
@@ -43,7 +42,8 @@ public class TUNNELDeadLockTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         promise=new Promise();
-        routerPort=Utilities.startGossipRouter("127.0.0.1");
+        router=new GossipRouter();
+        router.start();
     }
 
     public void tearDown() throws Exception {
@@ -61,23 +61,10 @@ public class TUNNELDeadLockTest extends TestCase {
         channel=null;
         promise.reset();
         promise=null;
-        Utilities.stopGossipRouter();
+        router.stop();
     }
 
 
-    private String getTUNNELProps(int routerPort) {
-        String props;
-
-        props="TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
-                "PING(timeout=3000;gossip_refresh=10000;num_initial_members=3;" +
-                "gossip_host=127.0.0.1;gossip_port=" + routerPort + "):" +
-                "FD_SOCK:" +
-                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=600,1200,2400,4800):" +
-                "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=20000;max_bytes=100000):" +
-                "pbcast.GMS(print_local_addr=true;join_timeout=5000;shun=true):" +
-                "SFC(max_credits=100000)";
-        return props;
-    }
 
     /**
      * Pushes messages down the channel as fast as possible. Sometimes this
@@ -92,7 +79,7 @@ public class TUNNELDeadLockTest extends TestCase {
      * doesn't see all the messages, it declares itself failed.
      */
     public void testStress() throws Exception {
-        String props=getTUNNELProps(routerPort);
+        String props="tunnel.xml";
         channel=new JChannel(props);
         channel.connect("agroup");
 
@@ -168,10 +155,7 @@ public class TUNNELDeadLockTest extends TestCase {
         return new TestSuite(TUNNELDeadLockTest.class);
     }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-        System.exit(0);
-    }
+
 
 
 }

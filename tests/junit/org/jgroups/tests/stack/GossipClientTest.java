@@ -1,4 +1,4 @@
-// $Id: GossipClientTest.java,v 1.2 2006/10/11 14:33:53 belaban Exp $
+// $Id: GossipClientTest.java,v 1.2.6.1 2008/10/30 14:01:38 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -8,6 +8,7 @@ import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.GossipRouter;
 
 import java.util.List;
 
@@ -17,13 +18,13 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.2.6.1 $
  * @since 2.2.1
  */
 public class GossipClientTest extends TestCase {
     GossipClient client;
-    private int port=-1;
     private long expiryTime=1000;
+    private GossipRouter router=null;
 
     public GossipClientTest(String name) {
         super(name);
@@ -31,15 +32,17 @@ public class GossipClientTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        port=Utilities.startGossipRouter(expiryTime, "127.0.0.1");
-        client=new GossipClient(new IpAddress("127.0.0.1", port), expiryTime);
+        router=new GossipRouter();
+        router.setExpiryTime(expiryTime);
+        router.start();
+        client=new GossipClient(new IpAddress("127.0.0.1", 12001), expiryTime);
         client.setRefresherEnabled(false); // don't refresh the registrations
     }
 
     public void tearDown() throws Exception {
         super.tearDown();
         client.stop();
-        Utilities.stopGossipRouter();
+        router.stop();
     }
 
 
@@ -103,7 +106,7 @@ public class GossipClientTest extends TestCase {
 
         // send a second GET after more than EXPIRY_TIME ms
         mbrs=client.getMembers(groupName);
-        assertTrue(mbrs == null || mbrs.size() == 0);
+        assertTrue(mbrs == null || mbrs.isEmpty());
     }
 
     public static Test suite() {
