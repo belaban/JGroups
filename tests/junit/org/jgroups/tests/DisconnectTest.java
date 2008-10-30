@@ -1,4 +1,3 @@
-// $Id: DisconnectTest.java,v 1.12.2.1 2007/11/20 08:53:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,13 +5,14 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
-import org.jgroups.tests.stack.Utilities;
-import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.*;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.PING;
+import org.jgroups.protocols.TUNNEL;
+import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 
 /**
@@ -21,12 +21,11 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.12.2.1 $
+ * @version $Id: DisconnectTest.java,v 1.12.2.2 2008/10/30 13:59:24 belaban Exp $
  **/
 public class DisconnectTest extends TestCase {
 
     private JChannel channel;
-    private int routerPort;
 
     public DisconnectTest(String name) {
         super(name);
@@ -45,16 +44,9 @@ public class DisconnectTest extends TestCase {
     }
 
 
-    private String getTUNNELProps(int routerPort, int gossipPort) {
-        return
-                "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
-                "PING(gossip_host=127.0.0.1;gossip_port=" + gossipPort + "):" +
-                "FD:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000):" +                
-                "pbcast.STABLE(desired_avg_gossip=20000):" +                
-                "pbcast.GMS(join_timeout=50000;shun=false;" +
-                "print_local_addr=true)";
+
+    private static JChannel createChannel() throws ChannelException {
+        return new JChannel("tunnel.xml");
     }
 
     /**
@@ -66,17 +58,19 @@ public class DisconnectTest extends TestCase {
      *
      **/
     public void testNullLocalAddress_TUNNEL() throws Exception {
+        GossipRouter router=null;
         try {
-            routerPort=Utilities.startGossipRouter();
-            String props = getTUNNELProps(routerPort, routerPort);
-            channel = new JChannel(props);
+            router=new GossipRouter();
+            router.start();
+            channel = createChannel();
             channel.connect("testgroup");
-            assertTrue(channel.getLocalAddress() != null);
+            assertNotNull(channel.getLocalAddress());
             channel.disconnect();
             assertNull(channel.getLocalAddress());
         }
         finally {
-            Utilities.stopGossipRouter();
+            if(router != null)
+                router.stop();
         }
     }
 
@@ -125,13 +119,10 @@ public class DisconnectTest extends TestCase {
      * to multicast messages.
      **/
     public void testDisconnectConnectSendTwo_Default() throws Exception {
-
         final Promise msgPromise=new Promise();
         JChannel coordinator=new JChannel();
+        coordinator.setReceiver(new PromisedMessageListener(msgPromise));
         coordinator.connect("testgroup");
-        PullPushAdapter ppa= new PullPushAdapter(coordinator,
-                                                 new PromisedMessageListener(msgPromise));
-        ppa.start();
 
         channel=new JChannel();
         channel.connect("testgroup1");
@@ -141,10 +132,9 @@ public class DisconnectTest extends TestCase {
         channel.send(new Message(null, null, "payload"));
 
         Message msg=(Message)msgPromise.getResult(20000);
-        assertTrue(msg != null);
+        assertNotNull(msg);
         assertEquals("payload", msg.getObject());
 
-        ppa.stop();
         coordinator.close();
     }
 
@@ -154,10 +144,11 @@ public class DisconnectTest extends TestCase {
       * (using TUNNEL).
       **/
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
+        GossipRouter router=null;
         try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
-            channel=new JChannel(props);
+            router=new GossipRouter();
+            router.start();
+            channel=createChannel();
             channel.connect("testgroup1");
             channel.disconnect();
             channel.connect("testgroup2");
@@ -166,8 +157,44 @@ public class DisconnectTest extends TestCase {
             assertTrue(view.containsMember(channel.getLocalAddress()));
         }
         finally {
-            Utilities.stopGossipRouter();
+            if(router != null)
+                router.stop();
         }
+     }
+
+
+    public void testConnectTwo_TUNNEL() throws Exception {
+        GossipRouter router=null;
+         try {
+             router=new GossipRouter();
+             router.start();
+             JChannel coordinator=createChannel();
+             setProps(coordinator);
+             coordinator.connect("testConnectTwo_TUNNEL");
+             channel=createChannel();
+             setProps(channel);
+             channel.connect("testConnectTwo_TUNNEL");
+
+             View view=channel.getView();
+             for(int i=0; i < 10; i++) {
+                 if(view.size() >= 2)
+                     break;
+                 System.out.print(".");
+                 Util.sleep(1000);
+                 view=channel.getView();
+             }
+
+             System.out.println("view = " + view);
+             assertEquals(2, view.size());
+             assertTrue(view.containsMember(channel.getLocalAddress()));
+             assertTrue(view.containsMember(coordinator.getLocalAddress()));
+             channel.close();
+             coordinator.close();
+         }
+         finally {
+             if(router != null)
+                 router.stop();
+         }
      }
 
 
@@ -176,28 +203,37 @@ public class DisconnectTest extends TestCase {
       * (using TUNNEL).
       **/
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
+         GossipRouter router=null;
          try {
-             routerPort = Utilities.startGossipRouter();
-             String props=getTUNNELProps(routerPort, routerPort);
-             // String props="tunnel.xml";
-             JChannel coordinator=new JChannel(props);
+             router=new GossipRouter();
+             router.start();
+             JChannel coordinator=createChannel();
+             setProps(coordinator);
              coordinator.connect("testgroup");
-             channel=new JChannel(props);
+             channel=createChannel();
+             setProps(channel);
              channel.connect("testgroup1");
              channel.disconnect();
              channel.connect("testgroup");
 
-             Thread.sleep(1000);
-
              View view=channel.getView();
+             for(int i=0; i < 10; i++) {
+                 if(view.size() >= 2)
+                     break;
+                 System.out.print(".");
+                 Util.sleep(1000);
+                 view=channel.getView();
+             }
+
              assertEquals(2, view.size());
              assertTrue(view.containsMember(channel.getLocalAddress()));
              assertTrue(view.containsMember(coordinator.getLocalAddress()));
-
+             channel.close();
              coordinator.close();
          }
          finally {
-             Utilities.stopGossipRouter();
+             if(router != null)
+                 router.stop();
          }
      }
 
@@ -210,19 +246,18 @@ public class DisconnectTest extends TestCase {
       * multicast messages.
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
+        GossipRouter router=null;
         try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
-
+            router=new GossipRouter();
+            router.start();
             final Promise msgPromise=new Promise();
-            JChannel coordinator=new JChannel(props);
+            JChannel coordinator=createChannel();
+            setProps(coordinator);
+            coordinator.setReceiver(new PromisedMessageListener(msgPromise));
             coordinator.connect("testgroup");
-            PullPushAdapter ppa=
-                    new PullPushAdapter(coordinator,
-                                        new PromisedMessageListener(msgPromise));
-            ppa.start();
 
-            channel=new JChannel(props);
+            channel=createChannel();
+            setProps(channel);
             channel.connect("testgroup1");
             channel.disconnect();
             channel.connect("testgroup");
@@ -230,14 +265,34 @@ public class DisconnectTest extends TestCase {
             channel.send(new Message(null, null, "payload"));
 
             Message msg=(Message)msgPromise.getResult(20000);
-            assertTrue(msg != null);
+            assertNotNull(msg);
             assertEquals("payload", msg.getObject());
-
-            ppa.stop();
+            channel.close();
             coordinator.close();
         }
         finally {
-            Utilities.stopGossipRouter();
+            if(router != null)
+                router.stop();
+        }
+    }
+
+
+    private static void setProps(JChannel channel) {
+        ProtocolStack stack=channel.getProtocolStack();
+        MERGE2 merge=(MERGE2)stack.findProtocol(MERGE2.class);
+        if(merge != null) {
+            merge.setMinInterval(1000);
+            merge.setMaxInterval(3000);
+        }
+
+        TUNNEL tunnel=(TUNNEL)stack.getTransport();
+        if(tunnel != null) {
+            tunnel.setReconnectInterval(2000);
+        }
+
+        PING ping=(PING)stack.findProtocol(PING.class);
+        if(ping != null) {
+            ping.setGossipRefresh(1000);
         }
     }
 
@@ -246,28 +301,17 @@ public class DisconnectTest extends TestCase {
         return new TestSuite(DisconnectTest.class);
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={DisconnectTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
-    private static class PromisedMessageListener implements MessageListener {
 
-        private Promise promise;
+    private static class PromisedMessageListener extends ReceiverAdapter {
+        private final Promise promise;
 
         public PromisedMessageListener(Promise promise) {
             this.promise=promise;
         }
 
-        public byte[] getState() {
-            return null;
-        }
-
         public void receive(Message msg) {
             promise.setResult(msg);
-        }
-
-        public void setState(byte[] state) {
         }
     }
 
