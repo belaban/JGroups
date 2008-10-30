@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.45.2.3 2008/05/22 13:23:06 belaban Exp $
+// $Id: TUNNEL.java,v 1.45.2.4 2008/10/30 14:02:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,6 +63,30 @@ public class TUNNEL extends TP {
 
     public String toString() {
         return "Protocol TUNNEL(local_addr=" + local_addr + ')';
+    }
+
+    public String getRouterHost() {
+        return router_host;
+    }
+
+    public void setRouterHost(String router_host) {
+        this.router_host=router_host;
+    }
+
+    public int getRouterPort() {
+        return router_port;
+    }
+
+    public void setRouterPort(int router_port) {
+        this.router_port=router_port;
+    }
+
+    public long getReconnectInterval() {
+        return reconnect_interval;
+    }
+
+    public void setReconnectInterval(long reconnect_interval) {
+        this.reconnect_interval=reconnect_interval;
     }
 
     /*------------------------------ Protocol interface ------------------------------ */

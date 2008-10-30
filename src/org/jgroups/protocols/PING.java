@@ -24,7 +24,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.36.2.2 2008/02/06 11:52:56 belaban Exp $
+ * @version $Id: PING.java,v 1.36.2.3 2008/10/30 14:03:59 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -34,6 +34,8 @@ public class PING extends Discovery {
     GossipClient client;
     int          port_range=1;        // number of ports to be probed for initial membership
     private List<Address> initial_hosts=null;  // hosts to be contacted for the initial membership
+    int                   sock_conn_timeout=1000;     // max time in millis for a socket creation
+    int                   sock_read_timeout=3000;     // max time in millis for a socket read
     public static final String name="PING";
 
 
@@ -87,17 +89,16 @@ public class PING extends Discovery {
             props.remove("gossip_refresh");
         }
 
-        if(gossip_hosts != null) {
-            client=new GossipClient(gossip_hosts, gossip_refresh);
+        str=props.getProperty("sock_conn_timeout");  // wait for at most n members
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
         }
-        else if(gossip_host != null && gossip_port != 0) {
-            try {
-                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh);
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("creation of GossipClient failed, exception=" + e);
-                return false; // will cause stack creation to abort
-            }
+
+        str=props.getProperty("sock_read_timeout");  // wait for at most n members
+        if(str != null) {
+            sock_read_timeout=Integer.parseInt(str);
+            props.remove("sock_read_timeout");
         }
 
         str=props.getProperty("port_range");           // if member cannot be contacted on base port,
@@ -127,6 +128,35 @@ public class PING extends Discovery {
         return super.setProperties(props);
     }
 
+    public int getGossipPort() {
+        return gossip_port;
+    }
+
+    public void setGossipPort(int gossip_port) {
+        this.gossip_port=gossip_port;
+    }
+
+    public long getGossipRefresh() {
+        return gossip_refresh;
+    }
+
+    public void setGossipRefresh(long gossip_refresh) {
+        this.gossip_refresh=gossip_refresh;
+    }
+
+    public void init() throws Exception {
+        super.init();
+        if(gossip_hosts != null) {
+            client=new GossipClient(gossip_hosts, gossip_refresh);
+            client.setSocketConnectionTimeout(sock_conn_timeout);
+            client.setSocketReadTimeout(sock_read_timeout);
+        }
+        else if(gossip_host != null && gossip_port != 0) {
+            client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh);
+            client.setSocketConnectionTimeout(sock_conn_timeout);
+            client.setSocketReadTimeout(sock_read_timeout);
+        }
+    }
 
     public void stop() {
         super.stop();
