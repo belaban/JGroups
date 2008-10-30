@@ -5,6 +5,9 @@ import org.jgroups.stack.GossipRouter;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.ReceiverAdapter;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.TUNNEL;
+import org.jgroups.protocols.PING;
 import org.jgroups.util.Util;
 
 import java.util.concurrent.locks.Lock;
@@ -15,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.1.2.3 2008/02/06 07:22:43 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.1.2.4 2008/10/30 11:03:55 belaban Exp $
  */
 public class GossipRouterTest extends TestCase {
     final static String PROPS="tunnel.xml";
@@ -55,21 +58,26 @@ public class GossipRouterTest extends TestCase {
 
         System.out.println("-- starting first channel");
         c1=new JChannel(PROPS);
+        changeMergeInterval(c1);
+        setReconnectInterval(c1);
+        setRefreshInterval(c1);
         c1.setReceiver(new MyReceiver("c1", done, lock, cond));
         c1.connect("demo");
 
-        Util.sleep(5000);
+        System.out.println("-- starting second channel");
+        c2=new JChannel(PROPS);
+        changeMergeInterval(c2);
+        setReconnectInterval(c2);
+        setRefreshInterval(c2);
+        c2.setReceiver(new MyReceiver("c2", done, lock, cond));
+        c2.connect("demo");
+
         System.out.println("-- starting GossipRouter");
         router=new GossipRouter(12001, "127.0.0.1");
         router.start();
 
-        System.out.println("-- starting second channel");
-        c2=new JChannel(PROPS);
-        c2.setReceiver(new MyReceiver("c2", done, lock, cond));
-        c2.connect("demo");
-
         System.out.println("-- waiting for merge to happen --");
-        long target_time=System.currentTimeMillis() + 30000;
+        long target_time=System.currentTimeMillis() + 40000;
         lock.lock();
         try {
             while(System.currentTimeMillis() < target_time && done.get() == false) {
@@ -89,6 +97,28 @@ public class GossipRouterTest extends TestCase {
         c1.close();
     }
 
+    private static void changeMergeInterval(JChannel c1) {
+        MERGE2 merge=(MERGE2)c1.getProtocolStack().findProtocol(MERGE2.class);
+        if(merge != null) {
+            merge.setMinInterval(1000);
+            merge.setMaxInterval(3000);
+        }
+    }
+
+    private static void setReconnectInterval(JChannel channel) {
+        TUNNEL tunnel=(TUNNEL)channel.getProtocolStack().getTransport();
+        if(tunnel != null) {
+            tunnel.setReconnectInterval(2000);
+        }
+    }
+
+    private static void setRefreshInterval(JChannel channel) {
+        PING ping=(PING)channel.getProtocolStack().findProtocol(PING.class);
+        if(ping != null) {
+            ping.setGossipRefresh(1000);
+        };
+    }
+
     private static class MyReceiver extends ReceiverAdapter {
         private final String name;
         private final Lock lock;
@@ -103,8 +133,8 @@ public class GossipRouterTest extends TestCase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "]: view=" + new_view);
             if(new_view.size() == 2) {
+                System.out.println("[" + name + "]: view=" + new_view);
                 lock.lock();
                 try {
                     done.set(true);
