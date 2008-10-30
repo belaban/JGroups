@@ -1,7 +1,7 @@
 #!/bin/bash
 
 JG=..
-LIB=$JG
+LIB=$JG/lib
 
 CP=$JG/classes:$JG/conf:$LIB/commons-logging.jar:$LIB/log4j.jar:$JG/keystore
 
