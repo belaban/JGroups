@@ -1,10 +1,13 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.util.Util;
+
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -13,20 +16,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.util.Util;
-
 /**
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32.2.4 2008/10/30 14:09:37 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.5 2008/10/30 14:27:32 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -106,6 +100,12 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
             }else{
                 blockUntilViewsReceived(channels, 60000);
+            }
+
+
+            for(ConcurrentStartupChannel c: channels) {
+                View view=c.getChannel().getView();
+                System.out.println("view = " + view);
             }
 
             // Sleep to ensure the threads get all the semaphore tickets
