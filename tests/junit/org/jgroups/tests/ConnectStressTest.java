@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.22.2.1 2008/10/30 16:01:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,21 +20,19 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.22.2.1 2008/10/30 16:01:29 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
-    static CyclicBarrier start_connecting=null;
-    static CyclicBarrier  connected=null;
-    static CyclicBarrier  received_all_views=null;
-    static CyclicBarrier  start_disconnecting=null;
-    static CyclicBarrier  disconnected=null;
-    static final int      NUM=20;
+    static CyclicBarrier    start_connecting=null;
+    static CyclicBarrier    connected=null;
+    static CyclicBarrier    received_all_views=null;
+    static CyclicBarrier    start_disconnecting=null;
+    static CyclicBarrier    disconnected=null;
+    static final int        NUM=20;
     static final MyThread[] threads=new MyThread[NUM];
-    static JChannel       channel=null;
-    static String         groupname="ConcurrentTestDemo";
-
-
-    static String props="udp.xml";
+    static JChannel         channel=null;
+    static String           groupname="ConcurrentTestDemo";
+    static String           props="udp.xml";
 
 
 
@@ -88,7 +86,7 @@ public class ConnectStressTest extends TestCase {
             int num_members=-1;
             for(int i=0; i < 10; i++) {
                 View v=channel.getView();
-                num_members=v.getMembers().size();
+                num_members=v.size();
                 System.out.println("*--* number of members connected: " + num_members + ", (expected: " +(NUM+1) +
                         "), v=" + v);
                 if(num_members == NUM+1)
@@ -126,7 +124,7 @@ public class ConnectStressTest extends TestCase {
                 if(num_members <= 1)
                     break;
             }
-            Util.sleep(3000);
+            Util.sleep(5000);
         }
         assertEquals("view should have size == 1 after disconnect ", 1, num_members);
         log("closing all channels");
@@ -228,8 +226,8 @@ public class ConnectStressTest extends TestCase {
         }
         MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
         if(merge != null) {
-            merge.setMinInterval(5000);
-            merge.setMaxInterval(10000);
+            merge.setMinInterval(2000);
+            merge.setMaxInterval(5000);
         }
     }
 
@@ -242,10 +240,7 @@ public class ConnectStressTest extends TestCase {
         return s;
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={ConnectStressTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+
 
 
 }
