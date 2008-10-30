@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.23 2008/10/29 16:48:26 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.24 2008/10/30 14:33:17 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -34,10 +34,6 @@
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
     <property name="channel.conf.flush" value="flush-udp.xml"/>
-    <property name="mux.on" value="false"/>
-    <property name="mux.conf" value="stacks.xml"/>
-    <property name="mux.conf.stack" value="udp"/>
-    <property name="mux.factorycount" value="4"/>
     <property name="threadcount" value="false"/>
     <property name="test.verbose" value="false"/>
 
@@ -58,9 +54,6 @@
         <include name="org/jgroups/tests/ConcurrentStartupTest*"/>
     </patternset>
 
-    <patternset id="mux.tests">
-        <include name="org/jgroups/tests/Multiplexer*"/>
-    </patternset>
 
     <patternset id="one.test">
         <include name="**/*${test}*"/>
@@ -74,13 +67,6 @@
     <patternset id="junit.excludes">
         <exclude name="**/DistributedQueueTest*"/>
         <exclude name="**/ChannelTestBase*"/>
-    </patternset>
-
-    <patternset id="junit.mux.excludes">
-    	<exclude name="**/DistributedQueueTest*"/>
-    	<exclude name="**/ChannelTestBase*"/>
-        <exclude name="**/SharedTransportTest*"/>
-        <exclude name="**/OOBTest*"/>
     </patternset>
 
 
@@ -235,20 +221,6 @@
         <delete dir="${dist.dir}/gossiptemp"/>
     </target>
 
-    <target name="multiplexer-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy the JChannelFactory (multiplexer) MBean">
-        <mkdir dir="${dist.dir}/muxtemp"/>
-        <copy file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
-        <copy file="${conf.dir}/multiplexer-xmbean.xml" todir="${dist.dir}/muxtemp/"/>
-        <jar jarfile="${dist.dir}/Multiplexer.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <fileset dir="${lib.dir}" includes="commons-logging*.jar,log4j*.jar"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
-            <metainf dir="${dist.dir}/muxtemp"
-                     includes="*.xml"/>
-        </jar>
-        <delete dir="${dist.dir}/muxtemp"/>
-    </target>
 
     <target name="jgroups-service" depends="jgroups-core.jar"
             description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
@@ -419,10 +391,6 @@
                 <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
                 <sysproperty key="channel.conf" value="${channel.conf}"/>
                 <sysproperty key="channel.conf.flush" value="${channel.conf.flush}"/>
-                <sysproperty key="mux.on" value="${mux.on}"/>
-                <sysproperty key="mux.conf" value="${mux.conf}"/>
-                <sysproperty key="mux.conf.stack" value="${mux.conf.stack}"/>
-                <sysproperty key="mux.factorycount" value="${mux.factorycount}"/>
                 <sysproperty key="threadcount" value="${threadcount}"/>
                 <classpath refid="jg.classpath"/>
                 <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
@@ -456,10 +424,6 @@
                 <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
                 <sysproperty key="channel.conf" value="${channel.conf}"/>
                 <sysproperty key="channel.conf.flush" value="${channel.conf.flush}"/>
-                <sysproperty key="mux.on" value="${mux.on}"/>
-                <sysproperty key="mux.conf" value="${mux.conf}"/>
-                <sysproperty key="mux.conf.stack" value="${mux.conf.stack}"/>
-                <sysproperty key="mux.factorycount" value="${mux.factorycount}"/>
                 <sysproperty key="threadcount" value="${threadcount}"/>
                 <classpath refid="jg.classpath"/>
                 <formatter type="xml" usefile="true" unless="testname.ext"/>
@@ -484,10 +448,6 @@
         <testrunner set="${testset}">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
-            mux.on=${mux.on}
-            mux.conf=${mux.conf}
-            mux.conf.stack=${mux.conf.stack}
-            mux.factorycount=${mux.factorycount}
             threadcount=${threadcount}
             test.verbose=${test.verbose}
             testname.ext=${testname.ext}
@@ -501,10 +461,6 @@
         <testrunner-functional set="all.tests">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
-            mux.on=${mux.on}
-            mux.conf=${mux.conf}
-            mux.conf.stack=${mux.conf.stack}
-            mux.factorycount=${mux.factorycount}
             threadcount=${threadcount}
             test.verbose=${test.verbose}
             testname.ext=${testname.ext}
@@ -522,8 +478,6 @@
     	
     	<antcall target="runtests">
             <param name="testset" value="flush.tests"/>
-            <param name="mux.on" value="false"/>
-            <param name="mux.conf.stack" value="udp"/>
     		<param name="channel.conf" value="udp.xml"/>
     		<param name="channel.conf.flush" value="flush-udp.xml"/>
     		<param name="test.verbose" value="false"/>
@@ -534,7 +488,6 @@
     	
         <antcall target="runtests">
             <param name="testset" value="flush.tests"/>
-            <param name="mux.on" value="false"/>
         	<param name="channel.conf" value="tcp.xml"/>
         	<param name="channel.conf.flush" value="flush-tcp.xml"/>
         	<param name="test.verbose" value="false"/>
@@ -580,23 +533,6 @@
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
 
-        <antcall target="runtests">
-            <param name="testset" value="all.tests"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp"/>
-            <param name="testname.ext" value="mux-udp"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-        </antcall>
-    	
-    	<antcall target="runtests">
-            <param name="testset" value="all.tests"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp"/>
-            <param name="testname.ext" value="mux-tcp"/>
-    		<param name="junit.excludes" value="junit.mux.excludes"/>
-            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-    	</antcall>
     </target>
 
 
@@ -675,33 +611,11 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tunnel.xml"/>
             <param name="channel.conf.flush" value="tunnel.xml"/>
-            <param name="mux.conf.stack" value="tunnel"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 
 
-    <!--
-          Runs entire testsuite in multiplexer mode with default stacks.xml
-          multiplexer udp stack configuration.
-          Other valid parameters that can additionally be specified are:
-          channel.conf
-          channel.conf.flush
-          threadcount
-          test.verbose
-     -->
-    <target name="all-tests-mux-udp" depends="makeKeystore, downloadFormatter"
-            description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">
-        <antcall target="runtests">
-            <param name="testset" value="all.tests"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp"/>
-        	<param name="testname.ext" value="mux-udp"/>
-        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-            <param name="test.verbose" value="true"/>
-        </antcall>
-    </target>
 
     <!--
           Runs entire testsuite with default tcp confguration specified by tcp.xml.
@@ -734,52 +648,13 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp-nio.xml"/>
             <param name="channel.conf.flush" value="flush-tcp-nio.xml"/>
-        	<param name="mux.conf.stack" value="tcp-nio"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 	
 
-    <!--
-          Runs entire testsuite in multiplexer mode with default stacks.xml
-          multiplexer tcp stack configuration.
-          Other valid parameters that can additionally be specified are:
-          channel.conf
-          channel.conf.flush
-          threadcount
-          test.verbose
-     -->
-    <target name="all-tests-mux-tcp" depends="makeKeystore, downloadFormatter"
-            description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
-        <antcall target="runtests">
-            <param name="testset" value="all.tests"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp"/>
-        	<param name="testname.ext" value="mux-tcp"/>
-        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-            <param name="test.verbose" value="true"/>
-        </antcall>
-    </target>
 
-    <!--
-          Runs entire testsuite in multiplexer mode with default stacks.xml
-          multiplexer tcp-nio stack configuration.
-          Other valid parameters that can additionally be specified are:
-          channel.conf
-          channel.conf.flush
-          threadcount
-          test.verbose
-     -->
-    <target name="all-tests-mux-tcp-nio" depends="makeKeystore"
-            description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
-        <antcall target="runtests">
-            <param name="testset" value="all.tests"/>
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp-nio"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        </antcall>
-    </target>
+
 	
 	
     <!--
@@ -794,10 +669,6 @@
 
           channel.conf
           channel.conf.flush
-          mux.on
-          mux.conf
-          mux.conf.stack
-          mux.factorycount
           threadcount
           test.verbose
      -->
@@ -810,82 +681,8 @@
         </antcall>
     </target>
 
-    <!--
-          Runs multiplexer specific tests with default stacks.xml multiplexer
-          udp stack configuration.
-          Other valid parameters that can additionally be specified are:
 
-          threadcount
-          test.verbose
-     -->
-    <target name="mux-test-udp"
-            description="Runs multiplexer specific tests with multiplexer udp stack configuration">
-        <antcall target="runtests">
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp"/>
-            <param name="testset" value="mux.tests"/>
-            <param name="test.verbose" value="true"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        </antcall>
-    </target>
 
-    <!--
-          Runs multiplexer specific tests with default stacks.xml multiplexer
-          udp-sync stack configuration.
-          Other valid parameters that can additionally be specified are:
-
-          threadcount
-          test.verbose
-     -->
-    <target name="mux-test-udp-sync"
-            description="Runs multiplexer specific tests with multiplexer udp-sync stack configuration">
-        <antcall target="runtests">
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp-sync"/>
-            <param name="testset" value="mux.tests"/>
-            <param name="test.verbose" value="true"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        </antcall>
-    </target>
-
-    <!--
-          Runs multiplexer specific tests with default stacks.xml multiplexer
-          tcp stack configuration.
-          Other valid parameters that can additionally be specified are:
-
-          threadcount
-          test.verbose
-     -->
-    <target name="mux-test-tcp"
-            description="Runs multiplexer specific tests with multiplexer tcp stack configuration">
-        <antcall target="runtests">
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp"/>
-            <param name="testset" value="mux.tests"/>
-            <param name="test.verbose" value="true"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        </antcall>
-    </target>
-
-    <!--
-          Runs multiplexer specific tests with default stacks.xml multiplexer
-          tcp-sync stack configuration.
-          Other valid parameters that can additionally be specified are:
-
-          threadcount
-          test.verbose
-     -->
-    <target name="mux-test-tcp-sync"
-            description="Runs multiplexer specific tests with default stacks.xml multiplexer
-			tcp-sync stack configuration">
-        <antcall target="runtests">
-            <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="tcp-sync"/>
-            <param name="testset" value="mux.tests"/>
-            <param name="test.verbose" value="true"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
-        </antcall>
-    </target>
 
     <target name="copy-build-properties">
         <copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
