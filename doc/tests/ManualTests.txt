@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.11 2007/11/12 09:17:01 belaban Exp $
+$Id: ManualTests.txt,v 1.11.2.1 2008/10/30 15:48:13 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -125,6 +125,14 @@ Test 10
 - Mbrship should be 20
 - Kill and leave members randomly
 - Last member should show mbrship=1
+
+
+Test 10a
+--------
+- Start 10 instances in shell #1
+- Start 1 instance in shell #2
+- Kill shell #1
+- The view of the only surviving instance should be 1
 
 
 Test 11
