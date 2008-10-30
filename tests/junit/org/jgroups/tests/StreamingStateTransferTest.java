@@ -39,32 +39,17 @@ public class StreamingStateTransferTest extends ChannelTestBase {
     }
 
     public void testTransfer() {
-        String channelNames[] = null;
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            channelNames = createMuxApplicationNames(1);
-        }else{
-            channelNames = new String[] { "A", "B", "C", "D" };
-        }
+        String[] channelNames = new String[] { "A", "B", "C", "D" };
         transferHelper(channelNames, false);
     }
 
     public void testRpcChannelTransfer() {
         // do this test for regular channels only
-        if(!isMuxChannelUsed()){
-            String channelNames[] = new String[] { "A", "B", "C", "D" };
-            transferHelper(channelNames, true);
-        }
+        String channelNames[] = new String[] { "A", "B", "C", "D" };
+        transferHelper(channelNames, true);
     }
 
-    public void testMultipleServiceMuxChannel() {
-        String channelNames[] = null;
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            channelNames = createMuxApplicationNames(2);
-            transferHelper(channelNames, false);
-        }
-    }
+
 
     public void transferHelper(String channelNames[], boolean useDispatcher) {
         transferHelper(channelNames, false, false, useDispatcher);
@@ -106,11 +91,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 }
             }
 
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+            blockUntilViewsReceived(channels, 60000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -127,7 +108,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
 
             Util.sleep(3000);
             for(int i = 0;i < channels.size();i++){
-                StreamingStateTransferApplication current = (StreamingStateTransferApplication) channels.get(i);
+                StreamingStateTransferApplication current =channels.get(i);
                 if(current.getStateInvoked){
                     getStateInvokedCount++;
                 }
@@ -142,7 +123,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 }
                 Map map = current.getMap();
                 for(int j = 0;j < channels.size();j++){
-                    StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(j);
+                    StreamingStateTransferApplication app =channels.get(j);
                     List l = (List) map.get(app.getLocalAddress());
                     int size = l != null ? l.size() : 0;
                     assertEquals("Correct element count in map ",
@@ -150,38 +131,23 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                                  size);
                 }
             }
-            if(isMuxChannelUsed()){
-                int factor = channelCount / getMuxFactoryCount();
-                assertEquals("Correct invocation count of getState ",
-                             1 * factor,
-                             getStateInvokedCount);
-                assertEquals("Correct invocation count of setState ",
-                             (channelCount / factor) - 1,
-                             setStateInvokedCount / factor);
-                assertEquals("Correct invocation count of partial getState ",
-                             1 * factor,
-                             partialGetStateInvokedCount);
-                assertEquals("Correct invocation count of partial setState ",
-                             (channelCount / factor) - 1,
-                             partialSetStateInvokedCount / factor);
-            }else{
-                assertEquals("Correct invocation count of getState ", 1, getStateInvokedCount);
-                assertEquals("Correct invocation count of setState ",
-                             channelCount - 1,
-                             setStateInvokedCount);
-                assertEquals("Correct invocation count of partial getState ",
-                             1,
-                             partialGetStateInvokedCount);
-                assertEquals("Correct invocation count of partial setState ",
-                             channelCount - 1,
-                             partialSetStateInvokedCount);
-            }
+
+            assertEquals("Correct invocation count of getState ", 1, getStateInvokedCount);
+            assertEquals("Correct invocation count of setState ",
+                         channelCount - 1,
+                         setStateInvokedCount);
+            assertEquals("Correct invocation count of partial getState ",
+                         1,
+                         partialGetStateInvokedCount);
+            assertEquals("Correct invocation count of partial setState ",
+                         channelCount - 1,
+                         partialSetStateInvokedCount);
 
         }catch(Exception ex){
             log.warn(ex);
         }finally{
             for(int i = 0;i < channels.size();i++){
-                StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(i);
+                StreamingStateTransferApplication app =channels.get(i);
                 Util.sleep(500);
                 app.cleanup();
             }

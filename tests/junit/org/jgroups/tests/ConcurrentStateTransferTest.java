@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.3 2008/06/11 14:46:37 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.4 2008/10/30 15:03:49 belaban Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -60,14 +60,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
      * 
      */
     protected void concurrentStateTranferHelper(boolean largeState, boolean useDispatcher) {
-        String[] names = null;
-
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
+        String[] names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
         ConcurrentStateTransfer[] channels = new ConcurrentStateTransfer[count];
@@ -96,11 +89,8 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             }
 
             // Make sure everyone is in sync
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+
+            blockUntilViewsReceived(channels, 60000);
 
             Util.sleep(1000);
             // Unleash hell !

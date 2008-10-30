@@ -35,13 +35,7 @@ public class ChannelTestBase extends TestCase {
 
     protected static String CHANNEL_CONFIG = "udp.xml";
 
-    protected static String MUX_CHANNEL_CONFIG = "stacks.xml";
-
-    protected static String MUX_CHANNEL_CONFIG_STACK_NAME = "udp";
-
     protected int active_threads = 0;
-
-    protected JChannelFactory muxFactory[] = null;
 
     protected String thread_dump = null;
 
@@ -65,9 +59,6 @@ public class ChannelTestBase extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        MUX_CHANNEL_CONFIG = System.getProperty("mux.conf", MUX_CHANNEL_CONFIG);
-        MUX_CHANNEL_CONFIG_STACK_NAME = System.getProperty("mux.conf.stack",
-                                                           MUX_CHANNEL_CONFIG_STACK_NAME);
         CHANNEL_CONFIG = System.getProperty("channel.conf", CHANNEL_CONFIG);
 
         currentChannelGeneratedName = LETTER_A;
@@ -75,15 +66,6 @@ public class ChannelTestBase extends TestCase {
         if(isTunnelUsed()){
             router = new GossipRouter(ROUTER_PORT, BIND_ADDR);
             router.start();
-        }
-
-        if(isMuxChannelUsed()){
-            muxFactory = new JChannelFactory[getMuxFactoryCount()];
-
-            for(int i = 0;i < muxFactory.length;i++){
-                muxFactory[i] = new JChannelFactory();
-                muxFactory[i].setMultiplexerConfig(MUX_CHANNEL_CONFIG);
-            }
         }
 
         if(shouldCompareThreadCount()){
@@ -105,16 +87,9 @@ public class ChannelTestBase extends TestCase {
     protected void tearDown() throws Exception {
         super.tearDown();
 
-        if(isMuxChannelUsed()){
-            for(int i = 0;i < muxFactory.length;i++){
-                muxFactory[i].destroy();
-            }
-        }
-
         if(router != null){
             router.stop();
-            // TODO ensure proper thread/socket cleanup when stopping
-            // GossipRouter
+            // TODO ensure proper thread/socket cleanup when stopping GossipRouter
             Util.sleep(100);
         }
 
@@ -140,58 +115,8 @@ public class ChannelTestBase extends TestCase {
         }
     }
 
-    /**
-     * Returns an array of mux application/service names with a guarantee that:
-     * <p> - there are no application/service name collissions on top of one
-     * channel (i.e cannot have two application/service(s) with the same name on
-     * top of one channel)
-     * <p> - each generated application/service name is guaranteed to have a
-     * corresponding pair application/service with the same name on another
-     * channel
-     * 
-     * @param muxApplicationstPerChannelCount
-     * @return
-     */
-    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount) {
-        return createMuxApplicationNames(muxApplicationstPerChannelCount, getMuxFactoryCount());
-    }
 
-    /**
-     * Returns an array of mux application/service names with a guarantee that:
-     * <p> - there are no application/service name collissions on top of one
-     * channel (i.e cannot have two application/service(s) with the same name on
-     * top of one channel)
-     * <p> - each generated application/service name is guaranteed to have a
-     * corresponding pair application/service with the same name on another
-     * channel
-     * 
-     * @param muxApplicationstPerChannelCount
-     * @param muxFactoryCount
-     *            how many mux factories should be used (has to be less than
-     *            getMuxFactoryCount())
-     * @return array of mux application id's represented as String objects
-     */
-    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount,
-                                                 int muxFactoryCount) {
-        if(muxFactoryCount > getMuxFactoryCount()){
-            throw new IllegalArgumentException("Parameter muxFactoryCount hs to be less than or equal to getMuxFactoryCount()");
-        }
 
-        int startLetter = LETTER_A;
-        String names[] = null;
-        int totalMuxAppCount = muxFactoryCount * muxApplicationstPerChannelCount;
-        names = new String[totalMuxAppCount];
-
-        boolean pickNextLetter = false;
-        for(int i = 0;i < totalMuxAppCount;i++){
-            pickNextLetter = (i % muxFactoryCount == 0);
-            if(pickNextLetter){
-                startLetter++;
-            }
-            names[i] = Character.toString((char) startLetter);
-        }
-        return names;
-    }
 
     /**
      * Returns channel name as String next in alphabetic sequence since
@@ -247,33 +172,7 @@ public class ChannelTestBase extends TestCase {
         }
 
         public Channel createChannel(Object id) throws Exception {
-            JChannel c = null;
-            if (isMuxChannelUsed()) {
-                synchronized(muxFactory) {
-                    log.info("Using configuration file " + MUX_CHANNEL_CONFIG
-                             + ", stack is "
-                             + MUX_CHANNEL_CONFIG_STACK_NAME);
-                    for(int i=0;i < muxFactory.length;i++) {
-                        if(!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME,
-                                                        id.toString())) {
-                            c=(JChannel)muxFactory[i].createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME,
-                                                                               id.toString());
-                            if(useBlocking()) {
-                                c.setOpt(Channel.BLOCK, Boolean.TRUE);
-                            }
-                            return c;
-                        }
-                    }
-                }
-
-                throw new Exception(
-                        "Cannot create mux channel with id "
-                                + id
-                                + " since all currently used channels have already registered service with that id");
-            } else {
-                c = createChannel(CHANNEL_CONFIG, useBlocking());
-            }
-            return c;
+            return createChannel(CHANNEL_CONFIG, useBlocking());
         }
     }
 
@@ -342,9 +241,6 @@ public class ChannelTestBase extends TestCase {
             }
         }
             
-        public boolean isUsingMuxChannel() {
-            return channel instanceof MuxChannel;
-        }
 
         public Address getLocalAddress() {
             return channel.getLocalAddress();
@@ -565,7 +461,7 @@ public class ChannelTestBase extends TestCase {
      */
     public static String translateEventTrace(List<Object> et) throws Exception {
 
-        String eventString=new String();
+        String eventString="";
 
         for(Iterator it=et.iterator();it.hasNext();) {
 
@@ -646,7 +542,7 @@ public class ChannelTestBase extends TestCase {
         
     } 
 
-    protected void checkEventStateTransferSequence(EventSequence receiver) {
+    protected static void checkEventStateTransferSequence(EventSequence receiver) {
 
         List<Object> events=receiver.getEvents();
         assertNotNull(events);
@@ -665,15 +561,7 @@ public class ChannelTestBase extends TestCase {
         Channel getChannel();
     }
 
-    /**
-     * Returns true if JVM has been started with mux.on system property set to
-     * true, false otherwise.
-     * 
-     * @return
-     */
-    protected static boolean isMuxChannelUsed() {
-        return Boolean.valueOf(System.getProperty("mux.on", "false")).booleanValue();
-    }
+
 
     /**
      * Returns true if JVM has been started with threadcount system property set
@@ -685,15 +573,7 @@ public class ChannelTestBase extends TestCase {
         return Boolean.valueOf(System.getProperty("threadcount", "false")).booleanValue();
     }
 
-    /**
-     * Returns value of mux.factorycount system property has been set, otherwise
-     * returns DEFAULT_MUX_FACTORY_COUNT.
-     * 
-     * @return
-     */
-    protected int getMuxFactoryCount() {
-        return Integer.parseInt(System.getProperty("mux.factorycount", DEFAULT_MUX_FACTORY_COUNT));
-    }
+  
 
     /**
      * Returns true if JVM has been started with useBlocking system property set

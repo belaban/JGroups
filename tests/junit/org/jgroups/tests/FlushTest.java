@@ -1,45 +1,24 @@
 package org.jgroups.tests;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.BlockEvent;
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.GetStateEvent;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.SetStateEvent;
-import org.jgroups.UnblockEvent;
-import org.jgroups.View;
-import org.jgroups.mux.MuxChannel;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.3 2008/05/21 18:51:37 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.4 2008/10/30 15:03:49 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -178,49 +157,11 @@ public class FlushTest extends ChannelTestBase {
      * 
      */
     public void testBlockingNoStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, muxFactoryCount);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_ONLY, 4);
-        }
+        String[] names = createApplicationNames(4);
+        _testChannels(names, FlushTestReceiver.CONNECT_ONLY, 4);
     }
 
-    /**
-     * Tests emition of block/unblock/get|set state events in mux mode. In this
-     * test all mux applications share the same "real" channel. This test runs
-     * only when mux.on=true. This test does not take into account
-     * -Dmux.factorycount parameter.
-     * 
-     */
-    public void testBlockingSharedMuxFactory() {
-        String[] names = null;
-        int muxFactoryCount = 1;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(4, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(1));
-        }
-    }
 
-    /**
-     * Tests emition of block/unblock/get|set state events in mux mode. In this
-     * test there will be exactly two real channels created where each real
-     * channel has two mux applications on top of it. This test runs only when
-     * mux.on=true. This test does not take into account -Dmux.factorycount
-     * parameter.
-     * 
-     */
-    public void testBlockingUnsharedMuxFactoryMultipleService() {
-        String[] names = null;
-        int muxFactoryCount = 2;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(2, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(2));
-        }
-    }
 
     /**
      * Tests emition of block/unblock/set|get state events for both mux and bare
@@ -230,15 +171,8 @@ public class FlushTest extends ChannelTestBase {
      * 
      */
     public void testBlockingWithStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, muxFactoryCount);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 4);
-        }
+        String[] names = createApplicationNames(4);
+        _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 4);
     }
     
     /**
@@ -249,34 +183,13 @@ public class FlushTest extends ChannelTestBase {
      * 
      */
     public void testBlockingWithConnectAndStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_GET_STATE, muxFactoryCount);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE, 4);
-        }
+        String[] names = createApplicationNames(4);
+        _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE, 4);
     }
 
-    /**
-     * Tests emition of block/unblock/set|get state events in mux mode setup
-     * where each "real" channel has two mux service on top of it. The number of
-     * real channels created is getMuxFactoryCount(). This test runs only when
-     * mux.on=true.
-     * 
-     */
-    public void testBlockingWithStateTransferAndMultipleServiceMuxChannel() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(2, 2);
-            _testChannels(names, 2, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 2);
-        }
-    }
+
 
     private void _testChannels(String names[],
-                               int muxFactoryCount,
                                int connectType,
                                Assertable a) {
         int count = names.length;
@@ -300,11 +213,7 @@ public class FlushTest extends ChannelTestBase {
                 Util.sleep(1000);
             }
 
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, muxFactoryCount, 10000);
-            }else{
-                blockUntilViewsReceived(channels, 10000);
-            }
+            blockUntilViewsReceived(channels, 10000);
 
             // if state transfer is used release all at once
             // clear all channels of view events
@@ -354,12 +263,8 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    public void _testChannels(String names[], int connectMethod, int viewSize) {
-        _testChannels(names, getMuxFactoryCount(), connectMethod, new ChannelAssertable(viewSize));
-    }
-
-    public void _testChannels(String names[], int muxFactoryCount, int connectMethod, int viewSize) {
-        _testChannels(names, muxFactoryCount, connectMethod, new ChannelAssertable(viewSize));
+    private  void _testChannels(String names[], int connectMethod, int viewSize) {
+        _testChannels(names, connectMethod, new ChannelAssertable(viewSize));
     }
 
     private class ChannelCloseAssertable implements Assertable {
@@ -369,40 +274,17 @@ public class FlushTest extends ChannelTestBase {
 
         Address appAddress;
 
-        String muxId;
 
         public ChannelCloseAssertable(ChannelApplication app){
             this.app = app;
             this.viewBeforeClose = app.getChannel().getView();
             appAddress = app.getChannel().getLocalAddress();
-            if(app.isUsingMuxChannel()){
-                MuxChannel mch = (MuxChannel) app.getChannel();
-                muxId = mch.getId();
-            }
         }
 
         public void verify(Object verifiable) {
-            Collection channels = (Collection) verifiable;
             Channel ch = app.getChannel();
             assertFalse("Channel open", ch.isOpen());
             assertFalse("Chnanel connected", ch.isConnected());
-
-            // if this channel had more than one member then verify that
-            // the other member does not have departed member in its view
-            if(viewBeforeClose.getMembers().size() > 1){
-                for(Iterator iter = channels.iterator();iter.hasNext();){
-                    FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-                    Channel channel = receiver.getChannel();
-                    boolean pairServiceFound = (receiver.isUsingMuxChannel() && muxId.equals(((MuxChannel) channel).getId()));
-                    if(pairServiceFound || !receiver.isUsingMuxChannel()){
-                        assertTrue("Removed from view, address " + appAddress
-                                   + " view is "
-                                   + channel.getView(), !channel.getView()
-                                                                .getMembers()
-                                                                .contains(appAddress));
-                    }
-                }
-            }
         }
     }
 
@@ -426,40 +308,6 @@ public class FlushTest extends ChannelTestBase {
                                                           .getMembers()
                                                           .contains(ch.getLocalAddress()));
                 assertNotNull("Valid cluster name ", ch.getClusterName());
-            }
-
-            // verify views for pair services created on top of different "real"
-            // channels
-            if(expectedViewSize > 1 && isMuxChannelUsed()){
-                for(Iterator iter = channels.iterator();iter.hasNext();){
-                    FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-                    MuxChannel ch = (MuxChannel) receiver.getChannel();
-                    int servicePairs = 1;
-                    for(Iterator it = channels.iterator();it.hasNext();){
-                        FlushTestReceiver receiver2 = (FlushTestReceiver) it.next();
-                        MuxChannel ch2 = (MuxChannel) receiver2.getChannel();
-                        if(ch.getId().equals(ch2.getId()) && !ch.getLocalAddress()
-                                                                .equals(ch2.getLocalAddress())){
-                            assertEquals("Correct view for service pair",
-                                         ch.getView(),
-                                         ch2.getView());
-                            assertTrue("Presence in view", ch.getView()
-                                                             .getMembers()
-                                                             .contains(ch.getLocalAddress()));
-                            assertTrue("Presence in view", ch.getView()
-                                                             .getMembers()
-                                                             .contains(ch2.getLocalAddress()));
-                            assertTrue("Presence in view", ch2.getView()
-                                                              .getMembers()
-                                                              .contains(ch2.getLocalAddress()));
-                            assertTrue("Presence in view", ch2.getView()
-                                                              .getMembers()
-                                                              .contains(ch.getLocalAddress()));
-                            servicePairs++;
-                        }
-                    }
-                    assertEquals("Correct service count", expectedViewSize, servicePairs);
-                }
             }
         }
     }
