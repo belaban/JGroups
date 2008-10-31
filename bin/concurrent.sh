@@ -25,7 +25,7 @@ fi
 
 
 count=0
-while [ $count -lt 1 ]
+while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
   java -Ddisable_canonicalization=false -classpath $CP $LOG $FLAGS -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.demos.Draw -props $HOME/udp-2.6.xml
