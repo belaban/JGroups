@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.MergeView;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
@@ -12,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Vector;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32.2.6 2008/10/30 15:03:49 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.7 2008/10/31 14:22:15 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -182,7 +184,9 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public void useChannel() throws Exception {
             channel.connect("test", null, null, 25000);
-            channel.send(null, null, channel.getLocalAddress());
+            LinkedList<Address> l =new LinkedList<Address>();
+            l.add(channel.getLocalAddress());
+            channel.send(null, null, l);
         }
 
         List<Address> getList() {
@@ -196,10 +200,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         public void receive(Message msg) {
             if(msg.getBuffer() == null)
                 return;
-            Address obj = (Address)msg.getObject();
+            List<Address> obj = (List)msg.getObject();
             log.info("-- [#" + getName() + " (" + channel.getLocalAddress() + ")]: received " + obj);
             synchronized(this){
-                l.add(obj);
+                l.addAll(obj);
                 Integer key = new Integer(getMod());
                 mods.put(key, obj);
             }
@@ -207,9 +211,33 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             super.viewAccepted(new_view);
-            synchronized(this){
-                Integer key = new Integer(getMod());
+            synchronized(this) {
+                Integer key=new Integer(getMod());
                 mods.put(key, new_view.getVid());
+
+                if(new_view instanceof MergeView) {
+                    MergeView mv=(MergeView)new_view;
+                    Vector<View> subgroups=mv.getSubgroups();
+                    boolean amISubgroupLeader=false;
+                    for(View view:subgroups) {
+                        Address subCoord=view.getMembers().firstElement();
+                        amISubgroupLeader=getLocalAddress().equals(subCoord);
+                        if(amISubgroupLeader) {
+                            for(View view2:subgroups) {
+                                if(!getLocalAddress().equals(view2.getMembers().firstElement())) {
+                                    for(Address member:view2.getMembers()) {
+                                        Message m=new Message(member, null, (Serializable)l);
+                                        try {
+                                            channel.send(m);
+                                        }
+                                        catch(Exception e) {
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
