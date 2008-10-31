@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.33 2008/10/31 08:38:43 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.34 2008/10/31 09:19:34 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -54,7 +54,7 @@ public class GossipRouter {
     public static final byte DUMP=8; // DUMP
     public static final byte SHUTDOWN=9;
 
-    public static final int PORT=8980;
+    public static final int PORT=12001;
     public static final long EXPIRY_TIME=30000;
     public static final long GOSSIP_REQUEST_TIMEOUT=1000;
     public static final long ROUTING_CLIENT_REPLY_TIMEOUT=120000;
@@ -468,6 +468,7 @@ public class GossipRouter {
 
                     case GossipRouter.CONNECT:
                         try {
+                            sock.setSoTimeout(0); // we have to disable this here
                             output=new DataOutputStream(sock.getOutputStream());
                             peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
                             logical_addr=req.getAddress();
