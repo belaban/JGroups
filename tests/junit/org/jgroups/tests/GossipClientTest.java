@@ -6,9 +6,10 @@ import org.jgroups.Global;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.util.List;
 
@@ -18,23 +19,22 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Id: GossipClientTest.java,v 1.4 2008/09/10 15:41:01 vlada Exp $
+ * @version $Id: GossipClientTest.java,v 1.5 2008/10/31 10:12:51 belaban Exp $
  * @since 2.2.1
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class GossipClientTest extends ChannelTestBase{
     GossipClient client;
-    private int port=-1;
     private long expiryTime=1000;
-    GossipRouter router;
 
 
 
     @BeforeClass
     void setUp() throws Exception {
-        router = createGossipRouter(getBindAddress(),expiryTime);        
-        port=router.getPort();
-        client=new GossipClient(new IpAddress(getBindAddress(), port), expiryTime, 1000, null);
+        router = new GossipRouter();
+        router.setExpiryTime(expiryTime);
+        router.start();
+        client=new GossipClient(new IpAddress(getBindAddress(), 12001), expiryTime, 1000, null);
         client.setRefresherEnabled(false); // don't refresh the registrations
     }
 
@@ -88,17 +88,17 @@ public class GossipClientTest extends ChannelTestBase{
     /**
      * Test if a member is removed from group after EXPIRY_TIME ms.
      */
-    public void testSweep() throws Exception {
+    public void testExpiration() throws Exception {
         String groupName="TESTGROUP-3";
-        int mbrPort=7777;
-        Address mbr=new IpAddress(getBindAddress(), mbrPort);
+        Address mbr=new IpAddress(getBindAddress(), 7777);
 
         client.register(groupName, mbr);
 
         Util.sleep(500);
         List mbrs=client.getMembers(groupName);
-        assert mbrs.size() == 1;
-        assert mbrs.get(0).equals(new IpAddress(getBindAddress(), mbrPort));
+        int size=mbrs.size();
+        assert size == 1 : "group " + groupName + " has " + size + " member(s)";
+        assert mbrs.get(0).equals(mbr);
 
         // because the sweep is ran at fixed expiryTime intervals, if
         // an entry was added immediately after a sweep run, it actually 
@@ -107,7 +107,7 @@ public class GossipClientTest extends ChannelTestBase{
 
         // send a second GET after more than EXPIRY_TIME ms
         mbrs=client.getMembers(groupName);
-        assert mbrs == null || mbrs.isEmpty();
+        assert mbrs == null || mbrs.isEmpty() : "group " + groupName + " has " + mbrs.size() + " member(s): " + mbrs;
     }
 
   
