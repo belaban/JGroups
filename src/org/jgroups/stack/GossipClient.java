@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.25 2008/05/30 15:42:29 vlada Exp $
+ * @version $Id: GossipClient.java,v 1.26 2008/10/31 08:38:43 belaban Exp $
  */
 public class GossipClient {
     TimeScheduler timer=null;
@@ -34,8 +34,9 @@ public class GossipClient {
     private Future<?> refresher_task=null;
     final Vector<Address> gossip_servers=new Vector<Address>();          // a list of GossipRouters (IpAddress)
     boolean refresher_enabled=true;
-    long EXPIRY_TIME=20000;          // must be less than in GossipRouter
+    long refresh_interval=20000;          // must be less than in GossipRouter
     int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
+    int sock_read_timeout=0;         // max number of ms to wait for socket reads (0 means block forever, or until the sock is closed)
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -69,12 +70,28 @@ public class GossipClient {
         this.refresher_enabled=refresher_enabled;
     }
 
-    public int getSockConnectionTimeout() {
+    public int getSocketConnectionTimeout() {
         return sock_conn_timeout;
     }
 
     public void setSocketConnectionTimeout(int sock_conn_timeout) {
         this.sock_conn_timeout=sock_conn_timeout;
+    }
+
+    public int getSocketReadTimeout() {
+        return sock_read_timeout;
+    }
+
+    public void setSocketReadTimeout(int sock_read_timeout) {
+        this.sock_read_timeout=sock_read_timeout;
+    }
+
+    public long getRefreshInterval() {
+        return refresh_interval;
+    }
+
+    public void setRefreshInterval(long refresh_interval) {
+        this.refresh_interval=refresh_interval;
     }
 
     public void setTimer(TimeScheduler timer) {
@@ -149,7 +166,7 @@ public class GossipClient {
             synchronized(this) {
                 if(refresher_task == null || refresher_task.isDone()) {
                     Refresher tmp=new Refresher();
-                    refresher_task=timer.scheduleWithFixedDelay(tmp, EXPIRY_TIME, EXPIRY_TIME, TimeUnit.MILLISECONDS);
+                    refresher_task=timer.scheduleWithFixedDelay(tmp, refresh_interval, refresh_interval, TimeUnit.MILLISECONDS);
                 }
             }
         }
@@ -196,7 +213,7 @@ public class GossipClient {
 
 
     final void init(IpAddress gossip_host, long expiry) {
-        EXPIRY_TIME=expiry;
+        refresh_interval=expiry;
         addGossipRouter(gossip_host);
     }
 
@@ -223,6 +240,8 @@ public class GossipClient {
                         if(log.isTraceEnabled())
                             log.trace("REGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
                         sock=new Socket();
+                        if(sock_read_timeout > 0)
+                            sock.setSoTimeout(sock_read_timeout);
                         sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
                         out=new DataOutputStream(sock.getOutputStream());
                         GossipData gossip_req=new GossipData(GossipRouter.REGISTER, group, mbr, null);
@@ -277,6 +296,8 @@ public class GossipClient {
                         if(log.isTraceEnabled())
                             log.trace("UNREGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
                         sock=new Socket();
+                        if(sock_read_timeout > 0)
+                            sock.setSoTimeout(sock_read_timeout);
                         sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
                         out=new DataOutputStream(sock.getOutputStream());
                         GossipData gossip_req=new GossipData(GossipRouter.UNREGISTER, group, mbr, null);
@@ -396,6 +417,8 @@ public class GossipClient {
                     DataInputStream in=null;
                     try {
                         sock=new Socket();
+                        if(sock_read_timeout > 0)
+                            sock.setSoTimeout(sock_read_timeout);
                         sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
                         out=new DataOutputStream(sock.getOutputStream());
                         GossipData gossip_req=new GossipData(GossipRouter.GOSSIP_GET, group, null, null);
