@@ -92,6 +92,8 @@ public abstract class BasicTCP extends TP {
     public void init() throws Exception {
         super.init();
 
+        linger=linger > 0 ? Math.min(1, linger / 1000) : linger; // convert from ms to secs
+
         Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
         Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
        

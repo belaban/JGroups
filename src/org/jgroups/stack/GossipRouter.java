@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.31 2008/08/18 16:22:49 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.32 2008/10/31 06:57:20 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -350,7 +350,7 @@ public class GossipRouter {
         while(up && srvSock != null) {
             try {
                 sock=srvSock.accept();
-                sock.setSoLinger(true, 500);
+                sock.setSoLinger(true, 5);
                 input=new DataInputStream(sock.getInputStream());
                 // if(log.isTraceEnabled())
                    // log.trace("accepted connection from " + sock);
