@@ -29,7 +29,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.46 2008/09/18 14:42:39 vlada Exp $
+ * @version $Id: PING.java,v 1.47 2008/10/31 08:38:44 belaban Exp $
  */
 public class PING extends Discovery {
     
@@ -51,8 +51,10 @@ public class PING extends Discovery {
     private int port_range=1;
    
     @Property(description="If socket is used for discovery, time in msecs to wait until socket is connected. Default is 1000 msec")
-    private int socket_conn_timeout =1000;
-    
+    private int socket_conn_timeout=1000;
+
+    @Property(description="Max to block on the socket on a read (in ms). 0 means block forever")
+    private int socket_read_timeout=3000;
     
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -72,11 +74,15 @@ public class PING extends Discovery {
         super.init();
         if(gossip_hosts != null) {
             client=new GossipClient(gossip_hosts, gossip_refresh, 1000, timer);
+            client.setSocketConnectionTimeout(socket_conn_timeout);
+            client.setSocketReadTimeout(socket_read_timeout);
         }
         else if(gossip_host != null && gossip_port != 0) {
             try {
                 client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host),
                                                       gossip_port), gossip_refresh, socket_conn_timeout, timer);
+                client.setSocketConnectionTimeout(socket_conn_timeout);
+                client.setSocketReadTimeout(socket_read_timeout);
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
@@ -85,7 +91,60 @@ public class PING extends Discovery {
             }
         }
     }
-    
+
+
+    public int getGossipPort() {
+        return gossip_port;
+    }
+
+    public void setGossipPort(int gossip_port) {
+        this.gossip_port=gossip_port;
+    }
+
+    public long getGossipRefresh() {
+        return gossip_refresh;
+    }
+
+    public void setGossipRefresh(long gossip_refresh) {
+        this.gossip_refresh=gossip_refresh;
+    }
+
+    public int getSocketConnTimeout() {
+        return socket_conn_timeout;
+    }
+
+    @Property
+    public void setSocketConnTimeout(int socket_conn_timeout) {
+        this.socket_conn_timeout=socket_conn_timeout;
+    }
+
+    public int getSocketReadTimeout() {
+        return socket_read_timeout;
+    }
+
+    @Property
+    public void setSocketReadTimeout(int socket_read_timeout) {
+        this.socket_read_timeout=socket_read_timeout;
+    }
+
+     public int getSockConnTimeout() {
+        return socket_conn_timeout;
+    }
+
+    @Property
+    public void setSockConnTimeout(int socket_conn_timeout) {
+        this.socket_conn_timeout=socket_conn_timeout;
+    }
+
+    public int getSockReadTimeout() {
+        return socket_read_timeout;
+    }
+
+    @Property
+    public void setSockReadTimeout(int socket_read_timeout) {
+        this.socket_read_timeout=socket_read_timeout;
+    }
+
     @Property
     public void setInitialHosts(String hosts) throws UnknownHostException {
         initial_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);

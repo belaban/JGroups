@@ -6,6 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
@@ -39,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.32 2008/10/31 06:57:20 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.33 2008/10/31 08:38:43 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -83,6 +84,14 @@ public class GossipRouter {
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
+
+    @Property(description="Time (in millis) for setting SO_LINGER on sockets returned from accept(). " +
+            "0 means do not set SO_LINGER")
+    private long linger_timeout=2000L;
+
+    @Property(description="Time (in millis) for SO_TIMEOUT on sockets returned from accept(). " +
+            "0 means don't set SO_TIMEOUT")
+    private long sock_read_timeout=3000L;
 
     @ManagedAttribute(description="operational status", name="running")
     private boolean up=true;
@@ -186,6 +195,21 @@ public class GossipRouter {
         this.discard_loopbacks=discard_loopbacks;
     }
 
+    public long getLingerTimeout() {
+        return linger_timeout;
+    }
+
+    public void setLingerTimeout(long linger_timeout) {
+        this.linger_timeout=linger_timeout;
+    }
+
+    public long getSocketReadTimeout() {
+        return sock_read_timeout;
+    }
+
+    public void setSocketReadTimeout(long sock_read_timeout) {
+        this.sock_read_timeout=sock_read_timeout;
+    }
 
     public static String type2String(int type) {
         switch(type) {
@@ -350,7 +374,14 @@ public class GossipRouter {
         while(up && srvSock != null) {
             try {
                 sock=srvSock.accept();
-                sock.setSoLinger(true, 5);
+                if(linger_timeout > 0) {
+                    int linger=Math.min(1, (int)(linger_timeout / 1000));
+                    sock.setSoLinger(true, linger);
+                }
+                if(sock_read_timeout > 0) {
+                    sock.setSoTimeout((int)sock_read_timeout);
+                }
+
                 input=new DataInputStream(sock.getInputStream());
                 // if(log.isTraceEnabled())
                    // log.trace("accepted connection from " + sock);

@@ -26,7 +26,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.32 2008/10/21 12:45:55 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.33 2008/10/31 08:38:44 belaban Exp $
  */
 public class TCPGOSSIP extends Discovery {
     
@@ -39,7 +39,8 @@ public class TCPGOSSIP extends Discovery {
     long gossip_refresh_rate=20000;
     @Property(description="Max time for socket creation. Default is 1000 msec")
     int sock_conn_timeout=1000;
-    
+    @Property(description="Max time in milliseconds to block on a read. 0 blocks forever")
+    int sock_read_timeout=3000;
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
@@ -72,8 +73,10 @@ public class TCPGOSSIP extends Discovery {
 
     public void start() throws Exception {
         super.start();
-        if(gossip_client == null)
+        if(gossip_client == null) {
             gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout, timer);
+            gossip_client.setSocketReadTimeout(sock_read_timeout);
+        }
     }
 
     public void stop() {
