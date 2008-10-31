@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83.2.4 2008/08/15 18:31:04 rachmatowicz Exp $
+ * @version $Id: FD_SOCK.java,v 1.83.2.5 2008/10/31 07:26:30 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -744,20 +744,21 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     private synchronized Address determinePingDest() {
-        Address neighbor=determineRightNeighbor();
-        return neighbor != null && !bcast_task.isSuspectedMember(neighbor)?neighbor:null;          
+        Vector<Address> non_suspected_mbrs=new Vector<Address>(members);
+        non_suspected_mbrs.removeAll(bcast_task.getSuspectedMembers());
+        return determineRightNeighbor(non_suspected_mbrs);         
     }
     
-    private synchronized Address determineRightNeighbor() {
+    private synchronized Address determineRightNeighbor(Vector<Address> list) {
         Address result=null;
-        if(members.size() > 1 && local_addr != null) {
-            if(local_addr.equals(members.lastElement())) {
-                result=members.firstElement();
+        if(list.size() > 1 && local_addr != null) {
+            if(local_addr.equals(list.lastElement())) {
+                result=list.firstElement();
             }
             else {
-                int myIndex=members.indexOf(local_addr);
+                int myIndex=list.indexOf(local_addr);
                 if(myIndex != -1){
-                    result=members.get(myIndex + 1);
+                    result=list.get(myIndex + 1);
                 }
             }          
         }
@@ -1116,8 +1117,12 @@ public class FD_SOCK extends Protocol implements Runnable {
      */
     private class BroadcastTask implements Runnable {
         final Set<Address> suspected_mbrs=new HashSet<Address>();
-        Future<?>             future;
+        Future<?>          future;
 
+
+        public Set<Address> getSuspectedMembers() {
+            return Collections.unmodifiableSet(suspected_mbrs);
+        }
 
         /** Adds a suspected member. Starts the task if not yet running */
         public void addSuspectedMember(Address mbr) {
