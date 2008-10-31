@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.34 2008/10/31 09:19:34 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.35 2008/10/31 10:12:50 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -66,7 +66,7 @@ public class GossipRouter {
     private String bindAddressString;
 
     @ManagedAttribute(description="time (in msecs) until a cached 'gossip' member entry expires", writable=true)
-    private long expiryTime;
+    private long expiryTime=30000;
 
     @ManagedAttribute(description="number of millisecs the main thread waits to receive a gossip request " +
             "after connection was established; upon expiration, the router initiates " +
@@ -298,21 +298,13 @@ public class GossipRouter {
     public void stop() {
         up=false;
 
-        if(srvSock == null) {
-            if(log.isWarnEnabled()) log.warn("router already stopped");
-            return;
-        }
-
         timer.cancel();
-        shutdown();
-        try {
-            srvSock.close();
+        if(srvSock != null) {
+            shutdown();
+            Util.close(srvSock);
+            // exiting the mainLoop will clean the tables
+            srvSock=null;
         }
-        catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("Failed to close server socket: " + e);
-        }
-        // exiting the mainLoop will clean the tables
-        srvSock=null;
         if(log.isInfoEnabled()) log.info("router stopped");
     }
 

@@ -18,7 +18,7 @@ import org.testng.annotations.BeforeMethod;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.16 2008/09/10 15:41:00 vlada Exp $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.17 2008/10/31 10:12:51 belaban Exp $
  * @see TUNNELDeadLockTest#testStress
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
@@ -34,15 +34,14 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
     private int mainTimeout=60000;
-    int routerPort=-1;
     GossipRouter gossipRouter;
 
 
     @BeforeMethod
     void setUp() throws Exception {
         promise=new Promise();
-        gossipRouter=createGossipRouter("127.0.0.1",1000);        
-        routerPort=gossipRouter.getPort();
+        gossipRouter=new GossipRouter();
+        gossipRouter.start();
     }
 
     @AfterMethod
@@ -61,19 +60,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     }
 
 
-    private static String getTUNNELProps(int routerPort) {
-        String props;
 
-        props="TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
-                "PING(timeout=3000;gossip_refresh=10000;num_initial_members=3;" +
-                "gossip_host=127.0.0.1;gossip_port=" + routerPort + "):" +
-                "FD_SOCK:" +
-                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=600,1200,2400,4800):" +
-                "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=20000;max_bytes=100000):" +
-                "pbcast.GMS(print_local_addr=true;join_timeout=5000;shun=true):" +
-                "SFC(max_credits=100000)";
-        return props;
-    }
 
     /**
      * Pushes messages down the channel as fast as possible. Sometimes this
@@ -89,8 +76,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
      */
     @Test
     public void testStress() throws Exception {
-        String props=getTUNNELProps(routerPort);
-        channel=new JChannel(props);
+        channel=new JChannel("tunnel.xml");
         channel.connect("agroup");
 
         // receiver thread
