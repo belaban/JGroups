@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.17 2008/06/23 07:55:52 belaban Exp $
+ * @version $Id: GMS.java,v 1.126.2.18 2008/10/31 15:03:42 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -122,6 +122,15 @@ public class GMS extends Protocol {
     public void setJoinRetryTimeout(long t) {}
     public boolean isShun() {return shun;}
     public void setShun(boolean s) {shun=s;}
+
+    public boolean isPrintLocalAddr() {
+        return print_local_addr;
+    }
+
+    public void setPrintLocalAddr(boolean print_local_addr) {
+        this.print_local_addr=print_local_addr;
+    }
+
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
         if(prev_members != null) {
@@ -357,7 +366,7 @@ public class GMS extends Protocol {
      * If the list is null, we take the members who are part of new_view
      * @param new_view
      * @param digest
-     * @param members
+     * @param newMembers
      */
     public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {           
         if(log.isTraceEnabled())
@@ -1214,7 +1223,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.17 2008/06/23 07:55:52 belaban Exp $
+     * @version $Id: GMS.java,v 1.126.2.18 2008/10/31 15:03:42 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
