@@ -1,15 +1,13 @@
 #!/bin/bash
 
 
-BIN=`dirname $0`
+LIB=../lib
 
-LIB=$BIN/../lib
+LIBS=$LIB/log4j.jar:$LIB/commons-logging.jar
 
-LIBS=$LIB/log4jjar:$LIB/commons-logging.jar
+FLAGS="$FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=192.168.1.5 -Djgroups.tcpping.initial_hosts=192.168.1.5[7800]"
 
-echo $CLASSPATH
-
-CLASSPATH=$BIN/../classes:$BIN/../conf:$CLASSPATH:$LIBS
+CLASSPATH=../classes:../conf:$CLASSPATH:$LIBS
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false;
@@ -27,10 +25,10 @@ fi
 
 
 count=0
-while [ $count -lt 20 ]
+while [ $count -lt 1 ]
 do
   echo "Starting Draw instance #$count"
-  java -classpath $CP -Dbind.address=192.168.2.5 org.jgroups.demos.Draw -props $HOME/udp.xml &
+  java -Ddisable_canonicalization=false -classpath $CP $LOG $FLAGS -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.demos.Draw -props $HOME/udp-2.6.xml
   # sleep 1
   count=$(($count+1))
 done
