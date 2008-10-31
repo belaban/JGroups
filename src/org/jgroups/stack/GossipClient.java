@@ -20,7 +20,7 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.18.2.3 2008/10/30 14:01:15 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.18.2.4 2008/10/31 08:21:14 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
@@ -77,7 +77,7 @@ public class GossipClient {
     }
 
 
-    public int getSockConnectionTimeout() {
+    public int getSocketConnectionTimeout() {
         return sock_conn_timeout;
     }
 
