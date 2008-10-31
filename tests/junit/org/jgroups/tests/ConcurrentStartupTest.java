@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32.2.7 2008/10/31 14:22:15 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.8 2008/10/31 15:00:35 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -36,14 +36,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     public boolean useBlocking() {
         return true;
-    }
+    }   
 
-    public void testConcurrentStartupLargeState() {
-        concurrentStartupHelper(true, false);
-    }
-
-    public void testConcurrentStartupSmallState() {
-        concurrentStartupHelper(false, true);
+    public void testConcurrentStartupState() {
+        concurrentStartupHelper(true);
     }
 
     /**
@@ -59,7 +55,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
      * 
      * 
      */
-    protected void concurrentStartupHelper(boolean largeState, boolean useDispatcher) {
+    protected void concurrentStartupHelper(boolean useDispatcher) {
         String[] names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
@@ -71,23 +67,14 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             semaphore.acquire(count);
 
             // Create activation threads that will block on the semaphore
-            for(int i = 0;i < count;i++){
-                if(largeState){
-                    channels[i] = new ConcurrentStartupChannelWithLargeState(semaphore,
-                                                                             names[i],
-                                                                             useDispatcher);                    
-                }else{
-                    channels[i] = new ConcurrentStartupChannel(names[i],
-                                                               semaphore,
-                                                               useDispatcher);                    
-                }
+            for(int i=0;i < count;i++) {
+
+                channels[i]=new ConcurrentStartupChannel(names[i], semaphore, useDispatcher);
 
                 // Release one ticket at a time to allow the thread to start
                 // working
                 channels[i].start();
-                semaphore.release(1);
-                //sleep at least a second and max second and a half
-                Util.sleep(500);
+                semaphore.release(1);                                
             }
 
             // Make sure everyone is in sync
@@ -142,37 +129,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     protected int getMod() {       
         return mod.incrementAndGet();
-    }  
-
-    protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
-        private static final long TRANSFER_TIME = 2000; 
-        public ConcurrentStartupChannelWithLargeState(Semaphore semaphore,
-                                                      String name,
-                                                      boolean useDispatcher) throws Exception{
-            super(name, semaphore, useDispatcher);
-        }
-      
-        public void setState(byte[] state) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(state);
-        }
-
-        public byte[] getState() {
-            Util.sleep(TRANSFER_TIME);
-            return super.getState();
-        }
-
-        public void getState(OutputStream ostream) {
-            Util.sleep(TRANSFER_TIME);
-            super.getState(ostream);
-        }
-
-        public void setState(InputStream istream) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(istream);
-        }
-    }
-
+    } 
+    
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
         private final List<Address> l = new LinkedList<Address>();       
 
