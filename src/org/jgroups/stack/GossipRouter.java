@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26.2.1 2008/10/30 14:02:17 belaban Exp $
+// $Id: GossipRouter.java,v 1.26.2.2 2008/10/31 06:47:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -367,9 +367,8 @@ public class GossipRouter {
             try {
                 sock=srvSock.accept();
                 if(linger_timeout > 0) {
-                    int linger=(int)(linger_timeout / 1000);
-                    if(linger > 0)
-                        sock.setSoLinger(true, linger);
+                    int linger=Math.min(1, (int)(linger_timeout / 1000));
+                    sock.setSoLinger(true, linger);
                 }
                 if(sock_read_timeout > 0) {
                     sock.setSoTimeout((int)sock_read_timeout);
