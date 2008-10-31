@@ -154,6 +154,9 @@ public abstract class BasicTCP extends TP {
         str=props.getProperty("linger");
         if(str != null) {
             linger=Integer.parseInt(str);
+            if(linger > 0) {
+                linger=Math.min(1, linger / 1000); // convert from ms to secs
+            }
             props.remove("linger");
         }
 

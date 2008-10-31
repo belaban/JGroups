@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.30.4.1 2008/02/06 03:18:47 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.30.4.2 2008/10/31 06:47:46 belaban Exp $
  */
 public class RouterStub {
 
@@ -100,7 +100,7 @@ public class RouterStub {
             this.groupname = groupname;
             try{
                 sock = new Socket(router_host, router_port, bind_addr, 0);
-                sock.setSoLinger(true, 500);
+                sock.setSoLinger(true, 5); // 5 secs !
                 output = new DataOutputStream(sock.getOutputStream());
                 GossipData req = new GossipData(GossipRouter.CONNECT,
                                                 groupname,
