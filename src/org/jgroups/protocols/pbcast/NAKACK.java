@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.14 2008/06/20 15:22:32 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.15 2008/10/31 15:04:00 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -80,6 +80,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * around, and don't need to wait for garbage collection to remove them.
      */
     private boolean discard_delivered_msgs=false;
+
+
+    /** Whether to emit a warning on reception of messages from members not in our view */
+    private boolean log_discard_msgs=true;
 
     /**
      * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
@@ -303,6 +307,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @deprecated removed in 2.6
      */
     public void setMaxXmitSize(long max_xmit_size) {
+    }
+
+    public boolean isLogDiscardMsgs() {
+        return log_discard_msgs;
+    }
+
+    public void setLogDiscardMsgs(boolean log_discard_msgs) {
+        this.log_discard_msgs=log_discard_msgs;
     }
 
     public boolean setProperties(Properties props) {
@@ -814,7 +826,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-            if(log.isWarnEnabled())
+            if(log.isWarnEnabled() && log_discard_msgs)
                 log.warn(local_addr + "] discarded message from non-member " + sender + ", my view is " + view);
             return;
         }
