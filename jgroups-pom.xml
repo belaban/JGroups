@@ -7,7 +7,7 @@
   <groupId>jgroups</groupId>
    <artifactId>jgroups</artifactId>
    <name>JGroups</name>
-   <version>2.6.5.GA</version>
+   <version>2.6.6.CR1</version>
    <url>http://www.jgroups.org</url>
    <build>
       <sourceDirectory>src</sourceDirectory>
