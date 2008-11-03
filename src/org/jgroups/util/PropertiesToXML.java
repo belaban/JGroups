@@ -8,11 +8,14 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,6 +30,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
@@ -43,7 +47,7 @@ import org.w3c.dom.Element;
  * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.4 2008/10/24 12:03:05 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.5 2008/11/03 15:14:57 vlada Exp $
  * 
  */
 public class PropertiesToXML {
@@ -107,32 +111,58 @@ public class PropertiesToXML {
             DocumentBuilder builder=factory.newDocumentBuilder();
             DOMImplementation impl=builder.getDOMImplementation();
             xmldoc=impl.createDocument(null, "table", null);
-            Element tbody=createXMLTree(xmldoc);
-            int propertyCount = 0;
-
-            for(;clazz != null;clazz=clazz.getSuperclass()) {
-                Field[] fields=clazz.getDeclaredFields();
+            Element tbody=createXMLTree(xmldoc);                       
+            Map<String,String> nameToDescription = new TreeMap<String,String>();
+            
+            //iterate fields
+            for(Class clazzInLoop=clazz;clazzInLoop != null;clazzInLoop=clazzInLoop.getSuperclass()) {
+                Field[] fields=clazzInLoop.getDeclaredFields();
                 for(Field field:fields) {
-                    if(field.isAnnotationPresent(Property.class)) {
-                        Element row=xmldoc.createElement("row");                        
-                        String property=field.getName();
-                        Element entry=xmldoc.createElement("entry");
-                        entry.setTextContent(property);
-                        row.appendChild(entry);
-
+                    if(field.isAnnotationPresent(Property.class)) {                                   
+                        String property=field.getName();                       
                         Property annotation=field.getAnnotation(Property.class);
-                        String desc=annotation.description();
-                        entry=xmldoc.createElement("entry");
-                        entry.setTextContent(desc);
-                        row.appendChild(entry);
-                        propertyCount++;
-                        
-                        tbody.appendChild(row);                       
+                        String desc=annotation.description();      
+                        nameToDescription.put(property, desc);                                           
                     } 
                 }
             }
+            
+            //iterate methods            
+            Method[] methods=clazz.getMethods();
+            for(Method method:methods) {
+                if(method.isAnnotationPresent(Property.class) && method.getName()
+                                                                       .startsWith("set")) {
+
+                    Property annotation=method.getAnnotation(Property.class);
+                    String desc=annotation.description();
+
+                    if(desc.length() > 0) {
+
+                        String name=annotation.name();
+                        if(name.length() < 1) {
+                            name=Configurator.renameFromJavaCodingConvention(method.getName()
+                                                                                   .substring(3));
+                        }
+                        nameToDescription.put(name, desc);
+                    }
+                }
+            }            
+            
+            //and write them out
+            for(Map.Entry<String,String> e:nameToDescription.entrySet()){
+                Element row=xmldoc.createElement("row");                                        
+                Element entry=xmldoc.createElement("entry");
+                entry.setTextContent(e.getKey());
+                row.appendChild(entry);
+                              
+                entry=xmldoc.createElement("entry");
+                entry.setTextContent(e.getValue());
+                row.appendChild(entry);                             
+                tbody.appendChild(row); 
+            }           
+            
             //do we have more than one property (superclass Protocol has only one property (stats))
-            if(propertyCount > 1) {
+            if(nameToDescription.size()>1) {
                 DOMSource domSource=new DOMSource(xmldoc);
                 StringWriter sw = new StringWriter();
                 StreamResult streamResult=new StreamResult(sw);
