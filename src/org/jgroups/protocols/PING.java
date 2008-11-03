@@ -29,7 +29,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.47 2008/10/31 08:38:44 belaban Exp $
+ * @version $Id: PING.java,v 1.48 2008/11/03 14:45:27 vlada Exp $
  */
 public class PING extends Discovery {
     
@@ -112,8 +112,7 @@ public class PING extends Discovery {
     public int getSocketConnTimeout() {
         return socket_conn_timeout;
     }
-
-    @Property
+    
     public void setSocketConnTimeout(int socket_conn_timeout) {
         this.socket_conn_timeout=socket_conn_timeout;
     }
@@ -121,8 +120,7 @@ public class PING extends Discovery {
     public int getSocketReadTimeout() {
         return socket_read_timeout;
     }
-
-    @Property
+    
     public void setSocketReadTimeout(int socket_read_timeout) {
         this.socket_read_timeout=socket_read_timeout;
     }
@@ -130,8 +128,7 @@ public class PING extends Discovery {
      public int getSockConnTimeout() {
         return socket_conn_timeout;
     }
-
-    @Property
+    
     public void setSockConnTimeout(int socket_conn_timeout) {
         this.socket_conn_timeout=socket_conn_timeout;
     }
@@ -139,8 +136,7 @@ public class PING extends Discovery {
     public int getSockReadTimeout() {
         return socket_read_timeout;
     }
-
-    @Property
+    
     public void setSockReadTimeout(int socket_read_timeout) {
         this.socket_read_timeout=socket_read_timeout;
     }
