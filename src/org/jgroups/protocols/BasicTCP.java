@@ -83,7 +83,10 @@ public abstract class BasicTCP extends TP {
     public long getConnExpireTime() {return conn_expire_time;}
     public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
 
-    @Property(name="external_addr")
+    @Property(name="external_addr", description="Use \"external_addr\" if you have hosts on different networks, behind " +
+            "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
+            "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
+            "parameter to the external (public IP) address of the firewall. ")
     public void setExternalAddress(String addr) throws UnknownHostException {
         external_addr=InetAddress.getByName(addr);
     }
@@ -91,8 +94,6 @@ public abstract class BasicTCP extends TP {
 
     public void init() throws Exception {
         super.init();
-
-        linger=linger > 0 ? Math.min(1, linger / 1000) : linger; // convert from ms to secs
 
         Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
         Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
