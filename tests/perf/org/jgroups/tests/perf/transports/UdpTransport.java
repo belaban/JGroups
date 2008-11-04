@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.13 2008/09/12 15:10:51 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.14 2008/11/04 16:04:47 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -52,7 +52,7 @@ public class UdpTransport implements Transport {
         this.config=properties;
         String mcast_addr_str=System.getProperty("udp.mcast_addr", config.getProperty("mcast_addr"));
         if(mcast_addr_str == null)
-            mcast_addr_str="228.8.8.8";
+            mcast_addr_str="233.3.4.5";
         mcast_addr=InetAddress.getByName(mcast_addr_str);
 
         String bind_addr_str=System.getProperty("udp.bind_addr", config.getProperty("bind_addr"));
