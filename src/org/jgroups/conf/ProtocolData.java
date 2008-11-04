@@ -5,7 +5,7 @@ package org.jgroups.conf;
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolData.java,v 1.8 2007/12/03 13:17:08 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.9 2008/11/04 08:23:04 belaban Exp $
  */
 
 import java.util.HashMap;
@@ -16,16 +16,22 @@ public class ProtocolData {
     /** Map<String,ProtocolParameter> of property keys and values */
     private final Map<String,ProtocolParameter> mParameters=new HashMap<String,ProtocolParameter>();
     private final String mProtocolName;
-    private final String mDescription;
     private final String mClassName;
-    private boolean mIsOverRide=false;
 
+    /**
+     *
+     * @param protocolName
+     * @param description
+     * @param className
+     * @param params
+     * @deprecated Use {@link #ProtocolData(String, String, ProtocolParameter[])} instead
+     */
+    @Deprecated
     public ProtocolData(String protocolName,
                         String description,
                         String className,
                         ProtocolParameter[] params) {
         mProtocolName=protocolName;
-        mDescription=description;
         mClassName=className;
         if(params != null) {
             for(int i=0; i < params.length; i++) {
@@ -34,10 +40,16 @@ public class ProtocolData {
         }
     }
 
-    public ProtocolData(String overRideName, ProtocolParameter[] params) {
-        this(overRideName, null, null, params);
-        mIsOverRide=true;
-
+    public ProtocolData(String protocolName,
+                        String className,
+                        ProtocolParameter[] params) {
+        mProtocolName=protocolName;
+        mClassName=className;
+        if(params != null) {
+            for(int i=0; i < params.length; i++) {
+                mParameters.put(params[i].getName(), params[i]);
+            }
+        }
     }
 
     public String getClassName() {
@@ -48,16 +60,18 @@ public class ProtocolData {
         return mProtocolName;
     }
 
-    public String getDescription() {
-        return mDescription;
+    @Deprecated
+    public static String getDescription() {
+        return "n/a";
     }
 
     public Map<String,ProtocolParameter> getParameters() {
         return mParameters;
     }
 
-    public boolean isOverride() {
-        return mIsOverRide;
+    @Deprecated
+    public static boolean isOverride() {
+        return false;
     }
 
     public ProtocolParameter[] getParametersAsArray() {
