@@ -1,0 +1,64 @@
+
+Release Notes JGroups 2.6.6
+===========================
+
+Version: $Id: ReleaseNotes-2.6.6.txt,v 1.1.2.1 2008/11/04 12:23:20 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.6 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2, 2.6.3, 2.6.4 and 2.6.5.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.5 and 2.6.6.
+
+
+Added socket read, close and connect timeouts in GossipRouter/GossipClient
+--------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-852]
+
+Configurable, can prevent denial-of-service attacks.
+
+
+Performance improvements
+------------------------
+[https://jira.jboss.org/jira/browse/JGRP-846]
+[https://jira.jboss.org/jira/browse/JGRP-847]
+
+Certain input and output streams had synchronized methods. Replacing them (because there is no concurrent access)
+improved performance (perf.Test tests) by about 9%.
+
+
+Bug fixes
+---------
+
+Concurrent start of multiple channels on shared transport
+---------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-849]
+
+Eliminate crosss-talking in MPING (on Linux only)
+-------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-836]
+
+FD_SOCK: no detection of multiple crashes
+-----------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-853]
+
+This is a bad regression, not present on CVS head (2.7) !
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Nov 4 2008
+
+
