@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.19 2008/10/23 15:18:40 vlada Exp $
+// $Id: XmlConfigurator.java,v 1.20 2008/11/04 08:23:04 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -41,8 +41,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
     protected XmlConfigurator(String stackName,ProtocolData[] protocols) {
         mStackName=stackName;
-        for(int i=0;i < protocols.length;i++)
-            mProtocolStack.add(protocols[i]);
+        mProtocolStack.addAll(Arrays.asList(protocols));
     }
 
     protected XmlConfigurator(String stackName) {
@@ -53,16 +52,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return getInstance(url.openStream());
     }
 
-    public static XmlConfigurator getInstanceOldFormat(URL url) throws java.io.IOException {
-        return getInstanceOldFormat(url.openStream());
-    }
-
     public static XmlConfigurator getInstance(InputStream stream) throws java.io.IOException {
         return parse(stream);
-    }
-
-    public static XmlConfigurator getInstanceOldFormat(InputStream stream) throws java.io.IOException {
-        return parseOldFormat(stream);
     }
 
     public static XmlConfigurator getInstance(Element el) throws java.io.IOException {
@@ -124,52 +115,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         mProtocolStack.add(data);
     }
 
-    protected static XmlConfigurator parseOldFormat(InputStream stream) throws java.io.IOException {
-        XmlConfigurator configurator=null;
-        try {
-            DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
-            factory.setValidating(false); //for now
-            DocumentBuilder builder=factory.newDocumentBuilder();
-            Document document=builder.parse(stream);
-            Element root=(Element)document.getElementsByTagName("protocol-stack").item(0);
-            root.normalize();
-            //print("",new PrintWriter(System.out),root);
-            String stackname=root.getAttribute(ATTR_NAME);
-            String inherit=root.getAttribute(ATTR_INHERIT);
-            boolean isinherited=(inherit != null && inherit.length() > 0);
-            NodeList protocol_list=document.getElementsByTagName(isinherited? ELMT_PROT_OVERRIDE
-                                                                            : ELMT_PROT);
-            Vector<ProtocolData> v=new Vector<ProtocolData>();
-            for(int i=0;i < protocol_list.getLength();i++) {
-                if(protocol_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    v.addElement(parseProtocolData(protocol_list.item(i)));
-                }
-            }
-            ProtocolData[] protocols=new ProtocolData[v.size()];
-            v.copyInto(protocols);
 
-            if(isinherited) {
-                URL inheritURL=new URL(inherit);
-                configurator=XmlConfigurator.getInstance(inheritURL);
-                for(int i=0;i < protocols.length;i++)
-                    configurator.override(protocols[i]);
-            }
-            else {
-                configurator=new XmlConfigurator(stackname, protocols);
-            }
-
-        }
-        catch(Exception x) {
-            if(x instanceof java.io.IOException)
-                throw (java.io.IOException)x;
-            else {
-                IOException tmp=new IOException();
-                tmp.initCause(x);
-                throw tmp;
-            }
-        }
-        return configurator;
-    }
 
     protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
         /**
@@ -214,13 +160,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
          * somebody wants to improve this, please be my guest.
          */
         try {
-            //            NodeList roots=root_element.getChildNodes();
-            //            for(int i =0; i < roots.getLength(); i++) {
-            //                root=roots.item(i);
-            //                if(root.getNodeType() != Node.ELEMENT_NODE)
-            //                    continue;
-            //            }
-
             String root_name=root_element.getNodeName();
             if(!"config".equals(root_name.trim().toLowerCase())) {
                 log.fatal("XML protocol stack configuration does not start with a '<config>' element; " + "maybe the XML configuration needs to be converted to the new format ?\n"
@@ -251,7 +190,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 ProtocolParameter[] params=new ProtocolParameter[tmp.size()];
                 for(int j=0;j < tmp.size();j++)
                     params[j]=tmp.get(j);
-                ProtocolData data=new ProtocolData(protocol, "bla", protocol, params);
+                ProtocolData data=new ProtocolData(protocol, protocol, params);
                 prot_data.add(data);
             }
 
@@ -272,63 +211,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return configurator;
     }
 
-    protected static ProtocolData parseProtocolData(Node protocol) throws java.io.IOException {
-        try {
-            protocol.normalize();
-            boolean isOverride=ELMT_PROT_OVERRIDE.equals(protocol.getNodeName());
-            int pos=0;
-            NodeList children=protocol.getChildNodes();
-            /**
-             * there should be 4 Element Nodes if we are not overriding 1.
-             * protocol-name 2. description 3. class-name 4. protocol-params
-             * 
-             * If we are overriding we should have 1. protocol-name 2.
-             * protocol-params
-             */
 
-            //
-            String name=null;
-            String clazzname=null;
-            String desc=null;
-            ProtocolParameter[] plist=null;
-
-            for(int i=0;i < children.getLength();i++) {
-                if(children.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    pos++;
-                    if(isOverride && (pos == 2))
-                        pos=4;
-                    switch(pos) {
-                        case 1:
-                            name=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 2:
-                            desc=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 3:
-                            clazzname=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 4:
-                            plist=parseProtocolParameters((Element)children.item(i));
-                            break;
-                    }//switch
-                }//end if
-            }//for
-
-            if(isOverride)
-                return new ProtocolData(name, plist);
-            else
-                return new ProtocolData(name, desc, clazzname, plist);
-        }
-        catch(Exception x) {
-            if(x instanceof java.io.IOException)
-                throw (java.io.IOException)x;
-            else {
-                IOException tmp=new IOException();
-                tmp.initCause(x);
-                throw tmp;
-            }
-        }
-    }
 
     protected static ProtocolParameter[] parseProtocolParameters(Element protparams) throws IOException {
         try {
