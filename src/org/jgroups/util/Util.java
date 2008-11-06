@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.179 2008/10/24 12:04:17 vlada Exp $
+ * @version $Id: Util.java,v 1.180 2008/11/06 13:41:58 belaban Exp $
  */
 public class Util {
 
@@ -1528,6 +1528,26 @@ public class Util {
             tmp=bytes / 1000000000.0;
             return f.format(tmp) + "GB";
         }
+    }
+
+
+    public static List<String> split(String input, int separator) {
+        List<String> retval=new ArrayList<String>();
+        if(input == null)
+            return retval;
+        int index=0, end;
+        while(true) {
+            index=input.indexOf(separator, index);
+            if(index == -1)
+                break;
+            index++;
+            end=input.indexOf(separator, index);
+            if(end == -1)
+                retval.add(input.substring(index));
+            else
+                retval.add(input.substring(index, end));
+        }
+        return retval;
     }
 
 
