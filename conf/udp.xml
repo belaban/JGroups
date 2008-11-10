@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.24.2.1 2007/11/20 08:53:40 belaban Exp $
+  version: $Id: udp.xml,v 1.24.2.2 2008/11/10 06:36:54 belaban Exp $
 -->
 
 <config>
@@ -33,7 +33,7 @@
          thread_pool.keep_alive_time="5000"
          thread_pool.queue_enabled="true"
          thread_pool.queue_max_size="1000"
-         thread_pool.rejection_policy="Run"
+         thread_pool.rejection_policy="discard"
 
          oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
