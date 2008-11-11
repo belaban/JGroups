@@ -19,7 +19,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.29.2.4 2008/10/20 06:50:24 belaban Exp $
+ * @version $Id: MPING.java,v 1.29.2.5 2008/11/11 10:54:49 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -323,6 +323,7 @@ public class MPING extends PING implements Runnable {
             out.flush(); // flushes contents to out_stream
             buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
             packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
+            discovery_reception.reset();
             if(mcast_send_sockets != null) {
                 MulticastSocket s;
                 for(int i=0; i < mcast_send_sockets.length; i++) {
@@ -339,6 +340,7 @@ public class MPING extends PING implements Runnable {
                 if(mcast_sock != null)
                     mcast_sock.send(packet);
             }
+            waitForDiscoveryRequestReception();
         }
         catch(IOException ex) {
             log.error("failed sending discovery request", ex);
