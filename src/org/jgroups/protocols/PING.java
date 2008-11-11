@@ -4,10 +4,12 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.TimeoutException;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -29,7 +31,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.48 2008/11/03 14:45:27 vlada Exp $
+ * @version $Id: PING.java,v 1.49 2008/11/11 10:45:37 belaban Exp $
  */
 public class PING extends Discovery {
     
@@ -55,7 +57,11 @@ public class PING extends Discovery {
 
     @Property(description="Max to block on the socket on a read (in ms). 0 means block forever")
     private int socket_read_timeout=3000;
-    
+
+    @Property(description="Time (in ms) to wait for our own discovery message to be received. 0 means don't wait. If the " +
+            "discovery message is not received within discovery_timeout ms, a warning will be logged")
+    private long discovery_timeout=0L;
+
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
@@ -65,6 +71,10 @@ public class PING extends Discovery {
         
     private List<IpAddress> initial_hosts=null; // hosts to be contacted for the initial membership
 
+    protected final Promise<Boolean>   discovery_reception=new Promise<Boolean>();
+
+
+    
 
     public String getName() {
         return name;
@@ -157,6 +167,7 @@ public class PING extends Discovery {
         if(client != null) {
             client.stop();
         }
+        discovery_reception.reset();
     }
 
 
@@ -242,7 +253,35 @@ public class PING extends Discovery {
         }
     }
 
+
+    public Object up(Event evt) {
+        if(evt.getType() == Event.MSG) {
+            Message msg=(Message)evt.getArg();
+            PingHeader hdr=(PingHeader)msg.getHeader(getName());
+            if(hdr != null && hdr.type == PingHeader.GET_MBRS_REQ && msg.getSrc().equals(local_addr)) {
+                discovery_reception.setResult(true);
+            }
+        }
+
+        return super.up(evt);
+    }
+
     void sendMcastDiscoveryRequest(Message discovery_request) {
+        discovery_reception.reset();
         down_prot.down(new Event(Event.MSG, discovery_request));
+        waitForDiscoveryRequestReception();
+    }
+
+
+    protected void waitForDiscoveryRequestReception() {
+        if(discovery_timeout > 0) {
+            try {
+                discovery_reception.getResultWithTimeout(discovery_timeout);
+            }
+            catch(TimeoutException e) {
+                if(log.isWarnEnabled())
+                    log.warn("didn't receive my own discovery request - multicast socket might not be configured correctly");
+            }
+        }
     }
 }
