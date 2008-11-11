@@ -26,7 +26,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.93 2008/09/25 13:09:18 belaban Exp $
+ * @version $Id: Message.java,v 1.94 2008/11/11 09:30:08 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -44,7 +44,11 @@ public class Message implements Streamable {
     /** All headers are placed here */
     protected Headers headers;
 
+    private byte      flags;
+
     protected static final Log log=LogFactory.getLog(Message.class);
+
+    static final Set<Class>    nonStreamableHeaders=new HashSet<Class>();
 
 
     static final byte DEST_SET         =  1;
@@ -61,9 +65,8 @@ public class Message implements Streamable {
     public static final byte LOW_PRIO          = 2; // not yet sure if we want this flag...
     public static final byte HIGH_PRIO         = 4; // not yet sure if we want this flag...
 
-    private byte flags=0;
 
-    static final Set<Class> nonStreamableHeaders=new HashSet<Class>();
+
 
 
 
