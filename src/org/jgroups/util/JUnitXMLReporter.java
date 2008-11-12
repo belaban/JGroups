@@ -3,6 +3,8 @@ package org.jgroups.util;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
+import org.testng.IInvokedMethod;
+import org.testng.IInvokedMethodListener;
 import org.testng.TestListenerAdapter;
 import org.testng.annotations.Test;
 
@@ -17,9 +19,9 @@ import java.util.concurrent.ConcurrentMap;
  * Copied from TestNG (www.testng.org) and modified
  * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.13 2008/10/28 18:23:26 rachmatowicz Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.14 2008/11/12 16:01:21 rachmatowicz Exp $
  */
-public class JUnitXMLReporter extends TestListenerAdapter {
+public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMethodListener {
     private String output_dir=null;
     private String suffix=null;
 
@@ -110,8 +112,10 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         }
     }
 
-    public void onTestStart(ITestResult result) {
-        Class real_class=result.getTestClass().getRealClass();
+    /** Invoked before any method (configuration or test) is invoked */
+    public void beforeInvocation(IInvokedMethod method, ITestResult tr) {
+        Class real_class=tr.getTestClass().getRealClass();
+
         local.set(real_class);
 
         List<ITestResult> results=classes.get(real_class);
@@ -120,8 +124,18 @@ public class JUnitXMLReporter extends TestListenerAdapter {
             classes.putIfAbsent(real_class, results);
         }
 
-        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(),
-                                                                             new StringBuffer()));
+        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer())) ;
+
+        // print(old_stdout, "before OK:   ", real_class.getName(), tr.getName());
+    }
+
+    /** Invoked after any method (configuration or test) is invoked */
+    public void afterInvocation(IInvokedMethod method, ITestResult tr) {
+
+    }
+
+    /* Moved code from onTestStart() to beforeInvocation() to avoid output leaks (JGRP-850) */ 
+    public void onTestStart(ITestResult result) {
         // old_stdout.println(Thread.currentThread() + " running " + real_class.getName() + "." + result.getName() + "()");
     }
 
