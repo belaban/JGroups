@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Created-By: Apache Ant 1.5Beta2
 Main-Class: org.jgroups.Version
-Implementation-Version: 2.7.0.ALPHA1
+Implementation-Version: 2.7.0.CR1
