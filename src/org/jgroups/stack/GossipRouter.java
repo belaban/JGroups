@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.35 2008/10/31 10:12:50 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.36 2008/11/12 08:14:54 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -92,6 +92,9 @@ public class GossipRouter {
     @Property(description="Time (in millis) for SO_TIMEOUT on sockets returned from accept(). " +
             "0 means don't set SO_TIMEOUT")
     private long sock_read_timeout=3000L;
+
+    @Property(description="The max queue size of backlogged connections")
+    private int backlog=1000;
 
     @ManagedAttribute(description="operational status", name="running")
     private boolean up=true;
@@ -156,6 +159,14 @@ public class GossipRouter {
 
     public String getBindAddress() {
         return bindAddressString;
+    }
+
+    public int getBacklog() {
+        return backlog;
+    }
+
+    public void setBacklog(int backlog) {
+        this.backlog=backlog;
     }
 
     public void setExpiryTime(long expiryTime) {
@@ -258,10 +269,10 @@ public class GossipRouter {
 
         if(bindAddressString != null) {
             bindAddress=InetAddress.getByName(bindAddressString);
-            srvSock=new ServerSocket(port, 50, bindAddress);
+            srvSock=new ServerSocket(port, backlog, bindAddress);
         }
         else {
-            srvSock=new ServerSocket(port, 50);
+            srvSock=new ServerSocket(port, backlog);
         }
 
         up=true;
