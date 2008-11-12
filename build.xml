@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.181 2008/11/12 11:22:32 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.182 2008/11/12 11:28:46 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -34,7 +34,7 @@
     <property name="unittest.timeout.low" value="300000"/>
 	
 	
-    <property name="version" value="2.7.0.CR1"/>
+    <property name="version" value="2.7.0.Beta1"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
