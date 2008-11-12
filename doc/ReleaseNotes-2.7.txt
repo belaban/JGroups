@@ -2,14 +2,28 @@
 Release Notes JGroups 2.7
 =========================
 
-Version: $Id: ReleaseNotes-2.7.txt,v 1.4 2008/11/12 11:57:55 belaban Exp $
+Version: $Id: ReleaseNotes-2.7.txt,v 1.5 2008/11/12 12:23:48 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.7).
 
-This is a major release, with close to 200 JIRA issues fixed and major new functionality.
+This is a big release, with close to 200 JIRA issues fixed and major new functionality.
 
 Below is a summary (with links to the detailed description) of the major new features.
+
+
+Features
+========
+
+Shared transport
+----------------
+[https://jira.jboss.org/jira/browse/JGRP-631]
+
+Multiple channels can now share the same transport (and still have different stack configurations on top). This
+replaces the Multiplexer, which is not supported any longer as of 2.7.
+
+See http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2204 for details.
+
 
 
 Converted unit tests from JUnit to TestNG
@@ -21,6 +35,7 @@ This cut down the time to run all tests from 2.5 hours to 15 minutes !
 
 Use of annotations to provide JMX management information
 --------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-723]
 [https://jira.jboss.org/jira/browse/JGRP-408]
 
 By annotating a protocol as @ManagedResource, an attribute as @ManagedAttribute or an operation as
@@ -65,10 +80,14 @@ Rather than flushing the entire cluster, we can now provide a list of target mem
 for example for buddy replication in JBossCache.
 
 
-Performance improvement
------------------------
+Performance improvements
+------------------------
 [https://jira.jboss.org/jira/browse/JGRP-846]
 [https://jira.jboss.org/jira/browse/JGRP-847]
+[https://jira.jboss.org/jira/browse/JGRP-805]
+[https://jira.jboss.org/jira/browse/JGRP-806]
+[https://jira.jboss.org/jira/browse/JGRP-829]
+[https://jira.jboss.org/jira/browse/JGRP-813]
 
 
 http://www.jgroups.org/javagroupsnew/docs/performance.html shows that we can get 150MB/sec/node on a 4 node
@@ -78,8 +97,55 @@ throughput of 600MB/sec !
 2.7 is ca 30-40% faster than 2.6 !
 
 
+FC: max block times depending on message size
+---------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-804]
+
+We can now set the max time to block for a given message, e.g. block 10ms max for messages up to 10K, 100ms for messages
+up to 1MB, 500ms for messages up to 10MB and 2000ms for messages larger than that.
+
+This means that - regardless of missing credits - messages will be sent after the deadline (max block time) has
+elapsed. This adds more predictability as to when messages are sent, but it also can lead to OOMEs if those values
+are too low, defying the purpose of flow control.
+
+
+UNICAST/NAKACK: eager lock release
+----------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-656]
+
+Better performance in cases where the receiver of a message uses the calling thread to send a message down the stack.
+In this case, the lock will be release as soon as send() is called, releasing the lock and allowing threads with
+messages from the same sender to proceed.
+
+
+GossipRouter / GossipClient: make sockets non-blocking
+------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-702]
+[https://jira.jboss.org/jira/browse/JGRP-852]
+
+Can now be configured to use non blocking socket close, connect and read/write
+
+
+Paralellize discovery phase
+---------------------------
+[https://jira.jboss.org/jira/browse/JGRP-375]
+
+
+Pluggable Probe
+---------------
+[https://jira.jboss.org/jira/browse/JGRP-832]
+
+This allows for users to write their own plugins which respond to a ping (a probe) and return (for example)
+application specific information.
+
+Details are at http://www.jboss.org/community/docs/DOC-11689 (towards the bottom of the page).
+
+
+
+
+
 Bug fixes
----------
+=========
 
 FD: nodes would not get suspected if traffic from different nodes was received
 ------------------------------------------------------------------------------
@@ -107,6 +173,25 @@ Concurrent connect of multiple channels with shared transport fails
 Eliminate Linux cross-talk in MPING
 -----------------------------------
 [https://jira.jboss.org/jira/browse/JGRP-836]
+
+FLUSH fixes
+-----------
+[https://jira.jboss.org/jira/browse/JGRP-756]
+[https://jira.jboss.org/jira/browse/JGRP-759]
+[https://jira.jboss.org/jira/browse/JGRP-700]
+[https://jira.jboss.org/jira/browse/JGRP-622]
+
+FD_SOCK: fixes
+--------------
+[https://jira.jboss.org/jira/browse/JGRP-841]
+[https://jira.jboss.org/jira/browse/JGRP-845]
+[https://jira.jboss.org/jira/browse/JGRP-794]
+[https://jira.jboss.org/jira/browse/JGRP-745]
+
+NAKACK: merging of digests is incorrect
+---------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-699]
+
 
 
 
