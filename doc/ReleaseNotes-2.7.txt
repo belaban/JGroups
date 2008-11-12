@@ -2,30 +2,112 @@
 Release Notes JGroups 2.7
 =========================
 
-Version: $Id: ReleaseNotes-2.7.txt,v 1.3 2007/11/27 16:07:22 belaban Exp $
+Version: $Id: ReleaseNotes-2.7.txt,v 1.4 2008/11/12 11:57:55 belaban Exp $
 Author: Bela Ban
 
-JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.5).
+JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.7).
+
+This is a major release, with close to 200 JIRA issues fixed and major new functionality.
 
 Below is a summary (with links to the detailed description) of the major new features.
 
 
-Thread pools can be replaced in the transport
----------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-632]
+Converted unit tests from JUnit to TestNG
+-----------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-410]
 
-We have 2 thread pools in the concurrent stack: the default and OOB thread pools. These can now be replaced with a custom
-user-written thread pool. The only requirement here is that the custom thread pool implements ExecutorService.
-This allows for tighter integration of JGroups into a system, e.g. for ISVs which already have a thread pool in their
-application, and want JGroups to use it.
+This cut down the time to run all tests from 2.5 hours to 15 minutes !
 
 
-Preventing reincarnation through storing of ports in temp storage
------------------------------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-637]
+Use of annotations to provide JMX management information
+--------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-408]
 
-Reincarnation can be prevented by not reusing recently used ports. All ports are stored ib stable
-storage, and purged after some configurable time.
+By annotating a protocol as @ManagedResource, an attribute as @ManagedAttribute or an operation as
+@ManagedOperation, we can simply expose JMX management information.
+
+This change allowed us to remove the parallel JMX class hierarchy (org.jgroups.jmx package), and dramatically
+reduced the effort needed to expose protocols via JMX.
+
+Credits for the initial implementation go to Chris Mills.
+
+
+
+Use of annotations to set properties
+------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-765]
+
+Instead of implementing setProperties() in each protocol, parsing the input string and converting it to a variable, we
+now use the @Property annoation to mark an attribute or getter/setter method. This way, input strings are
+automatically mapped to the corresponding fields in a protocol.
+
+This allowed us to remove a lot of boilerplate code.
+
+In addition, we now generate the protocol list
+documentation (http://www.jgroups.org/javagroupsnew/docs/manual/html/protlist.html) from the @Property annotations.
+The benefit is that we need to maintain the documentation only in one place (the code) instead of two, and we now
+have a complete documentation of all protocol properties. 
+
+
+Ability to replace thread pools with custom thread pools
+--------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-632]
+
+This allows (for example) system integrators to use the thread pools they already have in their applications. It
+also gives greater control over thread pool management, e.g. a provider can make all threads in a pool daemon threads.
+
+
+Allow flushing of a cluster subset
+----------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-661]
+
+Rather than flushing the entire cluster, we can now provide a list of target members for the FLUSH. This is needed
+for example for buddy replication in JBossCache.
+
+
+Performance improvement
+-----------------------
+[https://jira.jboss.org/jira/browse/JGRP-846]
+[https://jira.jboss.org/jira/browse/JGRP-847]
+
+
+http://www.jgroups.org/javagroupsnew/docs/performance.html shows that we can get 150MB/sec/node on a 4 node
+cluster connected to a 1GB switch with udp.xml (IP multicasting) on 2.7. This means we get an aggregate cluster
+throughput of 600MB/sec !
+
+2.7 is ca 30-40% faster than 2.6 !
+
+
+Bug fixes
+---------
+
+FD: nodes would not get suspected if traffic from different nodes was received
+------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-746]
+
+Traffic from *any* node was counted as a heartbeat. This is incorrect as only traffic from the pinged member
+should count as heartbeat.
+
+FRAG/FRAG2: fragment list is not cleared for crashed member (can lead to memory leak)
+-------------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-800]
+
+NAKACK: regular message not delivered (in some cases) until new message arrives
+-------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-781]
+
+STATE_TRANSFER: state transfer broken for large states
+------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-774]
+
+Concurrent connect of multiple channels with shared transport fails
+-------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-849]
+
+Eliminate Linux cross-talk in MPING
+-----------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-836]
+
 
 
 
@@ -33,10 +115,6 @@ Manual
 ------
 The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
 
-
-
-Bug fixes
----------
 
 
 The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
