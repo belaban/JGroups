@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26.2.2 2008/10/31 06:47:38 belaban Exp $
+// $Id: GossipRouter.java,v 1.26.2.3 2008/11/12 08:16:53 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -85,6 +85,9 @@ public class GossipRouter {
     /** Time (in millis) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT */
     private long sock_read_timeout=3000L;
 
+    /** The max queue size of backlogged connections */
+    private int backlog=1000;
+
     private boolean up=true;
 
     /** whether to discard message sent to self */
@@ -147,6 +150,14 @@ public class GossipRouter {
 
     public String getBindAddress() {
         return bindAddressString;
+    }
+
+    public int getBacklog() {
+        return backlog;
+    }
+
+    public void setBacklog(int backlog) {
+        this.backlog=backlog;
     }
 
     public void setExpiryTime(long expiryTime) {
@@ -250,10 +261,10 @@ public class GossipRouter {
 
         if(bindAddressString != null) {
             bindAddress=InetAddress.getByName(bindAddressString);
-            srvSock=new ServerSocket(port, 50, bindAddress);
+            srvSock=new ServerSocket(port, backlog, bindAddress);
         }
         else {
-            srvSock=new ServerSocket(port, 50);
+            srvSock=new ServerSocket(port, backlog);
         }
 
         up=true;
