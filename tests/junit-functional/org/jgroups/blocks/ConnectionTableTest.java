@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.12 2008/04/15 12:37:22 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.13 2008/11/12 13:37:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
@@ -92,7 +92,7 @@ public class ConnectionTableTest {
         
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        assert num_conns == 1;
+        assert num_conns == 1 : "num_conns is " + num_conns;
         num_conns=ct2.getNumConnections();
         assert num_conns == 1;
         
