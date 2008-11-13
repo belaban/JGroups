@@ -2,7 +2,7 @@
 Release Notes JGroups 2.7
 =========================
 
-Version: $Id: ReleaseNotes-2.7.txt,v 1.5 2008/11/12 12:23:48 belaban Exp $
+Version: $Id: ReleaseNotes-2.7.txt,v 1.6 2008/11/13 08:18:41 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -208,6 +208,6 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 
-April 2008
+Nov 2008
 
 
