@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.12 2008/10/29 12:56:38 vlada Exp $
+ * @version $Id: UDP.java,v 1.156.2.13 2008/11/14 15:15:05 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -229,7 +229,9 @@ public class UDP extends TP implements Runnable {
 
 
 
-
+    public void setMcastPort(int p) {
+        mcast_port=p;
+    }
 
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
