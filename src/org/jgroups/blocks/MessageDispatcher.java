@@ -4,6 +4,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Rsp;
@@ -37,7 +38,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74.2.3 2008/05/30 11:36:53 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74.2.4 2008/11/14 15:16:41 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -287,9 +288,14 @@ public class MessageDispatcher implements RequestHandler {
         }
         correlatorStarted();
         corr.start();
+
         if(channel != null) {
             Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
+            if(channel instanceof JChannel) {
+                TP transport=((JChannel)channel).getProtocolStack().getTransport();
+                corr.registerProbeHandler(transport);
+            }
         }
     }
 
@@ -301,6 +307,11 @@ public class MessageDispatcher implements RequestHandler {
     public void stop() {
         if(corr != null) {
             corr.stop();
+        }
+
+        if(channel instanceof JChannel) {
+            TP transport=((JChannel)channel).getProtocolStack().getTransport();
+            corr.unregisterProbeHandler(transport);
         }
 
         // fixes leaks of MembershipListeners (http://jira.jboss.com/jira/browse/JGRP-160)
