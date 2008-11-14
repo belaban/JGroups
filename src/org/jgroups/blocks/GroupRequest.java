@@ -51,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.36 2008/09/19 09:03:51 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.37 2008/11/14 17:08:32 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -422,22 +422,15 @@ public class GroupRequest implements RspCollector, Command {
         if(caller != null)
             ret.append("caller=").append(caller).append("\n");
 
-        Address mbr;
-        Rsp rsp;
         lock.lock();
         try {
-            for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
-                mbr=entry.getKey();
-                rsp=entry.getValue();
-                ret.append(mbr).append(": ").append(rsp).append("\n");
-
-                if(!suspects.isEmpty())
-                    ret.append("\nsuspects: ").append(suspects);
-                ret.append("\nrequest_msg: ").append(request_msg);
-                ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
-                ret.append("\ndone: ").append(done);
-                ret.append("\ntimeout: ").append(timeout);
-                ret.append("\nexpected_mbrs: ").append(expected_mbrs).append(" (" + members + ")]");
+            if(!requests.isEmpty()) {
+                ret.append("entries:\n");
+                for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
+                    Address mbr=entry.getKey();
+                    Rsp rsp=entry.getValue();
+                    ret.append(mbr).append(": ").append(rsp).append("\n");
+                }
             }
         }
         finally {
