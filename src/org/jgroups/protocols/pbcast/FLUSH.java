@@ -100,6 +100,8 @@ public class FLUSH extends Protocol {
 
     @GuardedBy("sharedLock")
     private final List<Address> flushMembers;
+    
+    private final AtomicInteger viewCounter = new AtomicInteger(0);  
 
     @GuardedBy("sharedLock")
     private final Map<Address, Digest> flushCompletedMap;    
@@ -152,7 +154,8 @@ public class FLUSH extends Protocol {
         map.put("flush_supported", Boolean.TRUE);
         up_prot.up(new Event(Event.CONFIG, map));
         down_prot.down(new Event(Event.CONFIG, map));
-        
+
+        viewCounter.set(0);       
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
@@ -217,14 +220,18 @@ public class FLUSH extends Protocol {
             }
         }
 
-        if(!successfulFlush && numberOfAttempts > 0){                  
-            waitForFlushCompletion(retry_timeout);      
-            if(log.isDebugEnabled()){               
-                log.debug("Retrying FLUSH at " + localAddress                                                  
-                          + ". Attempts left "
-                          + numberOfAttempts);
+        if(!successfulFlush && numberOfAttempts > 0) {
+            waitForFlushCompletion(retry_timeout);
+            Boolean result=flush_promise.getResult(100);
+            successfulFlush = result !=null && result.booleanValue();
+            if(!successfulFlush){
+                if(log.isDebugEnabled()) {
+                    log.debug("Retrying FLUSH at " + localAddress
+                              + ". Attempts left "
+                              + numberOfAttempts);
+                }
+                successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
             }
-            successfulFlush = startFlush(flushParticipants, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -332,7 +339,7 @@ public class FLUSH extends Protocol {
                         return up_prot.up(evt);                     
                     case FlushHeader.START_FLUSH:
                         Collection<Address> fp=fh.flushParticipants;
-                        boolean amIParticipant = fp != null && fp.contains(localAddress);
+                        boolean amIParticipant = (fp != null && fp.contains(localAddress)) || msg.getSrc().equals(localAddress);
                         if(amIParticipant){
                             handleStartFlush(msg, fh);
                         }         
@@ -351,9 +358,9 @@ public class FLUSH extends Protocol {
                     case FlushHeader.STOP_FLUSH:
                         onStopFlush();
                         break;
-                    case FlushHeader.ABORT_FLUSH:
-                        synchronized(sharedLock){
-                            flushCompletedMap.clear();
+                    case FlushHeader.ABORT_FLUSH: 
+                        synchronized(sharedLock){                            
+                            flushCompletedMap.remove(msg.getSrc());
                         }
                         flush_promise.setResult(Boolean.FALSE);
                         break;                               
@@ -361,18 +368,22 @@ public class FLUSH extends Protocol {
                         if(isCurrentFlushMessage(fh))
                             onFlushCompleted(msg.getSrc(), fh.digest);
                         break;
-                }                
+                }
+                return null; // do not pass FLUSH msg up
             }else{               
                 // http://jira.jboss.com/jira/browse/JGRP-575
                 // for processing of application messages after we join, 
                 // lets wait for STOP_FLUSH to complete
                 // before we start allowing message up.
-                // also, allow unicasts to pass, virtual synchrony only applies to multicasts          
-                if(allowMessagesToPassUp || msg.getDest() != null && !msg.getDest().isMulticastAddress()) {
-                    return up_prot.up(evt); 
-                }              
+                Address dest=msg.getDest();
+                if(dest != null && !dest.isMulticastAddress()) {
+                    return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny applies to multicasts
+                }
+
+                if(!allowMessagesToPassUp)
+                    return null;
             }
-            return null;
+            break;
 
         case Event.VIEW_CHANGE:                       
             /*
@@ -382,17 +393,14 @@ public class FLUSH extends Protocol {
              */
             up_prot.up(evt);            
             View newView = (View) evt.getArg();
-            boolean inPreviousView = false;
-            synchronized(sharedLock) {
-                inPreviousView = currentView.getMembers().contains(localAddress);
-            }            
             boolean coordinatorLeft = onViewChange(newView);
-            boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);            
+            boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
+            boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
             // if this is channel's first view and its the only member of the group - no flush was run
             // but the channel application should still receive BLOCK,VIEW,UNBLOCK 
             
             //also if coordinator of flush left each member should run stopFlush individually.
-            if((!inPreviousView && singletonMember) || coordinatorLeft){                
+            if((isThisOurFirstView && singletonMember) || coordinatorLeft){                
                 onStopFlush();              
             }
             return null;            
@@ -520,17 +528,18 @@ public class FLUSH extends Protocol {
         }
         if(proceed){          
             onStartFlush(flushRequester, fh);
-        } else{  
-            if(log.isDebugEnabled()){
-                log.debug("Rejecting flush at " + localAddress
-                          + " to flush requester "
-                          + abortFlushCoordinator
-                          + " coordinator is "
-                          + proceedFlushCoordinator);
-            }                        
-            rejectFlush(fh.viewID, abortFlushCoordinator);    
-            if(proceedFlushCoordinator != null)
+        } else{                                     
+            if(proceedFlushCoordinator != null){
+                if(log.isDebugEnabled()){
+                    log.debug("Rejecting flush at " + localAddress
+                              + " to flush requester "
+                              + abortFlushCoordinator
+                              + " coordinator is "
+                              + proceedFlushCoordinator);
+                }         
+                rejectFlush(fh.viewID, abortFlushCoordinator);
                 onStartFlush(proceedFlushCoordinator, fh);
+            }
         }
     }
 
@@ -595,8 +604,7 @@ public class FLUSH extends Protocol {
         }
                             
         synchronized(sharedLock){                     
-            flushCompletedMap.clear();            
-            reconcileOks.clear();            
+            flushCompletedMap.clear();                     
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
@@ -675,39 +683,45 @@ public class FLUSH extends Protocol {
         if(stats){
             startFlushTime = System.currentTimeMillis();
             numberOfFlushes += 1;
-        }        
+        }
+        boolean proceed = false;
         synchronized(sharedLock){
             flushCoordinator = flushStarter;
             flushMembers.clear();
             if(fh.flushParticipants != null){
                 flushMembers.addAll(fh.flushParticipants);
             }
-            flushMembers.removeAll(suspected);            
+            proceed = flushMembers.contains(localAddress);
+            flushMembers.removeAll(suspected);           
         }
         
-        if(sentBlock.compareAndSet(false, true)){
-            //ensures that we do not repeat block event
-            //and that we do not send block event to non participants            
-            sendBlockUpToChannel();            
-            synchronized(blockMutex){
-                isBlockingFlushDown = true;
+        if(proceed) {
+            if(sentBlock.compareAndSet(false, true)) {
+                //ensures that we do not repeat block event
+                //and that we do not send block event to non participants            
+                sendBlockUpToChannel();
+                synchronized(blockMutex) {
+                    isBlockingFlushDown=true;
+                }
             }
-        }
-        else{
+            else {
+                if(log.isDebugEnabled())
+                    log.debug("Received START_FLUSH at " + localAddress
+                              + " but not sending BLOCK up");
+            }
+
+            Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
+            FlushHeader fhr=new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID);
+            fhr.addDigest(digest);
+
+            Message msg=new Message(flushStarter);
+            msg.putHeader(getName(), fhr);
+            down_prot.down(new Event(Event.MSG, msg));
             if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress + " but not sending BLOCK up");
-        }                        
-            
-        Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
-        FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID);
-        fhr.addDigest(digest);            
-        
-        Message msg = new Message(flushStarter);
-        msg.putHeader(getName(), fhr);
-        down_prot.down(new Event(Event.MSG, msg));
-        if(log.isDebugEnabled())
-            log.debug("Received START_FLUSH at " + localAddress
-                      + " responded with FLUSH_COMPLETED to " + flushStarter );
+                log.debug("Received START_FLUSH at " + localAddress
+                          + " responded with FLUSH_COMPLETED to "
+                          + flushStarter);
+        }
               
     }
     
@@ -716,7 +730,7 @@ public class FLUSH extends Protocol {
         boolean needsReconciliationPhase = false;
         synchronized(sharedLock){
             flushCompletedMap.put(address, digest);
-            flushCompleted=flushCompletedMap.size() >= flushMembers.size() && flushCompletedMap.keySet().containsAll(flushMembers);           
+            flushCompleted=flushCompletedMap.size() >=  flushMembers.size() && !flushMembers.isEmpty() && flushCompletedMap.keySet().containsAll(flushMembers);           
 
             if(log.isDebugEnabled())
                 log.debug("At " + localAddress
@@ -724,6 +738,8 @@ public class FLUSH extends Protocol {
                           + address
                           + ",completed "
                           + flushCompleted
+                          + ",flushMembers "
+                          + flushMembers
                           + ",flushCompleted "
                           + flushCompletedMap.keySet());
 
@@ -741,8 +757,8 @@ public class FLUSH extends Protocol {
                 fh.addDigest(d);
                 msg.putHeader(getName(), fh);
 
-                if(log.isTraceEnabled())
-                    log.trace("Reconciling flush mebers due to virtual synchrony gap, digest is " + d
+                if(log.isDebugEnabled())
+                    log.debug("At "+ localAddress + " reconciling flush mebers due to virtual synchrony gap, digest is " + d
                               + " flush members are "
                               + flushMembers);
 
