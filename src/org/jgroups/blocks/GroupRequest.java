@@ -11,13 +11,12 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Command;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -42,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.30.2.2 2008/06/11 11:23:23 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.30.2.3 2008/11/17 13:37:59 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -211,7 +210,7 @@ public class GroupRequest implements RspCollector, Command {
         try {
             targets=new Vector<Address>(members);
             req_id=getRequestId();
-            reset(null); // clear 'responses' array
+            // reset(null); // clear 'responses' array
 
             for(Address suspect: suspects) { // mark all suspects in 'received' array
                 Rsp rsp=requests.get(suspect);
@@ -431,18 +430,13 @@ public class GroupRequest implements RspCollector, Command {
         Rsp rsp;
         lock.lock();
         try {
-            for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
-                mbr=entry.getKey();
-                rsp=entry.getValue();
-                ret.append(mbr).append(": ").append(rsp).append("\n");
-
-                if(!suspects.isEmpty())
-                    ret.append("\nsuspects: ").append(suspects);
-                ret.append("\nrequest_msg: ").append(request_msg);
-                ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
-                ret.append("\ndone: ").append(done);
-                ret.append("\ntimeout: ").append(timeout);
-                ret.append("\nexpected_mbrs: ").append(expected_mbrs).append(" (" + members + ")]");
+            if(!requests.isEmpty()) {
+                ret.append("entries:\n");
+                for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
+                    mbr=entry.getKey();
+                    rsp=entry.getValue();
+                    ret.append(mbr).append(": ").append(rsp).append("\n");
+                }
             }
         }
         finally {
