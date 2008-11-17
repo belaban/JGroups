@@ -1,10 +1,11 @@
-// $Id: RequestCorrelator.java,v 1.46 2008/10/10 14:53:30 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.47 2008/11/17 13:38:48 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Streamable;
@@ -13,6 +14,8 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -56,6 +59,8 @@ public class RequestCorrelator {
     protected Address local_addr=null;
 
     protected boolean started=false;
+
+    private final MyProbeHandler probe_handler=new MyProbeHandler(requests);
 
     protected static final Log log=LogFactory.getLog(RequestCorrelator.class);
 
@@ -336,7 +341,15 @@ public class RequestCorrelator {
     }
 
 
+    public void registerProbeHandler(TP transport) {
+        if(transport != null)
+            transport.registerProbeHandler(probe_handler);
+    }
 
+    public void unregisterProbeHandler(TP transport) {
+        if(transport != null)
+            transport.unregisterProbeHandler(probe_handler);
+    }
     // .......................................................................
 
 
@@ -711,6 +724,36 @@ public class RequestCorrelator {
             return retval;
         }
     }
+
+    private static class MyProbeHandler implements TP.ProbeHandler {
+        private final ConcurrentMap<Long,RspCollector> requests;
+
+        public MyProbeHandler(ConcurrentMap<Long, RspCollector> requests) {
+            this.requests=requests;
+        }
+
+        public Map<String, String> handleProbe(String... keys) {
+            if(requests == null)
+                return null;
+            Map<String,String> retval=new HashMap<String,String>();
+            for(String key: keys) {
+                if(key.equals("requests")) {
+                    StringBuilder sb=new StringBuilder();
+                    for(Map.Entry<Long,RspCollector> entry: requests.entrySet()) {
+                        sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                    }
+                    retval.put("requests", sb.toString());
+                    break;
+                }
+            }
+            return retval;
+        }
+
+        public String[] supportedKeys() {
+            return new String[]{"requests"};
+        }
+    }
+
 
 
 
