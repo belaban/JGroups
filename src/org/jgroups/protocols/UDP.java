@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.190 2008/10/29 13:07:38 vlada Exp $
+ * @version $Id: UDP.java,v 1.191 2008/11/17 12:37:06 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -153,7 +153,7 @@ public class UDP extends TP {
     public String getMulticastAddress() {return mcast_addr_name;}
     public int getMulticastPort() {return mcast_port;}
     public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
-
+    public void setMcastPort(int mcast_port) {this.mcast_port=mcast_port;}
 
 
     public String getInfo() {
