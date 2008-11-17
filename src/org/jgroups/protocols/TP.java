@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.35 2008/10/29 12:57:47 vlada Exp $
+ * @version $Id: TP.java,v 1.160.2.36 2008/11/17 13:37:10 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -296,6 +296,7 @@ public abstract class TP extends Protocol {
 
 
     private DiagnosticsHandler diag_handler=null;
+    private final List<ProbeHandler> preregistered_probe_handlers=new LinkedList<ProbeHandler>();
     boolean enable_diagnostics=true;
     String diagnostics_addr="224.0.75.75";
     int    diagnostics_port=7500;
@@ -357,6 +358,8 @@ public abstract class TP extends Protocol {
     public void registerProbeHandler(ProbeHandler handler) {
         if(diag_handler != null)
             diag_handler.registerProbeHandler(handler);
+        else
+            preregistered_probe_handlers.add(handler);
     }
 
     public void unregisterProbeHandler(ProbeHandler handler) {
@@ -735,6 +738,9 @@ public abstract class TP extends Protocol {
         if(enable_diagnostics) {
             diag_handler=new DiagnosticsHandler();
             diag_handler.start();
+            for(ProbeHandler handler: preregistered_probe_handlers)
+                diag_handler.registerProbeHandler(handler);
+            preregistered_probe_handlers.clear();
         }
 
         if(use_incoming_packet_handler && !use_concurrent_stack) {
@@ -772,6 +778,8 @@ public abstract class TP extends Protocol {
         // 2. Stop the incoming message handler
         if(incoming_msg_handler != null)
             incoming_msg_handler.stop();
+
+        preregistered_probe_handlers.clear();
     }
 
 
