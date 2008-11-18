@@ -18,10 +18,10 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.4 2008/10/30 15:03:49 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.5 2008/11/18 15:56:33 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
-    private JChannel c1, c2;
+    private JChannel c1, c2,c3;
 
     public FlushTest(){
         super();
@@ -37,7 +37,14 @@ public class FlushTest extends ChannelTestBase {
     }
 
     public void tearDown() throws Exception {
-        if(c2 != null){
+    	if(c3 != null){
+            c3.close();
+            assertFalse(c3.isOpen());
+            assertFalse(c3.isConnected());
+            c3 = null;
+        }
+    	
+    	if(c2 != null){
             c2.close();
             assertFalse(c2.isOpen());
             assertFalse(c2.isConnected());
@@ -102,6 +109,29 @@ public class FlushTest extends ChannelTestBase {
         // now send unicast, this might block as described in the case
         c2.send(unicast_msg);
         // if we don't get here this means we'd time out
+    }
+    
+    public void testFlushWithCrashedFlushCoordinator() throws ChannelException {
+        c1 = createChannel();
+        c1.connect("test");
+
+        c2 = createChannel();
+        c2.connect("test");
+        
+        c3 = createChannel();
+        c3.connect("test");
+        
+        //start flush
+        c2.startFlush(false);
+        
+        //and then kill the flush coordinator
+        ((JChannel)c2).shutdown();
+        
+        Util.sleep(8000);
+        
+        //cluster should not hang and two remaining members should have a correct view
+        assertTrue("corret view size", c1.getView().size()==2);
+        assertTrue("corret view size", c3.getView().size()==2);
     }
 
     /**
