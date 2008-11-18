@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.5 2008/11/18 15:56:33 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.6 2008/11/18 20:26:12 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2,c3;
@@ -132,6 +132,54 @@ public class FlushTest extends ChannelTestBase {
         //cluster should not hang and two remaining members should have a correct view
         assertTrue("corret view size", c1.getView().size()==2);
         assertTrue("corret view size", c3.getView().size()==2);
+    }
+    
+    public void testFlushWithCrashedNonCoordinator() throws ChannelException {
+        c1 = createChannel();
+        c1.connect("test");
+
+        c2 = createChannel();
+        c2.connect("test");
+        
+        c3 = createChannel();
+        c3.connect("test");
+        
+        //start flush
+        c2.startFlush(false);
+        
+        //and then kill the member other than flush coordinator
+        ((JChannel)c3).shutdown();
+        
+        c2.stopFlush();
+        Util.sleep(8000);
+        
+        //cluster should not hang and two remaining members should have a correct view
+        assertTrue("corret view size", c1.getView().size()==2);
+        assertTrue("corret view size", c2.getView().size()==2);
+    }
+    
+    public void testFlushWithCrashedNonCoordinators() throws ChannelException {
+        c1 = createChannel();
+        c1.connect("test");
+
+        c2 = createChannel();
+        c2.connect("test");
+        
+        c3 = createChannel();
+        c3.connect("test");
+        
+        //start flush
+        c2.startFlush(false);
+        
+       //and then kill members other than flush coordinator
+        ((JChannel)c3).shutdown();
+        ((JChannel)c1).shutdown();
+        
+        c2.stopFlush();
+        Util.sleep(8000);
+        
+        //cluster should not hang and one remaining member should have a correct view
+        assertTrue("corret view size", c2.getView().size()==1);
     }
 
     /**
