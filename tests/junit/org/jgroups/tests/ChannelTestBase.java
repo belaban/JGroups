@@ -42,11 +42,7 @@ public class ChannelTestBase {
 
     protected boolean use_blocking=false;
 
-    private int router_port=12001;
-
     private String bind_addr="127.0.0.1";
-
-    GossipRouter router=null;
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -62,84 +58,15 @@ public class ChannelTestBase {
 
         if(use_blocking != null)
             this.use_blocking=Boolean.parseBoolean(use_blocking);
-
-        if(isTunnelUsed()) {
-            router=new GossipRouter(router_port, bind_addr);
-            router.start();
-        }
-
         bind_addr = Util.getBindAddress(null).getHostAddress();
     }
 
-    protected boolean isTunnelUsed() {
-        return channel_conf.contains("tunnel");
-    }
 
-    
-    @AfterClass
-    protected void terminateBase() throws Exception {
-        if(router != null) {
-            router.stop();
-            Util.sleep(100);
-        }
-    }
     
     protected String getBindAddress(){
         return bind_addr;
     }
     
-    public GossipRouter createGossipRouter(final long expiryTime,
-                                           final String bind_addr,
-                                           final long gossipRequestTimeout,
-                                           final long routingClientReplyTimeout) throws Exception {
-
-        ServerSocket ss=new ServerSocket(0);
-        int routerPort=ss.getLocalPort();
-        ss.close();
-        GossipRouter gr=new GossipRouter(routerPort,
-                                         bind_addr,
-                                         expiryTime,
-                                         gossipRequestTimeout,
-                                         routingClientReplyTimeout);
-        gr.start();
-        GossipClient client=null;
-
-        // verify the router - try for 10 secs to connect
-        long startms=System.currentTimeMillis();
-        Exception lastConnectException=null;
-        long crtms=startms;
-
-        while(crtms - startms < 10000) {
-            try {
-                client=new GossipClient(new IpAddress(bind_addr, routerPort), 10000, 1000, null);
-                client.getMembers("Utilities:startGossipRouterConnectionTest");
-                lastConnectException=null;
-                break;
-            }
-            catch(Exception e) {
-                if(client != null)
-                    client.stop();
-                lastConnectException=e;
-                Thread.sleep(1000);
-                crtms=System.currentTimeMillis();
-            }
-        }
-
-        if(lastConnectException != null) {
-            lastConnectException.printStackTrace();
-            throw new Exception("Cannot connect to the router");
-        }
-
-        return gr;
-    }
-
-    public GossipRouter createGossipRouter(String bindAddress, long expiryTime) throws Exception {
-
-        return createGossipRouter(expiryTime,
-                                  bindAddress,
-                                  GossipRouter.GOSSIP_REQUEST_TIMEOUT,
-                                  GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
-    }
     
 
     protected final static void assertTrue(boolean condition) {

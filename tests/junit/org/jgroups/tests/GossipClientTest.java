@@ -19,12 +19,13 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Id: GossipClientTest.java,v 1.5 2008/10/31 10:12:51 belaban Exp $
+ * @version $Id: GossipClientTest.java,v 1.6 2008/11/19 07:38:04 belaban Exp $
  * @since 2.2.1
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class GossipClientTest extends ChannelTestBase{
     GossipClient client;
+    GossipRouter router;
     private long expiryTime=1000;
 
 
