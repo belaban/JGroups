@@ -66,8 +66,14 @@ public class ChannelTestBase {
     protected String getBindAddress(){
         return bind_addr;
     }
-    
-    
+
+    protected boolean useBlocking() {
+          return use_blocking;
+    }
+
+    protected void setUseBlocking(boolean flag) {
+        use_blocking=flag;
+    }
 
     protected final static void assertTrue(boolean condition) {
         Util.assertTrue(condition);
@@ -594,9 +600,6 @@ public class ChannelTestBase {
     }
 
 
-    protected boolean useBlocking() {
-        return use_blocking;
-    }
 
     /**
      * Checks each channel in the parameter array to see if it has the exact same view as other channels in an array.
