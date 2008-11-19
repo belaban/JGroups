@@ -9,9 +9,6 @@ import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.GossipClient;
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -22,7 +19,6 @@ import org.testng.annotations.*;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -50,16 +46,28 @@ public class ChannelTestBase {
 
 
     @BeforeClass
-    @Parameters(value={"channel.conf", "use_blocking"})
-    protected void initializeBase(@Optional("udp.xml") String channel_conf,
-                                  @Optional("false") String use_blocking) throws Exception {
-        if(channel_conf != null)
-            this.channel_conf=channel_conf;
+	@Parameters(value = { "channel.conf", "use_blocking" })
+	protected void initializeBase(@Optional("udp.xml") String chconf,
+			@Optional("false") String use_blocking) throws Exception {
+		Test annotation = this.getClass().getAnnotation(Test.class);
+		// this should never ever happen!
+		if (annotation == null)
+			throw new Exception("Test is not marked with @Test annotation");
 
-        if(use_blocking != null)
-            this.use_blocking=Boolean.parseBoolean(use_blocking);
-        bind_addr = Util.getBindAddress(null).getHostAddress();
-    }
+		List<String> groups = Arrays.asList(annotation.groups());
+		boolean testRequiresFlush = groups.contains(Global.FLUSH);
+		
+		//don't change chconf - should be equal to optional parameter above
+		if (testRequiresFlush && chconf.equals("udp.xml")) {
+			this.channel_conf = "flush-udp.xml";
+			this.use_blocking = true;
+		} else {
+			this.channel_conf = chconf;
+			this.use_blocking = Boolean.parseBoolean(use_blocking);
+		}
+
+		bind_addr = Util.getBindAddress(null).getHostAddress();
+	}
 
 
     
