@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.73 2008/11/19 07:12:57 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.74 2008/11/19 19:16:03 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
@@ -138,6 +138,74 @@ public class FlushTest extends ChannelTestBase {
 			// correct view
 			assertTrue("corret view size", c1.getView().size() == 2);
 			assertTrue("corret view size", c3.getView().size() == 2);
+		} finally {
+			Util.close(c3, c2, c1);
+		}
+	}
+    
+    @Test
+	public void testFlushWithCrashedNonCoordinator() throws Exception {
+		JChannel c1 = null;
+		JChannel c2 = null;
+		JChannel c3 = null;
+
+		try {
+			c1 = createChannel(true, 3);
+			c1.connect("testFlushWithCrashedFlushCoordinator");
+
+			c2 = createChannel(c1);
+			c2.connect("testFlushWithCrashedFlushCoordinator");
+
+			c3 = createChannel(c1);
+			c3.connect("testFlushWithCrashedFlushCoordinator");
+
+			// start flush
+			c2.startFlush(false);
+
+			// and then kill the flush coordinator
+			((JChannel) c3).shutdown();
+
+			c2.stopFlush();
+			Util.sleep(8000);
+
+			// cluster should not hang and two remaining members should have a
+			// correct view
+			assertTrue("corret view size", c1.getView().size() == 2);
+			assertTrue("corret view size", c2.getView().size() == 2);
+		} finally {
+			Util.close(c3, c2, c1);
+		}
+	}
+
+	@Test
+	public void testFlushWithCrashedNonCoordinators() throws Exception {
+		JChannel c1 = null;
+		JChannel c2 = null;
+		JChannel c3 = null;
+
+		try {
+			c1 = createChannel(true, 3);
+			c1.connect("testFlushWithCrashedFlushCoordinator");
+
+			c2 = createChannel(c1);
+			c2.connect("testFlushWithCrashedFlushCoordinator");
+
+			c3 = createChannel(c1);
+			c3.connect("testFlushWithCrashedFlushCoordinator");
+
+			// start flush
+			c2.startFlush(false);
+
+			// and then kill members other than flush coordinator
+			((JChannel) c3).shutdown();
+			((JChannel) c1).shutdown();
+
+			c2.stopFlush();
+			Util.sleep(8000);
+
+			// cluster should not hang and one remaining member should have a
+			// correct view
+			assertTrue("corret view size", c2.getView().size() == 1);
 		} finally {
 			Util.close(c3, c2, c1);
 		}
