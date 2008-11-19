@@ -10,7 +10,6 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
 import java.util.concurrent.CountDownLatch;
@@ -22,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.18 2008/06/17 03:40:38 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.19 2008/11/19 19:04:07 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -144,29 +143,21 @@ public class ChannelConcurrencyTest extends TestCase {
         }
 
         public void run() {
-            try {
-                c.connect("test");
-                if(useDispatcher) {
-                    final MessageDispatcher md=new MessageDispatcher(c, null, null, new MyHandler());
-                    for(int i=0;i < 10;i++) {
-                        final RspList rsp=md.castMessage(null,
-                                                         new Message(null, null, i),
-                                                         GroupRequest.GET_ALL,
-                                                         2500);
-                        for(Object o:rsp.getResults()) {
-                            assertEquals("Wrong result received at " + c.getLocalAddress(), i, o);
-                        }
-                    }
-                }
-            }
-            catch(final Exception e) {
-                exception=e;
-                e.printStackTrace();
-            }
-            finally {
-                latch.countDown();
-            }
-        }
+			try {
+				if (useDispatcher) {
+					final MessageDispatcher md = new MessageDispatcher(c, null, null, new MyHandler());
+					c.connect("test");
+					md.castMessage(null, new Message(null, null, "blah"),GroupRequest.GET_ALL, 2500);
+				} else {
+					c.connect("test");
+				}
+			} catch (final Exception e) {
+				exception = e;
+				e.printStackTrace();
+			} finally {
+				latch.countDown();
+			}
+		}
     }
     private static class MyHandler implements RequestHandler {
 
