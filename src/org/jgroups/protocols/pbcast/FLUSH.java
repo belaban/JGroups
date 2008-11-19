@@ -730,7 +730,9 @@ public class FLUSH extends Protocol {
         boolean needsReconciliationPhase = false;
         synchronized(sharedLock){
             flushCompletedMap.put(address, digest);
-            flushCompleted=flushCompletedMap.size() >=  flushMembers.size() && !flushMembers.isEmpty() && flushCompletedMap.keySet().containsAll(flushMembers);           
+            flushCompleted = flushCompletedMap.size() >= flushMembers.size()
+					&& !flushMembers.isEmpty()
+					&& flushCompletedMap.keySet().containsAll(flushMembers);           
 
             if(log.isDebugEnabled())
                 log.debug("At " + localAddress
