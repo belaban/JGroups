@@ -40,12 +40,6 @@ public class ChannelTestBase {
 
     protected String channel_conf="udp.xml";
 
-    protected int active_threads=0;
-
-    protected boolean compare_thread_count=false;
-
-    protected String before_threads=null;
-
     protected boolean use_blocking=false;
 
     private int router_port=12001;
@@ -60,15 +54,11 @@ public class ChannelTestBase {
 
 
     @BeforeClass
-    @Parameters(value={"channel.conf", "compare_thread_count", "use_blocking"})
+    @Parameters(value={"channel.conf", "use_blocking"})
     protected void initializeBase(@Optional("udp.xml") String channel_conf,
-                                  @Optional("false") String compare_thread_count,
                                   @Optional("false") String use_blocking) throws Exception {
         if(channel_conf != null)
             this.channel_conf=channel_conf;
-
-        if(compare_thread_count != null)
-            this.compare_thread_count=Boolean.parseBoolean(compare_thread_count);
 
         if(use_blocking != null)
             this.use_blocking=Boolean.parseBoolean(use_blocking);
@@ -78,11 +68,6 @@ public class ChannelTestBase {
             router.start();
         }
 
-        if(shouldCompareThreadCount()) {
-            active_threads=Thread.activeCount();
-            before_threads="active threads before (" + active_threads + "):\n" + Util.activeThreads();
-        }
-        
         bind_addr = Util.getBindAddress(null).getHostAddress();
     }
 
@@ -96,22 +81,6 @@ public class ChannelTestBase {
         if(router != null) {
             router.stop();
             Util.sleep(100);
-        }
-
-        if(shouldCompareThreadCount()) {
-            // at the moment Thread.activeCount() is called it might count in threads that are just being
-            // excluded from active count. Therefore we include a slight delay of 20 msec
-
-            Util.sleep(20);
-            int current_active_threads=Thread.activeCount();
-
-            String msg="";
-            if(active_threads != current_active_threads) {
-                System.out.println(before_threads);
-                System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-                msg="active threads:\n" + Util.dumpThreads();
-            }
-            assert active_threads == current_active_threads : msg;
         }
     }
     
@@ -697,9 +666,6 @@ public class ChannelTestBase {
         public Address getLocalAddress();
     }
 
-    protected boolean shouldCompareThreadCount() {
-        return compare_thread_count;
-    }
 
     protected boolean useBlocking() {
         return use_blocking;
