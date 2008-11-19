@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.72 2008/11/18 16:17:02 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.73 2008/11/19 07:12:57 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
@@ -331,8 +331,6 @@ public class FlushTest extends ChannelTestBase {
 
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
-        List<Object> events;
-        
         private int connectMethod;
         
         public static final int CONNECT_ONLY = 1;
