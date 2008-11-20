@@ -5,7 +5,7 @@
         >
 
 
-    <test name="udp" junit="false" time-out="60000">
+    <test name="udp" junit="false" time-out="80000">
         <parameter name="channel.conf" value="udp.xml"/>
         <groups>
             <run>
