@@ -7,7 +7,7 @@
 
 	<parameter name="channel.conf" value="flush-udp.xml"/>
 	<parameter name="use_blocking" value="true"/>
-    <test name="udp-flush" junit="false" time-out="60000">        
+    <test name="udp-flush" junit="false" time-out="80000">        
         <groups>
             <run>                              
             	<include name="base"/>                
