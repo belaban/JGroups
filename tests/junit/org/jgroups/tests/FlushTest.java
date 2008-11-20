@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.74 2008/11/19 19:16:03 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.75 2008/11/20 14:10:10 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
@@ -47,7 +47,7 @@ public class FlushTest extends ChannelTestBase {
         receivers[0].cleanup();
         Util.sleep(1000);
 
-        checkEventSequence(receivers[0]);
+        checkEventStateTransferSequence(receivers[0]);
     }
 
     /**
@@ -336,67 +336,11 @@ public class FlushTest extends ChannelTestBase {
             }
             
             // verify block/unblock/view/get|set state sequences for all members
-            for (FlushTestReceiver receiver : channels) {
-                if (connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE
-                        || connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
-                    checkEventStateTransferSequence(receiver);
-                } else {
-                    checkEventSequence(receiver);
-                }
-            }
+			for (FlushTestReceiver receiver : channels) {
+				checkEventStateTransferSequence(receiver);
+			}
         }
     }
-
-    private void checkEventSequence(ChannelApplication receiver) {
-            List<Object> events=receiver.getEvents();
-            String eventString="[" + receiver.getName() + "|" + receiver.getLocalAddress() + ",events:" + events;
-            log.info(eventString);
-            assert events != null;
-            assert events.size() > 1;
-            assert events.get(0) instanceof BlockEvent : "First event is not block but " + events.get(0);
-            assert events.get(events.size() - 1) instanceof UnblockEvent
-                    : "Last event not unblock but " + events.get(events.size() - 1);
-            int size=events.size();
-            for(int i=0; i < size; i++) {
-                Object event=events.get(i);
-                if(event instanceof BlockEvent) {
-                    if(i + 1 < size) {
-                        Object ev=events.get(i + 1);
-                        assert ev instanceof View
-                                : "After Block should be View but it is " + ev.getClass() + ",events= " + eventString;
-                    }
-                    if(i > 0) {
-                        Object ev=events.get(i - 1);
-                        assert ev instanceof UnblockEvent
-                                : "Before Block should be Unblock but it is " + ev.getClass() + ",events= " + eventString;
-                    }
-                }
-                else if(event instanceof View) {
-                    if(i + 1 < size) {
-                        Object ev=events.get(i + 1);
-                        assert ev instanceof UnblockEvent
-                                : "After View should be Unblock but it is " + ev.getClass() + ",events= " + eventString;
-                    }
-                    Object ev=events.get(i - 1);
-                    assert ev instanceof BlockEvent
-                            : "Before View should be Block but it is " + ev.getClass() + ",events= " + eventString;
-                }
-                else if(event instanceof UnblockEvent) {
-                    if(i + 1 < size) {
-                        Object ev=events.get(i + 1);
-                        assert ev instanceof BlockEvent
-                                : "After UnBlock should be Block but it is " + ev.getClass() + ",events= " + eventString;
-                    }
-
-                    Object ev=events.get(i - 1);
-
-                    assert ev instanceof View
-                            : "Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString;
-                }
-            }
-        }
-
-
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
         private int connectMethod;
