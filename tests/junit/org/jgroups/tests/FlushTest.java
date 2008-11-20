@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.75 2008/11/20 14:10:10 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.76 2008/11/20 17:54:49 vlada Exp $
  */
-@Test(groups=Global.FLUSH,sequential=false)
+@Test(groups=Global.FLUSH,sequential=true)
 public class FlushTest extends ChannelTestBase {
     
     @Test
