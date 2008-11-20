@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.46 2008/06/25 22:50:36 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.47 2008/11/20 17:54:49 vlada Exp $
  */
-@Test(groups={Global.FLUSH},sequential=false)
+@Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
     private AtomicInteger mod = new AtomicInteger(1);
 

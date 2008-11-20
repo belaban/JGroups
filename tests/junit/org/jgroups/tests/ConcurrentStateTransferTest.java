@@ -25,9 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.13 2008/06/25 22:50:36 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.14 2008/11/20 17:54:49 vlada Exp $
  */
-@Test(groups={Global.FLUSH},sequential=false)
+@Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
     private final AtomicInteger mod = new AtomicInteger(1);
@@ -94,7 +94,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
                 // Start threads and let them join the channel
                 channels[i].start();
-                Util.sleep(2000);
+                //Util.sleep(2000);
             }
 
             // Make sure everyone is in sync
@@ -140,7 +140,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         finally {
             for(ConcurrentStateTransfer channel:channels) {
                 channel.cleanup();
-                Util.sleep(2000); // remove before 2.6 GA
+                Util.sleep(2000); 
             }
             for(ConcurrentStateTransfer channel:channels) {
                 checkEventStateTransferSequence(channel);
