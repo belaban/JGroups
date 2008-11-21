@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.47 2008/11/20 17:54:49 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.48 2008/11/21 14:41:07 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -154,7 +154,9 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }  
 
     protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
-        private static final long TRANSFER_TIME = 2500; 
+        
+    	//depends on retry_timeout parameter in FLUSH
+    	private static final long TRANSFER_TIME = 1000; 
         public ConcurrentStartupChannelWithLargeState(Semaphore semaphore,
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
