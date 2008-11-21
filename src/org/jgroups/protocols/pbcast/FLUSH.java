@@ -203,33 +203,33 @@ public class FLUSH extends Protocol {
     private boolean startFlush(List<Address> flushParticipants, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
         if(!flushInProgress.get() || force){
-            flush_promise.reset();                                 
-                       
-            onSuspend(flushParticipants);
-            try{
-                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
-                successfulFlush = r.booleanValue();
-            }catch(TimeoutException e){
-                if(log.isDebugEnabled())
-                    log.debug("At " + localAddress
-                              + " timed out waiting for flush responses after "
-                              + start_flush_timeout
-                            + " msec");
+        	Boolean result=flush_promise.getResult(100);
+            successfulFlush = result !=null && result.booleanValue();
+            if(!successfulFlush){
+	            flush_promise.reset();                                 
+	                       
+	            onSuspend(flushParticipants);
+	            try{
+	                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
+	                successfulFlush = r.booleanValue();
+	            }catch(TimeoutException e){
+	                if(log.isDebugEnabled())
+	                    log.debug("At " + localAddress
+	                              + " timed out waiting for flush responses after "
+	                              + start_flush_timeout
+	                            + " msec");
+	            }
             }
         }
 
         if(!successfulFlush && numberOfAttempts > 0) {
             waitForFlushCompletion(retry_timeout);
-            Boolean result=flush_promise.getResult(100);
-            successfulFlush = result !=null && result.booleanValue();
-            if(!successfulFlush){
-                if(log.isDebugEnabled()) {
-                    log.debug("Retrying FLUSH at " + localAddress
-                              + ". Attempts left "
-                              + numberOfAttempts);
-                }
-                successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
+            if(log.isDebugEnabled()) {
+                log.debug("Retrying FLUSH at " + localAddress
+                          + ". Attempts left "
+                          + numberOfAttempts);
             }
+            successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -446,7 +446,8 @@ public class FLUSH extends Protocol {
     private boolean waitForFlushCompletion(long timeout){
         long start_time = System.currentTimeMillis(), backofftime = timeout;
         while (backofftime > 0 && flushInProgress.get()) {
-            Util.sleep(100);
+        	//sleep min 100 msec and max 600 msec
+            Util.sleep(100 + Util.random(500));
             backofftime = timeout - (System.currentTimeMillis() - start_time);            
         }
         return backofftime < 0; 
@@ -623,6 +624,7 @@ public class FLUSH extends Protocol {
             sendUnBlockUpToChannel();                  
         }                
         flushInProgress.set(false);
+        flush_promise.setResult(Boolean.FALSE);
     }
 
     private void onSuspend(List<Address> members) {

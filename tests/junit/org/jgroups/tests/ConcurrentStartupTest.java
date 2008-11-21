@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32.2.8 2008/10/31 15:00:35 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.9 2008/11/21 17:49:31 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -38,10 +38,45 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         return true;
     }   
 
-    public void testConcurrentStartupState() {
-        concurrentStartupHelper(true);
+    public void testConcurrentStartupState1() {
+        concurrentStartupHelper(true,false);
     }
 
+    public void testConcurrentStartupState2() {
+        concurrentStartupHelper(true,false);
+    }
+    
+    public void testConcurrentStartupState3() {
+        concurrentStartupHelper(true,false);
+    }
+    
+    public void testConcurrentStartupState4() {
+        concurrentStartupHelper(true,false);
+    }
+    
+    public void testConcurrentStartupState5() {
+        concurrentStartupHelper(true,false);
+    }
+    
+    public void testConcurrentStartupState6() {
+        concurrentStartupHelper(true,true);
+    }
+    
+    public void testConcurrentStartupState7() {
+        concurrentStartupHelper(true,true);
+    }
+    
+    public void testConcurrentStartupState8() {
+    	concurrentStartupHelper(true,true);
+    }
+    
+    public void testConcurrentStartupState9() {
+    	concurrentStartupHelper(true,true);
+    }
+    
+    public void testConcurrentStartupState10() {
+    	concurrentStartupHelper(true,true);
+    }
     /**
      * Tests concurrent startup and message sending directly after joining See
      * doc/design/ConcurrentStartupTest.txt for details. This will only work
@@ -55,7 +90,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
      * 
      * 
      */
-    protected void concurrentStartupHelper(boolean useDispatcher) {
+    protected void concurrentStartupHelper(boolean useDispatcher, boolean connectAndGetState) {
         String[] names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
@@ -69,7 +104,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             // Create activation threads that will block on the semaphore
             for(int i=0;i < count;i++) {
 
-                channels[i]=new ConcurrentStartupChannel(names[i], semaphore, useDispatcher);
+                channels[i]=new ConcurrentStartupChannel(names[i], semaphore, useDispatcher,connectAndGetState);
 
                 // Release one ticket at a time to allow the thread to start
                 // working
@@ -133,15 +168,22 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
         private final List<Address> l = new LinkedList<Address>();       
-
+        private boolean connectAndGetState;
         private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();       
 
-        public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+        public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher, boolean connectAndGetState) throws Exception{
             super(name, semaphore, useDispatcher);
+            this.connectAndGetState = connectAndGetState;
         }
 
         public void useChannel() throws Exception {
-            channel.connect("test", null, null, 25000);
+        	if (connectAndGetState) {
+				channel.connect("test", null, null, 25000);
+			} else {
+				channel.connect("test");
+				channel.getState(null, 20000);
+			}
+        	
             LinkedList<Address> l =new LinkedList<Address>();
             l.add(channel.getLocalAddress());
             channel.send(null, null, l);
