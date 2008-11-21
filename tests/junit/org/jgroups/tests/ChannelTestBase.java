@@ -546,7 +546,7 @@ public class ChannelTestBase {
 
         String eventString=new String();
 
-        for(Iterator it=et.iterator();it.hasNext();) {
+        for(Iterator<Object> it=et.iterator();it.hasNext();) {
 
             Object obj=it.next();
 
@@ -562,6 +562,10 @@ public class ChannelTestBase {
                 eventString+="v";
             else
                 throw new Exception("Unrecognized event type in event trace");
+        }
+        //if it ends with block, strip it out because it will be regarded as error sequence
+        if(eventString.endsWith("b")){
+        	eventString.substring(0, eventString.length()-1);
         }
         return eventString;
     }
