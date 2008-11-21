@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.14 2008/11/20 17:54:49 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.15 2008/11/21 15:47:18 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
@@ -285,7 +285,8 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     }
 
     protected class ConcurrentLargeStateTransfer extends ConcurrentStateTransfer {
-        private static final long TRANSFER_TIME = 2500;
+    	//depends on retry_timeout parameter in FLUSH
+        private static final long TRANSFER_TIME = 1000;
         public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
