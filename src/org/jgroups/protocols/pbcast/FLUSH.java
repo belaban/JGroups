@@ -57,10 +57,10 @@ public class FLUSH extends Protocol {
     private long timeout = 8000;
      
     @Property(description="Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2500 msec")
-    private long start_flush_timeout = 2500;
+    private long start_flush_timeout = 1500;
     
     @Property(description="Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
-    private long retry_timeout = 3000;
+    private long retry_timeout = 2000;
 
     @Property(description="Reconcilliation phase toggle. Default is true")
     private boolean enable_reconciliation = true;
@@ -159,6 +159,7 @@ public class FLUSH extends Protocol {
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
+        flush_promise.setResult(Boolean.FALSE);
         allowMessagesToPassUp = false;
     }
 
@@ -205,33 +206,33 @@ public class FLUSH extends Protocol {
     private boolean startFlush(List<Address> flushParticipants, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
         if(!flushInProgress.get() || force){
-            flush_promise.reset();                                 
-                       
-            onSuspend(flushParticipants);
-            try{
-                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
-                successfulFlush = r.booleanValue();
-            }catch(TimeoutException e){
-                if(log.isDebugEnabled())
-                    log.debug("At " + localAddress
-                              + " timed out waiting for flush responses after "
-                              + start_flush_timeout
-                            + " msec");
+        	Boolean result=flush_promise.getResult(100);
+            successfulFlush = result !=null && result.booleanValue();
+            if(!successfulFlush){
+	            flush_promise.reset();                                 
+	                       
+	            onSuspend(flushParticipants);
+	            try{
+	                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
+	                successfulFlush = r.booleanValue();
+	            }catch(TimeoutException e){
+	                if(log.isDebugEnabled())
+	                    log.debug("At " + localAddress
+	                              + " timed out waiting for flush responses after "
+	                              + start_flush_timeout
+	                            + " msec");
+	            }
             }
         }
 
         if(!successfulFlush && numberOfAttempts > 0) {
             waitForFlushCompletion(retry_timeout);
-            Boolean result=flush_promise.getResult(100);
-            successfulFlush = result !=null && result.booleanValue();
-            if(!successfulFlush){
-                if(log.isDebugEnabled()) {
-                    log.debug("Retrying FLUSH at " + localAddress
-                              + ". Attempts left "
-                              + numberOfAttempts);
-                }
-                successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
+            if(log.isDebugEnabled()) {
+                log.debug("Retrying FLUSH at " + localAddress
+                          + ". Attempts left "
+                          + numberOfAttempts);
             }
+            successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -626,6 +627,7 @@ public class FLUSH extends Protocol {
             sendUnBlockUpToChannel();                  
         }                
         flushInProgress.set(false);
+        flush_promise.setResult(Boolean.FALSE);
     }
 
     private void onSuspend(List<Address> members) {
