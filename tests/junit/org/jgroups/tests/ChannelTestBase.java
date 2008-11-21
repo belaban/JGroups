@@ -543,31 +543,28 @@ public class ChannelTestBase {
      * in the trace is represented by a letter.
      */
     protected static String translateEventTrace(List<Object> et) throws Exception {
-
-        String eventString=new String();
-
+        StringBuffer eventString=new StringBuffer();
         for(Iterator<Object> it=et.iterator();it.hasNext();) {
-
             Object obj=it.next();
-
             if(obj instanceof BlockEvent)
-                eventString+="b";
+                eventString.append("b");
             else if(obj instanceof UnblockEvent)
-                eventString+="u";
+                eventString.append("u");
             else if(obj instanceof SetStateEvent)
-                eventString+="s";
+                eventString.append("s");
             else if(obj instanceof GetStateEvent)
-                eventString+="g";
+                eventString.append("g");
             else if(obj instanceof View)
-                eventString+="v";
+                eventString.append("v");
             else
                 throw new Exception("Unrecognized event type in event trace");
         }
+        String s = eventString.toString();
         //if it ends with block, strip it out because it will be regarded as error sequence
-        if(eventString.endsWith("b")){
-        	eventString.substring(0, eventString.length()-1);
+        while(s.endsWith("b")){
+        	s = s.substring(0, s.length()-1);
         }
-        return eventString;
+        return s;
     }
   
     /**
