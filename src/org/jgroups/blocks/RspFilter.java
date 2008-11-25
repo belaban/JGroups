@@ -8,7 +8,7 @@ import org.jgroups.Address;
  * request will not return (assuming timeout is 0) when the first response has been received, but when the filter
  * passed
  * @author Bela Ban
- * @version $Id: RspFilter.java,v 1.1 2007/07/30 06:11:09 belaban Exp $
+ * @version $Id: RspFilter.java,v 1.2 2008/11/25 10:00:35 belaban Exp $
  */
 public interface RspFilter {
 
@@ -25,7 +25,7 @@ public interface RspFilter {
     /**
      * Right after calling {@link #isAcceptable(Object, org.jgroups.Address)}, this method is called to see whether
      * we are done with the request and can unblock the caller
-     * @return True if the request is done, otherwise false
+     * @return False if the request is done, otherwise true
      */
     boolean needMoreResponses();
 }
