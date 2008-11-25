@@ -3,7 +3,6 @@ package org.jgroups.blocks;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
-import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -20,13 +19,12 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
         final String GROUP="RpcDispatcherAnycastMultipleCallsTest";
         JChannel first_channel=null;
         for(int i=0; i < NUM; i++) {
-            JChannel c=first_channel == null? createChannel(true) : createChannel(first_channel);
+            JChannel c=first_channel == null? createChannel(true,NUM) : createChannel(first_channel);
             if(first_channel == null){
                 first_channel=c;
             }
             targets[i]=new RpcDispatcherAnycastServerObject(c);
             c.connect(GROUP);
-            Util.sleep(500);
         }
     }
 
