@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.25 2008/10/21 12:10:30 vlada Exp $
+// $Id: DISCARD.java,v 1.26 2008/11/27 15:42:02 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -63,6 +63,10 @@ public class DISCARD extends Protocol {
 
     public boolean isExcludeItself() {
         return excludeItself;
+    }
+    
+    public void setLocalAddress(Address localAddress){
+    	this.localAddress =localAddress;
     }
 
     public void setExcludeItself(boolean excludeItself) {
