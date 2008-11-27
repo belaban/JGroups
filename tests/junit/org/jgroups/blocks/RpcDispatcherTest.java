@@ -40,7 +40,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.23 2008/10/13 08:11:27 vlada Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.24 2008/11/27 16:03:20 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -192,7 +192,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
-    @Test(groups="first")
+    @Test(groups="first",enabled=false)
     public void testLargeReturnValue() {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
