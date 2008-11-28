@@ -25,14 +25,12 @@ import java.util.Map;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.27 2008/11/28 14:44:21 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.28 2008/11/28 14:45:18 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
             "JAXP Error: the required XML parsing classes are not available; " +
             "make sure that JAXP compatible libraries are in the classpath.";
-
-    static final String FORCE_CONFIGURATION="force.properties";
 
     static final Log log=LogFactory.getLog(ConfiguratorFactory.class);
 
