@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.45.2.4 2008/10/30 14:02:54 belaban Exp $
+// $Id: TUNNEL.java,v 1.45.2.5 2008/11/28 17:52:51 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -117,7 +117,6 @@ public class TUNNEL extends TP {
     public void stop() {        
         teardownTunnel();
         super.stop();        
-        local_addr = null;
     }
 
     /** Setup the Protocol instance acording to the configuration string */
