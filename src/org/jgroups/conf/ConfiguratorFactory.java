@@ -1,22 +1,18 @@
 
 package org.jgroups.conf;
 
-import org.w3c.dom.Element;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.util.Util;
+import org.w3c.dom.Element;
 
 import java.io.*;
-
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import java.util.Properties;
-import java.util.Map;
 import java.security.AccessControlException;
+import java.util.Map;
 
 /**
  * The ConfigurationFactory is a factory that returns a protocol stack configurator.
@@ -29,7 +25,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.26 2008/10/30 09:34:56 vlada Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.27 2008/11/28 14:44:21 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -40,158 +36,87 @@ public class ConfiguratorFactory {
 
     static final Log log=LogFactory.getLog(ConfiguratorFactory.class);
 
-    static String propertiesOverride=null;
-
-    // Check for the presence of the system property "force.properties", and
-    // act appropriately if it is set.  We only need to do this once since the
-    // system properties are highly unlikely to change.
-    static {
-        try {
-            Properties properties = System.getProperties();
-            propertiesOverride = properties.getProperty(FORCE_CONFIGURATION);
-        }
-        catch (SecurityException e) {
-            propertiesOverride = null;
-        }
-
-        if(propertiesOverride != null && log.isDebugEnabled()) {
-            log.debug("using properties override: " + propertiesOverride);
-        }
-    }
 
     protected ConfiguratorFactory() {
     }
 
     /**
-     * Returns a protocol stack configurator based on the XML configuration
-     * provided by the specified File.
+     * Returns a protocol stack configurator based on the XML configuration provided by the specified File.
      *
      * @param file a File with a JGroups XML configuration.
      *
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack
-     *         configuration.
+     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
      *
-     * @throws ChannelException if problems occur during the configuration of
-     *                          the protocol stack.
+     * @throws ChannelException if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(File file) throws ChannelException {
-        ProtocolStackConfigurator returnValue;
-
-        if (propertiesOverride != null) {
-            returnValue = getStackConfigurator(propertiesOverride);
+        try {
+            checkJAXPAvailability();
+            InputStream input=getConfigStream(file);
+            return XmlConfigurator.getInstance(input);
         }
-        else {
-            try {
-                checkJAXPAvailability();
-                InputStream input=getConfigStream(file);
-                returnValue=XmlConfigurator.getInstance(input);
-            }
-            catch(Exception ex) {
-                throw createChannelConfigurationException(ex);
-            }
+        catch(Exception ex) {
+            throw createChannelConfigurationException(ex);
         }
-        return returnValue;
     }
 
     /**
-     * Returns a protocol stack configurator based on the XML configuration
-     * provided at the specified URL.
+     * Returns a protocol stack configurator based on the XML configuration provided at the specified URL.
      *
      * @param url a URL pointing to a JGroups XML configuration.
      *
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack
-     *         configuration.
+     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
      *
-     * @throws ChannelException if problems occur during the configuration of
-     *                          the protocol stack.
+     * @throws ChannelException if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(URL url) throws ChannelException {
-        ProtocolStackConfigurator returnValue;
-
-        if (propertiesOverride != null) {
-            returnValue = getStackConfigurator(propertiesOverride);
-        }
-        else {
+        try {
             checkForNullConfiguration(url);
             checkJAXPAvailability();
-
-            try {
-                returnValue=XmlConfigurator.getInstance(url);
-            }
-            catch (IOException ioe) {
-                throw createChannelConfigurationException(ioe);
-            }
+            return XmlConfigurator.getInstance(url);
         }
-
-        return returnValue;
+        catch (IOException ioe) {
+            throw createChannelConfigurationException(ioe);
+        }
     }
 
     /**
-     * Returns a protocol stack configurator based on the XML configuration
-     * provided by the specified XML element.
+     * Returns a protocol stack configurator based on the XML configuration provided by the specified XML element.
      *
      * @param element a XML element containing a JGroups XML configuration.
      *
-     * @return a <code>ProtocolStackConfigurator</code> containing the stack
-     *         configuration.
+     * @return a <code>ProtocolStackConfigurator</code> containing the stack configuration.
      *
-     * @throws ChannelException if problems occur during the configuration of
-     *                          the protocol stack.
+     * @throws ChannelException if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(Element element) throws ChannelException {
-        ProtocolStackConfigurator returnValue;
-
-        if (propertiesOverride != null) {
-            returnValue = getStackConfigurator(propertiesOverride);
-        }
-        else {
+        try {
             checkForNullConfiguration(element);
-
-            // Since Element is a part of the JAXP specification and because an
-            // Element instance already exists, there is no need to check for
-            // JAXP availability.
-            //
-            // checkJAXPAvailability();
-
-            try {
-                returnValue=XmlConfigurator.getInstance(element);
-            }
-            catch (IOException ioe) {
-                throw createChannelConfigurationException(ioe);
-            }
+            return XmlConfigurator.getInstance(element);
         }
-
-        return returnValue;
+        catch (IOException ioe) {
+            throw createChannelConfigurationException(ioe);
+        }
     }
 
     /**
      * Returns a protocol stack configurator based on the provided properties
      * string.
      *
-     * @param properties an old style property string, a string representing a
-     *                   system resource containing a JGroups XML configuration,
-     *                   a string representing a URL pointing to a JGroups XML
-     *                   XML configuration, or a string representing a file name
-     *                   that contains a JGroups XML configuration.
+     * @param properties an old style property string, a string representing a system resource containing a JGroups
+     *                   XML configuration, a string representing a URL pointing to a JGroups XML configuration,
+     *                   or a string representing a file name that contains a JGroups XML configuration.
      */
     public static ProtocolStackConfigurator getStackConfigurator(String properties) throws ChannelException {
-        if (propertiesOverride != null) {
-            properties = propertiesOverride;
-        }
-
         // added by bela: for null String props we use the default properties
         if(properties == null)
             properties=JChannel.DEFAULT_PROTOCOL_STACK;
 
-        checkForNullConfiguration(properties);
-
-        ProtocolStackConfigurator returnValue;
-
-        // Attempt to treat the properties string as a pointer to an XML
-        // configuration.
+        // Attempt to treat the properties string as a pointer to an XML configuration.
         XmlConfigurator configurator = null;
 
         try {
+            checkForNullConfiguration(properties);
             configurator=getXmlConfigurator(properties);
         }
         catch (IOException ioe) {
@@ -200,15 +125,12 @@ public class ConfiguratorFactory {
 
         // Did the properties string point to a JGroups XML configuration?
         if (configurator != null) {
-            returnValue=configurator;
+            return configurator;
         }
         else {
-            // Attempt to process the properties string as the old style
-            // property string.
-            returnValue=new PlainConfigurator(properties);
+            // Attempt to process the properties string as the old style property string.
+            return new PlainConfigurator(properties);
         }
-
-        return returnValue;
     }
 
     /**
@@ -225,10 +147,6 @@ public class ConfiguratorFactory {
      */
     public static ProtocolStackConfigurator getStackConfigurator(Object properties) throws IOException {
         InputStream input=null;
-
-        if (propertiesOverride != null) {
-            properties = propertiesOverride;
-        }
 
         // added by bela: for null String props we use the default properties
         if(properties == null)
@@ -297,12 +215,8 @@ public class ConfiguratorFactory {
 
 
     public static InputStream getConfigStream(File file) throws Exception {
-        if(propertiesOverride != null)
-            return getConfigStream(propertiesOverride);
-
-        checkForNullConfiguration(file);
-
         try {
+            checkForNullConfiguration(file);
             return new FileInputStream(file);
         }
         catch(IOException ioe) {
@@ -313,8 +227,6 @@ public class ConfiguratorFactory {
 
 
     public static InputStream getConfigStream(URL url) throws Exception {
-        if (propertiesOverride != null)
-            return getConfigStream(propertiesOverride);
         try {
             checkJAXPAvailability();
             return url.openStream();
@@ -327,22 +239,16 @@ public class ConfiguratorFactory {
 
 
     /**
-     * Returns a JGroups XML configuration InputStream based on the provided
-     * properties string.
+     * Returns a JGroups XML configuration InputStream based on the provided properties string.
      *
-     * @param properties a string representing a system resource containing a
-     *                   JGroups XML configuration, a string representing a URL
-     *                   pointing to a JGroups ML configuration, or a string
-     *                   representing a file name that contains a JGroups XML
-     *                   configuration.
+     * @param properties a string representing a system resource containing a JGroups XML configuration, a string
+     *                   representing a URL pointing to a JGroups ML configuration, or a string representing
+     *                   a file name that contains a JGroups XML configuration.
      *
-     * @throws IOException  if the provided properties string appears to be a
-     *                      valid URL but is unreachable.
+     * @throws IOException  if the provided properties string appears to be a valid URL but is unreachable.
      */
     public static InputStream getConfigStream(String properties) throws IOException {
         InputStream configStream = null;
-        if (propertiesOverride != null)
-            return getConfigStream(propertiesOverride);
 
         // Check to see if the properties string is the name of a file.
         try {
@@ -382,8 +288,6 @@ public class ConfiguratorFactory {
 
     public static InputStream getConfigStream(Object properties) throws IOException {
         InputStream input=null;
-        if (propertiesOverride != null)
-            return getConfigStream(propertiesOverride);
 
         // added by bela: for null String props we use the default properties
         if(properties == null)
@@ -425,8 +329,7 @@ public class ConfiguratorFactory {
 
 
     /**
-     * Returns an XmlConfigurator based on the provided properties string (if
-     * possible).
+     * Returns an XmlConfigurator based on the provided properties string (if possible).
      *
      * @param properties a string representing a system resource containing a
      *                   JGroups XML configuration, a string representing a URL
