@@ -75,15 +75,13 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.208 2008/10/30 10:02:52 belaban Exp $
+ * @version $Id: JChannel.java,v 1.209 2008/11/28 14:45:16 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
 
     /** The default protocol stack used by the default constructor  */
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
-
-    static final String FORCE_PROPS="force.properties";
 
     protected String properties=null;
 
