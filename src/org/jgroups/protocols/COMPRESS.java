@@ -21,7 +21,7 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.21 2008/07/18 15:48:00 vlada Exp $
+ * @version $Id: COMPRESS.java,v 1.22 2008/11/28 05:52:11 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
     
@@ -146,7 +146,11 @@ public class COMPRESS extends Protocol {
                             if(log.isTraceEnabled())
                                 log.trace("uncompressed " + compressed_payload.length + " bytes to " + original_size +
                                         " bytes");
-                            msg.setBuffer(uncompressed_payload);
+                            // we need to copy: https://jira.jboss.org/jira/browse/JGRP-867
+                            Message copy=msg.copy(false);
+                            copy.setBuffer(uncompressed_payload);
+                            return up_prot.up(new Event(Event.MSG, copy));
+                            // msg.setBuffer(uncompressed_payload);
                         }
                         catch(DataFormatException e) {
                             if(log.isErrorEnabled()) log.error("exception on uncompression", e);
