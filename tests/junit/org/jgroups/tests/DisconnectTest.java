@@ -21,7 +21,7 @@ import org.jgroups.util.Util;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.12.2.2 2008/10/30 13:59:24 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.12.2.3 2008/12/02 19:40:39 vlada Exp $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -192,8 +192,11 @@ public class DisconnectTest extends TestCase {
              coordinator.close();
          }
          finally {
-             if(router != null)
+             if(router != null){
                  router.stop();
+                 //release ports
+                 Util.sleep(1000);
+             }
          }
      }
 
@@ -232,8 +235,11 @@ public class DisconnectTest extends TestCase {
              coordinator.close();
          }
          finally {
-             if(router != null)
+             if(router != null){
                  router.stop();
+                 //release ports
+                 Util.sleep(1000);
+             }
          }
      }
 
@@ -271,8 +277,11 @@ public class DisconnectTest extends TestCase {
             coordinator.close();
         }
         finally {
-            if(router != null)
+            if(router != null){
                 router.stop();
+                //release ports
+                Util.sleep(1000);
+            }
         }
     }
 
