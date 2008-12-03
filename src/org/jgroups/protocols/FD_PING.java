@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.apache.commons.logging.Log;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -14,8 +15,9 @@ import java.io.InputStreamReader;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.7 2008/10/21 12:20:32 vlada Exp $
+ * @version $Id: FD_PING.java,v 1.8 2008/12/03 07:38:51 belaban Exp $
  */
+@Unsupported
 public class FD_PING extends FD {
     /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
      * The only argument passed to cmd is the host's address (symbolic name or dotted-decimal IP address) */
