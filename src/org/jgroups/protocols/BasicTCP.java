@@ -66,6 +66,13 @@ public abstract class BasicTCP extends TP {
             start_port=Integer.parseInt(str);
             props.remove("start_port");
         }
+        
+        //https://jira.jboss.org/jira/browse/JGRP-865
+        str=props.getProperty("bind_port");
+        if(str != null) {
+            start_port=Integer.parseInt(str);
+            props.remove("bind_port");
+        }
 
         str=props.getProperty("end_port");
         if(str != null) {
