@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.191 2008/11/17 12:37:06 belaban Exp $
+ * @version $Id: UDP.java,v 1.192 2008/12/05 10:00:46 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -569,6 +569,13 @@ public class UDP extends TP {
     private void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
         try {
             sock.setSendBufferSize(send_buf_size);
+            int actual_size=sock.getSendBufferSize();
+            if(actual_size < send_buf_size && log.isWarnEnabled()) {
+                log.warn("send buffer of socket " + sock + " was set to " +
+                        Util.printBytes(send_buf_size) + ", but the OS only allocated " +
+                        Util.printBytes(actual_size) + ". This might lead to performance problems. Please set your " +
+                        "max send buffer in the OS correctly (e.g. net.core.wmem_max on Linux)");
+            }
         }
         catch(Throwable ex) {
             if(log.isWarnEnabled()) log.warn("failed setting send buffer size of " + send_buf_size + " in " + sock + ": " + ex);
@@ -576,6 +583,13 @@ public class UDP extends TP {
 
         try {
             sock.setReceiveBufferSize(recv_buf_size);
+            int actual_size=sock.getReceiveBufferSize();
+            if(actual_size < send_buf_size && log.isWarnEnabled()) {
+                log.warn("receive buffer of socket " + sock + " was set to " +
+                        Util.printBytes(recv_buf_size) + ", but the OS only allocated " +
+                        Util.printBytes(actual_size) + ". This might lead to performance problems. Please set your " +
+                        "max receive buffer in the OS correctly (e.g. net.core.rmem_max on Linux)");
+            }
         }
         catch(Throwable ex) {
             if(log.isWarnEnabled()) log.warn("failed setting receive buffer size of " + recv_buf_size + " in " + sock + ": " + ex);
