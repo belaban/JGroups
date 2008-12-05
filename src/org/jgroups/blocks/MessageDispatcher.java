@@ -38,7 +38,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74.2.4 2008/11/14 15:16:41 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74.2.5 2008/12/05 14:49:54 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -278,11 +278,11 @@ public class MessageDispatcher implements RequestHandler {
     public final void start() {
         if(corr == null) {
             if(transport_adapter != null) {
-                corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
+                corr=new RequestCorrelator("MsgDisp", transport_adapter,
                                            this, deadlock_detection, local_addr, concurrent_processing);
             }
             else {
-                corr=new RequestCorrelator("MessageDispatcher", prot_adapter,
+                corr=new RequestCorrelator("MsgDisp", prot_adapter,
                                            this, deadlock_detection, local_addr, concurrent_processing);
             }
         }
