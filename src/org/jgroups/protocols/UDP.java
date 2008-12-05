@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.13 2008/11/14 15:15:05 belaban Exp $
+ * @version $Id: UDP.java,v 1.156.2.14 2008/12/05 20:37:58 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -218,6 +218,14 @@ public class UDP extends TP implements Runnable {
             // null_src_addresses=Boolean.valueOf(str).booleanValue();
             props.remove("null_src_addresses");
             log.error("null_src_addresses has been deprecated, property will be ignored");
+        }
+        
+        //https://jira.jboss.org/jira/browse/JGRP-865
+        //https://jira.jboss.org/jira/browse/JGRP-606
+        str=props.getProperty("end_port");
+        if(str != null) {
+            port_range=Integer.parseInt(str) - bind_port;
+            props.remove("end_port");
         }
 
         Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
