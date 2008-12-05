@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.8 2008/12/03 07:38:51 belaban Exp $
+ * @version $Id: FD_PING.java,v 1.9 2008/12/05 09:22:28 belaban Exp $
  */
 @Unsupported
 public class FD_PING extends FD {
