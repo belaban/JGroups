@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.182 2008/11/12 11:28:46 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.183 2008/12/05 11:37:47 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
+    <property name="version" value="2.7.0.GA"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
@@ -32,9 +33,6 @@
 	
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="300000"/>
-	
-	
-    <property name="version" value="2.7.0.Beta1"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
