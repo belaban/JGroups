@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.153 2008/11/12 13:32:18 belaban Exp $
+ * @version $Id: GMS.java,v 1.154 2008/12/05 09:21:13 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -841,11 +841,6 @@ public class GMS extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                if(print_local_addr) {
-                    System.out.println("\n-------------------------------------------------------\n" +
-                                       "GMS: address is " + local_addr +
-                                       "\n-------------------------------------------------------");
-                }
                 break;                               // pass up
 
             case Event.SUSPECT:
@@ -897,6 +892,11 @@ public class GMS extends Protocol {
         Object arg=null;
         switch(evt.getType()) {            
             case Event.CONNECT:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1171,7 +1171,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.153 2008/11/12 13:32:18 belaban Exp $
+     * @version $Id: GMS.java,v 1.154 2008/12/05 09:21:13 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
