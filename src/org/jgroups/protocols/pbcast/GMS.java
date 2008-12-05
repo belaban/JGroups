@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.18 2008/10/31 15:03:42 belaban Exp $
+ * @version $Id: GMS.java,v 1.126.2.19 2008/12/05 09:28:39 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -769,11 +769,6 @@ public class GMS extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                if(print_local_addr) {
-                    System.out.println("\n-------------------------------------------------------\n" +
-                                       "GMS: address is " + local_addr +
-                                       "\n-------------------------------------------------------");
-                }
                 break;                               // pass up
 
             case Event.SUSPECT:
@@ -825,6 +820,11 @@ public class GMS extends Protocol {
         Object arg=null;
         switch(evt.getType()) {            
             case Event.CONNECT:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1223,7 +1223,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.18 2008/10/31 15:03:42 belaban Exp $
+     * @version $Id: GMS.java,v 1.126.2.19 2008/12/05 09:28:39 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
