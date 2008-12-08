@@ -1,10 +1,11 @@
-// $Id: GossipRouter.java,v 1.26.2.3 2008/11/12 08:16:53 belaban Exp $
+// $Id: GossipRouter.java,v 1.26.2.4 2008/12/08 12:42:44 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Version;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Util;
 
@@ -940,7 +941,7 @@ public class GossipRouter {
             help();
             return;
         }
-        System.out.println("GossipRouter is starting...");
+        System.out.println("GossipRouter is starting (JGroups version: " + Version.printVersion() + ")");
 
         try {
             ClassConfigurator.getInstance(true);

@@ -8,25 +8,9 @@ case "`uname`" in
         cygwin=true
         SEP=";"
         ;;
-
-    Darwin*)
-        darwin=true
-        ;;
 esac
-relpath=`dirname $0`
 
-while [ "$1" != "" ]; do
-    if [ "$1" = "-debug" ]; then
-        debug=true
-    fi
-    shift
-done
-
-CLASSPATH="$relpath/../classes$SEP$relpath/../conf$SEP$relpath/../lib/commons-logging.jar$SEP$relpath/../lib/log4j.jar"
-
-if [ "$debug" = "true" ]; then
-    JAVA_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_shmem,server=y,suspend=y,address=router"
-fi
+CLASSPATH="../classes$SEP../conf$SEP../lib/commons-logging.jar$SEP../lib/log4j.jar"
 
 if [ "$cygwin" = "true" ]; then
     CLASSPATH=`echo $CLASSPATH | sed -e 's/\;/\\\\;/g'`
@@ -34,6 +18,6 @@ fi
 
 #-Djava.util.logging.config.file=./java.logging.config
 
-echo $CLASSPATH
+echo "$CLASSPATH args=$*"
 java -classpath $CLASSPATH $JAVA_OPTS org.jgroups.stack.GossipRouter $*
 
