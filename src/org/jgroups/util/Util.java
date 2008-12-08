@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.180 2008/11/06 13:41:58 belaban Exp $
+ * @version $Id: Util.java,v 1.181 2008/12/08 14:39:07 belaban Exp $
  */
 public class Util {
 
@@ -261,8 +261,8 @@ public class Util {
                     retval=readGenericStreamable((DataInputStream)in);
                     break;
                 case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                    in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
-                    retval=((ContextObjectInputStream)in).readObject();
+                    in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+                    retval=((ObjectInputStream)in).readObject();
                     break;
                 case TYPE_BOOLEAN:
                     in=new DataInputStream(in_stream);
@@ -517,7 +517,7 @@ public class Util {
                 retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ContextObjectInputStream tmp=new ContextObjectInputStream(in);
+                ObjectInputStream tmp=new ObjectInputStream(in);
                 retval=tmp.readObject();
                 break;
             case TYPE_BOOLEAN:
@@ -585,7 +585,7 @@ public class Util {
 
         try {  // to read the object as an Externalizable
             ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
-            ObjectInputStream in=new ContextObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+            ObjectInputStream in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
             retval=in.readObject();
             in.close();
         }
