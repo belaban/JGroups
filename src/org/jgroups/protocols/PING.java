@@ -31,7 +31,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.50 2008/11/17 08:12:20 belaban Exp $
+ * @version $Id: PING.java,v 1.51 2008/12/08 13:18:58 belaban Exp $
  */
 public class PING extends Discovery {
     
@@ -192,8 +192,11 @@ public class PING extends Discovery {
     }
 
     public void handleDisconnect() {
-        if(client != null)
+        if(client != null) {
+            if(group_addr != null && local_addr != null)
+                client.unregister(group_addr, local_addr);
             client.stop();
+        }
     }
 
 
