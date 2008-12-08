@@ -26,7 +26,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.33 2008/10/31 08:38:44 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.34 2008/12/08 13:18:58 belaban Exp $
  */
 public class TCPGOSSIP extends Discovery {
     
@@ -104,6 +104,12 @@ public class TCPGOSSIP extends Discovery {
             if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
             gossip_client.register(group_addr, local_addr);
+        }
+    }
+
+    public void handleDisconnect() {
+        if(group_addr != null && local_addr != null) {
+            gossip_client.unregister(group_addr, local_addr);
         }
     }
 
