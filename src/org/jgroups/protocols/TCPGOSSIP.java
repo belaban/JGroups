@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.26.2.2 2008/10/30 14:03:24 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.26.2.3 2008/12/08 13:18:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -123,6 +123,12 @@ public class TCPGOSSIP extends Discovery {
             if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
             gossip_client.register(group_addr, local_addr);
+        }
+    }
+
+    public void handleDisconnect() {
+        if(group_addr != null && local_addr != null) {
+            gossip_client.unregister(group_addr, local_addr);
         }
     }
 
