@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.26 2008/10/31 08:38:43 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.27 2008/12/10 15:15:56 vlada Exp $
  */
 public class GossipClient {
     TimeScheduler timer=null;
@@ -32,7 +32,7 @@ public class GossipClient {
     /** Hashtable<String,List<Address>> */
     final Map<String,List<Address>> groups=new Hashtable<String,List<Address>>();               // groups - List of Addresses
     private Future<?> refresher_task=null;
-    final Vector<Address> gossip_servers=new Vector<Address>();          // a list of GossipRouters (IpAddress)
+    final Vector<IpAddress> gossip_servers=new Vector<IpAddress>();          // a list of GossipRouters (IpAddress)
     boolean refresher_enabled=true;
     long refresh_interval=20000;          // must be less than in GossipRouter
     int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
@@ -226,8 +226,7 @@ public class GossipClient {
         if(synchronous)
             futures=new ArrayList<Future<?>>();
 
-        for(int i=0; i < gossip_servers.size(); i++) {
-            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
+        for(final IpAddress entry: gossip_servers) {
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
@@ -282,8 +281,7 @@ public class GossipClient {
 
 
     void _unregister(final String group, final Address mbr) {
-        for(int i=0; i < gossip_servers.size(); i++) {
-            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
+        for(final IpAddress entry: gossip_servers) {
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
@@ -403,8 +401,7 @@ public class GossipClient {
         final AtomicInteger num_rsps=new AtomicInteger(0);
         final long stop_time=System.currentTimeMillis() + timeout;
 
-        for(int i=0; i < gossip_servers.size(); i++) {
-            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
+        for(final IpAddress entry: gossip_servers) {
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;

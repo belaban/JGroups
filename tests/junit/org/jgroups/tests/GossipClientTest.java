@@ -19,7 +19,7 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Id: GossipClientTest.java,v 1.6 2008/11/19 07:38:04 belaban Exp $
+ * @version $Id: GossipClientTest.java,v 1.7 2008/12/10 15:15:55 vlada Exp $
  * @since 2.2.1
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
@@ -72,7 +72,7 @@ public class GossipClientTest extends ChannelTestBase{
         String groupName="TESTGROUP-2";
         int mbrPort=7777;
         Address mbr=new IpAddress(getBindAddress(), mbrPort);
-        client.register(groupName, mbr);
+        client.register(groupName, mbr,true);
 
         List mbrs=client.getMembers(groupName);
         assert mbrs.size() == 1;
