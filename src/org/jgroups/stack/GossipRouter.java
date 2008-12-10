@@ -8,6 +8,11 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.DirectExecutor;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.ThreadManagerThreadPoolExecutor;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -18,8 +23,16 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP).
@@ -40,7 +53,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.36 2008/11/12 08:14:54 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.37 2008/12/10 15:15:56 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -101,6 +114,45 @@ public class GossipRouter {
 
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
+    
+    @ManagedAttribute(description="Minimum thread pool size for incoming connections. Default is 2")
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
+    protected int thread_pool_min_threads=2;
+
+    @ManagedAttribute(description="Maximum thread pool size for incoming connections. Default is 10")
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for regular messages. Default is 10")
+    protected int thread_pool_max_threads=10;
+   
+    
+    @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
+    protected long thread_pool_keep_alive_time=30000;
+
+    @ManagedAttribute(description="Switch for enabling thread pool for incoming connections. Default true")
+    @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages. Default true")
+    protected boolean thread_pool_enabled=false;
+  
+    @ManagedAttribute(description="Use queue to enqueue incoming connections")
+    @Property(name="thread_pool.queue_enabled",
+                      description="Use queue to enqueue incoming connections. Default is true")
+    protected boolean thread_pool_queue_enabled=true;
+
+    
+    @ManagedAttribute(description="Maximum queue size for incoming connections")
+    @Property(name="thread_pool.queue_max_size",
+                      description="Maximum queue size for incoming connections. Default is 50")
+    protected int thread_pool_queue_max_size=50;
+
+    @ManagedAttribute
+    @Property(name="thread_pool.rejection_policy",
+                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
+    protected String thread_pool_rejection_policy="Run";
+    
+    protected ExecutorService thread_pool;
+    
+    protected BlockingQueue<Runnable> thread_pool_queue=null;
+    
+    protected ThreadFactory default_thread_factory = new DefaultThreadFactory(Util.getGlobalThreadGroup(), "gossip-handlers", true, true);
 
 
     // the cache sweeper
@@ -109,6 +161,7 @@ public class GossipRouter {
     protected final Log log=LogFactory.getLog(this.getClass());
 
     private boolean jmx=false;
+   
 
 
     public GossipRouter() {
@@ -221,6 +274,16 @@ public class GossipRouter {
     public void setSocketReadTimeout(long sock_read_timeout) {
         this.sock_read_timeout=sock_read_timeout;
     }
+    
+    public ThreadFactory getDefaultThreadPoolThreadFactory() {
+        return default_thread_factory;
+    }
+
+    public void setDefaultThreadPoolThreadFactory(ThreadFactory factory) {
+        default_thread_factory=factory;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
+    }
 
     public static String type2String(int type) {
         switch(type) {
@@ -276,6 +339,22 @@ public class GossipRouter {
         }
 
         up=true;
+        
+        if (thread_pool_enabled) {
+			if (thread_pool_queue_enabled) {
+				thread_pool_queue = new LinkedBlockingQueue<Runnable>(
+						thread_pool_queue_max_size);
+			} else {
+				thread_pool_queue = new SynchronousQueue<Runnable>();
+			}
+			thread_pool = createThreadPool(thread_pool_min_threads,
+					thread_pool_max_threads, thread_pool_keep_alive_time,
+					thread_pool_rejection_policy, thread_pool_queue,
+					default_thread_factory);
+		} else { // otherwise use the caller's thread to unmarshal the byte
+			// buffer into a message
+			thread_pool = Executors.newSingleThreadExecutor(default_thread_factory);
+		}
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -308,6 +387,7 @@ public class GossipRouter {
     @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
         up=false;
+        thread_pool.shutdownNow();
 
         timer.cancel();
         if(srvSock != null) {
@@ -356,176 +436,194 @@ public class GossipRouter {
     }
 
 
-    /**
-     * The main server loop. Runs on the JGroups Router Main Thread.
-     */
     private void mainLoop() {
-        Socket sock=null;
-        DataInputStream input=null;
-        DataOutputStream output=null;
-        Address peer_addr=null, mbr, logical_addr;
 
-        if(bindAddress == null) {
-            bindAddress=srvSock.getInetAddress();
-        }
-        System.out.println("GossipRouter started at " + new Date() +
-                "\nListening on port " + port + " bound on address " + bindAddress + '\n');
+		if (bindAddress == null) {
+			bindAddress = srvSock.getInetAddress();
+		}
+		System.out.println("GossipRouter started at " + new Date()
+				+ "\nListening on port " + port + " bound on address "
+				+ bindAddress + '\n');
 
-        GossipData req;
-        String group;
+		while (up && srvSock != null) {
+			try {
+				final Socket sock = srvSock.accept();
+				if (linger_timeout > 0) {
+					int linger = Math.min(1, (int) (linger_timeout / 1000));
+					sock.setSoLinger(true, linger);
+				}
+				if (sock_read_timeout > 0) {
+					sock.setSoTimeout((int) sock_read_timeout);
+				}
 
-        while(up && srvSock != null) {
-            try {
-                sock=srvSock.accept();
-                if(linger_timeout > 0) {
-                    int linger=Math.min(1, (int)(linger_timeout / 1000));
-                    sock.setSoLinger(true, linger);
-                }
-                if(sock_read_timeout > 0) {
-                    sock.setSoTimeout((int)sock_read_timeout);
-                }
+				final DataInputStream input = new DataInputStream(sock.getInputStream());
+				Runnable task = new Runnable(){
 
-                input=new DataInputStream(sock.getInputStream());
-                // if(log.isTraceEnabled())
-                   // log.trace("accepted connection from " + sock);
+					public void run() {
+						DataOutputStream output =null;
+						Address peer_addr = null, mbr, logical_addr;
+						String group;
+						GossipData req = new GossipData();
+						try {
+							req.readFrom(input);
 
-                req=new GossipData();
-                req.readFrom(input);
+							switch (req.getType()) {
+							case GossipRouter.REGISTER:
+								mbr = req.getAddress();
+								group = req.getGroup();
+								if (log.isTraceEnabled())
+									log.trace("REGISTER(" + group + ", " + mbr + ")");
+								if (group == null || mbr == null) {
+									if (log.isErrorEnabled())
+										log.error("group or member is null, cannot register member");
+								} else
+									addGossipEntry(group, mbr, new AddressEntry(mbr));
+								Util.close(input);
+								Util.close(sock);
+								break;
 
-                switch(req.getType()) {
-                    case GossipRouter.REGISTER:
-                        mbr=req.getAddress();
-                        group=req.getGroup();
-                        if(log.isTraceEnabled())
-                            log.trace("REGISTER(" + group + ", " + mbr + ")");
-                        if(group == null || mbr == null) {
-                            if(log.isErrorEnabled()) log.error("group or member is null, cannot register member");
-                        }
-                        else
-                            addGossipEntry(group, mbr, new AddressEntry(mbr));
-                        Util.close(input);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.UNREGISTER:
+								mbr = req.getAddress();
+								group = req.getGroup();
+								if (log.isTraceEnabled())
+									log.trace("UNREGISTER(" + group + ", " + mbr + ")");
+								if (group == null || mbr == null) {
+									if (log.isErrorEnabled())
+										log.error("group or member is null, cannot unregister member");
+								} else
+									removeGossipEntry(group, mbr);
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								break;
 
-                    case GossipRouter.UNREGISTER:
-                        mbr=req.getAddress();
-                        group=req.getGroup();
-                        if(log.isTraceEnabled())
-                            log.trace("UNREGISTER(" + group + ", " + mbr + ")");
-                        if(group == null || mbr == null) {
-                            if(log.isErrorEnabled()) log.error("group or member is null, cannot unregister member");
-                        }
-                        else
-                            removeGossipEntry(group, mbr);
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.GOSSIP_GET:
+								group = req.getGroup();
+								List<Address> mbrs = null;
+								Map<Address, AddressEntry> map;
+								map = routingTable.get(group);
+								if (map != null) {
+									mbrs = new LinkedList<Address>(map.keySet());
+								}
 
-                    case GossipRouter.GOSSIP_GET:
-                        group=req.getGroup();
-                        List<Address> mbrs=null;
-                        Map<Address,AddressEntry> map;
-                        map=routingTable.get(group);
-                        if(map != null) {
-                            mbrs=new LinkedList<Address>(map.keySet());
-                        }
+								if (log.isTraceEnabled())
+									log.trace("GOSSIP_GET(" + group + ") --> " + mbrs);
+								output = new DataOutputStream(sock.getOutputStream());
+								GossipData rsp = new GossipData(GossipRouter.GET_RSP,group, null, mbrs);
+								rsp.writeTo(output);
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								break;
 
-                        if(log.isTraceEnabled())
-                            log.trace("GOSSIP_GET(" + group + ") --> " + mbrs);
-                        output=new DataOutputStream(sock.getOutputStream());
-                        GossipData rsp=new GossipData(GossipRouter.GET_RSP, group, null, mbrs);
-                        rsp.writeTo(output);
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.ROUTER_GET:
+								group = req.getGroup();
+								output = new DataOutputStream(sock.getOutputStream());
 
-                    case GossipRouter.ROUTER_GET:
-                        group=req.getGroup();
-                        output=new DataOutputStream(sock.getOutputStream());
+								List<Address> ret = null;
+								map = routingTable.get(group);
+								if (map != null) {
+									ret = new LinkedList<Address>(map.keySet());
+								} else
+									ret = new LinkedList<Address>();
+								if (log.isTraceEnabled())
+									log.trace("ROUTER_GET(" + group + ") --> " + ret);
+								rsp = new GossipData(GossipRouter.GET_RSP, group, null,
+										ret);
+								rsp.writeTo(output);
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								break;
 
-                        List<Address> ret=null;
-                        map=routingTable.get(group);
-                        if(map != null) {
-                            ret=new LinkedList<Address>(map.keySet());
-                        }
-                        else
-                            ret=new LinkedList<Address>();
-                        if(log.isTraceEnabled())
-                            log.trace("ROUTER_GET(" + group + ") --> " + ret);
-                        rsp=new GossipData(GossipRouter.GET_RSP, group, null, ret);
-                        rsp.writeTo(output);
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.DUMP:
+								output = new DataOutputStream(sock.getOutputStream());
+								output.writeUTF(dumpRoutingTable());
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								break;
 
-                    case GossipRouter.DUMP:
-                        output=new DataOutputStream(sock.getOutputStream());
-                        output.writeUTF(dumpRoutingTable());
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.CONNECT:
+								sock.setSoTimeout(0); // we have to disable this here
+								output = new DataOutputStream(sock.getOutputStream());
+								peer_addr = new IpAddress(sock.getInetAddress(), sock.getPort());
+								logical_addr = req.getAddress();
+								String group_name = req.getGroup();
 
-                    case GossipRouter.CONNECT:
-                        try {
-                            sock.setSoTimeout(0); // we have to disable this here
-                            output=new DataOutputStream(sock.getOutputStream());
-                            peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
-                            logical_addr=req.getAddress();
-                            String group_name=req.getGroup();
+								if (log.isTraceEnabled())
+									log.trace("CONNECT(" + group_name + ", "+ logical_addr + ")");
+								SocketThread st = new SocketThread(sock, input,group_name, logical_addr);
+								addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st, output));
+								st.start();
+								break;
 
-                            if(log.isTraceEnabled())
-                                log.trace("CONNECT(" + group_name + ", " + logical_addr + ")");
-                            SocketThread st=new SocketThread(sock, input, group_name, logical_addr);
-                            addEntry(group_name, logical_addr, new AddressEntry(logical_addr,
-                                                                                peer_addr,
-                                                                                sock,
-                                                                                st,
-                                                                                output));
-                            st.start();
-                            //in thread's run method we write back an ack 
-                        }
-                        catch(Exception e) {
-                            output.writeBoolean(false);
-                        }
-                        break;
+							case GossipRouter.DISCONNECT:
+								Address addr = req.getAddress();
+								group_name = req.getGroup();
+								removeEntry(group_name, addr);
+								if (log.isTraceEnabled())
+									log.trace("DISCONNECT(" + group_name + ", " + addr+ ")");
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								break;
 
-                    case GossipRouter.DISCONNECT:
-                        Address addr=req.getAddress();
-                        String group_name=req.getGroup();
-                        removeEntry(group_name, addr);
-                        if(log.isTraceEnabled())
-                            log.trace("DISCONNECT(" + group_name + ", " + addr + ")");
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        break;
+							case GossipRouter.SHUTDOWN:
+								if (log.isInfoEnabled())
+									log.info("router shutting down");
+								Util.close(input);
+								Util.close(output);
+								Util.close(sock);
+								up = false;
+								break;
+							default:
+								if (log.isWarnEnabled())
+									log.warn("received unkown gossip request (gossip="+ req + ')');
+								break;
+							}
+						} catch (Exception e) {
+							if (up)
+								if (log.isErrorEnabled())
+									log.error("failure handling a client request", e);
+							Util.close(input);
+							Util.close(output);
+							Util.close(sock);
+						}
+					}};
+					thread_pool.submit(task);
+			} catch (Exception exc) {
+				if (log.isErrorEnabled())
+					log.error("failure receiving and seting up a client request", exc);
+			}
+		}
+	}
+    
+    protected ExecutorService createThreadPool(int min_threads,
+			int max_threads, long keep_alive_time, String rejection_policy,
+			BlockingQueue<Runnable> queue, final ThreadFactory factory) {
 
-                    case GossipRouter.SHUTDOWN:
-                        if(log.isInfoEnabled()) log.info("router shutting down");
-                        Util.close(input);
-                        Util.close(output);
-                        Util.close(sock);
-                        up=false;
-                        break;
-                    default:
-                        if(log.isWarnEnabled())
-                            log.warn("received unkown gossip request (gossip=" + req + ')');
-                        break;
-                }
-            }
-            catch(Exception e) {
-                if(up)
-                    if(log.isErrorEnabled()) log.error("failure handling a client request", e);
-                Util.close(input);
-                Util.close(output);
-                Util.close(sock);
-            }
-        }
-    }
+		ThreadPoolExecutor pool = new ThreadManagerThreadPoolExecutor(
+				min_threads, max_threads, keep_alive_time,
+				TimeUnit.MILLISECONDS, queue);
+		pool.setThreadFactory(factory);
+
+		// default
+		RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
+		if (rejection_policy != null) {
+			if (rejection_policy.equals("abort"))
+				handler = new ThreadPoolExecutor.AbortPolicy();
+			else if (rejection_policy.equals("discard"))
+				handler = new ThreadPoolExecutor.DiscardPolicy();
+			else if (rejection_policy.equals("discardoldest"))
+				handler = new ThreadPoolExecutor.DiscardOldestPolicy();
+		}
+		pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(
+				handler));
+
+		return pool;
+	}
+
 
 
     /**
