@@ -9,7 +9,6 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.ShutdownRejectedExecutionHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.ThreadManagerThreadPoolExecutor;
@@ -53,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.37 2008/12/10 15:15:56 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.38 2008/12/11 07:57:47 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -119,7 +118,7 @@ public class GossipRouter {
     @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
     protected int thread_pool_min_threads=2;
 
-    @ManagedAttribute(description="Maximum thread pool size for incoming connections. Default is 10")
+	@ManagedAttribute(description="Maximum thread pool size for incoming connections. Default is 10")
     @Property(name="thread_pool.max_threads",description="Maximum thread pool size for regular messages. Default is 10")
     protected int thread_pool_max_threads=10;
    
@@ -284,6 +283,63 @@ public class GossipRouter {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
     }
+    
+    public int getThreadPoolMinThreads() {
+		return thread_pool_min_threads;
+	}
+
+	public void setThreadPoolMinThreads(int thread_pool_min_threads) {
+		this.thread_pool_min_threads = thread_pool_min_threads;
+	}
+
+	public int getThreadPoolMaxThreads() {
+		return thread_pool_max_threads;
+	}
+
+	public void setThreadPoolMaxThreads(int thread_pool_max_threads) {
+		this.thread_pool_max_threads = thread_pool_max_threads;
+	}
+
+	public long getThreadPoolKeepAliveTime() {
+		return thread_pool_keep_alive_time;
+	}
+
+	public void setThreadPoolKeepAliveTime(long thread_pool_keep_alive_time) {
+		this.thread_pool_keep_alive_time = thread_pool_keep_alive_time;
+	}
+
+	public boolean isThreadPoolEnabled() {
+		return thread_pool_enabled;
+	}
+
+	public void setThreadPoolEnabled(boolean thread_pool_enabled) {
+		this.thread_pool_enabled = thread_pool_enabled;
+	}
+
+	public boolean isThreadPoolQueueEnabled() {
+		return thread_pool_queue_enabled;
+	}
+
+	public void setThreadPoolQueueEnabled(boolean thread_pool_queue_enabled) {
+		this.thread_pool_queue_enabled = thread_pool_queue_enabled;
+	}
+
+	public int getThreadPoolQueueMaxSize() {
+		return thread_pool_queue_max_size;
+	}
+
+	public void setThreadPoolQueueMaxSize(int thread_pool_queue_max_size) {
+		this.thread_pool_queue_max_size = thread_pool_queue_max_size;
+	}
+
+	public String getThreadPoolRejectionPolicy() {
+		return thread_pool_rejection_policy;
+	}
+
+	public void setThreadPoolRejectionPolicy(String thread_pool_rejection_policy) {
+		this.thread_pool_rejection_policy = thread_pool_rejection_policy;
+	}
+
 
     public static String type2String(int type) {
         switch(type) {
@@ -594,7 +650,7 @@ public class GossipRouter {
 					thread_pool.submit(task);
 			} catch (Exception exc) {
 				if (log.isErrorEnabled())
-					log.error("failure receiving and seting up a client request", exc);
+					log.error("failure receiving and setting up a client request", exc);
 			}
 		}
 	}
