@@ -6,6 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.util.Util;
 import org.jgroups.debug.Simulator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -88,7 +89,8 @@ public class FRAG_Test extends ChannelTestBase {
             Sender sender=senders[i];
             sender.join(5000);
             if(sender.isAlive()) {
-                System.err.println("sender #" + i + " could not be joined (still alive)");
+                System.err.println("sender #" + i + " could not be joined (still alive), stack trace:\n" +
+                        Util.dumpThreads());
             }
         }
 
