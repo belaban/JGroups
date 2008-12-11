@@ -62,7 +62,7 @@ public class FRAG_Test extends ChannelTestBase {
 
 
     protected Protocol createProtocol() {
-        return new FRAG();
+        return new FRAG2();
     }
 
     @AfterMethod
