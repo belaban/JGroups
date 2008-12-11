@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.9 2008/09/05 08:27:31 belaban Exp $
+// $Id: UtilTest.java,v 1.10 2008/12/11 12:52:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -58,6 +58,46 @@ public class UtilTest {
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, null);
         assert retval == null;
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
+    }
+
+    public static void testGetProperty2() {
+        String input="foo, bar,  foobar: 1000";
+        String result=Util.getProperty(input);
+        assert result != null && result.equals("1000");
+
+        input="foo, bar,  foobar";
+        result=Util.getProperty(input);
+        assert result == null;
+
+        System.setProperty("foobar", "900");
+
+        input="foo, bar,  foobar: 1000";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("900");
+
+        input="foo, bar,  foobar";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("900");
+
+
+        System.setProperty("bar", "500");
+        input="foo, bar,  foobar: 1000";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("500");
+
+        input="foo, bar,  foobar";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("500");
+
+
+        System.setProperty("foo", "200");
+        input="foo, bar,  foobar: 1000";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("200");
+
+        input="foo, bar,  foobar";
+        result=Util.getProperty(input);
+        assert result != null && result.equals("200");
     }
 
 

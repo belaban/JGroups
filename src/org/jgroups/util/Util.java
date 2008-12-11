@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.181 2008/12/08 14:39:07 belaban Exp $
+ * @version $Id: Util.java,v 1.182 2008/12/11 12:52:18 belaban Exp $
  */
 public class Util {
 
@@ -2489,11 +2489,8 @@ public class Util {
     }
 
     public static MulticastSocket createMulticastSocket(InetAddress mcast_addr, int port, Log log) throws IOException {
-        if(mcast_addr != null && !mcast_addr.isMulticastAddress()) {
-            if(log != null && log.isWarnEnabled())
-                log.warn("mcast_addr (" + mcast_addr + ") is not a multicast address, will be ignored");
-            return new MulticastSocket(port);
-        }
+        if(mcast_addr != null && !mcast_addr.isMulticastAddress())
+            throw new IllegalArgumentException("mcast_addr (" + mcast_addr + ") is not a valid multicast address");
 
         SocketAddress saddr=new InetSocketAddress(mcast_addr, port);
         MulticastSocket retval=null;
@@ -3073,19 +3070,51 @@ public class Util {
         return sb.toString();
     }
 
-    private static String getProperty(String s) {
+    public static String getProperty(String s) {
         String var, default_val, retval=null;
         int index=s.indexOf(":");
         if(index >= 0) {
             var=s.substring(0, index);
             default_val=s.substring(index+1);
-            retval=System.getProperty(var, default_val);
+            if(default_val != null && default_val.length() > 0)
+                default_val=default_val.trim();
+            // retval=System.getProperty(var, default_val);
+            retval=_getProperty(var, default_val);
         }
         else {
             var=s;
-            retval=System.getProperty(var);
+            // retval=System.getProperty(var);
+            retval=_getProperty(var, null);
         }
         return retval;
+    }
+
+    /**
+     * Parses a var which might be comma delimited, e.g. bla,foo:1000: if 'bla' is set, return its value. Else,
+     * if 'foo' is set, return its value, else return "1000"
+     * @param var
+     * @param default_value
+     * @return
+     */
+    private static String _getProperty(String var, String default_value) {
+        if(var == null)
+            return null;
+        List<String> list=parseCommaDelimitedStrings(var);
+        if(list == null || list.isEmpty()) {
+            list=new ArrayList<String>(1);
+            list.add(var);
+        }
+        String retval=null;
+        for(String prop: list) {
+            try {
+                retval=System.getProperty(prop);
+                if(retval != null)
+                    return retval;
+            }
+            catch(Throwable e) {
+            }
+        }
+        return default_value;
     }
 
 
