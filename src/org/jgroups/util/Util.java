@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.182 2008/12/11 12:52:18 belaban Exp $
+ * @version $Id: Util.java,v 1.183 2008/12/11 12:55:51 vlada Exp $
  */
 public class Util {
 
@@ -2564,13 +2564,20 @@ public class Util {
             }
         }
 
-        if(retval == null) {
-            retval=bind_addr != null? InetAddress.getByName(bind_addr) : InetAddress.getLocalHost();
-        }
+        boolean localhost = false;
+		if (bind_addr != null) {
+			retval = InetAddress.getByName(bind_addr);
+		} 
+		else {
+			retval = InetAddress.getLocalHost();
+			localhost = true;
+		}
         
         //http://jira.jboss.org/jira/browse/JGRP-739
         //check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
-        if(NetworkInterface.getByInetAddress(retval) == null) {
+		//in some Linux setups NetworkInterface.getByInetAddress(InetAddress.getLocalHost()) returns null, so skip
+		//the check in that case
+        if(NetworkInterface.getByInetAddress(retval) == null && !localhost) {
             throw new UnknownHostException("Invalid bind address " + retval);
         }
 
