@@ -184,8 +184,7 @@ public class TCPConnectionMap{
                 if(bind_addr != null) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
-                        throw new BindException("bind_addr " + bind_addr
-                                                + " is not a valid interface");
+                    	log.warn("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
                 }
                 start_port++;
                 continue;
