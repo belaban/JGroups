@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
@@ -28,7 +29,7 @@ public class FRAG_Test extends ChannelTestBase {
     private Vector<Address> members;
     private View v;
     private Simulator s=null;
-    private int num_done=0;
+    private AtomicInteger num_done=new AtomicInteger(0);
 
     private Sender[] senders=null;
 
@@ -89,7 +90,8 @@ public class FRAG_Test extends ChannelTestBase {
             Sender sender=senders[i];
             sender.join(5000);
             if(sender.isAlive()) {
-                System.err.println("sender #" + i + " could not be joined (still alive), stack trace:\n" +
+                System.err.println("sender #" + i + " could not be joined (still alive): sender is " + sender);
+                System.out.println("stack trace:\n" +
                         Util.dumpThreads());
             }
         }
@@ -115,7 +117,7 @@ public class FRAG_Test extends ChannelTestBase {
         int num_sent=0;
         int num_received=0;
         int num_corrupted=0;
-        boolean done=false;
+        volatile boolean done=false;
 
         public int getIdent() {
             return id;
@@ -154,8 +156,8 @@ public class FRAG_Test extends ChannelTestBase {
                 try {
                     while(!done)
                         this.wait(500);
-                    num_done++;
-                    System.out.println("thread #" + id  + " is done (" + num_done + ")");
+                    num_done.incrementAndGet();
+                    System.out.println("thread #" + id  + " is done (" + num_done.get() + ")");
                 }
                 catch(InterruptedException e) {
                 }
@@ -196,6 +198,10 @@ public class FRAG_Test extends ChannelTestBase {
                     this.notify();
                 }
             }
+        }
+
+        public String toString() {
+            return id + ": num_sent=" + num_sent + ", num_received=" + num_received + ", done=" + done;
         }
     }
 
