@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.192 2008/12/05 10:00:46 belaban Exp $
+ * @version $Id: UDP.java,v 1.193 2008/12/11 12:59:33 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -227,12 +227,12 @@ public class UDP extends TP {
     public void init() throws Exception {
         super.init();
 
-        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"},
+        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR},
                                     null, "mcast_addr", false, null);
         if(str != null)
             mcast_addr_name=str;
 
-        str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT, "jboss.partition.udpPort"},
+        str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT},
                              null, "mcast_port", false, null);
 
         if(str != null)
