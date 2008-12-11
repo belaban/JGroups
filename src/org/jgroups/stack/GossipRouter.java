@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.38 2008/12/11 07:57:47 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.39 2008/12/11 08:28:32 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -115,36 +116,26 @@ public class GossipRouter {
     private boolean discard_loopbacks=false;
     
     @ManagedAttribute(description="Minimum thread pool size for incoming connections. Default is 2")
-    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
     protected int thread_pool_min_threads=2;
 
 	@ManagedAttribute(description="Maximum thread pool size for incoming connections. Default is 10")
-    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for regular messages. Default is 10")
     protected int thread_pool_max_threads=10;
    
     
     @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
-    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
     protected long thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute(description="Switch for enabling thread pool for incoming connections. Default true")
-    @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages. Default true")
     protected boolean thread_pool_enabled=false;
   
     @ManagedAttribute(description="Use queue to enqueue incoming connections")
-    @Property(name="thread_pool.queue_enabled",
-                      description="Use queue to enqueue incoming connections. Default is true")
     protected boolean thread_pool_queue_enabled=true;
 
     
     @ManagedAttribute(description="Maximum queue size for incoming connections")
-    @Property(name="thread_pool.queue_max_size",
-                      description="Maximum queue size for incoming connections. Default is 50")
     protected int thread_pool_queue_max_size=50;
 
-    @ManagedAttribute
-    @Property(name="thread_pool.rejection_policy",
-                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
+    @ManagedAttribute(description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
     protected String thread_pool_rejection_policy="Run";
     
     protected ExecutorService thread_pool;
@@ -469,10 +460,10 @@ public class GossipRouter {
             sb.append("empty ").append(label).append(" table");
         }
         else {
-            for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
-                String gname=(String)i.next();
+            for(Iterator<String> i=routingTable.keySet().iterator(); i.hasNext();) {
+                String gname=i.next();
                 sb.append("GROUP: '" + gname + "'\n");
-                Map map=routingTable.get(gname);
+                Map<Address,AddressEntry> map=routingTable.get(gname);
                 if(map == null) {
                     sb.append("\tnull list of addresses\n");
                 }
@@ -480,10 +471,8 @@ public class GossipRouter {
                     sb.append("\tempty list of addresses\n");
                 }
                 else {
-                    AddressEntry ae;
-                    for(Iterator j=map.values().iterator(); j.hasNext();) {
-                        ae=(AddressEntry)j.next();
-                        sb.append('\t').append(ae).append('\n');
+                    for(Iterator<AddressEntry> j=map.values().iterator(); j.hasNext();) {
+                        sb.append('\t').append(i.next()).append('\n');
                     }
                 }
             }
@@ -728,20 +717,17 @@ public class GossipRouter {
     private void sweep() {
         long diff, currentTime=System.currentTimeMillis();
         int num_entries_removed=0;
-
-        Map.Entry entry, entry2;
-        Map map;
-        AddressEntry ae;
-        for(Iterator it=routingTable.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            map=(Map)entry.getValue();
+       
+        for(Iterator<Entry<String,ConcurrentMap<Address,AddressEntry>>> it=routingTable.entrySet().iterator(); it.hasNext();) {
+        	Entry <String,ConcurrentMap<Address,AddressEntry>> entry=it.next();
+        	Map <Address,AddressEntry> map=entry.getValue();
             if(map == null || map.isEmpty()) {
                 it.remove();
                 continue;
             }
-            for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
-                entry2=(Map.Entry)it2.next();
-                ae=(GossipRouter.AddressEntry)entry2.getValue();
+            for(Iterator<Entry<Address,AddressEntry>> it2=map.entrySet().iterator(); it2.hasNext();) {
+            	Entry<Address,AddressEntry>entry2=it2.next();
+                AddressEntry ae=entry2.getValue();
                 diff=currentTime - ae.timestamp;
                 if(diff > expiryTime) {
                     it2.remove();
@@ -835,12 +821,11 @@ public class GossipRouter {
 
 
     private void removeEntry(String groupname, Address logical_addr) {
-        Map val;
-        val=routingTable.get(groupname);
+        Map<Address,AddressEntry>val=routingTable.get(groupname);
         if(val == null)
             return;
         synchronized(val) {
-            AddressEntry entry=(AddressEntry)val.get(logical_addr);
+            AddressEntry entry=val.get(logical_addr);
             if(entry != null) {
                 entry.destroy();
                 val.remove(logical_addr);
@@ -855,7 +840,7 @@ public class GossipRouter {
     private AddressEntry findAddressEntry(String group_name, Address logical_addr) {
         if(group_name == null || logical_addr == null)
             return null;
-        Map val=routingTable.get(group_name);
+        Map<Address,AddressEntry> val=routingTable.get(group_name);
         if(val == null)
             return null;
         return (AddressEntry)val.get(logical_addr);
@@ -880,17 +865,14 @@ public class GossipRouter {
 
 
     private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
-        Map val;
-        val=routingTable.get(groupname);
+        Map<Address,AddressEntry> val = routingTable.get(groupname);
         if(val == null || val.isEmpty())
             return;
-
-        Map.Entry tmp;
-        AddressEntry entry;
+        
         synchronized(val) {
-            for(Iterator i=val.entrySet().iterator(); i.hasNext();) {
-                tmp=(Map.Entry)i.next();
-                entry=(GossipRouter.AddressEntry)tmp.getValue();
+            for(Iterator<Entry<Address,AddressEntry>> i=val.entrySet().iterator(); i.hasNext();) {
+            	Entry<Address,AddressEntry> tmp=i.next();
+                AddressEntry entry=tmp.getValue();
                 DataOutputStream dos=entry.output;
 
                 if(dos != null) {
