@@ -20,11 +20,11 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
+ * Tests the fragmentation (FRAG2) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
 @Test(groups={Global.STACK_DEPENDENT})
-public class FRAG_Test extends ChannelTestBase {
+public class FRAG2_Test extends ChannelTestBase {
     private IpAddress a1;
     private Vector<Address> members;
     private View v;
@@ -48,22 +48,14 @@ public class FRAG_Test extends ChannelTestBase {
         s.setLocalAddress(a1);
         s.setView(v);
         s.addMember(a1);
-        Protocol frag=createProtocol();
-        if(frag instanceof FRAG)
-            ((FRAG)frag).setFragSize(512);
-        else if(frag instanceof FRAG2)
-            ((FRAG2)frag).setFragSize(512);
-        else
-            throw new IllegalStateException("fragmentation protocol is neither FRAG nor FRAG2");
+        FRAG2 frag=new FRAG2();
+        frag.setFragSize(512);
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
         s.start();
     }
 
 
-    protected Protocol createProtocol() {
-        return new FRAG2();
-    }
 
     @AfterMethod
     void tearDown() throws Exception {
@@ -73,7 +65,7 @@ public class FRAG_Test extends ChannelTestBase {
 
 
     public void testFragmentation() throws InterruptedException {
-        FRAG_Test.Receiver r=new FRAG_Test.Receiver();
+        FRAG2_Test.Receiver r=new FRAG2_Test.Receiver();
         s.setReceiver(r);
 
         senders=new Sender[NUM_THREADS];
