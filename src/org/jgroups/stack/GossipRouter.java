@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.39 2008/12/11 08:28:32 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.40 2008/12/18 12:23:37 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -151,6 +151,7 @@ public class GossipRouter {
     protected final Log log=LogFactory.getLog(this.getClass());
 
     private boolean jmx=false;
+	private boolean registered= false;
    
 
 
@@ -372,9 +373,10 @@ public class GossipRouter {
             throw new Exception("Router already started.");
         }
 
-        if(jmx) {
+        if(jmx && !registered) {
             MBeanServer server=Util.getMBeanServer();
             JmxConfigurator.register(this, server, "jgroups:name=GossipRouter");
+            registered = true;
         }
 
         if(bindAddressString != null) {
@@ -391,15 +393,16 @@ public class GossipRouter {
 			if (thread_pool_queue_enabled) {
 				thread_pool_queue = new LinkedBlockingQueue<Runnable>(
 						thread_pool_queue_max_size);
-			} else {
+			} 
+			else {
 				thread_pool_queue = new SynchronousQueue<Runnable>();
 			}
 			thread_pool = createThreadPool(thread_pool_min_threads,
 					thread_pool_max_threads, thread_pool_keep_alive_time,
 					thread_pool_rejection_policy, thread_pool_queue,
 					default_thread_factory);
-		} else { // otherwise use the caller's thread to unmarshal the byte
-			// buffer into a message
+		} 
+        else { 
 			thread_pool = Executors.newSingleThreadExecutor(default_thread_factory);
 		}
 
@@ -636,7 +639,10 @@ public class GossipRouter {
 							Util.close(sock);
 						}
 					}};
-					thread_pool.submit(task);
+					if(!thread_pool.isShutdown())
+						thread_pool.submit(task);
+					else
+						task.run();
 			} catch (Exception exc) {
 				if (log.isErrorEnabled())
 					log.error("failure receiving and setting up a client request", exc);
@@ -1103,7 +1109,7 @@ public class GossipRouter {
             help();
             return;
         }
-        System.out.println("GossipRouter is starting...");
+        System.out.println("GossipRouter is starting. Enter quit to exit JVM");
 
         try {
             router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout, jmx);
@@ -1112,6 +1118,17 @@ public class GossipRouter {
         catch(Exception e) {
             System.err.println(e);
         }
+        String quit = "";
+        while (!quit.startsWith("quit")) {
+			Scanner in = new Scanner(System.in);
+			try{
+				quit = in.nextLine();
+			}
+			catch(Exception e){}
+		}
+        
+        router.stop();
+        router.cleanup();
     }
 
     static void help() {
