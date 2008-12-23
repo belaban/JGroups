@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.4 2008/12/23 15:47:20 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.5 2008/12/23 16:00:57 belaban Exp $
 
 
 Idea
@@ -77,6 +77,12 @@ K can be -1 (replicate everywhere), 0 (create only on 1 node) or > 0 <= N (repli
 
 TIMEOUT (ms): -1 (no caching), 0 (cache until removed) or > 0 (cache for TIMEOUT ms)
 
+On reception of put():
+
+- The selected target nodes add the KEY,VAL to their local cache
+- *Everyone* removes KEY from their L1 cache. (Optimization: only the non-selected nodes do this, the selected nodes
+  also add KEY,VAL to their L1 caches)
+
 
 The put() method creates a message with KEY, VAL, K and TIMEOUT and multicasts it. Each node which receives the message
 does the following:
@@ -89,7 +95,7 @@ does the following:
 
 VAL get(KEY):
 
-- Look up KEY in the L1 cache. If found return it
+- Look up KEY in the L1 cache. If found,and not expired, return it
 - Multicast a GET request.
   - If a non-null response has been received: add it to the L1 cache (if not -1) and return
   - Else return null
@@ -103,7 +109,20 @@ void remove(KEY):
 View changes:
 
 
+For a new node P, every node N:
+-  For each local KEY:
+   - If the K factor is -1: replicate KEY,VAL to P
+   - If the K factor is 0: compute consistent hash and pick server S
+     - If S == P, the server which hosted KEY before P joined moves KEY,VAL to P (PUT message), and
+       removes KEY from its local hashmap
+     - Else: do nothing (no rebalancing needed)
+   - If the factor is > 0:
+     - Compute K consistent hashes and determine the K servers which are supposed to be hosting KEY
+       - For each server S:
+         - Do the same as above (factor == 0)
 
+
+For a left node R:
 
 
 
