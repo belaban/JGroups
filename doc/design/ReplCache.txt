@@ -4,13 +4,14 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.1 2008/12/23 15:19:24 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.2 2008/12/23 15:19:57 belaban Exp $
 
 
 Idea
 ----
+
 To have a big virtual memory by aggregating the physical memory of all nodes in a cluster. E.g. if we have hosts
-A, B, C and D and each host has 2GB of physical memory, then we can have 8 * 2 GB = 10GB of virtual memory.
+A, B, C and D and each host has 2GB of physical memory, then we can have 4 * 2 GB = 8 GB of virtual memory.
 
 ReplCache is a hashmap which distributes its keys and values across the cluster, based on consistent hashing.
 
