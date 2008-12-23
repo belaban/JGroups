@@ -1,0 +1,32 @@
+
+
+Replicated Cache
+================
+
+Author: Bela Ban
+Id: $Id: ReplCache.txt,v 1.1 2008/12/23 15:19:24 belaban Exp $
+
+
+Idea
+----
+To have a big virtual memory by aggregating the physical memory of all nodes in a cluster. E.g. if we have hosts
+A, B, C and D and each host has 2GB of physical memory, then we can have 8 * 2 GB = 10GB of virtual memory.
+
+ReplCache is a hashmap which distributes its keys and values across the cluster, based on consistent hashing.
+
+There are 3 methods: put(), get() and remove().
+
+When adding a new key/value pair, put() takes the 'replication factor' as argument, alongside the key and value and
+a timeout.
+
+A replication factor of 0 means no replication.
+
+A replication factor of K means replicate the element K times, e.g. PUT(KEY, VAL, 2, timeout) means that an element
+will be created on 2 nodes. When the view changes, the cluster makes sure that the above KEY, VAL is always present
+in 2 nodes. Note that K has to be less than or equal to N (= number of nodes).
+
+A replication factor of -1 means that the element is replicated to all cluster nodes.
+
+
+TBD: a replication factor which defines a percentage, e.g. 0.3 means replicate to 30% of all nodes.
+
