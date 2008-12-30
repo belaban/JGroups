@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.10.2.1 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -90,7 +90,7 @@ public class Probe {
         int          port=0;
         int          ttl=32;
         long         timeout=10000;
-        final String DEFAULT_DIAG_ADDR="224.0.0.75";
+        final String DEFAULT_DIAG_ADDR="224.0.75.75";
         final int    DEFAULT_DIAG_PORT=7500;
         List         query=new ArrayList();
         String       match=null;
