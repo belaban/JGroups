@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.193 2008/12/11 12:59:33 belaban Exp $
+ * @version $Id: UDP.java,v 1.194 2009/01/05 07:38:04 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -619,7 +619,7 @@ public class UDP extends TP {
         if(sock != null) {
             if(pm != null && bind_port > 0) {
                 int port=local_addr != null? ((IpAddress)local_addr).getPort() : sock.getLocalPort();
-                pm.removePort(port);
+                pm.updatePort(port);
             }
             sock.close();
             sock=null;
