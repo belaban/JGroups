@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.184 2009/01/05 12:28:50 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.185 2009/01/05 12:29:55 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -314,7 +314,7 @@
         </delete>
     	<!-- clean the docs directory if docs have been processed -->
         <delete dir="${manual.dir}/build"/>
-        <delete dir="${tutorial.dir}"/>
+        <delete dir="${tutorial.dir}/build"/>
     </target>
 
 
