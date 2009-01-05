@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.15 2009/01/05 07:40:59 belaban Exp $
+ * @version $Id: UDP.java,v 1.156.2.16 2009/01/05 08:33:20 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -57,10 +57,10 @@ public class UDP extends TP implements Runnable {
      */
     private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
 
-    private static final boolean is_linux; // are we running on Linux ?
+    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
     static {
-        is_linux=Util.checkForLinux();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris();
     }
 
     /** IP multicast socket for <em>sending</em> and <em>receiving</em> multicast packets */
@@ -497,7 +497,7 @@ public class UDP extends TP implements Runnable {
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
-            if(is_linux)
+            if(can_bind_to_mcast_addr)
                 mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
             else
                 mcast_sock=new MulticastSocket(mcast_port);
