@@ -185,7 +185,7 @@ public abstract class BasicConnectionTable {
             try {
                 if(pm != null) {
                     int tmp_port=srv_sock.getLocalPort();
-                    pm.removePort(tmp_port);
+                    pm.updatePort(tmp_port);
                 }
                 ServerSocket tmp=srv_sock;
                 srv_sock=null;

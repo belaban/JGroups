@@ -7,7 +7,7 @@ import java.util.*;
  * Maintains a list of ports used on this host, associated with time stamps. The ports are persistet into the
  * temp file system.
  * @author Bela Ban
- * @version $Id: PortsManager.java,v 1.4.2.2 2007/11/28 09:17:32 belaban Exp $
+ * @version $Id: PortsManager.java,v 1.4.2.3 2009/01/05 07:41:00 belaban Exp $
  */
 public class PortsManager {
     private String filename="jgroups-ports.txt";
@@ -66,7 +66,7 @@ public class PortsManager {
                 return start_port;
             }
 
-            // wed out expired ports
+            // weed out expired ports
             Map.Entry<Integer,Long> entry;
             for(Iterator<Map.Entry<Integer,Long>> it=map.entrySet().iterator(); it.hasNext();) {
                 entry=it.next();
@@ -105,6 +105,26 @@ public class PortsManager {
         catch(IOException e) {
         }
     }
+
+    /**
+     * Updates the timestamp for the given port
+     * @param port
+     */
+    public void updatePort(int port) {
+        Map<Integer,Long> map;
+
+        try {
+            map=load();
+            if(map.isEmpty()) {
+                return;
+            }
+            map.put(port, System.currentTimeMillis());
+            store(map);
+        }
+        catch(IOException e) {
+        }
+    }
+
 
     /** Deletes the underlying file. Used for unit testing, not recommended for regular use ! */
     public void deleteFile() {
