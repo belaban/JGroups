@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.12 2008/10/30 15:47:56 belaban Exp $
+$Id: ManualTests.txt,v 1.13 2009/01/05 12:14:00 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -140,7 +140,7 @@ Test 11
 
 - Start A, B
 - Shun A (CTRL-Z and then fg)
-- When B has rejoined the group, kill A
+- When A has rejoined the group, kill A
 - The view needs to be {B} now
 
 
