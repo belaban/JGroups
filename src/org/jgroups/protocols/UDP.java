@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.194 2009/01/05 07:38:04 belaban Exp $
+ * @version $Id: UDP.java,v 1.195 2009/01/05 08:24:06 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -54,11 +54,11 @@ public class UDP extends TP {
      */
     private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
     
-    private static final boolean is_linux; // are we running on Linux ?
+    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
 
     static {
-        is_linux=Util.checkForLinux();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris();
     }
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
@@ -127,7 +127,7 @@ public class UDP extends TP {
     private PacketReceiver mcast_receiver=null;
 
     /** Runnable to receive unicast packets */
-    private PacketReceiver ucast_receiver=null;  
+    private PacketReceiver ucast_receiver=null;
 
 
     /**
@@ -396,7 +396,7 @@ public class UDP extends TP {
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
-            if(is_linux)
+            if(can_bind_to_mcast_addr)
                 mcast_sock=Util.createMulticastSocket(group_addr, mcast_port, log);
             else
                 mcast_sock=new MulticastSocket(mcast_port);
