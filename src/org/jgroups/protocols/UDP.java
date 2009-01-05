@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.14 2008/12/05 20:37:58 vlada Exp $
+ * @version $Id: UDP.java,v 1.156.2.15 2009/01/05 07:40:59 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -760,7 +760,7 @@ public class UDP extends TP implements Runnable {
         if(sock != null) {
             if(pm != null && bind_port > 0) {
                 int port=local_addr != null? ((IpAddress)local_addr).getPort() : sock.getLocalPort();
-                pm.removePort(port);
+                pm.updatePort(port);
             }
             sock.close();
             sock=null;
