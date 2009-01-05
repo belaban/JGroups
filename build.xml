@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.183 2008/12/05 11:37:47 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.184 2009/01/05 12:28:50 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -24,6 +24,8 @@
     <property name="dist.dir" value="${root.dir}/dist"/>
     <property name="tmp.dir" value="${root.dir}/tmp"/>
     <property name="doc.dir" value="${root.dir}/doc"/>
+    <property name="manual.dir" value="${doc.dir}/manual"/>
+    <property name="tutorial.dir" value="${doc.dir}/tutorial"/>
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
@@ -311,12 +313,10 @@
             </fileset>
         </delete>
     	<!-- clean the docs directory if docs have been processed -->
-        <antcall target="clean-docs"/>
+        <delete dir="${manual.dir}/build"/>
+        <delete dir="${tutorial.dir}"/>
     </target>
 
-	<target name="clean-docs" if="docbook.support.present">
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
-	</target>
 
 
     <target name="version"
