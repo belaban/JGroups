@@ -4,10 +4,10 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Maintains a list of ports used on this host, associated with time stamps. The ports are persistet into the
+ * Maintains a list of ports used on this host, associated with time stamps. The ports are persisted into the
  * temp file system.
  * @author Bela Ban
- * @version $Id: PortsManager.java,v 1.4 2007/11/27 15:05:06 belaban Exp $
+ * @version $Id: PortsManager.java,v 1.5 2009/01/05 07:08:41 belaban Exp $
  */
 public class PortsManager {
     private String filename="jgroups-ports.txt";
