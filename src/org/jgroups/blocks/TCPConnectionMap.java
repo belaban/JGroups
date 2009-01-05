@@ -152,7 +152,7 @@ public class TCPConnectionMap{
     public void stop() {
         if(running.compareAndSet(true, false)) {
             if(pm != null) {
-                pm.removePort(srv_sock.getLocalPort());
+                pm.updatePort(srv_sock.getLocalPort());
             }
             Util.close(srv_sock);
             Util.interruptAndWaitToDie(acceptor);
