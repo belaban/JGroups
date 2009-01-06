@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.22 2006/10/25 08:23:58 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.22.2.1 2009/01/06 21:52:41 jiwils Exp $
  */
 public class RouterStub {
     String router_host=null;       // name of the router host
@@ -137,7 +137,7 @@ public class RouterStub {
 
         try {
             sock=new Socket(router_host, router_port, bind_addr, 0);
-            sock.setSoLinger(true, 500);
+            sock.setSoLinger(true, 5); // 5 seconds!
             output=new DataOutputStream(sock.getOutputStream());
             GossipData req=new GossipData(GossipRouter.CONNECT, groupname, local_addr, null);
             req.writeTo(output);
@@ -230,7 +230,7 @@ public class RouterStub {
 
         try {
             tmpsock=new Socket(router_host, router_port);
-            tmpsock.setSoLinger(true, 500);
+            tmpsock.setSoLinger(true, 5); // 5 seconds!
 
             // request membership for groupname
             tmpOutput=new DataOutputStream(tmpsock.getOutputStream());
