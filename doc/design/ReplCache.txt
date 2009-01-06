@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.6 2008/12/23 16:11:02 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.7 2009/01/06 10:09:39 belaban Exp $
 
 
 Idea
@@ -15,31 +15,33 @@ A, B, C and D and each host has 2GB of physical memory, then we can have 4 * 2 G
 
 ReplCache is a hashmap which distributes its keys and values across the cluster, based on consistent hashing.
 
+The difference to PartitionedHashMap is that ReplCache allows a user to define *per data item* whether it should be
+replicated (for high availability) or not and if yes, how many times.
+
 There are 3 methods: put(), get() and remove().
 
 When adding a new key/value pair, put() takes the 'replication factor' as argument, alongside the key and value and
 a timeout.
 
-A replication factor of 0 means no replication.
+A replication factor of 0 means no replication. The data will be placed on a node in the cluster that corresponds to
+the consistent hashcode of the data's key.
 
 A replication factor of -1 means that the element is replicated to all cluster nodes.
 
 A replication factor of K means replicate the element K times, e.g. PUT(KEY, VAL, 2, timeout) means that an element
-will be created on 2 nodes. When the view changes, the cluster makes sure that the above KEY, VAL is always present
-in 2 nodes. Note that K has to be less than or equal to N (= number of nodes). When K > N, then ReplCache treats
+will be created on 3 nodes. When the view changes, the cluster makes sure that the above KEY, VAL is always present
+on 3 nodes. Note that K has to be less than or equal to N (= number of nodes). When K > N, then ReplCache treats
 K as -1 (replicate to all nodes).
 
-
 TBD: a replication factor which defines a percentage, e.g. 0.3 means replicate to 30% of all nodes.
-
 
 The advantage of defining replication factors per element is that we can define what reliability we want for
 individual data items. For example, an element that can easily be retrieved from disk or database probably does
 fine with a factor of 0 (= no replication). Here, we use the cache just as a speedup to prevent DB access.
 An important item that is costly to recreate, or cannot be recreated at all, should probably have a factor of -1.
 
-The point of being able to define replication factors per data item is that we can save memory this way. If we
-compare this to RAID 0+1, then - because we're replicating every single data item - we can effectively only use
+The point of being able to define replication factors per data item is that we can save memory. If we
+compare this to RAID 1, then - because we're replicating every single data item - we can effectively only use
 half of the memory (disk space) allocated to the RAID system. With per data replication factors, we can increase the
 net memory that can be used (unless of course all elements are added with a factor of -1 !).
 
@@ -58,12 +60,12 @@ if enabled.
 
 Design points
 -------------
-There are a few design considerations:
+There are a few considerations and assumptions that influenced the design:
 
-- Keys and values are small. We do *not* provide technology which breaks large data items into multiple chunks
+- Keys and values must be small. We do *not* provide technology which breaks large data items into multiple chunks
   and distributes or replicates these chunks individually
 
-- IP multicasting is the transport. If we used TCP, communication would get costly (N-1 issue)
+- IP multicasting is used in the transport. If we used TCP, communication would get costly (N-1 issue)
 
 
 API
