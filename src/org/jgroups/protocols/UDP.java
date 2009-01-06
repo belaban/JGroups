@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123.2.6 2008/09/30 07:22:06 vlada Exp $
+ * @version $Id: UDP.java,v 1.123.2.7 2009/01/06 04:12:41 jiwils Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -54,6 +54,13 @@ public class UDP extends TP implements Runnable {
      * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
      */
     private static volatile BoundedList last_ports_used=null;
+
+    private static final boolean is_linux; // are we running on Linux ?
+
+    static {
+        is_linux=Util.checkForLinux();
+    }
+
 
     /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
      * If bind_port is > 0, then this option will be ignored */
@@ -456,10 +463,18 @@ public class UDP extends TP implements Runnable {
 
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
+            
             // 3a. Create mcast receiver socket
-            mcast_recv_sock=new MulticastSocket(mcast_port);
-            mcast_recv_sock.setTimeToLive(ip_ttl);
             tmp_addr=InetAddress.getByName(mcast_addr_name);
+
+            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
+            if(is_linux)
+                mcast_recv_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
+            else
+                mcast_recv_sock=new MulticastSocket(mcast_port);
+
+            mcast_recv_sock.setTimeToLive(ip_ttl);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
 
             if(receive_on_all_interfaces || (receive_interfaces != null && receive_interfaces.size() > 0)) {
