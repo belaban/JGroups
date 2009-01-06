@@ -21,20 +21,29 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.19.2.2 2007/09/11 15:53:18 belaban Exp $
+ * @version $Id: MPING.java,v 1.19.2.3 2009/01/06 04:45:09 jiwils Exp $
  */
 public class MPING extends PING implements Runnable {
-    MulticastSocket     mcast_sock=null;
-    Thread              receiver=null;
-    InetAddress         bind_addr=null;
+    MulticastSocket        mcast_sock=null;
+    Thread                 receiver=null;
+    InetAddress            bind_addr=null;
     boolean             bind_to_all_interfaces=false;
     int                 ip_ttl=16;
-    InetAddress         mcast_addr=null;
-    int                 mcast_port=7555;
+    InetAddress            mcast_addr=null;
+    int                    mcast_port=7555;
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
     byte                receive_buf[]=new byte[1024];
+
+
+    private static final boolean is_linux; // are we running on Linux ?
+
+
+    static {
+        is_linux=Util.checkForLinux();
+    }
+
 
 
     public String getName() {
@@ -87,13 +96,13 @@ public class MPING extends PING implements Runnable {
         String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
                                     ignore_systemprops, null);
         if(str != null) {
-            try {
+        try {
                 bind_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
+        }
+        catch(UnknownHostException unknown) {
                 if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
-                return false;
-            }
+            return false;
+        }
             props.remove("bind_addr");
         }
 
@@ -154,7 +163,11 @@ public class MPING extends PING implements Runnable {
 
 
     public void start() throws Exception {
-        mcast_sock=new MulticastSocket(mcast_port);
+        if(is_linux) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+            mcast_sock=Util.createMulticastSocket(mcast_addr, mcast_port, log);
+        else
+            mcast_sock=new MulticastSocket(mcast_port);
+
         mcast_sock.setTimeToLive(ip_ttl);
 
         if(bind_to_all_interfaces) {
@@ -169,7 +182,7 @@ public class MPING extends PING implements Runnable {
 //                InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
 //                if(interfaces != null && interfaces.length > 0)
 //                    bind_addr=interfaces[0];
-            }
+        }
             if(bind_addr == null)
                 bind_addr=InetAddress.getLocalHost();
 
@@ -239,8 +252,8 @@ public class MPING extends PING implements Runnable {
             out.flush(); // flushes contents to out_stream
             buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
             packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
-            mcast_sock.send(packet);
-        }
+                    mcast_sock.send(packet);
+            }
         catch(IOException ex) {
             log.error("failed sending discovery request", ex);
         }
