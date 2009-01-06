@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.22.2.2 2007/09/25 08:41:27 belaban Exp $
+// $Id: GossipRouter.java,v 1.22.2.3 2009/01/06 22:47:17 jiwils Exp $
 
 package org.jgroups.stack;
 
@@ -78,6 +78,15 @@ public class GossipRouter {
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
 
+    /** Time (in millis) for setting SO_LINGER on sockets returned from accept(). 0 means don't set SO_LINGER */
+    private long linger_timeout=2000L;
+
+    /** Time (in millis) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT */
+    private long sock_read_timeout=3000L;
+
+    /** The max queue size of backlogged connections */
+    private int backlog=1000;
+
     private boolean up=true;
 
     /** whether to discard message sent to self */
@@ -142,6 +151,14 @@ public class GossipRouter {
         return bindAddressString;
     }
 
+    public int getBacklog() {
+        return backlog;
+    }
+
+    public void setBacklog(int backlog) {
+        this.backlog=backlog;
+    }
+
     public void setExpiryTime(long expiryTime) {
         this.expiryTime=expiryTime;
     }
@@ -178,6 +195,21 @@ public class GossipRouter {
         this.discard_loopbacks=discard_loopbacks;
     }
 
+    public long getLingerTimeout() {
+        return linger_timeout;
+    }
+
+    public void setLingerTimeout(long linger_timeout) {
+        this.linger_timeout=linger_timeout;
+    }
+
+    public long getSocketReadTimeout() {
+        return sock_read_timeout;
+    }
+
+    public void setSocketReadTimeout(long sock_read_timeout) {
+        this.sock_read_timeout=sock_read_timeout;
+    }
 
     public static String type2String(int type) {
         switch(type) {
@@ -228,10 +260,10 @@ public class GossipRouter {
 
         if(bindAddressString != null) {
             bindAddress=InetAddress.getByName(bindAddressString);
-            srvSock=new ServerSocket(port, 50, bindAddress);
+            srvSock=new ServerSocket(port, backlog, bindAddress);
         }
         else {
-            srvSock=new ServerSocket(port, 50);
+            srvSock=new ServerSocket(port, backlog);
         }
 
         up=true;
@@ -346,7 +378,14 @@ public class GossipRouter {
         while(up && srvSock != null) {
             try {
                 sock=srvSock.accept();
-                sock.setSoLinger(true, 500);
+                if(linger_timeout > 0) {
+                    int linger=Math.max(1, (int)(linger_timeout / 1000));
+                    sock.setSoLinger(true, linger);
+                }
+                if(sock_read_timeout > 0) {
+                    sock.setSoTimeout((int)sock_read_timeout);
+                }
+
                 input=new DataInputStream(sock.getInputStream());
                 // if(log.isTraceEnabled())
                    // log.trace("accepted connection from " + sock);
@@ -432,6 +471,7 @@ public class GossipRouter {
                         break;
 
                     case GossipRouter.CONNECT:
+                        sock.setSoTimeout(0); // we have to disable this here
                         output=new DataOutputStream(sock.getOutputStream());
                         peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
                         logical_addr=req.getAddress();
