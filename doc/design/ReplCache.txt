@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.8 2009/01/06 10:23:19 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.9 2009/01/06 16:45:46 belaban Exp $
 
 
 Idea
@@ -129,7 +129,8 @@ For a new or left node P, every node N:
        - For each server S:
          - Do the same as above (count == 1)
 
-
+Stopping the cache:
+- migrate data (todo)
 
 
 
