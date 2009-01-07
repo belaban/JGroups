@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.9 2009/01/06 16:45:46 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.10 2009/01/07 09:32:31 belaban Exp $
 
 
 Idea
@@ -33,7 +33,7 @@ will be created on 2 nodes. When the view changes, the cluster makes sure that t
 on 2 nodes. Note that K has to be less than or equal to N (= number of nodes). When K > N, then ReplCache treats
 K as -1 (replicate to all nodes).
 
-K == 0 is invalid and will throw an exception.
+K == 0 is invalid and will be ignored; the data will not be stored in the cluster.
 
 TBD: a replication count which defines a percentage, e.g. 0.3 means replicate to 30% of all nodes.
 
@@ -51,46 +51,45 @@ Put() always results in a multicast across the cluster. Each node determines by 
 or not. This is done by computing a set of consistent hashes from KEY, mapping them to a set of servers and determining
 whether the node's address is in that set. If so, a node will add the KEY,VAL to its local cache, else not.
 
-Get() first checks the level 1 cache (L1 cache, not mentioned so far). If the data is found, it will be returned,
-else we multicast a GET request (bounded with a timeout). Every node returns its key/value from the local cache. Before
-returning from get(), we add the result to our L1 cache. (The L1 cache will independently evict timed out items, or
-evict items when it needs more space. Items with a timeout of -1 are never placed into the L1 cache).
+Get() first checks the level 1 cache (L1 cache, not mentioned so far), and the regular cache (L2 cache).
+If the data is found, it will be returned, else we multicast a GET request (bounded with a timeout).
+Every node returns its key/value from the local cache. Before returning from get(), we add the result to our L1 cache.
+(The L1 cache will independently evict timed-out items, or evict items when it needs more space.
+Items with a timeout of -1 are never placed into the L1 cache).
 
 Remove() simply multicasts the KEY across the cluster. Every node removes KEY from its local cache, and the L1 cache
 if enabled.
 
 
-Design points
--------------
+Design decisions
+----------------
 There are a few considerations and assumptions that influenced the design:
 
 - Keys and values must be small. We do *not* provide technology which breaks large data items into multiple chunks
   and distributes or replicates these chunks individually
 
-- IP multicasting is used in the transport. If we used TCP, communication would get costly (N-1 issue)
+- IP multicasting should be used in the transport. If we used TCP, communication would get costly (N-1 issue)
 
 
 API
 ---
 
 put(KEY, VAL, K, TIMEOUT):
+--------------------------
 
 Places KEY,VAL into the hashmaps of selected cluster nodes. Existing data will be overwritten. KEY and VAL have to
 be serializable.
 
-K can be -1 (replicate everywhere), 1 (create only on 1 node) or > 1 <= N (replicate to K nodes).
+K is the replication count and can be:
+          -1: replicate everywhere
+           1: create only on 1 node
+    > 1 <= N: store on K nodes
 
-TIMEOUT (ms): -1 (no caching), 0 (cache until removed) or > 0 (cache for TIMEOUT milliseconds)
-
-On reception of put():
-
-- The selected target nodes add the KEY,VAL to their local cache if
-  - K is -1, or
-  - K is 1 and the consistent hash matches their local_addr, or
-  - K > 1 && <= N and the local_addr matches *one* of the K consisten hashes
-- *Everyone* removes KEY from their L1 cache. (Optimization: only the non-selected nodes do this, the selected nodes
-  also add KEY,VAL to their L1 caches)
-
+TIMEOUT (ms):
+          -1: no caching
+           0: cache until removed
+         > 0: cache for TIMEOUT milliseconds
+         
 
 The put() method creates a message with KEY, VAL, K and TIMEOUT and multicasts it. Each node which receives the message
 does the following:
@@ -102,6 +101,7 @@ does the following:
 
 
 VAL get(KEY):
+-------------
 
 - Look up KEY in the L1 cache. If found,and not expired, return it
 - Multicast a GET request.
@@ -109,13 +109,16 @@ VAL get(KEY):
   - Else return null
 
 void remove(KEY):
+-----------------
 
 - Multicast a REMOVE(KEY) message
 - On reception, every node removes KEY from its local cache
 
 
-View changes:
+View change:
+------------
 
+For a new node P
 
 For a new or left node P, every node N:
 -  For each local KEY:
@@ -130,6 +133,7 @@ For a new or left node P, every node N:
          - Do the same as above (count == 1)
 
 Stopping the cache:
+-------------------
 - migrate data (todo)
 
 
