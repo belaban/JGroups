@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.11 2009/01/07 11:49:00 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.12 2009/01/07 16:00:09 belaban Exp $
 
 
 Idea
@@ -140,7 +140,26 @@ Re-balance (K > 1):
 
 - Old view is V, new view is V-NEW
 
+- move() installs a KEY regardless of whether it would be accepted in the current view
+
 - For each key KEY:
+  - If K == -1:
+    - For each newly joined node P:
+      - The coord sends KEY to P (move())
+
+  - If K ==  1:
+    - Compute 1 hashcode (based on V-NEW) and determine the new node N
+    - If N != local node --> move KEY to N
+
+  - If K  >  1:
+    - Compute hashes for V (NODES)
+    - Compute hashes for V-NEW (NEW-NODES)
+    - If NODES == NEW-NODES --> return
+    - Else
+      - Multicast KEY (make sure everyone has new view installed, to compute correct acceptance)
+      - If local node is not in NEW-NODES --> remove KEY from local node
+
+
   - Compute nodes for V (NODES)
   - Compute nodes for V-NEW (NEW-NODES)
   - If NODES == NEW-NODES --> return

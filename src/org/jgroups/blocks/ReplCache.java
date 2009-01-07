@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.8 2009/01/07 13:53:05 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.9 2009/01/07 16:00:07 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -568,7 +568,7 @@ public class ReplCache<K,V> implements MembershipListener {
                 continue;
             short repl_count=tmp.getReplicationCount();
 
-
+            
         }
 
     }
