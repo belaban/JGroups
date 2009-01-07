@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.10 2009/01/07 09:32:31 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.11 2009/01/07 11:49:00 belaban Exp $
 
 
 Idea
@@ -118,23 +118,43 @@ void remove(KEY):
 View change:
 ------------
 
-For a new node P
+- The handling of view changes needs to be done in a separate thread. Suggestion: do this in a timer task, and
+  start the task 100ms after the view change callback. This is to ensure that every cluster node installed the view.
 
-For a new or left node P, every node N:
--  For each local KEY:
-   - If the K count is -1: replicate KEY,VAL to P
-   - If the K count is 1: compute consistent hash and pick server S
-     - If S == P, the server which hosted KEY before P joined moves KEY,VAL to P (PUT message), and
-       removes KEY from its local hashmap
-     - Else: do nothing (no rebalancing needed)
-   - If the count is > 1:
-     - Compute K consistent hashes and determine the K servers which are supposed to be hosting KEY
-       - For each server S:
-         - Do the same as above (count == 1)
+- Old view is V, new view is V-NEW
+
+- For a new node P
+  - For each key KEY
+    - If K == -1: copy KEY to P (only the coord does this)
+    - If K ==  1: compute new hash (based on V-NEW), if not same as local node -> move KEY to P
+    - If K  >  1: re-balance
+
+- For each left node Q
+  - For each key KEY:
+    - If K == -1: no-op
+    - If K ==  1: compute new hash (based on V-NEW), if not same as local node -> move KEY to P
+    - If K  >  1: re-balance
+
+Re-balance (K > 1):
+-------------------
+
+- Old view is V, new view is V-NEW
+
+- For each key KEY:
+  - Compute nodes for V (NODES)
+  - Compute nodes for V-NEW (NEW-NODES)
+  - If NODES == NEW-NODES --> return
+  - Else
+    - Multicast KEY (every node will check the hash against itself and store if needed)
+    - If the local node is not in NEW-NODES --> remove KEY
+
 
 Stopping the cache:
 -------------------
-- migrate data (todo)
+- For each key KEY:
+  - If K is -1: no-op (every node already has KEY)
+  - If K == 1: compute new hash (based on the view excluding the current node) and copy KEY to the new node
+  - If K > 1: no-op (somebody else has KEY, view change will copy to more nodes if needed)
 
 
 
