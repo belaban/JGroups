@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.10 2009/01/07 16:12:29 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.11 2009/01/07 16:26:23 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -558,6 +558,8 @@ public class ReplCache<K,V> implements MembershipListener {
         HashFunction<K> new_func=hash_function_factory.create();
         new_func.installNodes(new_nodes);
 
+        boolean is_coord=Util.isCoordinator(ch);
+
         for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
             K key=entry.getKey();
             Cache.Value<Value<V>> val=entry.getValue();
@@ -566,10 +568,16 @@ public class ReplCache<K,V> implements MembershipListener {
             Value<V> tmp=val.getValue();
             if(tmp == null)
                 continue;
+            V real_value=tmp.getVal();
             short repl_count=tmp.getReplicationCount();
+            List<Address> new_mbrs=Util.newMembers(old_nodes, new_nodes);
 
             if(repl_count == -1) {
-                
+                if(is_coord) {
+                    for(Address new_mbr: new_mbrs) {
+                        move(new_mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+                    }
+                }
             }
             else if(repl_count == 1) {
 
