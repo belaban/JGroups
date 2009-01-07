@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.10 2008/12/11 12:52:19 belaban Exp $
+// $Id: UtilTest.java,v 1.11 2009/01/07 16:12:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -486,8 +486,7 @@ public class UtilTest {
     }
 
     public static void testLeftMembers2() {
-        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
-                d=new IpAddress(4000), e=new IpAddress(5000);
+        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000), d=new IpAddress(4000);
 
         Vector<Address> v1=new Vector<Address>();
         v1.add(a);
@@ -507,6 +506,30 @@ public class UtilTest {
         System.out.println("left = " + left);
         assert left != null;
         assert left.isEmpty();
+    }
+
+
+    public static void testNewMembers() {
+        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
+                d=new IpAddress(4000), e=new IpAddress(5000);
+        List<Address> old=new ArrayList<Address>();
+        List<Address> new_list=new ArrayList<Address>();
+
+        old.add(a); old.add(b); old.add(c);
+        new_list.add(b);
+        new_list.add(a);
+        new_list.add(c);
+        new_list.add(d);
+        new_list.add(e);
+
+        System.out.println("old: " + old);
+        System.out.println("new: " + new_list);
+
+        List<Address> new_nodes=Util.newMembers(old, new_list);
+        System.out.println("new_nodes = " + new_nodes);
+        assert new_nodes.size() == 2 : "list should have d and e";
+        assert new_nodes.contains(d);
+        assert new_nodes.contains(e);
     }
 
     public static void testPickRandomElement() {
