@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.6 2009/01/07 12:11:57 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.7 2009/01/07 13:14:55 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -68,21 +68,27 @@ public class ReplCache<K,V> implements MembershipListener {
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
      * will then also evict those keys from its L2 cache */
     @ManagedAttribute(writable=true)
-    private boolean migrate_data=false;
+    private boolean migrate_data=true;
 
-    private static final short PUT     = 1;
-    private static final short GET     = 2;
-    private static final short REMOVE  = 3;
+    private static final short PUT       = 1;
+    private static final short PUT_FORCE = 2;
+    private static final short GET       = 3;
+    private static final short REMOVE    = 4;
 
     protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
 
-     static {
+    static {
         try {
             methods.put(PUT, ReplCache.class.getMethod("_put",
                                                        Object.class,
                                                        Object.class,
                                                        short.class,
                                                        long.class));
+            methods.put(PUT_FORCE, ReplCache.class.getMethod("_put",
+                                                             Object.class,
+                                                             Object.class,
+                                                             short.class,
+                                                             long.class, boolean.class));
             methods.put(GET, ReplCache.class.getMethod("_get",
                                                        Object.class));
             methods.put(REMOVE, ReplCache.class.getMethod("_remove", Object.class));
@@ -266,19 +272,36 @@ public class ReplCache<K,V> implements MembershipListener {
             List<Address> members_without_me=new ArrayList<Address>(view.getMembers());
             members_without_me.remove(local_addr);
 
-//            for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
-//                K key=entry.getKey();
-//                Address node=hash_function.hash(key, members_without_me);
-//                if(!node.equals(local_addr)) {
-//                    Cache.Value<Value<V>> val=entry.getValue();
-//                    sendPut(node, key, val.getValue().getVal(),
-//                            val.getValue().getReplicationCount(), val.getExpirationTime(), true);
-//                    if(log.isTraceEnabled())
-//                        log.trace("migrated " + key + " from " + local_addr + " to " + node);
-//                }
-//            }
+            HashFunction<K> tmp_hash_function=hash_function_factory.create();
+            tmp_hash_function.installNodes(members_without_me);
+
+            for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
+                K key=entry.getKey();
+                Cache.Value<Value<V>> val=entry.getValue();
+                if(val == null)
+                    continue;
+                Value<V> tmp=val.getValue();
+                if(tmp == null)
+                    continue;
+                short repl_count=tmp.getReplicationCount();
+                if(repl_count != 1) // we only handle keys which are not replicated and which are stored by us
+                    continue;
+
+                List<Address> nodes=tmp_hash_function.hash(key, repl_count);
+                if(nodes == null)
+                    continue;
+                if(!nodes.contains(local_addr)) {
+                    Address dest=nodes.get(0); // should only have 1 element anyway
+                    move(dest, key, tmp.getVal(), repl_count, val.getExpirationTime(), true);
+                    if(l2_cache != null)
+                        l2_cache.remove(key);
+                    if(l1_cache != null)
+                        l1_cache.remove(key);
+                }
+            }
         }
-        l2_cache.stop();
+        if(l2_cache != null)
+            l2_cache.stop();
         disp.stop();
         ch.close();
     }
@@ -310,7 +333,7 @@ public class ReplCache<K,V> implements MembershipListener {
                 log.warn("repl_count of 0 is invalid, data will not be stored in the cluster");
             return;
         }
-        sendPut(key, val, repl_count, timeout, false);
+        mcastPut(key, val, repl_count, timeout, false);
         if(l1_cache != null && timeout >= 0)
             l1_cache.put(key, val, timeout);
     }
@@ -402,29 +425,44 @@ public class ReplCache<K,V> implements MembershipListener {
                 log.warn("remove() failed", t);
         }
     }
-    
 
     public V _put(K key, V val, short repl_count, long timeout) {
+        return _put(key, val, repl_count, timeout, false);
+    }
 
-        // check if we need to host the data
-        boolean accept=repl_count == -1;
+    /**
+     *
+     * @param key
+     * @param val
+     * @param repl_count
+     * @param timeout
+     * @param force Skips acceptance checking and simply adds the key/value
+     * @return
+     */
+    public V _put(K key, V val, short repl_count, long timeout, boolean force) {
 
-        if(!accept) {
-            if(view != null && repl_count >= view.size()) {
-                accept=true;
-            }
-            else {
-                List<Address> selected_hosts=hash_function != null? hash_function.hash(key, repl_count) : null;
-                if(selected_hosts != null) {
-                    for(Address addr: selected_hosts) {
-                        if(addr.equals(local_addr)) {
-                            accept=true;
-                            break;
+        if(!force) {
+
+            // check if we need to host the data
+            boolean accept=repl_count == -1;
+
+            if(!accept) {
+                if(view != null && repl_count >= view.size()) {
+                    accept=true;
+                }
+                else {
+                    List<Address> selected_hosts=hash_function != null? hash_function.hash(key, repl_count) : null;
+                    if(selected_hosts != null) {
+                        for(Address addr: selected_hosts) {
+                            if(addr.equals(local_addr)) {
+                                accept=true;
+                                break;
+                            }
                         }
                     }
+                    if(!accept)
+                        return null;
                 }
-                if(!accept)
-                    return null;
             }
         }
 
@@ -472,10 +510,6 @@ public class ReplCache<K,V> implements MembershipListener {
         for(MembershipListener l: membership_listeners) {
             l.viewAccepted(new_view);
         }
-
-//        if(migrate_data) {
-//            migrateData();
-//        }
     }
 
     public void suspect(Address suspected_mbr) {
@@ -507,21 +541,9 @@ public class ReplCache<K,V> implements MembershipListener {
 
 
 
-//    private void migrateData() {
-//        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
-//            K key=entry.getKey();
-//            Address node=getNode(key);
-//            if(!node.equals(local_addr)) {
-//                Cache.Value<Value<V>> val=entry.getValue();
-//                put(key, val.getValue().getVal(), val.getValue().getReplicationCount(), val.getExpirationTime());
-//                l2_cache.remove(key);
-//                if(log.isTraceEnabled())
-//                    log.trace("migrated " + key + " from " + local_addr + " to " + node);
-//            }
-//        }
-//    }
 
-    private void sendPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
+
+    private void mcastPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
         try {
             int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
             disp.callRemoteMethods(null, new MethodCall(PUT, new Object[]{key, val, repl_count, caching_time}), mode, call_timeout);
@@ -532,11 +554,21 @@ public class ReplCache<K,V> implements MembershipListener {
         }
     }
 
-//    private Address getNode(K key) {
-//        return hash_function.hash(key, null);
-//    }
+
+    private void move(Address dest, K key, V val, short repl_count, long caching_time, boolean synchronous) {
+        try {
+            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
+            disp.callRemoteMethod(dest, new MethodCall(PUT_FORCE, new Object[]{key, val, repl_count, caching_time, true}),
+                                  mode, call_timeout);
+        }
+        catch(Throwable t) {
+            if(log.isWarnEnabled())
+                log.warn("move() failed", t);
+        }
+    }
 
 
+    
     public static class ConsistentHashFunction<K> implements HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
@@ -689,17 +721,22 @@ public class ReplCache<K,V> implements MembershipListener {
 
 
     private static class CustomMarshaller implements RpcDispatcher.Marshaller {
+        static final byte NULL        = 0;
         static final byte OBJ         = 1;
         static final byte METHOD_CALL = 2;
         static final byte VALUE       = 3;
         
 
         public byte[] objectToByteBuffer(Object obj) throws Exception {
-            if(obj == null)
-                return null;
             ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
             DataOutputStream out=new DataOutputStream(out_stream);
             try {
+                if(obj == null) {
+                    out_stream.write(NULL);
+                    out_stream.flush();
+                    return out_stream.toByteArray();
+                }
+
                 if(obj instanceof MethodCall) {
                     out.writeByte(METHOD_CALL);
                     MethodCall call=(MethodCall)obj;
@@ -739,6 +776,8 @@ public class ReplCache<K,V> implements MembershipListener {
 
             DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
             byte type=in.readByte();
+            if(type == NULL)
+                return null;
             if(type == METHOD_CALL) {
                 short id=in.readShort();
                 short length=in.readShort();

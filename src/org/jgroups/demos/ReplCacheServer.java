@@ -14,7 +14,7 @@ import java.net.InetAddress;
 /**
  * Runs an instance of ReplCache and allows a user to add, get and remove elements
  * @author Bela Ban
- * @version $Id: ReplCacheServer.java,v 1.2 2009/01/07 09:01:27 belaban Exp $
+ * @version $Id: ReplCacheServer.java,v 1.3 2009/01/07 13:14:56 belaban Exp $
  */
 public class ReplCacheServer {
     private ReplCache<String,String> cache;
@@ -69,7 +69,7 @@ public class ReplCacheServer {
         while(true) {
             int c;
             System.in.skip(System.in.available());
-            System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [x] Exit");
+            System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [5] view [x] Exit");
             c=System.in.read();
             switch(c) {
                 case -1:
@@ -88,6 +88,9 @@ public class ReplCacheServer {
                     break;
                 case '4':
                     System.out.println(cache.dump());
+                    break;
+                case '5':
+                    System.out.println("view = " + cache.getView());
                     break;
                 case 'x':
                     cache.stop();
