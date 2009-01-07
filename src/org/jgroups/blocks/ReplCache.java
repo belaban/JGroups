@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.4 2009/01/07 09:01:26 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.5 2009/01/07 09:32:30 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -263,8 +263,8 @@ public class ReplCache<K,V> implements MembershipListener {
      * Needs to be &gt; 0
      * <ul>
      * <li>-1: create key/val in all the nodes in the cluster
-     * <li>0: create key/val only in one node in the cluster, picked by computing the consistent hash of KEY
-     * <li>K &gt; 0: create key/val in those nodes in the cluster which match the consistent hashes created for KEY
+     * <li>1: create key/val only in one node in the cluster, picked by computing the consistent hash of KEY
+     * <li>K &gt; 1: create key/val in those nodes in the cluster which match the consistent hashes created for KEY
      * </ul>
      * @param timeout Expiration time for key/value.
      * <ul>
@@ -275,6 +275,11 @@ public class ReplCache<K,V> implements MembershipListener {
      */
     @ManagedOperation
     public void put(K key, V val, short repl_count, long timeout) {
+        if(repl_count == 0) {
+            if(log.isWarnEnabled())
+                log.warn("repl_count of 0 is invalid, data will not be stored in the cluster");
+            return;
+        }
         sendPut(key, val, repl_count, timeout, false);
         if(l1_cache != null && timeout >= 0)
             l1_cache.put(key, val, timeout);
