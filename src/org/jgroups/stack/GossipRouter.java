@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26.2.4 2008/12/08 12:42:44 belaban Exp $
+// $Id: GossipRouter.java,v 1.26.2.5 2009/01/07 08:06:26 jiwils Exp $
 
 package org.jgroups.stack;
 
@@ -64,11 +64,11 @@ public class GossipRouter {
 
     // number of millisecs the main thread waits to receive a gossip request
     // after connection was established; upon expiration, the router initiates
-    // the routing protocol on the connection. Don't set the interval too big, 
+    // the routing protocol on the connection. Don't set the interval too big,
     // otherwise the router will appear slow in answering routing requests.
     private long gossipRequestTimeout;
 
-    // time (in ms) main thread waits for a router client to send the routing 
+    // time (in ms) main thread waits for a router client to send the routing
     // request type and the group afiliation before it declares the request
     // failed.
     private long routingClientReplyTimeout;
@@ -379,7 +379,7 @@ public class GossipRouter {
             try {
                 sock=srvSock.accept();
                 if(linger_timeout > 0) {
-                    int linger=Math.min(1, (int)(linger_timeout / 1000));
+                    int linger=Math.max(1, (int)(linger_timeout / 1000));
                     sock.setSoLinger(true, linger);
                 }
                 if(sock_read_timeout > 0) {
