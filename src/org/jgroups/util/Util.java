@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.184 2009/01/07 16:12:30 belaban Exp $
+ * @version $Id: Util.java,v 1.185 2009/01/07 16:26:24 belaban Exp $
  */
 public class Util {
 
@@ -2827,6 +2827,20 @@ public class Util {
         catch(SecurityException ex) {
             return false;
         }
+    }
+
+
+
+    public static boolean isCoordinator(JChannel ch) {
+        if(ch == null) return false;
+        View view=ch.getView();
+        if(view == null)
+            return false;
+        Address local_addr=ch.getLocalAddress();
+        if(local_addr == null)
+            return false;
+        Vector<Address> mbrs=view.getMembers();
+        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.firstElement());
     }
 
 
