@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.5 2009/01/07 09:32:30 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.6 2009/01/07 12:11:57 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -55,6 +55,13 @@ public class ReplCache<K,V> implements MembershipListener {
     private short default_replication_count=1; // no replication by default
 
     private HashFunction<K> hash_function=null;
+
+    private HashFunctionFactory<K> hash_function_factory=new HashFunctionFactory<K>() {
+        public HashFunction<K> create() {
+            return new ConsistentHashFunction<K>();
+        }
+    };
+
     private Set<MembershipListener> membership_listeners=new HashSet<MembershipListener>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
@@ -96,6 +103,17 @@ public class ReplCache<K,V> implements MembershipListener {
          * @return
          */
         List<Address> hash(K key, short replication_count);
+
+        /**
+         * When the topology changes, this method will be called. Implementations will typically cache the node list
+         * @param nodes
+         */
+        void installNodes(List<Address> nodes);
+    }
+
+
+    public interface HashFunctionFactory<K> {
+        HashFunction<K> create();
     }
 
 
@@ -179,6 +197,14 @@ public class ReplCache<K,V> implements MembershipListener {
         this.hash_function=hash_function;
     }
 
+    public HashFunctionFactory getHashFunctionFactory() {
+        return hash_function_factory;
+    }
+
+    public void setHashFunctionFactory(HashFunctionFactory hash_function_factory) {
+        this.hash_function_factory=hash_function_factory;
+    }
+
     public void addMembershipListener(MembershipListener l) {
         membership_listeners.add(l);
     }
@@ -210,8 +236,12 @@ public class ReplCache<K,V> implements MembershipListener {
 
     @ManagedOperation
     public void start() throws Exception {
-        hash_function=new ConsistentHashFunction<K>();
-        addMembershipListener((MembershipListener)hash_function);
+        if(hash_function_factory != null) {
+            hash_function=hash_function_factory.create();
+        }
+        if(hash_function == null)
+            hash_function=new ConsistentHashFunction<K>();
+
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, null, this, this);
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
@@ -434,6 +464,11 @@ public class ReplCache<K,V> implements MembershipListener {
     public void viewAccepted(View new_view) {
         System.out.println("view = " + new_view);
         this.view=new_view;
+
+        if(hash_function != null) {
+            hash_function.installNodes(new_view.getMembers());
+        }
+
         for(MembershipListener l: membership_listeners) {
             l.viewAccepted(new_view);
         }
@@ -502,7 +537,7 @@ public class ReplCache<K,V> implements MembershipListener {
 //    }
 
 
-    public static class ConsistentHashFunction<K> extends MembershipListenerAdapter implements HashFunction<K> {
+    public static class ConsistentHashFunction<K> implements HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
 
@@ -535,9 +570,9 @@ public class ReplCache<K,V> implements MembershipListener {
             return retval;
         }
 
-        public void viewAccepted(View new_view) {
+        public void installNodes(List<Address> new_nodes) {
             nodes.clear();
-            for(Address node: new_view.getMembers()) {
+            for(Address node: new_nodes) {
                 int hash=Math.abs(node.hashCode()) % HASH_SPACE;
                 for(int i=hash; i < hash + HASH_SPACE; i++) {
                     short new_index=(short)(i % HASH_SPACE);
@@ -556,6 +591,7 @@ public class ReplCache<K,V> implements MembershipListener {
                 log.trace(sb);
             }
         }
+
     }
 
 
