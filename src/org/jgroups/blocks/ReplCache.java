@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.3 2009/01/06 16:46:04 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.4 2009/01/07 09:01:26 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -275,7 +275,7 @@ public class ReplCache<K,V> implements MembershipListener {
      */
     @ManagedOperation
     public void put(K key, V val, short repl_count, long timeout) {
-        sendPut(null, key, val, repl_count, timeout, false);
+        sendPut(key, val, repl_count, timeout, false);
         if(l1_cache != null && timeout >= 0)
             l1_cache.put(key, val, timeout);
     }
@@ -308,9 +308,17 @@ public class ReplCache<K,V> implements MembershipListener {
         }
 
         // 2. Try the local cache
-        Value<V> tmp=l2_cache.get(key);
-        if(tmp != null)
-            return tmp.getVal();
+        Cache.Value<Value<V>> val=l2_cache.getEntry(key);
+        Value<V> tmp;
+        if(val != null) {
+            tmp=val.getValue();
+            if(tmp !=null) {
+                V real_value=tmp.getVal();
+                if(real_value != null && l1_cache != null && val.getExpirationTime() >= 0)
+                    l1_cache.put(key, real_value, val.getExpirationTime());
+                return tmp.getVal();
+            }
+        }
 
         // 3. Execute a cluster wide GET
         try {
@@ -319,7 +327,10 @@ public class ReplCache<K,V> implements MembershipListener {
                                                 GroupRequest.GET_ALL,
                                                 call_timeout);
             for(Rsp rsp: rsps.values()) {
-                Cache.Value<Value<V>> val=(Cache.Value<Value<V>>)rsp.getValue();
+                Object obj=rsp.getValue();
+                if(obj == null || obj instanceof Throwable)
+                    continue;
+                val=(Cache.Value<Value<V>>)rsp.getValue();
                 if(val != null) {
                     tmp=val.getValue();
                     if(tmp != null) {
@@ -346,8 +357,8 @@ public class ReplCache<K,V> implements MembershipListener {
     @ManagedOperation
     public void remove(K key) {
         try {
-            disp.callRemoteMethod(null, new MethodCall(REMOVE, new Object[]{key}),
-                                  GroupRequest.GET_NONE, call_timeout);
+            disp.callRemoteMethods(null, new MethodCall(REMOVE, new Object[]{key}),
+                                   GroupRequest.GET_NONE, call_timeout);
             if(l1_cache != null)
                 l1_cache.remove(key);
         }
@@ -389,6 +400,10 @@ public class ReplCache<K,V> implements MembershipListener {
             timeout=System.currentTimeMillis() + timeout;
         Value<V> value=new Value<V>(val, repl_count);
         Value<V> retval=l2_cache.put(key, value, timeout);
+
+        if(l1_cache != null)
+            l1_cache.remove(key);
+
         return retval != null? retval.getVal() : null;
     }
 
@@ -402,6 +417,8 @@ public class ReplCache<K,V> implements MembershipListener {
         if(log.isTraceEnabled())
             log.trace("_remove(" + key + ")");
         Value<V> retval=l2_cache.remove(key);
+        if(l1_cache != null)
+            l1_cache.remove(key);
         return retval != null? retval.getVal() : null;
     }
 
@@ -464,10 +481,10 @@ public class ReplCache<K,V> implements MembershipListener {
 //        }
 //    }
 
-    private void sendPut(Address dest, K key, V val, short repl_count, long caching_time, boolean synchronous) {
+    private void sendPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
         try {
             int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethod(dest, new MethodCall(PUT, new Object[]{key, val, repl_count, caching_time}), mode, call_timeout);
+            disp.callRemoteMethods(null, new MethodCall(PUT, new Object[]{key, val, repl_count, caching_time}), mode, call_timeout);
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -625,7 +642,7 @@ public class ReplCache<K,V> implements MembershipListener {
         }
 
         public String toString() {
-            return "val=" + val + ", replication_count=" + replication_count;
+            return val + " (replication_count=" + replication_count + ")";
         }
     }
 

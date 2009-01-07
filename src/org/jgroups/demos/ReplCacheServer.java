@@ -3,15 +3,18 @@ package org.jgroups.demos;
 import org.jgroups.blocks.Cache;
 import org.jgroups.blocks.ReplCache;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 
 /**
  * Runs an instance of ReplCache and allows a user to add, get and remove elements
  * @author Bela Ban
- * @version $Id: ReplCacheServer.java,v 1.1 2009/01/06 17:01:02 belaban Exp $
+ * @version $Id: ReplCacheServer.java,v 1.2 2009/01/07 09:01:27 belaban Exp $
  */
 public class ReplCacheServer {
     private ReplCache<String,String> cache;
@@ -57,8 +60,84 @@ public class ReplCacheServer {
         });
 
         cache.start();
+
+        mainLoop();
     }
 
+
+    private void mainLoop() throws IOException {
+        while(true) {
+            int c;
+            System.in.skip(System.in.available());
+            System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [x] Exit");
+            c=System.in.read();
+            switch(c) {
+                case -1:
+                    break;
+                case '1':
+                    put();
+                    break;
+                case '2':
+                    String key=readString("key");
+                    String val=cache.get(key);
+                    System.out.println("val = " + val);
+                    break;
+                case '3':
+                    key=readString("key");
+                    cache.remove(key);
+                    break;
+                case '4':
+                    System.out.println(cache.dump());
+                    break;
+                case 'x':
+                    cache.stop();
+                    return;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void put() throws IOException {
+        String key=readString("key");
+        String val=readString("value");
+        String tmp=readString("replication count");
+        short count=Short.parseShort(tmp);
+        tmp=readString("timeout");
+        long timeout=Long.parseLong(tmp);
+        cache.put(key, val, count, timeout);
+    }
+
+
+
+    private static void skip(InputStream in) throws IOException {
+        System.in.skip(in.available());
+    }
+
+    private static String readString(String s) throws IOException {
+        int c;
+        boolean looping=true;
+        StringBuilder sb=new StringBuilder();
+        System.out.print(s + ": ");
+        System.out.flush();
+        skip(System.in);
+
+        while(looping) {
+            c=System.in.read();
+            switch(c) {
+                case -1:
+                case '\n':
+                case 13:
+                    looping=false;
+                    break;
+                default:
+                    sb.append((char)c);
+                    break;
+            }
+        }
+
+        return sb.toString();
+    }
 
 
     public static void main(String[] args) throws Exception {
