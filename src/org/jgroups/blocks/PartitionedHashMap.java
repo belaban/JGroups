@@ -35,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.16 2008/09/03 14:17:57 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.17 2009/01/07 13:14:55 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -553,17 +553,22 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
     private static class CustomMarshaller implements RpcDispatcher.Marshaller {
+        static final byte NULL        = 0;
         static final byte OBJ         = 1;
         static final byte METHOD_CALL = 2;
         static final byte VALUE       = 3;
         
 
         public byte[] objectToByteBuffer(Object obj) throws Exception {
-            if(obj == null)
-                return null;
+
             ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
             DataOutputStream out=new DataOutputStream(out_stream);
             try {
+                if(obj == null) {
+                    out_stream.write(NULL);
+                    out_stream.flush();
+                    return out_stream.toByteArray();
+                }
                 if(obj instanceof MethodCall) {
                     out.writeByte(METHOD_CALL);
                     MethodCall call=(MethodCall)obj;
@@ -603,6 +608,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
             DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
             byte type=in.readByte();
+            if(type == NULL)
+                return null;
             if(type == METHOD_CALL) {
                 short id=in.readShort();
                 short length=in.readShort();
