@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.40 2008/12/18 12:23:37 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.41 2009/01/07 08:08:37 jiwils Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -114,34 +114,34 @@ public class GossipRouter {
 
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
-    
+
     @ManagedAttribute(description="Minimum thread pool size for incoming connections. Default is 2")
     protected int thread_pool_min_threads=2;
 
 	@ManagedAttribute(description="Maximum thread pool size for incoming connections. Default is 10")
     protected int thread_pool_max_threads=10;
-   
-    
+
+
     @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
     protected long thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute(description="Switch for enabling thread pool for incoming connections. Default true")
     protected boolean thread_pool_enabled=false;
-  
+
     @ManagedAttribute(description="Use queue to enqueue incoming connections")
     protected boolean thread_pool_queue_enabled=true;
 
-    
+
     @ManagedAttribute(description="Maximum queue size for incoming connections")
     protected int thread_pool_queue_max_size=50;
 
     @ManagedAttribute(description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
     protected String thread_pool_rejection_policy="Run";
-    
+
     protected ExecutorService thread_pool;
-    
+
     protected BlockingQueue<Runnable> thread_pool_queue=null;
-    
+
     protected ThreadFactory default_thread_factory = new DefaultThreadFactory(Util.getGlobalThreadGroup(), "gossip-handlers", true, true);
 
 
@@ -152,7 +152,7 @@ public class GossipRouter {
 
     private boolean jmx=false;
 	private boolean registered= false;
-   
+
 
 
     public GossipRouter() {
@@ -265,7 +265,7 @@ public class GossipRouter {
     public void setSocketReadTimeout(long sock_read_timeout) {
         this.sock_read_timeout=sock_read_timeout;
     }
-    
+
     public ThreadFactory getDefaultThreadPoolThreadFactory() {
         return default_thread_factory;
     }
@@ -275,7 +275,7 @@ public class GossipRouter {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
     }
-    
+
     public int getThreadPoolMinThreads() {
 		return thread_pool_min_threads;
 	}
@@ -388,12 +388,12 @@ public class GossipRouter {
         }
 
         up=true;
-        
+
         if (thread_pool_enabled) {
 			if (thread_pool_queue_enabled) {
 				thread_pool_queue = new LinkedBlockingQueue<Runnable>(
 						thread_pool_queue_max_size);
-			} 
+			}
 			else {
 				thread_pool_queue = new SynchronousQueue<Runnable>();
 			}
@@ -401,8 +401,8 @@ public class GossipRouter {
 					thread_pool_max_threads, thread_pool_keep_alive_time,
 					thread_pool_rejection_policy, thread_pool_queue,
 					default_thread_factory);
-		} 
-        else { 
+		}
+        else {
 			thread_pool = Executors.newSingleThreadExecutor(default_thread_factory);
 		}
 
@@ -497,7 +497,7 @@ public class GossipRouter {
 			try {
 				final Socket sock = srvSock.accept();
 				if (linger_timeout > 0) {
-					int linger = Math.min(1, (int) (linger_timeout / 1000));
+					int linger = Math.max(1, (int) (linger_timeout / 1000));
 					sock.setSoLinger(true, linger);
 				}
 				if (sock_read_timeout > 0) {
@@ -649,7 +649,7 @@ public class GossipRouter {
 			}
 		}
 	}
-    
+
     protected ExecutorService createThreadPool(int min_threads,
 			int max_threads, long keep_alive_time, String rejection_policy,
 			BlockingQueue<Runnable> queue, final ThreadFactory factory) {
@@ -723,7 +723,7 @@ public class GossipRouter {
     private void sweep() {
         long diff, currentTime=System.currentTimeMillis();
         int num_entries_removed=0;
-       
+
         for(Iterator<Entry<String,ConcurrentMap<Address,AddressEntry>>> it=routingTable.entrySet().iterator(); it.hasNext();) {
         	Entry <String,ConcurrentMap<Address,AddressEntry>> entry=it.next();
         	Map <Address,AddressEntry> map=entry.getValue();
@@ -874,7 +874,7 @@ public class GossipRouter {
         Map<Address,AddressEntry> val = routingTable.get(groupname);
         if(val == null || val.isEmpty())
             return;
-        
+
         synchronized(val) {
             for(Iterator<Entry<Address,AddressEntry>> i=val.entrySet().iterator(); i.hasNext();) {
             	Entry<Address,AddressEntry> tmp=i.next();
@@ -1016,7 +1016,7 @@ public class GossipRouter {
             int len;
             Address dst_addr=null;
             String gname;
-            
+
             DataOutputStream output = null;
             try {
                 output=new DataOutputStream(sock.getOutputStream());
@@ -1028,7 +1028,7 @@ public class GossipRouter {
                 }
                 catch(IOException e) {}
             }
-            
+
             while(active) {
                 try {
                     // 1. Group name is first
@@ -1126,7 +1126,7 @@ public class GossipRouter {
 			}
 			catch(Exception e){}
 		}
-        
+
         router.stop();
         router.cleanup();
     }
