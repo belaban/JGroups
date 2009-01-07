@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.7 2009/01/07 13:14:55 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.8 2009/01/07 13:53:05 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -500,7 +500,11 @@ public class ReplCache<K,V> implements MembershipListener {
 
 
     public void viewAccepted(View new_view) {
-        System.out.println("view = " + new_view);
+        if(log.isInfoEnabled())
+            log.info("new view: " + new_view);
+
+        List<Address> old_nodes=this.view != null? new ArrayList<Address>(this.view.getMembers()) : null;
+
         this.view=new_view;
 
         if(hash_function != null) {
@@ -510,7 +514,14 @@ public class ReplCache<K,V> implements MembershipListener {
         for(MembershipListener l: membership_listeners) {
             l.viewAccepted(new_view);
         }
+
+        if(old_nodes == null)
+            return;
+
+        rebalance(old_nodes, new ArrayList<Address>(new_view.getMembers()));
     }
+
+
 
     public void suspect(Address suspected_mbr) {
     }
@@ -540,7 +551,27 @@ public class ReplCache<K,V> implements MembershipListener {
     }
 
 
+    private void rebalance(List<Address> old_nodes, List<Address> new_nodes) {
+        HashFunction<K> old_func=hash_function_factory.create();
+        old_func.installNodes(old_nodes);
 
+        HashFunction<K> new_func=hash_function_factory.create();
+        new_func.installNodes(new_nodes);
+
+        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
+            K key=entry.getKey();
+            Cache.Value<Value<V>> val=entry.getValue();
+            if(val == null)
+                continue;
+            Value<V> tmp=val.getValue();
+            if(tmp == null)
+                continue;
+            short repl_count=tmp.getReplicationCount();
+
+
+        }
+
+    }
 
 
     private void mcastPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
