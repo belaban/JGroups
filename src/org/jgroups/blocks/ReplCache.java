@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.11 2009/01/07 16:26:23 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.12 2009/01/08 09:54:41 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -288,7 +288,7 @@ public class ReplCache<K,V> implements MembershipListener {
                     continue;
 
                 List<Address> nodes=tmp_hash_function.hash(key, repl_count);
-                if(nodes == null)
+                if(nodes == null || nodes.isEmpty())
                     continue;
                 if(!nodes.contains(local_addr)) {
                     Address dest=nodes.get(0); // should only have 1 element anyway
@@ -453,6 +453,7 @@ public class ReplCache<K,V> implements MembershipListener {
                 else {
                     List<Address> selected_hosts=hash_function != null? hash_function.hash(key, repl_count) : null;
                     if(selected_hosts != null) {
+                        System.out.println("local=" + local_addr + ", hosts=" + selected_hosts);
                         for(Address addr: selected_hosts) {
                             if(addr.equals(local_addr)) {
                                 accept=true;
@@ -580,13 +581,25 @@ public class ReplCache<K,V> implements MembershipListener {
                 }
             }
             else if(repl_count == 1) {
+                List<Address> tmp_nodes=new_func.hash(key, repl_count);
+                if(!tmp_nodes.isEmpty()) {
+                    Address mbr=tmp_nodes.get(0);
+                    if(!mbr.equals(local_addr)) {
+                        move(mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+                        if(l2_cache != null)
+                            l2_cache.remove(key);
+                        if(l1_cache != null)
+                            l1_cache.remove(key);
+                    }
+                }
 
             }
             else if(repl_count > 1) {
-
+                
             }
             else {
                 // failure: illegal state
+                throw new IllegalStateException("replication count is invalid (" + repl_count + ")");
             }
             
         }
@@ -623,10 +636,14 @@ public class ReplCache<K,V> implements MembershipListener {
     public static class ConsistentHashFunction<K> implements HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
+        private final static int FACTOR=3737;
 
         public List<Address> hash(K key, short replication_count) {
             int hash=Math.abs(key.hashCode());
             int index=hash % HASH_SPACE;
+
+            System.out.println("** index (" + key + ") =" + index);
+
             Set<Address> results=new LinkedHashSet<Address>();
             List<Address> retval=new ArrayList<Address>();
 
@@ -656,7 +673,7 @@ public class ReplCache<K,V> implements MembershipListener {
         public void installNodes(List<Address> new_nodes) {
             nodes.clear();
             for(Address node: new_nodes) {
-                int hash=Math.abs(node.hashCode()) % HASH_SPACE;
+                int hash=Math.abs(node.hashCode() * FACTOR) % HASH_SPACE;
                 for(int i=hash; i < hash + HASH_SPACE; i++) {
                     short new_index=(short)(i % HASH_SPACE);
                     if(!nodes.containsKey(new_index)) {
@@ -766,7 +783,7 @@ public class ReplCache<K,V> implements MembershipListener {
         }
 
         public String toString() {
-            return val + " (replication_count=" + replication_count + ")";
+            return val + " (" + replication_count + ")";
         }
     }
 
