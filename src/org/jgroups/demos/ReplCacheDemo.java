@@ -9,11 +9,13 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.1 2009/01/08 14:07:32 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.2 2009/01/08 14:49:29 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel
                                 implements ActionListener { 
@@ -23,22 +25,21 @@ public class ReplCacheDemo extends JPanel
     private JTextField repl_count_field=new JTextField("1", 3);
     private JTextField timeout_field=new JTextField("0", 5);
 
+    private MyTableModel model=new MyTableModel();
+
 
     public ReplCacheDemo() {
         super();
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        table = new JTable(new MyTableModel());
-        table.setPreferredScrollableViewportSize(new Dimension(500, 70));
+        table = new JTable(model);
+        table.setPreferredScrollableViewportSize(new Dimension(500, 200));
         table.setFillsViewportHeight(true);
         table.getSelectionModel().addListSelectionListener(new RowListener());
         table.getColumnModel().getSelectionModel().
             addListSelectionListener(new ColumnListener());
         add(new JScrollPane(table));
         
-        // add(new JSeparator());
-
-
         JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
         key.add(new JLabel("Key"));
         key.add(key_field);
@@ -84,7 +85,7 @@ public class ReplCacheDemo extends JPanel
                     repl_count_field.getText() + ", timeout=" + timeout_field.getText());
         }
         else if(command.equals("Remove")) {
-
+            model.change();
         }
         else if(command.equals("Exit")) {
             System.exit(1);
@@ -109,11 +110,34 @@ public class ReplCacheDemo extends JPanel
         }
     }
 
+    private class Entry {
+        private String value=null;
+        private int repl_count=1;
+        private long timeout=0;
+
+        private Entry(String value, int repl_count, long timeout) {
+            this.value=value;
+            this.repl_count=repl_count;
+            this.timeout=timeout;
+        }
+    }
+
+
     class MyTableModel extends AbstractTableModel {
         private String[] columnNames = {"Key",
                                         "Value",
                                         "K",
                                         "Timeout"};
+
+
+//        private final Map<String,Entry> map=new ConcurrentHashMap<String,Entry>();
+//
+//        MyTableModel() {
+//            map.put("name", new Entry("Bela", -1, 0));
+//            map.put("id", new Entry("322649", 1, 5000));
+//            map.put("hobbies", new Entry("Tennis, Running, Swimming", -1, 0));
+//        }
+
         private Object[][] data = {
             {"name", "Bela",
              "-1", "5000"},
@@ -174,6 +198,23 @@ public class ReplCacheDemo extends JPanel
         public void setValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
+        }
+
+
+        public void change() {
+            data = new String[][]{
+                    {"name", "Michelle",
+                            "-1", "5000"},
+                    {"id2", "322649",
+                            "3", "5000"},
+                    {"hobbies", "Tennis, Running, Biking",
+                            "-1", "0"},
+
+                    {"zip", "8280",
+                            "1", "0"},
+            };
+
+            fireTableDataChanged();
         }
 
     }
