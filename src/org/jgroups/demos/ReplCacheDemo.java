@@ -3,19 +3,19 @@ package org.jgroups.demos;
 
 
 import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.AbstractTableModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.*;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.TreeMap;
 
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.2 2009/01/08 14:49:29 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.3 2009/01/08 15:32:16 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel
                                 implements ActionListener { 
@@ -81,11 +81,23 @@ public class ReplCacheDemo extends JPanel
         System.out.println("command = " + command);
 
         if(command.equals("Put")) {
-            System.out.println("key=" + key_field.getText() + ", value=" + value_field.getText() + ", K=" +
-                    repl_count_field.getText() + ", timeout=" + timeout_field.getText());
+            String key=key_field.getText();
+            String value=value_field.getText();
+            String repl_count=repl_count_field.getText();
+            String timeout=timeout_field.getText();
+
+            if(key == null || value == null)
+                return;
+
+            if(repl_count == null)
+                repl_count="1";
+            if(timeout == null)
+                timeout="0";
+            model.put(key, value, Integer.valueOf(repl_count), Long.valueOf(timeout));
+            model.fireTableDataChanged();
         }
         else if(command.equals("Remove")) {
-            model.change();
+            // model.change();
         }
         else if(command.equals("Exit")) {
             System.exit(1);
@@ -130,41 +142,66 @@ public class ReplCacheDemo extends JPanel
                                         "Timeout"};
 
 
-//        private final Map<String,Entry> map=new ConcurrentHashMap<String,Entry>();
-//
-//        MyTableModel() {
-//            map.put("name", new Entry("Bela", -1, 0));
-//            map.put("id", new Entry("322649", 1, 5000));
-//            map.put("hobbies", new Entry("Tennis, Running, Swimming", -1, 0));
-//        }
+        private final Map<String,Entry> map=new TreeMap<String,Entry>();
 
-        private Object[][] data = {
-            {"name", "Bela",
-             "-1", "5000"},
-            {"id", "322649",
-             "3", 5000},
-            {"hobbies", "Tennis, Running, Biking",
-             "-1", 0},
-            {"country", "Switzerland",
-             "1", 0},
-            {"zip", "8280",
-             "1", 0},
-        };
+        MyTableModel() {
+            map.put("name", new Entry("Bela", -1, 0));
+            map.put("id", new Entry("322649", 1, 5000));
+            map.put("hobbies", new Entry("Tennis, Running, Swimming", -1, 0));
+        }
+
+//        private Object[][] data = {
+//            {"name", "Bela",
+//             -1, 5000},
+//            {"id", 322649,
+//             "3", 5000L},
+//            {"hobbies", "Tennis, Running, Biking",
+//             "-1", 0},
+//            {"country", "Switzerland",
+//             "1", "0"},
+//            {"zip", "8280",
+//             "1", 0},
+//        };
 
         public int getColumnCount() {
             return columnNames.length;
         }
 
         public int getRowCount() {
-            return data.length;
+            return map.size();
         }
 
         public String getColumnName(int col) {
             return columnNames[col];
         }
 
+        public void put(String key, String value, int repl_count, long timeout) {
+            map.put(key, new Entry(value, repl_count,  timeout));
+        }
+
         public Object getValueAt(int row, int col) {
-            return data[row][col];
+           //  return data[row][col];
+
+            int count=0;
+            Entry retval=null;
+            String key=null;
+
+            for(Map.Entry<String,Entry> entry: map.entrySet()) {
+                if(count++ >= row) {
+                    retval=entry.getValue();
+                    key=entry.getKey();
+                    break;
+                }
+            }
+            if(retval == null)
+                throw new IllegalArgumentException("row=" + row + ", col=" + col);
+            switch(col) {
+                case 0: return key;
+                case 1: return retval.value;
+                case 2: return retval.repl_count;
+                case 3: return retval.timeout;
+                default: return "n/a";
+            }
         }
 
         /*
@@ -184,38 +221,38 @@ public class ReplCacheDemo extends JPanel
         public boolean isCellEditable(int row, int col) {
             //Note that the data/cell address is constant,
             //no matter where the cell appears onscreen.
-            if (col < 2) {
-                return false;
-            } else {
-                return true;
-            }
+//            if (col < 2) {
+//                return false;
+//            } else {
+//                return true;
+//            }
+            return false;
         }
 
         /*
-         * Don't need to implement this method unless your table's
-         * data can change.
+         * Don't need to implement this method unless your table's data can change.
          */
         public void setValueAt(Object value, int row, int col) {
-            data[row][col] = value;
+            // data[row][col] = value;
             fireTableCellUpdated(row, col);
         }
 
 
-        public void change() {
-            data = new String[][]{
-                    {"name", "Michelle",
-                            "-1", "5000"},
-                    {"id2", "322649",
-                            "3", "5000"},
-                    {"hobbies", "Tennis, Running, Biking",
-                            "-1", "0"},
-
-                    {"zip", "8280",
-                            "1", "0"},
-            };
-
-            fireTableDataChanged();
-        }
+//        public void change() {
+//            data = new String[][]{
+//                    {"name", "Michelle",
+//                            "-1", "5000"},
+//                    {"id2", "322649",
+//                            "3", "5000"},
+//                    {"hobbies", "Tennis, Running, Biking",
+//                            "-1", "0"},
+//
+//                    {"zip", "8280",
+//                            "1", "0"},
+//            };
+//
+//            fireTableDataChanged();
+//        }
 
     }
 
