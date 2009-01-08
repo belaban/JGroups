@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.22.2.3 2009/01/06 22:47:17 jiwils Exp $
+// $Id: GossipRouter.java,v 1.22.2.4 2009/01/08 06:30:40 jiwils Exp $
 
 package org.jgroups.stack;
 
@@ -369,8 +369,8 @@ public class GossipRouter {
         if(bindAddress == null) {
             bindAddress=srvSock.getInetAddress();
         }
-        System.out.println("GossipRouter started at " + new Date() +
-                "\nListening on port " + port + " bound on address " + bindAddress + '\n');
+
+        printStartupInfo();
 
         GossipData req;
         String group;
@@ -772,6 +772,21 @@ public class GossipRouter {
 
 
     /**
+     * Prints startup information.
+     */
+    private void printStartupInfo() {
+        System.out.println("GossipRouter started at " + new Date());
+
+        System.out.print("Listening on port " + port);
+        System.out.println(" bound on address " + bindAddress);
+
+        System.out.print("Backlog is " + backlog);
+        System.out.print(", linger timeout is " + linger_timeout);
+        System.out.println(", and read timeout is " + sock_read_timeout);
+    }
+
+
+    /**
      * Class used to store Addresses in both routing and gossip tables.
      * If it is used for routing, sock and output have valid values, otherwise
      * they're null and only the timestamp counts.
@@ -921,6 +936,7 @@ public class GossipRouter {
         long routingTimeout=GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT;
         GossipRouter router=null;
         String bind_addr=null;
+        int backlog = 0;
 
         for(int i=0; i < args.length; i++) {
             arg=args[i];
@@ -936,12 +952,20 @@ public class GossipRouter {
                 expiry=Long.parseLong(args[++i]);
                 continue;
             }
+            // this option is not used and should be deprecated/removed
+            // in a future release
             if("-timeout".equals(arg)) {
                 timeout=Long.parseLong(args[++i]);
                 continue;
             }
+            // this option is not used and should be deprecated/removed
+            // in a future release
             if("-rtimeout".equals(arg)) {
                 routingTimeout=Long.parseLong(args[++i]);
+                continue;
+            }
+            if ("-backlog".equals(arg)) {
+                backlog=Integer.parseInt(args[++i]);
                 continue;
             }
             help();
@@ -951,7 +975,12 @@ public class GossipRouter {
 
         try {
             ClassConfigurator.getInstance(true);
+
             router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout);
+
+            if (backlog > 0)
+                router.setBacklog(backlog);
+
             router.start();
         }
         catch(Exception e) {
@@ -963,11 +992,18 @@ public class GossipRouter {
         System.out.println();
         System.out.println("GossipRouter [-port <port>] [-bind_addr <address>] [options]");
         System.out.println("Options: ");
-        System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires.");
-        System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
-        System.out.println("                            a gossip request after connection was established;");
-        System.out.println("                            upon expiration, the router initiates the routing");
-        System.out.println("                            protocol on the connection.");
+        System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires. 30000 is");
+        System.out.println("                            the default value.");
+        // -timeout isn't used and should be deprecated/removed
+        // in a future release. It's left in this code for backwards
+        // compatability, but it is no longer advertized.
+        //System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
+        //System.out.println("                            a gossip request after connection was established;");
+        //System.out.println("                            upon expiration, the router initiates the routing");
+        //System.out.println("                            protocol on the connection.");
+        System.out.println("        -backlog <size>   - Max queue size of backlogged connections. Must be");
+        System.out.println("                            greater than zero or the default of 1000 will be");
+        System.out.println("                            used.");
     }
 
 
