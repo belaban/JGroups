@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.22.2.5 2009/01/08 07:56:40 jiwils Exp $
+// $Id: GossipRouter.java,v 1.22.2.6 2009/01/08 07:59:37 jiwils Exp $
 
 package org.jgroups.stack;
 
@@ -1022,7 +1022,7 @@ public class GossipRouter {
         //System.out.println("                            upon expiration, the router initiates the routing");
         //System.out.println("                            protocol on the connection.");
 
-        System.out.println("    -backlog <size>       - Max queue size of backlogged connections. Must be");
+        System.out.println("    -backlog <backlog>    - Max queue size of backlogged connections. Must be");
         System.out.println("                            greater than zero or the default of 1000 will be");
         System.out.println("                            used.");
         System.out.println();
