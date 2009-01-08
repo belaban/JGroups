@@ -4,7 +4,7 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.12 2009/01/07 16:00:09 belaban Exp $
+Id: $Id: ReplCache.txt,v 1.13 2009/01/08 11:02:10 belaban Exp $
 
 
 Idea
@@ -69,6 +69,9 @@ There are a few considerations and assumptions that influenced the design:
   and distributes or replicates these chunks individually
 
 - IP multicasting should be used in the transport. If we used TCP, communication would get costly (N-1 issue)
+
+- K cannot be reduced for the same key, e.g. if K == 3 and then K == 2 for the same key, we'll have some leftover
+  data with K == 3. If this is necessary, remove the key first before calling put() again.
 
 
 API
