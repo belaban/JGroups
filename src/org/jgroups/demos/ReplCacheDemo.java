@@ -9,13 +9,14 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.3 2009/01/08 15:32:16 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.4 2009/01/08 15:44:26 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel
                                 implements ActionListener { 
@@ -97,7 +98,9 @@ public class ReplCacheDemo extends JPanel
             model.fireTableDataChanged();
         }
         else if(command.equals("Remove")) {
-            // model.change();
+            int[] rows=table.getSelectedRows();
+            model.remove(rows);
+            model.fireTableDataChanged();
         }
         else if(command.equals("Exit")) {
             System.exit(1);
@@ -142,7 +145,7 @@ public class ReplCacheDemo extends JPanel
                                         "Timeout"};
 
 
-        private final Map<String,Entry> map=new TreeMap<String,Entry>();
+        private final Map<String,Entry> map=new ConcurrentHashMap<String,Entry>();
 
         MyTableModel() {
             map.put("name", new Entry("Bela", -1, 0));
@@ -179,9 +182,23 @@ public class ReplCacheDemo extends JPanel
             map.put(key, new Entry(value, repl_count,  timeout));
         }
 
-        public Object getValueAt(int row, int col) {
-           //  return data[row][col];
+        public void remove(int[] rows) {
+            int count=0;
+            if(rows == null || rows.length == 0)
+                return;
+            for(Iterator<String> it=map.keySet().iterator(); it.hasNext();) {
+                it.next();
+                for(int i=0; i < rows.length; i++) {
+                    if(i == count) {
+                        it.remove();
+                        break;
+                    }
+                }
+                count++;
+            }
+        }
 
+        public Object getValueAt(int row, int col) {
             int count=0;
             Entry retval=null;
             String key=null;
