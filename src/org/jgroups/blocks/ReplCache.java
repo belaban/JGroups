@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.14 2009/01/09 09:42:45 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.15 2009/01/09 12:30:24 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -468,8 +468,11 @@ public class ReplCache<K,V> implements MembershipListener {
                             }
                         }
                     }
-                    if(!accept)
+                    if(!accept) {
+                        if(log.isTraceEnabled())
+                            log.trace(key + " was not accepted: local address=" + local_addr + ", selected hosts=" + selected_hosts);
                         return null;
+                    }
                 }
             }
         }
@@ -528,7 +531,6 @@ public class ReplCache<K,V> implements MembershipListener {
 
         if(old_nodes == null)
             return;
-
         rebalance(old_nodes, new ArrayList<Address>(new_view.getMembers()));
     }
 
@@ -573,6 +575,73 @@ public class ReplCache<K,V> implements MembershipListener {
         }
     }
 
+//    private void rebalance(List<Address> old_nodes, List<Address> new_nodes) {
+//        HashFunction<K> old_func=hash_function_factory.create();
+//        old_func.installNodes(old_nodes);
+//
+//        HashFunction<K> new_func=hash_function_factory.create();
+//        new_func.installNodes(new_nodes);
+//
+//        boolean is_coord=Util.isCoordinator(ch);
+//
+//        System.out.println("L2 contents:\n" + l2_cache.entrySet());
+//
+//        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
+//            K key=entry.getKey();
+//            System.out.println("==== rebalancing " + key);
+//            Cache.Value<Value<V>> val=entry.getValue();
+//            if(val == null) {
+//                if(log.isWarnEnabled())
+//                    log.warn(key + " has no value associated; ignoring");
+//                continue;
+//            }
+//            Value<V> tmp=val.getValue();
+//            if(tmp == null) {
+//                if(log.isWarnEnabled())
+//                    log.warn(key + " has no value associated; ignoring");
+//                continue;
+//            }
+//            V real_value=tmp.getVal();
+//            short repl_count=tmp.getReplicationCount();
+//            List<Address> new_mbrs=Util.newMembers(old_nodes, new_nodes);
+//
+//            if(repl_count == -1) {
+//                if(is_coord) {
+//                    for(Address new_mbr: new_mbrs) {
+//                        move(new_mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+//                    }
+//                }
+//            }
+//            else if(repl_count == 1) {
+//                List<Address> tmp_nodes=new_func.hash(key, repl_count);
+//                if(!tmp_nodes.isEmpty()) {
+//                    Address mbr=tmp_nodes.get(0);
+//                    if(!mbr.equals(local_addr)) {
+//                        move(mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+//                        _remove(key);
+//                    }
+//                }
+//            }
+//            else if(repl_count > 1) {
+//                List<Address> tmp_old=old_func.hash(key, repl_count);
+//                List<Address> tmp_new=new_func.hash(key, repl_count);
+//
+//                System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
+//                if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
+//                    return;
+//                mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
+//                if(tmp_new != null && !tmp_new.contains(local_addr)) {
+//                    _remove(key);
+//                }
+//            }
+//            else {
+//                throw new IllegalStateException("replication count is invalid (" + repl_count + ")");
+//            }
+//        }
+//    }
+
+
+
     private void rebalance(List<Address> old_nodes, List<Address> new_nodes) {
         HashFunction<K> old_func=hash_function_factory.create();
         old_func.installNodes(old_nodes);
@@ -582,14 +651,25 @@ public class ReplCache<K,V> implements MembershipListener {
 
         boolean is_coord=Util.isCoordinator(ch);
 
-        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
-            K key=entry.getKey();
-            Cache.Value<Value<V>> val=entry.getValue();
-            if(val == null)
+        List<K> keys=new ArrayList<K>(l2_cache.getInternalMap().keySet());
+
+        System.out.println("L2 keys: " + keys);
+
+        for(K key: keys) {
+        // for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
+            Cache.Value<Value<V>> val=l2_cache.getEntry(key);
+            System.out.println("==== rebalancing " + key);
+            if(val == null) {
+                if(log.isWarnEnabled())
+                    log.warn(key + " has no value associated; ignoring");
                 continue;
+            }
             Value<V> tmp=val.getValue();
-            if(tmp == null)
+            if(tmp == null) {
+                if(log.isWarnEnabled())
+                    log.warn(key + " has no value associated; ignoring");
                 continue;
+            }
             V real_value=tmp.getVal();
             short repl_count=tmp.getReplicationCount();
             List<Address> new_mbrs=Util.newMembers(old_nodes, new_nodes);
@@ -610,11 +690,12 @@ public class ReplCache<K,V> implements MembershipListener {
                         _remove(key);
                     }
                 }
-
             }
             else if(repl_count > 1) {
                 List<Address> tmp_old=old_func.hash(key, repl_count);
                 List<Address> tmp_new=new_func.hash(key, repl_count);
+
+                System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
                 if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
                     return;
                 mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
@@ -623,14 +704,35 @@ public class ReplCache<K,V> implements MembershipListener {
                 }
             }
             else {
-                // failure: illegal state
                 throw new IllegalStateException("replication count is invalid (" + repl_count + ")");
             }
-            
         }
-
     }
 
+    public void mcastEntries() {
+        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
+            K key=entry.getKey();
+            Cache.Value<Value<V>> val=entry.getValue();
+            if(val == null) {
+                if(log.isWarnEnabled())
+                    log.warn(key + " has no value associated; ignoring");
+                continue;
+            }
+            Value<V> tmp=val.getValue();
+            if(tmp == null) {
+                if(log.isWarnEnabled())
+                    log.warn(key + " has no value associated; ignoring");
+                continue;
+            }
+            V real_value=tmp.getVal();
+            short repl_count=tmp.getReplicationCount();
+
+            if(repl_count > 1) {
+                _remove(key);
+                mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
+            }
+        }
+    }
 
     private void mcastPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
         try {
@@ -669,9 +771,7 @@ public class ReplCache<K,V> implements MembershipListener {
         public List<Address> hash(K key, short replication_count) {
             int hash=Math.abs(key.hashCode());
             int index=hash % HASH_SPACE;
-
-            System.out.println("** index (" + key + ") =" + index);
-
+            
             Set<Address> results=new LinkedHashSet<Address>();
             List<Address> retval=new ArrayList<Address>();
 

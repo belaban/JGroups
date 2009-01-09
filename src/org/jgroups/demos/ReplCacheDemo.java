@@ -15,14 +15,13 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.7 2009/01/09 09:42:46 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.8 2009/01/09 12:30:25 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -35,8 +34,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     private JTextField   repl_count_field=new JTextField("1", 3);
     private JTextField   timeout_field=new JTextField("0", 5);
     private MyTableModel model=null;
-
-
 
 
 
@@ -59,7 +56,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                 timeout="0";
 
             cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
-            // model.fireTableDataChanged();
         }
         else if(command.equals("Remove")) {
             int[] rows=table.getSelectedRows();
@@ -69,9 +65,10 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                     if(key != null)
                         cache.remove(key);
                 }
-                // model.remove(rows);
-                // model.fireTableDataChanged();
             }
+        }
+        else if(command.equals("Rebalance")) {
+            cache.mcastEntries();
         }
         else if(command.equals("Exit")) {
             if(cache != null)
@@ -80,10 +77,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             System.exit(1); // or can we break out of mainLoop() somehow else ?
         }
     }
-
-
-
-
 
 
 
@@ -142,7 +135,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         add(new JScrollPane(table));
 
         JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        key.add(new JLabel("Key"));
+        key.add(new JLabel("Key  "));
         key.add(key_field);
         add(key);
 
@@ -164,6 +157,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         JPanel buttons=new JPanel();
         buttons.add(createButton("Put"));
         buttons.add(createButton("Remove"));
+        buttons.add(createButton("Rebalance"));
         buttons.add(createButton("Exit"));
         add(buttons);
         setOpaque(true);
@@ -173,11 +167,13 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         frame.setVisible(true);
     }
 
+
+    
     private JButton createButton(String text) {
-           JButton retval=new JButton(text);
-           retval.addActionListener(this);
-           return retval;
-       }
+        JButton retval=new JButton(text);
+        retval.addActionListener(this);
+        return retval;
+    }
 
 
 
@@ -230,12 +226,10 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             return;
         }
 
-
-
         ReplCacheDemo demo = new ReplCacheDemo();
         demo.start(props, rpc_timeout, caching_time,
-                             migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
-                             l2_max_entries, l2_reaping_interval);
+                   migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
+                   l2_max_entries, l2_reaping_interval);
         demo.mainLoop();
     }
 
@@ -332,13 +326,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         private final String[] columnNames = {"Key", "Value", "Replication Count", "Timeout"};
         private static final long serialVersionUID=1314724464389654329L;
 
-        MyTableModel() {
-            cache.put("name", "Bela", (short)-1, 0);
-            cache.put("id", "322649", (short)1, 5000);
-            cache.put("hobbies", "Tennis, Running, Swimming", (short)-1, 0);
-        }
-
-
         public void setMap(ConcurrentMap<K, Cache.Value<ReplCache.Value<V>>> map) {
             this.map=map;
         }
@@ -355,22 +342,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             return columnNames[col];
         }
 
-
-//        public void remove(int[] rows) {
-//            int count=0;
-//            if(rows == null || rows.length == 0)
-//                return;
-//            for(Iterator<K> it=map.keySet().iterator(); it.hasNext();) {
-//                it.next();
-//                for(int i=0; i < rows.length; i++) {
-//                    if(rows[i] == count) {
-//                        it.remove();
-//                        break;
-//                    }
-//                }
-//                count++;
-//            }
-//        }
 
         public Object getValueAt(int row, int col) {
             int count=0;
