@@ -2,20 +2,20 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.blocks.Cache;
-import org.jgroups.blocks.ReplCache;
-import org.jgroups.blocks.MembershipListenerAdapter;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.View;
+import org.jgroups.blocks.Cache;
+import org.jgroups.blocks.MembershipListenerAdapter;
+import org.jgroups.blocks.ReplCache;
+import org.jgroups.jmx.JmxConfigurator;
 
 import javax.management.MBeanServer;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
-import java.awt.event.*;
-import java.io.IOException;
-import java.io.InputStream;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.11 2009/01/09 15:23:00 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.12 2009/01/09 16:47:25 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -135,11 +135,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         table.setPreferredScrollableViewportSize(new Dimension(500, 200));
         table.setFillsViewportHeight(true);
         table.setShowGrid(false);
-
         table.setFont(table.getFont().deriveFont(Font.BOLD));
-
-         // table.setDefaultRenderer(String.class, new MyRenderer());
-
         add(new JScrollPane(table));
 
         JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -163,6 +159,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         add(timeout);
 
         JPanel buttons=new JPanel();
+        JButton put_button=createButton("Put");
         buttons.add(createButton("Put"));
         buttons.add(createButton("Remove"));
         buttons.add(createButton("Rebalance"));
@@ -172,6 +169,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         frame.setContentPane(this);
         frame.pack();
+        frame.getRootPane().setDefaultButton(put_button);
         frame.setVisible(true);
         setTitle("ReplCacheDemo");
 
@@ -183,23 +181,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     }
 
 
-    private class MyRenderer extends JLabel implements TableCellRenderer {
-        public MyRenderer() {
-            setOpaque(true); //MUST do this for background to show up.
-        }
 
-        public Component getTableCellRendererComponent(
-                JTable table, Object color,
-                boolean isSelected, boolean hasFocus,
-                int row, int column) {
-            setBackground(Color.DARK_GRAY);
-            System.out.println("HELLO");
-            return this;
-        }
-    }
-
-
-    
     private JButton createButton(String text) {
         JButton retval=new JButton(text);
         retval.addActionListener(this);
@@ -267,46 +249,46 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         demo.start(props, rpc_timeout, caching_time,
                    migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
                    l2_max_entries, l2_reaping_interval);
-        demo.mainLoop();
+        // demo.mainLoop();
     }
 
-    private void mainLoop() throws IOException {
-          while(true) {
-              int c;
-              System.in.skip(System.in.available());
-              System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [5] view [x] Exit");
-              c=System.in.read();
-              switch(c) {
-                  case -1:
-                      break;
-                  case '1':
-                      put();
-                      break;
-                  case '2':
-                      String key=readString("key");
-                      String val=cache.get(key);
-                      System.out.println("val = " + val);
-                      break;
-                  case '3':
-                      key=readString("key");
-                      cache.remove(key);
-                      break;
-                  case '4':
-                      System.out.println(cache.dump());
-                      break;
-                  case '5':
-                      System.out.println("view = " + cache.getView());
-                      break;
-                  case 'x':
-                      cache.stop();
-                      return;
-                  default:
-                      break;
-              }
-          }
-      }
+//    private void mainLoop() throws IOException {
+//          while(true) {
+//              int c;
+//              System.in.skip(System.in.available());
+//              System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [5] view [x] Exit");
+//              c=System.in.read();
+//              switch(c) {
+//                  case -1:
+//                      break;
+//                  case '1':
+//                      put();
+//                      break;
+//                  case '2':
+//                      String key=readString("key");
+//                      String val=cache.get(key);
+//                      System.out.println("val = " + val);
+//                      break;
+//                  case '3':
+//                      key=readString("key");
+//                      cache.remove(key);
+//                      break;
+//                  case '4':
+//                      System.out.println(cache.dump());
+//                      break;
+//                  case '5':
+//                      System.out.println("view = " + cache.getView());
+//                      break;
+//                  case 'x':
+//                      cache.stop();
+//                      return;
+//                  default:
+//                      break;
+//              }
+//          }
+//      }
 
-      private void put() throws IOException {
+      /*private void put() throws IOException {
           String key=readString("key");
           String val=readString("value");
           String tmp=readString("replication count");
@@ -314,11 +296,11 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
           tmp=readString("timeout");
           long timeout=Long.parseLong(tmp);
           cache.put(key, val, count, timeout);
-      }
+      }*/
 
 
 
-      private static void skip(InputStream in) throws IOException {
+     /* private static void skip(InputStream in) throws IOException {
           System.in.skip(in.available());
       }
 
@@ -346,7 +328,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
           return sb.toString();
       }
-
+*/
     void setTitle(String title) {
         String local_addr=cache != null? cache.getLocalAddressAsString() : null;
         int num_nodes=cache != null? cache.getClusterSize() : 0;
