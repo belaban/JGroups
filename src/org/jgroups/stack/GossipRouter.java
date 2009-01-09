@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.41 2009/01/07 08:08:37 jiwils Exp $
+ * @version $Id: GossipRouter.java,v 1.42 2009/01/09 03:55:02 jiwils Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -489,9 +489,8 @@ public class GossipRouter {
 		if (bindAddress == null) {
 			bindAddress = srvSock.getInetAddress();
 		}
-		System.out.println("GossipRouter started at " + new Date()
-				+ "\nListening on port " + port + " bound on address "
-				+ bindAddress + '\n');
+
+        printStartupInfo();
 
 		while (up && srvSock != null) {
 			try {
@@ -917,6 +916,21 @@ public class GossipRouter {
 
 
     /**
+     * Prints startup information.
+     */
+    private void printStartupInfo() {
+        System.out.println("GossipRouter started at " + new Date());
+
+        System.out.print("Listening on port " + port);
+        System.out.println(" bound on address " + bindAddress);
+
+        System.out.print("Backlog is " + backlog);
+        System.out.print(", linger timeout is " + linger_timeout);
+        System.out.println(", and read timeout is " + sock_read_timeout);
+    }
+
+
+    /**
      * Class used to store Addresses in both routing and gossip tables.
      * If it is used for routing, sock and output have valid values, otherwise
      * they're null and only the timestamp counts.
@@ -1076,6 +1090,11 @@ public class GossipRouter {
         long expiry=GossipRouter.EXPIRY_TIME;
         long timeout=GossipRouter.GOSSIP_REQUEST_TIMEOUT;
         long routingTimeout=GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT;
+
+        int backlog = 0;
+        long soLinger = -1;
+        long soTimeout = -1;
+
         GossipRouter router=null;
         String bind_addr=null;
         boolean jmx=false;
@@ -1090,20 +1109,36 @@ public class GossipRouter {
                 bind_addr=args[++i];
                 continue;
             }
+            if ("-backlog".equals(arg)) {
+                backlog=Integer.parseInt(args[++i]);
+                continue;
+            }
             if("-expiry".equals(arg)) {
                 expiry=Long.parseLong(args[++i]);
                 continue;
             }
+            if("-jmx".equals(arg)) {
+                jmx=true;
+                continue;
+            }
+            // this option is not used and should be deprecated/removed
+            // in a future release
             if("-timeout".equals(arg)) {
                 timeout=Long.parseLong(args[++i]);
                 continue;
             }
+            // this option is not used and should be deprecated/removed
+            // in a future release
             if("-rtimeout".equals(arg)) {
                 routingTimeout=Long.parseLong(args[++i]);
                 continue;
             }
-             if("-jmx".equals(arg)) {
-                jmx=true;
+            if ("-solinger".equals(arg)) {
+                soLinger=Long.parseLong(args[++i]);
+                continue;
+            }
+            if ("-sotimeout".equals(arg)) {
+                soTimeout=Long.parseLong(args[++i]);
                 continue;
             }
             help();
@@ -1113,6 +1148,16 @@ public class GossipRouter {
 
         try {
             router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout, jmx);
+
+            if (backlog > 0)
+                router.setBacklog(backlog);
+
+            if (soTimeout >= 0)
+                router.setSocketReadTimeout(soTimeout);
+
+            if (soLinger >= 0)
+                router.setLingerTimeout(soLinger);
+
             router.start();
         }
         catch(Exception e) {
@@ -1134,14 +1179,37 @@ public class GossipRouter {
     static void help() {
         System.out.println();
         System.out.println("GossipRouter [-port <port>] [-bind_addr <address>] [options]");
-        System.out.println("Options: ");
-        System.out.println("        -expiry <msecs>   - Time until a gossip cache entry expires.");
-        System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
-        System.out.println("                            a gossip request after connection was established;");
-        System.out.println("                            upon expiration, the router initiates the routing");
-        System.out.println("                            protocol on the connection.");
-        System.out.println("        -rtimeout  <mcsec> - Routing timeout");
-        System.out.println("        -jmx               - Expose attrs and operations via JMX");
+        System.out.println();
+        System.out.println("Options:");
+        System.out.println();
+
+        // -timeout isn't used and should be deprecated/removed
+        // in a future release. It's left in this code for backwards
+        // compatability, but it is no longer advertized.
+        //System.out.println("        -timeout <msecs>  - Number of millisecs the router waits to receive");
+        //System.out.println("                            a gossip request after connection was established;");
+        //System.out.println("                            upon expiration, the router initiates the routing");
+        //System.out.println("                            protocol on the connection.");
+
+        System.out.println("    -backlog <backlog>    - Max queue size of backlogged connections. Must be");
+        System.out.println("                            greater than zero or the default of 1000 will be");
+        System.out.println("                            used.");
+        System.out.println();
+        System.out.println("    -expiry <msecs>       - Time until a gossip cache entry expires. 30000 is");
+        System.out.println("                            the default value.");
+        System.out.println();
+        System.out.println("    -jmx                  - Expose attributes and operations via JMX.");
+        System.out.println();
+        System.out.println("    -solinger <msecs>     - Time for setting SO_LINGER on connections. 0");
+        System.out.println("                            means do not set SO_LINGER. Must be greater than");
+        System.out.println("                            or equal to zero or the default of 2000 will be");
+        System.out.println("                            used.");
+        System.out.println();
+        System.out.println("    -sotimeout <msecs>    - Time for setting SO_TIMEOUT on connections. 0");
+        System.out.println("                            means don't set SO_TIMEOUT. Must be greater than");
+        System.out.println("                            or equal to zero or the default of 3000 will be");
+        System.out.println("                            used.");
+        System.out.println();
     }
 
 
