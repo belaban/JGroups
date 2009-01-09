@@ -7,7 +7,6 @@ import org.jgroups.blocks.ReplCache;
 import org.jgroups.blocks.MembershipListenerAdapter;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.View;
-import org.jgroups.Address;
 
 import javax.management.MBeanServer;
 import javax.swing.*;
@@ -24,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.10 2009/01/09 14:31:10 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.11 2009/01/09 15:23:00 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -417,7 +416,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                         case 0:  return key;
                         case 1:  return tmp != null? tmp.getVal() : "n/a";
                         case 2:  return tmp.getReplicationCount();
-                        case 3:  return val.getExpirationTime();
+                        case 3:  return val.getTimeout();
                         default: return "n/a";
                     }
                 }

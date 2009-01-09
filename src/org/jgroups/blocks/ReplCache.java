@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.18 2009/01/09 15:10:05 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.19 2009/01/09 15:22:59 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -317,7 +317,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                     continue;
                 if(!nodes.contains(local_addr)) {
                     Address dest=nodes.get(0); // should only have 1 element anyway
-                    move(dest, key, tmp.getVal(), repl_count, val.getExpirationTime(), true);
+                    move(dest, key, tmp.getVal(), repl_count, val.getTimeout(), true);
                     _remove(key);
                 }
             }
@@ -394,8 +394,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             tmp=val.getValue();
             if(tmp !=null) {
                 V real_value=tmp.getVal();
-                if(real_value != null && l1_cache != null && val.getExpirationTime() >= 0)
-                    l1_cache.put(key, real_value, val.getExpirationTime());
+                if(real_value != null && l1_cache != null && val.getTimeout() >= 0)
+                    l1_cache.put(key, real_value, val.getTimeout());
                 return tmp.getVal();
             }
         }
@@ -415,8 +415,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                     tmp=val.getValue();
                     if(tmp != null) {
                         V real_value=tmp.getVal();
-                        if(real_value != null && l1_cache != null && val.getExpirationTime() >= 0)
-                            l1_cache.put(key, real_value, val.getExpirationTime());
+                        if(real_value != null && l1_cache != null && val.getTimeout() >= 0)
+                            l1_cache.put(key, real_value, val.getTimeout());
                         return real_value;
                     }
                 }
@@ -483,11 +483,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                             }
                         }
                     }
-                    if(!accept) {
-                        //if(log.isTraceEnabled())
-                          //  log.trace(key + " was not accepted: local address=" + local_addr + ", selected hosts=" + selected_hosts);
+                    if(!accept)
                         return null;
-                    }
                 }
             }
         }
@@ -628,7 +625,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             if(repl_count == -1) {
                 if(is_coord) {
                     for(Address new_mbr: new_mbrs) {
-                        move(new_mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+                        move(new_mbr, key, real_value, repl_count, val.getTimeout(), false);
                     }
                 }
             }
@@ -637,7 +634,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 if(!tmp_nodes.isEmpty()) {
                     Address mbr=tmp_nodes.get(0);
                     if(!mbr.equals(local_addr)) {
-                        move(mbr, key, real_value, repl_count, val.getExpirationTime(), false);
+                        move(mbr, key, real_value, repl_count, val.getTimeout(), false);
                         _remove(key);
                     }
                 }
@@ -649,7 +646,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
                 if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
                     continue;
-                mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
+                mcastPut(key, real_value, repl_count, val.getTimeout(), false);
                 if(tmp_new != null && !tmp_new.contains(local_addr)) {
                     _remove(key);
                 }
@@ -680,7 +677,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
             if(repl_count > 1) {
                 _remove(key);
-                mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
+                mcastPut(key, real_value, repl_count, val.getTimeout(), false);
             }
         }
     }
@@ -902,7 +899,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 else if(obj instanceof Cache.Value) {
                     Cache.Value value=(Cache.Value)obj;
                     out.writeByte(VALUE);
-                    out.writeLong(value.getExpirationTime());
+                    out.writeLong(value.getTimeout());
                     Util.objectToStream(value.getValue(), out);
                 }
                 else {
