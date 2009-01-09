@@ -16,7 +16,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.11 2009/01/09 09:29:41 belaban Exp $
+ * @version $Id: Cache.java,v 1.12 2009/01/09 15:10:05 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -26,6 +26,8 @@ public class Cache<K,V> {
     private ScheduledThreadPoolExecutor timer=new ScheduledThreadPoolExecutor(1);
     private Future task=null;
     private final AtomicBoolean is_reaping=new AtomicBoolean(false);
+
+    private Set<ChangeListener> change_listeners=new HashSet<ChangeListener>();
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
@@ -39,6 +41,14 @@ public class Cache<K,V> {
 
     public void setMaxNumberOfEntries(int max_num_entries) {
         this.max_num_entries=max_num_entries;
+    }
+
+    public void addChangeListener(ChangeListener l) {
+        change_listeners.add(l);
+    }
+
+    public void removeChangeListener(ChangeListener l) {
+        change_listeners.remove(l);
     }
 
     @ManagedAttribute
@@ -219,6 +229,7 @@ public class Cache<K,V> {
     }
 
     private void evict() {
+        boolean evicted=false;
         for(Iterator<Map.Entry<K,Value<V>>> it=map.entrySet().iterator(); it.hasNext();) {
             Map.Entry<K,Value<V>> entry=it.next();
             Value<V> val=entry.getValue();
@@ -227,7 +238,22 @@ public class Cache<K,V> {
                     if(log.isTraceEnabled())
                         log.trace("evicting " + entry.getKey() + ": " + entry.getValue().value);
                     it.remove();
+                    evicted=true;
                 }
+            }
+        }
+        if(evicted)
+            notifyChangeListeners();
+    }
+
+    private void notifyChangeListeners() {
+        for(ChangeListener l: change_listeners) {
+            try {
+                l.changed();
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed notifying change listener", t);
             }
         }
     }
@@ -274,6 +300,10 @@ public class Cache<K,V> {
         public void run() {
             evict();
         }
+    }
+
+    public interface ChangeListener {
+        void changed();
     }
 
 }

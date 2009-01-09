@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.17 2009/01/09 14:31:09 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.18 2009/01/09 15:10:05 belaban Exp $
  */
 @Experimental @Unsupported
-public class ReplCache<K,V> implements MembershipListener {
+public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
 
     /** The cache in which all entries are located. The value is a tuple, consisting of the replication count and the
      * actual value */
@@ -81,6 +81,8 @@ public class ReplCache<K,V> implements MembershipListener {
 
     protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
     private TimeScheduler timer;
+
+
 
 
     static {
@@ -283,6 +285,8 @@ public class ReplCache<K,V> implements MembershipListener {
         local_addr=ch.getLocalAddress();
         view=ch.getView();
         timer=ch.getProtocolStack().getTransport().getTimer();
+
+        l2_cache.addChangeListener(this);
     }
 
     @ManagedOperation
@@ -318,6 +322,7 @@ public class ReplCache<K,V> implements MembershipListener {
                 }
             }
         }
+        l2_cache.removeChangeListener(this);
         l2_cache.stop();
         disp.stop();
         ch.close();
@@ -490,8 +495,6 @@ public class ReplCache<K,V> implements MembershipListener {
         if(log.isTraceEnabled())
             log.trace("_put(" + key + ", " + val + ", " + repl_count + ", " + timeout + ")");
 
-        if(timeout > 0)
-            timeout=System.currentTimeMillis() + timeout;
         Value<V> value=new Value<V>(val, repl_count);
         Value<V> retval=l2_cache.put(key, value, timeout);
 
@@ -553,6 +556,9 @@ public class ReplCache<K,V> implements MembershipListener {
     public void block() {
     }
 
+    public void changed() {
+        notifyChangeListeners();
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -585,71 +591,6 @@ public class ReplCache<K,V> implements MembershipListener {
             }
         }
     }
-
-//    private void rebalance(List<Address> old_nodes, List<Address> new_nodes) {
-//        HashFunction<K> old_func=hash_function_factory.create();
-//        old_func.installNodes(old_nodes);
-//
-//        HashFunction<K> new_func=hash_function_factory.create();
-//        new_func.installNodes(new_nodes);
-//
-//        boolean is_coord=Util.isCoordinator(ch);
-//
-//        System.out.println("L2 contents:\n" + l2_cache.entrySet());
-//
-//        for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
-//            K key=entry.getKey();
-//            System.out.println("==== rebalancing " + key);
-//            Cache.Value<Value<V>> val=entry.getValue();
-//            if(val == null) {
-//                if(log.isWarnEnabled())
-//                    log.warn(key + " has no value associated; ignoring");
-//                continue;
-//            }
-//            Value<V> tmp=val.getValue();
-//            if(tmp == null) {
-//                if(log.isWarnEnabled())
-//                    log.warn(key + " has no value associated; ignoring");
-//                continue;
-//            }
-//            V real_value=tmp.getVal();
-//            short repl_count=tmp.getReplicationCount();
-//            List<Address> new_mbrs=Util.newMembers(old_nodes, new_nodes);
-//
-//            if(repl_count == -1) {
-//                if(is_coord) {
-//                    for(Address new_mbr: new_mbrs) {
-//                        move(new_mbr, key, real_value, repl_count, val.getExpirationTime(), false);
-//                    }
-//                }
-//            }
-//            else if(repl_count == 1) {
-//                List<Address> tmp_nodes=new_func.hash(key, repl_count);
-//                if(!tmp_nodes.isEmpty()) {
-//                    Address mbr=tmp_nodes.get(0);
-//                    if(!mbr.equals(local_addr)) {
-//                        move(mbr, key, real_value, repl_count, val.getExpirationTime(), false);
-//                        _remove(key);
-//                    }
-//                }
-//            }
-//            else if(repl_count > 1) {
-//                List<Address> tmp_old=old_func.hash(key, repl_count);
-//                List<Address> tmp_new=new_func.hash(key, repl_count);
-//
-//                System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
-//                if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
-//                    return;
-//                mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
-//                if(tmp_new != null && !tmp_new.contains(local_addr)) {
-//                    _remove(key);
-//                }
-//            }
-//            else {
-//                throw new IllegalStateException("replication count is invalid (" + repl_count + ")");
-//            }
-//        }
-//    }
 
 
 
