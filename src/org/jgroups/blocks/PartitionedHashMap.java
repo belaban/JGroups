@@ -35,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.17 2009/01/07 13:14:55 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.18 2009/01/09 15:22:59 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -240,7 +240,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 Address node=hash_function.hash(key, members_without_me);
                 if(!node.equals(local_addr)) {
                     Cache.Value<V> val=entry.getValue();
-                    sendPut(node, key, val.getValue(), val.getExpirationTime(), true);
+                    sendPut(node, key, val.getValue(), val.getTimeout(), true);
                     if(log.isTraceEnabled())
                         log.trace("migrated " + key + " from " + local_addr + " to " + node);
                 }
@@ -302,8 +302,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             }
             if(val != null) {
                 V retval=val.getValue();
-                if(l1_cache != null && val.getExpirationTime() >= 0)
-                    l1_cache.put(key, retval, val.getExpirationTime());
+                if(l1_cache != null && val.getTimeout() >= 0)
+                    l1_cache.put(key, retval, val.getTimeout());
                 return retval;
             }
             return null;
@@ -405,7 +405,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             Address node=getNode(key);
             if(!node.equals(local_addr)) {
                 Cache.Value<V> val=entry.getValue();
-                put(key, val.getValue(), val.getExpirationTime());
+                put(key, val.getValue(), val.getTimeout());
                 l2_cache.remove(key);
                 if(log.isTraceEnabled())
                     log.trace("migrated " + key + " from " + local_addr + " to " + node);
@@ -587,7 +587,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 else if(obj instanceof Cache.Value) {
                     Cache.Value value=(Cache.Value)obj;
                     out.writeByte(VALUE);
-                    out.writeLong(value.getExpirationTime());
+                    out.writeLong(value.getTimeout());
                     Util.objectToStream(value.getValue(), out);
                 }
                 else {

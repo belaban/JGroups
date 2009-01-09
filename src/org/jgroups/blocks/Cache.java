@@ -16,7 +16,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.12 2009/01/09 15:10:05 belaban Exp $
+ * @version $Id: Cache.java,v 1.13 2009/01/09 15:22:59 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -103,7 +103,7 @@ public class Cache<K,V> {
     public V put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("put(" + key + ", " + val + ", " + caching_time + ")");
-        Value<V> value=new Value<V>(val, caching_time <= 0? caching_time : System.currentTimeMillis() + caching_time);
+        Value<V> value=new Value<V>(val, caching_time);
         Value<V> retval=map.put(key, value);
 
         if(max_num_entries > 0 && map.size() > max_num_entries) {
@@ -159,8 +159,8 @@ public class Cache<K,V> {
         Value<V> val=map.get(key);
         if(val == null)
             return null;
-        if(val.expiration_time == -1 ||
-                (val.expiration_time > 0 && val.expiration_time < System.currentTimeMillis())) {
+        if(val.timeout == -1 ||
+                (val.timeout > 0 && val.timeout < System.currentTimeMillis())) {
             map.remove(key);
             return null;
         }
@@ -200,7 +200,7 @@ public class Cache<K,V> {
             Value<V> val=entry.getValue();
             sb.append(entry.getKey()).append(": ").append(entry.getValue().getValue());
             sb.append(" (expiration_time: ");
-            long expiration_time=val.getExpirationTime();
+            long expiration_time=val.getTimeout();
             if(expiration_time <= 0)
                 sb.append(expiration_time);
             else {
@@ -234,7 +234,7 @@ public class Cache<K,V> {
             Map.Entry<K,Value<V>> entry=it.next();
             Value<V> val=entry.getValue();
             if(val != null) {
-                if(val.expiration_time == -1 || (val.expiration_time > 0 && System.currentTimeMillis() > val.expiration_time)) {
+                if(val.timeout == -1 || (val.timeout > 0 && System.currentTimeMillis() > val.insertion_time + val.timeout)) {
                     if(log.isTraceEnabled())
                         log.trace("evicting " + entry.getKey() + ": " + entry.getValue().value);
                     it.remove();
@@ -266,13 +266,13 @@ public class Cache<K,V> {
         private long insertion_time=System.currentTimeMillis();
         
         /** When the value can be reaped (in ms) */
-        private transient long expiration_time;
+        private transient long timeout;
         private static final long serialVersionUID=-3445944261826378608L;
 
 
-        public Value(V value, long expiration_time) {
+        public Value(V value, long timeout) {
             this.value=value;
-            this.expiration_time=expiration_time;
+            this.timeout=timeout;
         }
 
         public Value() {
@@ -280,16 +280,16 @@ public class Cache<K,V> {
 
         public V getValue() {return value;}
         public long getInsertionTime() {return insertion_time;}
-        public long getExpirationTime() {return expiration_time;}
+        public long getTimeout() {return timeout;}
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(expiration_time);
+            out.writeLong(timeout);
             out.writeObject(value);
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             insertion_time=System.currentTimeMillis();
-            expiration_time=in.readLong();
+            timeout=in.readLong();
             value=(V)in.readObject();
         }
     }
