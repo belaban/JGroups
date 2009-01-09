@@ -13,18 +13,18 @@ package org.jgroups;
  * Z = 0-63 for micro versions
  *
  * @author Bela Ban
- * @version $Id: Version.java,v 1.42.2.10 2008/10/03 11:52:06 vlada Exp $
+ * @version $Id: Version.java,v 1.42.2.11 2009/01/09 05:37:36 jiwils Exp $
  * Holds version information for JGroups.
  */
 public class Version {
     public static final short major = 2;
     public static final short minor = 4;
-    public static final short micro = 4;
-    public static final String description="2.4.4.GA";
+    public static final short micro = 5;
+    public static final String description="2.4.5.GA";
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
-    public static final String cvs="$Id: Version.java,v 1.42.2.10 2008/10/03 11:52:06 vlada Exp $";
+    public static final String cvs="$Id: Version.java,v 1.42.2.11 2009/01/09 05:37:36 jiwils Exp $";
 
     private static final int MAJOR_SHIFT = 11;
     private static final int MINOR_SHIFT = 6;
