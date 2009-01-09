@@ -15,41 +15,29 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.6 2009/01/09 08:53:05 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.7 2009/01/09 09:42:46 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
     private static final String BASENAME="replcache";
 
-    private JFrame frame;
-    private JTable table;
-    private JTextField key_field=new JTextField(10);
-    private JTextField value_field=new JTextField(10);
-    private JTextField repl_count_field=new JTextField("1", 3);
-    private JTextField timeout_field=new JTextField("0", 5);
-
+    private JFrame       frame;
+    private JTable       table;
+    private JTextField   key_field=new JTextField(10);
+    private JTextField   value_field=new JTextField(10);
+    private JTextField   repl_count_field=new JTextField("1", 3);
+    private JTextField   timeout_field=new JTextField("0", 5);
     private MyTableModel model=null;
 
 
-    public ReplCacheDemo() {
-        super();
 
-
-    }
-
-    private JButton createButton(String text) {
-        JButton retval=new JButton(text);
-        retval.addActionListener(this);
-        return retval;
-    }
 
 
 
@@ -69,11 +57,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                 repl_count="1";
             if(timeout == null)
                 timeout="0";
-            model.put(key, value, Integer.valueOf(repl_count), Long.valueOf(timeout));
 
             cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
-
-            model.fireTableDataChanged();
+            // model.fireTableDataChanged();
         }
         else if(command.equals("Remove")) {
             int[] rows=table.getSelectedRows();
@@ -83,8 +69,8 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                     if(key != null)
                         cache.remove(key);
                 }
-                model.remove(rows);
-                model.fireTableDataChanged();
+                // model.remove(rows);
+                // model.fireTableDataChanged();
             }
         }
         else if(command.equals("Exit")) {
@@ -99,97 +85,6 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
 
-    private static class Entry {
-        private String value=null;
-        private int repl_count=1;
-        private long timeout=0;
-
-        private Entry(String value, int repl_count, long timeout) {
-            this.value=value;
-            this.repl_count=repl_count;
-            this.timeout=timeout;
-        }
-    }
-
-
-    class MyTableModel extends AbstractTableModel {
-        private String[] columnNames = {"Key",
-                                        "Value",
-                                        "K",
-                                        "Timeout"};
-
-
-        private final Map<String,Entry> map=new ConcurrentHashMap<String,Entry>();
-        private static final long serialVersionUID=1314724464389654329L;
-
-        MyTableModel() {
-            map.put("name", new Entry("Bela", -1, 0));
-            cache.put("name", "Bela", (short)-1, 0);
-
-            map.put("id", new Entry("322649", 1, 5000));
-            cache.put("id", "322649", (short)1, 5000);
-
-            map.put("hobbies", new Entry("Tennis, Running, Swimming", -1, 0));
-            cache.put("hobbies", "Tennis, Running, Swimming", (short)-1, 0);
-        }
-
-
-        public int getColumnCount() {
-            return columnNames.length;
-        }
-
-        public int getRowCount() {
-            return map.size();
-        }
-
-        public String getColumnName(int col) {
-            return columnNames[col];
-        }
-
-        public void put(String key, String value, int repl_count, long timeout) {
-            map.put(key, new Entry(value, repl_count,  timeout));
-        }
-
-        public void remove(int[] rows) {
-            int count=0;
-            if(rows == null || rows.length == 0)
-                return;
-            for(Iterator<String> it=map.keySet().iterator(); it.hasNext();) {
-                it.next();
-                for(int i=0; i < rows.length; i++) {
-                    if(rows[i] == count) {
-                        it.remove();
-                        break;
-                    }
-                }
-                count++;
-            }
-        }
-
-        public Object getValueAt(int row, int col) {
-            int count=0;
-            Entry retval=null;
-            String key=null;
-
-            for(Map.Entry<String,Entry> entry: map.entrySet()) {
-                if(count++ >= row) {
-                    retval=entry.getValue();
-                    key=entry.getKey();
-                    break;
-                }
-            }
-            if(retval == null)
-                throw new IllegalArgumentException("row=" + row + ", col=" + col);
-            switch(col) {
-                case 0: return key;
-                case 1: return retval.value;
-                case 2: return retval.repl_count;
-                case 3: return retval.timeout;
-                default: return "n/a";
-            }
-        }
-
-    }
 
 
     private void start(String props,
@@ -232,7 +127,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         cache.start();
 
-        model=new MyTableModel();
+        model=new MyTableModel<String,String>();
+        model.setMap(cache.getL2Cache().getInternalMap());
+        cache.addChangeListener(model);
 
         frame=new JFrame("ReplCacheDemo");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -275,6 +172,13 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         frame.pack();
         frame.setVisible(true);
     }
+
+    private JButton createButton(String text) {
+           JButton retval=new JButton(text);
+           retval.addActionListener(this);
+           return retval;
+       }
+
 
 
     public static void main(String[] args) throws Exception {
@@ -421,5 +325,78 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                 "[-l2_max_entries <num>] [-l2_reaping_interval <ms>] ");
     }
 
+
+
+    class MyTableModel<K,V> extends AbstractTableModel implements ReplCache.ChangeListener {
+        private ConcurrentMap<K, Cache.Value<ReplCache.Value<V>>> map;
+        private final String[] columnNames = {"Key", "Value", "Replication Count", "Timeout"};
+        private static final long serialVersionUID=1314724464389654329L;
+
+        MyTableModel() {
+            cache.put("name", "Bela", (short)-1, 0);
+            cache.put("id", "322649", (short)1, 5000);
+            cache.put("hobbies", "Tennis, Running, Swimming", (short)-1, 0);
+        }
+
+
+        public void setMap(ConcurrentMap<K, Cache.Value<ReplCache.Value<V>>> map) {
+            this.map=map;
+        }
+
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        public int getRowCount() {
+            return map.size();
+        }
+
+        public String getColumnName(int col) {
+            return columnNames[col];
+        }
+
+
+//        public void remove(int[] rows) {
+//            int count=0;
+//            if(rows == null || rows.length == 0)
+//                return;
+//            for(Iterator<K> it=map.keySet().iterator(); it.hasNext();) {
+//                it.next();
+//                for(int i=0; i < rows.length; i++) {
+//                    if(rows[i] == count) {
+//                        it.remove();
+//                        break;
+//                    }
+//                }
+//                count++;
+//            }
+//        }
+
+        public Object getValueAt(int row, int col) {
+            int count=0;
+
+            for(Map.Entry<K,Cache.Value<ReplCache.Value<V>>> entry: map.entrySet()) {
+                if(count++ >= row) {
+                    K key=entry.getKey();
+                    Cache.Value<ReplCache.Value<V>> val=entry.getValue();
+                    ReplCache.Value<V> tmp=val.getValue();
+                    switch(col) {
+                        case 0:  return key;
+                        case 1:  return tmp != null? tmp.getVal() : "n/a";
+                        case 2:  return tmp.getReplicationCount();
+                        case 3:  return val.getExpirationTime();
+                        default: return "n/a";
+                    }
+                }
+            }
+            throw new IllegalArgumentException("row=" + row + ", col=" + col);
+
+        }
+
+        public void changed() {
+            fireTableDataChanged();
+        }
+    }
+    
 
 }
