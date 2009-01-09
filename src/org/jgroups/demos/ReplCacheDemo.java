@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.5 2009/01/09 08:11:24 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.6 2009/01/09 08:53:05 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -36,48 +36,13 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     private JTextField repl_count_field=new JTextField("1", 3);
     private JTextField timeout_field=new JTextField("0", 5);
 
-    private MyTableModel model=new MyTableModel();
+    private MyTableModel model=null;
 
 
     public ReplCacheDemo() {
         super();
 
-        frame=new JFrame("ReplCacheDemo");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-
-        table = new JTable(model);
-        table.setPreferredScrollableViewportSize(new Dimension(500, 200));
-        table.setFillsViewportHeight(true);
-        add(new JScrollPane(table));
-        
-        JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        key.add(new JLabel("Key"));
-        key.add(key_field);
-        add(key);
-
-        JPanel value=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        value.add(new JLabel("Value"));
-        value.add(value_field);
-        add(value);
-
-        JPanel repl_count=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        repl_count.add(new JLabel("Replication count"));
-        repl_count.add(repl_count_field);
-        add(repl_count);
-
-        JPanel timeout=new JPanel(new FlowLayout(FlowLayout.LEFT));
-        timeout.add(new JLabel("Timeout"));
-        timeout.add(timeout_field);
-        add(timeout);
-
-        JPanel buttons=new JPanel();
-        buttons.add(createButton("Put"));
-        buttons.add(createButton("Remove"));
-        buttons.add(createButton("Exit"));
-        add(buttons);
-        setOpaque(true);
     }
 
     private JButton createButton(String text) {
@@ -105,17 +70,28 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             if(timeout == null)
                 timeout="0";
             model.put(key, value, Integer.valueOf(repl_count), Long.valueOf(timeout));
+
+            cache.put(key, value, Short.valueOf(repl_count), Long.valueOf(timeout));
+
             model.fireTableDataChanged();
         }
         else if(command.equals("Remove")) {
             int[] rows=table.getSelectedRows();
-            model.remove(rows);
-            model.fireTableDataChanged();
+            if(rows != null) {
+                for(int row: rows) {
+                    String key=(String)model.getValueAt(row, 0);
+                    if(key != null)
+                        cache.remove(key);
+                }
+                model.remove(rows);
+                model.fireTableDataChanged();
+            }
         }
         else if(command.equals("Exit")) {
             if(cache != null)
                 cache.stop();
-            System.exit(1);
+            frame.dispose();
+            System.exit(1); // or can we break out of mainLoop() somehow else ?
         }
     }
 
@@ -123,7 +99,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
 
-    private class Entry {
+    private static class Entry {
         private String value=null;
         private int repl_count=1;
         private long timeout=0;
@@ -144,11 +120,17 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
         private final Map<String,Entry> map=new ConcurrentHashMap<String,Entry>();
+        private static final long serialVersionUID=1314724464389654329L;
 
         MyTableModel() {
             map.put("name", new Entry("Bela", -1, 0));
+            cache.put("name", "Bela", (short)-1, 0);
+
             map.put("id", new Entry("322649", 1, 5000));
+            cache.put("id", "322649", (short)1, 5000);
+
             map.put("hobbies", new Entry("Tennis, Running, Swimming", -1, 0));
+            cache.put("hobbies", "Tennis, Running, Swimming", (short)-1, 0);
         }
 
 
@@ -210,13 +192,13 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     }
 
 
-    private void start(String props, InetAddress bind_addr, int port, int min_threads, int max_threads,
+    private void start(String props,
                        long rpc_timeout, long caching_time, boolean migrate_data, boolean use_l1_cache,
                        int l1_max_entries, long l1_reaping_interval,
                        int l2_max_entries, long l2_reaping_interval) throws Exception {
         MBeanServer server=ManagementFactory.getPlatformMBeanServer();
 
-        cache=new ReplCache(props, "replcache-cluster");
+        cache=new ReplCache<String,String>(props, "replcache-cluster");
         cache.setCallTimeout(rpc_timeout);
         cache.setCachingTime(caching_time);
         cache.setMigrateData(migrate_data);
@@ -250,6 +232,45 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         cache.start();
 
+        model=new MyTableModel();
+
+        frame=new JFrame("ReplCacheDemo");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        table = new JTable(model);
+        table.setPreferredScrollableViewportSize(new Dimension(500, 200));
+        table.setFillsViewportHeight(true);
+        add(new JScrollPane(table));
+
+        JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        key.add(new JLabel("Key"));
+        key.add(key_field);
+        add(key);
+
+        JPanel value=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        value.add(new JLabel("Value"));
+        value.add(value_field);
+        add(value);
+
+        JPanel repl_count=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        repl_count.add(new JLabel("Replication count"));
+        repl_count.add(repl_count_field);
+        add(repl_count);
+
+        JPanel timeout=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        timeout.add(new JLabel("Timeout"));
+        timeout.add(timeout_field);
+        add(timeout);
+
+        JPanel buttons=new JPanel();
+        buttons.add(createButton("Put"));
+        buttons.add(createButton("Remove"));
+        buttons.add(createButton("Exit"));
+        add(buttons);
+        setOpaque(true);
+
         frame.setContentPane(this);
         frame.pack();
         frame.setVisible(true);
@@ -257,34 +278,15 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
     public static void main(String[] args) throws Exception {
-        InetAddress bind_addr=null;
-        int port=11211;
         String props="udp.xml";
-        int min_threads=1, max_threads=500;
         long rpc_timeout=1500L, caching_time=30000L;
         boolean migrate_data=true, use_l1_cache=true;
         int l1_max_entries=5000, l2_max_entries=-1;
         long l1_reaping_interval=-1, l2_reaping_interval=30000L;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-bind_addr")) {
-                bind_addr=InetAddress.getByName(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-port") || args[i].equals("-p")) {
-                port=Integer.parseInt(args[++i]);
-                continue;
-            }
             if(args[i].equals("-props")) {
                 props=args[++i];
-                continue;
-            }
-            if(args[i].equals("-min_threads")) {
-                min_threads=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-max_threads")) {
-                max_threads=Integer.parseInt(args[++i]);
                 continue;
             }
             if(args[i].equals("-rpc_timeout")) {
@@ -327,7 +329,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
         ReplCacheDemo demo = new ReplCacheDemo();
-        demo.start(props, bind_addr, port, min_threads, max_threads, rpc_timeout, caching_time,
+        demo.start(props, rpc_timeout, caching_time,
                              migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
                              l2_max_entries, l2_reaping_interval);
         demo.mainLoop();
@@ -412,8 +414,8 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
     private static void help() {
-        System.out.println("ReplCacheServer [-help] [-bind_addr <address>] [-port <port>] [-props <props>] " +
-                "[-min_threads <min>] [-max_threads <max>] [-rpc_timeout <ms>] [-caching_time <ms>] " +
+        System.out.println("ReplCacheServer [-help] [-props <props>] " +
+                "[-rpc_timeout <ms>] [-caching_time <ms>] " +
                 "[-migrate_data <true|false>] [-use_l1_cache <true|false>] " +
                 "[-l1_max_entries <num>] [-l1_reaping_interval <ms>] " +
                 "[-l2_max_entries <num>] [-l2_reaping_interval <ms>] ");
