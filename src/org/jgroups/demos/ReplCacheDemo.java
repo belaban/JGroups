@@ -10,8 +10,7 @@ import javax.management.MBeanServer;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
@@ -21,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.8 2009/01/09 12:30:25 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.9 2009/01/09 13:34:04 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -29,10 +28,10 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
     private JFrame       frame;
     private JTable       table;
-    private JTextField   key_field=new JTextField(10);
-    private JTextField   value_field=new JTextField(10);
-    private JTextField   repl_count_field=new JTextField("1", 3);
-    private JTextField   timeout_field=new JTextField("0", 5);
+    private JTextField   key_field=createTextField(null, 10);
+    private JTextField   value_field=createTextField(null, 10);
+    private JTextField   repl_count_field=createTextField("1", 3);
+    private JTextField   timeout_field=createTextField("0", 5);
     private MyTableModel model=null;
 
 
@@ -172,6 +171,12 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     private JButton createButton(String text) {
         JButton retval=new JButton(text);
         retval.addActionListener(this);
+        return retval;
+    }
+
+    private static JTextField createTextField(String name, int length) {
+        JTextField retval=new JTextField(name, length);
+        retval.addFocusListener(new MyFocusListener(retval));
         return retval;
     }
 
@@ -321,7 +326,25 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
 
-    class MyTableModel<K,V> extends AbstractTableModel implements ReplCache.ChangeListener {
+    private static class MyFocusListener implements FocusListener {
+        private final JTextField field;
+
+        public MyFocusListener(JTextField field) {
+            this.field=field;
+        }
+
+        public void focusGained(FocusEvent e) {
+            String value=field.getText();
+            if(value != null && value.length() > 0) {
+                field.selectAll();
+            }
+        }
+
+        public void focusLost(FocusEvent e) {
+        }
+    }
+
+    private class MyTableModel<K,V> extends AbstractTableModel implements ReplCache.ChangeListener {
         private ConcurrentMap<K, Cache.Value<ReplCache.Value<V>>> map;
         private final String[] columnNames = {"Key", "Value", "Replication Count", "Timeout"};
         private static final long serialVersionUID=1314724464389654329L;
