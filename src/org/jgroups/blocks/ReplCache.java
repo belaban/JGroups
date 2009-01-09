@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.16 2009/01/09 13:15:48 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.17 2009/01/09 14:31:09 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -154,6 +154,11 @@ public class ReplCache<K,V> implements MembershipListener {
     @ManagedAttribute
     public String getView() {
         return view != null? view.toString() : "null";
+    }
+
+    @ManagedAttribute
+    public int getClusterSize() {
+        return view != null? view.size() : 0;
     }
 
     @ManagedAttribute

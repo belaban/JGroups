@@ -4,11 +4,15 @@ package org.jgroups.demos;
 
 import org.jgroups.blocks.Cache;
 import org.jgroups.blocks.ReplCache;
+import org.jgroups.blocks.MembershipListenerAdapter;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.View;
+import org.jgroups.Address;
 
 import javax.management.MBeanServer;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -20,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.9 2009/01/09 13:34:04 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.10 2009/01/09 14:31:10 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -131,6 +135,12 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         table = new JTable(model);
         table.setPreferredScrollableViewportSize(new Dimension(500, 200));
         table.setFillsViewportHeight(true);
+        table.setShowGrid(false);
+
+        table.setFont(table.getFont().deriveFont(Font.BOLD));
+
+         // table.setDefaultRenderer(String.class, new MyRenderer());
+
         add(new JScrollPane(table));
 
         JPanel key=new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -164,6 +174,29 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         frame.setContentPane(this);
         frame.pack();
         frame.setVisible(true);
+        setTitle("ReplCacheDemo");
+
+        cache.addMembershipListener(new MembershipListenerAdapter() {
+            public void viewAccepted(View new_view) {
+                setTitle("ReplCacheDemo");
+            }
+        });
+    }
+
+
+    private class MyRenderer extends JLabel implements TableCellRenderer {
+        public MyRenderer() {
+            setOpaque(true); //MUST do this for background to show up.
+        }
+
+        public Component getTableCellRendererComponent(
+                JTable table, Object color,
+                boolean isSelected, boolean hasFocus,
+                int row, int column) {
+            setBackground(Color.DARK_GRAY);
+            System.out.println("HELLO");
+            return this;
+        }
     }
 
 
@@ -314,6 +347,12 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
           return sb.toString();
       }
+
+    void setTitle(String title) {
+        String local_addr=cache != null? cache.getLocalAddressAsString() : null;
+        int num_nodes=cache != null? cache.getClusterSize() : 0;
+        frame.setTitle(title + ": " + local_addr + " (" + num_nodes + ")");
+    }
 
 
     private static void help() {
