@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.13 2009/01/08 11:02:08 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.14 2009/01/09 09:42:45 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -63,6 +63,8 @@ public class ReplCache<K,V> implements MembershipListener {
     };
 
     private Set<MembershipListener> membership_listeners=new HashSet<MembershipListener>();
+
+    private Set<ChangeListener> change_listeners=new HashSet<ChangeListener>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -217,6 +219,14 @@ public class ReplCache<K,V> implements MembershipListener {
 
     public void removeMembershipListener(MembershipListener l) {
         membership_listeners.remove(l);
+    }
+
+    public void addChangeListener(ChangeListener l) {
+        change_listeners.add(l);
+    }
+
+    public void removeChangeListener(ChangeListener l) {
+        change_listeners.remove(l);
     }
 
     public Cache<K,V> getL1Cache() {
@@ -475,6 +485,8 @@ public class ReplCache<K,V> implements MembershipListener {
         if(l1_cache != null)
             l1_cache.remove(key);
 
+        notifyChangeListeners();
+
         return retval != null? retval.getVal() : null;
     }
 
@@ -490,6 +502,7 @@ public class ReplCache<K,V> implements MembershipListener {
         Value<V> retval=l2_cache.remove(key);
         if(l1_cache != null)
             l1_cache.remove(key);
+        notifyChangeListeners();
         return retval != null? retval.getVal() : null;
     }
 
@@ -548,6 +561,17 @@ public class ReplCache<K,V> implements MembershipListener {
         return sb.toString();
     }
 
+    private void notifyChangeListeners() {
+        for(ChangeListener l: change_listeners) {
+            try {
+                l.changed();
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed notifying change listener", t);
+            }
+        }
+    }
 
     private void rebalance(List<Address> old_nodes, List<Address> new_nodes) {
         HashFunction<K> old_func=hash_function_factory.create();
@@ -633,6 +657,9 @@ public class ReplCache<K,V> implements MembershipListener {
     }
 
 
+    public static interface ChangeListener {
+        void changed();
+    }
     
     public static class ConsistentHashFunction<K> implements HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
