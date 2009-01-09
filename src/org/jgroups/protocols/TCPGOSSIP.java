@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.20.2.1 2007/04/27 08:03:51 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.20.2.2 2009/01/09 05:36:26 jiwils Exp $
 
 package org.jgroups.protocols;
 
@@ -31,6 +31,8 @@ public class TCPGOSSIP extends Discovery {
     // we need to refresh the registration with the GossipRouter(s) periodically,
     // so that our entries are not purged from the cache
     long gossip_refresh_rate=20000;
+    int                 sock_conn_timeout=1000;     // max time in millis for a socket creation
+    int                 sock_read_timeout=3000;     // max time in millis for a socket read
 
     final static Vector EMPTY_VECTOR=new Vector();
     final static String name="TCPGOSSIP";
@@ -50,6 +52,18 @@ public class TCPGOSSIP extends Discovery {
             props.remove("gossip_refresh_rate");
         }
 
+        str=props.getProperty("sock_conn_timeout");  // wait for at most n members
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
+        }
+
+        str=props.getProperty("sock_read_timeout");  // wait for at most n members
+        if(str != null) {
+            sock_read_timeout=Integer.parseInt(str);
+            props.remove("sock_read_timeout");
+        }
+
         str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
@@ -67,6 +81,12 @@ public class TCPGOSSIP extends Discovery {
             if(log.isErrorEnabled()) log.error("initial_hosts must contain the address of at least one GossipRouter");
             return false;
         }
+
+        if(timeout <= sock_conn_timeout) {
+            log.warn("timeout should be greater than sock_conn_timeout");
+        }
+
+
         return super.setProperties(props);
     }
 
@@ -74,8 +94,10 @@ public class TCPGOSSIP extends Discovery {
 
     public void start() throws Exception {
         super.start();
-        if(gossip_client == null)
-            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate);
+        if(gossip_client == null) {
+            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout);
+            gossip_client.setSocketReadTimeout(sock_read_timeout);
+        }
     }
 
     public void stop() {
