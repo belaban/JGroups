@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.19 2009/01/09 15:22:59 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.20 2009/01/09 16:47:24 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -475,7 +475,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 else {
                     List<Address> selected_hosts=hash_function != null? hash_function.hash(key, repl_count) : null;
                     if(selected_hosts != null) {
-                        System.out.println("local=" + local_addr + ", hosts=" + selected_hosts);
+                        if(log.isTraceEnabled())
+                            log.trace("local=" + local_addr + ", hosts=" + selected_hosts);
                         for(Address addr: selected_hosts) {
                             if(addr.equals(local_addr)) {
                                 accept=true;
@@ -602,11 +603,10 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
         List<K> keys=new ArrayList<K>(l2_cache.getInternalMap().keySet());
 
-        System.out.println("L2 keys: " + keys);
-
         for(K key: keys) {
             Cache.Value<Value<V>> val=l2_cache.getEntry(key);
-            System.out.println("==== rebalancing " + key);
+            if(log.isTraceEnabled())
+                log.trace("==== rebalancing " + key);
             if(val == null) {
                 if(log.isWarnEnabled())
                     log.warn(key + " has no value associated; ignoring");
@@ -643,7 +643,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 List<Address> tmp_old=old_func.hash(key, repl_count);
                 List<Address> tmp_new=new_func.hash(key, repl_count);
 
-                System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
+                if(log.isTraceEnabled())
+                    log.trace("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
                 if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
                     continue;
                 mcastPut(key, real_value, repl_count, val.getTimeout(), false);
