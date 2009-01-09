@@ -16,7 +16,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.10 2008/09/03 10:38:25 belaban Exp $
+ * @version $Id: Cache.java,v 1.11 2009/01/09 09:29:41 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -155,6 +155,15 @@ public class Cache<K,V> {
             return null;
         }
         return val.value;
+    }
+
+    /**
+     * This method should not be used to add or remove elements ! It was just added because ReplCacheDemo
+     * requires it for its data model
+     * @return
+     */
+    public ConcurrentMap<K, Value<V>> getInternalMap() {
+        return map;
     }
 
     public Value<V> getEntry(K key) {
