@@ -13,11 +13,13 @@ import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -25,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.15 2009/01/09 12:30:24 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.16 2009/01/09 13:15:48 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener {
@@ -78,6 +80,8 @@ public class ReplCache<K,V> implements MembershipListener {
     private static final short REMOVE    = 4;
 
     protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
+    private TimeScheduler timer;
+
 
     static {
         try {
@@ -273,6 +277,7 @@ public class ReplCache<K,V> implements MembershipListener {
         ch.connect(cluster_name);
         local_addr=ch.getLocalAddress();
         view=ch.getView();
+        timer=ch.getProtocolStack().getTransport().getTimer();
     }
 
     @ManagedOperation
@@ -469,8 +474,8 @@ public class ReplCache<K,V> implements MembershipListener {
                         }
                     }
                     if(!accept) {
-                        if(log.isTraceEnabled())
-                            log.trace(key + " was not accepted: local address=" + local_addr + ", selected hosts=" + selected_hosts);
+                        //if(log.isTraceEnabled())
+                          //  log.trace(key + " was not accepted: local address=" + local_addr + ", selected hosts=" + selected_hosts);
                         return null;
                     }
                 }
@@ -513,25 +518,26 @@ public class ReplCache<K,V> implements MembershipListener {
 
 
 
-    public void viewAccepted(View new_view) {
+    public void viewAccepted(final View new_view) {
+        final List<Address> old_nodes=this.view != null? new ArrayList<Address>(this.view.getMembers()) : null;
+
+        this.view=new_view;
         if(log.isInfoEnabled())
             log.info("new view: " + new_view);
 
-        List<Address> old_nodes=this.view != null? new ArrayList<Address>(this.view.getMembers()) : null;
-
-        this.view=new_view;
-
-        if(hash_function != null) {
+        if(hash_function != null)
             hash_function.installNodes(new_view.getMembers());
-        }
 
-        for(MembershipListener l: membership_listeners) {
+        for(MembershipListener l: membership_listeners)
             l.viewAccepted(new_view);
-        }
 
-        if(old_nodes == null)
-            return;
-        rebalance(old_nodes, new ArrayList<Address>(new_view.getMembers()));
+        if(old_nodes != null) {
+            timer.schedule(new Runnable() {
+                public void run() {
+                    rebalance(old_nodes, new ArrayList<Address>(new_view.getMembers()));
+                }
+            }, 100, TimeUnit.MILLISECONDS);
+        }
     }
 
 
@@ -656,7 +662,6 @@ public class ReplCache<K,V> implements MembershipListener {
         System.out.println("L2 keys: " + keys);
 
         for(K key: keys) {
-        // for(Map.Entry<K,Cache.Value<Value<V>>> entry: l2_cache.entrySet()) {
             Cache.Value<Value<V>> val=l2_cache.getEntry(key);
             System.out.println("==== rebalancing " + key);
             if(val == null) {
@@ -697,7 +702,7 @@ public class ReplCache<K,V> implements MembershipListener {
 
                 System.out.println("old nodes: " + tmp_old + "\nnew nodes: " + tmp_new);
                 if(tmp_old != null && tmp_new != null && tmp_old.equals(tmp_new))
-                    return;
+                    continue;
                 mcastPut(key, real_value, repl_count, val.getExpirationTime(), false);
                 if(tmp_new != null && !tmp_new.contains(local_addr)) {
                     _remove(key);
