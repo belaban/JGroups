@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.20 2009/01/09 16:47:24 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.21 2009/01/10 14:53:46 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -445,6 +445,20 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         catch(Throwable t) {
             if(log.isWarnEnabled())
                 log.warn("remove() failed", t);
+        }
+    }
+
+    /**
+     * Removes all keys and values in the L2 and L1 caches
+     */
+    @ManagedOperation
+    public void clear() {
+        Set<K> keys=new HashSet<K>(l2_cache.getInternalMap().keySet());
+        for(K key: keys) {
+            remove(key); // inefficient - should so bulk removal (e.g. pass all keys as args) !
+        }
+        if(l1_cache != null) {
+            l1_cache.getInternalMap().clear();
         }
     }
 
