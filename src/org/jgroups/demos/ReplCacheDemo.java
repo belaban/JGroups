@@ -24,21 +24,27 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.13 2009/01/10 13:01:41 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.14 2009/01/10 14:38:39 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
     private static final String BASENAME="replcache";
 
     private JFrame       frame;
+    private JTabbedPane  root_pane=new JTabbedPane();
     private JTable       table;
     private JTextField   key_field=createTextField(null, 10);
     private JTextField   value_field=createTextField(null, 10);
     private JTextField   repl_count_field=createTextField("1", 3);
     private JTextField   timeout_field=createTextField("0", 5);
+    private JTextField   perf_key_prefix=createTextField("key", 5);
+    private JTextField   perf_num_keys=createTextField("1000", 5);
+    private JTextField   perf_size=createTextField("1000", 5);
+    private JTextField   perf_repl_count_field=createTextField("1", 3);
+    private JTextField   perf_timeout_field=createTextField("0", 5);
+    private JTextArea    status=new JTextArea("Status area", 10, 5);
+    private JLabel       num_elements=new JLabel("0 elements");
     private MyTableModel model=null;
-
-
 
 
     public void actionPerformed(ActionEvent event) {
@@ -73,6 +79,15 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         else if(command.equals("Rebalance")) {
             cache.mcastEntries();
         }
+        else if(command.equals("Reset")) {
+            status.setText("");
+        }
+        else if(command.equals("Start")) {
+            startPerfTest();
+        }
+        else if(command.equals("Stop")) {
+
+        }
         else if(command.equals("Exit")) {
             if(cache != null)
                 cache.stop();
@@ -81,6 +96,35 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         }
     }
 
+    private void startPerfTest() {
+        int   num_puts=1000;
+        int   size=1000;
+        short repl_count=1;
+        long  timeout=0;
+        String key_prefix="key";
+
+        String tmp=perf_key_prefix.getText();
+        if(tmp != null)
+            key_prefix=tmp;
+        tmp=perf_num_keys.getText();
+        if(tmp != null)
+            num_puts=Integer.valueOf(tmp);
+        tmp=perf_size.getText();
+        if(tmp != null)
+            size=Integer.valueOf(tmp);
+        tmp=perf_repl_count_field.getText();
+        if(tmp != null)
+            repl_count=Short.valueOf(tmp);
+        tmp=perf_timeout_field.getText();
+        if(tmp != null)
+            timeout=Long.valueOf(tmp);
+
+        for(int i=0; i < num_puts; i++) {
+            String key=key_prefix + "-" + i;
+            String value="val-" + i;
+            cache.put(key, value, repl_count,  timeout);
+        }
+    }
 
 
     private void start(String props,
@@ -132,7 +176,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        table = new MyTable(model);
+        table=new MyTable(model);
         table.setPreferredScrollableViewportSize(new Dimension(500, 200));
         // table.setFillsViewportHeight(true); // JDK 6 specific
         table.setShowGrid(false);
@@ -165,10 +209,52 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         buttons.add(createButton("Remove"));
         buttons.add(createButton("Rebalance"));
         buttons.add(createButton("Exit"));
+        buttons.add(num_elements);
         add(buttons);
         setOpaque(true);
 
-        frame.setContentPane(this);
+        root_pane.addTab("Data", this);
+        JPanel perf_panel=new JPanel();
+        perf_panel.setLayout(new BoxLayout(perf_panel, BoxLayout.Y_AXIS));
+        perf_panel.setOpaque(true);
+        root_pane.addTab("Perf test", perf_panel);
+
+        perf_panel.add(status);
+        status.setForeground(Color.BLUE);
+
+        JPanel prefix=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        prefix.add(new JLabel("Key prefix"));
+        prefix.add(perf_key_prefix);
+        perf_panel.add(prefix);
+
+        JPanel keys=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        keys.add(new JLabel("Number of keys to insert"));
+        keys.add(perf_num_keys);
+        perf_panel.add(keys);
+
+        JPanel size=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        size.add(new JLabel("Size of each key (bytes)"));
+        size.add(perf_size);
+        perf_panel.add(size);
+
+        JPanel perf_repl_count=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        perf_repl_count.add(new JLabel("Replication count"));
+        perf_repl_count.add(perf_repl_count_field);
+        perf_panel.add(perf_repl_count);
+
+        JPanel perf_timeout=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        perf_timeout.add(new JLabel("Timeout"));
+        perf_timeout.add(perf_timeout_field);
+        perf_panel.add(perf_timeout);
+
+        JPanel perf_buttons=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        perf_buttons.add(createButton("Start"));
+        perf_buttons.add(createButton("Stop"));
+        perf_buttons.add(createButton("Reset"));
+        perf_buttons.add(createButton("Exit"));
+        perf_panel.add(perf_buttons);
+
+        frame.setContentPane(root_pane);
         frame.pack();
         frame.getRootPane().setDefaultButton(put_button);
         frame.setVisible(true);
@@ -250,86 +336,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         demo.start(props, rpc_timeout, caching_time,
                    migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
                    l2_max_entries, l2_reaping_interval);
-        // demo.mainLoop();
     }
 
-//    private void mainLoop() throws IOException {
-//          while(true) {
-//              int c;
-//              System.in.skip(System.in.available());
-//              System.out.println("\n[1] Put [2] Get [3] Remove [4] Dump [5] view [x] Exit");
-//              c=System.in.read();
-//              switch(c) {
-//                  case -1:
-//                      break;
-//                  case '1':
-//                      put();
-//                      break;
-//                  case '2':
-//                      String key=readString("key");
-//                      String val=cache.get(key);
-//                      System.out.println("val = " + val);
-//                      break;
-//                  case '3':
-//                      key=readString("key");
-//                      cache.remove(key);
-//                      break;
-//                  case '4':
-//                      System.out.println(cache.dump());
-//                      break;
-//                  case '5':
-//                      System.out.println("view = " + cache.getView());
-//                      break;
-//                  case 'x':
-//                      cache.stop();
-//                      return;
-//                  default:
-//                      break;
-//              }
-//          }
-//      }
 
-      /*private void put() throws IOException {
-          String key=readString("key");
-          String val=readString("value");
-          String tmp=readString("replication count");
-          short count=Short.parseShort(tmp);
-          tmp=readString("timeout");
-          long timeout=Long.parseLong(tmp);
-          cache.put(key, val, count, timeout);
-      }*/
-
-
-
-     /* private static void skip(InputStream in) throws IOException {
-          System.in.skip(in.available());
-      }
-
-      private static String readString(String s) throws IOException {
-          int c;
-          boolean looping=true;
-          StringBuilder sb=new StringBuilder();
-          System.out.print(s + ": ");
-          System.out.flush();
-          skip(System.in);
-
-          while(looping) {
-              c=System.in.read();
-              switch(c) {
-                  case -1:
-                  case '\n':
-                  case 13:
-                      looping=false;
-                      break;
-                  default:
-                      sb.append((char)c);
-                      break;
-              }
-          }
-
-          return sb.toString();
-      }
-*/
     void setTitle(String title) {
         String local_addr=cache != null? cache.getLocalAddressAsString() : null;
         int num_nodes=cache != null? cache.getClusterSize() : 0;
@@ -423,6 +432,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         public void changed() {
             fireTableDataChanged();
+            num_elements.setText(cache.getL2Cache().getSize() + " elements");
         }
     }
     
