@@ -11,6 +11,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import javax.management.MBeanServer;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.12 2009/01/09 16:47:25 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.13 2009/01/10 13:01:41 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -131,9 +132,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        table = new JTable(model);
+        table = new MyTable(model);
         table.setPreferredScrollableViewportSize(new Dimension(500, 200));
-        table.setFillsViewportHeight(true);
+        // table.setFillsViewportHeight(true); // JDK 6 specific
         table.setShowGrid(false);
         table.setFont(table.getFont().deriveFont(Font.BOLD));
         add(new JScrollPane(table));
@@ -362,6 +363,19 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         public void focusLost(FocusEvent e) {
         }
+    }
+
+    private static class MyTable extends JTable {
+
+        private MyTable(TableModel dm) {
+            super(dm);
+        }
+
+        public boolean getScrollableTracksViewportHeight() {
+            Container viewport=getParent();
+            return viewport instanceof JViewport && getPreferredSize().height < viewport.getHeight();
+        }
+
     }
 
     private class MyTableModel<K,V> extends AbstractTableModel implements ReplCache.ChangeListener {
