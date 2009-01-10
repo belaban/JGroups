@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.14 2009/01/10 14:38:39 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.15 2009/01/10 14:53:47 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -76,6 +76,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                 }
             }
         }
+        else if(command.equals("Clear")) {
+            clear();
+        }
         else if(command.equals("Rebalance")) {
             cache.mcastEntries();
         }
@@ -94,6 +97,10 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
             frame.dispose();
             System.exit(1); // or can we break out of mainLoop() somehow else ?
         }
+    }
+
+    private void clear() {
+        cache.clear();
     }
 
     private void startPerfTest() {
@@ -119,11 +126,14 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         if(tmp != null)
             timeout=Long.valueOf(tmp);
 
+        long start=System.currentTimeMillis();
         for(int i=0; i < num_puts; i++) {
             String key=key_prefix + "-" + i;
             String value="val-" + i;
             cache.put(key, value, repl_count,  timeout);
         }
+        long diff=System.currentTimeMillis() - start;
+        status.setText("It took " + diff + " ms to insert " + num_puts + " elements");
     }
 
 
@@ -207,6 +217,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         JButton put_button=createButton("Put");
         buttons.add(createButton("Put"));
         buttons.add(createButton("Remove"));
+        buttons.add(createButton("Clear"));
         buttons.add(createButton("Rebalance"));
         buttons.add(createButton("Exit"));
         buttons.add(num_elements);
@@ -234,7 +245,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
         JPanel size=new JPanel(new FlowLayout(FlowLayout.LEFT));
         size.add(new JLabel("Size of each key (bytes)"));
-        size.add(perf_size);
+        size.add(perf_size); size.add(new JLabel("    (ignored for now)"));
         perf_panel.add(size);
 
         JPanel perf_repl_count=new JPanel(new FlowLayout(FlowLayout.LEFT));
