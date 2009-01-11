@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.15 2008/10/07 18:53:48 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.16 2009/01/11 22:53:21 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -431,6 +431,8 @@
 			<echo>@{text}</echo>
 			<echo>Using set: @{set}</echo>
 			<mkdir dir="${tmp.dir}/tests-results"/>
+			<property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
+			<property name="testname.ext" value=""/>
 	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	        	
 	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
 	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
@@ -445,8 +447,9 @@
 			 	<sysproperty key="mux.conf.stack" value="${mux.conf.stack}" />
 		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
 		 		<sysproperty key="threadcount" value="${threadcount}" />
-	            <classpath refid="jg.classpath"/>
-	            <formatter type="xml" usefile="true"/>	        	
+	            <classpath refid="jg.classpath"/>   	
+	        	<sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
+	            <formatter classname="${formatter.class}" extension="${testname.ext}.xml"/>	        	
 	        	<batchtest todir="${tmp.dir}/tests-results">
 	                <fileset dir="${junit.dir}">
 	                	<patternset refid="@{set}"/>
@@ -471,6 +474,7 @@
 			mux.conf.stack=${mux.conf.stack}
 			mux.factorycount=${mux.factorycount}
 			threadcount=${threadcount}	
+		 	formatter.class=${formatter.class}
 			test.verbose=${test.verbose}
 		 </testrunner>
 	</target>
@@ -489,6 +493,9 @@
 		 	<param name="testset" value="all.tests"/>
 		 	<param name="channel.conf" value="udp.xml"/>
 		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
+		 	<param name="testname.ext" value="udp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		 	<param name="test.verbose" value="false"/>
 		 </antcall>
 	</target>
 	
@@ -509,6 +516,9 @@
 		 	<param name="testset" value="all.tests"/>	
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="udp"/>
+		 	<param name="testname.ext" value="mux-udp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		 	<param name="test.verbose" value="false"/>
 		 </antcall>
 	</target>
 	
@@ -526,6 +536,9 @@
 		 	<param name="testset" value="all.tests"/>	
 		 	<param name="channel.conf" value="tcp.xml"/>
 		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
+		 	<param name="testname.ext" value="tcp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		 	<param name="test.verbose" value="false"/>
 		 </antcall>
 	</target>
 	
@@ -546,6 +559,9 @@
 		 	<param name="testset" value="all.tests"/>	
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="tcp"/>
+		 	<param name="testname.ext" value="mux-tcp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		 	<param name="test.verbose" value="false"/>
 		 </antcall>
 	</target>
 	
@@ -573,6 +589,8 @@
 			description="Runs a single junit test indicated by -Dtest=testname parameter">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="one.test"/>
+		 	<param name="testname.ext" value="one-test"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
 		 	<param name="test.verbose" value="true"/>
 		 </antcall>
 	</target>
@@ -592,6 +610,8 @@
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="udp"/>
 		 	<param name="testset" value="mux.tests"/>
+		 	<param name="testname.ext" value="mux-udp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
     		<param name="test.verbose" value="true"/>
     	</antcall>
     </target>
@@ -611,6 +631,8 @@
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="udp-sync"/>
 		 	<param name="testset" value="mux.tests"/>
+		 	<param name="testname.ext" value="mux-udp-sync"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
     		<param name="test.verbose" value="true"/>
     	</antcall>			
     </target>
@@ -630,6 +652,8 @@
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="udp-sync"/>
 		 	<param name="testset" value="mux.tests"/>
+		 	<param name="testname.ext" value="mux-tcp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
     		<param name="test.verbose" value="true"/>
     	</antcall>
     </target>
@@ -650,6 +674,8 @@
 		 	<param name="mux.on" value="true"/>
 		 	<param name="mux.conf.stack" value="tcp-sync"/>
 		 	<param name="testset" value="mux.tests"/>
+		 	<param name="testname.ext" value="mux-tcp-sync"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
     		<param name="test.verbose" value="true"/>
     	</antcall>			
 	</target>
