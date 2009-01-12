@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.21 2009/01/10 14:53:46 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.22 2009/01/12 14:11:38 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -74,10 +74,11 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     @ManagedAttribute(writable=true)
     private boolean migrate_data=true;
 
-    private static final short PUT       = 1;
-    private static final short PUT_FORCE = 2;
-    private static final short GET       = 3;
-    private static final short REMOVE    = 4;
+    private static final short PUT         = 1;
+    private static final short PUT_FORCE   = 2;
+    private static final short GET         = 3;
+    private static final short REMOVE      = 4;
+    private static final short REMOVE_MANY = 5;
 
     protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
     private TimeScheduler timer;
@@ -100,6 +101,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             methods.put(GET, ReplCache.class.getMethod("_get",
                                                        Object.class));
             methods.put(REMOVE, ReplCache.class.getMethod("_remove", Object.class));
+            methods.put(REMOVE_MANY, ReplCache.class.getMethod("_removeMany", Set.class));
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -454,12 +456,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     @ManagedOperation
     public void clear() {
         Set<K> keys=new HashSet<K>(l2_cache.getInternalMap().keySet());
-        for(K key: keys) {
-            remove(key); // inefficient - should so bulk removal (e.g. pass all keys as args) !
-        }
-        if(l1_cache != null) {
-            l1_cache.getInternalMap().clear();
-        }
+        mcastClear(keys, false);
     }
 
     public V _put(K key, V val, short repl_count, long timeout) {
@@ -532,6 +529,14 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             l1_cache.remove(key);
         notifyChangeListeners();
         return retval != null? retval.getVal() : null;
+    }
+
+
+    public void _removeMany(Set<K> keys) {
+        if(log.isTraceEnabled())
+            log.trace("_removeMany(): " + keys.size() + " entries");
+        for(K key: keys)
+            _remove(key);
     }
 
 
@@ -705,6 +710,17 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         catch(Throwable t) {
             if(log.isWarnEnabled())
                 log.warn("put() failed", t);
+        }
+    }
+
+    private void mcastClear(Set<K> keys, boolean synchronous) {
+        try {
+            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
+            disp.callRemoteMethods(null, new MethodCall(REMOVE_MANY, new Object[]{keys}), mode, call_timeout);
+        }
+        catch(Throwable t) {
+            if(log.isWarnEnabled())
+                log.warn("clear() failed", t);
         }
     }
 
