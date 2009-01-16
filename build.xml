@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.185 2009/01/05 12:29:55 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.186 2009/01/16 17:09:43 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -262,20 +262,20 @@
 
     <target name="all" depends="compile"/>
 
-    <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support">
+    <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support,prot-properties-to-doc">
         <echo message="Building docs from docbook ..."/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
         <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
     </target>
 
 
-    <target name="manual" description="Build the html doc" depends="check-docbook-support">
+    <target name="manual" description="Build the html doc" depends="check-docbook-support,prot-properties-to-doc">
         <echo message="Building HTML doc from docbook ..."/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
         <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="html"/>
     </target>
 
-    <target name="pdf" description="Build the PDF doc" depends="check-docbook-support">
+    <target name="pdf" description="Build the PDF doc" depends="check-docbook-support,prot-properties-to-doc">
         <echo message="Building PDF doc from docbook ..."/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="pdf"/>
         <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="pdf"/>
@@ -289,11 +289,14 @@
               unless="docbook.support.present"/>
     </target>
 
+	<target name="prot-properties-to-doc">
+		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath"/>
+	</target>
 
     <target name="checkout-docbook-support">
         <exec executable="svn">
             <arg value="co"/>
-            <arg value="http://anonsvn.jboss.org/repos/jbossas/trunk/docbook-support"/>
+            <arg value="http://anonsvn.labs.jboss.com/labs/jbosslabs/trunk/doc/docbook-support/"/>
             <arg value="${root.dir}/../docbook-support"/>
         </exec>
     </target>
