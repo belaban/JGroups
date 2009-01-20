@@ -29,17 +29,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
- * Iterates over all concrete Protocol classes and creates an XML file per
- * Protocol class.
+ * Iterates over all concrete Protocol classes and creates XML schema used for validation of 
+ * configuration files. 
  * 
- * <p>
- * Each XML file in turn contains all protocol properties along with property
- * description. The output XML snipet is conforming docbook format so that
- * property descriptions can be easily added to master docbook JGroups
- * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.1 2009/01/20 15:39:16 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.2 2009/01/20 15:41:23 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
