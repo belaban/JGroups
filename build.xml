@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.186 2009/01/16 17:09:43 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.187 2009/01/20 13:50:28 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -81,7 +81,6 @@
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
         <mkdir dir="${dist.dir}"/>
-        <mkdir dir="${javadoc.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
   
@@ -242,8 +241,9 @@
 
     <!-- generate java doc -->
     <target name="javadoc"
-            depends="prepare"
+            depends="prepare,check-javadoc" unless="javadoc.exists"
             description="Create Javadoc documentation in the ./dist/javadoc directory">
+         <mkdir dir="${javadoc.dir}"/>
         <javadoc packagenames="${javadoc.packages}"
                  sourcepath="${src.dir}"
                  destdir="${javadoc.dir}"
@@ -258,6 +258,10 @@
             <!-- The tag option for Javadoc is available in Java 1.4 or later. -->
             <tag name="todo" description="To do:"/>
         </javadoc>
+    </target>
+
+    <target name="check-javadoc" description="Checks whether the ./dist/javadoc dir exists">
+        <available file="${javadoc.dir}" type="dir" property="javadoc.exists"/>
     </target>
 
     <target name="all" depends="compile"/>
