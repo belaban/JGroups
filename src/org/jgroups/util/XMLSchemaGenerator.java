@@ -34,14 +34,24 @@ import org.w3c.dom.Element;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.2 2009/01/20 15:41:23 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.3 2009/01/20 20:30:21 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
 
 	public static void main(String[] args) {
-
-		File f = new File("JGroups-" + Version.major + "." + Version.minor + "." + Version.micro + ".xsd");
+		
+		String outputDir = "./";
+		
+		for(int i=0; i < args.length; i++) {
+            String arg=args[i];
+            if("-o".equals(arg)) {
+            	outputDir=args[++i];
+            	continue;
+            }
+		}
+		
+		File f = new File(outputDir,"JGroups-" + Version.major + "." + Version.minor + "." + Version.micro + ".xsd");
 		try {
 			FileWriter fw = new FileWriter(f,false);
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
