@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.191 2009/01/21 12:06:24 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.192 2009/01/21 14:42:38 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -336,7 +336,7 @@
               unless="docbook.support.present"/>
     </target>
 
-	<target name="prot-properties-to-doc">
+	<target name="prot-properties-to-doc" depends="compile">
 		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath"/>
 	</target>
 
