@@ -34,7 +34,7 @@ import org.w3c.dom.Element;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.3 2009/01/20 20:30:21 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.4 2009/01/21 20:52:15 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -51,13 +51,15 @@ public class XMLSchemaGenerator {
             }
 		}
 		
-		File f = new File(outputDir,"JGroups-" + Version.major + "." + Version.minor + "." + Version.micro + ".xsd");
+		File f = new File(outputDir,"JGroups-" + Version.major + "." + Version.minor + ".xsd");
 		try {
 			FileWriter fw = new FileWriter(f,false);
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			DOMImplementation impl = builder.getDOMImplementation();
-			Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);
+			Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);			
+			xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
+		
 			Element xsElement = xmldoc.createElement("xs:element");
 			xsElement.setAttribute("name", "config");
 			xmldoc.getDocumentElement().appendChild(xsElement);
