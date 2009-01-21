@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.190 2009/01/21 10:59:57 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.191 2009/01/21 12:06:24 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -32,6 +32,7 @@
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
+    <property name="timestamp" value=".timestamp"/>
 	
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="300000"/>
@@ -278,12 +279,40 @@
 
     <target name="all" depends="compile"/>
 
-    <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support,prot-properties-to-doc">
-        <echo message="Building docs from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
+    <target name="docs" description="Build all html and pdf docs" depends="manual,tutorial">
     </target>
-	
+
+    <target name="manual" description="Build all html and pdf docs"
+            depends="check-docbook-support,prot-properties-to-doc,check-manual" unless="manual.up-to-date">
+        <echo message="Building manual from docbook ..."/>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
+        <touch file="${manual.dir}/build/timestamp"/>
+    </target>
+
+
+    <target name="tutorial" description="Build all html and pdf docs"
+            depends="check-docbook-support,prot-properties-to-doc,check-tutorial" unless="tutorial.up-to-date">
+        <echo message="Building tutorial from docbook ..."/>
+        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
+        <touch file="${tutorial.dir}/build/timestamp"/>
+    </target>
+
+
+    <target name="check-tutorial">
+        <uptodate property="tutorial.up-to-date" targetfile="${tutorial.dir}/build/timestamp">
+            <srcfiles dir="${tutorial.dir}/en" includes="**/*">
+            </srcfiles>
+        </uptodate>
+    </target>
+
+    <target name="check-manual">
+        <uptodate property="manual.up-to-date" targetfile="${manual.dir}/build/timestamp">
+            <srcfiles dir="${manual.dir}/en" includes="**/*">
+            </srcfiles>
+        </uptodate>
+    </target>
+
+
 	<target name="create-schema" description="creates XML schema for this version of JGroups" depends="compile">
 		<delete dir="${root.dir}/schema" failonerror="false"/>
 		<mkdir dir="${root.dir}/schema"/>
@@ -292,12 +321,6 @@
 		</java>	
 	</target>
 
-
-    <target name="manual" description="Build the html doc" depends="check-docbook-support,prot-properties-to-doc">
-        <echo message="Building HTML doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="html"/>
-    </target>
 
     <target name="pdf" description="Build the PDF doc" depends="check-docbook-support,prot-properties-to-doc">
         <echo message="Building PDF doc from docbook ..."/>
