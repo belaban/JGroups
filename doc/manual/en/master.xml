@@ -3,7 +3,7 @@
         "../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
         <!ENTITY overview     SYSTEM "modules/overview.xml">
         <!ENTITY blocks       SYSTEM "modules/blocks.xml">
-        <!ENTITY protocols    SYSTEM "modules/protocols.xml">
+        <!ENTITY protocols    SYSTEM "modules/protocols-temp.xml">
         <!ENTITY installation SYSTEM "modules/installation.xml">
         <!ENTITY api          SYSTEM "modules/api.xml">
         <!ENTITY advanced     SYSTEM "modules/advanced.xml">
@@ -14,8 +14,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2008/01/23 14:36:56 $</pubdate>
-        <releaseinfo>$Revision: 1.10 $</releaseinfo>
+        <pubdate>$Date: 2009/01/22 16:14:33 $</pubdate>
+        <releaseinfo>$Revision: 1.11 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
