@@ -47,7 +47,7 @@ import org.w3c.dom.Element;
  * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.5 2008/11/03 15:14:57 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.6 2009/01/22 16:14:34 vlada Exp $
  * 
  */
 public class PropertiesToXML {
@@ -55,8 +55,9 @@ public class PropertiesToXML {
     public static void main(String[] args) {
 
         try {
-
-            File f = new File("doc/manual/en/modules/protocols.xml");            
+        	//first copy protocols.xml file into protocols-temp.xml
+        	File f = new File("doc/manual/en/modules/protocols-temp.xml");
+        	copy(new FileReader(new File("doc/manual/en/modules/protocols.xml")), new FileWriter(f));
             String s = fileToString(f);            
             
             Set<Class<?>> classes=getClasses("org.jgroups.protocols", Protocol.class);
@@ -192,15 +193,20 @@ public class PropertiesToXML {
     }
 
     public static int copy(Reader input, Writer output) throws IOException {
-        char[] buffer=new char[8 * 1024];
-        int count=0;
-        int n=0;
-        while(-1 != (n=input.read(buffer))) {
-            output.write(buffer, 0, n);
-            count+=n;
-        }
-        return count;
-    }
+		char[] buffer = new char[8 * 1024];
+		int count = 0;
+		int n = 0;
+		try {
+			while (-1 != (n = input.read(buffer))) {
+				output.write(buffer, 0, n);
+				count += n;
+			}
+		} finally {
+			output.flush();
+			output.close();
+		}
+		return count;
+	}
     
     
     private static Element createXMLTree(Document xmldoc) throws ParserConfigurationException {
