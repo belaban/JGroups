@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.194 2009/01/22 16:14:35 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.195 2009/01/23 09:50:41 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -33,7 +33,8 @@
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="timestamp" value=".timestamp"/>
-	
+    <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
+
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="300000"/>
 
@@ -283,11 +284,12 @@
     </target>
 
     <target name="manual" description="Build all html and pdf docs"
-            depends="check-docbook-support,prot-properties-to-doc,check-manual" unless="manual.up-to-date">
+            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from docbook ..."/>
+        <prot-properties-to-doc input="${protocols.xml}"/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
+    	<delete file="${protocols.xml}.tmp"/>
         <touch file="${manual.dir}/build/timestamp"/>
-    	<delete file="${manual.dir}/en/modules/protocols-temp.xml"/>
     </target>
 
 
@@ -304,6 +306,7 @@
             <srcfiles dir="${tutorial.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
+        <echo message="tutorial.up-to-data=${tutorial.up-to-date}"/>
     </target>
 
     <target name="check-manual">
@@ -311,6 +314,7 @@
             <srcfiles dir="${manual.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
+        <echo message="manual.up-to-data=${manual.up-to-date}"/>
     </target>
 
 
@@ -323,12 +327,6 @@
 	</target>
 
 
-    <target name="pdf" description="Build the PDF doc" depends="check-docbook-support,prot-properties-to-doc">
-        <echo message="Building PDF doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="pdf"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="pdf"/>
-    </target>
-
 
     <target name="check-docbook-support">
         <available file="${root.dir}/../docbook-support" type="dir"
@@ -337,9 +335,7 @@
               unless="docbook.support.present"/>
     </target>
 
-	<target name="prot-properties-to-doc" depends="compile">
-		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath"/>
-	</target>
+
 
     <target name="checkout-docbook-support">
         <exec executable="svn">
@@ -563,6 +559,14 @@
     </macrodef>
 
 
+    <macrodef name="prot-properties-to-doc">
+        <attribute name="input" default="${protocols.xml}"/>
+        <sequential>
+		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
+            <arg value="@{input}"/>
+        </java>
+        </sequential>
+    </macrodef>
 
     <!-- =============================== TestNG ======================================== -->
 
