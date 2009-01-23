@@ -32,9 +32,10 @@ import org.w3c.dom.Element;
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of 
  * configuration files. 
  * 
+ * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.5 2009/01/23 01:20:38 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.6 2009/01/23 15:24:43 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -43,12 +44,15 @@ public class XMLSchemaGenerator {
 		
 		String outputDir = "./";
 		
-		for(int i=0; i < args.length; i++) {
-            String arg=args[i];
-            if("-o".equals(arg)) {
-            	outputDir=args[++i];
-            	continue;
-            }
+		for (int i = 0; i < args.length; i++) {
+			String arg = args[i];
+			if ("-o".equals(arg)) {
+				outputDir = args[++i];
+				continue;
+			} else {
+				System.out.println("XMLSchemaGenerator -o <path to newly created xsd schema file>");
+				return;
+			}
 		}
 		
 		File f = new File(outputDir,"JGroups-" + Version.major + "." + Version.minor + ".xsd");
