@@ -42,22 +42,32 @@ import org.w3c.dom.Element;
  * 
  * <p>
  * Each XML file in turn contains all protocol properties along with property
- * description. The output XML snipet is conforming docbook format so that
+ * description. The output XML snippet is conforming docbook format so that
  * property descriptions can be easily added to master docbook JGroups
  * documentation.
- * 
+ * <p/>
+ * There are 1 arg: the input file
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.6 2009/01/22 16:14:34 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.7 2009/01/23 09:50:40 belaban Exp $
  * 
  */
 public class PropertiesToXML {
 
+
     public static void main(String[] args) {
+        String input="doc/manual/en/modules/protocols.xml";
+
+        if(args.length != 1) {
+            help();
+            return;
+        }
+        input=args[0];
+        String temp_file=input + ".tmp";
 
         try {
         	//first copy protocols.xml file into protocols-temp.xml
-        	File f = new File("doc/manual/en/modules/protocols-temp.xml");
-        	copy(new FileReader(new File("doc/manual/en/modules/protocols.xml")), new FileWriter(f));
+        	File f = new File(temp_file);
+        	copy(new FileReader(new File(input)), new FileWriter(f));
             String s = fileToString(f);            
             
             Set<Class<?>> classes=getClasses("org.jgroups.protocols", Protocol.class);
@@ -76,6 +86,10 @@ public class PropertiesToXML {
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    static void help() {
+        System.out.println("PropertiesToXML <input XML file>");
     }
 
     private static Set<Class<?>> getClasses(String packageName, Class<?> assignableFrom) throws IOException,
