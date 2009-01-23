@@ -34,7 +34,7 @@ import org.w3c.dom.Element;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.4 2009/01/21 20:52:15 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.5 2009/01/23 01:20:38 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -59,6 +59,7 @@ public class XMLSchemaGenerator {
 			DOMImplementation impl = builder.getDOMImplementation();
 			Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);			
 			xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
+			xmldoc.getDocumentElement().setAttribute("elementFormDefault","qualified");
 		
 			Element xsElement = xmldoc.createElement("xs:element");
 			xsElement.setAttribute("name", "config");
