@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.93 2008/10/21 12:56:59 vlada Exp $
+ * @version $Id: STABLE.java,v 1.94 2009/02/05 09:21:41 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -432,7 +432,9 @@ public class STABLE extends Protocol {
 
     /** Votes is already locked and guaranteed to be non-null */
     private boolean allVotesReceived(Set<Address> votes) {
-        return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
+        synchronized(mbrs) {
+            return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
+        }
     }
 
 
