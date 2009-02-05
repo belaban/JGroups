@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.8 2008/10/10 10:07:59 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.9 2009/02/05 16:23:04 vlada Exp $
  */
 public class Util {
 
@@ -1986,7 +1986,7 @@ public class Util {
 
 
     /** Finds first available port starting at start_port and returns server socket */
-    public static ServerSocket createServerSocket(int start_port) {
+    public static ServerSocket createServerSocket(int start_port) throws IOException{
         ServerSocket ret=null;
 
         while(true) {
@@ -2001,10 +2001,12 @@ public class Util {
             }
             break;
         }
+        if(ret == null)
+        	throw new IOException("Could not create server socket, start port:" +start_port);
         return ret;
     }
 
-    public static ServerSocket createServerSocket(InetAddress bind_addr, int start_port) {
+    public static ServerSocket createServerSocket(InetAddress bind_addr, int start_port) throws IOException{
         ServerSocket ret=null;
 
         while(true) {
@@ -2019,6 +2021,8 @@ public class Util {
             }
             break;
         }
+        if(ret == null)
+        	throw new IOException("Could not create server socket, start port:" +start_port);
         return ret;
     }
 
@@ -2066,6 +2070,8 @@ public class Util {
                 }
             }
         }
+        if(sock == null)
+        	throw new IOException ("Could not create udp socket, port = "+ port);
         return sock; // will never be reached, but the stupid compiler didn't figure it out...
     }
 
@@ -2371,20 +2377,23 @@ public class Util {
 
 
     public static MBeanServer getMBeanServer() {
-        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-        if(servers == null || servers.isEmpty())
-            return null;
+		ArrayList servers = MBeanServerFactory.findMBeanServer(null);
+		if (servers != null && !servers.isEmpty()) {
+			// return 'jboss' server if available
+			for (int i = 0; i < servers.size(); i++) {
+				MBeanServer srv = (MBeanServer) servers.get(i);
+				if ("jboss".equalsIgnoreCase(srv.getDefaultDomain()))
+					return srv;
+			}
 
-        // return 'jboss' server if available
-        for(int i=0; i < servers.size(); i++) {
-            MBeanServer srv=(MBeanServer)servers.get(i);
-            if("jboss".equalsIgnoreCase(srv.getDefaultDomain()))
-                return srv;
-        }
-
-        // return first available server
-        return (MBeanServer)servers.get(0);
-    }
+			// return first available server
+			return (MBeanServer) servers.get(0);
+		} 
+		else {
+			//if it all fails, create a default
+			return MBeanServerFactory.createMBeanServer();
+		}
+	}
 
 
     public static String getProperty(Protocol prot, String prop_name) {
