@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26.2.6 2009/01/08 08:22:39 jiwils Exp $
+// $Id: GossipRouter.java,v 1.26.2.7 2009/02/05 16:23:49 vlada Exp $
 
 package org.jgroups.stack;
 
@@ -66,11 +66,13 @@ public class GossipRouter {
     // after connection was established; upon expiration, the router initiates
     // the routing protocol on the connection. Don't set the interval too big,
     // otherwise the router will appear slow in answering routing requests.
+    @Deprecated
     private long gossipRequestTimeout;
 
     // time (in ms) main thread waits for a router client to send the routing
     // request type and the group afiliation before it declares the request
     // failed.
+    @Deprecated
     private long routingClientReplyTimeout;
 
     // HashMap<String, Map<Address,AddressEntry> >. Maintains associations between groups and their members. Keys=group
@@ -123,6 +125,22 @@ public class GossipRouter {
              ROUTING_CLIENT_REPLY_TIMEOUT);
     }
 
+    /**
+	 * 
+	 * Creates a gossip router on a given port bound to a specified interface
+	 * and an expiry time (in msecs) until a cached 'gossip' member entry
+	 * expires.
+	 * 
+	 * <p>
+	 * Remaining two parameters are deprecated and not used.
+	 * 
+	 * @param port
+	 * @param bindAddressString
+	 * @param expiryTime
+	 * @param gossipRequestTimeout
+	 * @param routingClientReplyTimeout
+	 * 
+	 */
     public GossipRouter(int port, String bindAddressString,
                         long expiryTime, long gossipRequestTimeout,
                         long routingClientReplyTimeout) {
@@ -169,18 +187,22 @@ public class GossipRouter {
         return expiryTime;
     }
 
+    @Deprecated
     public void setGossipRequestTimeout(long gossipRequestTimeout) {
         this.gossipRequestTimeout=gossipRequestTimeout;
     }
 
+    @Deprecated
     public long getGossipRequestTimeout() {
         return gossipRequestTimeout;
     }
 
+    @Deprecated
     public void setRoutingClientReplyTimeout(long routingClientReplyTimeout) {
         this.routingClientReplyTimeout=routingClientReplyTimeout;
     }
 
+    @Deprecated
     public long getRoutingClientReplyTimeout() {
         return routingClientReplyTimeout;
     }
