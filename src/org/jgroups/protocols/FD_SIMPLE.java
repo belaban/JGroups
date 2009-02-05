@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.19.2.1 2008/05/22 13:23:07 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.19.2.2 2009/02/05 09:28:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.19.2.1 $
+ * @version $Revision: 1.19.2.2 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -192,11 +192,13 @@ public class FD_SIMPLE extends Protocol {
                 }
 
                 // remove all keys from 'counters' which are not in this new view
-                for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
-                    key=(Address)it.next();
-                    if(!members.contains(key)) {
-                        if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
-                        it.remove();
+                synchronized(counters) {
+                    for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
+                        key=(Address)it.next();
+                        if(!members.contains(key)) {
+                            if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
+                            it.remove();
+                        }
                     }
                 }
         }
@@ -262,9 +264,11 @@ public class FD_SIMPLE extends Protocol {
         StringBuilder sb=new StringBuilder();
         Address key;
 
-        for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
-            key=(Address)it.next();
-            sb.append(key).append(": ").append(counters.get(key)).append('\n');
+        synchronized(counters) {
+            for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
+                key=(Address)it.next();
+                sb.append(key).append(": ").append(counters.get(key)).append('\n');
+            }
         }
         return sb.toString();
     }
