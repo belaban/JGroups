@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.85.2.2 2008/05/22 13:23:10 belaban Exp $
+ * @version $Id: STABLE.java,v 1.85.2.3 2009/02/05 09:21:50 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -425,7 +425,9 @@ public class STABLE extends Protocol {
 
     /** Votes is already locked and guaranteed to be non-null */
     private boolean allVotesReceived(Set<Address> votes) {
-        return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
+        synchronized(mbrs) {
+            return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
+        }
     }
 
 
