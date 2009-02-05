@@ -320,7 +320,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         return !flushProtocolInStack;
     }
 
-    private void respondToStateRequester(String id, Address stateRequester, boolean open_barrier) {
+    private void respondToStateRequester(String id, Address stateRequester, boolean open_barrier) throws IOException{
 
         // setup the plumbing if needed
         if(spawner == null){

@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.62.2.3 2008/10/22 08:52:19 belaban Exp $
+// $Id: ConnectionTable.java,v 1.62.2.4 2009/02/05 16:22:01 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -363,6 +363,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
            srv_port=start_port;
            break;
        }
+       if(ret == null)
+    	   throw new IOException("Could not create server socket in port range " + start_port + " - " +end_port);
        return ret;
    }
 
