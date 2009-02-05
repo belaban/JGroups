@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.185 2009/01/07 16:26:24 belaban Exp $
+ * @version $Id: Util.java,v 1.186 2009/02/05 16:49:16 vlada Exp $
  */
 public class Util {
 
@@ -2845,20 +2845,24 @@ public class Util {
 
 
     public static MBeanServer getMBeanServer() {
-        ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-        if(servers == null || servers.isEmpty())
-            return null;
+		ArrayList servers = MBeanServerFactory.findMBeanServer(null);
+		if (servers != null && !servers.isEmpty()) {
+			// return 'jboss' server if available
+			for (int i = 0; i < servers.size(); i++) {
+				MBeanServer srv = (MBeanServer) servers.get(i);
+				if ("jboss".equalsIgnoreCase(srv.getDefaultDomain()))
+					return srv;
+			}
 
-        // return 'jboss' server if available
-        for(int i=0; i < servers.size(); i++) {
-            MBeanServer srv=(MBeanServer)servers.get(i);
-            if("jboss".equalsIgnoreCase(srv.getDefaultDomain()))
-                return srv;
-        }
+			// return first available server
+			return (MBeanServer) servers.get(0);
+		} 
+		else {
+			//if it all fails, create a default
+			return MBeanServerFactory.createMBeanServer();
+		}
+	}
 
-        // return first available server
-        return (MBeanServer)servers.get(0);
-    }
 
 
     
