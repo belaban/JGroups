@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.25 2008/05/29 14:17:37 vlada Exp $
+// $Id: FD_SIMPLE.java,v 1.26 2009/02/05 09:27:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,15 +7,14 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
-import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Properties;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -30,16 +29,16 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
-    Address local_addr=null;
+    Address       local_addr=null;
     TimeScheduler timer=null;
 
     final Lock    heartbeat_lock=new ReentrantLock();
     @GuardedBy("heartbeat_lock")
-    Future<?>        heartbeat_future=null;
+    Future<?>     heartbeat_future=null;
     HeartbeatTask task;
 
     @Property
@@ -47,7 +46,7 @@ public class FD_SIMPLE extends Protocol {
     @Property
     long timeout=3000;             // time (in msecs) to wait for a response to are-you-alive
     final Vector<Address> members=new Vector<Address>();
-    final HashMap<Address,Integer> counters=new HashMap<Address,Integer>();   // keys=Addresses, vals=Integer (count)
+    final Map<Address,Integer> counters=new HashMap<Address,Integer>();   // keys=Addresses, vals=Integer (count)
     @Property
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
     static final String name="FD_SIMPLE";
@@ -169,11 +168,13 @@ public class FD_SIMPLE extends Protocol {
                 }
 
                 // remove all keys from 'counters' which are not in this new view
-                for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
-                    key=it.next();
-                    if(!members.contains(key)) {
-                        if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
-                        it.remove();
+                synchronized(counters) {
+                    for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
+                        key=it.next();
+                        if(!members.contains(key)) {
+                            if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
+                            it.remove();
+                        }
                     }
                 }
         }
@@ -239,9 +240,11 @@ public class FD_SIMPLE extends Protocol {
         StringBuilder sb=new StringBuilder();
         Address key;
 
-        for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
-            key=it.next();
-            sb.append(key).append(": ").append(counters.get(key)).append('\n');
+        synchronized(counters) {
+            for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
+                key=it.next();
+                sb.append(key).append(": ").append(counters.get(key)).append('\n');
+            }
         }
         return sb.toString();
     }
