@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.14 2007/10/26 18:24:00 vlada Exp $
+ * @version $Id: AckCollector.java,v 1.14.2.1 2009/02/05 09:13:29 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -82,7 +82,9 @@ public class AckCollector {
     public void handleView(View v) {
         if(v == null) return;
         Vector<Address> mbrs=v.getMembers();
-        suspected_mbrs.retainAll(mbrs);
+        synchronized(this) {
+            suspected_mbrs.retainAll(mbrs);
+        }
     }
 
     public boolean waitForAllAcks() {
