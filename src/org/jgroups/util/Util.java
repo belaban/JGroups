@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.9 2009/02/05 16:23:04 vlada Exp $
+ * @version $Id: Util.java,v 1.137.2.10 2009/02/06 16:53:46 vlada Exp $
  */
 public class Util {
 
@@ -2390,8 +2390,8 @@ public class Util {
 			return (MBeanServer) servers.get(0);
 		} 
 		else {
-			//if it all fails, create a default
-			return MBeanServerFactory.createMBeanServer();
+			//if it all fails, get the default server
+			return ManagementFactory.getPlatformMBeanServer();
 		}
 	}
 
