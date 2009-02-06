@@ -1,0 +1,18 @@
+
+
+Transport Next Generation
+-------------------------
+
+Author: Bela Ban
+Version: $Id: TransportNetGen,v 1.1 2009/02/06 11:49:47 belaban Exp $
+
+The next version of the transport (org.jgroups.protocols.TP) should be NIO based: TP has an NIO selector, and subclasses
+such as TCP or UDP only register NIO channels with TP. For example, UDP would create 2 NIO channels, a unicast and a
+multicast channel and register them with TP. TCP would do an accept() in a loop and, whenever a new peer connects,
+pass the client's NIO socket channel to TP.
+
+TP would therefore be a multiplexer which handles a number of connections, be they TCP or UDP connections. Therefore,
+the connection table functionality of TCP would be largely removed, because this is now handled by TP itself.
+
+
+
