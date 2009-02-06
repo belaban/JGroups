@@ -4,15 +4,27 @@ Transport Next Generation
 -------------------------
 
 Author: Bela Ban
-Version: $Id: TransportNetGen,v 1.1 2009/02/06 11:49:47 belaban Exp $
+Version: $Id: TransportNetGen,v 1.2 2009/02/06 12:01:38 belaban Exp $
 
 The next version of the transport (org.jgroups.protocols.TP) should be NIO based: TP has an NIO selector, and subclasses
 such as TCP or UDP only register NIO channels with TP. For example, UDP would create 2 NIO channels, a unicast and a
 multicast channel and register them with TP. TCP would do an accept() in a loop and, whenever a new peer connects,
-pass the client's NIO socket channel to TP.
+register the client's NIO socket channel with TP's selector.
 
 TP would therefore be a multiplexer which handles a number of connections, be they TCP or UDP connections. Therefore,
 the connection table functionality of TCP would be largely removed, because this is now handled by TP itself.
 
+This requires JDK 7, because NetworkChannel.open() does not yet exist in prior JDKs. To be more precise, it does exist,
+but only for datagram sockets (DatagramChannel.open()), not for multicast sockets (no MulticastChannel.open()).
+
+Transport NetGen should be combined with the copyless stack (https://jira.jboss.org/jira/browse/JGRP-809). On the
+receive side, this is done by passing the selection key to a thread from the thread pool. If the key has an attachment,
+it is the ByteBuffer previously created by a (possibly different) thread to receive the message. The receiver thread
+will then simply call read() (or receive()) on the input NIO channel and - when all bytes have been received (defined
+by the initial length field of a message) - unmarshall the buffer and pass the resulting message up the stack.
+When there is no attachment, the receiver thread creates one (according to the length field which prefixes each message)
+and reads the bytes available from the NIO channel into it. If the number of bytes read is equals to the expected length,
+the thread proceeds to unmarshalling and passing the message up. Otherwise, it attaches the ByteBuffer to the selection
+key and returns. Later, a (potentially) different thread will complete reading the full message and then finish the job.
 
 
