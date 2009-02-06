@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.30.4.2 2008/10/31 06:47:46 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.30.4.3 2009/02/06 16:41:55 vlada Exp $
  */
 public class RouterStub {
 
@@ -109,7 +109,11 @@ public class RouterStub {
                 req.writeTo(output);
                 output.flush();
                 input = new DataInputStream(sock.getInputStream());
-                connectionStateChanged(STATUS_CONNECTED);
+                boolean connectedOk = input.readBoolean();
+                if(connectedOk)
+                    connectionStateChanged(STATUS_CONNECTED);
+                else
+                    throw new Exception("Failed to get connection ack from gossip router");
             }catch(Exception e){
                 if(log.isWarnEnabled())
                     log.warn(this + " failed connecting to " + router_host + ":" + router_port);
