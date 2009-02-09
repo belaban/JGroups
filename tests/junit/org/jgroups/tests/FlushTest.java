@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.6 2008/11/18 20:26:12 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.7 2009/02/09 13:52:22 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2,c3;
@@ -130,8 +130,8 @@ public class FlushTest extends ChannelTestBase {
         Util.sleep(8000);
         
         //cluster should not hang and two remaining members should have a correct view
-        assertTrue("corret view size", c1.getView().size()==2);
-        assertTrue("corret view size", c3.getView().size()==2);
+        assertTrue("correct view size, expecting 2", c1.getView().size()==2);
+        assertTrue("correct view size, expecting 2", c3.getView().size()==2);
     }
     
     public void testFlushWithCrashedNonCoordinator() throws ChannelException {
@@ -154,8 +154,8 @@ public class FlushTest extends ChannelTestBase {
         Util.sleep(8000);
         
         //cluster should not hang and two remaining members should have a correct view
-        assertTrue("corret view size", c1.getView().size()==2);
-        assertTrue("corret view size", c2.getView().size()==2);
+        assertTrue("correct view size, expecting 2", c1.getView().size()==2);
+        assertTrue("correct view size, expecting 2", c2.getView().size()==2);
     }
     
     public void testFlushWithCrashedNonCoordinators() throws ChannelException {
@@ -179,7 +179,7 @@ public class FlushTest extends ChannelTestBase {
         Util.sleep(8000);
         
         //cluster should not hang and one remaining member should have a correct view
-        assertTrue("corret view size", c2.getView().size()==1);
+        assertTrue("correct view size, expecting 1", c2.getView().size()==1);
     }
 
     /**
