@@ -1,0 +1,58 @@
+
+Release Notes JGroups 2.6.8
+===========================
+
+Version: $Id: ReleaseNotes-2.6.8.txt,v 1.1.2.1 2009/02/09 12:38:18 vlada Exp $
+Author: Bela Ban
+
+JGroups 2.6.8 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6 and 2.6.7.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.7 and 2.6.8.
+
+Bugs
+
+    * [https://jira.jboss.org/jira/browse/JGRP-863] - GroupRequest: only remove don't add members on view changes
+    * [https://jira.jboss.org/jira/browse/JGRP-865] - TCP: bind_port is ignored
+    * [https://jira.jboss.org/jira/browse/JGRP-867] - COMPRESS: cannot replace message buffer in-place
+    * [https://jira.jboss.org/jira/browse/JGRP-876] - ConcurrentModificationException during startup of JBoss AS 5.0.0.GA
+    * [https://jira.jboss.org/jira/browse/JGRP-878] - FD_SOCK: client connection handlers are not removed from list
+    * [https://jira.jboss.org/jira/browse/JGRP-881] - Persistent ports: update port on graceful leave
+    * [https://jira.jboss.org/jira/browse/JGRP-883] - Use of Math.min In GossipRouter's Socket Linger Code Causes Unexpected Results
+    * [https://jira.jboss.org/jira/browse/JGRP-888] - concurrent modification exception in FD_SIMPLE
+    * [https://jira.jboss.org/jira/browse/JGRP-891] - ConcurrentModificationException during JBoss AS 5.0.0.GA startup
+    * [https://jira.jboss.org/jira/browse/JGRP-896] - GMS: ConcurrentModificationException in AckCollector.handleView()
+
+Feature Requests
+
+    * [https://jira.jboss.org/jira/browse/JGRP-868] - GossipRouter: use a thread pool to handle requests
+    * [https://jira.jboss.org/jira/browse/JGRP-869] - Include the cluster name in the GMS print_local_addr logging
+    * [https://jira.jboss.org/jira/browse/JGRP-884] - Provide Gossip Router Command Line Options For Backlog, Socket Read Timeout, and Socket Linger Timeout
+    * [https://jira.jboss.org/jira/browse/JGRP-890] - Util.getMBeanServer should return the platform MBean server is no other is found
+
+Tasks
+
+    * [https://jira.jboss.org/jira/browse/JGRP-874] - PING/TCPGOSSIP: unregister member on leaving the cluster
+    * [https://jira.jboss.org/jira/browse/JGRP-879] - UDP: see whether new MulticastSocket(mcast_addr, port) works on Solaris
+    * [https://jira.jboss.org/jira/browse/JGRP-885] - Remove Obselete GossipRouter Command Line Arguments
+    * [https://jira.jboss.org/jira/browse/JGRP-892] - ConnectionMap.createServerSocket(): throw an exception if socket cannot be created
+    * [https://jira.jboss.org/jira/browse/JGRP-894] - Add task to put distro in Maven repo when releasing
+    * [https://jira.jboss.org/jira/browse/JGRP-898] - Make the RPC response OOB by default (back port from 2.7/2.8)
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Feb 2009
+
+
