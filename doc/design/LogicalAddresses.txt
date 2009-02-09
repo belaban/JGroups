@@ -1,0 +1,36 @@
+
+
+Logical addresses
+=================
+
+Author:  Bela Ban
+Version: $Id: LogicalAddresses.txt,v 1.1 2009/02/09 09:48:59 belaban Exp $
+JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
+
+The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
+following reasons, this is not good enough:
+
+- Reincarnation: if we use fixed ports (bind_port is set), then a restarted (or shunned) node will have the same
+  address. If other nodes in the cluster don't clear their states before the reincarnated node comes up again, we'll
+  have issues (see JGRP-130 for details)
+
+- NIC failover: a NIC goes down, we want to continue sending/receiving on a different NIC
+
+- The sender sends on all available NICs (send_on_all_interfaces="true"). This means that -if we take the receiver's
+datagram packet's address to be the identity of the sender - we get N different identities; 1 for each interface
+the message is sent on
+
+- Network Address Translation: the sender's address might get changed by the NAT
+
+DESIGN:
+
+- A logical address is represented by org.jgroups.util.UUID, is a subclass of Address and consists of the least and
+  most significant bits variables copied from java.util.UUID. All other instance variables are omitted.
+  - The isMulticastAddress() method uses 1 bit out of the 128 bits of UUID
+    (Maybe we can remove this method and always represent multicast addresses as nulls, so UUIDs would only be used
+     to represent non multicast addresses)
+
+- A UUID is created on channel connect, deleted on channel disconnect and re-created on channel connect.
+  It is used for equals() and hashCode() of the logical address. Since it is re-created on every connect(), it will
+  prevent reincarnation issues
+
