@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.2 2009/02/09 10:03:32 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.3 2009/02/09 13:48:27 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -48,13 +48,13 @@ Transport (TP)
 --------------
 
 TP maintains a cache of mappings between UUIDs and physical addresses. Whenever a message is sent, the physical address
-is looked up from the cache.
+of the receiver is looked up from the cache.
 
 A UUID can have more than 1 physical address. We envisage providing a pluggable strategy which picks a physical
-address given a UUID. For example, we could load balance between physical addresses.
+address given a UUID. For example, a plugin could load balance between physical addresses.
 
 To exchange cache information, we'll use a simple (TP-internal) protocol similar to ARP. Whenever the cache is changed,
-we set a 'dirty' flag. The next down message will then attached the cache contents to the message in an additional
+we set a 'dirty' flag. The next down message(s) will then attached the cache contents to the message in an additional
 I-HAVE header. Receiving nodes will update their local caches upon reception.
 
 When a physical address for a given UUID is not present, a sender discards (or queues, TBD) the message and broadcasts
