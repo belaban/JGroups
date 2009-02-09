@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.1 2009/02/09 09:48:59 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.2 2009/02/09 10:03:32 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -24,13 +24,38 @@ the message is sent on
 
 DESIGN:
 
-- A logical address is represented by org.jgroups.util.UUID, is a subclass of Address and consists of the least and
+- A logical address consists of a unique identifier (UUID) and a logical name. The name is passed to JGroups when a
+ channel is created (new JChannel(String logical_name, String props)). If logical_name is null, JGroups picks a
+ logical name (which is not guaranteed to be unique though). The logical name stays with the channel until the latter
+ is destroyed
+
+- A UUID is represented by org.jgroups.util.UUID, which is a subclass of Address and consists of the least and
   most significant bits variables copied from java.util.UUID. All other instance variables are omitted.
   - The isMulticastAddress() method uses 1 bit out of the 128 bits of UUID
     (Maybe we can remove this method and always represent multicast addresses as nulls, so UUIDs would only be used
      to represent non multicast addresses)
 
-- A UUID is created on channel connect, deleted on channel disconnect and re-created on channel connect.
-  It is used for equals() and hashCode() of the logical address. Since it is re-created on every connect(), it will
-  prevent reincarnation issues
+- All UUIDs have a reference to a static table which contains the mappings between logical names and UUIDs
+  (classloader issues ?)
 
+- The logical name is used in UUID.toString(), and the least and most significant bits are used for equals() and
+  hashCode()
+
+- A UUID is created on channel connect, deleted on channel disconnect and re-created on channel connect.
+  Since it is re-created on every connect(), it will prevent reincarnation issues
+
+Transport (TP)
+--------------
+
+TP maintains a cache of mappings between UUIDs and physical addresses. Whenever a message is sent, the physical address
+is looked up from the cache.
+
+A UUID can have more than 1 physical address. We envisage providing a pluggable strategy which picks a physical
+address given a UUID. For example, we could load balance between physical addresses.
+
+To exchange cache information, we'll use a simple (TP-internal) protocol similar to ARP. Whenever the cache is changed,
+we set a 'dirty' flag. The next down message will then attached the cache contents to the message in an additional
+I-HAVE header. Receiving nodes will update their local caches upon reception.
+
+When a physical address for a given UUID is not present, a sender discards (or queues, TBD) the message and broadcasts
+a WHO-HAS message. Receivers then broadcast (or unicast) the UUID-physical address mapping.
