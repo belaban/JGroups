@@ -23,10 +23,11 @@ import java.io.DataOutputStream;
 import java.util.*;
 
 
+
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.11 2008/10/10 14:53:30 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.12 2009/02/10 15:33:39 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -440,6 +441,12 @@ public class SizeTest {
         IpAddress addr=new IpAddress(5555, false);
         addr.setAdditionalData("bela".getBytes());
         _testSize(addr);
+    }
+
+
+    public static void testUUID() throws Exception {
+        org.jgroups.util.UUID uuid=org.jgroups.util.UUID.randomUUID();
+        _testSize(uuid);
     }
 
 
