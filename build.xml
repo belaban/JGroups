@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.195 2009/01/23 09:50:41 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.196 2009/02/10 12:27:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -82,7 +82,6 @@
     <target name="prepare">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
-        <mkdir dir="${dist.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
   
