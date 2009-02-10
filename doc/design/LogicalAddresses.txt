@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.6 2009/02/10 09:04:01 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.7 2009/02/10 13:06:50 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -70,7 +70,7 @@ UDP startup
 -----------
 - The joiner multicasts a discovery request with its UUID, logical name and physical address(es)
 - The receivers' transports add this information into their caches
-- Each receiver unicasts a discovery request, containing the coordinator's address, plus its own UUID, logical
+- Each receiver unicasts a discovery response, containing the coordinator's address, plus its own UUID, logical
   name and physical address(es)
 - On reception of a discovery response, the transport adds this information to its cache if not yet there
 
