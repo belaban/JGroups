@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.5 2009/02/10 09:02:48 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.6 2009/02/10 09:04:01 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -115,6 +115,8 @@ TODOs
 - Find all uses of IpAddress and change them to SocketAddress (if possible), or try to use Address rather than
   IpAddress
 - [TBD] Change IpAddress into PhysicalAddress (?)
+- UUID: generate a nice name from UUID if the logical name is not defined. Alternative: don't use the UUID to generate
+  the logical name, but maybe the host name and a random short
 
 
 
