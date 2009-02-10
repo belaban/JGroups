@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.4 2009/02/10 08:58:54 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.5 2009/02/10 09:02:48 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -108,10 +108,13 @@ TCPGOSSIP:TUNNEL startup
 
 
 
-Action items
-------------
+TODOs
+-----
 - Multicast messages should always be null, so Address.isMulticastAddress() should not be needed anymore
-- GossipRouter: we need to register logical *and* physical addresses, plus the logical name 
+- GossipRouter: we need to register logical *and* physical addresses, plus the logical name
+- Find all uses of IpAddress and change them to SocketAddress (if possible), or try to use Address rather than
+  IpAddress
+- [TBD] Change IpAddress into PhysicalAddress (?)
 
 
 
