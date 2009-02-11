@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.7 2009/02/10 13:06:50 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.8 2009/02/11 07:50:22 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -78,11 +78,11 @@ UDP startup
 TCPPING:TCP startup
 -------------------
 - The problem is that TCPPING has as initial_hosts the *physical* (not logical) addresses listed !
-- The joiner sends a discovery request to all nodes listed in initial_hosts
-- The destination address is now a physical address (IpAddress), not a UUID
+- The joiner sends a discovery request to all physical addresses listed in initial_hosts
+- The destination address is *null*. This works because Discovery/PING/TCPPING don't check the messages's
+  dest field ! (Otherwise 'null' would be interpreted as a multicast destination !)
 - The transport usually converts UUIDs to physical addresses using a cache lookup
-- However, if a check reveals that the dest is a physical address, we simply *use* that physical address and
-  don't do the translation UUID --> physical address
+- Null values are of course not converted, so we're fine
 - On the receiver side, the destination is not used for discovery
 - The response is sent back to the sender (Message.getSrc()), this is a UUID and will be translated back
   into a physical address
