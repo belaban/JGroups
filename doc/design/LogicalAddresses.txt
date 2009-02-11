@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.10 2009/02/11 08:23:07 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.11 2009/02/11 08:51:45 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -120,6 +120,10 @@ ARP-like functionality
   GossipRouter if TCPGOSSIP)
 - On reception of  I-HAVE, Discovery sends the result down the stack via an I-HAVE event
 - When the transport receives an I-HAVE event, it updates its local cache and then tries to send the queued messages
+
+- A discovery request also ships the logical name and physical address(es)
+- A discovery response also contains these items
+- When a discovery request or response is received, the cache is updated if necessary
 
 
 
