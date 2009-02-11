@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.9 2009/02/11 08:01:28 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.10 2009/02/11 08:23:07 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -107,6 +107,19 @@ TCPGOSSIP:TUNNEL startup
 - Same as for TCPGOSSIP:TCP, but here we don't really need the physical addresses, because we send every request
   to the GossipRouter anyway (via our TCP connection to it)
 - The physical address will simply be ignored
+
+
+ARP-like functionality
+----------------------
+- This is handled by Discovery
+- We'll add WHO-HAS and I-HAVE message handling to Discovery
+- Discovery and transport communicate via events
+- When the transport wants to send a message whose destination UUID is not in its cache, it sends a (non-blocking)
+  WHO-HAS up the stack which is handled by Discovery. Meanwhile the message is queued (bounded queue).
+- Discovery sends a WHO-HAS(UUID) message (multicast if PING, sent to initial_hosts in TCPPING, or sent to the
+  GossipRouter if TCPGOSSIP)
+- On reception of  I-HAVE, Discovery sends the result down the stack via an I-HAVE event
+- When the transport receives an I-HAVE event, it updates its local cache and then tries to send the queued messages
 
 
 
