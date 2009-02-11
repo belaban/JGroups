@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.11 2009/02/11 08:51:45 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.12 2009/02/11 11:01:26 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -112,7 +112,7 @@ TCPGOSSIP:TUNNEL startup
 ARP-like functionality
 ----------------------
 - This is handled by Discovery
-- We'll add WHO-HAS and I-HAVE message handling to Discovery
+- We'll add WHO-HAS, I-HAVE and INVALIDATE message handling to Discovery
 - Discovery and transport communicate via events
 - When the transport wants to send a message whose destination UUID is not in its cache, it sends a (non-blocking)
   WHO-HAS up the stack which is handled by Discovery. Meanwhile the message is queued (bounded queue).
@@ -120,10 +120,49 @@ ARP-like functionality
   GossipRouter if TCPGOSSIP)
 - On reception of  I-HAVE, Discovery sends the result down the stack via an I-HAVE event
 - When the transport receives an I-HAVE event, it updates its local cache and then tries to send the queued messages
-
 - A discovery request also ships the logical name and physical address(es)
 - A discovery response also contains these items
 - When a discovery request or response is received, the cache is updated if necessary
+- When a channel is closed, we send an INVALIDATE(UUID) message around, which removes the UUID from UUID.cache and
+  the transport's cache in all cluster nodes
+
+
+
+Runtime scenarios
+-----------------
+
+Startup
+-------
+- The transport stores the logical name (generated if user didn't pass one to the JChannel() constructor)
+- On connect:
+  - The UUID is generated (local address) and associated with the logical name (in UUID.cache)
+  - The local socket is created and associated with the UUID in the transport's cache
+- On disconnect: the local_addr (UUID) is nulled and removed from the transport's cache and UUID.cache
+- On close: an INVALIDATE(UUID) message is broadcast so every node can remove UUID from the transport's cache
+  and from UUID.cache
+
+Discovery
+---------
+- Discovery fetches the local_addr (UUID), logical name and physical address(es) from the transport via a
+  GET-LOCAL-ADDR-INFO
+- A discovery request containing this info is sent out (multicast, unicast via TCP or sent to GossipRouter)
+- The receivers (Discovery protocols) fetch this info from the message and send it down to the transport, which
+  adds it to its cache and to UUID.cache
+- The receivers then fetch their own local information from the transport and send it along with the discovery
+  response
+- On reception of the discovery response, the requester extracts this info from the message and sends it
+  down to its transport, which adds it to its own local cache
+
+Sending of a message with no physical address available for UUID
+----------------------------------------------------------------
+- The transport queues the message
+- The transport sends a WHO-HAS *event* up the stack
+- The Discovery protocol sends out a WHO-HAS *message* (via multicast, TCP unicast, or to the GossipRouter)
+- The receivers fetch their local information from the transport (exception: the GossipRouter has this information
+  in its local loookup cache), and return it with a I-HAVE message
+- On reception of the I-HAVE message, an I-HAVE event is sent down the stack to the transport
+- The transport updates its local cache from the information
+- The transport sends all queued messages if the UUID are now available
 
 
 
