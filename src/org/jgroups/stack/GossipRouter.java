@@ -56,7 +56,7 @@ import org.jgroups.util.Util;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.26.2.8 2009/02/06 16:41:55 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.26.2.9 2009/02/12 20:05:54 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -1139,13 +1139,15 @@ public class GossipRouter {
             // this option is not used and should be deprecated/removed
             // in a future release
             if("-timeout".equals(arg)) {
-                timeout=Long.parseLong(args[++i]);
+            	System.out.println("    -timeout is depracted and will be ignored"); 
+            	++i;
                 continue;
             }
             // this option is not used and should be deprecated/removed
             // in a future release
             if("-rtimeout".equals(arg)) {
-                routingTimeout=Long.parseLong(args[++i]);
+            	System.out.println("    -rtimeout is depracted and will be ignored"); 
+            	++i;
                 continue;
             }
             if ("-solinger".equals(arg)) {
@@ -1163,7 +1165,7 @@ public class GossipRouter {
         System.out.println("GossipRouter is starting (JGroups version: " + Version.printVersion() + ")");
 
         try {
-            router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout);
+            router=new GossipRouter(port, bind_addr, expiry);
 
             if (backlog > 0)
                 router.setBacklog(backlog);
