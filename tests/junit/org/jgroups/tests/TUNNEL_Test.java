@@ -5,7 +5,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.TUNNEL;
-import org.jgroups.protocols.PING;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -22,7 +21,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.1 2008/10/31 09:20:11 belaban Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.2 2009/02/12 16:39:28 vlada Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -144,6 +143,28 @@ public class TUNNEL_Test extends ChannelTestBase{
         assert view.size() == 1;
         assert view.containsMember(channel.getLocalAddress());
     }
+     
+     public void testConnectThree() throws Exception {
+         coordinator=new JChannel(props);
+         setProps(coordinator);
+
+         channel=new JChannel(props);
+         setProps(channel);
+         
+         coordinator.connect(GROUP);
+         channel.connect(GROUP);
+         
+         JChannel third = new JChannel (props);
+         third.connect(GROUP);
+         
+         View view=channel.getView();
+         assert channel.getView().size() == 3;
+         assert third.getView().size() == 3;
+         assert view.containsMember(channel.getLocalAddress());
+         assert view.containsMember(coordinator.getLocalAddress());
+         
+         Util.close(third);
+     }
 
 
      /**
@@ -204,15 +225,10 @@ public class TUNNEL_Test extends ChannelTestBase{
             merge.setMaxInterval(3000);
         }
 
-        TUNNEL tunnel=(TUNNEL)stack.getTransport();
+        /*TUNNEL tunnel=(TUNNEL)stack.getTransport();
         if(tunnel != null) {
             tunnel.setReconnectInterval(2000);
-        }
-
-        PING ping=(PING)stack.findProtocol(PING.class);
-        if(ping != null) {
-            ping.setGossipRefresh(1000);
-        }
+        }*/
     }
 
 

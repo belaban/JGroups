@@ -53,19 +53,16 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.42 2009/01/09 03:55:02 jiwils Exp $
+ * @version $Id: GossipRouter.java,v 1.43 2009/02/12 16:39:30 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
     public static final byte CONNECT=1; // CONNECT(group, addr) --> local address
     public static final byte DISCONNECT=2; // DISCONNECT(group, addr)
-    public static final byte REGISTER=3; // REGISTER(group, addr)
     public static final byte GOSSIP_GET=4; // GET(group) --> List<addr> (members)
-    public static final byte ROUTER_GET=5; // GET(group) --> List<addr> (members)
-    public static final byte GET_RSP=6; // GET_RSP(List<addr>)
-    public static final byte UNREGISTER=7; // UNREGISTER(group, addr)
     public static final byte DUMP=8; // DUMP
     public static final byte SHUTDOWN=9;
+    public static final byte ROUTE=10;
 
     public static final int PORT=12001;
     public static final long EXPIRY_TIME=30000;
@@ -338,17 +335,9 @@ public class GossipRouter {
             case CONNECT:
                 return "CONNECT";
             case DISCONNECT:
-                return "DISCONNECT";
-            case REGISTER:
-                return "REGISTER";
+                return "DISCONNECT";            
             case GOSSIP_GET:
                 return "GOSSIP_GET";
-            case ROUTER_GET:
-                return "ROUTER_GET";
-            case GET_RSP:
-                return "GET_RSP";
-            case UNREGISTER:
-                return "UNREGISTER";
             case DUMP:
                 return "DUMP";
             case SHUTDOWN:
@@ -508,81 +497,13 @@ public class GossipRouter {
 
 					public void run() {
 						DataOutputStream output =null;
-						Address peer_addr = null, mbr, logical_addr;
-						String group;
+						Address peer_addr = null, logical_addr;
 						GossipData req = new GossipData();
 						try {
 							req.readFrom(input);
 
 							switch (req.getType()) {
-							case GossipRouter.REGISTER:
-								mbr = req.getAddress();
-								group = req.getGroup();
-								if (log.isTraceEnabled())
-									log.trace("REGISTER(" + group + ", " + mbr + ")");
-								if (group == null || mbr == null) {
-									if (log.isErrorEnabled())
-										log.error("group or member is null, cannot register member");
-								} else
-									addGossipEntry(group, mbr, new AddressEntry(mbr));
-								Util.close(input);
-								Util.close(sock);
-								break;
-
-							case GossipRouter.UNREGISTER:
-								mbr = req.getAddress();
-								group = req.getGroup();
-								if (log.isTraceEnabled())
-									log.trace("UNREGISTER(" + group + ", " + mbr + ")");
-								if (group == null || mbr == null) {
-									if (log.isErrorEnabled())
-										log.error("group or member is null, cannot unregister member");
-								} else
-									removeGossipEntry(group, mbr);
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								break;
-
-							case GossipRouter.GOSSIP_GET:
-								group = req.getGroup();
-								List<Address> mbrs = null;
-								Map<Address, AddressEntry> map;
-								map = routingTable.get(group);
-								if (map != null) {
-									mbrs = new LinkedList<Address>(map.keySet());
-								}
-
-								if (log.isTraceEnabled())
-									log.trace("GOSSIP_GET(" + group + ") --> " + mbrs);
-								output = new DataOutputStream(sock.getOutputStream());
-								GossipData rsp = new GossipData(GossipRouter.GET_RSP,group, null, mbrs);
-								rsp.writeTo(output);
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								break;
-
-							case GossipRouter.ROUTER_GET:
-								group = req.getGroup();
-								output = new DataOutputStream(sock.getOutputStream());
-
-								List<Address> ret = null;
-								map = routingTable.get(group);
-								if (map != null) {
-									ret = new LinkedList<Address>(map.keySet());
-								} else
-									ret = new LinkedList<Address>();
-								if (log.isTraceEnabled())
-									log.trace("ROUTER_GET(" + group + ") --> " + ret);
-								rsp = new GossipData(GossipRouter.GET_RSP, group, null,
-										ret);
-								rsp.writeTo(output);
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								break;
-
+							
 							case GossipRouter.DUMP:
 								output = new DataOutputStream(sock.getOutputStream());
 								output.writeUTF(dumpRoutingTable());
@@ -752,12 +673,6 @@ public class GossipRouter {
 
 
     private void route(Address dest, String dest_group, byte[] msg, Address sender) {
-        //if(log.isTraceEnabled()) {
-          //  int len=msg != null? msg.length : 0;
-            //log.trace("routing request from " + sender + " for " + dest_group + " to " +
-              //      (dest == null? "ALL" : dest.toString()) + ", " + len + " bytes");
-        //}
-
         if(dest == null) { // send to all members in group dest.getChannelName()
             if(dest_group == null) {
                 if(log.isErrorEnabled()) log.error("both dest address and group are null");
@@ -850,24 +765,6 @@ public class GossipRouter {
             return null;
         return (AddressEntry)val.get(logical_addr);
     }
-
-
-
-    /**
-      * Adds a new member to the group in the gossip table or renews the
-      * membership where is the case.
-      * @since 2.2.1
-      */
-     private void addGossipEntry(String groupname, Address logical_addr, AddressEntry e) {
-         addEntry(groupname, logical_addr, e, true);
-     }
-
-
-     private void removeGossipEntry(String groupname, Address mbr) {
-         removeEntry(groupname, mbr);
-     }
-
-
 
     private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
         Map<Address,AddressEntry> val = routingTable.get(groupname);
@@ -1045,22 +942,46 @@ public class GossipRouter {
 
             while(active) {
                 try {
-                    // 1. Group name is first
-                    gname=input.readUTF();
+                	
+                	byte command = input.readByte();
+                	switch (command){
+                		case GossipRouter.ROUTE:
+                			// 1. Group name is first
+                            gname=input.readUTF();
 
-                    // 2. Second is the destination address
-                    dst_addr=Util.readAddress(input);
+                            // 2. Second is the destination address
+                            dst_addr=Util.readAddress(input);
 
-                    // 3. Then the length of the byte buffer representing the message
-                    len=input.readInt();
-                    if(len == 0) {
-                        if(log.isWarnEnabled()) log.warn("received null message");
-                        continue;
-                    }
+                            // 3. Then the length of the byte buffer representing the message
+                            len=input.readInt();
+                            if(len == 0) {
+                                if(log.isWarnEnabled()) log.warn("received null message");
+                                continue;
+                            }
 
-                    // 4. Finally the message itself, as a byte buffer
-                    buf=new byte[len];
-                    input.readFully(buf, 0, buf.length);  // message
+                            // 4. Finally the message itself, as a byte buffer
+                            buf=new byte[len];
+                            input.readFully(buf, 0, buf.length);  // message
+                            
+                            try {
+                                route(dst_addr, gname, buf, logical_addr);
+                            }
+                            catch(Exception e) {
+                                if(log.isErrorEnabled()) log.error("failed routing request to " + dst_addr, e);
+                                break;
+                            }
+                            break;    
+                		case GossipRouter.GOSSIP_GET:    
+                			String group = input.readUTF();
+                			List<Address> mbrs = null;
+							Map<Address, AddressEntry> map = routingTable.get(group);
+							if (map != null) {
+								mbrs = new LinkedList<Address>(map.keySet());
+							}
+							DataOutputStream rsp=new DataOutputStream(sock.getOutputStream());
+			            	Util.writeAddresses(mbrs, rsp);				           
+			            	break;
+                	}
                 }
                 catch(Exception io_ex) {
                     if(log.isTraceEnabled())
@@ -1068,14 +989,6 @@ public class GossipRouter {
                                 " closed connection; removing it from routing table");
                     removeEntry(group_name, logical_addr); // will close socket
                     return;
-                }
-
-                try {
-                    route(dst_addr, gname, buf, logical_addr);
-                }
-                catch(Exception e) {
-                    if(log.isErrorEnabled()) log.error("failed routing request to " + dst_addr, e);
-                    break;
                 }
             }
             closeSocket();

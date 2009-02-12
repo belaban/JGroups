@@ -5,11 +5,11 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.GossipClient;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 
 import java.util.*;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 
@@ -26,7 +26,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.34 2008/12/08 13:18:58 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.35 2009/02/12 16:39:31 vlada Exp $
  */
 public class TCPGOSSIP extends Discovery {
     
@@ -45,8 +45,8 @@ public class TCPGOSSIP extends Discovery {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    List<IpAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
-    GossipClient gossip_client=null; // accesses the GossipRouter(s) to find initial mbrship    
+    List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
+    List<RouterStub> stubs = new ArrayList<RouterStub>();
 
     public String getName() {
         return name;
@@ -68,33 +68,19 @@ public class TCPGOSSIP extends Discovery {
     
     @Property
     public void setInitialHosts(String hosts) throws UnknownHostException {
-        initial_hosts=Util.parseCommaDelimetedHosts(hosts,1);       
-    }
-
-    public void start() throws Exception {
-        super.start();
-        if(gossip_client == null) {
-            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout, timer);
-            gossip_client.setSocketReadTimeout(sock_read_timeout);
-        }
+        initial_hosts=Util.parseCommaDelimetedHosts2(hosts,1);       
     }
 
     public void stop() {
-        super.stop();
-        if(gossip_client != null) {
-            gossip_client.stop();
-            gossip_client=null;
-        }
-    }
-
-    public void destroy() {
-        if(gossip_client != null) {
-            gossip_client.destroy();
-            gossip_client=null;
-        }
-    }
-
-
+		super.stop();
+		for (RouterStub stub : stubs) {
+			try {
+				stub.disconnect();
+			} 
+			catch (Exception e) {
+			}
+		}
+	}
     public void handleConnect() {
         if(group_addr == null || local_addr == null) {
             if(log.isErrorEnabled())
@@ -103,20 +89,39 @@ public class TCPGOSSIP extends Discovery {
         else {
             if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
-            gossip_client.register(group_addr, local_addr);
+            
+            stubs.clear();
+            
+            //init stubs 
+            for(InetSocketAddress host:initial_hosts){
+            	stubs.add(new RouterStub(host.getHostName(),host.getPort(),null));
+            }
+            
+            //and connect
+            for (RouterStub stub : stubs) {
+    			try {
+    				stub.connect(group_addr,local_addr);
+    			} 
+    			catch (Exception e) {
+    			}
+    		}
         }
     }
 
     public void handleDisconnect() {
-        if(group_addr != null && local_addr != null) {
-            gossip_client.unregister(group_addr, local_addr);
-        }
+    	for (RouterStub stub : stubs) {
+			try {
+				stub.disconnect();
+			} 
+			catch (Exception e) {
+			}
+		}
     }
 
     public void sendGetMembersRequest(String cluster_name) {
         Message msg, copy;
         PingHeader hdr;
-        List<Address> tmp_mbrs;
+        List<Address> tmp_mbrs = new ArrayList<Address>();
         Address mbr_addr;
 
         if(group_addr == null) {
@@ -124,15 +129,21 @@ public class TCPGOSSIP extends Discovery {
             return;
         }
         if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
-        tmp_mbrs=gossip_client.getMembers(group_addr,
-                                          (long)(timeout * .50)); // needs to be below timeout
-        if(tmp_mbrs == null || tmp_mbrs.isEmpty()) {
+        
+        for (RouterStub stub : stubs) {
+			try {
+				tmp_mbrs.addAll(stub.getMembers(group_addr, sock_conn_timeout));
+			} 
+			catch (Exception e) {
+			}
+		}
+        
+        if(tmp_mbrs.isEmpty()) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");           
             return;
         }
         if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
 
-        // 1. 'Mcast' GET_MBRS_REQ message
         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
         msg=new Message(null);
         msg.setFlag(Message.OOB);

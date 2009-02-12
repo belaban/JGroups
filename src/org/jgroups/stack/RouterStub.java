@@ -5,8 +5,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,7 +20,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.33 2008/10/31 06:57:20 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.34 2009/02/12 16:39:30 vlada Exp $
  */
 public class RouterStub {
 
@@ -51,6 +54,11 @@ public class RouterStub {
     private InetAddress bind_addr = null;
 
     private DatagramSocket my_sock = null;
+    
+    private int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
+    
+    private int sock_read_timeout=0;         // max number of ms to wait for socket reads (0 means block forever, or until the sock is closed)
+
 
     public interface ConnectionListener {
         void connectionStatusChange(int state);
@@ -68,6 +76,22 @@ public class RouterStub {
         router_host = routerHost != null ? routerHost : "localhost";
         router_port = routerPort;
         bind_addr = bindAddress;
+    }
+    
+    public int getSocketConnectionTimeout() {
+        return sock_conn_timeout;
+    }
+
+    public void setSocketConnectionTimeout(int sock_conn_timeout) {
+        this.sock_conn_timeout=sock_conn_timeout;
+    }
+    
+    public int getSocketReadTimeout() {
+        return sock_read_timeout;
+    }
+
+    public void setSocketReadTimeout(int sock_read_timeout) {
+        this.sock_read_timeout=sock_read_timeout;
     }
 
     public boolean isConnected() {
@@ -92,19 +116,40 @@ public class RouterStub {
      * @param groupname
      *                The name of the group under which to register
      */
-    public synchronized void connect(String groupname) throws Exception {
+    public void connect(String groupname) throws Exception {
+        connect(groupname,getLocalAddress());
+    }
+    
+    /**
+     * Register this process with the router under <code>groupname</code>.
+     * 
+     * @param groupname
+     *                The name of the group under which to register
+     */
+    public synchronized void connect(String groupname, Address localAddress) throws Exception {
         if(groupname == null || groupname.length() == 0)
             throw new Exception("groupname is null");
+        
+        if(localAddress == null)
+            throw new Exception("localAddress is null");
 
         if(!isConnected()){
             this.groupname = groupname;
             try{
-                sock = new Socket(router_host, router_port, bind_addr, 0);
+                sock = new Socket();
+                sock.bind(new InetSocketAddress(bind_addr,0));
+                sock.setSoTimeout(sock_read_timeout);
                 sock.setSoLinger(true, 5);
+                sock.connect(new InetSocketAddress(router_host,router_port), sock_conn_timeout);
                 output = new DataOutputStream(sock.getOutputStream());
+                
+                if(local_addr == null){
+                	local_addr = localAddress;
+                }
+                
                 GossipData req = new GossipData(GossipRouter.CONNECT,
                                                 groupname,
-                                                getLocalAddress(),
+                                                localAddress,
                                                 null);
                 req.writeTo(output);
                 output.flush();
@@ -127,20 +172,49 @@ public class RouterStub {
     }
 
     public synchronized void disconnect() {
-        try{
-            GossipData req = new GossipData(GossipRouter.DISCONNECT, groupname, local_addr, null);
-            req.writeTo(output);
-            output.flush();
-        }catch(Exception e){
-        }finally{
-            Util.close(output);
-            Util.close(input);
-            Util.close(sock);
-            Util.close(my_sock);
-            sock = null;
-            connectionStateChanged(STATUS_DISCONNECTED);
-        }
-    }
+		if (isConnected()) {
+			try {
+				GossipData req = new GossipData(GossipRouter.DISCONNECT,
+						groupname, local_addr, null);
+				req.writeTo(output);
+				output.flush();
+			} catch (Exception e) {
+			} finally {
+				Util.close(output);
+				Util.close(input);
+				Util.close(sock);
+				Util.close(my_sock);
+				sock = null;
+				connectionStateChanged(STATUS_DISCONNECTED);
+			}
+		}
+	}
+    
+    public List<Address> getMembers(final String group, long timeout) throws Exception {
+    	 List<Address>mbrs = new LinkedList<Address>();
+    	 if(isConnected()){
+             try{
+             	output.writeByte(GossipRouter.GOSSIP_GET);
+                 // 1. Group name
+                 output.writeUTF(groupname);
+                 output.flush();
+                 
+                 mbrs=(List<Address>)Util.readAddresses(input, LinkedList.class);
+
+             }catch(SocketException se){
+                 if(log.isWarnEnabled())
+                     log.warn("Router stub " + this
+                              + " did not send message",se);
+                 connectionStateChanged(STATUS_DISCONNECTED);
+             }catch(Exception e){
+                 if(log.isErrorEnabled())
+                     log.error("Router stub " + this + " failed sending message to router");
+                 connectionStateChanged(STATUS_DISCONNECTED);
+                 throw new Exception("Connection broken", e);
+             }
+         }
+		 return mbrs;
+	}
 
     public String toString() {
         return "RouterStub[local_address=" + local_addr
@@ -160,7 +234,8 @@ public class RouterStub {
 
     public synchronized void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
         if(isConnected()){
-            try{
+            try{	
+            	output.writeByte(GossipRouter.ROUTE);
                 // 1. Group name
                 output.writeUTF(groupname);
 
@@ -180,7 +255,7 @@ public class RouterStub {
                     log.warn("Router stub " + this
                              + " did not send message to "
                              + (dest == null ? "mcast"
-                                            : dest + " since underlying socket is closed"));
+                                            : dest + " since underlying socket is closed"),se);
                 connectionStateChanged(STATUS_DISCONNECTED);
             }catch(Exception e){
                 if(log.isErrorEnabled())

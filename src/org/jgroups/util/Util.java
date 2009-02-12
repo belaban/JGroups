@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.186 2009/02/05 16:49:16 vlada Exp $
+ * @version $Id: Util.java,v 1.187 2009/02/12 16:39:34 vlada Exp $
  */
 public class Util {
 
@@ -2208,6 +2208,27 @@ public class Util {
         return Collections.unmodifiableList(new LinkedList<IpAddress>(retval));
     }
 
+    
+    /**
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
+     * InetSocketAddress
+     */
+    public static List<InetSocketAddress> parseCommaDelimetedHosts2(String hosts, int port_range) throws UnknownHostException {
+        StringTokenizer tok=new StringTokenizer(hosts, ",");
+        String t;
+        Set<InetSocketAddress> retval=new HashSet<InetSocketAddress>();
+
+        while(tok.hasMoreTokens()) {
+            t=tok.nextToken().trim();
+            String host=t.substring(0, t.indexOf('['));
+            host=host.trim();
+            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
+            for(int i=port;i < port + port_range;i++) {
+                retval.add(new InetSocketAddress(host, i));
+            }
+        }
+        return Collections.unmodifiableList(new LinkedList<InetSocketAddress>(retval));
+    }
 
     public static List<String> parseStringList(String l, String separator) {
          List<String> tmp=new LinkedList<String>();

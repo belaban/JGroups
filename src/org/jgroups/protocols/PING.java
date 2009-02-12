@@ -6,13 +6,14 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
@@ -31,7 +32,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.51 2008/12/08 13:18:58 belaban Exp $
+ * @version $Id: PING.java,v 1.52 2009/02/12 16:39:31 vlada Exp $
  */
 public class PING extends Discovery {
     
@@ -65,9 +66,9 @@ public class PING extends Discovery {
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
-    private GossipClient client;
+    private List<RouterStub> clients = new ArrayList<RouterStub>();
     
-    private List<IpAddress> gossip_hosts=null;
+    private List<InetSocketAddress> gossip_hosts=null;
         
     private List<IpAddress> initial_hosts=null; // hosts to be contacted for the initial membership
 
@@ -83,16 +84,20 @@ public class PING extends Discovery {
     public void init() throws Exception {
         super.init();
         if(gossip_hosts != null) {
-            client=new GossipClient(gossip_hosts, gossip_refresh, 1000, timer);
-            client.setSocketConnectionTimeout(socket_conn_timeout);
-            client.setSocketReadTimeout(socket_read_timeout);
+            
+        	for(InetSocketAddress host:gossip_hosts){
+        		RouterStub rs = new RouterStub(host.getHostName(),host.getPort(),null);
+        		rs.setSocketConnectionTimeout(socket_conn_timeout);
+        		rs.setSocketReadTimeout(socket_read_timeout);
+        		clients.add(rs);
+        	}
         }
         else if(gossip_host != null && gossip_port != 0) {
             try {
-                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host),
-                                                      gossip_port), gossip_refresh, socket_conn_timeout, timer);
-                client.setSocketConnectionTimeout(socket_conn_timeout);
-                client.setSocketReadTimeout(socket_read_timeout);
+            	RouterStub rs = new RouterStub(gossip_host,gossip_port,null);
+            	rs.setSocketConnectionTimeout(socket_conn_timeout);
+        		rs.setSocketReadTimeout(socket_read_timeout);
+            	clients.add(rs);                                      
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
@@ -160,14 +165,14 @@ public class PING extends Discovery {
 
     @Property
     public void setGossipHosts(String hosts) throws UnknownHostException {
-        gossip_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);
+        gossip_hosts=Util.parseCommaDelimetedHosts2(hosts, port_range);
     }
 
 
     public void stop() {
         super.stop();
-        if(client != null) {
-            client.stop();
+        for(RouterStub stub:clients){
+        	stub.disconnect();
         }
         discovery_reception.reset();
     }
@@ -187,16 +192,23 @@ public class PING extends Discovery {
 
 
     public void handleConnect() {
-        if(client != null)
-            client.register(group_addr, local_addr);
+    	for(RouterStub client:clients){
+    		try {
+				client.connect(group_addr,local_addr);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
 
     public void handleDisconnect() {
-        if(client != null) {
-            if(group_addr != null && local_addr != null)
-                client.unregister(group_addr, local_addr);
-            client.stop();
-        }
+    	for(RouterStub client:clients){
+    		try {
+				client.disconnect();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    	}
     }
 
 
@@ -204,11 +216,17 @@ public class PING extends Discovery {
     public void sendGetMembersRequest(String cluster_name) {
         Message       msg;
         PingHeader    hdr;
-        List<Address> gossip_rsps;
+        List<Address> gossip_rsps = new ArrayList<Address>();
 
-        if(client != null) {
-            gossip_rsps=client.getMembers(group_addr);
-            if(gossip_rsps != null && !gossip_rsps.isEmpty()) {
+        if(!clients.isEmpty()) {
+        	for(RouterStub client:clients){
+        		try {
+					gossip_rsps.addAll(client.getMembers(group_addr, 2500));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+        	}
+            if(!gossip_rsps.isEmpty()) {
                 // Set a temporary membership in the UDP layer, so that the following multicast
                 // will be sent to all of them
                 Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector<Address>(gossip_rsps)));
