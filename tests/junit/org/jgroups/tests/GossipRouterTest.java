@@ -6,8 +6,6 @@ import org.jgroups.View;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.Global;
 import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.TUNNEL;
-import org.jgroups.protocols.PING;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -21,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.8 2008/10/31 08:38:42 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.9 2009/02/12 16:39:28 vlada Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT, sequential=true)
 public class GossipRouterTest {
@@ -55,16 +53,12 @@ public class GossipRouterTest {
         System.out.println("-- starting first channel");
         c1=new JChannel(PROPS);
         changeMergeInterval(c1);
-        setReconnectInterval(c1);
-        setRefreshInterval(c1);
         c1.setReceiver(new MyReceiver("c1", done, lock, cond));
         c1.connect("demo");
 
         System.out.println("-- starting second channel");
         c2=new JChannel(PROPS);
         changeMergeInterval(c2);
-        setReconnectInterval(c2);
-        setRefreshInterval(c2);
         c2.setReceiver(new MyReceiver("c2", done, lock, cond));
         c2.connect("demo");
 
@@ -98,20 +92,6 @@ public class GossipRouterTest {
         if(merge != null) {
             merge.setMinInterval(1000);
             merge.setMaxInterval(3000);
-        }
-    }
-
-    private static void setReconnectInterval(JChannel channel) {
-        TUNNEL tunnel=(TUNNEL)channel.getProtocolStack().getTransport();
-        if(tunnel != null) {
-            tunnel.setReconnectInterval(2000);
-        }
-    }
-
-    private static void setRefreshInterval(JChannel channel) {
-        PING ping=(PING)channel.getProtocolStack().findProtocol(PING.class);
-        if(ping != null) {
-            ping.setGossipRefresh(1000);
         }
     }
 
