@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.197 2009/02/12 12:25:05 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.198 2009/02/12 14:31:19 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -362,6 +362,7 @@
     	<!-- clean the docs directory if docs have been processed -->
         <delete dir="${manual.dir}/build"/>
         <delete dir="${tutorial.dir}/build"/>
+        <delete dir="${root.dir}/schema" failonerror="false"/>
     </target>
 
 
