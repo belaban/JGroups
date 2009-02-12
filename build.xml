@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.196 2009/02/10 12:27:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.197 2009/02/12 12:25:05 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -118,6 +118,7 @@
 
     <target name="jgroups-all.jar"
             description="Creates the jgroups-all.jar (includes everything)" depends="compile,create-schema">
+    	<mkdir dir="${dist.dir}"/>
     	<copy todir="${compile.dir}/schema">
  			<fileset dir="${root.dir}/schema">
     			<include name="**/*.xsd"/>
