@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.52 2009/02/16 14:41:32 vlada Exp $
+// $Id: TUNNEL.java,v 1.53 2009/02/16 16:59:48 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -119,6 +119,10 @@ public class TUNNEL extends TP {
     public String getName() {
         return "TUNNEL";
     }
+    
+    public void setTUNNELPolicy(TUNNELPolicy policy) {
+		tunnel_policy = policy;
+	}
 
     public void init() throws Exception {        
         super.init();
@@ -178,16 +182,7 @@ public class TUNNEL extends TP {
         switch(evt.getType()){
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:
-	        for (RouterStub stub : stubs) {
-				try {
-					stub.connect(channel_name);
-				} catch (Exception e) {
-					if (log.isErrorEnabled())
-						log.error("failed connecting to GossipRouter at "
-								+ router_host + ":" + router_port);
-					startReconnecting(stub);
-				}
-			}
+	        tunnel_policy.connect(stubs);
             break;
 
         case Event.DISCONNECT:
@@ -329,15 +324,14 @@ public class TUNNEL extends TP {
     }
     
     public interface TUNNELPolicy{
+    	public void connect(List<RouterStub> stubs);
     	public void sendToAllMembers(List<RouterStub> stubs, byte[]data,int offset,int length);
     	public void sendToSingleMembers(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
     }
     
     private class DefaultTUNNELPolicy implements TUNNELPolicy{
 
-		public void sendToAllMembers(List<RouterStub> stubs, byte[] data,
-				int offset, int length) {
-			
+		public void sendToAllMembers(List<RouterStub> stubs, byte[] data, int offset, int length) {	
 			for(RouterStub stub:stubs){
 				try{
 					stub.sendToAllMembers(data, offset, length);
@@ -349,9 +343,7 @@ public class TUNNEL extends TP {
 			
 		}
 
-		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,
-				byte[] data, int offset, int length) {
-			
+		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,byte[] data, int offset, int length) {
 			for(RouterStub stub:stubs){
 				try{
 					stub.sendToSingleMember(dest, data, offset, length);
@@ -361,6 +353,18 @@ public class TUNNEL extends TP {
 				}			
 			}
 		}
+
+		public void connect(List<RouterStub> stubs) {
+			for (RouterStub stub : stubs) {
+				try {
+					stub.connect(channel_name);
+				} catch (Exception e) {
+					if (log.isErrorEnabled())
+						log.error("failed connecting to GossipRouter at "
+								+ router_host + ":" + router_port);
+					startReconnecting(stub);
+				}
+			}
+		}
     }
-    
 }
