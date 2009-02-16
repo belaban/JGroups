@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.51 2008/10/31 08:38:44 belaban Exp $
+// $Id: TUNNEL.java,v 1.52 2009/02/16 14:41:32 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,13 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -41,52 +47,61 @@ public class TUNNEL extends TP {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @Property(description="Router host address")
+	@Deprecated
+    @Property(deprecatedMessage="Specify target GRs using gossip_router_hosts",description="Router host address")
     private String router_host = null;
 
-    @Property(description="Router port")
+	@Deprecated
+    @Property(deprecatedMessage="Specify target GRs using gossip_router_hosts",description="Router port")
     private int router_port = 0;    
 
     @Property(description="Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
     private long reconnect_interval = 5000;
     
     
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
-    
-    private RouterStub stub;
-    
-    /*
-     * flag indicating if tunnel was destroyed intentionally (disconnect, channel destroy etc)
-     */
-    private volatile boolean intentionallyTornDown = false; 
+	private final List<InetSocketAddress> gossip_router_hosts = new ArrayList<InetSocketAddress>();
+	
+	private final List<RouterStub> stubs = new ArrayList<RouterStub>();
+	
+	private TUNNELPolicy tunnel_policy = new DefaultTUNNELPolicy();
 
     /** time to wait in ms between reconnect attempts */
 
-    @GuardedBy("reconnectorLock")
-    private Future<?> reconnectorFuture = null;
+    @GuardedBy("reconnectorLock") 
+    private final Map<InetSocketAddress,Future<?>> reconnectFutures = new HashMap<InetSocketAddress, Future<?>>();
 
     private final Lock reconnectorLock = new ReentrantLock();
 
     public TUNNEL(){}
+    
+    @Property
+    public void setGossipRouterHosts(String hosts) throws UnknownHostException {
+    	gossip_router_hosts.clear();
+    	gossip_router_hosts.addAll(Util.parseCommaDelimetedHosts2(hosts,1));       
+    }
 
     public String toString() {
         return "Protocol TUNNEL(local_addr=" + local_addr + ')';
     }
 
+    @Deprecated
     public String getRouterHost() {
         return router_host;
     }
 
+    @Deprecated
     public void setRouterHost(String router_host) {
         this.router_host=router_host;
     }
 
+    @Deprecated
     public int getRouterPort() {
         return router_port;
     }
 
+    @Deprecated
     public void setRouterPort(int router_port) {
         this.router_port=router_port;
     }
@@ -114,21 +129,33 @@ public class TUNNEL extends TP {
             log.debug("router_host=" + router_host + ";router_port=" + router_port);
         }
 
-        if(router_host == null || router_port == 0){
-            throw new Exception("both router_host and router_port have to be set !");            
+        if((router_host == null || router_port == 0) && gossip_router_hosts.isEmpty()){
+            throw new Exception("Either router_host and router_port have to be set or a list of gossip routers");            
+        }
+        
+        if(router_host != null && router_port != 0 && !gossip_router_hosts.isEmpty()){ 
+        	throw new Exception("Cannot specify both router host and port along with gossip_router_hosts");
+        }
+        
+        if(router_host != null && router_port != 0 && gossip_router_hosts.isEmpty()){
+        	gossip_router_hosts.add(new InetSocketAddress(router_host,router_port));
         }
     }
 
     public void start() throws Exception {
         // loopback turned on is mandatory
         loopback = true;
-        intentionallyTornDown = false;
 
-        stub = new RouterStub(router_host, router_port, bind_addr);
-        stub.setConnectionListener(new StubConnectionListener());
-        local_addr = stub.getLocalAddress();
-        if(additional_data != null && local_addr instanceof IpAddress)
-            ((IpAddress) local_addr).setAdditionalData(additional_data);
+        for(InetSocketAddress gr:gossip_router_hosts){
+        	RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr);
+            stub.setConnectionListener(new StubConnectionListener(stub));
+        	stubs.add(stub);
+        	if(local_addr == null){
+        		local_addr = stub.getLocalAddress();
+                if(additional_data != null && local_addr instanceof IpAddress)
+                    ((IpAddress) local_addr).setAdditionalData(additional_data);
+        	}
+        }
         super.start();
     }
 
@@ -140,9 +167,10 @@ public class TUNNEL extends TP {
 
     /** Tears the TCP connection to the router down */
     void teardownTunnel() {
-        intentionallyTornDown = true;
-        stopReconnecting();
-        stub.disconnect();
+        for(RouterStub stub:stubs){
+        	stopReconnecting(stub);
+        	stub.disconnect();
+        }
     }
 
     public Object handleDownEvent(Event evt) {
@@ -150,15 +178,16 @@ public class TUNNEL extends TP {
         switch(evt.getType()){
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:
-            try{
-                stub.connect(channel_name);
-            }catch(Exception e){
-                if(log.isErrorEnabled())
-                    log.error("failed connecting to GossipRouter at " + router_host
-                              + ":"
-                              + router_port);
-                startReconnecting();
-            }
+	        for (RouterStub stub : stubs) {
+				try {
+					stub.connect(channel_name);
+				} catch (Exception e) {
+					if (log.isErrorEnabled())
+						log.error("failed connecting to GossipRouter at "
+								+ router_host + ":" + router_port);
+					startReconnecting(stub);
+				}
+			}
             break;
 
         case Event.DISCONNECT:
@@ -168,14 +197,15 @@ public class TUNNEL extends TP {
         return retEvent;
     }
 
-    private void startReconnecting() {
+    private void startReconnecting(final RouterStub stub) {
         reconnectorLock.lock();
         try{
+        	Future<?>reconnectorFuture = reconnectFutures.get(stub.getGossipRouterAddress());
             if(reconnectorFuture == null || reconnectorFuture.isDone()){
                 final Runnable reconnector = new Runnable() {
                     public void run() {
                         try{
-                            if(!intentionallyTornDown){
+                            if(!stub.isIntentionallyDisconnected()){
                                 if(log.isDebugEnabled()){
                                     log.debug("Reconnecting " + getLocalAddress()
                                               + " to router at "
@@ -195,18 +225,21 @@ public class TUNNEL extends TP {
                                                                  0,
                                                                  reconnect_interval,
                                                                  TimeUnit.MILLISECONDS);
+                reconnectFutures.put(stub.getGossipRouterAddress(), reconnectorFuture);
             }
         }finally{
             reconnectorLock.unlock();
         }
     }
 
-    private void stopReconnecting() {
+    private void stopReconnecting(final RouterStub stub) {
         reconnectorLock.lock();
+        InetSocketAddress address = stub.getGossipRouterAddress();
         try{
+        	Future<?>reconnectorFuture = reconnectFutures.get(address);
             if(reconnectorFuture != null){
                 reconnectorFuture.cancel(true);
-                reconnectorFuture = null;
+                reconnectFutures.remove(address);
             }
         }finally{
             reconnectorLock.unlock();
@@ -215,14 +248,20 @@ public class TUNNEL extends TP {
 
     private class StubConnectionListener implements RouterStub.ConnectionListener {
 
-        private volatile int currentState = RouterStub.STATUS_DISCONNECTED;
+    	private final RouterStub stub;
+        public StubConnectionListener(RouterStub stub) {
+			super();
+			this.stub = stub;
+		}
+
+		private volatile int currentState = RouterStub.STATUS_DISCONNECTED;
 
         public void connectionStatusChange(int newState) {            
             if(newState == RouterStub.STATUS_DISCONNECTED){
-                startReconnecting();
+                startReconnecting(stub);
             }else if(currentState != RouterStub.STATUS_CONNECTED && newState == RouterStub.STATUS_CONNECTED){
-                stopReconnecting();
-                Thread t = global_thread_factory.newThread(new TunnelReceiver(), "TUNNEL receiver");
+                stopReconnecting(stub);
+                Thread t = global_thread_factory.newThread(new StubReceiver(stub), "TUNNEL receiver");
                 t.setDaemon(true);
                 t.start();
             }
@@ -230,8 +269,14 @@ public class TUNNEL extends TP {
         }
     }
 
-    private class TunnelReceiver implements Runnable {
-        public void run() {
+    private class StubReceiver implements Runnable {
+    	private final RouterStub stub;
+        public StubReceiver(RouterStub stub) {
+			super();
+			this.stub = stub;			
+		}
+
+		public void run() {
             while(stub.isConnected()){
                 Address dest = null;                
                 int len;
@@ -261,18 +306,18 @@ public class TUNNEL extends TP {
     }
 
     public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        stub.sendToAllMembers(data, offset, length);
+        tunnel_policy.sendToAllMembers(stubs, data, offset, length);
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        stub.sendToSingleMember(dest, data, offset, length);
+        tunnel_policy.sendToSingleMembers(stubs,dest, data, offset, length);
     }
 
     public String getInfo() {
-        if(stub != null)
-            return stub.toString();
+        if(stubs.isEmpty())
+            return stubs.toString();
         else
-            return "RouterStub not yet initialized";
+            return "RouterStubs not yet initialized";
     }
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
@@ -282,4 +327,40 @@ public class TUNNEL extends TP {
     public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
         msg.setDest(dest);
     }
+    
+    public interface TUNNELPolicy{
+    	public void sendToAllMembers(List<RouterStub> stubs, byte[]data,int offset,int length);
+    	public void sendToSingleMembers(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
+    }
+    
+    private class DefaultTUNNELPolicy implements TUNNELPolicy{
+
+		public void sendToAllMembers(List<RouterStub> stubs, byte[] data,
+				int offset, int length) {
+			
+			for(RouterStub stub:stubs){
+				try{
+					stub.sendToAllMembers(data, offset, length);
+					break;
+				}
+				catch(Exception e){					
+				}	
+			}
+			
+		}
+
+		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,
+				byte[] data, int offset, int length) {
+			
+			for(RouterStub stub:stubs){
+				try{
+					stub.sendToSingleMember(dest, data, offset, length);
+					break;
+				}
+				catch(Exception e){					
+				}			
+			}
+		}
+    }
+    
 }
