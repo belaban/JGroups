@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.34 2009/02/12 16:39:30 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.35 2009/02/16 14:41:31 vlada Exp $
  */
 public class RouterStub {
 
@@ -58,6 +58,8 @@ public class RouterStub {
     private int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
     
     private int sock_read_timeout=0;         // max number of ms to wait for socket reads (0 means block forever, or until the sock is closed)
+    
+    private volatile boolean intentionallyDisconnected = false; 
 
 
     public interface ConnectionListener {
@@ -185,10 +187,15 @@ public class RouterStub {
 				Util.close(sock);
 				Util.close(my_sock);
 				sock = null;
+				intentionallyDisconnected = true;
 				connectionStateChanged(STATUS_DISCONNECTED);
 			}
 		}
 	}
+    
+    public boolean isIntentionallyDisconnected(){
+    	return intentionallyDisconnected;
+    }
     
     public List<Address> getMembers(final String group, long timeout) throws Exception {
     	 List<Address>mbrs = new LinkedList<Address>();
@@ -215,6 +222,10 @@ public class RouterStub {
          }
 		 return mbrs;
 	}
+    
+    public InetSocketAddress getGossipRouterAddress(){
+    	return new InetSocketAddress(router_host,router_port);
+    }
 
     public String toString() {
         return "RouterStub[local_address=" + local_addr
