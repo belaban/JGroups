@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.53 2009/02/16 16:59:48 vlada Exp $
+// $Id: TUNNEL.java,v 1.54 2009/02/16 17:34:55 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -48,11 +48,11 @@ public class TUNNEL extends TP {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
 	@Deprecated
-    @Property(deprecatedMessage="Specify target GRs using gossip_router_hosts",description="Router host address")
+    @Property(name="router_host",deprecatedMessage="router_host is deprecated. Specify target GRs using gossip_router_hosts",description="Router host address")
     private String router_host = null;
 
 	@Deprecated
-    @Property(deprecatedMessage="Specify target GRs using gossip_router_hosts",description="Router port")
+    @Property(name="router_port",deprecatedMessage="router_port is deprecated. Specify target GRs using gossip_router_hosts",description="Router port")
     private int router_port = 0;    
 
     @Property(description="Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
@@ -121,6 +121,7 @@ public class TUNNEL extends TP {
     }
     
     public void setTUNNELPolicy(TUNNELPolicy policy) {
+    	if(policy == null) throw new IllegalArgumentException("Tunnel policy has to be non null");
 		tunnel_policy = policy;
 	}
 
@@ -169,7 +170,6 @@ public class TUNNEL extends TP {
         local_addr = null;
     }
 
-    /** Tears the TCP connection to the router down */
     void teardownTunnel() {
         for(RouterStub stub:stubs){
         	stopReconnecting(stub);
@@ -360,8 +360,7 @@ public class TUNNEL extends TP {
 					stub.connect(channel_name);
 				} catch (Exception e) {
 					if (log.isErrorEnabled())
-						log.error("failed connecting to GossipRouter at "
-								+ router_host + ":" + router_port);
+						log.error("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
 					startReconnecting(stub);
 				}
 			}
