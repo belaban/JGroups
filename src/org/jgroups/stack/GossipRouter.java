@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -53,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.44 2009/02/12 20:06:09 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.45 2009/02/16 18:54:13 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -563,6 +564,10 @@ public class GossipRouter {
 						thread_pool.submit(task);
 					else
 						task.run();
+			} catch (SocketException se){
+				if(srvSock != null && srvSock.isClosed()){
+					log.warn("Server socket closing");
+				}
 			} catch (Exception exc) {
 				if (log.isErrorEnabled())
 					log.error("failure receiving and setting up a client request", exc);
