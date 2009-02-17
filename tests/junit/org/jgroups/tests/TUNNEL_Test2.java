@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.2 2009/02/17 14:57:23 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.3 2009/02/17 15:03:51 vlada Exp $
  **/
 @Test(groups = Global.STACK_INDEPENDENT, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
@@ -112,45 +112,52 @@ public class TUNNEL_Test2 extends ChannelTestBase {
       * 
        **/
 	public void testConnectSendMessageSecondGRDown() throws Exception {
-		final Promise<Message> msgPromise = new Promise<Message>();
-		coordinator = new JChannel(props);
-		coordinator.connect(GROUP);
-		coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
-		channel = new JChannel(props);
-		channel.connect(GROUP);
-		
-		gossipRouter2.stop();
+		try {
+			final Promise<Message> msgPromise = new Promise<Message>();
+			coordinator = new JChannel(props);
+			coordinator.connect(GROUP);
+			coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
-		channel.send(new Message(null, null, "payload"));
+			channel = new JChannel(props);
+			channel.connect(GROUP);
 
-		Message msg = msgPromise.getResult(20000);
-		assert msg != null;
-		assert "payload".equals(msg.getObject());
-		
-		gossipRouter2.start();
+			gossipRouter2.stop();
+
+			channel.send(new Message(null, null, "payload"));
+
+			Message msg = msgPromise.getResult(20000);
+			assert msg != null;
+			assert "payload".equals(msg.getObject());
+		} finally {
+			if(!gossipRouter2.isStarted())
+				gossipRouter2.start();
+		}
 	}
 
 	public void testConnectSendMessageFirstGRDown() throws Exception {
-		final Promise<Message> msgPromise = new Promise<Message>();
-		coordinator = new JChannel(props);
-		coordinator.connect(GROUP);
-		coordinator.setReceiver(new PromisedMessageListener(msgPromise));
+		try {
+			final Promise<Message> msgPromise = new Promise<Message>();
+			coordinator = new JChannel(props);
+			coordinator.connect(GROUP);
+			coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
-		channel = new JChannel(props);
-		channel.connect(GROUP);
-		
-		gossipRouter1.stop();
+			channel = new JChannel(props);
+			channel.connect(GROUP);
 
-		channel.send(new Message(null, null, "payload"));
+			gossipRouter1.stop();
 
-		Message msg = msgPromise.getResult(20000);
-		assert msg != null;
-		assert "payload".equals(msg.getObject());
-		
-		gossipRouter1.start();
+			channel.send(new Message(null, null, "payload"));
+
+			Message msg = msgPromise.getResult(20000);
+			assert msg != null;
+			assert "payload".equals(msg.getObject());
+		} finally {
+			if(!gossipRouter1.isStarted())
+				gossipRouter1.start();
+		}
 	}
-	
+
 	private static class PromisedMessageListener extends ReceiverAdapter {
 		private final Promise<Message> promise;
 
