@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.5 2009/02/17 18:59:55 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.6 2009/02/17 19:07:15 vlada Exp $
  **/
 @Test(groups = Global.STACK_INDEPENDENT, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
@@ -77,6 +77,36 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		view = coordinator.getView();
 		assert view.size() == 1;
 		assert view.containsMember(coordinator.getLocalAddress());
+	}
+	
+	/**
+	 * Tests connect with two members but when both GR fail and restart
+	 * 
+	 **/
+	public void testConnectTwoChannelsBothGRDownReconnect() throws Exception {
+		coordinator = new JChannel(props);
+		channel = new JChannel(props);
+		coordinator.connect(GROUP);
+		channel.connect(GROUP);
+		
+		gossipRouter1.stop();
+		gossipRouter2.stop();
+		
+		gossipRouter1.start();
+		gossipRouter2.start();
+		
+		
+		//give time to reconnect
+		Util.sleep(5000);
+		View view = coordinator.getView();
+		assert view.size() == 2;
+		assert view.containsMember(coordinator.getLocalAddress());
+		assert view.containsMember(channel.getLocalAddress());
+		
+		view = channel.getView();
+		assert view.size() == 2;
+		assert view.containsMember(coordinator.getLocalAddress());
+		assert view.containsMember(channel.getLocalAddress());
 	}
 
 	public void testConnectThreeChannelsWithGRDown() throws Exception {
