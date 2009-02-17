@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.4 2009/02/17 17:45:15 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.5 2009/02/17 18:59:55 vlada Exp $
  **/
 @Test(groups = Global.STACK_INDEPENDENT, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
@@ -52,8 +52,10 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		channel = new JChannel(props);
 		channel.connect(GROUP);
 		assert channel.getLocalAddress() != null;
+		assert channel.getView().size() == 1;
 		channel.disconnect();
 		assert channel.getLocalAddress() == null;
+		assert channel.getView() == null;
 	}
 
 	/**
@@ -68,6 +70,12 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		View view = channel.getView();
 		assert view.size() == 2;
 		assert view.containsMember(channel.getLocalAddress());
+		assert view.containsMember(coordinator.getLocalAddress());
+		
+		channel.disconnect();
+		
+		view = coordinator.getView();
+		assert view.size() == 1;
 		assert view.containsMember(coordinator.getLocalAddress());
 	}
 
