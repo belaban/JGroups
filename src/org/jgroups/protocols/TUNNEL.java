@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.54 2009/02/16 17:34:55 vlada Exp $
+// $Id: TUNNEL.java,v 1.55 2009/02/17 14:57:22 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -335,9 +335,12 @@ public class TUNNEL extends TP {
 			for(RouterStub stub:stubs){
 				try{
 					stub.sendToAllMembers(data, offset, length);
+					if(log.isDebugEnabled())
+						log.debug("Sent to all GR at " + stub.getGossipRouterAddress());
 					break;
 				}
-				catch(Exception e){					
+				catch(Exception e){		
+					log.warn("Failed sending to all GR at " + stub.getGossipRouterAddress());
 				}	
 			}
 			
@@ -347,9 +350,12 @@ public class TUNNEL extends TP {
 			for(RouterStub stub:stubs){
 				try{
 					stub.sendToSingleMember(dest, data, offset, length);
+					if(log.isDebugEnabled())
+						log.debug("Sent to GR at " + stub.getGossipRouterAddress());
 					break;
 				}
-				catch(Exception e){					
+				catch(Exception e){		
+					log.warn("Failed sending to GR at " + stub.getGossipRouterAddress());
 				}			
 			}
 		}
@@ -358,9 +364,11 @@ public class TUNNEL extends TP {
 			for (RouterStub stub : stubs) {
 				try {
 					stub.connect(channel_name);
+					if(log.isDebugEnabled())
+						log.debug("Connected to GR at " + stub.getGossipRouterAddress());
 				} catch (Exception e) {
 					if (log.isErrorEnabled())
-						log.error("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
+						log.warn("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
 					startReconnecting(stub);
 				}
 			}

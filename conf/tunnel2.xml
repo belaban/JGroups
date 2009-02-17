@@ -5,7 +5,7 @@
 <!-- input file: tunnel.old.xml -->
 
 <config>
-    <TUNNEL gossip_router_hosts="127.0.0.1[12001],127.0.0.1[12002]"/>
+    <TUNNEL gossip_router_hosts="127.0.0.1[12002],127.0.0.1[12003]"/>
     <PING timeout="2000"/>
     <MERGE2 max_interval="20000"
               min_interval="5000"/>    
