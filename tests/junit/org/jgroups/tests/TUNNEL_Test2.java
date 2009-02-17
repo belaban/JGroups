@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.3 2009/02/17 15:03:51 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.4 2009/02/17 17:45:15 vlada Exp $
  **/
 @Test(groups = Global.STACK_INDEPENDENT, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
@@ -71,22 +71,37 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		assert view.containsMember(coordinator.getLocalAddress());
 	}
 
-	public void testConnectThreeChannels() throws Exception {
-		coordinator = new JChannel(props);
-		channel = new JChannel(props);
-		coordinator.connect(GROUP);
-		channel.connect(GROUP);
+	public void testConnectThreeChannelsWithGRDown() throws Exception {
+		JChannel third = null;
+		try {
+			coordinator = new JChannel(props);
+			channel = new JChannel(props);
+			coordinator.connect(GROUP);
+			channel.connect(GROUP);
 
-		JChannel third = new JChannel(props);
-		third.connect(GROUP);
+			third = new JChannel(props);
+			third.connect(GROUP);
 
-		View view = channel.getView();
-		assert channel.getView().size() == 3;
-		assert third.getView().size() == 3;
-		assert view.containsMember(channel.getLocalAddress());
-		assert view.containsMember(coordinator.getLocalAddress());
+			View view = channel.getView();
+			assert channel.getView().size() == 3;
+			assert third.getView().size() == 3;
+			assert view.containsMember(channel.getLocalAddress());
+			assert view.containsMember(coordinator.getLocalAddress());
+			
+			//kill router and recheck views
+			gossipRouter2.stop();
+			Util.sleep(1000);
 
-		Util.close(third);
+			view = channel.getView();
+			assert channel.getView().size() == 3;
+			assert third.getView().size() == 3;
+			assert third.getView().containsMember(channel.getLocalAddress());
+			assert third.getView().containsMember(coordinator.getLocalAddress());
+		} finally {
+			if (!gossipRouter2.isStarted())
+				gossipRouter2.start();
+			Util.close(third);
+		}
 	}
 
 	/**
@@ -130,7 +145,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 			assert msg != null;
 			assert "payload".equals(msg.getObject());
 		} finally {
-			if(!gossipRouter2.isStarted())
+			if (!gossipRouter2.isStarted())
 				gossipRouter2.start();
 		}
 	}
@@ -153,7 +168,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 			assert msg != null;
 			assert "payload".equals(msg.getObject());
 		} finally {
-			if(!gossipRouter1.isStarted())
+			if (!gossipRouter1.isStarted())
 				gossipRouter1.start();
 		}
 	}
