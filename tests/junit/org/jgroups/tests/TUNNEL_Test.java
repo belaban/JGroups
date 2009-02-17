@@ -2,9 +2,12 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.TUNNEL;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -21,7 +24,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.2 2009/02/12 16:39:28 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.3 2009/02/17 14:57:23 vlada Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -109,7 +112,7 @@ public class TUNNEL_Test extends ChannelTestBase{
      * to multicast messages.
      **/
     public void testDisconnectConnectSendTwo_Default() throws Exception {
-        final Promise msgPromise=new Promise();
+        final Promise<Message> msgPromise=new Promise<Message>();
         coordinator=new JChannel(props);
         setProps(coordinator);
         coordinator.connect(GROUP);
@@ -224,19 +227,14 @@ public class TUNNEL_Test extends ChannelTestBase{
             merge.setMinInterval(1000);
             merge.setMaxInterval(3000);
         }
-
-        /*TUNNEL tunnel=(TUNNEL)stack.getTransport();
-        if(tunnel != null) {
-            tunnel.setReconnectInterval(2000);
-        }*/
     }
 
 
 
     private static class PromisedMessageListener extends ReceiverAdapter {
-        private final Promise promise;
+        private final Promise<Message> promise;
 
-        public PromisedMessageListener(Promise promise) {
+        public PromisedMessageListener(Promise<Message> promise) {
             this.promise=promise;
         }
 

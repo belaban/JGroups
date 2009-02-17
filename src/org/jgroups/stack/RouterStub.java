@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.35 2009/02/16 14:41:31 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.36 2009/02/17 14:57:21 vlada Exp $
  */
 public class RouterStub {
 
@@ -268,6 +268,7 @@ public class RouterStub {
                              + (dest == null ? "mcast"
                                             : dest + " since underlying socket is closed"),se);
                 connectionStateChanged(STATUS_DISCONNECTED);
+                throw new Exception("dest=" + dest + " (" + length + " bytes)", se);
             }catch(Exception e){
                 if(log.isErrorEnabled())
                     log.error("Router stub " + this + " failed sending message to router");
