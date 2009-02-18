@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.55 2009/02/17 14:57:22 vlada Exp $
+// $Id: TUNNEL.java,v 1.56 2009/02/18 17:03:00 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -129,10 +129,6 @@ public class TUNNEL extends TP {
         super.init();
         if(timer == null)
             throw new Exception("TUNNEL.init(): timer cannot be retrieved from protocol stack");
-        
-        if(log.isDebugEnabled()){
-            log.debug("router_host=" + router_host + ";router_port=" + router_port);
-        }
 
         if((router_host == null || router_port == 0) && gossip_router_hosts.isEmpty()){
             throw new Exception("Either router_host and router_port have to be set or a list of gossip routers");            
@@ -144,6 +140,10 @@ public class TUNNEL extends TP {
         
         if(router_host != null && router_port != 0 && gossip_router_hosts.isEmpty()){
         	gossip_router_hosts.add(new InetSocketAddress(router_host,router_port));
+        }
+        
+        if(log.isDebugEnabled()){
+            log.debug("Target GRs are:" + gossip_router_hosts.toString());
         }
     }
 
@@ -204,16 +204,19 @@ public class TUNNEL extends TP {
                                 if(log.isDebugEnabled()){
                                     log.debug("Reconnecting " + getLocalAddress()
                                               + " to router at "
-                                              + router_host
-                                              + ":"
-                                              + router_port);
+                                              + stub.getGossipRouterAddress());
                                 }
                                 stub.connect(channel_name);
                             }
-                        }catch(Exception ex){
-                            if(log.isTraceEnabled())
-                                log.trace("failed reconnecting", ex);
-                        }
+                        } catch (Exception ex) {
+							if (log.isWarnEnabled())
+								try {
+									log.warn("failed reconnecting "
+											+ stub.getLocalAddress() + " to GR at "
+											+ stub.getGossipRouterAddress(), ex);
+								} catch (SocketException e) {
+								}
+						}
                     }
                 };
                 reconnectorFuture = timer.scheduleWithFixedDelay(reconnector,
@@ -329,34 +332,48 @@ public class TUNNEL extends TP {
     	public void sendToSingleMembers(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
     }
     
-    private class DefaultTUNNELPolicy implements TUNNELPolicy{
+    private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
-		public void sendToAllMembers(List<RouterStub> stubs, byte[] data, int offset, int length) {	
-			for(RouterStub stub:stubs){
-				try{
+		public void sendToAllMembers(List<RouterStub> stubs, byte[] data,
+				int offset, int length) {
+			for (RouterStub stub : stubs) {
+				try {
 					stub.sendToAllMembers(data, offset, length);
-					if(log.isDebugEnabled())
-						log.debug("Sent to all GR at " + stub.getGossipRouterAddress());
+					if (log.isDebugEnabled())
+						log.debug(stub.getLocalAddress()
+								+ " sent a message to all members, GR used "
+								+ stub.getGossipRouterAddress());
 					break;
+				} catch (Exception e) {
+					try {
+						log.warn(stub.getLocalAddress()
+								+ " failed sending a message to all members, GR used "
+								+ stub.getGossipRouterAddress());
+					} catch (SocketException e1) {
+					}
 				}
-				catch(Exception e){		
-					log.warn("Failed sending to all GR at " + stub.getGossipRouterAddress());
-				}	
 			}
-			
+
 		}
 
-		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,byte[] data, int offset, int length) {
-			for(RouterStub stub:stubs){
-				try{
+		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,
+				byte[] data, int offset, int length) {
+			for (RouterStub stub : stubs) {
+				try {
 					stub.sendToSingleMember(dest, data, offset, length);
-					if(log.isDebugEnabled())
-						log.debug("Sent to GR at " + stub.getGossipRouterAddress());
+					if (log.isDebugEnabled())
+						log.debug(stub.getLocalAddress()
+								+ " sent a message to " + dest + ", GR used "
+								+ stub.getGossipRouterAddress());
 					break;
+				} catch (Exception e) {
+					try {
+						log.warn(stub.getLocalAddress()
+								+ " failed sending a message to " + dest
+								+ ", GR used " + stub.getGossipRouterAddress());
+					} catch (SocketException e1) {
+					}
 				}
-				catch(Exception e){		
-					log.warn("Failed sending to GR at " + stub.getGossipRouterAddress());
-				}			
 			}
 		}
 
@@ -364,7 +381,7 @@ public class TUNNEL extends TP {
 			for (RouterStub stub : stubs) {
 				try {
 					stub.connect(channel_name);
-					if(log.isDebugEnabled())
+					if (log.isDebugEnabled())
 						log.debug("Connected to GR at " + stub.getGossipRouterAddress());
 				} catch (Exception e) {
 					if (log.isErrorEnabled())
@@ -373,5 +390,5 @@ public class TUNNEL extends TP {
 				}
 			}
 		}
-    }
+	}
 }
