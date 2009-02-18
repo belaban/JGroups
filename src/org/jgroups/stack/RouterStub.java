@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.36 2009/02/17 14:57:21 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.37 2009/02/18 17:02:59 vlada Exp $
  */
 public class RouterStub {
 
@@ -55,9 +55,9 @@ public class RouterStub {
 
     private DatagramSocket my_sock = null;
     
-    private int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
+    private int sock_conn_timeout=3000;      // max number of ms to wait for socket establishment to GossipRouter
     
-    private int sock_read_timeout=0;         // max number of ms to wait for socket reads (0 means block forever, or until the sock is closed)
+    private int sock_read_timeout=3000;         // max number of ms to wait for socket reads (0 means block forever, or until the sock is closed)
     
     private volatile boolean intentionallyDisconnected = false; 
 
@@ -141,7 +141,7 @@ public class RouterStub {
                 sock = new Socket();
                 sock.bind(new InetSocketAddress(bind_addr,0));
                 sock.setSoTimeout(sock_read_timeout);
-                sock.setSoLinger(true, 5);
+                sock.setSoLinger(true, 2);
                 sock.connect(new InetSocketAddress(router_host,router_port), sock_conn_timeout);
                 output = new DataOutputStream(sock.getOutputStream());
                 
