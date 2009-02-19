@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.45 2009/02/16 18:54:13 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.46 2009/02/19 12:57:30 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -515,15 +515,14 @@ public class GossipRouter {
 
 							case GossipRouter.CONNECT:
 								sock.setSoTimeout(0); // we have to disable this here
-								output = new DataOutputStream(sock.getOutputStream());
 								peer_addr = new IpAddress(sock.getInetAddress(), sock.getPort());
 								logical_addr = req.getAddress();
 								String group_name = req.getGroup();
 
 								if (log.isTraceEnabled())
 									log.trace("CONNECT(" + group_name + ", "+ logical_addr + ")");
-								SocketThread st = new SocketThread(sock, input,group_name, logical_addr);
-								addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st, output));
+								SocketThread st = new SocketThread(sock,group_name, logical_addr);
+								addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st));
 								st.start();
 								break;
 
@@ -838,25 +837,18 @@ public class GossipRouter {
      * they're null and only the timestamp counts.
      */
     class AddressEntry {
-        Address logical_addr=null, physical_addr=null;
-        Socket sock=null;
-        DataOutputStream output=null;
-        long timestamp=0;
-        final SocketThread thread;
+        private final Address logical_addr, physical_addr;
+        private final Socket sock;
+        private final DataOutputStream output;
+        private long timestamp=0;
+        private final SocketThread thread;
 
-        /**
-         * AddressEntry for a 'gossip' membership.
-         */
-        public AddressEntry(Address addr) {
-            this(addr, null, null, null, null);
-        }
-
-        public AddressEntry(Address logical_addr, Address physical_addr, Socket sock, SocketThread thread, DataOutputStream output) {
+        public AddressEntry(Address logical_addr, Address physical_addr, Socket sock, SocketThread thread) throws IOException {
             this.logical_addr=logical_addr;
             this.physical_addr=physical_addr;
             this.sock=sock;
             this.thread=thread;
-            this.output=output;
+            this.output=new DataOutputStream(sock.getOutputStream());
             this.timestamp=System.currentTimeMillis();
         }
 
@@ -865,9 +857,7 @@ public class GossipRouter {
                 thread.finish();
             }
             Util.close(output);
-            output=null;
             Util.close(sock);
-            sock=null;
             timestamp=0;
         }
 
@@ -903,16 +893,18 @@ public class GossipRouter {
      */
     class SocketThread extends Thread {
         private volatile boolean active=true;
-        Socket sock=null;
-        DataInputStream input=null;
-        Address logical_addr=null;
-        String group_name=null;
+        private final Socket sock;
+        private final DataOutputStream output;
+        private final DataInputStream input;
+        private final Address logical_addr;
+        private final String group_name;
 
 
-        public SocketThread(Socket sock, DataInputStream ois, String group_name, Address logical_addr) {
+        public SocketThread(Socket sock, String group_name, Address logical_addr) throws IOException {
             super(Util.getGlobalThreadGroup(), "SocketThread " + (threadCounter++));
             this.sock=sock;
-            input=ois;
+            this.input=new DataInputStream(sock.getInputStream());
+            this.output = new DataOutputStream(sock.getOutputStream());
             this.group_name=group_name;
             this.logical_addr=logical_addr;
         }
@@ -932,10 +924,8 @@ public class GossipRouter {
             int len;
             Address dst_addr=null;
             String gname;
-
-            DataOutputStream output = null;
+            
             try {
-                output=new DataOutputStream(sock.getOutputStream());
                 output.writeBoolean(true);
             }
             catch(IOException e1) {
