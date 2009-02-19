@@ -2,7 +2,6 @@ package org.jgroups.stack;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -20,7 +19,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.37 2009/02/18 17:02:59 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.38 2009/02/19 17:49:19 vlada Exp $
  */
 public class RouterStub {
 
@@ -157,6 +156,7 @@ public class RouterStub {
                 output.flush();
                 input = new DataInputStream(sock.getInputStream());
                 boolean connectedOk = input.readBoolean();
+                intentionallyDisconnected = false;
                 if(connectedOk)
                     connectionStateChanged(STATUS_CONNECTED);
                 else
@@ -174,22 +174,20 @@ public class RouterStub {
     }
 
     public synchronized void disconnect() {
-		if (isConnected()) {
-			try {
-				GossipData req = new GossipData(GossipRouter.DISCONNECT,
-						groupname, local_addr, null);
-				req.writeTo(output);
-				output.flush();
-			} catch (Exception e) {
-			} finally {
-				Util.close(output);
-				Util.close(input);
-				Util.close(sock);
-				Util.close(my_sock);
-				sock = null;
-				intentionallyDisconnected = true;
-				connectionStateChanged(STATUS_DISCONNECTED);
-			}
+		try {
+			GossipData req = new GossipData(GossipRouter.DISCONNECT,
+					groupname, local_addr, null);
+			req.writeTo(output);
+			output.flush();
+		} catch (Exception e) {
+		} finally {
+			Util.close(output);
+			Util.close(input);
+			Util.close(sock);
+			Util.close(my_sock);
+			sock = null;
+			intentionallyDisconnected = true;
+			connectionStateChanged(STATUS_DISCONNECTED);
 		}
 	}
     
@@ -199,26 +197,24 @@ public class RouterStub {
     
     public List<Address> getMembers(final String group, long timeout) throws Exception {
     	 List<Address>mbrs = new LinkedList<Address>();
-    	 if(isConnected()){
-             try{
-             	output.writeByte(GossipRouter.GOSSIP_GET);
-                 // 1. Group name
-                 output.writeUTF(groupname);
-                 output.flush();
-                 
-                 mbrs=(List<Address>)Util.readAddresses(input, LinkedList.class);
+         try{
+         	output.writeByte(GossipRouter.GOSSIP_GET);
+             // 1. Group name
+             output.writeUTF(groupname);
+             output.flush();
+             
+             mbrs=(List<Address>)Util.readAddresses(input, LinkedList.class);
 
-             }catch(SocketException se){
-                 if(log.isWarnEnabled())
-                     log.warn("Router stub " + this
-                              + " did not send message",se);
-                 connectionStateChanged(STATUS_DISCONNECTED);
-             }catch(Exception e){
-                 if(log.isErrorEnabled())
-                     log.error("Router stub " + this + " failed sending message to router");
-                 connectionStateChanged(STATUS_DISCONNECTED);
-                 throw new Exception("Connection broken", e);
-             }
+         }catch(SocketException se){
+             if(log.isWarnEnabled())
+                 log.warn("Router stub " + this
+                          + " did not send message",se);
+             connectionStateChanged(STATUS_DISCONNECTED);
+         }catch(Exception e){
+             if(log.isErrorEnabled())
+                 log.error("Router stub " + this + " failed sending message to router");
+             connectionStateChanged(STATUS_DISCONNECTED);
+             throw new Exception("Connection broken", e);
          }
 		 return mbrs;
 	}
@@ -243,45 +239,40 @@ public class RouterStub {
         sendToSingleMember(null, data, offset, length);
     }
 
-    public synchronized void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(isConnected()){
-            try{	
-            	output.writeByte(GossipRouter.ROUTE);
-                // 1. Group name
-                output.writeUTF(groupname);
+    public synchronized void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {        
+        try{	
+        	output.writeByte(GossipRouter.ROUTE);
+            // 1. Group name
+            output.writeUTF(groupname);
 
-                // 2. Destination address (null in case of mcast)
-                Util.writeAddress(dest, output);
+            // 2. Destination address (null in case of mcast)
+            Util.writeAddress(dest, output);
 
-                // 3. Length of byte buffer
-                output.writeInt(data.length);
+            // 3. Length of byte buffer
+            output.writeInt(data.length);
 
-                // 4. Byte buffer
-                output.write(data, 0, data.length);
+            // 4. Byte buffer
+            output.write(data, 0, data.length);
 
-                output.flush();
+            output.flush();
 
-            }catch(SocketException se){
-                if(log.isWarnEnabled())
-                    log.warn("Router stub " + this
-                             + " did not send message to "
-                             + (dest == null ? "mcast"
-                                            : dest + " since underlying socket is closed"),se);
-                connectionStateChanged(STATUS_DISCONNECTED);
-                throw new Exception("dest=" + dest + " (" + length + " bytes)", se);
-            }catch(Exception e){
-                if(log.isErrorEnabled())
-                    log.error("Router stub " + this + " failed sending message to router");
-                connectionStateChanged(STATUS_DISCONNECTED);
-                throw new Exception("dest=" + dest + " (" + length + " bytes)", e);
-            }
+        }catch(SocketException se){
+            if(log.isWarnEnabled())
+                log.warn("Router stub " + this
+                         + " did not send message to "
+                         + (dest == null ? "mcast"
+                                        : dest + " since underlying socket is closed"),se);
+            connectionStateChanged(STATUS_DISCONNECTED);
+            throw new Exception("dest=" + dest + " (" + length + " bytes)", se);
+        }catch(Exception e){
+            if(log.isErrorEnabled())
+                log.error("Router stub " + this + " failed sending message to router");
+            connectionStateChanged(STATUS_DISCONNECTED);
+            throw new Exception("dest=" + dest + " (" + length + " bytes)", e);
         }
     }
 
-    public DataInputStream getInputStream() throws IOException {
-        if(!isConnected()){
-            throw new IOException("InputStream is closed");
-        }
+    public DataInputStream getInputStream(){
         return input;
     }
 

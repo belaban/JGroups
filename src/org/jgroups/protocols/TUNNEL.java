@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.56 2009/02/18 17:03:00 vlada Exp $
+// $Id: TUNNEL.java,v 1.57 2009/02/19 17:49:20 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -308,7 +308,7 @@ public class TUNNEL extends TP {
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        tunnel_policy.sendToSingleMembers(stubs,dest, data, offset, length);
+        tunnel_policy.sendToSingleMember(stubs,dest, data, offset, length);
     }
 
     public String getInfo() {
@@ -329,7 +329,7 @@ public class TUNNEL extends TP {
     public interface TUNNELPolicy{
     	public void connect(List<RouterStub> stubs);
     	public void sendToAllMembers(List<RouterStub> stubs, byte[]data,int offset,int length);
-    	public void sendToSingleMembers(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
+    	public void sendToSingleMember(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
     }
     
     private class DefaultTUNNELPolicy implements TUNNELPolicy {
@@ -356,7 +356,7 @@ public class TUNNEL extends TP {
 
 		}
 
-		public void sendToSingleMembers(List<RouterStub> stubs, Address dest,
+		public void sendToSingleMember(List<RouterStub> stubs, Address dest,
 				byte[] data, int offset, int length) {
 			for (RouterStub stub : stubs) {
 				try {
