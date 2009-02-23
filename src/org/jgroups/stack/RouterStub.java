@@ -2,7 +2,6 @@ package org.jgroups.stack;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -19,7 +18,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.38 2009/02/19 17:49:19 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.39 2009/02/23 18:22:17 vlada Exp $
  */
 public class RouterStub {
 
@@ -27,20 +26,17 @@ public class RouterStub {
 
     public final static int STATUS_DISCONNECTED = 1;
 
-    private String router_host = null; // name of the router host
+    private final String router_host; // name of the router host
 
-    private int router_port = 0; // port on which router listens on
-                                    // router_host
+    private final int router_port; // port on which router listens on
 
     private Socket sock = null; // socket connecting to the router
 
-    private DataOutputStream output = null; // output stream associated with
-                                            // sock
+    private DataOutputStream output = null; 
+                                   
+    private DataInputStream input = null; 
 
-    private DataInputStream input = null; // input stream associated with sock
-
-    private Address local_addr = null; // addr of group mbr. Once assigned,
-                                        // remains the same
+    private final Address local_addr; 
 
     private volatile int connectionState = STATUS_DISCONNECTED;
 
@@ -50,9 +46,7 @@ public class RouterStub {
 
     private String groupname = null;
 
-    private InetAddress bind_addr = null;
-
-    private DatagramSocket my_sock = null;
+    private final InetAddress bind_addr;
     
     private int sock_conn_timeout=3000;      // max number of ms to wait for socket establishment to GossipRouter
     
@@ -72,11 +66,16 @@ public class RouterStub {
      *                The name of the router's host
      * @param routerPort
      *                The router's port
+     * @throws SocketException 
      */
-    public RouterStub(String routerHost,int routerPort,InetAddress bindAddress){
-        router_host = routerHost != null ? routerHost : "localhost";
+    public RouterStub(String routerHost,int routerPort,InetAddress bindAddress, Address localAddress){       
+    	if (localAddress == null){
+    		throw new IllegalArgumentException("localAddress cannot be null"); 
+    	}   	
+    	router_host = routerHost != null ? routerHost : "localhost";
         router_port = routerPort;
         bind_addr = bindAddress;
+        local_addr = localAddress;
     }
     
     public int getSocketConnectionTimeout() {
@@ -103,22 +102,8 @@ public class RouterStub {
         this.conn_listener = conn_listener;
     }
 
-    public synchronized Address getLocalAddress() throws SocketException {
-        if(local_addr == null){
-            my_sock = new DatagramSocket(0, bind_addr);
-            local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
-        }
+    public Address getLocalAddress() throws SocketException {
         return local_addr;
-    }
-
-    /**
-     * Register this process with the router under <code>groupname</code>.
-     * 
-     * @param groupname
-     *                The name of the group under which to register
-     */
-    public void connect(String groupname) throws Exception {
-        connect(groupname,getLocalAddress());
     }
     
     /**
@@ -127,12 +112,9 @@ public class RouterStub {
      * @param groupname
      *                The name of the group under which to register
      */
-    public synchronized void connect(String groupname, Address localAddress) throws Exception {
+    public synchronized void connect(String groupname) throws Exception {
         if(groupname == null || groupname.length() == 0)
             throw new Exception("groupname is null");
-        
-        if(localAddress == null)
-            throw new Exception("localAddress is null");
 
         if(!isConnected()){
             this.groupname = groupname;
@@ -143,14 +125,10 @@ public class RouterStub {
                 sock.setSoLinger(true, 2);
                 sock.connect(new InetSocketAddress(router_host,router_port), sock_conn_timeout);
                 output = new DataOutputStream(sock.getOutputStream());
-                
-                if(local_addr == null){
-                	local_addr = localAddress;
-                }
-                
+               
                 GossipData req = new GossipData(GossipRouter.CONNECT,
                                                 groupname,
-                                                localAddress,
+                                                local_addr,
                                                 null);
                 req.writeTo(output);
                 output.flush();
@@ -184,7 +162,6 @@ public class RouterStub {
 			Util.close(output);
 			Util.close(input);
 			Util.close(sock);
-			Util.close(my_sock);
 			sock = null;
 			intentionallyDisconnected = true;
 			connectionStateChanged(STATUS_DISCONNECTED);

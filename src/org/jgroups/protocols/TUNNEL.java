@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.57 2009/02/19 17:49:20 vlada Exp $
+// $Id: TUNNEL.java,v 1.58 2009/02/23 18:22:18 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -13,10 +13,12 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,16 +152,18 @@ public class TUNNEL extends TP {
     public void start() throws Exception {
         // loopback turned on is mandatory
         loopback = true;
+        
+        if(local_addr == null){
+    		DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
+            local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
+            if(additional_data != null && local_addr instanceof IpAddress)
+                ((IpAddress) local_addr).setAdditionalData(additional_data);
+    	}
 
         for(InetSocketAddress gr:gossip_router_hosts){
-        	RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr);
+        	RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,local_addr);
             stub.setConnectionListener(new StubConnectionListener(stub));
         	stubs.add(stub);
-        	if(local_addr == null){
-        		local_addr = stub.getLocalAddress();
-                if(additional_data != null && local_addr instanceof IpAddress)
-                    ((IpAddress) local_addr).setAdditionalData(additional_data);
-        	}
         }
         super.start();
     }
@@ -336,6 +340,7 @@ public class TUNNEL extends TP {
 
 		public void sendToAllMembers(List<RouterStub> stubs, byte[] data,
 				int offset, int length) {
+			Collections.shuffle(stubs);
 			for (RouterStub stub : stubs) {
 				try {
 					stub.sendToAllMembers(data, offset, length);
@@ -358,6 +363,7 @@ public class TUNNEL extends TP {
 
 		public void sendToSingleMember(List<RouterStub> stubs, Address dest,
 				byte[] data, int offset, int length) {
+			Collections.shuffle(stubs);
 			for (RouterStub stub : stubs) {
 				try {
 					stub.sendToSingleMember(dest, data, offset, length);

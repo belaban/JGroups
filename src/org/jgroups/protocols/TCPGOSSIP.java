@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.util.*;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 
@@ -26,7 +27,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.35 2009/02/12 16:39:31 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.36 2009/02/23 18:22:18 vlada Exp $
  */
 public class TCPGOSSIP extends Discovery {
     
@@ -89,18 +90,18 @@ public class TCPGOSSIP extends Discovery {
         else {
             if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
-            
+             
             stubs.clear();
             
-            //init stubs 
-            for(InetSocketAddress host:initial_hosts){
-            	stubs.add(new RouterStub(host.getHostName(),host.getPort(),null));
-            }
+            // init stubs
+			for (InetSocketAddress host : initial_hosts) {
+				stubs.add(new RouterStub(host.getHostName(), host.getPort(),null, local_addr));
+			}
             
             //and connect
             for (RouterStub stub : stubs) {
     			try {
-    				stub.connect(group_addr,local_addr);
+    				stub.connect(group_addr);
     			} 
     			catch (Exception e) {
     			}
