@@ -32,7 +32,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.52 2009/02/12 16:39:31 vlada Exp $
+ * @version $Id: PING.java,v 1.53 2009/02/23 18:22:18 vlada Exp $
  */
 public class PING extends Discovery {
     
@@ -83,29 +83,24 @@ public class PING extends Discovery {
     
     public void init() throws Exception {
         super.init();
-        if(gossip_hosts != null) {
-            
-        	for(InetSocketAddress host:gossip_hosts){
-        		RouterStub rs = new RouterStub(host.getHostName(),host.getPort(),null);
-        		rs.setSocketConnectionTimeout(socket_conn_timeout);
-        		rs.setSocketReadTimeout(socket_read_timeout);
-        		clients.add(rs);
-        	}
-        }
-        else if(gossip_host != null && gossip_port != 0) {
-            try {
-            	RouterStub rs = new RouterStub(gossip_host,gossip_port,null);
-            	rs.setSocketConnectionTimeout(socket_conn_timeout);
-        		rs.setSocketReadTimeout(socket_read_timeout);
-            	clients.add(rs);                                      
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled())
-                    log.error("creation of GossipClient failed, exception=" + e);
-                throw e;
-            }
-        }
     }
+
+	private void initializeRouterStubs() {
+		if (gossip_hosts != null) {
+			for (InetSocketAddress host : gossip_hosts) {
+				RouterStub rs = new RouterStub(host.getHostName(), host.getPort(), null, local_addr);
+				rs.setSocketConnectionTimeout(socket_conn_timeout);
+				rs.setSocketReadTimeout(socket_read_timeout);
+				clients.add(rs);
+			}
+		} else if (gossip_host != null && gossip_port != 0) {
+
+			RouterStub rs = new RouterStub(gossip_host, gossip_port, null,local_addr);
+			rs.setSocketConnectionTimeout(socket_conn_timeout);
+			rs.setSocketReadTimeout(socket_read_timeout);
+			clients.add(rs);
+		}
+	}
 
 
     public int getGossipPort() {
@@ -179,22 +174,15 @@ public class PING extends Discovery {
 
 
     public void localAddressSet(Address addr) {
-        // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-//        if(initial_hosts != null && addr != null) {
-//            if(initial_hosts.contains(addr)) {
-//                initial_hosts.remove(addr);
-//                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
-//                        ") from initial_hosts; initial_hosts=" + initial_hosts);
-//            }
-//        }
-    }
+		initializeRouterStubs();
+	}
 
 
 
     public void handleConnect() {
     	for(RouterStub client:clients){
     		try {
-				client.connect(group_addr,local_addr);
+				client.connect(group_addr);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
