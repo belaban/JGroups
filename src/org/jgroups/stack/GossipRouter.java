@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.47 2009/02/24 13:45:32 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.48 2009/02/24 18:14:37 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -101,7 +101,7 @@ public class GossipRouter {
 
     @Property(description="Time (in millis) for SO_TIMEOUT on sockets returned from accept(). " +
             "0 means don't set SO_TIMEOUT")
-    private long sock_read_timeout=3000L;
+    private long sock_read_timeout=5000L;
 
     @Property(description="The max queue size of backlogged connections")
     private int backlog=1000;
