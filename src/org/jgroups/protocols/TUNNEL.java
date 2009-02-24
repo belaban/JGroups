@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.59 2009/02/24 13:45:34 vlada Exp $
+// $Id: TUNNEL.java,v 1.60 2009/02/24 20:35:45 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -334,14 +334,15 @@ public class TUNNEL extends TP {
     
     public interface TUNNELPolicy{
     	public void connect(List<RouterStub> stubs);
-    	public void sendToAllMembers(List<RouterStub> stubs, byte[]data,int offset,int length);
-    	public void sendToSingleMember(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length);
+    	public void sendToAllMembers(List<RouterStub> stubs, byte[]data,int offset,int length) throws Exception;
+    	public void sendToSingleMember(List<RouterStub> stubs, Address dest, byte[]data,int offset,int length) throws Exception;
     }
     
     private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
 		public void sendToAllMembers(List<RouterStub> stubs, byte[] data,
-				int offset, int length) {
+				int offset, int length) throws Exception {
+			boolean sent = false;
 			Collections.shuffle(stubs);
 			for (RouterStub stub : stubs) {
 				try {
@@ -350,6 +351,7 @@ public class TUNNEL extends TP {
 						log.debug(stub.getLocalAddress()
 								+ " sent a message to all members, GR used "
 								+ stub.getGossipRouterAddress());
+					sent = true;
 					break;
 				} catch (Exception e) {
 					try {
@@ -360,11 +362,14 @@ public class TUNNEL extends TP {
 					} catch (SocketException e1) {
 					}
 				}
-			}
+			}	
+			if(!sent)
+				throw new Exception ("None of the available stubs " + stubs+" accepted a multicast message");
 		}
 
 		public void sendToSingleMember(List<RouterStub> stubs, Address dest,
-				byte[] data, int offset, int length) {
+				byte[] data, int offset, int length) throws Exception {
+			boolean sent = false;
 			Collections.shuffle(stubs);
 			for (RouterStub stub : stubs) {
 				try {
@@ -373,6 +378,7 @@ public class TUNNEL extends TP {
 						log.debug(stub.getLocalAddress()
 								+ " sent a message to " + dest + ", GR used "
 								+ stub.getGossipRouterAddress());
+					sent = true;
 					break;
 				} catch (Exception e) {
 					try {
@@ -386,6 +392,8 @@ public class TUNNEL extends TP {
 					}
 				}
 			}
+			if(!sent)
+				throw new Exception ("None of the available stubs " + stubs+" accepted a message for dest " + dest);
 		}
 
 		public void connect(List<RouterStub> stubs) {
