@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.58 2009/02/23 18:22:18 vlada Exp $
+// $Id: TUNNEL.java,v 1.59 2009/02/24 13:45:34 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -122,7 +122,7 @@ public class TUNNEL extends TP {
         return "TUNNEL";
     }
     
-    public void setTUNNELPolicy(TUNNELPolicy policy) {
+    public synchronized void setTUNNELPolicy(TUNNELPolicy policy) {
     	if(policy == null) throw new IllegalArgumentException("Tunnel policy has to be non null");
 		tunnel_policy = policy;
 	}
@@ -250,13 +250,13 @@ public class TUNNEL extends TP {
 
     private class StubConnectionListener implements RouterStub.ConnectionListener {
 
+    	private volatile int currentState = RouterStub.STATUS_DISCONNECTED;
     	private final RouterStub stub;
+    	
         public StubConnectionListener(RouterStub stub) {
 			super();
 			this.stub = stub;
 		}
-
-		private volatile int currentState = RouterStub.STATUS_DISCONNECTED;
 
         public void connectionStatusChange(int newState) {            
             if(newState == RouterStub.STATUS_DISCONNECTED){
@@ -272,8 +272,10 @@ public class TUNNEL extends TP {
     }
 
     private class StubReceiver implements Runnable {
+    	
     	private final RouterStub stub;
-        public StubReceiver(RouterStub stub) {
+        
+    	public StubReceiver(RouterStub stub) {
 			super();
 			this.stub = stub;			
 		}
@@ -308,11 +310,11 @@ public class TUNNEL extends TP {
     }
 
     public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        tunnel_policy.sendToAllMembers(stubs, data, offset, length);
+        tunnel_policy.sendToAllMembers(new ArrayList<RouterStub>(stubs), data, offset, length);
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        tunnel_policy.sendToSingleMember(stubs,dest, data, offset, length);
+        tunnel_policy.sendToSingleMember(new ArrayList<RouterStub>(stubs), dest, data, offset, length);
     }
 
     public String getInfo() {
@@ -351,14 +353,14 @@ public class TUNNEL extends TP {
 					break;
 				} catch (Exception e) {
 					try {
-						log.warn(stub.getLocalAddress()
-								+ " failed sending a message to all members, GR used "
-								+ stub.getGossipRouterAddress());
+						if (log.isWarnEnabled())
+							log.warn(stub.getLocalAddress()
+											+ " failed sending a message to all members, GR used "
+											+ stub.getGossipRouterAddress());
 					} catch (SocketException e1) {
 					}
 				}
 			}
-
 		}
 
 		public void sendToSingleMember(List<RouterStub> stubs, Address dest,
@@ -374,9 +376,12 @@ public class TUNNEL extends TP {
 					break;
 				} catch (Exception e) {
 					try {
-						log.warn(stub.getLocalAddress()
-								+ " failed sending a message to " + dest
-								+ ", GR used " + stub.getGossipRouterAddress());
+						if (log.isWarnEnabled()) {
+							log.warn(stub.getLocalAddress()
+									+ " failed sending a message to " + dest
+									+ ", GR used "
+									+ stub.getGossipRouterAddress());
+						}
 					} catch (SocketException e1) {
 					}
 				}
@@ -390,7 +395,7 @@ public class TUNNEL extends TP {
 					if (log.isDebugEnabled())
 						log.debug("Connected to GR at " + stub.getGossipRouterAddress());
 				} catch (Exception e) {
-					if (log.isErrorEnabled())
+					if (log.isWarnEnabled())
 						log.warn("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
 					startReconnecting(stub);
 				}

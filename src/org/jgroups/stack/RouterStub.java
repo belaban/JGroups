@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.39 2009/02/23 18:22:17 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.40 2009/02/24 13:45:32 vlada Exp $
  */
 public class RouterStub {
 
@@ -153,9 +153,7 @@ public class RouterStub {
 
     public synchronized void disconnect() {
 		try {
-			GossipData req = new GossipData(GossipRouter.DISCONNECT,
-					groupname, local_addr, null);
-			req.writeTo(output);
+			output.writeByte(GossipRouter.DISCONNECT);
 			output.flush();
 		} catch (Exception e) {
 		} finally {

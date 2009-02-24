@@ -54,14 +54,13 @@ import java.util.concurrent.TimeUnit;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.46 2009/02/19 12:57:30 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.47 2009/02/24 13:45:32 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
     public static final byte CONNECT=1; // CONNECT(group, addr) --> local address
     public static final byte DISCONNECT=2; // DISCONNECT(group, addr)
     public static final byte GOSSIP_GET=4; // GET(group) --> List<addr> (members)
-    public static final byte DUMP=8; // DUMP
     public static final byte SHUTDOWN=9;
     public static final byte ROUTE=10;
 
@@ -339,8 +338,6 @@ public class GossipRouter {
                 return "DISCONNECT";            
             case GOSSIP_GET:
                 return "GOSSIP_GET";
-            case DUMP:
-                return "DUMP";
             case SHUTDOWN:
                 return "SHUTDOWN";
             default:
@@ -502,53 +499,31 @@ public class GossipRouter {
 						GossipData req = new GossipData();
 						try {
 							req.readFrom(input);
-
-							switch (req.getType()) {
-							
-							case GossipRouter.DUMP:
-								output = new DataOutputStream(sock.getOutputStream());
-								output.writeUTF(dumpRoutingTable());
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								break;
-
-							case GossipRouter.CONNECT:
-								sock.setSoTimeout(0); // we have to disable this here
-								peer_addr = new IpAddress(sock.getInetAddress(), sock.getPort());
-								logical_addr = req.getAddress();
-								String group_name = req.getGroup();
-
-								if (log.isTraceEnabled())
-									log.trace("CONNECT(" + group_name + ", "+ logical_addr + ")");
-								SocketThread st = new SocketThread(sock,group_name, logical_addr);
-								addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st));
-								st.start();
-								break;
-
-							case GossipRouter.DISCONNECT:
-								Address addr = req.getAddress();
-								group_name = req.getGroup();
-								removeEntry(group_name, addr);
-								if (log.isTraceEnabled())
-									log.trace("DISCONNECT(" + group_name + ", " + addr+ ")");
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								break;
-
-							case GossipRouter.SHUTDOWN:
-								if (log.isInfoEnabled())
-									log.info("router shutting down");
-								Util.close(input);
-								Util.close(output);
-								Util.close(sock);
-								up = false;
-								break;
-							default:
-								if (log.isWarnEnabled())
-									log.warn("received unkown gossip request (gossip="+ req + ')');
-								break;
+							switch (req.getType()) {							
+								case GossipRouter.CONNECT:
+									peer_addr = new IpAddress(sock.getInetAddress(), sock.getPort());
+									logical_addr = req.getAddress();
+									String group_name = req.getGroup();
+	
+									if (log.isTraceEnabled())
+										log.trace("CONNECT(" + group_name + ", "+ logical_addr + ")");
+									SocketThread st = new SocketThread(sock,group_name, logical_addr);
+									addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st));
+									st.start();
+									break;
+									
+								case GossipRouter.SHUTDOWN:
+									if (log.isInfoEnabled())
+										log.info("router shutting down");
+									Util.close(input);
+									Util.close(output);
+									Util.close(sock);
+									up = false;
+									break;
+								default:
+									if (log.isWarnEnabled())
+										log.warn("received unkown gossip request (gossip="+ req + ')');
+									break;
 							}
 						} catch (Exception e) {
 							if (up)
@@ -976,6 +951,11 @@ public class GossipRouter {
 							DataOutputStream rsp=new DataOutputStream(sock.getOutputStream());
 			            	Util.writeAddresses(mbrs, rsp);				           
 			            	break;
+                		case GossipRouter.DISCONNECT:
+                			removeEntry(group_name, logical_addr);
+							closeSocket();
+							finish();
+                			break;
                 	}
                 }
                 catch(Exception io_ex) {
@@ -988,7 +968,6 @@ public class GossipRouter {
             }
             closeSocket();
         }
-
     }
 
 
