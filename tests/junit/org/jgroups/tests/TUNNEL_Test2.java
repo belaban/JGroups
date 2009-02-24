@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.6 2009/02/17 19:07:15 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.7 2009/02/24 14:28:32 vlada Exp $
  **/
 @Test(groups = Global.STACK_INDEPENDENT, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
@@ -97,7 +97,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		
 		
 		//give time to reconnect
-		Util.sleep(5000);
+		Util.sleep(6000);
 		View view = coordinator.getView();
 		assert view.size() == 2;
 		assert view.containsMember(coordinator.getLocalAddress());
@@ -178,6 +178,16 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 			gossipRouter2.stop();
 
 			channel.send(new Message(null, null, "payload"));
+			
+			View view = coordinator.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+			
+			view = channel.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
 
 			Message msg = msgPromise.getResult(20000);
 			assert msg != null;
@@ -185,6 +195,100 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 		} finally {
 			if (!gossipRouter2.isStarted())
 				gossipRouter2.start();
+		}
+	}
+	
+	
+	/**
+     * 
+      **/
+	public void testConnectSendMessageBothGRDown() throws Exception {
+
+		try {
+			final Promise<Message> msgPromise = new Promise<Message>();
+			coordinator = new JChannel(props);
+			coordinator.connect(GROUP);
+			coordinator.setReceiver(new PromisedMessageListener(msgPromise));
+
+			channel = new JChannel(props);
+			channel.connect(GROUP);
+
+			gossipRouter1.stop();
+			gossipRouter2.stop();
+			
+			gossipRouter1.start();
+			gossipRouter2.start();
+			
+			//give time to reconnect
+			Util.sleep(6000);
+
+			channel.send(new Message(null, null, "payload"));
+			
+			View view = coordinator.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+			
+			view = channel.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+
+			Message msg = msgPromise.getResult(20000);
+			assert msg != null;
+			assert "payload".equals(msg.getObject());
+		} finally {
+			if (!gossipRouter2.isStarted())
+				gossipRouter2.start();
+			
+			if (!gossipRouter1.isStarted())
+				gossipRouter1.start();
+		}
+	}
+	
+	/**
+     * 
+      **/
+	public void testConnectSendMessageBothGRDownOnlyOneUp() throws Exception {
+
+		try {
+			final Promise<Message> msgPromise = new Promise<Message>();
+			coordinator = new JChannel(props);
+			coordinator.connect(GROUP);
+			coordinator.setReceiver(new PromisedMessageListener(msgPromise));
+
+			channel = new JChannel(props);
+			channel.connect(GROUP);
+
+			gossipRouter1.stop();
+			gossipRouter2.stop();
+			
+			gossipRouter1.start();
+			
+			//give time to reconnect
+			Util.sleep(6000);
+
+			channel.send(new Message(null, null, "payload"));
+			
+			View view = coordinator.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+			
+			view = channel.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+
+			Message msg = msgPromise.getResult(20000);
+			assert msg != null;
+			assert "payload".equals(msg.getObject());
+		} finally {
+			if (!gossipRouter2.isStarted())
+				gossipRouter2.start();
+			
+			if (!gossipRouter1.isStarted())
+				gossipRouter1.start();
 		}
 	}
 
@@ -201,6 +305,15 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 			gossipRouter1.stop();
 
 			channel.send(new Message(null, null, "payload"));
+			View view = coordinator.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
+			
+			view = channel.getView();
+			assert view.size() == 2;
+			assert view.containsMember(coordinator.getLocalAddress());
+			assert view.containsMember(channel.getLocalAddress());
 
 			Message msg = msgPromise.getResult(20000);
 			assert msg != null;
