@@ -905,7 +905,9 @@
         group. It is not recommended to use TCPGOSSIP for discovery if TUNNEL is 
         already used. TCPGOSSIP might be used in rare scenarios when registration and 
         initial member discovery <emphasis>has to be done </emphasis>through gossip 
-        router indepedent of transport protocol being used.</para>
+        router indepedent of transport protocol being used. Starting with 2.8 release 
+        TCPGOSSIP accepts one or multiple router hosts as a comma delimited list 
+        of host[port] elements specified in a property initial_hosts.</para>
 
         <para><classname>TUNNEL</classname> establishes a TCP connection to the
         <emphasis>GossipRouter</emphasis> process (also outside the firewall) that
