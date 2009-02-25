@@ -890,20 +890,22 @@
         so other members (possibly also behind firewalls) can access it.</para>
 
         <para>The solution works as follows. A channel inside a firewall has
-        to use protocol TUNNEL instead of UDP as bottommost layer in the
-        stack, plus either PING or TCPGOSSIP, as shown below (only the bottom
-        two protocols shown):</para>
+        to use protocol TUNNEL instead of UDP or TCP as bottommost layer. Recommended 
+        discovery protocol is PING, starting with 2.8 release, you do not have to specify 
+        any gossip routers in PING. </para>
 
         <screen>
-                    &lt;TUNNEL router_host="localhost" router_port="12001" /&gt;
-                    &lt;TCPGOSSIP initial_hosts="localhost[12001]" gossip_refresh_rate="10000"
-                               num_initial_members="3" /&gt;
+                    &lt;TUNNEL gossip_router_hosts="127.0.0.1[12001]" /&gt;
+                    &lt;PING /&gt;
                 </screen>
 
         <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
         the firewall) at port <literal>12001</literal> to register its address
         (periodically) and to retrieve the initial membership for its
-        group.</para>
+        group. It is not recommended to use TCPGOSSIP for discovery if TUNNEL is 
+        already used. TCPGOSSIP might be used in rare scenarios when registration and 
+        initial member discovery <emphasis>has to be done </emphasis>through gossip 
+        router indepedent of transport protocol being used.</para>
 
         <para><classname>TUNNEL</classname> establishes a TCP connection to the
         <emphasis>GossipRouter</emphasis> process (also outside the firewall) that
@@ -920,7 +922,10 @@
         <para>Note that <classname>TUNNEL</classname> has to be given the
         hostname and port of the GossipRouter process. This example assumes a GossipRouter
         is running on the local host at port <literal>12001</literal>. Both
-        TUNNEL and TCPGOSSIP (or PING) access the same GossipRouter.</para>
+        TUNNEL and TCPGOSSIP (or PING) access the same GossipRouter. 
+        Starting with 2.8 release TUNNEL transport layer accepts one or multiple router 
+        hosts as a comma delimited list of host[port] elements specified in a 
+        property gossip_router_hosts.</para>
 
         <para>Any time a message has to be sent, TUNNEL forwards the message
         to GossipRouter, which distributes it to its destination: if the message's
@@ -933,6 +938,28 @@
             <para>To do so, GossipRouter has to maintain a table between groups,
             member addresses and TCP connections.</para>
           </footnote> .</para>
+         
+         <para> 
+          Starting with 2.8 release, gossip router is no longer a single 
+		  point of failure. In a set-up with multiple gossip routers, routers do 
+		  not communicate among themselves, and single point of failure is avoided 
+		  by having each channel simply connect to multiple available routers. In 
+          case one or more routers go down, cluster members are still able to 
+          exchange message through remaining available router instances, if there 
+          are any.
+
+          For each send invocation, a channel goes through a list of available 
+          connections to routers and attempts to send a message on each connection 
+          until it succeeds. If a message could not be sent on any of the 
+          connections – an exception is raised. Default policy for connection 
+          selection is random. However, we also provide an plug-in interface for 
+          other policies as well.
+
+          Gossip router configuration is static and is not updated for the 
+          lifetime of the channel. A list of available routers has to be provided 
+          in channel configuration file.</para>
+
+          
 
         <para>To tunnel a firewall using JGroups, the following steps have to
         be taken:</para>
@@ -1001,24 +1028,15 @@
         connection to B. Also, applications behind a firewall would be able to
         talk to each other, joining a group.</para>
 
-        <para>However, there are several drawbacks: first, the central
-        GossipRouter process constitute a single point of failure
-        (if host B crashes) <footnote>
-            <para>Although multiple GossipRouters could be started</para>
-          </footnote> , second, having to maintain a TCP connection for the
+        <para>However, there are several drawbacks: first, having to maintain a TCP connection for the
         duration of the connection might use up resources in the host system
-        (e.g. in the GossipRouter), leading to scalability problems, third, this
+        (e.g. in the GossipRouter), leading to scalability problems, second, this
         scheme is inappropriate when only a few channels are located behind
         firewalls, and the vast majority can indeed use IP multicast to
         communicate, and finally, it is not always possible to enable outgoing
         traffic on 2 ports in a firewall, e.g. when a user does not 'own' the
         firewall.</para>
-
-          <note>
-              There will be a major overhaul of GossipRouter/TUNNEL in 2.6, where we'll streamline the connection
-              table and possibly introduce new functionality such as connecting to multiple GossipRouters,
-              connecting to both IP multicasting and TCP based clients etc.
-          </note>
+        
       </section>
     </section>
   </section>
