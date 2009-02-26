@@ -1,9 +1,11 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.ExtendedReceiverAdapter;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.util.Util;
-import org.testng.annotations.Test;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -11,8 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Tests concurrent FLUSH and partial FLUSHes
+ *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.2 2009/02/26 13:31:00 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.3 2009/02/26 14:36:09 loonix Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -41,6 +44,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
         final CountDownLatch startFlushLatch=new CountDownLatch(1);
         final CountDownLatch stopFlushLatch=new CountDownLatch(1);
+        final CountDownLatch flushStartReceived=new CountDownLatch(2);
         final CountDownLatch flushStopReceived=new CountDownLatch(2);
 
         Thread t1=new Thread() {
@@ -48,10 +52,18 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                 }
-                catch(InterruptedException e) {
+                catch (InterruptedException e) {
                     interrupt();
                 }
-                c1.startFlush(true);
+                c1.startFlush(false);
+
+                try {
+                    stopFlushLatch.await();
+                } catch (InterruptedException e) {
+                    interrupt();
+                }
+
+                c1.stopFlush();
             }
         };
 
@@ -60,24 +72,31 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                 }
-                catch(InterruptedException e) {
+                catch (InterruptedException e) {
                     interrupt();
                 }
-                c2.startFlush(true);
+                c2.startFlush(false);
+
+                try {
+                    stopFlushLatch.await();
+                } catch (InterruptedException e) {
+                    interrupt();
+                }
+
+                c2.stopFlush();
             }
         };
 
-        Listener l1=new Listener(c1, stopFlushLatch, flushStopReceived);
-        Listener l2=new Listener(c2, stopFlushLatch, flushStopReceived);
+        Listener l1=new Listener(c1, flushStartReceived, flushStopReceived);
+        Listener l2=new Listener(c2, flushStartReceived, flushStopReceived);
         t1.start();
         t2.start();
 
         startFlushLatch.countDown();
 
-        t1.join();
-        t2.join();
+        assertTrue(flushStartReceived.await(60, TimeUnit.SECONDS));
 
-        // at this stage both channels should have started a flush?
+        // at this stage both channels should have started a flush
         stopFlushLatch.countDown();
 
         assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
@@ -94,7 +113,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     public void testConcurrentFlushAndPartialFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testConcurrentFlushAndPartialFlush");
-        
+
         c2=createChannel(c1);
         c2.connect("testConcurrentFlushAndPartialFlush");
 
@@ -104,8 +123,9 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
         final CountDownLatch startFlushLatch=new CountDownLatch(1);
         final CountDownLatch stopFlushLatch=new CountDownLatch(1);
-        
+
         //5 because we have total and partial flush
+        final CountDownLatch flushStartReceived=new CountDownLatch(5);
         final CountDownLatch flushStopReceived=new CountDownLatch(5);
 
         Thread t1=new Thread() {
@@ -113,10 +133,19 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                 }
-                catch(InterruptedException e) {
+                catch (InterruptedException e) {
                     interrupt();
                 }
-                c1.startFlush(true);
+                c1.startFlush(false);
+
+                try {
+                    stopFlushLatch.await();
+                } catch (InterruptedException e) {
+                    interrupt();
+                }
+
+                c1.stopFlush();
+
             }
         };
 
@@ -125,30 +154,36 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                 }
-                catch(InterruptedException e) {
+                catch (InterruptedException e) {
                     interrupt();
                 }
                 // partial, only between c2 and c3
                 c2.startFlush(Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress()), false);
+
+                try {
+                    stopFlushLatch.await();
+                } catch (InterruptedException e) {
+                    interrupt();
+                }
+
                 c2.stopFlush(Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress()));
             }
         };
 
-        Listener l1=new Listener(c1, stopFlushLatch, flushStopReceived);
-        Listener l2=new Listener(c2, stopFlushLatch, flushStopReceived);
-        Listener l3=new Listener(c3, stopFlushLatch, flushStopReceived);
+        Listener l1=new Listener(c1, flushStartReceived, flushStopReceived);
+        Listener l2=new Listener(c2, flushStartReceived, flushStopReceived);
+        Listener l3=new Listener(c3, flushStartReceived, flushStopReceived);
 
         t1.start();
         t2.start();
 
         startFlushLatch.countDown();
 
-        t1.join();
-        t2.join();
+        assertTrue(flushStartReceived.await(60, TimeUnit.SECONDS));
 
         // at this stage both channels should have started a flush?
         stopFlushLatch.countDown();
-        
+
         assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
 
         assertTrue(l1.blockReceived);
@@ -160,19 +195,18 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     }
 
 
-
     private static void assertViewsReceived(JChannel... channels) {
-        for(JChannel c : channels) assertEquals(c.getView().getMembers().size(), channels.length);
+        for (JChannel c : channels) assertEquals(c.getView().getMembers().size(), channels.length);
     }
 
     private static class Listener extends ExtendedReceiverAdapter {
         boolean blockReceived, unblockReceived;
         JChannel channel;
-        CountDownLatch stopFlushLatch, flushStopReceived;
+        CountDownLatch flushStartReceived, flushStopReceived;
 
-        Listener(JChannel channel, CountDownLatch stopFlushLatch, CountDownLatch flushStopReceived) {
+        Listener(JChannel channel, CountDownLatch flushStartReceived, CountDownLatch flushStopReceived) {
             this.channel=channel;
-            this.stopFlushLatch=stopFlushLatch;
+            this.flushStartReceived=flushStartReceived;
             this.flushStopReceived=flushStopReceived;
             this.channel.setReceiver(this);
         }
@@ -184,6 +218,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
         public void block() {
             blockReceived=true;
+            flushStartReceived.countDown();
         }
     }
 }
