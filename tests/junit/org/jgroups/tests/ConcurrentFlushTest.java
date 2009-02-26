@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.3 2009/02/26 14:36:09 loonix Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.4 2009/02/26 15:11:51 vlada Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -124,8 +124,10 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         final CountDownLatch startFlushLatch=new CountDownLatch(1);
         final CountDownLatch stopFlushLatch=new CountDownLatch(1);
 
+        //2 because either total or partial has to finish first
+        final CountDownLatch flushStartReceived=new CountDownLatch(2);
+        
         //5 because we have total and partial flush
-        final CountDownLatch flushStartReceived=new CountDownLatch(5);
         final CountDownLatch flushStopReceived=new CountDownLatch(5);
 
         Thread t1=new Thread() {
