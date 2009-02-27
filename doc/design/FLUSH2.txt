@@ -4,7 +4,7 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.5 2007/10/22 19:46:52 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.6 2009/02/27 08:13:25 belaban Exp $
 
 Prerequisites:
 - A flush is always started and stopped by the *same* member, both for joins and state transfer
@@ -83,3 +83,41 @@ Reconciliation phase (in NAKACK):
 - Sends XMIT requests for message not in local digest, but in digest received from REBROADCAST_MSGS
 - Wait until local digest (updated when missing messages are received) is same as digest received from REBROADCAST_MSGS
 - Takes suspects into account
+
+
+
+Concurrent total flushing (members={A,B,C,D})
+---------------------------------------------
+
+- In general, concurrent total flushes are not allowed
+
+- Concurrent flushes on the same member:
+  - The first thread to call Channel.startFlush() runs the flush phase
+  - Subsequent threads to call Channel.startFlush() block until the current flush phase has completed
+    (Channel.stopFlush())
+    
+- Concurrent flushes on different members:
+  - A.startFlush() and B.startFlush() are called concurrently
+  - A sends a START-FLUSH to all members, and so does B
+  - When a START-FLUSH is received, a flag 'flushing-in-progress' is set
+  - If flushing-in-progress cannot be set (because another flush protocol is running), we send back a
+    START-FLUSH-FAIL. (We might add a small timeout to block until flushing-in-progress can be acquired)
+  - On reception of a START-FLUSH-FAIL, we 'roll back' the flush, setting all of our acquired 'flushing-in-progess'
+    flags back to false
+  - SUMMARY: either A fails, or B fails, or both A and B fail in a concurrent flush phase (similar to concurrent
+    transactions)
+
+
+Concurrent partial flushing (members={A,B,C,D})
+-----------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
