@@ -4,7 +4,7 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.6 2009/02/27 08:13:25 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.7 2009/02/27 08:48:24 belaban Exp $
 
 Prerequisites:
 - A flush is always started and stopped by the *same* member, both for joins and state transfer
@@ -111,7 +111,11 @@ Concurrent total flushing (members={A,B,C,D})
 Concurrent partial flushing (members={A,B,C,D})
 -----------------------------------------------
 
+- In general, concurrent partial flushes are not allowed (same as for concurrent total flushes)
 
+- Example for Non Blocking State Transfer (JBossCache):
+  - B acquires state from A and C acquires state from A
+  - B acquires state from A and C acquires state from B
 
 
 
