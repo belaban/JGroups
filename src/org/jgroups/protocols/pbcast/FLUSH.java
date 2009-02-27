@@ -136,6 +136,8 @@ public class FLUSH extends Protocol {
     
     private final AtomicBoolean sentUnblock = new AtomicBoolean(false);
 
+
+
     public FLUSH(){
         super();
         currentView = new View(new ViewId(), new Vector<Address>());      
@@ -147,6 +149,22 @@ public class FLUSH extends Protocol {
 
     public String getName() {
         return NAME;
+    }
+
+    public long getStartFlushTimeout() {
+        return start_flush_timeout;
+    }
+
+    public void setStartFlushTimeout(long start_flush_timeout) {
+        this.start_flush_timeout=start_flush_timeout;
+    }
+
+    public long getRetryTimeout() {
+        return retry_timeout;
+    }
+
+    public void setRetryTimeout(long retry_timeout) {
+        this.retry_timeout=retry_timeout;
     }
 
     public void start() throws Exception {
@@ -588,7 +606,7 @@ public class FLUSH extends Protocol {
         synchronized(sharedLock){            
             suspected.retainAll(view.getMembers());
             currentView = view;
-            coordinatorLeft = view.getMembers().size()>0 && !view.containsMember(view.getCreator());            
+            coordinatorLeft =!view.getMembers().isEmpty() && !view.containsMember(view.getCreator());            
         }      
         if(log.isDebugEnabled())
             log.debug("Installing view at  " + localAddress + " view is " + view);
