@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.5 2009/02/27 09:13:42 belaban Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.6 2009/02/27 09:18:10 belaban Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -74,7 +74,54 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         assert rc;
 
         rc=startFlush(c1, true);
+
+        rc=startFlush(c2, true);
     }
+
+    /**
+     * Tests A.startFlush(), followed by another A.startFlush()
+     */
+    public void testTwoStartFlushesOnDifferentMembersWithTotalFlush() throws Exception {
+        c1=createChannel(true, 3);
+        c1.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
+        c2=createChannel(c1);
+        c2.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
+        assertViewsReceived(c1, c2);
+
+        setTimeoutsInFLUSH(c1, 500);
+
+        boolean rc=startFlush(c1, false);
+        assert rc;
+
+        rc=startFlush(c2, false);
+        assert !rc;
+
+        setTimeoutsInFLUSH(c1, 4000);
+
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                stopFlush(c1);
+            }
+        }.start();
+
+        rc=startFlush(c2, false);
+        assert rc;
+        setTimeoutsInFLUSH(c1, 300);
+        stopFlush(c2);
+
+        rc=startFlush(c1, false);
+        assert rc;
+        stopFlush(c1);
+
+        rc=startFlush(c2, true);
+        assert rc;
+
+        rc=startFlush(c1, true);
+
+        rc=startFlush(c2, true);
+    }
+
 
     private static void setTimeoutsInFLUSH(JChannel ch, long timeout) {
         FLUSH flush=(FLUSH)ch.getProtocolStack().findProtocol(FLUSH.class);
