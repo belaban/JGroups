@@ -3,6 +3,8 @@ package org.jgroups.tests;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.Channel;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -15,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.4 2009/02/26 15:11:51 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.5 2009/02/27 09:13:42 belaban Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -29,6 +31,57 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
     public boolean useBlocking() {
         return true;
+    }
+
+
+    /**
+     * Tests A.startFlush(), followed by another A.startFlush()
+     */
+    public void testTwoStartFlushesOnSameMemberWithTotalFlush() throws Exception {
+        c1=createChannel(true, 3);
+        c1.connect("testTwoStartFlushes");
+        c2=createChannel(c1);
+        c2.connect("testTwoStartFlushes");
+        assertViewsReceived(c1, c2);
+
+        setTimeoutsInFLUSH(c1, 500);
+
+        boolean rc=startFlush(c1, false);
+        assert rc;
+
+        rc=startFlush(c1, false);
+        assert !rc;
+
+        setTimeoutsInFLUSH(c1, 4000);
+
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                stopFlush(c1);
+            }
+        }.start();
+
+        rc=startFlush(c1, false);
+        assert rc;
+        stopFlush(c1);
+        setTimeoutsInFLUSH(c1, 300);
+
+        rc=startFlush(c1, false);
+        assert rc;
+        stopFlush(c1);
+
+        rc=startFlush(c1, true);
+        assert rc;
+
+        rc=startFlush(c1, true);
+    }
+
+    private static void setTimeoutsInFLUSH(JChannel ch, long timeout) {
+        FLUSH flush=(FLUSH)ch.getProtocolStack().findProtocol(FLUSH.class);
+        if(flush != null) {
+            flush.setRetryTimeout(timeout);
+            flush.setStartFlushTimeout(timeout);
+        }
     }
 
     /**
@@ -194,6 +247,16 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         assertTrue(l2.unblockReceived);
         assertTrue(l3.blockReceived);
         assertTrue(l3.unblockReceived);
+    }
+
+    private static boolean startFlush(Channel ch, boolean automatic_resume) {
+        System.out.println("starting flush on " + ch.getLocalAddress() + " with automatic resume=" + automatic_resume);
+        return ch.startFlush(automatic_resume);
+    }
+
+    private static void stopFlush(Channel ch) {
+        System.out.println("calling stopFlush()");
+        ch.stopFlush();
     }
 
 
