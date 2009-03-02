@@ -4,7 +4,7 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.7 2009/02/27 08:48:24 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.8 2009/03/02 07:29:19 belaban Exp $
 
 Prerequisites:
 - A flush is always started and stopped by the *same* member, both for joins and state transfer
@@ -86,6 +86,25 @@ Reconciliation phase (in NAKACK):
 
 
 
+
+Concurrent flushes
+------------------
+
+- Concurrent flushes to overlapping member sets will cause only 1 flush to succeed, and all others to fail
+
+- A failed flush set the flushInProgress flag back to false on all members on which it successfully set it
+
+- Algorithm:
+  - Send a START-FLUSH to all members in the target set
+  - Every member sets the flushInProgress flag to true
+    - If this succeeds, the member sends back an OK
+    - Else a FAIL is sent back
+  - If we received OKs from all members, startFlush() succeeded and returns true
+  - If 1 FAIL is received:
+    - Send an ABORT-FLUSH to all members which took part in the flush, causes flushInProgress to be set to false
+    - startFlush() failed and returns false
+
+
 Concurrent total flushing (members={A,B,C,D})
 ---------------------------------------------
 
@@ -113,9 +132,7 @@ Concurrent partial flushing (members={A,B,C,D})
 
 - In general, concurrent partial flushes are not allowed (same as for concurrent total flushes)
 
-- Example for Non Blocking State Transfer (JBossCache):
-  - B acquires state from A and C acquires state from A
-  - B acquires state from A and C acquires state from B
+
 
 
 
