@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.6 2009/02/27 09:18:10 belaban Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.7 2009/03/03 15:05:35 vlada Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -37,6 +37,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests A.startFlush(), followed by another A.startFlush()
      */
+    @Test(enabled=false)
     public void testTwoStartFlushesOnSameMemberWithTotalFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testTwoStartFlushes");
