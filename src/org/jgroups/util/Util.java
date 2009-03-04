@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.188 2009/03/04 13:21:56 vlada Exp $
+ * @version $Id: Util.java,v 1.189 2009/03/04 16:07:02 vlada Exp $
  */
 public class Util {
 
@@ -2431,11 +2431,11 @@ public class Util {
         return sb.toString();
     }
     
-    protected static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts, long randomSleepTimeout) {
+    public static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts, long randomSleepTimeout) {
     	boolean successfulFlush = false;
         int attemptCount = 0;
         while(attemptCount < numberOfAttempts){
-        	successfulFlush = c.startFlush(flushParticipants,false);
+        	successfulFlush = c.startFlush(flushParticipants, false);
         	if(successfulFlush)
         		break;
         	Util.sleepRandom(randomSleepTimeout);
@@ -2444,11 +2444,11 @@ public class Util {
         return successfulFlush;
     }
     
-    protected static boolean startFlush(Channel c, List<Address> flushParticipants) {
+    public static boolean startFlush(Channel c, List<Address> flushParticipants) {
     	return startFlush(c,flushParticipants,4,3000);
     }
 
-    protected static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeout) {
+    public static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeout) {
     	boolean successfulFlush = false;
         int attemptCount = 0;
         while(attemptCount < numberOfAttempts){
@@ -2461,7 +2461,7 @@ public class Util {
         return successfulFlush;
     }
     
-    protected static boolean startFlush(Channel c) {
+    public static boolean startFlush(Channel c) {
     	return startFlush(c,4,3000);
     }
 
