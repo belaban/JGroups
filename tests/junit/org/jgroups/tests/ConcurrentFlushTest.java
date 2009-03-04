@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.9 2009/03/04 17:15:49 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.10 2009/03/04 18:35:11 vlada Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -25,7 +25,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        Util.close(c1, c2, c3);
+        Util.close(c3, c2, c1);
     }
 
     public boolean useBlocking() {
@@ -36,6 +36,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests A.startFlush(), followed by another A.startFlush()
      */
+    @Test(enabled=true)
     public void testTwoStartFlushesOnSameMemberWithTotalFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testTwoStartFlushes");
@@ -47,7 +48,6 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
         new Thread() {
             public void run() {
-                Util.sleep(1000);
                 stopFlush(c1);
             }
         }.start();
@@ -86,7 +86,6 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
         new Thread() {
             public void run() {
-                Util.sleep(1000);
                 stopFlush(c1);
             }
         }.start();
@@ -110,6 +109,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests 2 channels calling FLUSH simultaneously
      */
+    @Test(enabled=true)
     public void testConcurrentFlush() throws Exception {
         c1=createChannel(true, 2);
         c1.connect("testConcurrentFlush");
@@ -186,6 +186,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests 2 channels calling partial FLUSHes and one calling FLUSH simultaneously
      */
+    @Test(enabled=true)
     public void testConcurrentFlushAndPartialFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testConcurrentFlushAndPartialFlush");
