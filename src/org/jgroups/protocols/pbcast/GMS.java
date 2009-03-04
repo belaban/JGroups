@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.154 2008/12/05 09:21:13 belaban Exp $
+ * @version $Id: GMS.java,v 1.155 2009/03/04 17:15:52 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -709,13 +709,20 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view) {
+    boolean startFlush(View new_view, int maxAttempts,long randomFloor, long randomCeiling) {
         boolean successfulFlush=true;
         boolean validView=new_view != null && new_view.size() > 0;
         if(validView && flushProtocolInStack) {
-            successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND,
-                                                          new ArrayList<Address>(new_view.getMembers())));
-
+        	
+        	int attemptCount = 0;
+            while(attemptCount < maxAttempts){
+            	successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+            	if(successfulFlush)
+            		break;
+            	Util.sleepRandom(randomFloor,randomCeiling);
+            	attemptCount++;
+            }
+            
             if(successfulFlush) {
                 if(log.isTraceEnabled())
                     log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
@@ -1171,7 +1178,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.154 2008/12/05 09:21:13 belaban Exp $
+     * @version $Id: GMS.java,v 1.155 2009/03/04 17:15:52 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

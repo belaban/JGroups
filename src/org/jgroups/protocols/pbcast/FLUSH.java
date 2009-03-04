@@ -218,42 +218,26 @@ public class FLUSH extends Protocol {
             log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
     	
     	List<Address> flushParticipants = (List<Address>) evt.getArg();
-        return startFlush(flushParticipants, flush_retry_count, false);
+        return startFlush(flushParticipants);
     }
     
-    private boolean startFlush(List<Address> flushParticipants, int numberOfAttempts, boolean force) {
-        boolean successfulFlush = false;
-        if(!flushInProgress.get() || force){
-        	Boolean result=flush_promise.getResult(100);
-            successfulFlush = result !=null && result.booleanValue();
-            if(!successfulFlush){
-	            flush_promise.reset();                                 
-	                       
-	            onSuspend(flushParticipants);
-	            try{
-	                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
-	                successfulFlush = r.booleanValue();
-	            }catch(TimeoutException e){
-	                if(log.isDebugEnabled())
-	                    log.debug("At " + localAddress
-	                              + " timed out waiting for flush responses after "
-	                              + start_flush_timeout
-	                            + " msec");
-	            }
-            }
-        }
-
-        if(!successfulFlush && numberOfAttempts > 0) {
-            waitForFlushCompletion(retry_timeout);
-            if(log.isDebugEnabled()) {
-                log.debug("Retrying FLUSH at " + localAddress
-                          + ". Attempts left "
-                          + numberOfAttempts);
-            }
-            successfulFlush=startFlush(flushParticipants, --numberOfAttempts, true);
-        }
-        return successfulFlush;
-    }
+    private boolean startFlush(List<Address> flushParticipants) {
+		boolean successfulFlush = false;
+		if (!flushInProgress.get()) {
+			flush_promise.reset();
+			onSuspend(flushParticipants);
+			try {
+				Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
+				successfulFlush = r.booleanValue();
+			} catch (TimeoutException e) {
+				if (log.isDebugEnabled())
+					log.debug("At " + localAddress
+							+ " timed out waiting for flush responses after "
+							+ start_flush_timeout + " msec");
+			}
+		}
+		return successfulFlush;
+	}
 
     @ManagedOperation(description="Request end of flush in a cluster")
     public void stopFlush() {

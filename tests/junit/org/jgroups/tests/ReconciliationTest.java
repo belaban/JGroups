@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.19 2008/11/26 00:22:04 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.20 2009/03/04 17:15:49 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -89,7 +89,7 @@ public class ReconciliationTest extends ChannelTestBase {
         FlushTrigger t=new FlushTrigger() {
             public void triggerFlush() {
                 JChannel channel=channels.get(0);
-                boolean rc=channel.startFlush(false);
+                boolean rc=Util.startFlush(channel);
                 log.info("manual flush success=" + rc);
                 channel.stopFlush();
             };
@@ -321,7 +321,8 @@ public class ReconciliationTest extends ChannelTestBase {
 
     private static void flush(Channel channel, long timeout) {
         if(channel.flushSupported()) {
-            boolean success=channel.startFlush(true);
+            boolean success=Util.startFlush(channel);
+            channel.stopFlush();
             System.out.println("startFlush(): " + success);
             assertTrue(success);
         }

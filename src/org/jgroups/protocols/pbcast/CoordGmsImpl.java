@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.93 2008/06/19 15:48:11 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.94 2009/03/04 17:15:51 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -195,7 +195,7 @@ public class CoordGmsImpl extends GmsImpl {
         //[JGRP-700] - FLUSH: flushing should span merge
         
         /*if flush is in stack, let this coordinator flush its cluster island */
-        boolean suceesfulFlush = gms.startFlush(view);
+        boolean suceesfulFlush = gms.startFlush(view,4,1000,5000);
         if(suceesfulFlush) {
             digest=gms.getDigest();
             sendMergeResponse(sender, view, digest);
@@ -393,7 +393,7 @@ public class CoordGmsImpl extends GmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            boolean successfulFlush = gms.startFlush(new_view);
+            boolean successfulFlush = gms.startFlush(new_view,4,1000,5000);
             if(!successfulFlush && hasJoiningMembers){
                 //see http://jira.jboss.org/jira/browse/JGRP-759
                 //We should NOT send back a join response if the flush fails. 

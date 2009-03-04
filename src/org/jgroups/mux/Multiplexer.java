@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.105 2008/05/29 08:22:05 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.106 2009/03/04 17:16:01 vlada Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -250,7 +250,7 @@ public class Multiplexer implements UpHandler {
     private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException,
                                                                                       ChannelNotConnectedException {
         boolean rc, all_tranfers_ok=false;
-        boolean flushStarted=channel.startFlush(false);
+        boolean flushStarted=Util.startFlush(channel);
         if(flushStarted) {
             try {
                 for(String stateId:keys) {
@@ -546,7 +546,10 @@ public class Multiplexer implements UpHandler {
     }
 
     boolean startFlush(boolean automatic_resume) {
-        return channel.startFlush(automatic_resume);
+    	boolean result = Util.startFlush(channel);
+    	if(automatic_resume)
+    		channel.stopFlush();
+    	return result;
     }
 
     void stopFlush() {
