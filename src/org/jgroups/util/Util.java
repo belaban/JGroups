@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.187 2009/02/12 16:39:34 vlada Exp $
+ * @version $Id: Util.java,v 1.188 2009/03/04 13:21:56 vlada Exp $
  */
 public class Util {
 
@@ -2429,6 +2429,40 @@ public class Util {
         else
             sb.append(hostname);
         return sb.toString();
+    }
+    
+    protected static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts, long randomSleepTimeout) {
+    	boolean successfulFlush = false;
+        int attemptCount = 0;
+        while(attemptCount < numberOfAttempts){
+        	successfulFlush = c.startFlush(flushParticipants,false);
+        	if(successfulFlush)
+        		break;
+        	Util.sleepRandom(randomSleepTimeout);
+        	attemptCount++;
+        }
+        return successfulFlush;
+    }
+    
+    protected static boolean startFlush(Channel c, List<Address> flushParticipants) {
+    	return startFlush(c,flushParticipants,4,3000);
+    }
+
+    protected static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeout) {
+    	boolean successfulFlush = false;
+        int attemptCount = 0;
+        while(attemptCount < numberOfAttempts){
+        	successfulFlush = c.startFlush(false);
+        	if(successfulFlush)
+        		break;
+        	Util.sleepRandom(randomSleepTimeout);
+        	attemptCount++;
+        }
+        return successfulFlush;
+    }
+    
+    protected static boolean startFlush(Channel c) {
+    	return startFlush(c,4,3000);
     }
 
     public static String shortName(InetAddress hostname) {
