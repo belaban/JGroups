@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.8 2009/03/04 13:38:47 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.9 2009/03/04 17:15:49 vlada Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -131,7 +131,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 catch (InterruptedException e) {
                     interrupt();
                 }
-                c1.startFlush(false);
+                Util.startFlush(c1);
 
                 try {
                     stopFlushLatch.await();
@@ -151,7 +151,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 catch (InterruptedException e) {
                     interrupt();
                 }
-                c2.startFlush(false);
+                Util.startFlush(c2);
 
                 try {
                     stopFlushLatch.await();
@@ -214,7 +214,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 catch (InterruptedException e) {
                     interrupt();
                 }
-                c1.startFlush(false);
+                Util.startFlush(c1);
 
                 try {
                     stopFlushLatch.await();
@@ -236,8 +236,8 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                     interrupt();
                 }
                 // partial, only between c2 and c3
-                c2.startFlush(Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress()), false);
-
+                Util.startFlush(c2, (Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress())));
+                
                 try {
                     stopFlushLatch.await();
                 } catch (InterruptedException e) {
@@ -274,7 +274,11 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
     private static boolean startFlush(Channel ch, boolean automatic_resume) {
         System.out.println("starting flush on " + ch.getLocalAddress() + " with automatic resume=" + automatic_resume);
-        return ch.startFlush(automatic_resume);
+        boolean result = Util.startFlush(ch);
+        if(automatic_resume){
+        	ch.stopFlush();
+        }
+        return result;
     }
 
     private static void stopFlush(Channel ch) {
