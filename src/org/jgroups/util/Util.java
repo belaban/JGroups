@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.190 2009/03/04 17:16:04 vlada Exp $
+ * @version $Id: Util.java,v 1.191 2009/03/04 17:44:47 vlada Exp $
  */
 public class Util {
 
@@ -1235,7 +1235,6 @@ public class Util {
         }
         long diff = ceiling - floor;
         long r=(int)((Math.random() * 100000) % diff) + floor;
-        System.out.println("sleeping " + r);
         sleep(r);
     }
 
