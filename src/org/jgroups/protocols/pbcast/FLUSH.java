@@ -57,7 +57,7 @@ public class FLUSH extends Protocol {
     private long timeout = 8000;
      
     @Property(description="Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2500 msec")
-    private long start_flush_timeout = 1500;
+    private long start_flush_timeout = 2000;
     
     @Property(description="Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
     private long retry_timeout = 2000;
@@ -280,10 +280,6 @@ public class FLUSH extends Protocol {
                 sentBlock.set(false); // set the var back to its original state if we cannot connect successfully
             }
             return result;
-            
-        case Event.DISCONNECT:
-            waitForFlushCompletion(retry_timeout);
-            break;
 
         case Event.SUSPEND:
             return startFlush(evt);
@@ -367,11 +363,11 @@ public class FLUSH extends Protocol {
                         }
                         break;                               
                     case FlushHeader.FLUSH_NOT_COMPLETED:
-                    	flush_promise.setResult(Boolean.FALSE);
                     	synchronized(sharedLock){                      
                             flushCompletedMap.clear();
                         }
                     	rejectFlush(fh.flushParticipants, fh.viewID);
+                    	flush_promise.setResult(Boolean.FALSE);
                     	break;
                     	
                     case FlushHeader.FLUSH_COMPLETED:
@@ -454,16 +450,6 @@ public class FLUSH extends Protocol {
         }
 
         return up_prot.up(evt);
-    }
-    
-    private boolean waitForFlushCompletion(long timeout){
-        long start_time = System.currentTimeMillis(), backofftime = timeout;
-        while (backofftime > 0 && flushInProgress.get()) {
-        	//sleep min 100 msec and max 600 msec
-            Util.sleep(100 + Util.random(1000));
-            backofftime = timeout - (System.currentTimeMillis() - start_time);            
-        }
-        return backofftime < 0; 
     }
 
     private void onFlushReconcileOK(Message msg) {
