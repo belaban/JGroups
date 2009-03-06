@@ -357,16 +357,7 @@ public class FLUSH extends Protocol {
                         onStopFlush();
                         break;
                     case FlushHeader.ABORT_FLUSH: 
-                    	boolean isFromCurrentCoordinator = msg.getSrc().equals(flushCoordinator);
-                    	if (log.isDebugEnabled()) {
-							log.debug("At " + localAddress
-									+ " received ABORT_FLUSH from " + msg.getSrc()
-									+ ", isFromCurrentCoordinator="
-									+ isFromCurrentCoordinator);
-                    	}
-                        if(isFromCurrentCoordinator){
-                        	flushInProgress.set(false);
-                        }
+                    	flushInProgress.set(false);                       
                         break;                               
                     case FlushHeader.FLUSH_NOT_COMPLETED:
                     	if (log.isDebugEnabled()) {
