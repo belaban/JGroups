@@ -104,7 +104,11 @@ public class FLUSH extends Protocol {
     private final AtomicInteger viewCounter = new AtomicInteger(0);  
 
     @GuardedBy("sharedLock")
-    private final Map<Address, Digest> flushCompletedMap;    
+    private final Map<Address, Digest> flushCompletedMap;   
+   
+    @GuardedBy("sharedLock")
+    private final List<Address> flushNotCompletedMap;   
+     
 
     @GuardedBy("sharedLock")
     private final Set<Address> suspected;
@@ -142,6 +146,7 @@ public class FLUSH extends Protocol {
         super();
         currentView = new View(new ViewId(), new Vector<Address>());      
         flushCompletedMap = new HashMap<Address, Digest>();        
+        flushNotCompletedMap = new ArrayList<Address>();
         reconcileOks = new ArrayList<Address>();
         flushMembers = new ArrayList<Address>();
         suspected = new TreeSet<Address>();
@@ -183,7 +188,8 @@ public class FLUSH extends Protocol {
     public void stop() {
         synchronized(sharedLock){
             currentView = new View(new ViewId(), new Vector<Address>());
-            flushCompletedMap.clear();                       
+            flushCompletedMap.clear();               
+            flushNotCompletedMap.clear();
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
@@ -356,8 +362,11 @@ public class FLUSH extends Protocol {
                     case FlushHeader.STOP_FLUSH:
                         onStopFlush();
                         break;
-                    case FlushHeader.ABORT_FLUSH: 
-                    	flushInProgress.set(false);                       
+                    case FlushHeader.ABORT_FLUSH:                     	
+                    	Collection<Address> flushParticipants = fh.flushParticipants;
+                    	if(flushParticipants != null && flushParticipants.contains(localAddress)){
+                    		flushInProgress.set(false);	
+                    	}
                         break;                               
                     case FlushHeader.FLUSH_NOT_COMPLETED:
                     	if (log.isDebugEnabled()) {
@@ -365,16 +374,24 @@ public class FLUSH extends Protocol {
 									+ " received FLUSH_NOT_COMPLETED from "
 									+ msg.getSrc());
                     	}
-                    	synchronized(sharedLock){                      
-                            flushCompletedMap.clear();
-                        }
-                    	rejectFlush(fh.flushParticipants, fh.viewID);
+                    	boolean flushCollision = false;
+                    	synchronized(sharedLock){
+                    		flushNotCompletedMap.add(msg.getSrc());
+                            flushCollision = !flushCompletedMap.isEmpty();
+                            if(flushCollision){
+                            	flushNotCompletedMap.clear();
+                            	flushCompletedMap.clear();
+                            }
+                        }                    	
+                    	if(flushCollision){
+                    		rejectFlush(fh.flushParticipants, fh.viewID);
+                    	}
                     	flush_promise.setResult(Boolean.FALSE);
                     	break;
                     	
                     case FlushHeader.FLUSH_COMPLETED:
                         if(isCurrentFlushMessage(fh))
-                            onFlushCompleted(msg.getSrc(), fh.digest);
+                            onFlushCompleted(msg.getSrc(), fh);
                         break;
                 }
                 return null; // do not pass FLUSH msg up
@@ -518,7 +535,7 @@ public class FLUSH extends Protocol {
     private void rejectFlush(Collection<Address> participants,long viewId) {
     	for(Address flushMember:participants){
     		Message reject = new Message(flushMember, localAddress, null);
-            reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH,viewId));
+            reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH,viewId,participants));
             down_prot.down(new Event(Event.MSG, reject));
     	}
 	}
@@ -578,7 +595,8 @@ public class FLUSH extends Protocol {
         }
                             
         synchronized(sharedLock){                     
-            flushCompletedMap.clear();                     
+            flushCompletedMap.clear();
+            flushNotCompletedMap.clear();
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
@@ -686,7 +704,7 @@ public class FLUSH extends Protocol {
             }
 
             Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
-            FlushHeader fhr=new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID);
+            FlushHeader fhr=new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID,fh.flushParticipants);
             fhr.addDigest(digest);
 
             Message msg=new Message(flushStarter);
@@ -700,15 +718,18 @@ public class FLUSH extends Protocol {
               
     }
     
-    private void onFlushCompleted(Address address, Digest digest) {        
+    private void onFlushCompleted(Address address, FlushHeader header) {        
         Message msg = null;
         boolean needsReconciliationPhase = false;
+        boolean collision = false;
+        Digest digest = header.digest;
         synchronized(sharedLock){
             flushCompletedMap.put(address, digest);
             flushCompleted = flushCompletedMap.size() >= flushMembers.size()
 					&& !flushMembers.isEmpty()
 					&& flushCompletedMap.keySet().containsAll(flushMembers);           
 
+            collision = !flushNotCompletedMap.isEmpty();
             if(log.isDebugEnabled())
                 log.debug("At " + localAddress
                           + " FLUSH_COMPLETED from "
@@ -742,6 +763,9 @@ public class FLUSH extends Protocol {
                 flushCompletedMap.clear();
             } else if (flushCompleted){
                 flushCompletedMap.clear();
+            } else if (collision){
+            	flushNotCompletedMap.clear();
+            	flushCompletedMap.clear();
             }
         }
         if(needsReconciliationPhase){
@@ -750,6 +774,8 @@ public class FLUSH extends Protocol {
             flush_promise.setResult(Boolean.TRUE);
             if(log.isDebugEnabled())
                 log.debug("All FLUSH_COMPLETED received at " + localAddress);
+        }else if(collision){
+        	rejectFlush(header.flushParticipants,header.viewID);
         }
     }
 
