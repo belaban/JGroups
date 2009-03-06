@@ -823,6 +823,7 @@ public class FLUSH extends Protocol {
     	
     	//handles FlushTest#testFlushWithCrashedFlushCoordinator
         boolean amINeighbourOfCrashedFlushCoordinator = false;
+        ArrayList<Address> flushMembersCopy = null;
         synchronized(sharedLock){
         	boolean flushCoordinatorSuspected = address.equals(flushCoordinator);
         	if(flushCoordinatorSuspected && flushMembers != null){
@@ -830,13 +831,16 @@ public class FLUSH extends Protocol {
 	        	int myIndex = flushMembers.indexOf(localAddress);
 	        	int diff = myIndex - indexOfCoordinator;
 	        	amINeighbourOfCrashedFlushCoordinator = (diff == 1 || (myIndex==0 && indexOfCoordinator == flushMembers.size()));
+	        	if(amINeighbourOfCrashedFlushCoordinator){
+	        		flushMembersCopy = new ArrayList<Address>(flushMembers);
+	        	}
         	}
         }
         if(amINeighbourOfCrashedFlushCoordinator){
         	if(log.isDebugEnabled())
         		log.debug("Flush coordinator " + flushCoordinator + " suspected, " + localAddress + " is neighbour, completing flush ");
     		
-        	onResume(new Event(Event.RESUME, flushMembers));
+        	onResume(new Event(Event.RESUME, flushMembersCopy));
     	}
         
         //handles FlushTest#testFlushWithCrashedNonCoordinators
