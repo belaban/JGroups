@@ -364,6 +364,12 @@ public class FLUSH extends Protocol {
                         break;
                     case FlushHeader.ABORT_FLUSH:                     	
                     	Collection<Address> flushParticipants = fh.flushParticipants;
+                    	if (log.isDebugEnabled()) {
+							log.debug("At " + localAddress
+									+ " received ABORT_FLUSH from " + msg.getSrc()
+									+ ",  am i flush participant "
+									+ flushParticipants.contains(localAddress));
+						}
                     	if(flushParticipants != null && flushParticipants.contains(localAddress)){
                     		flushInProgress.set(false);	
                     	}
@@ -382,7 +388,14 @@ public class FLUSH extends Protocol {
                             	flushNotCompletedMap.clear();
                             	flushCompletedMap.clear();
                             }
-                        }                    	
+                        }     
+                    	
+                    	if (log.isDebugEnabled()) {
+							log.debug("At " + localAddress
+									+ " received FLUSH_NOT_COMPLETED from "
+									+ msg.getSrc() + " collision=" + flushCollision);
+                    	}
+                    	
                     	if(flushCollision){
                     		rejectFlush(fh.flushParticipants, fh.viewID);
                     	}
