@@ -631,7 +631,6 @@ public class FLUSH extends Protocol {
             sendUnBlockUpToChannel();                  
         }                
         flushInProgress.set(false);
-        flush_promise.setResult(Boolean.FALSE);
     }
 
     private void onSuspend(List<Address> members) {
