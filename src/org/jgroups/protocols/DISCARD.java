@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.26 2008/11/27 15:42:02 vlada Exp $
+// $Id: DISCARD.java,v 1.27 2009/03/10 16:49:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,11 +12,15 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+import javax.swing.*;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 
 /**
@@ -44,6 +48,11 @@ public class DISCARD extends Protocol {
     // number of subsequent multicasts to drop in the down direction
     int drop_down_multicasts=0;
 
+    private DiscardDialog discard_dialog=null;
+
+    @Property(name="gui", description="use a GUI or not")
+    protected boolean use_gui=false;
+
     
     /**
      * All protocol names have to be unique !
@@ -67,6 +76,8 @@ public class DISCARD extends Protocol {
     
     public void setLocalAddress(Address localAddress){
     	this.localAddress =localAddress;
+        if(discard_dialog != null)
+            discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
     }
 
     public void setExcludeItself(boolean excludeItself) {
@@ -117,6 +128,16 @@ public class DISCARD extends Protocol {
 
     public void start() throws Exception {
         super.start();
+        if(use_gui) {
+            discard_dialog=new DiscardDialog();
+            discard_dialog.init();
+        }
+    }
+
+    public void stop() {
+        super.stop();
+        if(discard_dialog != null)
+            discard_dialog.dispose();
     }
 
     public Object up(Event evt) {
@@ -291,4 +312,37 @@ public class DISCARD extends Protocol {
 			out.writeObject(dropMessages);
 		}
 	}
+
+
+    private class DiscardDialog extends JFrame implements ActionListener {
+        private JButton start_discarding_button=new JButton("start discarding");
+        private JButton stop_discarding_button=new JButton("stop discarding");
+        JPanel panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        private DiscardDialog() {
+        }
+
+        void init() {
+            panel.add(start_discarding_button);
+            panel.add(stop_discarding_button);
+            start_discarding_button.addActionListener(this);
+            stop_discarding_button.addActionListener(this);
+            add(panel);
+            setContentPane(panel);
+            pack();
+            setVisible(true);
+            setTitle("Discard dialog (" + localAddress + ")");
+        }
+
+
+        public void actionPerformed(ActionEvent e) {
+            String command=e.getActionCommand();
+            if(command.startsWith("start")) {
+                discard_all=true;
+            }
+            else if(command.startsWith("stop")) {
+                discard_all=false;
+            }
+        }
+    }
 }
