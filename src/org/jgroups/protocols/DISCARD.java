@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.27 2009/03/10 16:49:48 belaban Exp $
+// $Id: DISCARD.java,v 1.28 2009/03/10 16:58:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -144,8 +144,11 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS)
+        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
             localAddress=(Address)evt.getArg();
+            if(discard_dialog != null)
+                discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
+        }
 
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
