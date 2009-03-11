@@ -364,14 +364,17 @@ public class FLUSH extends Protocol {
                         break;
                     case FlushHeader.ABORT_FLUSH:                     	
                     	Collection<Address> flushParticipants = fh.flushParticipants;
-                    	if (log.isDebugEnabled()) {
-							log.debug("At " + localAddress
-									+ " received ABORT_FLUSH from " + msg.getSrc()
-									+ ",  am i flush participant "
-									+ flushParticipants.contains(localAddress));
-						}
+						
                     	if(flushParticipants != null && flushParticipants.contains(localAddress)){
+                    		if (log.isDebugEnabled()) {
+    							log.debug("At " + localAddress
+    									+ " received ABORT_FLUSH from flush coordinator " + msg.getSrc()
+    									+ ",  am i flush participant="
+    									+ flushParticipants.contains(localAddress));
+                    		}
                     		flushInProgress.set(false);	
+                    		flushNotCompletedMap.clear();
+                        	flushCompletedMap.clear();
                     	}
                         break;                               
                     case FlushHeader.FLUSH_NOT_COMPLETED:
@@ -384,10 +387,6 @@ public class FLUSH extends Protocol {
                     	synchronized(sharedLock){
                     		flushNotCompletedMap.add(msg.getSrc());
                             flushCollision = !flushCompletedMap.isEmpty();
-                            if(flushCollision){
-                            	flushNotCompletedMap.clear();
-                            	flushCompletedMap.clear();
-                            }
                         }     
                     	
                     	if (log.isDebugEnabled()) {
@@ -775,10 +774,7 @@ public class FLUSH extends Protocol {
                 flushCompletedMap.clear();
             } else if (flushCompleted){
                 flushCompletedMap.clear();
-            } else if (collision){
-            	flushNotCompletedMap.clear();
-            	flushCompletedMap.clear();
-            }
+            } 
         }
         if(needsReconciliationPhase){
             down_prot.down(new Event(Event.MSG, msg));
