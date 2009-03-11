@@ -387,6 +387,10 @@ public class FLUSH extends Protocol {
                     	synchronized(sharedLock){
                     		flushNotCompletedMap.add(msg.getSrc());
                             flushCollision = !flushCompletedMap.isEmpty();
+                            if(flushCollision){
+                            	flushNotCompletedMap.clear();
+                            	flushCompletedMap.clear();
+                            }
                         }     
                     	
                     	if (log.isDebugEnabled()) {
@@ -774,7 +778,10 @@ public class FLUSH extends Protocol {
                 flushCompletedMap.clear();
             } else if (flushCompleted){
                 flushCompletedMap.clear();
-            } 
+            } else if (collision){
+            	flushNotCompletedMap.clear();
+            	flushCompletedMap.clear();
+            }
         }
         if(needsReconciliationPhase){
             down_prot.down(new Event(Event.MSG, msg));
