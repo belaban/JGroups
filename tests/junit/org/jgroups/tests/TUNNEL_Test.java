@@ -24,9 +24,9 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.4 2009/03/12 18:26:33 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.5 2009/03/12 19:06:33 vlada Exp $
  **/
-@Test(enabled=false,groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT, "known-failures"},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
     private JChannel channel, coordinator;
     private final static String GROUP="TUNNEL_Test";

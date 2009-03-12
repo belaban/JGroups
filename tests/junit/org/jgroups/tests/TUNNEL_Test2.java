@@ -18,11 +18,10 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.8 2009/03/12 17:38:41 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.9 2009/03/12 19:06:33 vlada Exp $
  **/
 
-//TODO investigate while it fails on Hudson
-@Test(enabled=false,groups = Global.STACK_INDEPENDENT, sequential = true)
+@Test(groups={Global.STACK_INDEPENDENT, "known-failures"}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
 	private JChannel channel, coordinator;
 	private final static String GROUP = "TUNNEL_Test2";
