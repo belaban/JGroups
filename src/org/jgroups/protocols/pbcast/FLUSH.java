@@ -336,7 +336,7 @@ public class FLUSH extends Protocol {
         switch(evt.getType()){
         case Event.MSG:
             Message msg = (Message) evt.getArg();
-            FlushHeader fh = (FlushHeader) msg.getHeader(getName());
+            final FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if(fh != null){
                 switch(fh.type){
                     case FlushHeader.FLUSH_BYPASS:
@@ -399,9 +399,18 @@ public class FLUSH extends Protocol {
 									+ msg.getSrc() + " collision=" + flushCollision);
                     	}
                     	
+                    	//reject flush if we have at least one OK and at least one FAIL
                     	if(flushCollision){
-                    		rejectFlush(fh.flushParticipants, fh.viewID);
+                    		Runnable r = new Runnable(){
+                    			public void run() {
+                    				//wait a bit so ABORTs do not get received before other possible FLUSH_COMPLETED
+                    				Util.sleep(1000);
+                    				rejectFlush(fh.flushParticipants, fh.viewID);
+								}
+                    		};
+                    		new Thread(r).start();                    	
                     	}
+                    	//however, flush should fail/retry as soon as one FAIL is received
                     	flush_promise.setResult(Boolean.FALSE);
                     	break;
                     	
