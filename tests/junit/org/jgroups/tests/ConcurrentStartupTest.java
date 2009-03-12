@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.48 2008/11/21 14:41:07 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.49 2009/03/12 15:54:45 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -97,8 +97,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 // working
                 channels[i].start();
                 semaphore.release(1);
-                //sleep at least a second and max second and a half
-                Util.sleepRandom(1500);
+                //sleep a second and half thus avoiding merges
+                Util.sleep(1500);
             }
 
             // Make sure everyone is in sync
