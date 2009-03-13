@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.17 2006/11/17 13:39:20 belaban Exp $
+// $Id: Configurator.java,v 1.16.6.1 2009/03/13 12:30:19 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -11,6 +11,10 @@ import org.jgroups.util.Util;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.StringReader;
+import java.io.Reader;
 
 
 /**
@@ -71,6 +75,7 @@ public class Configurator {
 
     public void startProtocolStack(Protocol bottom_prot) {
         while(bottom_prot != null) {
+            bottom_prot.startDownHandler();
             bottom_prot.startUpHandler();
             bottom_prot=bottom_prot.getUpProtocol();
         }
@@ -141,6 +146,7 @@ public class Configurator {
         prot.init();
 
         // start the handler threads (unless down_thread or up_thread are set to false)
+        prot.startDownHandler();
         prot.startUpHandler();
 
         return prot;
@@ -249,7 +255,7 @@ public class Configurator {
      */
     public Vector parseConfigurations(String configuration) throws Exception {
         Vector retval=new Vector();
-        Vector component_strings=parseComponentStrings(configuration, ":");
+        Vector component_strings=parseProtocols(configuration);
         String component_string;
         ProtocolConfiguration protocol_config;
 
@@ -262,6 +268,106 @@ public class Configurator {
         }
         return retval;
     }
+
+
+
+        /**
+     * Get a string of the form "P1(config_str1):P2:P3(config_str3)" and return
+     * ProtocolConfigurations for it. That means, parse "P1(config_str1)", "P2" and
+     * "P3(config_str3)"
+     * @param config_str Configuration string
+     * @return Vector of strings
+     */
+    private Vector parseProtocols(String config_str) throws IOException {
+        Vector retval=new Vector();
+        PushbackReader reader=new PushbackReader(new StringReader(config_str));
+        int ch;
+        StringBuilder sb;
+        boolean running=true;
+
+        while(running) {
+            String protocol_name=readWord(reader);
+            sb=new StringBuilder();
+            sb.append(protocol_name);
+
+            ch=read(reader);
+            if(ch == -1) {
+                retval.add(sb.toString());
+                break;
+            }
+
+            if(ch == ':') {  // no attrs defined
+                retval.add(sb.toString());
+                continue;
+            }
+
+            if(ch == '(') { // more attrs defined
+                reader.unread(ch);
+                String attrs=readUntil(reader, ')');
+                sb.append(attrs);
+                retval.add(sb.toString());
+            }
+            else {
+                retval.add(sb.toString());
+            }
+
+            while(true) {
+                ch=read(reader);
+                if(ch == ':') {
+                    break;
+                }
+                if(ch == -1) {
+                    running=false;
+                    break;
+                }
+            }
+        }
+        reader.close();
+
+        return retval;
+    }
+
+
+    private static int read(Reader reader) throws IOException {
+        int ch=-1;
+        while((ch=reader.read()) != -1) {
+            if(!Character.isWhitespace(ch))
+                return ch;
+        }
+        return ch;
+    }
+
+
+
+
+    private static String readUntil(Reader reader, char c) throws IOException {
+        StringBuilder sb=new StringBuilder();
+        int ch;
+        while((ch=read(reader)) != -1) {
+            sb.append((char)ch);
+            if(ch == c)
+                break;
+        }
+        return sb.toString();
+    }
+
+    private static String readWord(PushbackReader reader) throws IOException {
+        StringBuilder sb=new StringBuilder();
+        int ch;
+
+        while((ch=read(reader)) != -1) {
+            if(Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
+                sb.append((char)ch);
+            }
+            else {
+                reader.unread(ch);
+                break;
+            }
+        }
+
+        return sb.toString();
+    }
+
 
 
     /**
@@ -522,17 +628,19 @@ public class Configurator {
         }
 
 
+     
         void setContents(String config_str) throws Exception {
             int index=config_str.indexOf('(');  // e.g. "UDP(in_port=3333)"
             int end_index=config_str.lastIndexOf(')');
 
             if(index == -1) {
                 protocol_name=config_str;
+                properties_str="";
             }
             else {
                 if(end_index == -1) {
-                    throw new Exception("Configurator.ProtocolConfiguration.setContents(): closing ')' " +
-                                        "not found in " + config_str + ": properties cannot be set !");
+                    throw new Exception("Configurator.ProtocolConfiguration(): closing ')' " +
+                            "not found in " + config_str + ": properties cannot be set !");
                 }
                 else {
                     properties_str=config_str.substring(index + 1, end_index);
@@ -541,23 +649,25 @@ public class Configurator {
             }
 
             /* "in_port=5555;out_port=6666" */
-            if(properties_str != null) {
-                Vector components=parseComponentStrings(properties_str, ";");
-                if(components.size() > 0) {
-                    for(int i=0; i < components.size(); i++) {
-                        String name, value, comp=(String)components.elementAt(i);
-                        index=comp.indexOf('=');
-                        if(index == -1) {
-                            throw new Exception("Configurator.ProtocolConfiguration.setContents(): " +
-                                                "'=' not found in " + comp);
-                        }
-                        name=comp.substring(0, index);
-                        value=comp.substring(index + 1, comp.length());
-                        properties.put(name, value);
+            if(properties_str.length() > 0) {
+                String[] components=properties_str.split(";");
+                for(int i=0; i < components.length; i++) {
+                // for(String property : components) {
+                    String property=components[i];
+                    String name, value;
+                    index=property.indexOf('=');
+                    if(index == -1) {
+                        throw new Exception("Configurator.ProtocolConfiguration(): '=' not found in " + property
+                                + " of "
+                                + protocol_name);
                     }
+                    name=property.substring(0, index);
+                    value=property.substring(index + 1, property.length());
+                    properties.put(name, value);
                 }
             }
         }
+
 
 
         private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
