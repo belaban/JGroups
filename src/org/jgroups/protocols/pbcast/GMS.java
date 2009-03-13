@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.68.2.6 2007/08/31 09:08:27 belaban Exp $
+ * @version $Id: GMS.java,v 1.68.2.7 2009/03/13 11:43:57 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -742,11 +742,6 @@ public class GMS extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                if(print_local_addr) {
-                    System.out.println("\n-------------------------------------------------------\n" +
-                                       "GMS: address is " + local_addr +
-                                       "\n-------------------------------------------------------");
-                }
                 break;                               // pass up
 
             case Event.SUSPECT:
@@ -793,6 +788,11 @@ public class GMS extends Protocol {
         switch(evt.getType()) {
 
             case Event.CONNECT:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
                 Object arg=null;
                 passDown(evt);
                 if(local_addr == null)
@@ -1223,7 +1223,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.68.2.6 2007/08/31 09:08:27 belaban Exp $
+     * @version $Id: GMS.java,v 1.68.2.7 2009/03/13 11:43:57 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread           thread;
