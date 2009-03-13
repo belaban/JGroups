@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.90.2.4 2008/08/19 08:38:44 belaban Exp $
+ * @version $Id: FC.java,v 1.90.2.5 2009/03/13 09:06:00 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -144,7 +144,11 @@ public class FC extends Protocol {
      * Thread that carries messages through up() and shouldn't be blocked
      * in down() if ignore_synchronous_response==true. JGRP-465.
      */
-    private Thread ignore_thread;
+    private final ThreadLocal<Boolean> ignore_thread=new ThreadLocal<Boolean>() {
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     private static final String name="FC";
 
@@ -407,7 +411,7 @@ public class FC extends Protocol {
         sent_lock.lock();
         try {
             running=false;
-            ignore_thread=null;
+            ignore_thread.set(false);
             credits_available.signalAll(); // notify all threads waiting on the mutex that we are done
         }
         finally {
@@ -435,12 +439,8 @@ public class FC extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
-
                 // JGRP-465. We only deal with msgs to avoid having to use a concurrent collection; ignore views,
-                // suspicions, etc which can come up on unusual threads.
-                if(ignore_thread == null && ignore_synchronous_response)
-                    ignore_thread=Thread.currentThread();
-
+                // suspicions, etc which can come up on unusual threads
                 Message msg=(Message)evt.getArg();
                 FcHeader hdr=(FcHeader)msg.getHeader(name);
                 if(hdr != null) {
@@ -461,17 +461,23 @@ public class FC extends Protocol {
                     }
                     return null; // don't pass message up
                 }
-                else {
-                    Address sender=msg.getSrc();
-                    long new_credits=adjustCredit(received, received_lock, sender, msg.getLength());
-                    try {
-                        return up_prot.up(evt);
-                    }
-                    finally {
-                        if(new_credits > 0) {
-                            if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + sender);
-                            sendCredit(sender, new_credits);
-                        }
+
+                Address sender=msg.getSrc();
+                long new_credits=adjustCredit(received, received_lock, sender, msg.getLength());
+
+                // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
+                // introduction of the concurrent stack
+                if(ignore_synchronous_response)
+                    ignore_thread.set(true);
+                try {
+                    return up_prot.up(evt);
+                }
+                finally {
+                    if(ignore_synchronous_response)
+                        ignore_thread.set(false); // need to revert because the thread is placed back into the pool
+                    if(new_credits > 0) {
+                        if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + sender);
+                        sendCredit(sender, new_credits);
                     }
                 }
 
@@ -517,7 +523,8 @@ public class FC extends Protocol {
         sent_lock.lock();
         try {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
-                if(ignore_synchronous_response && ignore_thread == Thread.currentThread()) { // JGRP-465
+
+                if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
                     if(log.isTraceEnabled())
                         log.trace("bypassing blocking to avoid deadlocking " + Thread.currentThread());
                 }
