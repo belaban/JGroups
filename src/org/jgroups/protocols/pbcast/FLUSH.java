@@ -742,7 +742,7 @@ public class FLUSH extends Protocol {
               
     }
     
-    private void onFlushCompleted(Address address, FlushHeader header) {        
+    private void onFlushCompleted(Address address, final FlushHeader header) {        
         Message msg = null;
         boolean needsReconciliationPhase = false;
         boolean collision = false;
@@ -799,7 +799,15 @@ public class FLUSH extends Protocol {
             if(log.isDebugEnabled())
                 log.debug("All FLUSH_COMPLETED received at " + localAddress);
         }else if(collision){
-        	rejectFlush(header.flushParticipants,header.viewID);
+        	//reject flush if we have at least one OK and at least one FAIL
+        	Runnable r = new Runnable(){
+    			public void run() {
+    				//wait a bit so ABORTs do not get received before other possible FLUSH_COMPLETED
+    				Util.sleep(1000);
+    				rejectFlush(header.flushParticipants, header.viewID);
+				}
+    		};
+    		new Thread(r).start();      
         }
     }
 
