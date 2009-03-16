@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.16 2008/05/22 13:23:08 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.17 2009/03/16 21:18:41 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -246,7 +246,7 @@ public class Multiplexer implements UpHandler {
     private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException,
                                                                                       ChannelNotConnectedException {
         boolean rc, all_tranfers_ok=false;
-        boolean flushStarted=channel.startFlush(false);
+        boolean flushStarted=Util.startFlush(channel);
         if(flushStarted) {
             try {
                 for(String stateId:keys) {
@@ -542,7 +542,10 @@ public class Multiplexer implements UpHandler {
     }
 
     boolean startFlush(boolean automatic_resume) {
-        return channel.startFlush(automatic_resume);
+        boolean b = Util.startFlush(channel);
+        if(automatic_resume)
+        	channel.stopFlush();
+        return b;
     }
 
     void stopFlush() {

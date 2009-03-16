@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.7 2009/02/09 13:52:22 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.8 2009/03/16 21:18:38 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2,c3;
@@ -122,7 +122,7 @@ public class FlushTest extends ChannelTestBase {
         c3.connect("test");
         
         //start flush
-        c2.startFlush(false);
+        Util.startFlush(c2);
         
         //and then kill the flush coordinator
         ((JChannel)c2).shutdown();
@@ -145,7 +145,7 @@ public class FlushTest extends ChannelTestBase {
         c3.connect("test");
         
         //start flush
-        c2.startFlush(false);
+        Util.startFlush(c2);
         
         //and then kill the member other than flush coordinator
         ((JChannel)c3).shutdown();
@@ -169,7 +169,7 @@ public class FlushTest extends ChannelTestBase {
         c3.connect("test");
         
         //start flush
-        c2.startFlush(false);
+        Util.startFlush(c2);
         
        //and then kill members other than flush coordinator
         ((JChannel)c3).shutdown();
@@ -218,7 +218,7 @@ public class FlushTest extends ChannelTestBase {
        
         List<Address> members = new ArrayList<Address>();
         members.add(c2.getLocalAddress());       
-        boolean flushedOk = c2.startFlush(members, false);
+        boolean flushedOk = Util.startFlush(c2,members);
         
         assertTrue("Partial flush worked", flushedOk);
         
