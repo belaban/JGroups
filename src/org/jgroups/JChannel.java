@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
@@ -75,7 +76,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.210 2009/03/04 17:16:05 vlada Exp $
+ * @version $Id: JChannel.java,v 1.211 2009/03/16 17:38:32 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1075,7 +1076,63 @@ public class JChannel extends Channel {
      *                 if flush is used in this channel and cluster could not be
      *                 flushed
      */    
-    public boolean getState(Address target, String state_id, long timeout,boolean useFlushIfPresent) throws ChannelNotConnectedException, ChannelClosedException {
+    public boolean getState(Address target, String state_id, long timeout,
+			boolean useFlushIfPresent) throws ChannelNotConnectedException,
+			ChannelClosedException {
+		
+    	Callable<Boolean> flusher = new Callable<Boolean>() {
+			public Boolean call() throws Exception {
+				return Util.startFlush(JChannel.this);
+			}
+		};
+		return getState(target, state_id, timeout, useFlushIfPresent?flusher:null);
+	}
+    
+    /**
+     * Retrieves a substate (or partial state) indicated by state_id from the target member.
+     * <p>
+     * 
+     * State transfer is initiated by invoking getState on this channel, state
+     * receiver, and sending a GET_STATE message to a target member - state
+     * provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application
+     * state to a state receiver. Upon successful installation of a state at
+     * state receiver this method returns true.
+     * 
+     * 
+     * @param target
+     *                State provider. If null, coordinator is used
+     * @param state_id
+     *                The ID of the substate. If null, the entire state will be
+     *                transferred
+     * @param timeout
+     *                the number of milliseconds to wait for the operation to
+     *                complete successfully. 0 waits until the state has been
+     *                received
+     * @param flushInvoker
+     *                algorithm invoking flush
+     * 
+     * @see ExtendedMessageListener#getState(OutputStream)
+     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState()
+     * @see MessageListener#setState(byte[])
+     * 
+     * 
+     * @return true if state transfer was successful, false otherwise
+     * @throws ChannelNotConnectedException
+     *                 if channel was not connected at the time state retrieval
+     *                 was initiated
+     * @throws ChannelClosedException
+     *                 if channel was closed at the time state retrieval was
+     *                 initiated
+     * @throws IllegalStateException
+     *                 if one of state transfer protocols is not present in this
+     *                 channel
+     * @throws IllegalStateException
+     *                 if flush is used in this channel and cluster could not be
+     *                 flushed
+     */    
+    protected boolean getState(Address target, String state_id, long timeout,Callable<Boolean> flushInvoker) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
         if(!state_transfer_supported) {
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
@@ -1090,15 +1147,23 @@ public class JChannel extends Channel {
             return false;
         }
               
-        boolean initiateFlush = flushSupported() && useFlushIfPresent;
+        boolean initiateFlush = flushSupported() && flushInvoker!=null;
         
-        if(initiateFlush){
-            boolean successfulFlush = Util.startFlush(this);
-            //http://jira.jboss.com/jira/browse/JGRP-759
-            if(!successfulFlush){
-                throw new IllegalStateException("Could not flush the cluster and proceed with state retrieval");
-            }
-        }
+        if (initiateFlush) {
+			boolean successfulFlush = false;
+			try {
+				successfulFlush = flushInvoker.call();
+			} 
+			catch (Exception e) {
+				successfulFlush = false;
+				// http://jira.jboss.com/jira/browse/JGRP-759
+			} 
+			finally {
+				if (!successfulFlush) {
+					throw new IllegalStateException("Node "+ local_addr+ " could not flush the cluster for state retrieval");
+				}
+			}
+		}
 
         state_promise.reset();
         StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);

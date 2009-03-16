@@ -5,13 +5,16 @@ package org.jgroups.protocols.pbcast;
 import org.apache.commons.logging.Log;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.155 2009/03/04 17:15:52 vlada Exp $
+ * @version $Id: GMS.java,v 1.156 2009/03/16 17:38:30 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -114,6 +117,9 @@ public class GMS extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
+    @Property(converter=PropertyConverters.FlushInvoker.class,name="flush_invoker_class")
+    private Class<Callable<Boolean>> flushInvokerClass;
+    
     private GmsImpl impl=null;
     private final Object impl_mutex=new Object(); // synchronizes event entry into impl
     private final Hashtable<String,GmsImpl> impls=new Hashtable<String,GmsImpl>(3);
@@ -709,30 +715,54 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view, int maxAttempts,long randomFloor, long randomCeiling) {
-        boolean successfulFlush=true;
-        boolean validView=new_view != null && new_view.size() > 0;
-        if(validView && flushProtocolInStack) {
-        	
-        	int attemptCount = 0;
-            while(attemptCount < maxAttempts){
-            	successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
-            	if(successfulFlush)
-            		break;
-            	Util.sleepRandom(randomFloor,randomCeiling);
-            	attemptCount++;
-            }
-            
-            if(successfulFlush) {
-                if(log.isTraceEnabled())
-                    log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
-            }
-            else {
-                if(log.isWarnEnabled())
-                    log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
-            }
+    boolean startFlush(final View new_view) {
+        if(flushInvokerClass == null){
+	        Callable<Boolean> invoker = new Callable<Boolean>(){
+				public Boolean call() throws Exception {
+					int maxAttempts =4;
+					long randomFloor=1000L;
+					long randomCeiling=5000L;
+					
+					boolean successfulFlush=true;
+			        boolean validView=new_view != null && new_view.size() > 0;
+			        if(validView && flushProtocolInStack) {
+			        	
+			        	int attemptCount = 0;
+			            while(attemptCount < maxAttempts){
+			            	successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+			            	if(successfulFlush)
+			            		break;
+			            	Util.sleepRandom(randomFloor,randomCeiling);
+			            	attemptCount++;
+			            }
+			            
+			            if(successfulFlush) {
+			                if(log.isTraceEnabled())
+			                    log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
+			            }
+			            else {
+			                if(log.isWarnEnabled())
+			                    log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
+			            }
+			        }
+			        return successfulFlush;
+				}
+	        };
+	        try {
+				return invoker.call();
+			} catch (Exception e) {
+				return false;
+			}
         }
-        return successfulFlush;
+        else{
+        	Callable<Boolean> invoker = null;
+        	try {
+				invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
+				return invoker.call();
+			} catch (Exception e) {
+				return false;
+			}
+        }
     }
 
     void stopFlush() {
@@ -1178,7 +1208,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.155 2009/03/04 17:15:52 vlada Exp $
+     * @version $Id: GMS.java,v 1.156 2009/03/16 17:38:30 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
