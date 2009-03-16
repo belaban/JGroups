@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.10 2009/02/06 16:53:46 vlada Exp $
+ * @version $Id: Util.java,v 1.137.2.11 2009/03/16 21:18:37 vlada Exp $
  */
 public class Util {
 
@@ -939,6 +939,16 @@ public class Util {
         }
 
         long r=(int)((Math.random() * 100000) % timeout) + 1;
+        sleep(r);
+    }
+    
+    /** Sleeps between floor and ceiling milliseconds, chosen randomly */
+    public static void sleepRandom(long floor, long ceiling) {
+        if(ceiling - floor<= 0) {
+            return;
+        }
+        long diff = ceiling - floor;
+        long r=(int)((Math.random() * 100000) % diff) + floor;
         sleep(r);
     }
 
@@ -1982,6 +1992,40 @@ public class Util {
         else
             sb.append(hostname.getHostAddress());
         return sb.toString();
+    }
+    
+    public static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts,  long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+    	boolean successfulFlush = false;
+        int attemptCount = 0;
+        while(attemptCount < numberOfAttempts){
+        	successfulFlush = c.startFlush(flushParticipants, false);
+        	if(successfulFlush)
+        		break;
+        	Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
+        	attemptCount++;
+        }
+        return successfulFlush;
+    }
+    
+    public static boolean startFlush(Channel c, List<Address> flushParticipants) {
+    	return startFlush(c,flushParticipants,4,1000,5000);
+    }
+
+    public static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+    	boolean successfulFlush = false;
+        int attemptCount = 0;
+        while(attemptCount < numberOfAttempts){
+        	successfulFlush = c.startFlush(false);
+        	if(successfulFlush)
+        		break;
+        	Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
+        	attemptCount++;
+        }
+        return successfulFlush;
+    }
+    
+    public static boolean startFlush(Channel c) {
+    	return startFlush(c,4,1000,5000);
     }
 
 
