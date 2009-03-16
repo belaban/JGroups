@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.191 2009/03/04 17:44:47 vlada Exp $
+ * @version $Id: Util.java,v 1.192 2009/03/16 08:11:37 belaban Exp $
  */
 public class Util {
 
@@ -2680,6 +2680,10 @@ public class Util {
 
     public static boolean checkForWindows() {
         return checkForPresence("os.name", "win");
+    }
+
+    public static boolean checkForMax() {
+        return checkForPresence("os.name", "mac");
     }
 
     private static boolean checkForPresence(String key, String value) {
