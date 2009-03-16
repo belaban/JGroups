@@ -2,9 +2,12 @@ package org.jgroups.conf;
 
 import java.util.Properties;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
+import org.jgroups.View;
 import org.jgroups.util.Util;
 
 /**
@@ -17,7 +20,7 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.6 2008/06/02 08:13:25 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.7 2009/03/16 17:38:31 vlada Exp $
  */
 public class PropertyConverters {
 
@@ -40,6 +43,25 @@ public class PropertyConverters {
             }
             return sb.toString();
         }
+    }
+    
+    public static class FlushInvoker implements PropertyConverter{
+
+		public Object convert(Class<?> propertyFieldType, Properties props,
+				String propertyValue) throws Exception {
+			if (propertyValue == null) {
+				return null;
+			} else {
+				Class<Callable<Boolean>> invoker = (Class<Callable<Boolean>>) Class.forName(propertyValue);
+				invoker.getDeclaredConstructor(View.class);
+				return invoker;
+			}
+		}
+
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}
+    	
     }
     
     public static class BindAddress implements PropertyConverter {
