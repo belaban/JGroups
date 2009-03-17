@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.10.2.2 2009/03/17 14:45:38 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.10.2.3 2009/03/17 14:48:55 vlada Exp $
  */
 public class ConcurrentFlushTest extends ChannelTestBase {
 
@@ -58,9 +58,9 @@ public class ConcurrentFlushTest extends ChannelTestBase {
      * Tests A.startFlush(), followed by another A.startFlush()
      */
     public void testTwoStartFlushesOnSameMemberWithTotalFlush() throws Exception {
-        c1=createChannel("c1");
+        c1=createChannel();
         c1.connect("testTwoStartFlushes");
-        c2=createChannel("c2");
+        c2=createChannel();
         c2.connect("testTwoStartFlushes");
         assertViewsReceived(c1, c2);
 
@@ -92,9 +92,9 @@ public class ConcurrentFlushTest extends ChannelTestBase {
      * Tests A.startFlush(), followed by another A.startFlush()
      */
     public void testTwoStartFlushesOnDifferentMembersWithTotalFlush() throws Exception {
-        c1=createChannel("c1");
+        c1=createChannel();
         c1.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
-        c2=createChannel("c2");
+        c2=createChannel();
         c2.connect("testTwoStartFlushesOnDifferentMembersWithTotalFlush");
         assertViewsReceived(c1, c2);
 
@@ -130,9 +130,9 @@ public class ConcurrentFlushTest extends ChannelTestBase {
      * Tests 2 channels calling FLUSH simultaneously
      */
     public void testConcurrentFlush() throws Exception {
-        c1=createChannel("c1");
+        c1=createChannel();
         c1.connect("testConcurrentFlush");
-        c2=createChannel("c2");
+        c2=createChannel();
         c2.connect("testConcurrentFlush");
 
         assertViewsReceived(c1, c2);
@@ -206,13 +206,13 @@ public class ConcurrentFlushTest extends ChannelTestBase {
      * Tests 2 channels calling partial FLUSHes and one calling FLUSH simultaneously
      */
     public void testConcurrentFlushAndPartialFlush() throws Exception {
-        c1=createChannel("c1");
+        c1=createChannel();
         c1.connect("testConcurrentFlushAndPartialFlush");
 
-        c2=createChannel("c2");
+        c2=createChannel();
         c2.connect("testConcurrentFlushAndPartialFlush");
 
-        c3=createChannel("c3");
+        c3=createChannel();
         c3.connect("testConcurrentFlushAndPartialFlush");
         assertViewsReceived(c1, c2, c3);
 
