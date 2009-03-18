@@ -14,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,13 +31,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.209 2008/11/12 13:32:18 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.210 2009/03/18 11:27:34 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
 
-    
     private static final long INITIAL_SEQNO=0;
 
     private static final String name="NAKACK";
@@ -752,7 +751,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
                 msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
-                win.add(msg_id, msg);
+                if(win.add(msg_id, msg) && !msg.isFlagSet(Message.OOB))
+                    undelivered_msgs.incrementAndGet();
                 seqno=msg_id;
             }
             catch(Throwable t) {
@@ -804,8 +804,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         boolean loopback=local_addr.equals(sender);
-        boolean added=loopback || win.add(hdr.seqno, msg);
-        boolean regular_msg_added=added && !msg.isFlagSet(Message.OOB);
+        boolean added_to_window=false;
+        boolean added=loopback || (added_to_window=win.add(hdr.seqno, msg));
+        
+        if(added_to_window)
+            undelivered_msgs.incrementAndGet();
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
@@ -833,7 +836,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
-        short removed_regular_msgs=0;
+        int num_regular_msgs_removed=0;
 
         // 2nd line of defense: in case of an exception, remove() might not be called, therefore processing would never
         // be set back to false. If we get an exception and released_processing is not true, then we set
@@ -855,7 +858,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(msg_to_deliver.isFlagSet(Message.OOB)) {
                     continue;
                 }
-                removed_regular_msgs++;
+                num_regular_msgs_removed++;
+                // System.out.println("removed regular #" + ((NakAckHeader)msg_to_deliver.getHeader(name)).seqno);
 
                 // Changed by bela Jan 29 2003: not needed (see above)
                 //msg_to_deliver.removeHeader(getName());
@@ -869,16 +873,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 locks.remove(Thread.currentThread());
             if(lock.isHeldByCurrentThread())
                 lock.unlock();
+
+
             // We keep track of regular messages that we added, but couldn't remove (because of ordering).
             // When we have such messages pending, then even OOB threads will remove and process them
             // http://jira.jboss.com/jira/browse/JGRP-781
-            if(regular_msg_added && removed_regular_msgs == 0) {
-                undelivered_msgs.incrementAndGet();
-            }
-            if(removed_regular_msgs > 0) { // regardless of whether a message was added or not !
-                int num_msgs_added=regular_msg_added? 1 : 0;
-                undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
-            }
+            undelivered_msgs.addAndGet(-num_regular_msgs_removed);
         }
     }
 
