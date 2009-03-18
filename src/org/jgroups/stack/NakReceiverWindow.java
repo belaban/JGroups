@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.61 2008/10/08 12:41:32 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.62 2009/03/18 11:25:44 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -454,6 +454,16 @@ public class NakReceiverWindow {
         }
     }
 
+    public boolean hasRegularMessageToRemove() {
+        lock.readLock().lock();
+        try {
+            Message msg=xmit_table.get(highest_delivered + 1);
+            return msg != null && !msg.isFlagSet(Message.OOB);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
     /**
      * Delete all messages <= seqno (they are stable, that is, have been received at all members).
