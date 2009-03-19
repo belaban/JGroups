@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.62 2009/03/18 11:25:44 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.63 2009/03/19 09:55:59 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -60,8 +60,6 @@ public class NakReceiverWindow {
     }
 
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
-
-    private final ReentrantLock up_lock=new ReentrantLock();
 
     Address local_addr=null;
 
@@ -166,10 +164,6 @@ public class NakReceiverWindow {
      */
     public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno) {
         this(sender, cmd, highest_delivered_seqno, null);
-    }
-
-    public ReentrantLock getLock() {
-        return up_lock;
     }
 
     public AtomicBoolean getProcessing() {
