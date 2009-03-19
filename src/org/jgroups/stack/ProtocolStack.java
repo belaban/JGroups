@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -30,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * stacks, and to destroy them again when not needed anymore
  * 
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.92 2008/10/29 09:19:32 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.93 2009/03/19 09:55:16 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -50,12 +49,6 @@ public class ProtocolStack extends Protocol implements Transport {
     private String   setup_string;
     private JChannel channel = null;
     private volatile boolean stopped=true;
-
-    /**
-     * Locks acquired by protocol below, need to get released on down(). See
-     * http://jira.jboss.com/jira/browse/JGRP-535 for details
-     */
-    private final Map<Thread,ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
 
 
     private final TP.ProbeHandler props_handler=new TP.ProbeHandler() {
@@ -134,9 +127,6 @@ public class ProtocolStack extends Protocol implements Transport {
     public static void setTimerThreadFactory(ThreadFactory f) {
     }
 
-    public Map<Thread,ReentrantLock> getLocks() {
-        return locks;
-    }
 
     public Channel getChannel() {
         return channel;
@@ -828,12 +818,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public Object down(Event evt) {
-        ReentrantLock lock=locks.remove(Thread.currentThread());
-        if(lock != null && lock.isHeldByCurrentThread()) {
-            lock.unlock();
-            if(log.isTraceEnabled())
-                log.trace("released lock held by " + Thread.currentThread());
-        }
         if(top_prot != null)
             return top_prot.down(evt);
         return null;
