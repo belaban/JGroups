@@ -31,10 +31,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.211 2009/03/18 17:14:14 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.212 2009/03/19 09:54:11 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-@DeprecatedProperty(names={"max_xmit_size"})
+@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
 
     private static final long INITIAL_SEQNO=0;
@@ -129,7 +129,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * false.
      */
     @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
-    private boolean eager_lock_release=true;
+    private boolean eager_lock_release=false;
 
     /**
      * If value is > 0, the retransmit buffer is bounded: only the
@@ -222,10 +222,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
 
-    
-    
-    
-    private Map<Thread,ReentrantLock> locks;
     private boolean is_server=false;
     private Address local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -527,7 +523,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
-        locks=stack.getLocks();
         started=true;
         leaving=false;
 
@@ -842,11 +837,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // be set back to false. If we get an exception and released_processing is not true, then we set
         // processing to false in the finally clause
         boolean released_processing=false;
-        final ReentrantLock lock=win.getLock();
         try {
-            if(eager_lock_release)
-                locks.put(Thread.currentThread(), lock);
-            lock.lock();
             while(true) {
                 // we're removing a msg and set processing to false (if null) *atomically* (wrt to add())
                 Message msg_to_deliver=win.remove(processing);
@@ -868,20 +859,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
         finally {
-            // processing is always set in win.remove(processing) above and never here ! This code is just a
-            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
-            if(!released_processing)
-                processing.set(false);
-            if(eager_lock_release)
-                locks.remove(Thread.currentThread());
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-
-
             // We keep track of regular messages that we added, but couldn't remove (because of ordering).
             // When we have such messages pending, then even OOB threads will remove and process them
             // http://jira.jboss.com/jira/browse/JGRP-781
             undelivered_msgs.addAndGet(-num_regular_msgs_removed);
+
+            // processing is always set in win.remove(processing) above and never here ! This code is just a
+            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
+            if(!released_processing)
+                processing.set(false);
         }
     }
 
