@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.conf.PropertyConverters;
@@ -15,7 +16,13 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -44,7 +51,7 @@ import java.util.*;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.30 2008/05/30 20:39:30 vlada Exp $
+ * @version $Id: SMACK.java,v 1.31 2009/03/19 08:41:23 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -55,10 +62,12 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
     final Set<Address>     members=new LinkedHashSet<Address>();      // contains Addresses
     AckMcastSenderWindow   sender_win=null;
-    final Map<Address,AckReceiverWindow> receivers=new HashMap<Address,AckReceiverWindow>();   // keys=sender (Address), values=AckReceiverWindow
-    final Map<Address,Integer>          xmit_table=new HashMap<Address,Integer>();  // keeps track of num xmits / member (keys: mbr, val:num)
+    final Map<Address,AckReceiverWindow> receivers=new ConcurrentHashMap<Address,AckReceiverWindow>();   // keys=sender (Address), values=AckReceiverWindow
+    final Map<Address,Integer>          xmit_table=new ConcurrentHashMap<Address,Integer>();  // keeps track of num xmits / member (keys: mbr, val:num)
     Address                local_addr=null;           // my own address
+    @GuardedBy("lock")
     long                   seqno=1;                   // seqno for msgs sent by this sender
+    final Lock             lock=new ReentrantLock();  // for access to seqno
     long                   vid=1;                     // for the fake view changes
     @Property
     boolean                print_local_addr=true;
@@ -76,13 +85,11 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     }
 
     public void stop() {
-        AckReceiverWindow win;
         if(sender_win != null) {
             sender_win.stop();
             sender_win=null;
         }
-        for(Iterator it=receivers.values().iterator(); it.hasNext();) {
-            win=(AckReceiverWindow)it.next();
+        for(AckReceiverWindow win: receivers.values()) {
             win.reset();
         }
         receivers.clear();
@@ -194,6 +201,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 leave_msg=new Message();
                 leave_msg.putHeader(name, new SmackHeader(SmackHeader.LEAVE_ANNOUNCEMENT, -1));
                 down_prot.down(new Event(Event.MSG, leave_msg));
+                Util.sleep(100);
                 sender_win.stop();
                 break;
 
@@ -213,10 +221,18 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 Message msg=(Message)evt.getArg();
                 if(msg == null) break;
                 if(msg.getDest() == null || msg.getDest().isMulticastAddress()) {
-                    msg.putHeader(name, new SmackHeader(SmackHeader.MCAST, seqno));
-                    sender_win.add(seqno, msg, new Vector<Address>(members));
-                    if(log.isTraceEnabled()) log.trace("sending mcast #" + seqno);
-                    seqno++;
+                    lock.lock();
+                    try {
+                        long msg_id=seqno;
+                        msg.putHeader(name, new SmackHeader(SmackHeader.MCAST, msg_id));
+                        sender_win.add(msg_id, msg, new Vector<Address>(members));
+                        if(log.isTraceEnabled()) log.trace("sending mcast #" + msg_id);
+                        seqno++;
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+
                 }
                 break;
         }
@@ -333,6 +349,14 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
             down_prot.down(new Event(Event.VIEW_CHANGE, new_view));
             if(sender_win != null)
                 sender_win.remove(mbr); // causes retransmissions to mbr to stop
+            for(Map.Entry<Address,AckReceiverWindow> entry: receivers.entrySet()) {
+                Address member=entry.getKey();
+                if(!members.contains(member)) {
+                    AckReceiverWindow win=entry.getValue();
+                    win.reset();
+                }
+            }
+            receivers.keySet().retainAll(members);
         }
     }
 
