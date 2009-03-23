@@ -76,7 +76,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.211 2009/03/16 17:38:32 vlada Exp $
+ * @version $Id: JChannel.java,v 1.212 2009/03/23 19:40:42 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -395,6 +395,24 @@ public class JChannel extends Channel {
      */
     @ManagedOperation(description="Connects the channel to a group")
     public synchronized void connect(String cluster_name) throws ChannelException {
+    	connect(cluster_name,true);
+    }
+
+    /**
+     * Connects the channel to a group.
+     * If the channel is already connected, an error message will be printed to the error log.
+     * If the channel is closed a ChannelClosed exception will be thrown.
+     * This method starts the protocol stack by calling ProtocolStack.start,
+     * then it sends an Event.CONNECT event down the stack and waits for the return value.
+     * Once the call returns, the channel listeners are notified and the channel is considered connected.
+     *
+     * @param cluster_name A <code>String</code> denoting the group name. Cannot be null.
+     * @exception ChannelException The protocol stack cannot be started
+     * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
+     *                                   A new channel has to be created first.
+     */
+    @ManagedOperation(description="Connects the channel to a group")
+    public synchronized void connect(String cluster_name, boolean useFlushIfPresent) throws ChannelException {
         if(connected) {
             if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
             return;
@@ -404,7 +422,13 @@ public class JChannel extends Channel {
 
         if(cluster_name != null) {    // only connect if we are not a unicast channel
             
-            Event connect_event=new Event(Event.CONNECT, cluster_name);
+        	Event connect_event = null;
+        	if (useFlushIfPresent) {
+				connect_event = new Event(Event.CONNECT_USE_FLUSH, cluster_name);
+			} else {
+				connect_event = new Event(Event.CONNECT, cluster_name);
+			}
+        		
             Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
                 stopStack(true, false);
@@ -426,7 +450,6 @@ public class JChannel extends Channel {
         connected=true;
         notifyChannelConnected(this);
     }
-
 
     /**
      * Connects this channel to a group and gets a state from a specified state
@@ -458,6 +481,41 @@ public class JChannel extends Channel {
                                      Address target,
                                      String state_id,
                                      long timeout) throws ChannelException {
+    	connect(cluster_name, target, state_id, timeout,true);
+    }
+
+    
+    /**
+     * Connects this channel to a group and gets a state from a specified state
+     * provider.
+     * <p>
+     * 
+     * This method essentially invokes
+     * <code>connect<code> and <code>getState<code> methods successively. 
+     * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and 
+     * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succesion. 
+     *   
+     * If the channel is already connected, an error message will be printed to the error log.
+     * If the channel is closed a ChannelClosed exception will be thrown.
+     * 
+     *                                       
+     * @param cluster_name  the cluster name to connect to. Cannot be null.
+     * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
+     * @param state_id the substate id for partial state transfer. If null entire state will be transferred. 
+     * @param timeout the timeout for state transfer.      
+     * 
+     * @exception ChannelException The protocol stack cannot be started
+     * @exception ChannelException Connecting to cluster was not successful 
+     * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
+     *                                   A new channel has to be created first.
+     * @exception StateTransferException State transfer was not successful
+     *
+     */
+    public synchronized void connect(String cluster_name,
+                                     Address target,
+                                     String state_id,
+                                     long timeout,
+                                     boolean useFlushIfPresent) throws ChannelException {
 
         if(connected) {
             if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
@@ -473,7 +531,12 @@ public class JChannel extends Channel {
         if(cluster_name != null) {
 
             try {
-                Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+            	Event connect_event = null;
+            	if (useFlushIfPresent) {
+    				connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name);
+    			} else {
+    				connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+    			}
                 Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
                 joinSuccessful=!(res != null && res instanceof Exception);
                 if(!joinSuccessful) {

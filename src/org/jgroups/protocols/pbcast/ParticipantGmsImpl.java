@@ -12,7 +12,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.30 2008/09/18 16:42:58 vlada Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.31 2009/03/23 19:40:38 vlada Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -30,11 +30,11 @@ public class ParticipantGmsImpl extends GmsImpl {
         leave_promise.reset();
     }
 
-    public void join(Address mbr) {
+    public void join(Address mbr, boolean useFlushIfPresent) {
         wrongMethod("join");
     }
     
-    public void joinWithStateTransfer(Address mbr) {
+    public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
 

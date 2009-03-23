@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.52 2008/10/21 12:37:10 vlada Exp $
+ * @version $Id: Discovery.java,v 1.53 2009/03/23 19:40:40 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -349,7 +349,9 @@ public abstract class Discovery extends Protocol {
             return null;
 
         case Event.CONNECT:
-        case Event.CONNECT_WITH_STATE_TRANSFER:    
+        case Event.CONNECT_WITH_STATE_TRANSFER: 
+        case Event.CONNECT_USE_FLUSH:
+        case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: 	
             group_addr=(String)evt.getArg();
             Object ret=down_prot.down(evt);
             handleConnect();

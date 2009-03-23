@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.156 2009/03/16 17:38:30 vlada Exp $
+ * @version $Id: GMS.java,v 1.157 2009/03/23 19:40:38 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -101,6 +101,9 @@ public class GMS extends Protocol {
      */
     @Property(description="Should repeated join requests from existing members be treated as errors. Default is true")
     boolean reject_join_from_existing_member=true;
+    
+    @Property(description="Use flush for view changes. Default is true")
+    boolean use_flush_if_present=true;
     
     @ManagedAttribute(writable=true, description="Logs failures for collecting all view acks if true")
     boolean log_collect_msgs=true;   
@@ -793,10 +796,10 @@ public class GMS extends Protocol {
                     break;
                 switch(hdr.type) {
                     case GmsHeader.JOIN_REQ:
-                        view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null));
+                        view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null,hdr.useFlushIfPresent));
                         break;
                     case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null));
+                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null,hdr.useFlushIfPresent));
                         break;    
                     case GmsHeader.JOIN_RSP:
                         impl.handleJoinResponse(hdr.join_rsp);
@@ -938,24 +941,53 @@ public class GMS extends Protocol {
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
                 try {
-                    impl.join(local_addr);
+                    impl.join(local_addr,false);
                 }
                 catch(Throwable e) {
                     arg=e;
                 }
                 return arg;  // don't pass down: was already passed down
                 
+            case Event.CONNECT_USE_FLUSH:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
+                down_prot.down(evt);
+                if(local_addr == null)
+                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
+                try {
+                    impl.join(local_addr,true);
+                }
+                catch(Throwable e) {
+                    arg=e;
+                }
+                return arg;  // don't pass down: was already passed down     
+                
             case Event.CONNECT_WITH_STATE_TRANSFER:
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
                 try {
-                    impl.joinWithStateTransfer(local_addr);
+                    impl.joinWithStateTransfer(local_addr,false);
                 }
                 catch(Throwable e) {
                     arg=e;
                 }
                 return arg;  // don't pass down: was already passed down    
+            
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                down_prot.down(evt);
+                if(local_addr == null)
+                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
+                try {
+                    impl.joinWithStateTransfer(local_addr,true);
+                }
+                catch(Throwable e) {
+                    arg=e;
+                }
+                return arg;  // don't pass down: was already passed down         
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
@@ -1018,6 +1050,7 @@ public class GMS extends Protocol {
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
         Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
+        boolean useFlushIfPresent; // used when type=JOIN_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
         Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
         ViewId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
@@ -1041,9 +1074,14 @@ public class GMS extends Protocol {
 
 
         /** Used for JOIN_REQ or LEAVE_REQ header */
-        public GmsHeader(byte type, Address mbr) {
+        public GmsHeader(byte type, Address mbr,boolean useFlushIfPresent) {
             this.type=type;
             this.mbr=mbr;
+            this.useFlushIfPresent = useFlushIfPresent;
+        }
+        
+        public GmsHeader(byte type, Address mbr) {
+        	this(type,mbr,true);
         }
 
         /** Used for JOIN_RSP header */
@@ -1131,6 +1169,7 @@ public class GMS extends Protocol {
             out.writeObject(my_digest);
             out.writeObject(merge_id);
             out.writeBoolean(merge_rejected);
+            out.writeBoolean(useFlushIfPresent);
         }
 
 
@@ -1142,6 +1181,7 @@ public class GMS extends Protocol {
             my_digest=(Digest)in.readObject();
             merge_id=(ViewId)in.readObject();
             merge_rejected=in.readBoolean();
+            useFlushIfPresent=in.readBoolean();
         }
 
 
@@ -1155,6 +1195,7 @@ public class GMS extends Protocol {
             Util.writeStreamable(my_digest, out);
             Util.writeStreamable(merge_id, out); // kludge: we know merge_id is a ViewId
             out.writeBoolean(merge_rejected);
+            out.writeBoolean(useFlushIfPresent);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -1169,6 +1210,7 @@ public class GMS extends Protocol {
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
             merge_id=(ViewId)Util.readStreamable(ViewId.class, in);
             merge_rejected=in.readBoolean();
+            useFlushIfPresent=in.readBoolean();
         }
 
         public int size() {
@@ -1208,7 +1250,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.156 2009/03/16 17:38:30 vlada Exp $
+     * @version $Id: GMS.java,v 1.157 2009/03/23 19:40:38 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

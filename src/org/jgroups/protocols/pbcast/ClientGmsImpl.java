@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.65 2008/09/18 14:45:34 vlada Exp $
+// $Id: ClientGmsImpl.java,v 1.66 2009/03/23 19:40:38 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.65 $
+ * @version $Revision: 1.66 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -36,14 +36,16 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.reset();
     }
     
-    public void join(Address address) {
-        join(address, false);
+    public void join(Address address,boolean useFlushIfPresent) {
+    	joinInternal(address, false,useFlushIfPresent);
     }
     
 
-    public void joinWithStateTransfer(Address address) {
-        join(address, true);
-    }
+    @Override
+	public void joinWithStateTransfer(Address local_addr,
+			boolean useFlushIfPresent) {
+    	joinInternal(local_addr,true,useFlushIfPresent);
+	}
 
     /**
      * Joins this process to a group. Determines the coordinator and sends a
@@ -64,7 +66,7 @@ public class ClientGmsImpl extends GmsImpl {
      * 
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
-    private void join(Address mbr, boolean joinWithStateTransfer) {
+    private void joinInternal(Address mbr, boolean joinWithStateTransfer,boolean useFlushIfPresent) {
         Address coord=null;
         JoinRsp rsp=null;
         View tmp_view;
@@ -133,7 +135,7 @@ public class ClientGmsImpl extends GmsImpl {
 
                 if(log.isDebugEnabled())
                     log.debug("sending handleJoin(" + mbr + ") to " + coord);
-                sendJoinMessage(coord, mbr, joinWithStateTransfer);
+                sendJoinMessage(coord, mbr, joinWithStateTransfer,useFlushIfPresent);
             }
 
             try {
@@ -283,16 +285,16 @@ public class ClientGmsImpl extends GmsImpl {
 
 
 
-    void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer) {
+    void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         Message msg;
         GMS.GmsHeader hdr;
 
         msg=new Message(coord, null, null);
         msg.setFlag(Message.OOB);
         if(joinWithTransfer)
-            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr);
+            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr,useFlushIfPresent);
         else
-            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr);
+            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr,useFlushIfPresent);
         msg.putHeader(gms.getName(), hdr);
         
         // we have to enable unicasts to coord, as coord is not in our membership (the unicast message would get dropped)
@@ -373,5 +375,4 @@ public class ClientGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
                                            ", impl is " + gms.getImpl().getClass().getName());
     }
-
 }

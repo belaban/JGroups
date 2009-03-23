@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.60 2009/02/24 20:35:45 vlada Exp $
+// $Id: TUNNEL.java,v 1.61 2009/03/23 19:40:40 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -186,6 +186,8 @@ public class TUNNEL extends TP {
         switch(evt.getType()){
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:
+        case Event.CONNECT_USE_FLUSH:
+        case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: 	
 	        tunnel_policy.connect(stubs);
             break;
 
