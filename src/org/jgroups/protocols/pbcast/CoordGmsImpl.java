@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.95 2009/03/16 17:38:30 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.96 2009/03/23 19:40:38 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -83,11 +83,11 @@ public class CoordGmsImpl extends GmsImpl {
         cancelMerge();
     }
 
-    public void join(Address mbr) {
+    public void join(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
     
-    public void joinWithStateTransfer(Address mbr) {
+    public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
 
@@ -315,6 +315,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     public void handleMembershipChange(Collection<Request> requests) {
         boolean joinAndStateTransferInitiated=false;
+        boolean useFlushIfPresent=gms.use_flush_if_present;
         Collection<Address> new_mbrs=new LinkedHashSet<Address>(requests.size());
         Collection<Address> suspected_mbrs=new LinkedHashSet<Address>(requests.size());
         Collection<Address> leaving_mbrs=new LinkedHashSet<Address>(requests.size());
@@ -323,10 +324,12 @@ public class CoordGmsImpl extends GmsImpl {
             switch(req.type) {
                 case Request.JOIN:
                     new_mbrs.add(req.mbr);
+                    useFlushIfPresent=req.useFlushIfPresent;
                     break;
                 case Request.JOIN_WITH_STATE_TRANSFER:
                     new_mbrs.add(req.mbr);
                     joinAndStateTransferInitiated=true;
+                    useFlushIfPresent=req.useFlushIfPresent;
                     break;
                 case Request.LEAVE:
                     if(req.suspected)
@@ -393,7 +396,7 @@ public class CoordGmsImpl extends GmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            boolean successfulFlush = gms.startFlush(new_view);
+            boolean successfulFlush = useFlushIfPresent?gms.startFlush(new_view):true;
             if(!successfulFlush && hasJoiningMembers){
                 //see http://jira.jboss.org/jira/browse/JGRP-759
                 //We should NOT send back a join response if the flush fails. 
@@ -431,7 +434,7 @@ public class CoordGmsImpl extends GmsImpl {
         finally {
             if(hasJoiningMembers)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
-            if(!joinAndStateTransferInitiated)
+            if(!joinAndStateTransferInitiated && useFlushIfPresent)
                 gms.stopFlush();
             if(leaving) {
                 gms.initState(); // in case connect() is called again
@@ -898,5 +901,4 @@ public class CoordGmsImpl extends GmsImpl {
             }
         }
     }
-
 }

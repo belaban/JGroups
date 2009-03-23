@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.29 2008/03/27 09:02:53 vlada Exp $
+// $Id: GmsImpl.java,v 1.30 2009/03/23 19:40:38 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -30,8 +30,8 @@ public abstract class GmsImpl {
         warn=log.isWarnEnabled();
     }
 
-    public abstract void      join(Address mbr);
-    public abstract void      joinWithStateTransfer(Address local_addr);
+    public abstract void      join(Address mbr, boolean useFlushIfPresent);
+    public abstract void      joinWithStateTransfer(Address local_addr,boolean useFlushIfPresent);
     
     public abstract void      leave(Address mbr);
 
@@ -107,16 +107,22 @@ public abstract class GmsImpl {
         View             view;
         Digest           digest;
         List<Address>    target_members;
+        boolean useFlushIfPresent;
 
         Request(int type) {
             this.type=type;
         }
 
-        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators) {
+        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators,boolean useFlushPresent) {
             this.type=type;
             this.mbr=mbr;
             this.suspected=suspected;
             this.coordinators=coordinators;
+            this.useFlushIfPresent=useFlushPresent;
+        }
+        
+        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators) {
+        	this(type,mbr,suspected,coordinators,true);
         }
 
         public int getType() {

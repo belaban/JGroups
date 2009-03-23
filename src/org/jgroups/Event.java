@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.63 2008/07/30 11:45:52 belaban Exp $
+// $Id: Event.java,v 1.64 2009/03/23 19:40:42 vlada Exp $
 
 package org.jgroups;
 
@@ -50,6 +50,9 @@ public class Event {
     public static final int START_PARTITION                    = 82;  // arg = null;
     public static final int STOP_PARTITION                     = 83;  // arg = null; 
     public static final int PREPARE_VIEW                       = 86;  // arg = View
+    
+    public static final int CONNECT_USE_FLUSH			= 87;
+    public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH			= 88;
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -134,6 +137,8 @@ public class Event {
             case START_PARTITION:        return "START_PARTITION";
             case STOP_PARTITION:         return "STOP_PARTITION";            
             case PREPARE_VIEW:           return "PREPARE_VIEW";
+            case CONNECT_USE_FLUSH:           return "CONNECT_USE_FLUSH";
+            case CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:           return "CONNECT_WITH_STATE_TRANSFER_USE_FLUSH";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
