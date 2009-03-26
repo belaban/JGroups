@@ -83,8 +83,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private final static String NAME = "STREAMING_STATE_TRANSFER";
 
     /*
-     * ----------------------------- Properties
-     * ------------------------------------
+     * ----------------------------------------------Properties ----------------------------------- 
+     *    
      */
 
     @Property(converter = PropertyConverters.BindAddress.class, description = "The interface (NIC) used to accept state requests")
@@ -102,13 +102,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     @Property(description = "Buffer size for state transfer. Default is 8 KB")
     private int socket_buffer_size = 8 * 1024;
 
-    @ManagedAttribute(description = "If true default transport will be used for state transfer rather than seperate TCP sockets. Default is false")
-    @Property(description = "If true default transport will be used for state transfer rather than seperate TCP sockets. Default is false")
+    @ManagedAttribute(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
+    @Property(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     boolean use_default_transport = false;
 
     /*
-     * --------------------------------------------- JMX statistics
-     * ------------------------------------------------------
+     * --------------------------------------------- JMX statistics -------------------------------
      */
 
     private final AtomicInteger num_state_reqs = new AtomicInteger(0);
@@ -118,8 +117,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private volatile double avg_state_size = 0;
 
     /*
-     * --------------------------------------------- Fields
-     * ------------------------------------------------------
+     * --------------------------------------------- Fields ---------------------------------------
      */
 
     private Address local_addr = null;
@@ -312,8 +310,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     /*
-     * --------------------------- Private Methods
-     * --------------------------------
+     * --------------------------- Private Methods ------------------------------------------------
      */
 
     /**
@@ -468,7 +465,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
     }
 
-    public void openAndProvideOutputStreamToStateRecipient(Address stateRequester, String state_id) {
+    private void openAndProvideOutputStreamToStateRecipient(Address stateRequester, String state_id) {
         StateOutputStream wrapper = null;
         try {
             wrapper = new StateOutputStream(stateRequester, state_id);
@@ -532,8 +529,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     /*
-     * ------------------------ End of Private Methods
-     * ------------------------------
+     * ------------------------ End of Private Methods --------------------------------------------
      */
 
     private class StateProviderThreadSpawner implements Runnable {
