@@ -445,39 +445,34 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private void openAndProvideInputStreamToStateProvider(StateHeader hdr) {
-        String tmp_state_id = hdr.getStateId();
-        StateInputStream wrapper = null;
-        StateTransferInfo sti = null;
-
+        BufferedInputStream bis = null;
         try {
-            wrapper = new StateInputStream();
-            sti = new StateTransferInfo(hdr.sender, new BufferedInputStream(wrapper,
-                    socket_buffer_size), tmp_state_id);
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+            bis = new BufferedInputStream(new StateInputStream(), socket_buffer_size);
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
+                    hdr.sender, bis, hdr.getStateId())));
         } catch (IOException e) {
             // pass null stream up so that JChannel.getState() returns false
             log.error("Could not provide state recipient with appropriate stream", e);
             InputStream is = null;
-            sti = new StateTransferInfo(hdr.sender, is, tmp_state_id);
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
+                    hdr.sender, is, hdr.getStateId())));
         } finally {
-            Util.close(wrapper);
+            Util.close(bis);
         }
     }
 
     private void openAndProvideOutputStreamToStateRecipient(Address stateRequester, String state_id) {
-        StateOutputStream wrapper = null;
+        BufferedOutputStream bos = null;
         try {
-            wrapper = new StateOutputStream(stateRequester, state_id);
-            StateTransferInfo sti = new StateTransferInfo(stateRequester, new BufferedOutputStream(
-                    wrapper, socket_buffer_size), state_id);
-            up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
+            bos = new BufferedOutputStream(new StateOutputStream(stateRequester, state_id),socket_buffer_size);
+            up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, new StateTransferInfo(
+                    stateRequester, bos, state_id)));
         } catch (IOException e) {
             if (log.isWarnEnabled()) {
                 log.warn("StateOutputStream could not be given to application", e);
             }
         } finally {
-            Util.close(wrapper);
+            Util.close(bos);
         }
     }
 
