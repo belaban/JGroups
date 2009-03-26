@@ -791,7 +791,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             if (closed.get())
                 return -1;
             final byte[] array = new byte[1];
-            return read(array);
+            return read(array) == -1 ? -1 : array[0];
         }
 
         public int read(byte[] b, int off, int len) throws IOException {
@@ -806,7 +806,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                return -1;
+                throw new InterruptedIOException();
             }
             return -1;
         }
@@ -873,7 +873,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         public void write(int b) throws IOException {
             if (closed.get())
                 throw closed();
-            byte buf[] = new byte[1];
+            byte buf[] = new byte[]{(byte) b};
             write(buf);
         }
 
