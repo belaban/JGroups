@@ -32,10 +32,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * <code>STREAMING_STATE_TRANSFER</code>, as its name implies, allows a
  * streaming state transfer between two channel instances.
- * 
  * <p>
  * 
- * Major advantage of this approach is that transfering application state to a
+ * Major advantage of this approach is that transferring application state to a
  * joining member of a group does not entail loading of the complete application
  * state into memory. Application state, for example, might be located entirely
  * on some form of disk based storage. The default <code>STATE_TRANSFER</code>
@@ -44,8 +43,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * does not. Thus <code>STREAMING_STATE_TRANSFER</code> protocol is able to
  * transfer application state that is very large (>1Gb) without a likelihood of
  * such transfer resulting in OutOfMemoryException.
- * 
  * <p>
+ * 
+ * <code>STREAMING_STATE_TRANSFER</code> allows use of either default channel transport or 
+ * separate tcp sockets for state transfer. If firewalls are not a concern then separate tcp sockets 
+ * should be used as they offer faster state transfer.  Transport for state transfer is selected using 
+ * <code>use_default_transport<code> boolean property. 
+ * <p>
+ *  
  * 
  * Channel instance can be configured with either
  * <code>STREAMING_STATE_TRANSFER</code> or <code>STATE_TRANSFER</code> but
@@ -90,9 +95,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     @Property(description="Keep alive for pool threads serving state requests. Default is 20000 msec")
     private long pool_thread_keep_alive = 20*1000;
 
-    @Property(description="Buffer size for state transfer sockets. Default is 8 KB")
+    @Property(description="Buffer size for state transfer. Default is 8 KB")
     private int socket_buffer_size=8 * 1024;
     
+    @ManagedAttribute(description="If true default transport will be used for state transfer rather than seperate TCP sockets. Default is false")
     @Property(description="If true default transport will be used for state transfer rather than seperate TCP sockets. Default is false")
     boolean use_default_transport = false;
 
@@ -111,20 +117,29 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private Address local_addr=null;
 
     @GuardedBy("members")
-    private final Vector<Address> members=new Vector<Address>();
+    private final Vector<Address> members;
     
-    private final Map<String, LinkedBlockingQueue<Message>> statesMap;
+    /*
+     * BlockingQueue used for transfer of state Message(s) if default transport is used
+     * Only state recipient uses this queue
+     */
+    private final BlockingQueue<Message> stateQueue;
 
     /*
-     * Runnable that listens for state requests and spawns threads to serve those requests     
+     * Runnable that listens for state requests and spawns threads to serve those requests 
+     * if socket transport is used    
      */
     private StateProviderThreadSpawner spawner;
 
-    private volatile boolean flushProtocolInStack=false;
+    /*
+     * Set to true if FLUSH protocol is detected in protocol stack
+     */
+    private AtomicBoolean flushProtocolInStack= new AtomicBoolean(false);
     
 
     public STREAMING_STATE_TRANSFER() {
-    	statesMap = Collections.synchronizedMap(new HashMap<String, LinkedBlockingQueue<Message>>());
+    	members=new Vector<Address>();
+    	stateQueue = new LinkedBlockingQueue<Message>();
     }
 
     public final String getName() {
@@ -191,11 +206,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                             handleStateRsp(hdr);
                             break;
                         case StateHeader.STATE_PART:
-                        	BlockingQueue<Message> queue = statesMap.get(hdr.state_id);
                         	try {
-                        		queue.put(msg);
+                        		stateQueue.put(msg);
 							} catch (InterruptedException e) {					
-								e.printStackTrace();
+								Thread.currentThread().interrupt();
 							}
                         	break;
                         default:
@@ -268,10 +282,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                         log.debug("GET_STATE: asking " + target
                                   + " for state, passing down a SUSPEND_STABLE event, timeout="
                                   + info.timeout);
-
-                    if(use_default_transport){
-                    	statesMap.put(info.state_id, new LinkedBlockingQueue<Message>());
-                    }
+                   
                     down_prot.down(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
                     down_prot.down(new Event(Event.MSG, state_req));
                 }
@@ -286,7 +297,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             case Event.CONFIG:
                 Map<String,Object> config=(Map<String,Object>)evt.getArg();
                 if(config != null && config.containsKey("flush_supported")) {
-                    flushProtocolInStack=true;
+                    flushProtocolInStack.set(true);
                 }
                 break;
 
@@ -309,7 +320,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      * @return true if use of digests is required, false otherwise
      */
     private boolean isDigestNeeded() {
-        return !flushProtocolInStack;
+        return !flushProtocolInStack.get();
     }
 
     private void respondToStateRequester(String id, Address stateRequester, boolean open_barrier) {
@@ -443,7 +454,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         StateTransferInfo sti=null;
                    
         try {
-			wrapper = new StateInputStream(tmp_state_id);
+			wrapper = new StateInputStream();
 			sti = new StateTransferInfo(hdr.sender, new BufferedInputStream(wrapper,socket_buffer_size), tmp_state_id);
 			up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
 		} catch (IOException e) {
@@ -756,9 +767,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
                 down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
 
-                if(stats) {
-                    avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
-                }
+                if (stats) {
+					avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter)
+							/ num_state_reqs.doubleValue();
+				}
             }
         }
 
@@ -784,29 +796,21 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
     }
     
-        private class StateInputStream extends InputStream {
+    private class StateInputStream extends InputStream {
     	
         private final AtomicBoolean closed;
-        private final BlockingQueue<Message> queue;
-        private final String state_id;
-
-        public StateInputStream(String stateId) throws IOException {
+     
+        public StateInputStream() throws IOException {
 			super();
-
-			BlockingQueue<Message> q = statesMap.get(stateId);
-			if (q == null)
-				throw new IOException("Cannot find appropriate queue for state " + stateId);
-			this.queue = q;
-			this.state_id=stateId;
 			this.closed = new AtomicBoolean(false);
 		}
         
         public void close() throws IOException {
             if(closed.compareAndSet(false, true)) {
                 if(log.isDebugEnabled()) {
-                    log.debug("State reader is closing the socket ");
+                    log.debug("State reader is closing the stream");
                 }
-                statesMap.remove(state_id);
+                stateQueue.clear();
                 up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
                 down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
                 super.close();
@@ -823,7 +827,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         	if(closed.get()) return -1;
         	Message m = null;
         	try {
-				m = queue.take();
+				m = stateQueue.take();
                 StateHeader hdr=(StateHeader)m.getHeader(getName());
                 if(hdr.type == StateHeader.STATE_PART){
                 	return readAndTransferPayload(m,b,off,len);
@@ -839,7 +843,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 			byte[] buffer = m.getBuffer();
 			if (log.isDebugEnabled()) {
 				log.debug(local_addr + " reading chunk of state  "
-						+ "byte[] b " + b.length + ", off" + off + ", len"
+						+ "byte[] b=" + b.length + ", off=" + off + ", buffer.length="
 						+ buffer.length);
 			}
 			System.arraycopy(buffer, 0, b, off, buffer.length);
@@ -868,14 +872,17 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         
         public void close() throws IOException {
             if(closed.compareAndSet(false, true)) {
-                if(log.isDebugEnabled()) {
-                    log.debug("State writer " + local_addr + " is closing the output stream for state_id " +state_id);
-                }                
+                if (log.isDebugEnabled()) {
+					log.debug("State writer " + local_addr
+							+ " is closing the output stream for state_id "
+							+ state_id);
+				}                
                 up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
                 down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
-                if(stats) {
-                    avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
-                }
+                if (stats) {
+					avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter)
+							/ num_state_reqs.doubleValue();
+				}
                 super.close();
             }
         }
@@ -907,8 +914,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         	down_prot.down(new Event(Event.MSG, m));
         	if (log.isDebugEnabled()) {
 				log.debug(local_addr + " sent chunk of state to "
-						+ stateRequester + "byte[] b " + b.length + ", off"
-						+ off + ", len" + len);
+						+ stateRequester + "byte[] b=" + b.length + ", off="
+						+ off + ", len=" + len);
 			}
         }
         
