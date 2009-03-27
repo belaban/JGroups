@@ -104,7 +104,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     @ManagedAttribute(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     @Property(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
-    boolean use_default_transport = false;
+    boolean use_default_transport = true;
 
     /*
      * --------------------------------------------- JMX statistics -------------------------------
@@ -357,7 +357,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             down_prot.down(new Event(Event.OPEN_BARRIER));
 
         if (use_default_transport) {
-            openAndProvideOutputStreamToStateRecipient(stateRequester, id);
+            openAndProvideOutputStreamToStateProvider(stateRequester, id);
         }
     }
 
@@ -435,7 +435,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             // has to accept state messages from state provider
             Thread t = getThreadFactory().newThread(new Runnable() {
                 public void run() {
-                    openAndProvideInputStreamToStateProvider(hdr);
+                    openAndProvideInputStreamToStateReceiver(hdr.sender, hdr.getStateId());
                 }
             }, "STREAMING_STATE_TRANSFER state reader");
             t.start();
@@ -444,24 +444,24 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
     }
 
-    private void openAndProvideInputStreamToStateProvider(StateHeader hdr) {
+    private void openAndProvideInputStreamToStateReceiver(Address stateProvider, String state_id) {
         BufferedInputStream bis = null;
         try {
             bis = new BufferedInputStream(new StateInputStream(), socket_buffer_size);
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    hdr.sender, bis, hdr.getStateId())));
+                    stateProvider, bis, state_id)));
         } catch (IOException e) {
             // pass null stream up so that JChannel.getState() returns false
             log.error("Could not provide state recipient with appropriate stream", e);
             InputStream is = null;
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    hdr.sender, is, hdr.getStateId())));
+                    stateProvider, is, state_id)));
         } finally {
             Util.close(bis);
         }
     }
 
-    private void openAndProvideOutputStreamToStateRecipient(Address stateRequester, String state_id) {
+    private void openAndProvideOutputStreamToStateProvider(Address stateRequester, String state_id) {
         BufferedOutputStream bos = null;
         try {
             bos = new BufferedOutputStream(new StateOutputStream(stateRequester, state_id),socket_buffer_size);
