@@ -126,8 +126,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private final Vector<Address> members;
 
     /*
-     * BlockingQueue used for transfer of state Message(s) if default transport
-     * is used Only state recipient uses this queue
+     * BlockingQueue to accept state transfer Message(s) if default transport
+     * is used. Only state recipient uses this queue
      */
     private final BlockingQueue<Message> stateQueue;
 
@@ -244,7 +244,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                         log.debug("using bind_addr from CONFIG event " + bind_addr);
                 }
                 if (config != null && config.containsKey("state_transfer")) {
-                    log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+                    log.error("Protocol stack must have only one state transfer protocol");
                 }
                 break;
         }
