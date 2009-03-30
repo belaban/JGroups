@@ -1,11 +1,9 @@
-// $Id: DISCARD.java,v 1.28 2009/03/10 16:58:33 belaban Exp $
+// $Id: DISCARD.java,v 1.29 2009/03/30 11:18:58 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
@@ -14,10 +12,7 @@ import org.jgroups.util.Util;
 
 import javax.swing.*;
 import java.io.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -123,6 +118,8 @@ public class DISCARD extends Protocol {
     /** Messages from this sender will get dropped */
     public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}
 
+    public void removeIgnoredMember(Address member) {ignoredMembers.remove(member);}
+
     public void resetIgnoredMembers() {ignoredMembers.clear();}
 
 
@@ -198,7 +195,8 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
-        if(evt.getType() == Event.MSG) {
+        switch(evt.getType()) {
+            case Event.MSG:
             msg=(Message)evt.getArg();
             Address dest=msg.getDest();
             boolean multicast=dest == null || dest.isMulticastAddress();
@@ -238,6 +236,14 @@ public class DISCARD extends Protocol {
                     }
                 }
             }
+                break;
+            case Event.VIEW_CHANGE:
+                View view=(View)evt.getArg();
+                Vector<Address> mbrs=view.getMembers();
+                ignoredMembers.retainAll(mbrs); // remove all non members
+                if(discard_dialog != null)
+                    discard_dialog.handleView(mbrs);
+                break;
         }
 
         return down_prot.down(evt);
@@ -321,20 +327,50 @@ public class DISCARD extends Protocol {
         private JButton start_discarding_button=new JButton("start discarding");
         private JButton stop_discarding_button=new JButton("stop discarding");
         JPanel panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel checkboxes=new JPanel();
+
 
         private DiscardDialog() {
         }
 
         void init() {
-            panel.add(start_discarding_button);
-            panel.add(stop_discarding_button);
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            checkboxes.setLayout(new BoxLayout(checkboxes, BoxLayout.Y_AXIS));
+            JPanel button_panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+            button_panel.add(start_discarding_button);
+            button_panel.add(stop_discarding_button);
+            panel.add(button_panel);
+
             start_discarding_button.addActionListener(this);
             stop_discarding_button.addActionListener(this);
-            add(panel);
+
+
+            panel.add(checkboxes);
+
+//            final JCheckBox box=new MyCheckBox("discard messages from 192.168.1.5:5000", localAddress);
+//            box.addActionListener(new ActionListener() {
+//
+//                public void actionPerformed(ActionEvent e) {
+//                    System.out.println("action is " + e.getActionCommand() + ", selected=" + box.isSelected());
+//                    System.out.println("source=" + e.getSource());
+//                }
+//            });
+//            checkboxes.add(box);
+//
+//            for(int i=6000; i< 6100; i+=10)
+//                checkboxes.add(new JCheckBox("discard msgs from 192.168.1.5:" + i));
+//
+
             setContentPane(panel);
             pack();
             setVisible(true);
             setTitle("Discard dialog (" + localAddress + ")");
+
+
+            Component[] comps=panel.getComponents();
+            for(Component c: comps) {
+                System.out.println("c = " + c);
+        }
         }
 
 
@@ -345,7 +381,51 @@ public class DISCARD extends Protocol {
             }
             else if(command.startsWith("stop")) {
                 discard_all=false;
+                Component[] comps=checkboxes.getComponents();
+                for(Component c: comps) {
+                    if(c instanceof JCheckBox) {
+                        ((JCheckBox)c).setSelected(false);
             }
+        }
+    }
+}
+
+        void handleView(Collection<Address> mbrs) {
+            checkboxes.removeAll();
+            for(final Address addr: mbrs) {
+                final MyCheckBox box=new MyCheckBox("discard traffic from " + addr, addr);
+                box.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        if(box.isSelected()) {
+                            ignoredMembers.add(addr);
+                        }
+                        else {
+                            ignoredMembers.remove(addr);
+                        }
+                    }
+                });
+                checkboxes.add(box);
+            }
+
+            for(Component comp: checkboxes.getComponents()) {
+                MyCheckBox box=(MyCheckBox)comp;
+                if(ignoredMembers.contains(box.mbr))
+                    box.setSelected(true);
+            }
+            pack();
+        }
+    }
+
+    private static class MyCheckBox extends JCheckBox {
+        final Address mbr;
+
+        public MyCheckBox(String name, Address member) {
+            super(name);
+            this.mbr=member;
+        }
+
+        public String toString() {
+            return super.toString() + " [mbr=" + mbr + "]";
         }
     }
 }
