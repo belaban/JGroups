@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.102 2009/03/13 09:17:18 belaban Exp $
+ * @version $Id: FC.java,v 1.103 2009/03/30 10:43:47 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -105,7 +105,8 @@ public class FC extends Protocol {
      * Set to false by default in 2.5 because we have OOB messages for credit replenishments - this flag should not be set
      * to true if the concurrent stack is used
      */
-    @Property
+    @Property(description="Does not block a down message if it is a result of handling an up message in the" +
+            "same thread. Fixes JGRP-928")
     private boolean ignore_synchronous_response=false;
     
     
