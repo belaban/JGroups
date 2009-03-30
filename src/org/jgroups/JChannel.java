@@ -72,7 +72,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.24 2009/03/16 21:18:40 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.25 2009/03/30 12:35:18 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1775,8 +1775,11 @@ public class JChannel extends Channel {
      * hang waiting for up() to return, while up() actually tries to kill that very thread.
      * This way, we return immediately and allow the thread to terminate.
      */
-    private void handleExit(Event evt) {
+    private synchronized void handleExit(Event evt) {
         notifyChannelShunned();
+        if(!auto_reconnect)
+            return;
+        
         if(closer != null && !closer.isAlive())
             closer=null;
         if(closer == null) {
@@ -1913,7 +1916,7 @@ public class JChannel extends Channel {
         if(mbrs == null)
             return null;
         if(!mbrs.isEmpty())
-            return (Address)mbrs.firstElement();
+            return mbrs.firstElement();
         return null;
     }
 
@@ -1967,6 +1970,9 @@ public class JChannel extends Channel {
         }
     }
 
+    /**
+     * Closes, reopens and reconnects to the cluster
+     */
     class CloserThread extends Thread {
         final Event evt;
         final Thread t=null;
@@ -1980,64 +1986,78 @@ public class JChannel extends Channel {
 
 
         public void run() {
+            String old_cluster_name=cluster_name; // remember because close() will null it
             try {
-                String old_cluster_name=cluster_name; // remember because close() will null it
                 if(log.isDebugEnabled())
                     log.debug("closing the channel");
                 _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
+            }
+            catch(Throwable ex1) {
+                if(log.isErrorEnabled())
+                    log.error("failed closing the channel", ex1);
+            }
 
+            try {
                 if(up_handler != null)
                     up_handler.up(this.evt);
                 else {
-                    try {
-                        if(receiver == null)
-                            mq.add(this.evt);
-                    }
-                    catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("exception: " + ex);
+                    if(receiver == null)
+                        mq.add(this.evt);
+                }
+            }
+            catch(Throwable ex2) {
+                if(log.isErrorEnabled())
+                    log.error("failed passing up EXIT event", ex2);
+            }
+
+
+            if(mq != null) {
+                Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
+                try { mq.close(false); } catch(Throwable ex3) {}
+            }
+
+            for(int i=0; i < 5; i++) {
+                try {
+                    if(closed == false)
+                        break;
+                    if(log.isDebugEnabled()) log.debug("reconnecting to cluster " + old_cluster_name);
+                    open();
+                    if(additional_data != null) {
+                        // send previously set additional_data down the stack - other protocols (e.g. TP) use it
+                        Map<String,Object> m=new HashMap<String,Object>(additional_data);
+                        down(new Event(Event.CONFIG, m));
                     }
                 }
-
-                if(mq != null) {
-                    Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
-                    try {
-                        mq.close(false);
-                    }
-                    catch(Exception ex) {
-                    }
+                catch(Throwable ex4) {
+                    if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex4);
+                    Util.sleep(500);
                 }
+            }
 
-                if(auto_reconnect) {
-                    try {
-                        if(log.isDebugEnabled()) log.debug("reconnecting to group " + old_cluster_name);
-                        open();
-                        if(additional_data != null) {
-                            // send previously set additional_data down the stack - other protocols (e.g. TP) use it
-                            Map<String,Object> m=new HashMap<String,Object>(additional_data);
-                            down(new Event(Event.CONFIG, m));
-                        }
-                    }
-                    catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
-                        return;
-                    }
+            if(closed) { // still closed; reopening failed above
+                if(log.isErrorEnabled())
+                    log.error("failed reopening channel, terminating closer thread");
+                closer=null;
+                return;
+            }
 
-                    while(!connected) {
-                        try {
-                            connect(old_cluster_name);
-                            notifyChannelReconnected(local_addr);
-                        }
-                        catch(Exception ex) {
-                            if(log.isErrorEnabled()) log.error("failure reconnecting to channel, retrying", ex);
-                            Util.sleep(1000); // sleep 1 sec between reconnect attempts
-                        }
-                    }
+            while(!connected) {
+                try {
+                    connect(old_cluster_name);
+                    notifyChannelReconnected(local_addr);
                 }
+                catch(Throwable ex5) {
+                    if(log.isErrorEnabled()) log.error("failure reconnecting to channel, retrying", ex5);
+                    Util.sleep(1000); // sleep 1 sec between reconnect attempts
+                }
+            }
 
-                if(auto_getstate && state_transfer_supported) {
-                    if(log.isDebugEnabled())
-                        log.debug("fetching the state (auto_getstate=true)");
-                    boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
+            if(auto_getstate && state_transfer_supported) {
+                if(log.isDebugEnabled())
+                    log.debug("fetching the state (auto_getstate=true)");
+                boolean rc=false;
+                try {
+                    rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
                     if(log.isDebugEnabled()) {
                         if(rc)
                             log.debug("state was retrieved successfully");
@@ -2045,14 +2065,13 @@ public class JChannel extends Channel {
                             log.debug("state transfer failed");
                     }
                 }
+                catch(Throwable ex6) {
+                    if(log.isErrorEnabled())
+                        log.error("failed auto-fetching state", ex6);
+                }
 
             }
-            catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception: " + ex);
-            }
-            finally {
-                closer=null;
-            }
+
         }
     }
 
