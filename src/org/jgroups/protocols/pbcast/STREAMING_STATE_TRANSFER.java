@@ -13,9 +13,9 @@ import org.jgroups.util.Digest;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -104,6 +104,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      * Buffer size for state transfer. Default is 8 KB
      */
     private int socket_buffer_size = 8 * 1024;
+    
+    /*
+     * If default transport is used the total state buffer size before state producer is blocked. Default is 81920 bytes
+     */
+    private int buffer_queue_size = 81920;
 
     /*
      * If true default transport will be used for state transfer rather than
@@ -131,10 +136,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private final Vector<Address> members;
 
     /*
-     * BlockingQueue used for transfer of state Message(s) if default transport
-     * is used Only state recipient uses this queue
+     * BlockingQueue to accept state transfer Message(s) if default transport
+     * is used. Only state recipient uses this queue
      */
-    private final BlockingQueue<Message> stateQueue;
+    private BlockingQueue<Message> stateQueue;
 
     /*
      * Runnable that listens for state requests and spawns threads to serve
@@ -149,7 +154,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public STREAMING_STATE_TRANSFER() {
         members = new Vector<Address>();
-        stateQueue = new LinkedBlockingQueue<Message>();
     }
 
     public final String getName() {
@@ -209,6 +213,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             return false;
         }
         use_default_transport = Util.parseBoolean(props, "use_default_transport", false);
+        buffer_queue_size = Util.parseInt(props, "buffer_queue_size", 81920);
         bind_port = Util.parseInt(props, "start_port", 0);
         socket_buffer_size = Util.parseInt(props, "socket_buffer_size", 8 * 1024); // 8K
         max_pool = Util.parseInt(props, "max_pool", 5);
@@ -229,6 +234,19 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         map.put("state_transfer", Boolean.TRUE);
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));
+        
+        if (use_default_transport) {
+            int size = buffer_queue_size / socket_buffer_size;
+            // idiot proof it
+            if (size <= 1) {
+                size = 10;
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("buffer_queue_size=" + buffer_queue_size + ", socket_buffer_size="
+                        + socket_buffer_size + ", creating queue of size " + size);
+            }
+            stateQueue = new ArrayBlockingQueue<Message>(size);
+        }      
     }
 
     public void stop() {
@@ -285,7 +303,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                         log.debug("using bind_addr from CONFIG event " + bind_addr);
                 }
                 if (config != null && config.containsKey("state_transfer")) {
-                    log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+                    log.error("Protocol stack must have only one state transfer protocol");
                 }
                 break;
         }
@@ -351,8 +369,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     /*
-     * --------------------------- Private Methods
-     * --------------------------------
+     * --------------------------- Private Methods ------------------------------------------------
      */
 
     /**
@@ -400,7 +417,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             down_prot.down(new Event(Event.OPEN_BARRIER));
 
         if (use_default_transport) {
-            openAndProvideOutputStreamToStateRecipient(stateRequester, id);
+            openAndProvideOutputStreamToStateProvider(stateRequester, id);
         }
     }
 
@@ -478,7 +495,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             // has to accept state messages from state provider
             Thread t = getThreadFactory().newThread(new Runnable() {
                 public void run() {
-                    openAndProvideInputStreamToStateProvider(hdr);
+                    openAndProvideInputStreamToStateReceiver(hdr.sender, hdr.getStateId());
                 }
             }, "STREAMING_STATE_TRANSFER state reader");
             t.start();
@@ -487,24 +504,24 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
     }
 
-    private void openAndProvideInputStreamToStateProvider(StateHeader hdr) {
+    private void openAndProvideInputStreamToStateReceiver(Address stateProvider, String state_id) {
         BufferedInputStream bis = null;
         try {
             bis = new BufferedInputStream(new StateInputStream(), socket_buffer_size);
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    hdr.sender, bis, hdr.getStateId())));
+                    stateProvider, bis, state_id)));
         } catch (IOException e) {
             // pass null stream up so that JChannel.getState() returns false
             log.error("Could not provide state recipient with appropriate stream", e);
             InputStream is = null;
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    hdr.sender, is, hdr.getStateId())));
+                    stateProvider, is, state_id)));
         } finally {
             Util.close(bis);
         }
     }
 
-    private void openAndProvideOutputStreamToStateRecipient(Address stateRequester, String state_id) {
+    private void openAndProvideOutputStreamToStateProvider(Address stateRequester, String state_id) {
         BufferedOutputStream bos = null;
         try {
             bos = new BufferedOutputStream(new StateOutputStream(stateRequester, state_id),socket_buffer_size);
@@ -518,7 +535,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             Util.close(bos);
         }
     }
-
 
     private void connectToStateProvider(StateHeader hdr) {
         IpAddress address = hdr.bind_addr;
@@ -568,8 +584,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     /*
-     * ------------------------ End of Private Methods
-     * ------------------------------
+     * ------------------------ End of Private Methods --------------------------------------------
      */
 
     private class StateProviderThreadSpawner implements Runnable {
