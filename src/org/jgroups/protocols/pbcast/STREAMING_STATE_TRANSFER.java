@@ -18,6 +18,7 @@ import org.jgroups.util.Digest;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -101,6 +102,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     @Property(description = "Buffer size for state transfer. Default is 8 KB")
     private int socket_buffer_size = 8 * 1024;
+    
+    @Property(description = "If default transport is used the total state buffer size before state producer is blocked. Default is 81920 bytes")
+    private int buffer_queue_size = 81920;
 
     @ManagedAttribute(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     @Property(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
@@ -129,7 +133,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      * BlockingQueue to accept state transfer Message(s) if default transport
      * is used. Only state recipient uses this queue
      */
-    private final BlockingQueue<Message> stateQueue;
+    private BlockingQueue<Message> stateQueue;
 
     /*
      * Runnable that listens for state requests and spawns threads to serve
@@ -144,7 +148,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public STREAMING_STATE_TRANSFER() {
         members = new Vector<Address>();
-        stateQueue = new LinkedBlockingQueue<Message>();
     }
 
     public final String getName() {
@@ -188,6 +191,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         map.put("state_transfer", Boolean.TRUE);
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));
+        
+        if(use_default_transport){
+            int size = buffer_queue_size/socket_buffer_size;
+            if(log.isDebugEnabled()){
+                log.debug("Creating queue of size " + size);
+            }
+            stateQueue = new ArrayBlockingQueue<Message>(size);
+        }      
     }
 
     public void stop() {
