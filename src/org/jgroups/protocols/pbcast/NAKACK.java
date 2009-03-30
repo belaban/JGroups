@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.15 2008/10/31 15:04:00 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.16 2009/03/30 15:54:08 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -182,7 +182,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private static final int NUM_REBROADCAST_MSGS=3;
 
     /** BoundedList<Digest>, keeps the last 10 stability messages */
-    private final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
+    protected final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
+
+    protected final BoundedList<String> merge_history=new BoundedList<String>(10);
 
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     protected boolean print_stability_history_on_failed_xmit=false;
@@ -236,6 +238,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             receive_history.clear();
         if(send_history != null)
             send_history.clear();
+        stability_msgs.clear();
+        merge_history.clear();
     }
 
     public void init() throws Exception {
@@ -507,6 +511,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Digest digest: stability_msgs) {
             sb.append(i++).append(": ").append(digest).append("\n");
         }
+        return sb.toString();
+    }
+
+    public String printMergeHistory() {
+        StringBuilder sb=new StringBuilder();
+        for(String tmp: merge_history)
+            sb.append(tmp).append("\n");
         return sb.toString();
     }
 
@@ -1285,33 +1296,24 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-
-        StringBuilder sb=null;
-        if(log.isDebugEnabled()) {
-            sb=new StringBuilder();
-            sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
-        }
-
-        Address sender;
-        Digest.Entry val;
-        NakReceiverWindow win;
-        long highest_delivered_seqno, low_seqno;
+        StringBuilder sb=new StringBuilder();
+        sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
         for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            sender=entry.getKey();
-            val=entry.getValue();
+            Address sender=entry.getKey();
+            Digest.Entry val=entry.getValue();
             if(sender == null || val == null) {
                 if(log.isWarnEnabled()) {
                     log.warn("sender or value is null");
                 }
                 continue;
             }
-            highest_delivered_seqno=val.getHighestDeliveredSeqno();
-            low_seqno=val.getLow();
+            long highest_delivered_seqno=val.getHighestDeliveredSeqno();
+            long low_seqno=val.getLow();
 
             // changed Feb 2008 (bela): http://jira.jboss.com/jira/browse/JGRP-699: we replace all existing entries
             // except for myself
-            win=xmit_table.get(sender);
+            NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
                 if(local_addr != null && local_addr.equals(sender)) {
                     continue;
@@ -1324,10 +1326,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
             xmit_table.put(sender, win);
         }
-        if(log.isDebugEnabled() && sb != null) {
-            sb.append("\n").append("resulting digest: " + getDigest());
+        sb.append("\n").append("resulting digest: " + getDigest());
+        merge_history.add(sb.toString());
+        if(log.isDebugEnabled())
             log.debug(sb);
-        }
 
         if(!xmit_table.containsKey(local_addr)) {
             if(log.isWarnEnabled()) {
