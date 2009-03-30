@@ -192,10 +192,15 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));
         
-        if(use_default_transport){
-            int size = buffer_queue_size/socket_buffer_size;
-            if(log.isDebugEnabled()){
-                log.debug("Creating queue of size " + size);
+        if (use_default_transport) {
+            int size = buffer_queue_size / socket_buffer_size;
+            // idiot proof it
+            if (size <= 1) {
+                size = 10;
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("buffer_queue_size=" + buffer_queue_size + ", socket_buffer_size="
+                        + socket_buffer_size + ", creating queue of size " + size);
             }
             stateQueue = new ArrayBlockingQueue<Message>(size);
         }      
