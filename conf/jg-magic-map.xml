@@ -41,4 +41,5 @@
     <class id="65" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader"/>
     <class id="66" name="org.jgroups.blocks.PullPushAdapter$PullHeader"/>
     <class id="67" name="org.jgroups.protocols.AuthHeader"/>
+    <class id="68" name="org.jgroups.protocols.MERGE3$CoordAnnouncement"/>
 </magic-number-class-mapping>
