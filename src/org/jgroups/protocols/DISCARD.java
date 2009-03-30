@@ -1,15 +1,17 @@
-// $Id: DISCARD.java,v 1.17.2.2 2008/06/11 07:02:59 belaban Exp $
+// $Id: DISCARD.java,v 1.17.2.3 2009/03/30 11:02:16 belaban Exp $
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.*;
 
@@ -36,6 +38,10 @@ public class DISCARD extends Protocol {
     // number of subsequent multicasts to drop in the down direction
     int drop_down_multicasts=0;
 
+    private DiscardDialog discard_dialog=null;
+
+    protected boolean use_gui=false;
+
 
     /**
      * All protocol names have to be unique !
@@ -45,41 +51,34 @@ public class DISCARD extends Protocol {
     }
 
 
-    public boolean isDiscardAll() {
-        return discard_all;
+    public boolean isExcludeItself() {
+        return excludeItself;
     }
 
-    public void setDiscardAll(boolean discard_all) {
-        this.discard_all=discard_all;
+    public void setLocalAddress(Address localAddress){
+        this.localAddress =localAddress;
+        if(discard_dialog != null)
+            discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
     }
 
-    public boolean setProperties(Properties props) {
-        String str;
+    public void setExcludeItself(boolean excludeItself) {
+        this.excludeItself=excludeItself;
+    }
 
-        super.setProperties(props);
-        str=props.getProperty("up");
-        if(str != null) {
-            up=Double.parseDouble(str);
-            props.remove("up");
-        }
+    public double getUpDiscardRate() {
+        return up;
+    }
 
-        str=props.getProperty("down");
-        if(str != null) {
-            down=Double.parseDouble(str);
-            props.remove("down");
-        }
+    public void setUpDiscardRate(double up) {
+        this.up=up;
+    }
 
-        str=props.getProperty("excludeitself");
-        if(str != null) {
-            excludeItself=Boolean.valueOf(str).booleanValue();
-            props.remove("excludeitself");
-        }
+    public double getDownDiscardRate() {
+        return down;
+    }
 
-        if(!props.isEmpty()) {
-            log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
+    public void setDownDiscardRate(double down) {
+        this.down=down;
     }
 
     public int getDropDownUnicasts() {
@@ -105,19 +104,74 @@ public class DISCARD extends Protocol {
     /** Messages from this sender will get dropped */
     public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}
 
+    public void removeIgnoredMember(Address member) {ignoredMembers.remove(member);}
+
     public void resetIgnoredMembers() {ignoredMembers.clear();}
+
+
+
+
+    public boolean setProperties(Properties props) {
+        String str;
+
+        super.setProperties(props);
+        str=props.getProperty("up");
+        if(str != null) {
+            up=Double.parseDouble(str);
+            props.remove("up");
+        }
+
+        str=props.getProperty("down");
+        if(str != null) {
+            down=Double.parseDouble(str);
+            props.remove("down");
+        }
+
+        str=props.getProperty("excludeitself");
+        if(str != null) {
+            excludeItself=Boolean.valueOf(str).booleanValue();
+            props.remove("excludeitself");
+        }
+
+        str=props.getProperty("use_gui");
+        if(str != null) {
+            use_gui=Boolean.valueOf(str).booleanValue();
+            props.remove("use_gui");
+        }
+
+        if(!props.isEmpty()) {
+            log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
+            return false;
+        }
+        return true;
+    }
+
+
 
 
     public void start() throws Exception {
         super.start();
+        if(use_gui) {
+            discard_dialog=new DiscardDialog();
+            discard_dialog.init();
+        }
+    }
+
+    public void stop() {
+        super.stop();
+        if(discard_dialog != null)
+            discard_dialog.dispose();
     }
 
     public Object up(Event evt) {
         Message msg;
         double r;
 
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS)
+        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
             localAddress=(Address)evt.getArg();
+            if(discard_dialog != null)
+                discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
+        }
 
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
@@ -128,12 +182,12 @@ public class DISCARD extends Protocol {
             }
 
             DiscardHeader dh = (DiscardHeader) msg.getHeader(getName());
-			if (dh != null) {
-				ignoredMembers.clear();
-				ignoredMembers.addAll(dh.dropMessages);
-				if (log.isTraceEnabled())
-					log.trace("will potentially drop messages from " + ignoredMembers);
-			} else {
+            if (dh != null) {
+                ignoredMembers.clear();
+                ignoredMembers.addAll(dh.dropMessages);
+                if (log.isTraceEnabled())
+                    log.trace("will potentially drop messages from " + ignoredMembers);
+            } else {
                 boolean dropMessage=ignoredMembers.contains(sender);
                 if (dropMessage) {
                     if (log.isTraceEnabled())
@@ -167,35 +221,55 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
-        if(evt.getType() == Event.MSG) {
-            msg=(Message)evt.getArg();
-            Address dest=msg.getDest();
+        switch(evt.getType()) {
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                Address dest=msg.getDest();
+                boolean multicast=dest == null || dest.isMulticastAddress();
 
-            if(msg.getSrc() == null)
-                msg.setSrc(localAddress);
+                if(msg.getSrc() == null)
+                    msg.setSrc(localAddress);
 
-            if(discard_all) {
-                if(dest == null || dest.isMulticastAddress() || dest.equals(localAddress)) {
-                    //System.out.println("[" + localAddress + "] down(): looping back " + msg + ", hdrs:\n" + msg.getHeaders());
-                    loopback(msg);
-                }
-                return null;
-            }
-
-            if(down > 0) {
-                r=Math.random();
-                if(r < down) {
-                    if(excludeItself && msg.getSrc().equals(localAddress)) {
-                        if(log.isTraceEnabled()) log.trace("excluding itself");
+                if(discard_all) {
+                    if(dest == null || dest.isMulticastAddress() || dest.equals(localAddress)) {
+                        //System.out.println("[" + localAddress + "] down(): looping back " + msg + ", hdrs:\n" + msg.getHeaders());
+                        loopback(msg);
                     }
-                    else {
-                        if(log.isTraceEnabled())
-                            log.trace("dropping message");
-                        num_down++;
-                        return null;
+                    return null;
+                }
+
+                if(!multicast && drop_down_unicasts > 0) {
+                    drop_down_unicasts=Math.max(0, drop_down_unicasts -1);
+                    return null;
+                }
+
+                if(multicast && drop_down_multicasts > 0) {
+                    drop_down_multicasts=Math.max(0, drop_down_multicasts -1);
+                    return null;
+                }
+
+                if(down > 0) {
+                    r=Math.random();
+                    if(r < down) {
+                        if(excludeItself && msg.getSrc().equals(localAddress)) {
+                            if(log.isTraceEnabled()) log.trace("excluding itself");
+                        }
+                        else {
+                            if(log.isTraceEnabled())
+                                log.trace("dropping message");
+                            num_down++;
+                            return null;
+                        }
                     }
                 }
-            }
+                break;
+            case Event.VIEW_CHANGE:
+                View view=(View)evt.getArg();
+                Vector<Address> mbrs=view.getMembers();
+                ignoredMembers.retainAll(mbrs); // remove all non members
+                if(discard_dialog != null)
+                    discard_dialog.handleView(mbrs);
+                break;
         }
 
         return down_prot.down(evt);
@@ -273,4 +347,111 @@ public class DISCARD extends Protocol {
 			out.writeObject(dropMessages);
 		}
 	}
+
+
+    private class DiscardDialog extends JFrame implements ActionListener {
+        private JButton start_discarding_button=new JButton("start discarding");
+        private JButton stop_discarding_button=new JButton("stop discarding");
+        JPanel panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel checkboxes=new JPanel();
+
+        
+        private DiscardDialog() {
+        }
+
+        void init() {
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            checkboxes.setLayout(new BoxLayout(checkboxes, BoxLayout.Y_AXIS));
+            JPanel button_panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+            button_panel.add(start_discarding_button);
+            button_panel.add(stop_discarding_button);
+            panel.add(button_panel);
+
+            start_discarding_button.addActionListener(this);
+            stop_discarding_button.addActionListener(this);
+
+
+            panel.add(checkboxes);
+
+//            final JCheckBox box=new MyCheckBox("discard messages from 192.168.1.5:5000", localAddress);
+//            box.addActionListener(new ActionListener() {
+//
+//                public void actionPerformed(ActionEvent e) {
+//                    System.out.println("action is " + e.getActionCommand() + ", selected=" + box.isSelected());
+//                    System.out.println("source=" + e.getSource());
+//                }
+//            });
+//            checkboxes.add(box);
+//
+//            for(int i=6000; i< 6100; i+=10)
+//                checkboxes.add(new JCheckBox("discard msgs from 192.168.1.5:" + i));
+//
+
+            setContentPane(panel);
+            pack();
+            setVisible(true);
+            setTitle("Discard dialog (" + localAddress + ")");
+
+
+            Component[] comps=panel.getComponents();
+            for(Component c: comps) {
+                System.out.println("c = " + c);
+            }
+        }
+
+
+        public void actionPerformed(ActionEvent e) {
+            String command=e.getActionCommand();
+            if(command.startsWith("start")) {
+                discard_all=true;
+            }
+            else if(command.startsWith("stop")) {
+                discard_all=false;
+                Component[] comps=checkboxes.getComponents();
+                for(Component c: comps) {
+                    if(c instanceof JCheckBox) {
+                        ((JCheckBox)c).setSelected(false);
+                    }
+                }
+            }
+        }
+
+        void handleView(Collection<Address> mbrs) {
+            checkboxes.removeAll();
+            for(final Address addr: mbrs) {
+                final MyCheckBox box=new MyCheckBox("discard traffic from " + addr, addr);
+                box.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        if(box.isSelected()) {
+                            ignoredMembers.add(addr);
+                        }
+                        else {
+                            ignoredMembers.remove(addr);
+                        }
+                    }
+                });
+                checkboxes.add(box);
+            }
+
+            for(Component comp: checkboxes.getComponents()) {
+                MyCheckBox box=(MyCheckBox)comp;
+                if(ignoredMembers.contains(box.mbr))
+                    box.setSelected(true);
+            }
+            pack();
+        }
+    }
+
+    private static class MyCheckBox extends JCheckBox {
+        final Address mbr;
+
+        public MyCheckBox(String name, Address member) {
+            super(name);
+            this.mbr=member;
+        }
+
+        public String toString() {
+            return super.toString() + " [mbr=" + mbr + "]";
+        }
+    }
 }
