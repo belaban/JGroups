@@ -4,9 +4,11 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.25 2008/09/25 14:26:07 belaban Exp $
+    version: $Id: tcp.xml,v 1.26 2009/03/31 12:35:29 vlada Exp $
 -->
-<config>
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups file:schema/JGroups-2.8.xsd">
     <TCP bind_port="7800"
          loopback="true"
          recv_buf_size="20000000"
