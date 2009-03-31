@@ -1,8 +1,8 @@
 
-Release Notes JGroups 2.6.8
+Release Notes JGroups 2.6.9
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.9.txt,v 1.1.2.1 2009/03/31 12:54:53 vlada Exp $
+Version: $Id: ReleaseNotes-2.6.9.txt,v 1.1.2.2 2009/03/31 12:55:15 vlada Exp $
 Author: Bela Ban
 
 JGroups 2.6.9 is still API-backwards compatible with previous versions (down to 2.2.7).
