@@ -463,14 +463,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         BufferedInputStream bis = null;
         try {
             bis = new BufferedInputStream(new StateInputStream(), socket_buffer_size);
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    stateProvider, bis, state_id)));
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(stateProvider, bis, state_id)));
         } catch (IOException e) {
             // pass null stream up so that JChannel.getState() returns false
             log.error("Could not provide state recipient with appropriate stream", e);
             InputStream is = null;
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(
-                    stateProvider, is, state_id)));
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, new StateTransferInfo(stateProvider, is, state_id)));
         } finally {
             Util.close(bis);
         }
@@ -480,8 +478,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         BufferedOutputStream bos = null;
         try {
             bos = new BufferedOutputStream(new StateOutputStream(stateRequester, state_id),socket_buffer_size);
-            up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, new StateTransferInfo(
-                    stateRequester, bos, state_id)));
+            up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, new StateTransferInfo(stateRequester, bos, state_id)));
         } catch (IOException e) {
             if (log.isWarnEnabled()) {
                 log.warn("StateOutputStream could not be given to application", e);
@@ -557,8 +554,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             super();
             this.pool = pool;
             this.serverSocket = stateServingSocket;
-            this.address = new IpAddress(STREAMING_STATE_TRANSFER.this.bind_addr, serverSocket
-                    .getLocalPort());
+            this.address = new IpAddress(STREAMING_STATE_TRANSFER.this.bind_addr, serverSocket.getLocalPort());
         }
 
         public void run() {
