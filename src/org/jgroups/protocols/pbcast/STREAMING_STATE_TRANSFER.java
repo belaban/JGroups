@@ -107,7 +107,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     @ManagedAttribute(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     @Property(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
-    boolean use_default_transport = true;
+    boolean use_default_transport = false;
 
     /*
      * --------------------------------------------- JMX statistics -------------------------------
@@ -494,7 +494,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private void connectToStateProvider(StateHeader hdr) {
         IpAddress address = hdr.bind_addr;
         String tmp_state_id = hdr.getStateId();
-        StreamingInputStreamWrapper wrapper = null;
+        InputStream bis = null;
         StateTransferInfo sti = null;
         Socket socket = new Socket();
         try {
@@ -516,8 +516,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             out.writeObject(tmp_state_id);
             out.writeObject(local_addr);
 
-            wrapper = new StreamingInputStreamWrapper(socket);
-            sti = new StateTransferInfo(hdr.sender, wrapper, tmp_state_id);
+            bis = new BufferedInputStream(new StreamingInputStreamWrapper(socket));
+            sti = new StateTransferInfo(hdr.sender, bis, tmp_state_id);
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
         } catch (IOException e) {
             if (log.isWarnEnabled()) {
@@ -533,7 +533,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 if (log.isWarnEnabled())
                     log.warn("Could not connect to state provider. Closing socket...");
             }
-            Util.close(wrapper);
+            Util.close(bis);
             Util.close(socket);
         }
     }
@@ -631,7 +631,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private class StateProviderHandler {
         public void process(Socket socket) {
-            StreamingOutputStreamWrapper wrapper = null;
+            OutputStream bos = null;
             ObjectInputStream ois = null;
             try {
                 int bufferSize = socket.getSendBufferSize();
@@ -646,9 +646,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 ois = new ObjectInputStream(socket.getInputStream());
                 String state_id = (String) ois.readObject();
                 Address stateRequester = (Address) ois.readObject();
-                wrapper = new StreamingOutputStreamWrapper(socket);
-                StateTransferInfo sti = new StateTransferInfo(stateRequester, wrapper, state_id);
-                up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
+                bos = new BufferedOutputStream(new StreamingOutputStreamWrapper(socket),socket_buffer_size);
+                up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, new StateTransferInfo(stateRequester, bos, state_id)));
             } catch (IOException e) {
                 if (log.isWarnEnabled()) {
                     log.warn("State writer socket thread spawned abnormaly", e);
@@ -661,84 +660,46 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     if (log.isWarnEnabled())
                         log.warn("Could not receive connection from state receiver. Closing socket...");
                 }
-                Util.close(wrapper);
+                Util.close(bos);
                 Util.close(socket);
             }
         }
     }
 
-    private class StreamingInputStreamWrapper extends InputStream {
-
-        private final InputStream delegate;
+    private class StreamingInputStreamWrapper extends FilterInputStream {
 
         private final Socket inputStreamOwner;
 
         private final AtomicBoolean closed = new AtomicBoolean(false);
 
         public StreamingInputStreamWrapper(Socket inputStreamOwner) throws IOException {
-            super();
+            super(inputStreamOwner.getInputStream());
             this.inputStreamOwner = inputStreamOwner;
-            this.delegate = new BufferedInputStream(inputStreamOwner.getInputStream());
         }
-
-        public int available() throws IOException {
-            return delegate.available();
-        }
-
+        
         public void close() throws IOException {
             if (closed.compareAndSet(false, true)) {
                 if (log.isDebugEnabled()) {
                     log.debug("State reader is closing the socket ");
                 }
-                Util.close(delegate);
                 Util.close(inputStreamOwner);
-                up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
+                up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
                 down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
             }
-        }
-
-        public synchronized void mark(int readlimit) {
-            delegate.mark(readlimit);
-        }
-
-        public boolean markSupported() {
-            return delegate.markSupported();
-        }
-
-        public int read() throws IOException {
-            return delegate.read();
-        }
-
-        public int read(byte[] b, int off, int len) throws IOException {
-            return delegate.read(b, off, len);
-        }
-
-        public int read(byte[] b) throws IOException {
-            return delegate.read(b);
-        }
-
-        public synchronized void reset() throws IOException {
-            delegate.reset();
-        }
-
-        public long skip(long n) throws IOException {
-            return delegate.skip(n);
+            super.close();
         }
     }
 
-    private class StreamingOutputStreamWrapper extends OutputStream {
+    private class StreamingOutputStreamWrapper extends FilterOutputStream {
         private final Socket outputStreamOwner;
-
-        private final OutputStream delegate;
-
+        
         private final AtomicBoolean closed = new AtomicBoolean(false);
 
         private long bytesWrittenCounter = 0;
 
         public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException {
-            super();
+            super(outputStreamOwner.getOutputStream());
             this.outputStreamOwner = outputStreamOwner;
-            this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());
         }
 
         public void close() throws IOException {
@@ -746,41 +707,34 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 if (log.isDebugEnabled()) {
                     log.debug("State writer is closing the socket ");
                 }
-
-                Util.close(delegate);
                 Util.close(outputStreamOwner);
-                up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
+                up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
                 down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
 
                 if (stats) {
                     avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter)
                             / num_state_reqs.doubleValue();
                 }
+                super.close();
             }
         }
-
-        public void flush() throws IOException {
-            delegate.flush();
-        }
-
+        
         public void write(byte[] b, int off, int len) throws IOException {
-            delegate.write(b, off, len);
+            super.write(b, off, len);
             bytesWrittenCounter += len;
         }
 
         public void write(byte[] b) throws IOException {
-            delegate.write(b);
-            if (b != null) {
-                bytesWrittenCounter += b.length;
-            }
+            super.write(b);
+            bytesWrittenCounter += b.length;            
         }
 
         public void write(int b) throws IOException {
-            delegate.write(b);
+            super.write(b);
             bytesWrittenCounter += 1;
         }
     }
-
+    
     private class StateInputStream extends InputStream {
 
         private final AtomicBoolean closed;
