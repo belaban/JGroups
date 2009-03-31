@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.17.2.4 2009/03/31 11:28:09 belaban Exp $
+// $Id: DISCARD.java,v 1.17.2.5 2009/03/31 12:28:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -58,7 +58,7 @@ public class DISCARD extends Protocol {
     public void setLocalAddress(Address localAddress){
         this.localAddress =localAddress;
         if(discard_dialog != null)
-            discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
+            discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
     }
 
     public void setExcludeItself(boolean excludeItself) {
@@ -170,7 +170,7 @@ public class DISCARD extends Protocol {
         if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
             localAddress=(Address)evt.getArg();
             if(discard_dialog != null)
-                discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
+                discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
         }
 
         if(evt.getType() == Event.MSG) {
@@ -368,7 +368,7 @@ public class DISCARD extends Protocol {
             getContentPane().add(checkboxes);
             pack();
             setVisible(true);
-            setTitle("Discard dialog (" + localAddress + ")");
+            setTitle(localAddress != null? localAddress.toString() : "n/a");
         }
 
 
