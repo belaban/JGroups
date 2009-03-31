@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.17.2.3 2009/03/30 11:02:16 belaban Exp $
+// $Id: DISCARD.java,v 1.17.2.4 2009/03/31 11:28:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -352,7 +352,6 @@ public class DISCARD extends Protocol {
     private class DiscardDialog extends JFrame implements ActionListener {
         private JButton start_discarding_button=new JButton("start discarding");
         private JButton stop_discarding_button=new JButton("stop discarding");
-        JPanel panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
         JPanel checkboxes=new JPanel();
 
         
@@ -360,43 +359,16 @@ public class DISCARD extends Protocol {
         }
 
         void init() {
-            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
             checkboxes.setLayout(new BoxLayout(checkboxes, BoxLayout.Y_AXIS));
-            JPanel button_panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
-            button_panel.add(start_discarding_button);
-            button_panel.add(stop_discarding_button);
-            panel.add(button_panel);
-
+            getContentPane().add(start_discarding_button);
+            getContentPane().add(stop_discarding_button);
             start_discarding_button.addActionListener(this);
             stop_discarding_button.addActionListener(this);
-
-
-            panel.add(checkboxes);
-
-//            final JCheckBox box=new MyCheckBox("discard messages from 192.168.1.5:5000", localAddress);
-//            box.addActionListener(new ActionListener() {
-//
-//                public void actionPerformed(ActionEvent e) {
-//                    System.out.println("action is " + e.getActionCommand() + ", selected=" + box.isSelected());
-//                    System.out.println("source=" + e.getSource());
-//                }
-//            });
-//            checkboxes.add(box);
-//
-//            for(int i=6000; i< 6100; i+=10)
-//                checkboxes.add(new JCheckBox("discard msgs from 192.168.1.5:" + i));
-//
-
-            setContentPane(panel);
+            getContentPane().add(checkboxes);
             pack();
             setVisible(true);
             setTitle("Discard dialog (" + localAddress + ")");
-
-
-            Component[] comps=panel.getComponents();
-            for(Component c: comps) {
-                System.out.println("c = " + c);
-            }
         }
 
 
@@ -420,6 +392,7 @@ public class DISCARD extends Protocol {
             checkboxes.removeAll();
             for(final Address addr: mbrs) {
                 final MyCheckBox box=new MyCheckBox("discard traffic from " + addr, addr);
+                box.setAlignmentX(LEFT_ALIGNMENT);
                 box.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         if(box.isSelected()) {
@@ -448,6 +421,10 @@ public class DISCARD extends Protocol {
         public MyCheckBox(String name, Address member) {
             super(name);
             this.mbr=member;
+        }
+
+        public float getAlignmentX() {
+            return LEFT_ALIGNMENT;
         }
 
         public String toString() {
