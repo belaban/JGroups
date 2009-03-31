@@ -516,7 +516,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             out.writeObject(tmp_state_id);
             out.writeObject(local_addr);
 
-            bis = new BufferedInputStream(new StreamingInputStreamWrapper(socket));
+            bis = new BufferedInputStream(new StreamingInputStreamWrapper(socket),socket_buffer_size);
             sti = new StateTransferInfo(hdr.sender, bis, tmp_state_id);
             up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
         } catch (IOException e) {
