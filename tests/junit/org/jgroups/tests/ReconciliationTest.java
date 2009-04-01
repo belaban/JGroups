@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.20 2009/03/04 17:15:49 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.21 2009/04/01 17:04:46 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -241,7 +241,7 @@ public class ReconciliationTest extends ChannelTestBase {
         void triggerFlush();
     }
 
-    private static class MyReceiver extends ExtendedReceiverAdapter {
+    private class MyReceiver extends ExtendedReceiverAdapter {
         Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
 
         Channel channel;
@@ -268,7 +268,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 msgs.put(msg.getSrc(), list);
             }
             list.add((Integer)msg.getObject());
-            System.out.println("[" + name
+            log.debug("[" + name
                                + " / "
                                + channel.getLocalAddress()
                                + "]: received message from "
@@ -278,7 +278,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + " / " + channel.getLocalAddress() + "]: " + new_view);
+            log.debug("[" + name + " / " + channel.getLocalAddress() + "]: " + new_view);
         }
     }
 
@@ -305,7 +305,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         flush(c1, 5000);
-        System.out.println("cache_1 (" + cache_1.size()
+        log.debug("cache_1 (" + cache_1.size()
                            + " elements): "
                            + cache_1
                            + "\ncache_2 ("
@@ -319,18 +319,18 @@ public class ReconciliationTest extends ChannelTestBase {
         
     }
 
-    private static void flush(Channel channel, long timeout) {
+    private void flush(Channel channel, long timeout) {
         if(channel.flushSupported()) {
             boolean success=Util.startFlush(channel);
             channel.stopFlush();
-            System.out.println("startFlush(): " + success);
+            log.debug("startFlush(): " + success);
             assertTrue(success);
         }
         else
             Util.sleep(timeout);
     }
 
-    private static class Cache extends ExtendedReceiverAdapter {
+    private class Cache extends ExtendedReceiverAdapter {
         protected final Map<Object,Object> data;
 
         Channel ch;
@@ -483,9 +483,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         private void log(String msg) {
-            System.out.println("-- [" + name + "] " + msg);
+            log.debug("-- [" + name + "] " + msg);
         }
-
     }
-
 }
