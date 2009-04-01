@@ -99,7 +99,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     @Property(description = "Keep alive for pool threads serving state requests. Default is 20000 msec")
     private long pool_thread_keep_alive = 20 * 1000;
 
-    @Property(description = "Buffer size for state transfer. Default is 8 KB")
+    @Property(description = "Buffer size for state transfer. Default is 8192 bytes")
     private int socket_buffer_size = 8 * 1024;
     
     @Property(description = "If default transport is used the total state buffer size before state producer is blocked. Default is 81920 bytes")
