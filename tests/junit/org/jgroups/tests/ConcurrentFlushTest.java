@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  *
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.10 2009/03/04 18:35:11 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.11 2009/04/01 17:04:46 vlada Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -36,7 +36,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests A.startFlush(), followed by another A.startFlush()
      */
-    @Test(enabled=true)
+    @Test
     public void testTwoStartFlushesOnSameMemberWithTotalFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testTwoStartFlushes");
@@ -109,7 +109,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests 2 channels calling FLUSH simultaneously
      */
-    @Test(enabled=true)
+    @Test
     public void testConcurrentFlush() throws Exception {
         c1=createChannel(true, 2);
         c1.connect("testConcurrentFlush");
@@ -186,7 +186,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
     /**
      * Tests 2 channels calling partial FLUSHes and one calling FLUSH simultaneously
      */
-    @Test(enabled=true)
+    @Test
     public void testConcurrentFlushAndPartialFlush() throws Exception {
         c1=createChannel(true, 3);
         c1.connect("testConcurrentFlushAndPartialFlush");
@@ -273,8 +273,8 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         assertTrue(l3.unblockReceived);
     }
 
-    private static boolean startFlush(Channel ch, boolean automatic_resume) {
-        System.out.println("starting flush on " + ch.getLocalAddress() + " with automatic resume=" + automatic_resume);
+    private boolean startFlush(Channel ch, boolean automatic_resume) {
+        log.debug("starting flush on " + ch.getLocalAddress() + " with automatic resume=" + automatic_resume);
         boolean result = Util.startFlush(ch);
         if(automatic_resume){
         	ch.stopFlush();
@@ -282,8 +282,8 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         return result;
     }
 
-    private static void stopFlush(Channel ch) {
-        System.out.println("calling stopFlush()");
+    private void stopFlush(Channel ch) {
+        log.debug("calling stopFlush()");
         ch.stopFlush();
     }
 
