@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.198 2009/02/12 14:31:19 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.199 2009/04/01 17:20:20 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -36,7 +36,7 @@
     <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
 
 	<!-- 5 minutes per test suite timeout -->
-    <property name="unittest.timeout.low" value="300000"/>
+    <property name="unittest.timeout.low" value="500000"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
