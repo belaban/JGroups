@@ -2,7 +2,7 @@ package org.jgroups.util;
 
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
-import org.apache.commons.logging.LogFactory;
+
 
 /**
  * ShutdownRejectedExecutionHandler is a decorator RejectedExecutionHandler used
