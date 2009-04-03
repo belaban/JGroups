@@ -105,7 +105,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     @Property(description = "If default transport is used the total state buffer size before state producer is blocked. Default is 81920 bytes")
     private int buffer_queue_size = 81920;
 
-    @ManagedAttribute(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     @Property(description = "If true default transport is used for state transfer rather than seperate TCP sockets. Default is false")
     boolean use_default_transport = false;
 
