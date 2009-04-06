@@ -504,7 +504,7 @@ public abstract class BasicConnectionTable {
                    if(log.isWarnEnabled())
                        log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
                               append(" has different version (").append(version).append(") from ours (").
-                                append(Version.version).append("). This may cause problems"));
+                                append(Version.print(Version.version)).append("). This may cause problems"));
                }
                client_peer_addr=new IpAddress();
                client_peer_addr.readFrom(in);
