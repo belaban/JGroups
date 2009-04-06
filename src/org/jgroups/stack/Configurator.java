@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.16.6.1 2009/03/13 12:30:19 belaban Exp $
+// $Id: Configurator.java,v 1.16.6.2 2009/04/06 16:45:24 rachmatowicz Exp $
 
 package org.jgroups.stack;
 
@@ -282,12 +282,12 @@ public class Configurator {
         Vector retval=new Vector();
         PushbackReader reader=new PushbackReader(new StringReader(config_str));
         int ch;
-        StringBuilder sb;
+        StringBuffer sb;
         boolean running=true;
 
         while(running) {
             String protocol_name=readWord(reader);
-            sb=new StringBuilder();
+            sb=new StringBuffer();
             sb.append(protocol_name);
 
             ch=read(reader);
@@ -331,7 +331,7 @@ public class Configurator {
     private static int read(Reader reader) throws IOException {
         int ch=-1;
         while((ch=reader.read()) != -1) {
-            if(!Character.isWhitespace(ch))
+            if(!Character.isWhitespace((char)ch))
                 return ch;
         }
         return ch;
@@ -341,7 +341,7 @@ public class Configurator {
 
 
     private static String readUntil(Reader reader, char c) throws IOException {
-        StringBuilder sb=new StringBuilder();
+        StringBuffer sb=new StringBuffer();
         int ch;
         while((ch=read(reader)) != -1) {
             sb.append((char)ch);
@@ -352,11 +352,11 @@ public class Configurator {
     }
 
     private static String readWord(PushbackReader reader) throws IOException {
-        StringBuilder sb=new StringBuilder();
+        StringBuffer sb=new StringBuffer();
         int ch;
 
         while((ch=read(reader)) != -1) {
-            if(Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
+            if(Character.isLetterOrDigit((char)ch) || ch == '_' || ch == '.' || ch == '$') {
                 sb.append((char)ch);
             }
             else {
