@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.17 2009/01/12 21:49:17 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.18 2009/04/06 15:56:33 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -38,6 +38,14 @@
 	<property name="threadcount" value="false"/>
 	<property name="test.verbose" value="false"/>
 
+    <!-- properties to determine IP version used -->
+    <condition property="java.net.preferIPv4Stack" value="true" else="false">
+      <isfalse value="${jgroups.useIPv6}"/>
+    </condition>
+
+    <condition property="java.net.preferIPv6Addresses" value="true" else="false">
+      <istrue value="${jgroups.useIPv6}"/>
+    </condition>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
@@ -392,6 +400,13 @@
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+            <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+            <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
             <classpath refid="jg.classpath"/>
             <formatter type="brief" usefile="false"/>
             <batchtest todir="${tmp.dir}">
@@ -409,6 +424,11 @@
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+            <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+            <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
             <classpath refid="jg.classpath"/>
@@ -433,10 +453,14 @@
 			<mkdir dir="${tmp.dir}/tests-results"/>
 			<property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
 			<property name="testname.ext" value=""/>
-	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	        	
+	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	
 	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
 	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-	        	<jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+	            <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+	            <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+	            <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+	            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+			  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
 	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />	        	
 	            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
 	            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
@@ -476,6 +500,7 @@
 			threadcount=${threadcount}	
 		 	formatter.class=${formatter.class}
 			test.verbose=${test.verbose}
+		 	usingIPv6=${jgroups.useIPv6}
 		 </testrunner>
 	</target>
 	
