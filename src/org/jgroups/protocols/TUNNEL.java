@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.63 2009/04/09 14:00:01 vlada Exp $
+// $Id: TUNNEL.java,v 1.64 2009/04/09 18:06:39 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -68,6 +68,8 @@ public class TUNNEL extends TP {
 	private final List<RouterStub> stubs = new ArrayList<RouterStub>();
 	
 	private TUNNELPolicy tunnel_policy = new DefaultTUNNELPolicy();
+	
+	private DatagramSocket sock;
 
     /** time to wait in ms between reconnect attempts */
 
@@ -153,17 +155,15 @@ public class TUNNEL extends TP {
         // loopback turned on is mandatory
         loopback = true;
 
-        if(local_addr == null){
-    		DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
-            local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
-    	}
-
-        for(InetSocketAddress gr:gossip_router_hosts){
-        	RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,local_addr);
-            stub.setConnectionListener(new StubConnectionListener(stub));
-        	stubs.add(stub);
-        }
+        sock = new DatagramSocket(0, bind_addr);
+        
         super.start();
+        
+        for(InetSocketAddress gr:gossip_router_hosts){
+            RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,getPhysicalAddress());
+            stub.setConnectionListener(new StubConnectionListener(stub));
+            stubs.add(stub);
+        }
     }
 
     public void stop() {        
@@ -322,7 +322,7 @@ public class TUNNEL extends TP {
     }
 
     protected PhysicalAddress getPhysicalAddress() {
-        return (PhysicalAddress) local_addr;
+        return sock != null? new IpAddress(bind_addr, sock.getLocalPort()) : null;
     }
     
     public interface TUNNELPolicy{
