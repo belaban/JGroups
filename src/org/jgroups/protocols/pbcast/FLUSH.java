@@ -601,10 +601,14 @@ public class FLUSH extends Protocol {
 
     private boolean onViewChange(View view) {        
         boolean coordinatorLeft = false;
+        View oldView;
         synchronized(sharedLock){            
             suspected.retainAll(view.getMembers());
+            oldView = currentView;
             currentView = view;
-            coordinatorLeft =!view.getMembers().isEmpty() && !view.containsMember(view.getCreator());            
+            coordinatorLeft = !oldView.getMembers().isEmpty() && 
+                                             !view.getMembers().isEmpty() && 
+                                             !view.containsMember(oldView.getCreator());            
         }      
         if(log.isDebugEnabled())
             log.debug("Installing view at  " + localAddress + " view is " + view);
