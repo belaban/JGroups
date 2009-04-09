@@ -121,7 +121,7 @@ public class AckCollectorTest {
             public void run() {
                 Util.sleep(500);
                 System.out.println("resetting AckCollector");
-                ac.reset(null, new_list);
+                ac.reset(new_list);
                 System.out.println("reset AckCollector: " + ac);
             }
         }.start();
@@ -139,7 +139,7 @@ public class AckCollectorTest {
             public void run() {
                 Util.sleep(500);
                 System.out.println("resetting AckCollector");
-                ac.reset(null, new_list);
+                ac.reset(new_list);
                 System.out.println("reset AckCollector: " + ac);
                 Util.sleep(100);
                 ac.ack("six");

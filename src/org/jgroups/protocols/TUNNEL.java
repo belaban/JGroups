@@ -1,14 +1,14 @@
-// $Id: TUNNEL.java,v 1.61 2009/03/23 19:40:40 vlada Exp $
+// $Id: TUNNEL.java,v 1.62 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -85,7 +85,7 @@ public class TUNNEL extends TP {
     }
 
     public String toString() {
-        return "Protocol TUNNEL(local_addr=" + local_addr + ')';
+        return "TUNNEL";
     }
 
     @Deprecated
@@ -152,12 +152,10 @@ public class TUNNEL extends TP {
     public void start() throws Exception {
         // loopback turned on is mandatory
         loopback = true;
-        
+
         if(local_addr == null){
     		DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
             local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
-            if(additional_data != null && local_addr instanceof IpAddress)
-                ((IpAddress) local_addr).setAdditionalData(additional_data);
     	}
 
         for(InetSocketAddress gr:gossip_router_hosts){
@@ -171,7 +169,6 @@ public class TUNNEL extends TP {
     public void stop() {        
         teardownTunnel();
         super.stop();        
-        local_addr = null;
     }
 
     void teardownTunnel() {
@@ -208,9 +205,7 @@ public class TUNNEL extends TP {
                         try{
                             if(!stub.isIntentionallyDisconnected()){
                                 if(log.isDebugEnabled()){
-                                    log.debug("Reconnecting " + getLocalAddress()
-                                              + " to router at "
-                                              + stub.getGossipRouterAddress());
+                                    log.debug("Reconnecting to router at " + stub.getGossipRouterAddress());
                                 }
                                 stub.connect(channel_name);
                             }
@@ -284,18 +279,17 @@ public class TUNNEL extends TP {
 
 		public void run() {
             while(stub.isConnected()){
-                Address dest = null;                
                 int len;
                 byte[] data = null;
                 DataInputStream input = null;
                 try{
                     input = stub.getInputStream();
-                    dest = Util.readAddress(input);                    
+                    Address dest = Util.readAddress(input);
                     len = input.readInt();
                     if(len > 0){
                         data = new byte[len];
                         input.readFully(data, 0, len);                        
-                        receive(dest, null/*src will be read from data*/, data, 0, len);
+                        receive(null/*src will be read from data*/, data, 0, len);
                     }
                 }catch(SocketException se){
                     // if(log.isWarnEnabled()) log.warn("failure in TUNNEL
@@ -311,13 +305,14 @@ public class TUNNEL extends TP {
         }
     }
 
-    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         tunnel_policy.sendToAllMembers(new ArrayList<RouterStub>(stubs), data, offset, length);
     }
 
-    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         tunnel_policy.sendToSingleMember(new ArrayList<RouterStub>(stubs), dest, data, offset, length);
     }
+
 
     public String getInfo() {
         if(stubs.isEmpty())
@@ -326,12 +321,14 @@ public class TUNNEL extends TP {
             return "RouterStubs not yet initialized";
     }
 
-    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-        msg.setDest(dest);
-    }
-
-    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-        msg.setDest(dest);
+    protected PhysicalAddress getPhysicalAddress() {
+        //try {
+            throw new UnsupportedOperationException("needs to be implemented !");
+            // return (PhysicalAddress)stub.getLocalAddress();
+        //}
+        //catch(SocketException e) {
+          //  throw new RuntimeException(e);
+        //}
     }
     
     public interface TUNNELPolicy{

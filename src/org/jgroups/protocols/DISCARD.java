@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.30 2009/03/31 12:39:59 belaban Exp $
+// $Id: DISCARD.java,v 1.31 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -141,12 +141,6 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
-            localAddress=(Address)evt.getArg();
-            if(discard_dialog != null)
-                discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
-        }
-
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
             Address sender=msg.getSrc();
@@ -243,6 +237,10 @@ public class DISCARD extends Protocol {
                 ignoredMembers.retainAll(mbrs); // remove all non members
                 if(discard_dialog != null)
                     discard_dialog.handleView(mbrs);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                localAddress=(Address)evt.getArg();
                 break;
         }
 

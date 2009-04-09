@@ -7,7 +7,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.10 2008/08/08 17:07:30 vlada Exp $
+ * @version $Id: PullPushShunTest.java,v 1.11 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class PullPushShunTest extends ChannelTestBase {
@@ -43,14 +43,14 @@ public class PullPushShunTest extends ChannelTestBase {
         channel.connect("PullPushTestShun");
         adapter=new PullPushAdapter(channel, null, null);
         assertEquals(1, channel.getView().getMembers().size());
-        old_local_addr=channel.getLocalAddress();
+        old_local_addr=channel.getAddress();
         assertNotNull(old_local_addr);
 
         Util.sleep(1000);
         System.out.println("shunning channel");
         shun();
         Util.sleep(5000);
-        new_local_addr=channel.getLocalAddress();
+        new_local_addr=channel.getAddress();
         assertNotNull(new_local_addr);
         channel.close();
     }

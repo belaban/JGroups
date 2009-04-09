@@ -20,11 +20,11 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.77 2009/03/04 17:15:49 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.78 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class FlushTest extends ChannelTestBase {
-    
+
     @Test
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
@@ -52,7 +52,7 @@ public class FlushTest extends ChannelTestBase {
 
     /**
      * Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335
-     * @throws Exception 
+     * @throws Exception
      */
     @Test
     public void testJoinFollowedByUnicast() throws Exception {
@@ -63,7 +63,7 @@ public class FlushTest extends ChannelTestBase {
             c1.setReceiver(new SimpleReplier(c1, true));
             c1.connect("testJoinFollowedByUnicast");
 
-            Address target=c1.getLocalAddress();
+            Address target=c1.getAddress();
             Message unicast_msg=new Message(target);
 
             c2=createChannel(c1);
@@ -81,7 +81,7 @@ public class FlushTest extends ChannelTestBase {
 
     /**
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
-     * @throws Exception 
+     * @throws Exception
      */
     @Test
     public void testStateTransferFollowedByUnicast() throws Exception {
@@ -93,7 +93,7 @@ public class FlushTest extends ChannelTestBase {
             c1.setReceiver(new SimpleReplier(c1, true));
             c1.connect("testStateTransferFollowedByUnicast");
 
-            Address target=c1.getLocalAddress();
+            Address target=c1.getAddress();
             Message unicast_msg=new Message(target);
 
             c2=createChannel(c1);
@@ -109,13 +109,13 @@ public class FlushTest extends ChannelTestBase {
             Util.close(c2, c1);
         }
     }
-    
+
     @Test
     public void testFlushWithCrashedFlushCoordinator() throws Exception {
 		JChannel c1 = null;
 		JChannel c2 = null;
 		JChannel c3 = null;
-		
+
 		try {
 			c1 = createChannel(true, 3);
 			c1.connect("testFlushWithCrashedFlushCoordinator");
@@ -142,7 +142,7 @@ public class FlushTest extends ChannelTestBase {
 			Util.close(c3, c2, c1);
 		}
 	}
-    
+
     @Test
 	public void testFlushWithCrashedNonCoordinator() throws Exception {
 		JChannel c1 = null;
@@ -210,10 +210,10 @@ public class FlushTest extends ChannelTestBase {
 			Util.close(c3, c2, c1);
 		}
 	}
-    
+
     /**
      * Tests http://jira.jboss.com/jira/browse/JGRP-661
-     * @throws Exception 
+     * @throws Exception
      */
     @Test
     public void testPartialFlush() throws Exception {
@@ -246,7 +246,7 @@ public class FlushTest extends ChannelTestBase {
      * channel mode. In mux mode this test creates getFactoryCount() real
      * channels and creates only one mux application on top of each channel. In
      * bare channel mode 4 real channels are created.
-     * 
+     *
      */
     @Test
     public void testBlockingNoStateTransfer() {
@@ -263,20 +263,20 @@ public class FlushTest extends ChannelTestBase {
      * channel depending on mux.on parameter. In mux mode there will be only one
      * mux channel for each "real" channel created and the number of real
      * channels created is getMuxFactoryCount().
-     * 
+     *
      */
     @Test
     public void testBlockingWithStateTransfer() {
         String[] names = {"A", "B", "C", "D"};
         _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
     }
-    
+
     /**
      * Tests emition of block/unblock/set|get state events for both mux and bare
      * channel depending on mux.on parameter. In mux mode there will be only one
      * mux channel for each "real" channel created and the number of real
      * channels created is getMuxFactoryCount().
-     * 
+     *
      */
     @Test
     public void testBlockingWithConnectAndStateTransfer() {
@@ -311,7 +311,7 @@ public class FlushTest extends ChannelTestBase {
                 // Release one ticket at a time to allow the thread to start
                 // working
                 channel.start();
-                semaphore.release(1);			
+                semaphore.release(1);
                 Util.sleep(1000);
             }
 
@@ -323,18 +323,18 @@ public class FlushTest extends ChannelTestBase {
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
             semaphore.tryAcquire(count, 40, TimeUnit.SECONDS);
-                      
+
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             assert false : "Exception encountered during test execution: " + ex;
         }finally{
-            
+
             //close all channels and ....
             for(FlushTestReceiver app:channels){
                 app.cleanup();
                 Util.sleep(2000);
             }
-            
+
             // verify block/unblock/view/get|set state sequences for all members
 			for (FlushTestReceiver receiver : channels) {
 				checkEventStateTransferSequence(receiver);
@@ -344,12 +344,12 @@ public class FlushTest extends ChannelTestBase {
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
         private int connectMethod;
-        
+
         public static final int CONNECT_ONLY = 1;
-        
+
         public static final int CONNECT_AND_SEPARATE_GET_STATE = 2;
-        
-        public static final int CONNECT_AND_GET_STATE = 3;      
+
+        public static final int CONNECT_AND_GET_STATE = 3;
 
         int msgCount = 0;
 
@@ -363,12 +363,12 @@ public class FlushTest extends ChannelTestBase {
             events = Collections.synchronizedList(new LinkedList<Object>());
             if(connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
             	channel.connect("FlushTestReceiver");
-            
+
             if(connectMethod == CONNECT_AND_GET_STATE){
                 channel.connect("FlushTestReceiver",null,null, 25000);
             }
-        }        
-        
+        }
+
         protected FlushTestReceiver(JChannel ch, String name,
                                     Semaphore semaphore,
                                     int msgCount,
@@ -379,11 +379,11 @@ public class FlushTest extends ChannelTestBase {
             events = Collections.synchronizedList(new LinkedList<Object>());
             if(connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
                 channel.connect("FlushTestReceiver");
-            
+
             if(connectMethod == CONNECT_AND_GET_STATE){
                 channel.connect("FlushTestReceiver",null,null, 25000);
             }
-        }        
+        }
 
         public void clear() {
             events.clear();
@@ -438,7 +438,7 @@ public class FlushTest extends ChannelTestBase {
             }
         }
 
-        protected void useChannel() throws Exception {            
+        protected void useChannel() throws Exception {
             if(connectMethod == CONNECT_AND_SEPARATE_GET_STATE){
                 channel.getState(null, 25000);
             }
@@ -464,7 +464,7 @@ public class FlushTest extends ChannelTestBase {
         public void receive(Message msg) {
             Message reply = new Message(msg.getSrc());
             try{
-                log.info("-- MySimpleReplier[" + channel.getLocalAddress()
+                log.info("-- MySimpleReplier[" + channel.getAddress()
                          + "]: received message from "
                          + msg.getSrc());
                 if(handle_requests){
@@ -478,18 +478,18 @@ public class FlushTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            log.info("-- MySimpleReplier[" + channel.getLocalAddress()
+            log.info("-- MySimpleReplier[" + channel.getAddress()
                      + "]: viewAccepted("
                      + new_view
                      + ")");
         }
 
         public void block() {
-            log.info("-- MySimpleReplier[" + channel.getLocalAddress() + "]: block()");
+            log.info("-- MySimpleReplier[" + channel.getAddress() + "]: block()");
         }
 
         public void unblock() {
-            log.info("-- MySimpleReplier[" + channel.getLocalAddress() + "]: unblock()");
+            log.info("-- MySimpleReplier[" + channel.getAddress() + "]: unblock()");
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.12 2007/11/19 16:08:27 belaban Exp $
+// $Id: Draw2Channels.java,v 1.13 2009/04/09 09:11:27 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -151,8 +151,8 @@ public class Draw2Channels implements ActionListener {
             mainFrame.setTitle(" Draw Demo ");
             return;
         }
-        if(control_channel.getLocalAddress() != null)
-            title+=control_channel.getLocalAddress();
+        if(control_channel.getAddress() != null)
+            title+=control_channel.getAddress();
         title+=" (" + member_size + ") mbrs";
         mainFrame.setTitle(title);
     }

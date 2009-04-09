@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -116,18 +117,11 @@ public abstract class BasicTCP extends TP {
 
 
 
-    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        Set<Address> mbrs;
-
-        synchronized(members) {
-            mbrs=(Set<Address>)members.clone();
-        }
-        for(Address dest: mbrs) {
-            sendToSingleMember(dest, data, offset, length);
-        }
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+        sendToAllPhysicalAddresses(data, offset, length);
     }
 
-    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
@@ -158,16 +152,6 @@ public abstract class BasicTCP extends TP {
         return sb.toString();
     }
 
-    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-        if(multicast)
-            msg.setDest(null);
-        else
-            msg.setDest(dest);
-    }
-
-    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-        postUnmarshalling(msg, dest, null, multicast);
-    }
 
     public abstract String printConnections();
 
@@ -175,16 +159,23 @@ public abstract class BasicTCP extends TP {
 
     public abstract void retainAll(Collection<Address> members);
 
-    /** ConnectionTable.Receiver interface */
+    /** ConnectionMap.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        receive(local_addr, sender, data, offset, length);
+        super.receive(sender, data, offset, length);
     }
 
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.clear();
-            retainAll(members); // remove all connections from the ConnectionTable which are not members
+
+            Set<Address> physical_mbrs=new HashSet<Address>();
+            for(Address addr: members) {
+                PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
+                if(physical_addr != null)
+                    physical_mbrs.add(physical_addr);
+            }
+            retainAll(physical_mbrs); // remove all connections from the ConnectionTable which are not members
         }
         else if(evt.getType() == Event.UNSUSPECT) {
             Address suspected_mbr=(Address)evt.getArg();

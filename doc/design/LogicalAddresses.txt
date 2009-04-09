@@ -4,7 +4,7 @@ Logical addresses
 =================
 
 Author:  Bela Ban
-Version: $Id: LogicalAddresses.txt,v 1.12 2009/02/11 11:01:26 belaban Exp $
+Version: $Id: LogicalAddresses.txt,v 1.13 2009/04/09 09:11:32 belaban Exp $
 JIRA:    https://jira.jboss.org/jira/browse/JGRP-129
 
 The address chosen by each node is essentially the IP address and port of the receiver socket. However, for the
@@ -17,17 +17,17 @@ following reasons, this is not good enough:
 - NIC failover: a NIC goes down, we want to continue sending/receiving on a different NIC
 
 - The sender sends on all available NICs (send_on_all_interfaces="true"). This means that -if we take the receiver's
-datagram packet's address to be the identity of the sender - we get N different identities; 1 for each interface
-the message is sent on
+  datagram packet's address to be the identity of the sender - we get N different identities; 1 for each interface
+  the message is sent on
 
 - Network Address Translation: the sender's address might get changed by the NAT
 
 DESIGN:
 
 - A logical address consists of a unique identifier (UUID) and a logical name. The name is passed to JGroups when a
- channel is created (new JChannel(String logical_name, String props)). If logical_name is null, JGroups picks a
- logical name (which is not guaranteed to be unique though). The logical name stays with the channel until the latter
- is destroyed
+  channel is created (new JChannel(String logical_name, String props)). If logical_name is null, JGroups picks a
+  logical name (which is not guaranteed to be unique though). The logical name stays with the channel until the latter
+  is destroyed
 
 - A UUID is represented by org.jgroups.util.UUID, which is a subclass of Address and consists of the least and
   most significant bits variables copied from java.util.UUID. All other instance variables are omitted.
@@ -53,9 +53,7 @@ of the receiver is looked up from the cache.
 A UUID can have more than 1 physical address. We envisage providing a pluggable strategy which picks a physical
 address given a UUID. For example, a plugin could load balance between physical addresses.
 
-To exchange cache information, we'll use a simple (TP-internal) protocol similar to ARP. Whenever the cache is changed,
-we set a 'dirty' flag. The next down message(s) will then attached the cache contents to the message in an additional
-I-HAVE header. Receiving nodes will update their local caches upon reception.
+To exchange cache information, we'll use the existing Discovery protocol (see below).
 
 When a physical address for a given UUID is not present, a sender discards (or queues, TBD) the message and broadcasts
 a WHO-HAS message. Receivers then broadcast (or unicast) the UUID-physical address mapping.
@@ -80,7 +78,7 @@ TCPPING:TCP startup
 - The problem is that TCPPING has as initial_hosts the *physical* (not logical) addresses listed !
 - The joiner sends a discovery request to all physical addresses listed in initial_hosts
 - The dest_addr field of a discovery request message is the physical address
-- The transport usually expects UUIDs as addresses and finds the right physical address in the cache
+- The transport usually expects UUIDs as addresses and finds the associated physical address in the cache
 - However, in this case, the transport re-uses the physical address (dest_addr) in the message, bypasses the
   translation UUID --> physical address, and nulls dest_addr in Message
 - The destination address is now *null*. This works because Discovery/PING/TCPPING don't check the messages's
@@ -113,7 +111,7 @@ ARP-like functionality
 ----------------------
 - This is handled by Discovery
 - We'll add WHO-HAS, I-HAVE and INVALIDATE message handling to Discovery
-- Discovery and transport communicate via events
+- The Discovery and transport protocols communicate via events
 - When the transport wants to send a message whose destination UUID is not in its cache, it sends a (non-blocking)
   WHO-HAS up the stack which is handled by Discovery. Meanwhile the message is queued (bounded queue).
 - Discovery sends a WHO-HAS(UUID) message (multicast if PING, sent to initial_hosts in TCPPING, or sent to the
@@ -144,10 +142,10 @@ Startup
 Discovery
 ---------
 - Discovery fetches the local_addr (UUID), logical name and physical address(es) from the transport via a
-  GET-LOCAL-ADDR-INFO
-- A discovery request containing this info is sent out (multicast, unicast via TCP or sent to GossipRouter)
-- The receivers (Discovery protocols) fetch this info from the message and send it down to the transport, which
-  adds it to its cache and to UUID.cache
+  GET_PHYSICAL_ADDRESS
+- A discovery request containing this info is sent out (multicast, unicast via TCP or sent to the GossipRouter)
+- The receivers (Discovery protocols) fetch this info from the message and send it down to the transport
+  (via a SET_PHYSICAL_ADDRESS), which adds it to its cache and to UUID.cache
 - The receivers then fetch their own local information from the transport and send it along with the discovery
   response
 - On reception of the discovery response, the requester extracts this info from the message and sends it
@@ -156,14 +154,54 @@ Discovery
 Sending of a message with no physical address available for UUID
 ----------------------------------------------------------------
 - The transport queues the message
-- The transport sends a WHO-HAS *event* up the stack
-- The Discovery protocol sends out a WHO-HAS *message* (via multicast, TCP unicast, or to the GossipRouter)
+- The transport sends a GET_PHYSICAL_ADDRESS *event* up the stack
+- The Discovery protocol sends out a GET_MBRS_REQ *message* (via multicast, TCP unicast, or to the GossipRouter)
 - The receivers fetch their local information from the transport (exception: the GossipRouter has this information
-  in its local loookup cache), and return it with a I-HAVE message
-- On reception of the I-HAVE message, an I-HAVE event is sent down the stack to the transport
+  in its local loookup cache), and return it with a GET_MBRS_RSP message
+- On reception of the GET_MBRS_RSP message, a SET_PHYSICAL_ADDRESS event is sent down the stack to the transport
 - The transport updates its local cache from the information
 - The transport sends all queued messages if the UUID are now available
 
+
+On view change
+--------------
+- The coordinator's Discovery protocol broadcasts an INVALIDATE(UUID) message for each node which left the cluster
+- On reception, every receiver sends down a REMOVE_PHYSICAL_ADDRESS(UUID)
+- The transport then removes the mapping for the given UUID
+
+
+IDs instead of UUIDs
+--------------------
+- Implemented in TP or a separate protocol (ID ?)
+- The coordinator dishes out IDs (shorts) for new nodes
+- The IDs are always increasing
+- Every new ID is broadcast across the cluster, so everyone knows the highest IDs
+- An ID is associated with a UUID, and UUIDs are also associated with physical addresses (2 tables)
+- When we send a message to dest UUID, we lookup the ID associated with UUID. If found, we send the ID (a short)
+  rather than the UUID
+- On reception, if an ID is found, we create an IdAddress, which work on the short field for equals() and hashCode()
+- IdAddress.equals() and IdAddress.compareTo() can compare to both IdAddress *and* UUIDs: in the latter case, they
+  fetch the ID from the table given the UUID as key and do the comparison. UUIDs can also compare to IdAddresses
+- We should probably either add a PhysicalAddress interface, which inherits from Address, and have physical addresses
+  implement PhysicalAddress (so we can do an instanceof PhysicalAddress), or have an isPhysicalAddress() method
+- ID canonicalization should be configurable: we can enable or disable it
+- This could be used by an ID protocol (sitting on top of the transport), which maintains a UUID-ID table and *replaces*
+  dest and src addresses for messages coming in and going out
+- This protocol would replace an UUID dest with an IdAddress and provide the physical address as well (?)
+
+
+Shared transport and UUIDs
+--------------------------
+- With a shared transport, every channel has a local_addr: the transport itself cannot have a local_addr anymore. The
+  reason is that a channel could get shunned, leaves the cluster and then reconnects. However, because the address
+  of the shared transport hasn't changed, the rejoined member has the same address, thus chances of reincarnation are
+  higher
+- When a channel connects, it creates a new local_addr (UUID) and sends it down via SET_LOCAL_ADDRESS. The transport
+  then adds the UUID/physical address mapping to its cache
+- When we send a multicast message (dest == null), but don't have a multicast capable transport (e.g. UDP.ip_mcast=false)
+  or TCP/TCP_NIO, then we simply send it to all *physical* addresses in the transport's UUID cache.
+  If we don't currently have all physical addresses, that's fine because MERGE2 will eventually fetch all physical
+  addresses in the cluster
 
 
 TODOs
@@ -172,9 +210,35 @@ TODOs
 - GossipRouter: we need to register logical *and* physical addresses, plus the logical name
 - Find all uses of IpAddress and change them to SocketAddress (if possible), or try to use Address rather than
   IpAddress
-- [TBD] Change IpAddress into PhysicalAddress (?)
 - UUID: generate a nice name from UUID if the logical name is not defined. Alternative: don't use the UUID to generate
   the logical name, but maybe the host name and a random short
+- Util.writeAddress()/writeAddresses(): currently optimized for IpAddress, change to UUID.
+  Example: View.writeTo()/readFrom()
+- How are we going to associate logical names to channels when a shared transport is used ?
+- Marshalled size of UUID: 18 bytes, IpAddress: 9 bytes. Size in memory (without superclass, additional_data, on
+  64 bit machine): 16 bytes for UUID, 32 bytes for IpAddress ! So while marshalling takes more space for UUID,
+  it is quite compact in memory !
+  If it turns out that UUIDs generate too much overhead on the wire (bandwidth), we should think about canonicalizing
+  UUIDs to shorts: run an agreement protocol which assigns cluster-wide unique shorts to UUIDs, and send the shorts
+  rather than the UUIDs around !
+- UDP.initial_hosts also needs to send to physical addresses
+- Implement getPhysicalAddress() in all transports
+- BasicTCP.handleDownEvent(): view has to be handled in ProtocolAdapter and connections have to be closed there, too
+  --> The semantics of retainAll() have to be inspected: do we handle UUIDs or PhysicalAddresses ?
+  --> Should we switch to a model where ConnectionTable never reaps connections based on view changes, but based on
+      idle time ? Ie. reap a connection that hasn't been used for more than 30 seconds
+- TCPPING.initial_hosts="A,B": how will we find out about C, D and E ?
 
 
+- Shared transport
+  - Move setSourceAddress() from TP to JChannel ?
+  - Check whether thread names in a shared transport are still correct.
+  - Do thread names use the logical or UUID name of a channel ?
+  - Is Global.DUMMY still needed when we set the local address top down ?
+  - The 'members' variable in TP is a union of all memberships in the shared transport case
+    - In BasicTCP, we need to change retainAll() to use physical addresses rather than UUIDs stored ib TP.members
+    - Dito for suspected_mbrs
+    - In general, change all addresses in TCP to PhysicalAddresses. Or should we use logical addresses ?
+  
+        
 

@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.26 2009/02/05 09:27:45 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.27 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -82,11 +82,6 @@ public class FD_SIMPLE extends Protocol {
         boolean counter_reset=false;
 
         switch(evt.getType()) {
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
-
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 sender=msg.getSrc();
@@ -133,6 +128,9 @@ public class FD_SIMPLE extends Protocol {
         Address key;
 
         switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
 
             // Start heartbeat thread when we have more than 1 member; stop it when membership drops below 2
             case Event.VIEW_CHANGE:

@@ -14,7 +14,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.11 2008/11/25 21:32:19 vlada Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.12 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
@@ -27,19 +27,19 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         ServerObject obj=new ServerObject(null);
         disp=new RpcDispatcher(ch, null, null, obj);
         ch.connect("RpcDispatcherAnycastTest");
-        obj.setAddress(ch.getLocalAddress());
+        obj.setAddress(ch.getAddress());
 
         ch2=createChannel(ch);
         ServerObject obj2=new ServerObject(null);
         disp2=new RpcDispatcher(ch2, null, null, obj2);
         ch2.connect("RpcDispatcherAnycastTest");
-        obj2.setAddress(ch2.getLocalAddress());
+        obj2.setAddress(ch2.getAddress());
 
         ch3=createChannel(ch);
         ServerObject obj3=new ServerObject(null);
         disp3=new RpcDispatcher(ch3, null, null, obj3);
         ch3.connect("RpcDispatcherAnycastTest");
-        obj3.setAddress(ch3.getLocalAddress());
+        obj3.setAddress(ch3.getAddress());
     }
 
     @AfterMethod

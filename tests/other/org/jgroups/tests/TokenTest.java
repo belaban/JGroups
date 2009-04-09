@@ -11,7 +11,7 @@ import java.util.List;
  * member leaving is very crude). This test measures latency between token rotations across the ring. To get good
  * numbers, disable message bundling in the transport, or set max_bundle_time to a very low value.
  * @author Bela Ban
- * @version $Id: TokenTest.java,v 1.1 2007/10/05 14:43:10 belaban Exp $
+ * @version $Id: TokenTest.java,v 1.2 2009/04/09 09:11:20 belaban Exp $
  */
 public class TokenTest extends ReceiverAdapter {
     JChannel ch;
@@ -40,7 +40,7 @@ public class TokenTest extends ReceiverAdapter {
         ch=new JChannel(props);
         ch.setReceiver(this);
         ch.connect("token-group");
-        local_addr=ch.getLocalAddress();
+        local_addr=ch.getAddress();
         next=determineNext(members, local_addr);
         if(isCoord() && !token_sent) {
             ch.send(next, null, null);

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Tests UNICAST by sending anycast messages via an RpcDispatcher
  * @author Bela Ban
- * @version $Id: UnicastStressTest.java,v 1.3 2007/04/24 13:57:19 belaban Exp $
+ * @version $Id: UnicastStressTest.java,v 1.4 2009/04/09 09:11:35 belaban Exp $
  */
 public class UnicastStressTest {
     int num_channels=6;
@@ -74,10 +74,10 @@ public class UnicastStressTest {
                 throw new Exception("cluster has not formed correctly, expected " + num_channels + " channels, found" +
                         " only " + members.size() + " (view: " + view + ")");
             }
-            Vector<Address> tmp=pickBuddies(members, channel.getLocalAddress());
+            Vector<Address> tmp=pickBuddies(members, channel.getAddress());
 
             for(int j=0; j < num_threads; j++) {
-                Sender sender=new Sender(start_barrier, msg_size, num_msgs, dispatchers[i], channel.getLocalAddress(), tmp);
+                Sender sender=new Sender(start_barrier, msg_size, num_msgs, dispatchers[i], channel.getAddress(), tmp);
                 sender.start(); // will wait on barrier
             }
         }

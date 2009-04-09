@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.22 2009/01/12 14:11:38 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.23 2009/04/09 09:11:19 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -284,7 +284,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         });
 
         ch.connect(cluster_name);
-        local_addr=ch.getLocalAddress();
+        local_addr=ch.getAddress();
         view=ch.getView();
         timer=ch.getProtocolStack().getTransport().getTimer();
 

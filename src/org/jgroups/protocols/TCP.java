@@ -1,16 +1,15 @@
-// $Id: TCP.java,v 1.57 2008/10/29 13:07:38 vlada Exp $
+// $Id: TCP.java,v 1.58 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
-import java.net.InetAddress;
-import java.util.Collection;
-
 import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.TCPConnectionMap;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.PortsManager;
+
+import java.net.InetAddress;
+import java.util.Collection;
 
 /**
  * TCP based protocol. Creates a server socket, which gives us the local address
@@ -58,13 +57,13 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     }
 
     public void start() throws Exception {
-        ct=getConnectionTable(reaper_interval,
+        ct=createConnectionTable(reaper_interval,
                               conn_expire_time,
                               bind_addr,
                               external_addr,
                               bind_port,
-                              bind_port+port_range,
-                              pm);
+                              bind_port+port_range
+                              );
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
         ct.setUseSendQueues(use_send_queues);
@@ -72,12 +71,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
         ct.setSocketConnectionTimeout(sock_conn_timeout);
         ct.setTcpNodelay(tcp_nodelay);
         ct.setLinger(linger);
-        local_addr=ct.getLocalAddress();
-        if(additional_data != null && local_addr instanceof IpAddress)
-            ((IpAddress)local_addr).setAdditionalData(additional_data);
 
-        //http://jira.jboss.com/jira/browse/JGRP-626
-        //we first start threads in TP
+        // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
         super.start();
     }
     
@@ -119,13 +114,13 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
      * @return ConnectionTable Sub classes overrides this method to initialize a
      *         different version of ConnectionTable.
      */
-    protected TCPConnectionMap getConnectionTable(long reaperInterval,
+    protected TCPConnectionMap createConnectionTable(long reaperInterval,
                                                                         long connExpireTime,
                                                                         InetAddress bindAddress,
                                                                         InetAddress externalAddress,
                                                                         int startPort,
-                                                                        int endPort,
-                                                                        PortsManager pm) throws Exception {
+                                                                        int endPort
+                                                                        ) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {
             cTable=new TCPConnectionMap(getThreadFactory(),
@@ -133,8 +128,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                               bindAddress,
                                                               externalAddress,
                                                               startPort,
-                                                              endPort,
-                                                              pm);
+                                                              endPort
+                                                              );
         }
         else {
             if(reaperInterval == 0) {
@@ -154,10 +149,14 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                               startPort,
                                                               endPort,
                                                               reaperInterval,
-                                                              connExpireTime,
-                                                              pm);
+                                                              connExpireTime
+                                                              );
         }
 
         return cTable;
+    }
+
+    protected PhysicalAddress getPhysicalAddress() {
+        return ct != null? (PhysicalAddress)ct.getLocalAddress() : null;
     }
 }

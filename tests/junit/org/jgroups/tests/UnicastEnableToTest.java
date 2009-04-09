@@ -1,9 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,7 +14,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.9 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.10 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
@@ -35,7 +34,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
 
     public void testUnicastMessageToUnknownMember() throws Exception {
-        IpAddress addr=new IpAddress("127.0.0.1", 8976);
+        Address addr=UUID.randomUUID();
         System.out.println("sending message to non-existing destination " + addr);
         try {
             c1.send(new Message(addr, null, "Hello world"));
@@ -50,15 +49,15 @@ public class UnicastEnableToTest extends ChannelTestBase {
     public void testUnicastMessageToExistingMember() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
-        Assert.assertEquals(2, c2.getView().size());
+        assert 2 == c2.getView().size() : " view=" + c2.getView();
         MyReceiver receiver=new MyReceiver();
         c2.setReceiver(receiver);
-        Address dest=c2.getLocalAddress();
+        Address dest=c2.getAddress();
         c1.send(new Message(dest, null, "hello"));
         Util.sleep(500);
         List<Message> list=receiver.getMsgs();
         System.out.println("channel2 received the following msgs: " + list);
-        Assert.assertEquals(1, list.size());
+        assert 1 == list.size();
         receiver.reset();
     }
 
@@ -66,8 +65,8 @@ public class UnicastEnableToTest extends ChannelTestBase {
     public void testUnicastMessageToLeftMember() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
-        Assert.assertEquals(2, c2.getView().size());
-        Address dest=c2.getLocalAddress();
+        assert 2 == c2.getView().size() : "view=" + c2.getView();
+        Address dest=c2.getAddress();
         c2.close();
         Util.sleep(100);
         try {
@@ -83,12 +82,13 @@ public class UnicastEnableToTest extends ChannelTestBase {
     public void testUnicastMessageToLeftMemberWithEnableUnicastToEvent() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
-        Assert.assertEquals(2, c2.getView().size());
-        Address dest=c2.getLocalAddress();
+        assert 2 == c2.getView().size() : "view=" + c2.getView();
+        Address dest=c2.getAddress();
         c2.close();
         Util.sleep(100);
         c1.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
         c1.send(new Message(dest, null, "hello"));
+        c1.down(new Event(Event.DISABLE_UNICASTS_TO, dest));
     }
 
 

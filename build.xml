@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.199 2009/04/01 17:20:20 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.200 2009/04/09 09:11:23 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-    <property name="version" value="2.8.0.Alpha1.ReplCacheDemo"/>
+    <property name="version" value="2.8.0.Alpha2"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
@@ -84,7 +84,7 @@
         <mkdir dir="${compile.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
-  
+
     <target name="compile"
             depends="prepare"
             description="Compiles are Java files">
@@ -323,7 +323,7 @@
 		<mkdir dir="${root.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
 			<arg line="-o schema"/>
-		</java>	
+		</java>
 	</target>
 
 
@@ -390,7 +390,7 @@
             <arg value="keystore/defaultStore2.keystore"/>
             <classpath refid="jg.classpath"/>
         </java>
-    </target>        	
+    </target>
 
 	<target name="keyStoreGenerated">
 	    <condition property="isKeyStoreGenerated">
@@ -400,23 +400,24 @@
 	        </and>
 	    </condition>
 	</target>
-	
-	<target name="postcompile" depends="makeKeystore">	
+
+	<target name="postcompile" depends="makeKeystore">
 	</target>
 
-    <!-- =============================== TestNG ======================================== -->
+    <!--
+=============================== TestNG ======================================== -->
 
     <target name="all-tests-cc">
-        <antcall target="all-new-tests"/>        
+        <antcall target="all-new-tests"/>
     </target>
 
     <target name="all-new-tests">
-        <sequential>   
+        <sequential>
         	<antcall target="functional"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
-            <antcall target="tcp"/>   
-        	<antcall target="udp-flush"/>        	
+            <antcall target="tcp"/>
+        	<antcall target="udp-flush"/>
         	<antcall target="tcp-flush"/>
         </sequential>
     </target>
@@ -442,7 +443,7 @@
                  testng.xmlfile="stack-independent.xml"
                 />
     </target>
-	
+
     <target name="single" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
@@ -479,11 +480,11 @@
                 />
     </target>
 
-    <target name="tcp" depends="postcompile">    	
+    <target name="tcp" depends="postcompile">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
-    	
+
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="1"
@@ -541,7 +542,7 @@
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
-                    listeners="org.jgroups.util.JUnitXMLReporter"                   
+                    listeners="org.jgroups.util.JUnitXMLReporter"
             		timeout="${unittest.timeout.low}"
             	    verbose="${test.verbose}"
                     >
@@ -569,7 +570,7 @@
         </sequential>
     </macrodef>
 
-    <!-- =============================== TestNG ======================================== -->
+    <!--
+=============================== TestNG ======================================== -->
 
 </project>
-

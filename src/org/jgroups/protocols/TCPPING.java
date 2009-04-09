@@ -5,11 +5,13 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.util.UUID;
 
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -31,7 +33,7 @@ import java.util.List;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.41 2008/10/21 12:47:04 vlada Exp $
+ * @version $Id: TCPPING.java,v 1.42 2009/04/09 09:11:15 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -48,11 +50,14 @@ public class TCPPING extends Discovery {
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    
+    /**
+     * List of PhysicalAddresses
+     */
     private List<IpAddress> initial_hosts;
 
 
-    public TCPPING() {    
+    public TCPPING() {
+        return_entire_cache=true;
     }
 
     public String getName() {
@@ -87,13 +92,15 @@ public class TCPPING extends Discovery {
     }
     
     public void sendGetMembersRequest(String cluster_name) {
+        PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
         for(final Address addr: initial_hosts) {
-            if(addr.equals(local_addr))
+            if(addr.equals(physical_addr))
                 continue;
             final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(NAME, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
-
+            msg.putHeader(NAME, hdr);
             if(log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
             timer.submit(new Runnable() {

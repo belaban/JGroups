@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.23 2008/08/08 17:07:11 vlada Exp $
+// $Id: CloseTest.java,v 1.24 2009/04/09 09:11:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,6 +9,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.Vector;
+import java.util.List;
+import java.util.ArrayList;
 
 
 /**
@@ -80,85 +82,76 @@ public class CloseTest extends ChannelTestBase {
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         Address a1, a2;
         Vector members;
+        MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
+
         c1.set(createChannel(true));
+        c1.get().setReceiver(r1);
         System.out.println("-- connecting c1");
-        final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByParticipant");
+        final String GROUP="CloseTest.testViewChangeReceptionOnChannelCloseByParticipant";
         c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        dumpMessages("c1", c1.get());
-        a1=c1.get().getLocalAddress();
+        System.out.println("c1: " + r1.getViews());
+        a1=c1.get().getAddress();
         c2.set(createChannel(c1.get()));
+        c2.get().setReceiver(r2);
         System.out.println("-- connecting c2");
+        r1.clearViews();
         c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        a2=c2.get().getLocalAddress();
-        dumpMessages("c2", c2.get());
+        a2=c2.get().getAddress();
+        System.out.println("c2: " + r2.getViews());
 
         System.out.println("-- closing c2");
         c2.get().close();
-        Object obj=c1.get().receive(100);
-        assertTrue(obj instanceof View);
-        View v=(View)obj;
+        View v=r1.getViews().get(0);
         members=v.getMembers();
         System.out.println("-- first view of c1: " + v);
         Assert.assertEquals(2, members.size());
         assertTrue(members.contains(a1));
         assertTrue(members.contains(a2));
 
-        obj=c1.get().receive(100);
-        assertTrue(obj instanceof View);
-        v=(View)obj;
+        v=r1.getViews().get(1);
         members=v.getMembers();
         System.out.println("-- second view of c1: " + v);
-        Assert.assertEquals(1, members.size());
-        assertTrue(members.contains(a1));
-        assertFalse(members.contains(a2));
+        assert 1 == members.size();
+        assert members.contains(a1);
+        assert !members.contains(a2);
     }
 
     @Test
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
         Address a1, a2;
         Vector members;
-        Object obj;
-        View v;
+        MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
+
         final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByCoordinator");
         c1.set(createChannel(true));
+        c1.get().setReceiver(r1);
         c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        dumpMessages("c1", c1.get());
-        a1=c1.get().getLocalAddress();
+        a1=c1.get().getAddress();
         c2.set(createChannel(c1.get()));
+        c2.get().setReceiver(r2);
         c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        a2=c2.get().getLocalAddress();
-        v=(View)c2.get().receive(1);
+        a2=c2.get().getAddress();
+        View v=r2.getViews().get(0);
         members=v.getMembers();
-        Assert.assertEquals(2, members.size());
-        assertTrue(members.contains(a2));
+        assert 2 == members.size();
+        assert members.contains(a2);
 
+        r2.clearViews();
         c1.get().close();
-        Util.sleep(500);
+        Util.sleep(1000);
 
-        System.out.println("queue of c2 is " + c2.get().dumpQueue());
-        assertTrue("found 0 messages in channel", c2.get().getNumMessages() > 0);
-        obj=c2.get().receive(0);
-        assertTrue(obj instanceof View);
-        v=(View)obj;
+        v=r2.getViews().get(0);
         members=v.getMembers();
-        Assert.assertEquals(1, members.size());
-        assertFalse(members.contains(a1));
-        assertTrue(members.contains(a2));
-
+        assert 1 == members.size();
+        assert !members.contains(a1);
+        assert members.contains(a2);
         assert c2.get().getNumMessages() == 0;
     }
 
-    private static void dumpMessages(String msg, Channel ch) throws Exception {
-        while(ch.getNumMessages() > 0) {
-            Object obj=ch.receive(0);
-            if(obj instanceof View)
-                System.out.println(msg + ": " + obj);
-        }
-    }
 
     @Test
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
@@ -330,5 +323,15 @@ public class CloseTest extends ChannelTestBase {
         Assert.assertEquals(view.size(), num, msg);
     }
 
+
+    private static class MyReceiver extends ReceiverAdapter {
+        final List<View> views=new ArrayList<View>();
+        public void viewAccepted(View new_view) {
+            views.add(new_view);
+            System.out.println("new_view = " + new_view);
+        }
+        public List<View> getViews() {return views;}
+        public void clearViews() {views.clear();}
+    }
 
 }

@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.96 2009/03/23 19:40:38 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.97 2009/04/09 09:11:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -386,6 +386,16 @@ public class CoordGmsImpl extends GmsImpl {
         }
         
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
+
+        if(new_view.size() == 0 && gms.local_addr != null && gms.local_addr.equals(new_view.getCreator())) {
+            if(log.isTraceEnabled())
+                log.trace("view " + new_view + " is empty: will not multicast it (last view)");
+            if(leaving) {
+                gms.initState(); // in case connect() is called again
+            }
+            return;
+        }
+
         gms.up(new Event(Event.PREPARE_VIEW,new_view));
         gms.down(new Event(Event.PREPARE_VIEW,new_view));
         
@@ -671,7 +681,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug(gms.local_addr + " is sending merge view " + v.getVid() + " to coordinators " + coords);
         
-        gms.merge_ack_collector.reset(v.getVid(), coords);
+        gms.merge_ack_collector.reset(coords);
         int size=gms.merge_ack_collector.size();
         long timeout=gms.view_ack_collection_timeout;         
         

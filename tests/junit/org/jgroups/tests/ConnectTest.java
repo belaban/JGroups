@@ -7,13 +7,14 @@ import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.jgroups.util.UUID;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.20 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: ConnectTest.java,v 1.21 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConnectTest extends ChannelTestBase {
@@ -48,7 +49,7 @@ public class ConnectTest extends ChannelTestBase {
         channel.connect("ConnectTest.testgroup-2");
         View view=channel.getView();
         assert view.size() == 1;
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(channel.getAddress());
     }
 
 
@@ -61,6 +62,7 @@ public class ConnectTest extends ChannelTestBase {
         coordinator=createChannel(true);
         changeProps(coordinator);
         coordinator.connect("ConnectTest.testgroup-3");
+        print(coordinator, "coordinator");
         view=coordinator.getView();
         System.out.println("-- view for coordinator: " + view);
         assert view.size() == 1;
@@ -68,6 +70,7 @@ public class ConnectTest extends ChannelTestBase {
         channel=createChannel(coordinator);
         changeProps(channel);
         channel.connect("ConnectTest.testgroup-4");
+        print(channel, "channel");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
         assert view.size() == 1;
@@ -75,12 +78,20 @@ public class ConnectTest extends ChannelTestBase {
         channel.disconnect();
 
         channel.connect("ConnectTest.testgroup-3");
+        print(channel, "channel");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
 
         assert view.size() == 2;
-        assert view.containsMember(channel.getLocalAddress());
-        assert view.containsMember(coordinator.getLocalAddress());
+        assert view.containsMember(channel.getAddress());
+        assert view.containsMember(coordinator.getAddress());
+    }
+
+
+    static void print(JChannel ch, String msg) {
+        System.out.println(msg + ": name=" + ch.getName() + ", addr=" + ch.getAddress() +
+                ", UUID=" + ch.getAddressAsUUID() + "\nUUID cache:\n" + UUID.printCache() +
+                "\nLogical_addr_cache:\n" + ch.getProtocolStack().getTransport().printLogicalAddressCache());
     }
 
 

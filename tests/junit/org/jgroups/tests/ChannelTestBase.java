@@ -341,7 +341,7 @@ public class ChannelTestBase {
 
 
         public Address getLocalAddress() {
-            return channel.getLocalAddress();
+            return channel.getAddress();
         }
 
         public void start() {

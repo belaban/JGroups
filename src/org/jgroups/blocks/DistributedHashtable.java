@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.35 2008/04/08 14:41:22 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.36 2009/04/09 09:11:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -33,7 +33,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.35 2008/04/08 14:41:22 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.36 2009/04/09 09:11:19 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 @Unsupported
@@ -236,7 +236,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
     }
 
 
-    public Address getLocalAddress()        {return channel != null ? channel.getLocalAddress() : null;}
+    public Address getLocalAddress()        {return channel != null ? channel.getAddress() : null;}
     public String  getGroupName()           {return groupname;}
     public Channel getChannel()             {return channel;}
     public boolean getPersistent()          {return persistent;}

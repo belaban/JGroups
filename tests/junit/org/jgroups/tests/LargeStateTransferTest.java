@@ -24,7 +24,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.20 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.21 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -82,7 +82,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         assert view.size() == 2 : "view is " + view + ", but should have 2 members";
         log("requesting state of " + size + " bytes");
         start=System.currentTimeMillis();
-        boolean rc=requester.getState(provider.getLocalAddress(), 20000);
+        boolean rc=requester.getState(provider.getAddress(), 20000);
         log.info("getState(): result=" + rc);
         Object result=p.getResult(10000);
         stop=System.currentTimeMillis();

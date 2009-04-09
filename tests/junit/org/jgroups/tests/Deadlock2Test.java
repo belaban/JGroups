@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.20 2008/10/10 14:53:30 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.21 2009/04/09 09:11:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
@@ -53,7 +53,7 @@ public class Deadlock2Test extends ChannelTestBase {
         RpcDispatcher disp=new RpcDispatcher(c1, null, null, serverObject, DEADLOCK_DETECTION);
         serverObject.setRpcDispatcher(disp);
         c1.connect(name);
-        Address localAddress = c1.getLocalAddress();
+        Address localAddress = c1.getAddress();
 
         // call the nested group method on itself
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
@@ -100,7 +100,7 @@ public class Deadlock2Test extends ChannelTestBase {
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
-        Address localAddress2 = c2.getLocalAddress();
+        Address localAddress2 = c2.getAddress();
 
         // call a point-to-point method on Member 2 that triggers a nested distributed RPC
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
@@ -126,8 +126,8 @@ public class Deadlock2Test extends ChannelTestBase {
         c2.connect(name);
 
         Vector<Address> dests=new Vector<Address>();
-        dests.add(c1.getLocalAddress());
-        dests.add(c2.getLocalAddress());
+        dests.add(c1.getAddress());
+        dests.add(c2.getAddress());
 
         // call a point-to-point method on Member 2 that triggers a nested distributed RPC
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);

@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.48 2008/10/21 10:03:52 vlada Exp $
+// $Id: ENCRYPT.java,v 1.49 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -399,13 +399,6 @@ public class ENCRYPT extends Protocol {
       */
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            // we need to know what our address is
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                if(log.isDebugEnabled())
-                    log.debug("set local address to " + local_addr);
-                break;
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if(log.isInfoEnabled())
@@ -883,6 +876,13 @@ public class ENCRYPT extends Protocol {
                     handleViewChange(view, false);
                 }
                 break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                if(log.isDebugEnabled())
+                    log.debug("set local address to " + local_addr);
+                break;
+
             case Event.TMP_VIEW:
                 view=(View)evt.getArg();
                 if(log.isInfoEnabled())

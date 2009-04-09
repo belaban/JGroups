@@ -1,10 +1,10 @@
-// $Id: Ping.java,v 1.13 2007/11/19 16:08:26 belaban Exp $
+// $Id: Ping.java,v 1.14 2009/04/09 09:11:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.PingRsp;
+import org.jgroups.protocols.PingData;
 import org.jgroups.util.Util;
 
 import java.util.Enumeration;
@@ -47,9 +47,9 @@ public class Ping implements UpHandler {
 
         try {
             channel.connect(groupname);
-            List<PingRsp> responses = (List<PingRsp>) channel.downcall(new Event(Event.FIND_INITIAL_MBRS));
+            List<PingData> responses = (List<PingData>) channel.downcall(new Event(Event.FIND_INITIAL_MBRS));
             for(int i=0; i < responses.size(); i++) {
-            	PingRsp rsp=responses.get(i);
+            	PingData rsp=responses.get(i);
                 System.out.println("Rsp #" + (i + 1) + ": " + rsp);
             }
 
@@ -64,9 +64,9 @@ public class Ping implements UpHandler {
         }
     }
 
-    static void verifyCoordinator(List<PingRsp> rsps) {
+    static void verifyCoordinator(List<PingData> rsps) {
         Hashtable votes=new Hashtable();  // coord address, list of members who voted for this guy
-        PingRsp rsp;
+        PingData rsp;
         Vector v;
         Address coord, mbr;
 

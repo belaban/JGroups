@@ -1,4 +1,3 @@
-
 package org.jgroups.protocols;
 
 import org.jgroups.*;
@@ -31,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.104 2009/03/23 19:40:40 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.105 2009/04/09 09:11:15 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -179,10 +178,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     public Object up(Event evt) {
         switch(evt.getType()) {
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address) evt.getArg();
-                break;
-                           
             case Event.MSG:
                 Message msg=(Message) evt.getArg();
                 FdHeader hdr=(FdHeader)msg.getHeader(name);
@@ -298,6 +293,10 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.SHUTDOWN:
                 stopServerSocket(false);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address) evt.getArg();
                 break;
 
             case Event.VIEW_CHANGE:

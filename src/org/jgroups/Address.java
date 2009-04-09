@@ -1,4 +1,4 @@
-// $Id: Address.java,v 1.5 2008/01/10 08:06:59 belaban Exp $
+// $Id: Address.java,v 1.6 2009/04/09 09:11:29 belaban Exp $
 
 package org.jgroups;
 
@@ -14,6 +14,10 @@ import java.io.Externalizable;
  * @author Bela Ban
  */
 public interface Address extends Externalizable, Streamable, Comparable<Address>, Cloneable { // todo: remove Externalizable
+    // flags used for marshalling
+    public static final byte NULL      = 1;
+    public static final byte UUID_ADDR = 2;
+    public static final byte IP_ADDR   = 4;
 
     /**
      * Checks whether this is an address that represents multiple destinations;

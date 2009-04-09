@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.9 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.10 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
@@ -63,7 +63,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         ch2.connect("UNICAST_OOB_Test");
         assert ch2.getView().size() == 2 : "ch2.view is " + ch2.getView();
 
-        Address dest=ch2.getLocalAddress();
+        Address dest=ch2.getAddress();
         for(int i=1; i <=5; i++) {
             Message msg=new Message(dest, null, new Long(i));
             if(i == 4 && oob)

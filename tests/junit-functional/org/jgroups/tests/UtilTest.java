@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.11 2009/01/07 16:12:32 belaban Exp $
+// $Id: UtilTest.java,v 1.12 2009/04/09 09:11:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -98,6 +98,32 @@ public class UtilTest {
         input="foo, bar,  foobar";
         result=Util.getProperty(input);
         assert result != null && result.equals("200");
+    }
+
+    public static void testFlags() {
+        final byte ONE   =   1;
+        final byte TWO   =   2;
+        final byte THREE =   4;
+        final byte FOUR  =   8;
+        final byte FIVE =   16;
+        final byte SIX  =   32;
+        final byte SEVEN =  64;
+
+        byte flags=0;
+        flags=Util.setFlag(flags, ONE);
+        assert Util.isFlagSet(flags, ONE);
+
+        flags=0;
+        flags=Util.setFlag(flags, (byte)(ONE | SEVEN));
+        assert Util.isFlagSet(flags, ONE);
+        assert Util.isFlagSet(flags, SEVEN);
+        assert !Util.isFlagSet(flags, FIVE);
+        flags=Util.clearFlags(flags, ONE);
+        assert !Util.isFlagSet(flags, ONE);
+
+        flags=Util.setFlag(flags, FIVE);
+        assert Util.isFlagSet(flags, FIVE);
+        assert Util.isFlagSet(flags, SEVEN);
     }
 
 

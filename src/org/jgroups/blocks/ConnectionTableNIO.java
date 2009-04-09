@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.41 2008/09/25 14:20:51 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.42 2009/04/09 09:11:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import org.apache.commons.logging.Log;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.PortsManager;
 import org.jgroups.util.ShutdownRejectedExecutionHandler;
 
 import java.io.IOException;
@@ -120,21 +119,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             start();
     }
 
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
-                              int srv_port, int max_port, PortsManager pm,
-                              boolean doStart)
-            throws Exception
-    {
-        setReceiver(r);
-        this.external_addr=external_addr;
-        this.bind_addr=bind_addr;
-        this.srv_port=srv_port;
-        this.max_port=max_port;
-        this.pm=pm;
-        use_reaper=true;
-        if(doStart)
-            start();
-    }
 
 
    /**
@@ -179,25 +163,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
         if(doStart)
             start();
     }
-
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, 
-                              int srv_port, int max_port, PortsManager pm,
-                              long reaper_interval, long conn_expire_time, boolean doStart
-    ) throws Exception
-    {
-        setReceiver(r);
-        this.bind_addr=bind_addr;
-        this.external_addr=external_addr;
-        this.srv_port=srv_port;
-        this.max_port=max_port;
-        this.pm=pm;
-        this.reaper_interval=reaper_interval;
-        this.conn_expire_time=conn_expire_time;
-        use_reaper=true;
-        if(doStart)
-            start();
-    }
-
 
 
     public int getReaderThreads() { return m_reader_threads; }
@@ -622,9 +587,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       this.m_acceptSelector = Selector.open();
       m_serverSocketChannel = ServerSocketChannel.open();
       m_serverSocketChannel.configureBlocking(false);
-
-       if(start_port > 0 && pm != null)
-           start_port=pm.getNextAvailablePort(start_port);
 
       while (true)
       {

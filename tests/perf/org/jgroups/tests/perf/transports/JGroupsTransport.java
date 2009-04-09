@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.20 2008/09/11 17:43:12 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.21 2009/04/09 09:11:39 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -30,7 +30,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
     }
 
     public Object getLocalAddress() {
-        return channel != null? channel.getLocalAddress() : null;
+        return channel != null? channel.getAddress() : null;
     }
 
 
@@ -130,7 +130,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
 
     private static boolean isCoordinator(Channel ch) {
         Vector<Address> members=ch.getView().getMembers();
-        Address local_addr=ch.getLocalAddress();
+        Address local_addr=ch.getAddress();
         return !members.isEmpty() && members.get(0).equals(local_addr);
     }
 

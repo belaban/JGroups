@@ -80,7 +80,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         for(ReplicatedHashMap<Address,Integer> map:channels) {
             map.getChannel().connect("ReplicatedHashMapStartupTest");
             map.start(0);
-            map.put(map.getChannel().getLocalAddress(), new Integer(1));
+            map.put(map.getChannel().getAddress(), new Integer(1));
             Util.sleep(100);
         }
 

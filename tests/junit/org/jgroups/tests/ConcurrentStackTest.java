@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.11 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.12 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
@@ -168,7 +168,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
         public Sender(Channel ch) {
             this.ch=ch;
-            local_addr=ch.getLocalAddress();
+            local_addr=ch.getAddress();
         }
 
         public void run() {

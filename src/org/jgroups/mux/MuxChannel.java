@@ -27,7 +27,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.54 2008/05/29 08:22:05 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.55 2009/04/09 09:11:25 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -97,7 +97,7 @@ public class MuxChannel extends JChannel {
         return mux.getChannel().getClusterName();
     }
 
-    public Address getLocalAddress() {
+    public Address getAddress() {
         return mux.getLocalAddress();
     }
    
@@ -386,7 +386,7 @@ public class MuxChannel extends JChannel {
         // unless service runs on a specified target node
         // http://jira.jboss.com/jira/browse/JGRP-401
         Address service_view_coordinator=mux.getStateProvider(target, id);
-        Address tmp=getLocalAddress();
+        Address tmp=getAddress();
 
         if(service_view_coordinator != null)
             target=service_view_coordinator;

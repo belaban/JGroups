@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.15 2009/02/05 09:14:55 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.16 2009/04/09 09:11:18 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -17,14 +17,19 @@ public class AckCollector {
     private final Set<Object>      received_acks=new HashSet<Object>();
     private final Promise<Boolean> all_acks_received=new Promise<Boolean>();
     private final Set<Address>     suspected_mbrs=new HashSet<Address>();
+    private int                    expected_acks=0;
 
 
     public AckCollector() {
         missing_acks=new ArrayList<Object>();
+        expected_acks=0;
     }
 
     public AckCollector(ViewId v, List<Object> l) {
-        missing_acks=new ArrayList<Object>(l);      
+        missing_acks=new ArrayList<Object>(l);
+        if(v != null) {
+            expected_acks=l != null? l.size() : 0;
+        }
     }
 
     public String printMissing() {
@@ -39,13 +44,15 @@ public class AckCollector {
         }
     }    
 
-    public void reset(ViewId v, List<Address> members) {
+    public void reset(List<Address> members) {
         synchronized(this) {
             suspected_mbrs.clear();           
             missing_acks.clear();
             received_acks.clear();
-            if(members != null && !members.isEmpty())
+            if(members != null && !members.isEmpty()) {
                 missing_acks.addAll(members);
+                expected_acks=members.size();
+            }
             missing_acks.removeAll(suspected_mbrs);
             all_acks_received.reset();
         }
@@ -54,6 +61,18 @@ public class AckCollector {
     public int size() {
         synchronized(this) {
             return missing_acks.size();
+        }
+    }
+
+    public int receivedAcks() {
+        synchronized(this) {
+            return received_acks.size();
+        }
+    }
+
+    public int expectedAcks() {
+        synchronized(this) {
+            return expected_acks;
         }
     }
 

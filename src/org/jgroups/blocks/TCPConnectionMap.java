@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.PortsManager;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -46,7 +45,6 @@ public class TCPConnectionMap{
     private boolean tcp_nodelay=false;
     private int linger=-1;    
     private final Thread acceptor;
-    private PortsManager pm=null;       
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile boolean use_send_queues=false;    
@@ -56,9 +54,9 @@ public class TCPConnectionMap{
                             InetAddress bind_addr,
                             InetAddress external_addr,
                             int srv_port,
-                            int max_port,
-                            PortsManager pm) throws Exception {
-        this(f,r,bind_addr,external_addr,srv_port,max_port,0,0,pm);
+                            int max_port
+                            ) throws Exception {
+        this(f,r,bind_addr,external_addr,srv_port,max_port,0,0);
     }
 
     public TCPConnectionMap(ThreadFactory f,
@@ -68,12 +66,11 @@ public class TCPConnectionMap{
                             int srv_port,
                             int max_port,
                             long reaper_interval,
-                            long conn_expire_time,
-                            PortsManager pm) throws Exception {
+                            long conn_expire_time
+                            ) throws Exception {
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
         this.bind_addr=bind_addr;               
-        this.pm=pm;   
         this.conn_expire_time = conn_expire_time;
         this.srv_sock=createServerSocket(srv_port, max_port);      
 
@@ -151,9 +148,6 @@ public class TCPConnectionMap{
 
     public void stop() {
         if(running.compareAndSet(true, false)) {
-            if(pm != null) {
-                pm.updatePort(srv_sock.getLocalPort());
-            }
             Util.close(srv_sock);
             Util.interruptAndWaitToDie(acceptor);
             mapper.stop();
@@ -169,8 +163,6 @@ public class TCPConnectionMap{
 
         while(true) {
             try {
-                if(start_port > 0 && pm != null)
-                    start_port=pm.getNextAvailablePort(start_port);
                 if(bind_addr == null)
                     ret=new ServerSocket(start_port);
                 else {

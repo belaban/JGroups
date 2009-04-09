@@ -100,12 +100,12 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
-        Rsp rsp=rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
         assert ret == null;
 
-        rsp=rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
         assert ret == null;
@@ -159,12 +159,12 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
-        Rsp rsp=rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getAddress());
         assertNotNull(rsp);
         byte[] ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
 
-        rsp=rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getAddress());
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);

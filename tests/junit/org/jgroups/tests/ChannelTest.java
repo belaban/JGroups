@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.23 2008/10/13 14:20:37 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.24 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class ChannelTest extends ChannelTestBase {       
@@ -28,15 +28,15 @@ public class ChannelTest extends ChannelTestBase {
             assert c1.isOpen();
             assert c1.isConnected();
        
-            assert c1.getLocalAddress() != null;
+            assert c1.getAddress() != null;
             assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getLocalAddress());
+            assert c1.getView().getMembers().contains(c1.getAddress());
        
             c1.connect("testBasicOperations");
             c1.disconnect();
             assert c1.isConnected() == false;
             assert c1.isOpen();
-            assert c1.getLocalAddress() == null;
+            assert c1.getAddress() == null;
             assert c1.getView() == null;
             assert c1.getClusterName() == null;
        
@@ -54,7 +54,7 @@ public class ChannelTest extends ChannelTestBase {
        
             assert c1.isConnected() == false;
             assert c1.isOpen() == false;
-            assert c1.getLocalAddress() == null;
+            assert c1.getAddress() == null;
             assert c1.getView() == null;
        
             assert c1.getClusterName() == null;
@@ -69,18 +69,18 @@ public class ChannelTest extends ChannelTestBase {
             assert c1.isOpen();
             assert c1.isConnected();
        
-            assert c1.getLocalAddress() != null;
+            assert c1.getAddress() != null;
             assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getLocalAddress());
-            assert c1.getView().getMembers().contains(c2.getLocalAddress());
+            assert c1.getView().getMembers().contains(c1.getAddress());
+            assert c1.getView().getMembers().contains(c2.getAddress());
        
             assert c2.isOpen();
             assert c2.isConnected();
        
-            assert c2.getLocalAddress() != null;
+            assert c2.getAddress() != null;
             assert c2.getView() != null;
-            assert c2.getView().getMembers().contains(c2.getLocalAddress());
-            assert c2.getView().getMembers().contains(c1.getLocalAddress());
+            assert c2.getView().getMembers().contains(c2.getAddress());
+            assert c2.getView().getMembers().contains(c1.getAddress());
        
             c2.close();
             Util.sleep(1000);
@@ -88,16 +88,16 @@ public class ChannelTest extends ChannelTestBase {
             assert c2.isOpen() == false;
             assert c2.isConnected() == false;
        
-            assert c2.getLocalAddress() == null;
+            assert c2.getAddress() == null;
             assert c2.getView() == null;
        
             assert c1.isOpen();
             assert c1.isConnected();
        
-            assert c1.getLocalAddress() != null;
+            assert c1.getAddress() != null;
             assert c1.getView() != null;
-            assert c1.getView().getMembers().contains(c1.getLocalAddress());
-            assert c1.getView().getMembers().contains(c2.getLocalAddress()) == false;
+            assert c1.getView().getMembers().contains(c1.getAddress());
+            assert c1.getView().getMembers().contains(c2.getAddress()) == false;
         }
         finally {
             Util.close(c1,c2);
@@ -330,7 +330,7 @@ public class ChannelTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            receivedViewWhenDisconnected = !new_view.containsMember(ch.getLocalAddress());
+            receivedViewWhenDisconnected = !new_view.containsMember(ch.getAddress());
         }
 
     }

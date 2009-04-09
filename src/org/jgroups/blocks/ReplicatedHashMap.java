@@ -41,7 +41,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.18 2008/05/13 12:33:53 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.19 2009/04/09 09:11:19 belaban Exp $
  */
 @Unsupported(comment="Use JBossCache instead")
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
@@ -350,7 +350,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     }
 
     public Address getLocalAddress() {
-        return channel != null? channel.getLocalAddress() : null;
+        return channel != null? channel.getAddress() : null;
     }
 
     public String getClusterName() {

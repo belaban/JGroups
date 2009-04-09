@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.7 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.8 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class UnicastUnitTest extends ChannelTestBase {
@@ -60,7 +60,7 @@ public class UnicastUnitTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            Address local_addr=channel.getLocalAddress();
+            Address local_addr=channel.getAddress();
             assertNotNull(local_addr);
             System.out.println("[" + local_addr + "]: " + new_view);
             List<Address> members=new LinkedList<Address>(new_view.getMembers());

@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.11 2008/06/16 08:06:43 belaban Exp $
+// $Id: UnicastTest.java,v 1.12 2009/04/09 09:11:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -300,7 +300,7 @@ public class UnicastTest implements Runnable {
             mbrs=channel.getView().getMembers();
             System.out.println("pick receiver from the following members:");
             for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getLocalAddress()))
+                if(mbrs.elementAt(i).equals(channel.getAddress()))
                     System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
                 else
                     System.out.println("[" + i + "]: " + mbrs.elementAt(i));

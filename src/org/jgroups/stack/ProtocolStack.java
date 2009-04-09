@@ -1,4 +1,3 @@
-
 package org.jgroups.stack;
 
 import org.jgroups.*;
@@ -27,9 +26,9 @@ import java.util.concurrent.ConcurrentMap;
  * <p>
  * The ProtocolStack makes use of the Configurator to setup and initialize
  * stacks, and to destroy them again when not needed anymore
- * 
+ *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.93 2009/03/19 09:55:16 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.94 2009/04/09 09:11:31 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -43,7 +42,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
 
 
-    
+
     private Protocol top_prot = null;
     private Protocol bottom_prot = null;
     private String   setup_string;
@@ -72,9 +71,9 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
-        
+
         this.setup_string=setup_string;
-        this.channel=channel;       
+        this.channel=channel;
 
         Class<?> tmp=ClassConfigurator.class; // load this class, trigger init()
         try {
@@ -150,7 +149,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
-    public Vector<Protocol> getProtocols() {        
+    public Vector<Protocol> getProtocols() {
         Vector<Protocol> v=new Vector<Protocol>();
         Protocol p=top_prot;
         while(p != null) {
@@ -454,7 +453,7 @@ public class ProtocolStack extends Protocol implements Transport {
             top_prot=getProtocolStackFactory().setupProtocolStack();
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
-            bottom_prot=getBottomProtocol();           
+            bottom_prot=getBottomProtocol();
             initProtocolStack();
         }
     }
@@ -466,12 +465,12 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
 
-    public void setup(ProtocolStack stack) throws Exception {      
+    public void setup(ProtocolStack stack) throws Exception {
         if(top_prot == null) {
             top_prot=getProtocolStackFactory().setupProtocolStack(stack);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
-            bottom_prot=getBottomProtocol();           
+            bottom_prot=getBottomProtocol();
             initProtocolStack();
         }
     }
@@ -499,7 +498,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
         if(position == ProtocolStack.BELOW && neighbor instanceof TP)
             throw new IllegalArgumentException("Cannot insert protocol " + prot.getName() + " below transport protocol");
-            
+
         insertProtocolInStack(prot, neighbor,  position);
     }
 
@@ -524,7 +523,7 @@ public class ProtocolStack extends Protocol implements Transport {
             neighbor.setUpProtocol(prot);
         }
     }
-    
+
     private void checkAndSwitchTop(Protocol oldTop, Protocol newTop){
         if(oldTop == top_prot)
             top_prot = newTop;
@@ -538,7 +537,7 @@ public class ProtocolStack extends Protocol implements Transport {
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
             throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
-        
+
         insertProtocolInStack(prot, neighbor,  position);
     }
 
@@ -555,9 +554,9 @@ public class ProtocolStack extends Protocol implements Transport {
     public Protocol removeProtocol(String prot_name) throws Exception {
         if(prot_name == null) return null;
         Protocol prot=findProtocol(prot_name);
-        if(prot == null) return null;        
+        if(prot == null) return null;
         Protocol above=prot.getUpProtocol(), below=prot.getDownProtocol();
-        checkAndSwitchTop(prot, below);     
+        checkAndSwitchTop(prot, below);
         if(above != null)
             above.setDownProtocol(below);
         if(below != null)
@@ -580,7 +579,7 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return null;
     }
-    
+
     public Protocol getBottomProtocol() {
         Protocol curr_prot=this;
         while(curr_prot != null && curr_prot.getDownProtocol() !=null) {
@@ -588,23 +587,23 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return curr_prot;
     }
-    
+
     public Protocol getTopProtocol() {
         return top_prot;
     }
-    
+
     public Protocol findProtocol(Class<?> clazz) {
-        Protocol tmp=top_prot;       
+        Protocol tmp=top_prot;
         while(tmp != null) {
             Class<?> protClass=tmp.getClass();
             if(clazz.isAssignableFrom(protClass)){
                 return tmp;
-            }           
+            }
             tmp=tmp.getDownProtocol();
         }
         return null;
     }
-    
+
     public void initProtocolStack() throws Exception {
         Vector <Protocol> protocols = getProtocols();
         Collections.reverse(protocols);
@@ -657,15 +656,15 @@ public class ProtocolStack extends Protocol implements Transport {
                 }
                 prot.destroy();
             }
-            
+
             /*
              *Do not null top_prot reference since we need recreation of channel properties (JChannel#getProperties)
              *during channel recreation, especially if those properties were modified after channel was created.
              *We modify channel properties after channel creation in some tests for example
-             * 
+             *
              */
             //top_prot=null;
-        }        
+        }
     }
 
 
@@ -675,10 +674,10 @@ public class ProtocolStack extends Protocol implements Transport {
      * <em>from top to bottom</em>.
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
-    public void startStack(String cluster_name) throws Exception {
+    public void startStack(String cluster_name, Address local_addr) throws Exception {
         if(stopped == false) return;
 
-        Protocol above_prot=null;        
+        Protocol above_prot=null;
         for(final Protocol prot: getProtocols()) {
             if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
@@ -702,9 +701,9 @@ public class ProtocolStack extends Protocol implements Transport {
                             }
 
                             if(above_prot != null) {
-                                TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot,
-                                                                             transport.getThreadNamingPattern(),
-                                                                             transport.getLocalAddress());
+                                TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, local_addr, prot.getName(),
+                                                                             above_prot, prot,
+                                                                             transport.getThreadNamingPattern());
                                 ad.setProtocolStack(above_prot.getProtocolStack());
                                 above_prot.setDownProtocol(ad);
                                 up_prots.put(cluster_name, ad);
@@ -715,8 +714,6 @@ public class ProtocolStack extends Protocol implements Transport {
                             ProtocolStack.RefCounter counter=val.getVal2();
                             short num_starts=counter.incrementStartCount();
                             if(num_starts >= 1) {
-                                if(above_prot != null)
-                                    above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
                                 continue;
                             }
                             else {
@@ -727,7 +724,7 @@ public class ProtocolStack extends Protocol implements Transport {
                         }
                     }
                 }
-            }                       
+            }
             prot.start();
             above_prot=prot;
         }
@@ -751,9 +748,9 @@ public class ProtocolStack extends Protocol implements Transport {
         if(stopped) return;
         for(final Protocol prot: getProtocols()) {
             if(prot instanceof TP) {
-                TP transport=(TP)prot;                
+                TP transport=(TP)prot;
                 if(transport.isSingleton()) {
-                    String singleton_name=transport.getSingletonName();                    
+                    String singleton_name=transport.getSingletonName();
                     final Map<String,Protocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
                         up_prots.remove(cluster_name);
@@ -852,17 +849,17 @@ public class ProtocolStack extends Protocol implements Transport {
         public short incrementInitCount(){
             return init_count++;
         }
-        
+
         public short decrementInitCount() {
             init_count=(short)Math.max(init_count -1, 0);
             return init_count;
-        }    
-        
+        }
+
         public short decrementStartCount() {
             start_count=(short)Math.max(start_count -1, 0);
             return start_count;
         }
-        
+
         public short incrementStartCount() {
             return start_count++;
         }
@@ -871,11 +868,10 @@ public class ProtocolStack extends Protocol implements Transport {
             return "init_count=" + init_count + ", start_count=" + start_count;
         }
     }
-    
+
     public interface ProtocolStackFactory{
         public Protocol setupProtocolStack() throws Exception;
         public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception;
     }
 
 }
-

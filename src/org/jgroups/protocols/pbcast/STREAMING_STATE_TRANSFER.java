@@ -241,10 +241,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 }
                 break;
 
-            case Event.SET_LOCAL_ADDRESS :
-                local_addr = (Address) evt.getArg();
-                break;
-
             case Event.TMP_VIEW :
             case Event.VIEW_CHANGE :
                 handleViewChange((View) evt.getArg());
@@ -318,6 +314,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 }
                 break;
 
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
 
         return down_prot.down(evt); // pass on to the layer below us
@@ -329,10 +328,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     /**
      * When FLUSH is used we do not need to pass digests between members
-     * 
+     *
      * see JGroups/doc/design/PArtialStateTransfer.txt see
      * JGroups/doc/design/FLUSH.txt
-     * 
+     *
      * @return true if use of digests is required, false otherwise
      */
     private boolean isDigestNeeded() {
@@ -671,7 +670,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             super(inputStreamOwner.getInputStream());
             this.inputStreamOwner = inputStreamOwner;
         }
-        
+
         public void close() throws IOException {
             if (closed.compareAndSet(false, true)) {
                 if (log.isDebugEnabled()) {
@@ -687,7 +686,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private class StreamingOutputStreamWrapper extends FilterOutputStream {
         private final Socket outputStreamOwner;
-        
+
         private final AtomicBoolean closed = new AtomicBoolean(false);
 
         private long bytesWrittenCounter = 0;
@@ -713,7 +712,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 super.close();
             }
         }
-        
+
         public void write(byte[] b, int off, int len) throws IOException {
             super.write(b, off, len);
             bytesWrittenCounter += len;
@@ -721,7 +720,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
         public void write(byte[] b) throws IOException {
             super.write(b);
-            bytesWrittenCounter += b.length;            
+            bytesWrittenCounter += b.length;
         }
 
         public void write(int b) throws IOException {
@@ -729,7 +728,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             bytesWrittenCounter += 1;
         }
     }
-    
+
     private class StateInputStream extends InputStream {
 
         private final AtomicBoolean closed;

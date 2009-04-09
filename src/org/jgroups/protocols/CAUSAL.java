@@ -58,7 +58,7 @@ import java.util.*;
  *</p>
  * <em>Note that this protocol is experimental and has never been tested extensively !</em>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Id: CAUSAL.java,v 1.21 2008/05/08 09:46:42 vlada Exp $
+ *  @version $Id: CAUSAL.java,v 1.22 2009/04/09 09:11:15 belaban Exp $
  *
  **/
 
@@ -843,6 +843,9 @@ public class CAUSAL extends Protocol
         try {
             // If not a MSG, just pass down.
             if (evt.getType()!=Event.MSG) {
+                if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
+                    localAddress=(Address)evt.getArg();
+                }
                 return down_prot.down(evt);
             }
             
@@ -888,9 +891,6 @@ public class CAUSAL extends Protocol
     public Object up(Event evt) {
         try {
             switch (evt.getType()) {
-                case Event.SET_LOCAL_ADDRESS:
-                    upSetLocalAddress(evt);
-                    break;               
                 case Event.VIEW_CHANGE:
                     upViewChange(evt);
                     break;                    
@@ -906,11 +906,7 @@ public class CAUSAL extends Protocol
         return null;
     }
     
-    private void upSetLocalAddress(Event evt) {
-        localAddress = (Address) evt.getArg();
-        up_prot.up(evt);
-    }
-   
+
     /**
      * Process a VIEW_CHANGE event.
      * @param evt The event.

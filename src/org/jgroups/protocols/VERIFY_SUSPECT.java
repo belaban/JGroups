@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.38 2008/07/18 15:18:04 vlada Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.39 2009/04/09 09:11:15 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
@@ -69,16 +69,15 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(evt.getType() == Event.SHUTDOWN) {
             shutting_down=true;
         }
+        else if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
+            local_addr=(Address)evt.getArg();
+            shutting_down=false;
+        }
         return down_prot.down(evt);
     }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                shutting_down=false;
-                break;
 
             case Event.SUSPECT:  // it all starts here ...
                 if(shutting_down)

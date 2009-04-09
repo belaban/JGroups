@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.21 2009/04/01 17:04:46 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.22 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -145,7 +145,7 @@ public class ReconciliationTest extends ChannelTestBase {
         JChannel last=channels.get(channels.size() - 1);
         JChannel nextToLast=channels.get(channels.size() - 2);
 
-        insertDISCARD(nextToLast, last.getLocalAddress());
+        insertDISCARD(nextToLast, last.getAddress());
 
         String lastsName=names[names.length - 1];
         String nextToLastName=names[names.length - 2];
@@ -170,14 +170,14 @@ public class ReconciliationTest extends ChannelTestBase {
         // check last (must have received its own messages)
         Map<Address,List<Integer>> map=lastReceiver.getMsgs();
         Assert.assertEquals(map.size(), 1, "we should have only 1 sender, namely C at this time");
-        List<Integer> list=map.get(last.getLocalAddress());
+        List<Integer> list=map.get(last.getAddress());
         log.info(lastsName + ": messages received from " + lastsName + ",list=" + list);
         Assert.assertEquals(list.size(), 5, "correct msgs: " + list);
 
         // check nextToLast (should have received none of last messages)
         map=nextToLastReceiver.getMsgs();
         Assert.assertEquals(map.size(), 0, "we should have no sender at this time");
-        list=map.get(last.getLocalAddress());
+        list=map.get(last.getAddress());
         log.info(nextToLastName + ": messages received from " + lastsName + " : " + list);
         assert list == null;
 
@@ -187,14 +187,14 @@ public class ReconciliationTest extends ChannelTestBase {
         for(MyReceiver receiver:otherReceivers) {
             map=receiver.getMsgs();
             Assert.assertEquals(map.size(), 1, "we should have only 1 sender");
-            list=map.get(last.getLocalAddress());
+            list=map.get(last.getAddress());
             log.info(receiver.name + " messages received from " + lastsName + ":" + list);
             Assert.assertEquals(list.size(), 5, "correct msgs" + list);
         }
 
         removeDISCARD(nextToLast);
 
-        Address address=last.getLocalAddress();
+        Address address=last.getAddress();
         ft.triggerFlush();
 
         int cnt=1000;
@@ -270,7 +270,7 @@ public class ReconciliationTest extends ChannelTestBase {
             list.add((Integer)msg.getObject());
             log.debug("[" + name
                                + " / "
-                               + channel.getLocalAddress()
+                               + channel.getAddress()
                                + "]: received message from "
                                + msg.getSrc()
                                + ": "
@@ -314,9 +314,9 @@ public class ReconciliationTest extends ChannelTestBase {
                            + cache_2);
         Assert.assertEquals(cache_1.size(), cache_2.size());
         Assert.assertEquals(20, cache_1.size());
-        
+
         Util.close(c1,c2);
-        
+
     }
 
     private void flush(Channel channel, long timeout) {

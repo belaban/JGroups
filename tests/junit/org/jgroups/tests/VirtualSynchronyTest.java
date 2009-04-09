@@ -111,7 +111,7 @@ public class VirtualSynchronyTest {
 		public String getAddress() {
 			if(ch!=null && ch.isConnected())
 			{
-				return ch.getLocalAddress().toString();
+				return ch.getAddress().toString();
 			}
 			else
 			{
@@ -189,7 +189,7 @@ public class VirtualSynchronyTest {
 					}
 				}
 			} else if (m instanceof String) {
-                assert currentView.getVid().getId() == Long.parseLong((String)m) : ch.getLocalAddress()
+                assert currentView.getVid().getId() == Long.parseLong((String)m) : ch.getAddress()
                         + " received message from the wrong view. Message sender was " + msg.getSrc();
                 numberOfMessagesInView++;
 			}
@@ -199,7 +199,7 @@ public class VirtualSynchronyTest {
 			View tmpView = (View) msg;			
 			if (currentView != null) {
 				payload = new VSynchPayload(currentView.getVid(),
-						numberOfMessagesInView,ch.getLocalAddress());
+						numberOfMessagesInView,ch.getAddress());
 				ch.send(tmpView.getMembers().get(0), null, payload);
 			}
 			numberOfMessagesInView = 0;

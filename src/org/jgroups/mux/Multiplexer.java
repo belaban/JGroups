@@ -6,7 +6,6 @@ import org.jgroups.*;
 import org.jgroups.TimeoutException;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.protocols.pbcast.FLUSH;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
@@ -37,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.106 2009/03/04 17:16:01 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.107 2009/04/09 09:11:25 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -68,7 +67,7 @@ public class Multiplexer implements UpHandler {
 
     /** To collect service acks from Multiplexers */
     private final AckCollector service_ack_collector=new AckCollector();
-    
+
     protected long service_ack_timeout = 2000;
 
     /** Cluster view */
@@ -107,7 +106,7 @@ public class Multiplexer implements UpHandler {
         this.channel=channel;
         this.channel.addChannelListener(new MultiplexerChannelListener());
         this.channel.setUpHandler(this);
-        this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves                
+        this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
 
         //thread pool is enabled by default
         boolean use_thread_pool=Global.getPropertyAsBoolean(Global.MUX_ENABLED, true);
@@ -142,7 +141,7 @@ public class Multiplexer implements UpHandler {
     public void setServicesResponseTimeout(long services_rsp_timeout) {
         this.service_response_timeout=services_rsp_timeout;
     }
-    
+
 
     public long getServiceAckTimeout() {
         return service_ack_timeout;
@@ -155,7 +154,7 @@ public class Multiplexer implements UpHandler {
     /**
      * Returns a copy of the current view <em>minus</em> the nodes on which
      * service service_id is <em>not</em> running
-     * 
+     *
      * @param service_id
      * @return The service view
      */
@@ -223,7 +222,7 @@ public class Multiplexer implements UpHandler {
 
         ThreadFactory factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Multiplexer", false, true);
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
-                                      new SynchronousQueue<Runnable>(), 
+                                      new SynchronousQueue<Runnable>(),
                                       factory,
                                       new ShutdownRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy()));
     }
@@ -244,7 +243,7 @@ public class Multiplexer implements UpHandler {
     /**
      * Fetches the app states for all service IDs in keys. The keys are a
      * duplicate list, so it cannot be modified by the caller of this method
-     * 
+     *
      * @param keys
      */
     private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException,
@@ -286,7 +285,7 @@ public class Multiplexer implements UpHandler {
 
     /**
      * Remove mux header and dispatch to correct MuxChannel
-     * 
+     *
      * @param evt
      * @return
      */
@@ -354,7 +353,7 @@ public class Multiplexer implements UpHandler {
                         services_merged.set(false);
                     }
                 }
-                else { // regular view                    
+                else { // regular view
                     HashMap<String,List<Address>> payload=(HashMap<String,List<Address>>)view.getPayload("service_state");
                     if(payload != null) {
                         synchronized(service_state) {
@@ -412,19 +411,15 @@ public class Multiplexer implements UpHandler {
                 handleStateResponse(evt, true);
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                passToAllMuxChannels(evt);
-                break;
-
             case Event.BLOCK:
                 passToAllMuxChannels(evt, true, true);
                 return null;
 
-            case Event.UNBLOCK: // process queued-up MergeViews                
+            case Event.UNBLOCK: // process queued-up MergeViews
                 passToAllMuxChannels(evt);
                 break;
             case Event.EXIT:
-                //we are being shunned, close all services                
+                //we are being shunned, close all services
                 closeAll();
                 break;
 
@@ -538,7 +533,7 @@ public class Multiplexer implements UpHandler {
     }
 
     Address getLocalAddress() {
-        return channel.getLocalAddress();
+        return channel.getAddress();
     }
 
     boolean flushSupported() {
@@ -582,7 +577,7 @@ public class Multiplexer implements UpHandler {
      * preferredTarget is returned. Otherwise, service view coordinator is
      * returned if such node exists. If service view is empty for a given
      * service_id null is returned.
-     * 
+     *
      * @param preferredTarget
      * @param service_id
      * @return
@@ -615,16 +610,16 @@ public class Multiplexer implements UpHandler {
             }
             return;
         }
-        
+
         if(!channel.isOpen() || !channel.isConnected()) {
             if(log.isWarnEnabled()) {
-                log.warn("Underlying multiplexer channel " + channel.getLocalAddress()
+                log.warn("Underlying multiplexer channel " + channel.getAddress()
                          + " is not connected, cannot send ServiceInfo."
                          + ServiceInfo.typeToString(type)
                          + " message");
             }
             return;
-        }            
+        }
 
         Message service_msg=new Message();
         service_msg.putHeader(NAME, new MuxHeader(new ServiceInfo(type, service, host, payload)));
@@ -646,8 +641,8 @@ public class Multiplexer implements UpHandler {
             }
 
             //initialize collector and ...
-            service_ack_collector.reset(null, muxChannels);
-            int size=service_ack_collector.size();            
+            service_ack_collector.reset(muxChannels);
+            int size=service_ack_collector.size();
 
             //then send a message
             channel.send(service_msg);
@@ -675,7 +670,7 @@ public class Multiplexer implements UpHandler {
             }
         }
         else {
-            //if asynchronous then fire and forget 
+            //if asynchronous then fire and forget
             channel.send(service_msg);
         }
     }
@@ -707,7 +702,7 @@ public class Multiplexer implements UpHandler {
             //JGRP-616
             if(mux_ch == null) {
                 if(log.isWarnEnabled())
-                    log.warn("State provider " + channel.getLocalAddress()
+                    log.warn("State provider " + channel.getAddress()
                              + " does not have service with id "
                              + id
                              + ", returning null state");
@@ -763,7 +758,7 @@ public class Multiplexer implements UpHandler {
 
         mux_ch=services.get(appl_id);
         if(mux_ch == null) {
-            log.error("State receiver " + channel.getLocalAddress()
+            log.error("State receiver " + channel.getAddress()
                       + " does not have service with id "
                       + appl_id);
         }
@@ -937,7 +932,7 @@ public class Multiplexer implements UpHandler {
      * Fetches the service states from everyone else in the cluster. Once all
      * states have been received and inserted into service_state, compute a
      * service view (a copy of MergeView) for each service and pass it up
-     * 
+     *
      * @param view
      */
     private void handleMergeView(MergeView view) throws Exception {
@@ -947,7 +942,7 @@ public class Multiplexer implements UpHandler {
 
         byte[] data=Util.objectToByteBuffer(new HashSet<String>(services.keySet()));
 
-        //loop and keep sending our service list until either 
+        //loop and keep sending our service list until either
         //we hit timeout or we get notification of merge completed
         //http://jira.jboss.com/jira/browse/JGRP-665
         while(time_to_wait > 0 && !services_merged.get()) {
@@ -1058,7 +1053,7 @@ public class Multiplexer implements UpHandler {
      * hosts. Call viewAccepted() on the MuxChannel which corresponds with
      * service. If no members are removed or added from/to view, this is a
      * no-op.
-     * 
+     *
      * @param hosts
      *                List<Address>
      * @return the servicd view (a modified copy of the real view), or null if
@@ -1116,10 +1111,10 @@ public class Multiplexer implements UpHandler {
         return null;
     }
 
-    private class MultiplexerChannelListener extends ChannelListenerAdapter {        
+    private class MultiplexerChannelListener extends ChannelListenerAdapter {
 
-        //handle reconnecting of services after being shunned and 
-        //then reconnected back 
+        //handle reconnecting of services after being shunned and
+        //then reconnected back
         @Override
         public void channelReconnected(Address addr) {
             if(log.isDebugEnabled())
@@ -1136,12 +1131,12 @@ public class Multiplexer implements UpHandler {
                     boolean fetchAndGetState=reconnect && getState;
                     if(fetchAndGetState) {
                         mux_ch.connect(mux_ch.getClusterName(), null, null, 10000);
-                        mux_ch.fireChannelReconnected(mux_ch.getLocalAddress());
+                        mux_ch.fireChannelReconnected(mux_ch.getAddress());
                     }
                     else {
                         if(reconnect) {
                             mux_ch.connect(mux_ch.getClusterName());
-                            mux_ch.fireChannelReconnected(mux_ch.getLocalAddress());
+                            mux_ch.fireChannelReconnected(mux_ch.getAddress());
                         }
                         if(getState) {
                             mux_ch.getState(null, 5000);
@@ -1154,7 +1149,7 @@ public class Multiplexer implements UpHandler {
                 }
             }
         }
-        
+
         @Override
         public void channelShunned() {
             for(MuxChannel mux_ch:services.values()) {

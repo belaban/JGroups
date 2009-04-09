@@ -38,6 +38,9 @@ public class MERGEFAST extends Protocol {
         if(evt.getType() == Event.VIEW_CHANGE) {
             handleViewChange((View)evt.getArg());
         }
+        else if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
+            local_addr=(Address)evt.getArg();
+        }
 
         return down_prot.down(evt);
     }
@@ -46,9 +49,6 @@ public class MERGEFAST extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
             case Event.MSG:
                 if(is_coord == false) // only handle message if we are coordinator
                     break;

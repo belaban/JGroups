@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.11 2008/08/08 17:07:30 vlada Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.12 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
@@ -57,7 +57,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
 
     public void testMethodWithoutException() throws Throwable {
-        Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        Object retval=disp.callRemoteMethod(channel.getAddress(), "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
         assertNotNull(retval);
     }
@@ -65,25 +65,25 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=TimeoutException.class)
     public void testMethodWithException() throws Throwable {
-        Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "bar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        Object retval=disp.callRemoteMethod(channel.getAddress(), "bar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=IllegalArgumentException.class)
     public void testMethodWithException2() throws Throwable {
-        Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "foobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        Object retval=disp.callRemoteMethod(channel.getAddress(), "foobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=AssertionError.class)
     public void testMethodWithError() throws Throwable {
-        Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "foofoobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        Object retval=disp.callRemoteMethod(channel.getAddress(), "foofoobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=Throwable.class)
     public void testMethodWithThrowable() throws Throwable {
-        Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "fooWithThrowable", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        Object retval=disp.callRemoteMethod(channel.getAddress(), "fooWithThrowable", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
     }
 
