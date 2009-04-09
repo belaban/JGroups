@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.20 2009/03/16 21:18:39 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.21 2009/04/09 21:12:01 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -870,6 +870,11 @@ public class GMS extends Protocol {
                 return arg;  // don't pass down: was already passed down
                 
             case Event.CONNECT_WITH_STATE_TRANSFER:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }     
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1268,7 +1273,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.20 2009/03/16 21:18:39 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.21 2009/04/09 21:12:01 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
