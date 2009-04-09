@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.7 2009/04/09 13:58:31 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.8 2009/04/09 13:58:53 vlada Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
