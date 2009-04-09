@@ -16,7 +16,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.15 2009/04/09 09:11:30 belaban Exp $
+ * @version $Id: Simulator.java,v 1.16 2009/04/09 09:51:54 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -147,7 +147,7 @@ public class Simulator {
 		}
 
         // bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-        prot_stack.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        protStack[0].down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
 
 		for(int i=0; i < protStack.length; i++) {
 			Protocol p=protStack[i];
