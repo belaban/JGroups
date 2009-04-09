@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.159 2009/04/09 09:11:34 belaban Exp $
+ * @version $Id: GMS.java,v 1.160 2009/04/09 21:10:11 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -965,6 +965,11 @@ public class GMS extends Protocol {
                 return arg;  // don't pass down: was already passed down     
                 
             case Event.CONNECT_WITH_STATE_TRANSFER:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -977,6 +982,11 @@ public class GMS extends Protocol {
                 return arg;  // don't pass down: was already passed down    
             
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1255,7 +1265,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.159 2009/04/09 09:11:34 belaban Exp $
+     * @version $Id: GMS.java,v 1.160 2009/04/09 21:10:11 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
