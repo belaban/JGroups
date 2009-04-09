@@ -26,7 +26,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.54 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: PING.java,v 1.55 2009/04/09 18:09:28 vlada Exp $
  */
 public class PING extends Discovery {
     
@@ -79,21 +79,25 @@ public class PING extends Discovery {
         super.init();
     }
 
-	private void initializeRouterStubs() {
-		if (gossip_hosts != null) {
+	private void initializeRouterStubs() {   
+	    PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+		if (gossip_hosts != null) {		   
 			for (InetSocketAddress host : gossip_hosts) {
-				RouterStub rs = new RouterStub(host.getHostName(), host.getPort(), null, local_addr);
+				RouterStub rs = new RouterStub(host.getHostName(), host.getPort(), null, physical_addr);
 				rs.setSocketConnectionTimeout(socket_conn_timeout);
 				rs.setSocketReadTimeout(socket_read_timeout);
 				clients.add(rs);
 			}
 		} else if (gossip_host != null && gossip_port != 0) {
-
-			RouterStub rs = new RouterStub(gossip_host, gossip_port, null,local_addr);
+			RouterStub rs = new RouterStub(gossip_host, gossip_port, null,physical_addr);
 			rs.setSocketConnectionTimeout(socket_conn_timeout);
 			rs.setSocketReadTimeout(socket_read_timeout);
 			clients.add(rs);
 		}
+	}
+	
+	private boolean isUsingRouterStubs(){
+	    return gossip_hosts != null || (gossip_host != null && gossip_port != 0);
 	}
 
 
@@ -165,6 +169,11 @@ public class PING extends Discovery {
         }
         discovery_reception.reset();
     }
+    
+    public void destroy(){
+        super.destroy();
+        clients.clear();
+    }
 
 
     public void handleConnect() {
@@ -193,6 +202,11 @@ public class PING extends Discovery {
         Message       msg;
         PingHeader    hdr;
         List<Address> gossip_rsps = new ArrayList<Address>();
+        
+        boolean routerStubsInitiliazed = !clients.isEmpty();
+        if(isUsingRouterStubs() && !routerStubsInitiliazed){
+            initializeRouterStubs();
+        }
 
         if(!clients.isEmpty()) {
         	for(RouterStub client:clients){
