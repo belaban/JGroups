@@ -18,7 +18,7 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.21 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: DiscardTest.java,v 1.22 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DiscardTest extends ChannelTestBase {
@@ -72,9 +72,9 @@ public class DiscardTest extends ChannelTestBase {
         }
 
         ch1.connect(GROUP);
-        ch1_addr=ch1.getLocalAddress();
+        ch1_addr=ch1.getAddress();
         ch2.connect(GROUP);
-        ch2_addr=ch2.getLocalAddress();
+        ch2_addr=ch2.getAddress();
 
         Util.sleep(2000);
         View v=ch2.getView();

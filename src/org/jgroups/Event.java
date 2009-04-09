@@ -1,5 +1,3 @@
-// $Id: Event.java,v 1.64 2009/03/23 19:40:42 vlada Exp $
-
 package org.jgroups;
 
 
@@ -7,6 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
+ * @version $Id: Event.java,v 1.65 2009/04/09 09:11:29 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -47,13 +46,14 @@ public class Event {
     public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
-    public static final int START_PARTITION                    = 82;  // arg = null;
-    public static final int STOP_PARTITION                     = 83;  // arg = null; 
     public static final int PREPARE_VIEW                       = 86;  // arg = View
-    
-    public static final int CONNECT_USE_FLUSH			= 87;
-    public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH			= 88;
-
+    public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
+    public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = null --> Map<Address,PhysicalAddress>
+    public static final int SET_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress>
+    public static final int REMOVE_ADDRESS                     = 90;  // arg = Address
+    public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
+    public static final int CONNECT_USE_FLUSH			       = 92;
+    public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH = 93;
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
 
@@ -102,14 +102,14 @@ public class Event {
             case VIEW_CHANGE:	         return "VIEW_CHANGE";
             case SET_LOCAL_ADDRESS:	     return "SET_LOCAL_ADDRESS";
             case SUSPECT:                return "SUSPECT";
-            case BLOCK:	                 return "BLOCK";            
-            case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";           
+            case BLOCK:	                 return "BLOCK";
+            case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
-            case STATE_RECEIVED:         return "STATE_RECEIVED";         
+            case STATE_RECEIVED:         return "STATE_RECEIVED";
             case STABLE:                 return "STABLE";
             case GET_DIGEST:             return "GET_DIGEST";
             case SET_DIGEST:             return "SET_DIGEST";
@@ -121,7 +121,7 @@ public class Event {
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
-            case SUSPEND:        		 return "SUSPEND";          
+            case SUSPEND:        		 return "SUSPEND";
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
@@ -134,11 +134,7 @@ public class Event {
             case SHUTDOWN:               return "SHUTDOWN";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
-            case START_PARTITION:        return "START_PARTITION";
-            case STOP_PARTITION:         return "STOP_PARTITION";            
             case PREPARE_VIEW:           return "PREPARE_VIEW";
-            case CONNECT_USE_FLUSH:           return "CONNECT_USE_FLUSH";
-            case CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:           return "CONNECT_WITH_STATE_TRANSFER_USE_FLUSH";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
@@ -155,4 +151,3 @@ public class Event {
     }
 
 }
-

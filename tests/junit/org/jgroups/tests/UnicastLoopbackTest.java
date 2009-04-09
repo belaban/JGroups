@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
  * Tests unicasts to self (loopback of transport protocol)
  * @author Richard Achmatowicz 12 May 2008
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.14 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.15 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastLoopbackTest extends ChannelTestBase {
@@ -54,7 +54,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     	channel.setReceiver(receiver) ;
     	channel.connect("demo-group") ;
 
-    	Address local_addr=channel.getLocalAddress();
+    	Address local_addr=channel.getAddress();
 
     	// set the loopback property on transport
     	setLoopbackProperty(channel, true) ;

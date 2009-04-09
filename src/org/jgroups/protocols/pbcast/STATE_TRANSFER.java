@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.82 2008/07/11 18:07:10 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.83 2009/04/09 09:11:34 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -133,10 +133,6 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 return null;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
-
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
@@ -208,6 +204,9 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 break;
 
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
 
         return down_prot.down(evt); // pass on to the layer below us

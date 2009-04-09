@@ -1,4 +1,3 @@
-
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
@@ -8,11 +7,10 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
-import org.jgroups.protocols.TP;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -76,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.213 2009/03/30 14:35:14 belaban Exp $
+ * @version $Id: JChannel.java,v 1.214 2009/04/09 09:11:29 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -87,7 +85,10 @@ public class JChannel extends Channel {
     protected String properties=null;
 
     /*the address of this JChannel instance*/
-    private Address local_addr=null;
+    private UUID local_addr=null;
+
+    private String name=null;
+
     /*the channel (also know as group) name*/
     private String cluster_name=null;  // group name
     /*the latest view of the group membership*/
@@ -100,17 +101,12 @@ public class JChannel extends Channel {
     /** Thread responsible for closing a channel and potentially reconnecting to it (e.g., when shunned). */
     protected CloserThread closer=null;
 
-    /** To wait until a local address has been assigned */
-    private final Promise<Address> local_addr_promise=new Promise<Address>();
-
     private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
 
     private final Promise<Boolean> flush_unblock_promise=new Promise<Boolean>();
 
-    /** wait until we have a non-null local_addr */
-    private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 5 secs*/
@@ -166,7 +162,11 @@ public class JChannel extends Channel {
 
 
 
-    /** Used by subclass to create a JChannel without a protocol stack, don't use as application programmer */
+    /**
+     * Used by subclass to create a JChannel without a protocol stack, don't use as application programmer
+     * @deprecated Remove in 3.0 
+     */
+
     protected JChannel(boolean no_op) {
         ;
     }
@@ -418,6 +418,7 @@ public class JChannel extends Channel {
             return;
         }
 
+        setAddress();
         startStack(cluster_name);
 
         if(cluster_name != null) {    // only connect if we are not a unicast channel
@@ -522,6 +523,7 @@ public class JChannel extends Channel {
             return;
         }
 
+        setAddress();
         startStack(cluster_name);
 
         boolean stateTransferOk=false;
@@ -555,14 +557,14 @@ public class JChannel extends Channel {
                         // fetch state from target
                         stateTransferOk=getState(target, state_id, timeout, false);
                         if(!stateTransferOk) {
-                            throw new StateTransferException(getLocalAddress() + " could not fetch state "
+                            throw new StateTransferException(getAddress() + " could not fetch state "
                                     + state_id
                                     + " from "
                                     + target);
                         }
                     }
                     catch(Exception e) {
-                        throw new StateTransferException(getLocalAddress() + " could not fetch state "
+                        throw new StateTransferException(getAddress() + " could not fetch state "
                                 + state_id
                                 + " from "
                                 + target, e);
@@ -841,19 +843,47 @@ public class JChannel extends Channel {
     @ManagedAttribute
     public static String getVersion() {
         return Version.printDescription();
-    }  
+    }
+
+    public Address getLocalAddress() {
+        return getAddress();
+    }
 
     /**
-     * returns the local address of the channel
-     * returns null if the channel is closed
+     * Returns the local address of the channel (null if the channel is closed)
      */
-    public Address getLocalAddress() {
+    public Address getAddress() {
         return closed ? null : local_addr;
     }
 
-    @ManagedAttribute(name="LocalAddress")
-    public String getLocalAddressAsString() {
+    @ManagedAttribute(name="Address")
+    public String getAddressAsString() {
         return local_addr != null? local_addr.toString() : "n/a";
+    }
+
+    @ManagedAttribute(name="Address (UUID)")
+    public String getAddressAsUUID() {
+        return local_addr != null? local_addr.toStringLong() : null;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the logical name for the channel. The name will stay associated with this channel for the channel's
+     * lifetime (until close() is called). This method should be called <em>before</em> calling connect().<br/>
+     * @param name
+     */
+    @ManagedAttribute(writable=true, description="The logical name of this channel. Stays with the channel until " +
+            "the channel is closed")
+    public void setName(String name) {
+        if(name != null) {
+            this.name=name;
+            if(local_addr != null) {
+                UUID.add(local_addr, this.name);
+            }
+        }
     }
 
     /**
@@ -1344,15 +1374,15 @@ public class JChannel extends Channel {
                 break;
 
             case Event.CONFIG:
-                Map<String,Object> config=(Map<String,Object>)evt.getArg();
-                if(config != null) {
-                    if(config.containsKey("state_transfer")) {
-                        state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+                Map<String,Object> cfg=(Map<String,Object>)evt.getArg();
+                if(cfg != null) {
+                    if(cfg.containsKey("state_transfer")) {
+                        state_transfer_supported=((Boolean)cfg.get("state_transfer")).booleanValue();
                     }
-                    if(config.containsKey("flush_supported")) {
-                        flush_supported=((Boolean)config.get("flush_supported")).booleanValue();
+                    if(cfg.containsKey("flush_supported")) {
+                        flush_supported=((Boolean)cfg.get("flush_supported")).booleanValue();
                     }
-                    config.putAll(config);
+                    cfg.putAll(cfg);
                 }
                 break;
                 
@@ -1436,9 +1466,8 @@ public class JChannel extends Channel {
                 }
                 break;
 
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr_promise.setResult((Address)evt.getArg());
-                break;
+            case Event.GET_LOCAL_ADDRESS:
+                return local_addr;
 
             case Event.EXIT:
                 handleExit(evt);
@@ -1618,8 +1647,8 @@ public class JChannel extends Channel {
                         additional_data.putAll(m);
                         if(m.containsKey("additional_data")) {
                             byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr instanceof IpAddress)
-                                ((IpAddress)local_addr).setAdditionalData(tmp);
+                            if(local_addr != null)
+                                local_addr.setAdditionalData(tmp);
                         }
                     }
                 }
@@ -1644,8 +1673,8 @@ public class JChannel extends Channel {
                         additional_data.putAll(m);
                         if(m.containsKey("additional_data")) {
                             byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr instanceof IpAddress)
-                                ((IpAddress)local_addr).setAdditionalData(tmp);
+                            if(local_addr != null)
+                                local_addr.setAdditionalData(tmp);
                         }
                     }
                 }
@@ -1724,6 +1753,8 @@ public class JChannel extends Channel {
      * to be ready for new <tt>connect()</tt>
      */
     private void init() {
+        if(local_addr != null)
+            down(new Event(Event.REMOVE_ADDRESS, local_addr));
         local_addr=null;
         cluster_name=null;
         my_view=null;
@@ -1747,21 +1778,10 @@ public class JChannel extends Channel {
             this.cluster_name=cluster_name;
 
         try {
-            prot_stack.startStack(cluster_name); // calls start() in all protocols, from top to bottom
+            prot_stack.startStack(cluster_name, local_addr); // calls start() in all protocols, from top to bottom
         }
         catch(Throwable e) {
             throw new ChannelException("failed to start protocol stack", e);
-        }
-
-        String tmp=Util.getProperty(new String[]{Global.CHANNEL_LOCAL_ADDR_TIMEOUT, "local_addr.timeout"},
-                                    null, null, false, "30000");
-        LOCAL_ADDR_TIMEOUT=Long.parseLong(tmp);
-
-        /* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
-        local_addr=local_addr_promise.getResult(LOCAL_ADDR_TIMEOUT);
-        if(local_addr == null) {
-            log.fatal("local_addr is null; cannot connect");
-            throw new ChannelException("local_addr is null");
         }
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
@@ -1773,6 +1793,30 @@ public class JChannel extends Channel {
         transport.registerProbeHandler(probe_handler);
     }
 
+    /**
+     * Generates new UUID and sets local address. Sends down a REMOVE_ADDRESS (if existing address was present) and
+     * a SET_LOCAL_ADDRESS
+     */
+    private void setAddress() {
+        UUID old_addr=local_addr;
+        local_addr=UUID.randomUUID();
+
+        byte[] buf=(byte[])additional_data.get("additional_data");
+        if(buf != null)
+            local_addr.setAdditionalData(buf);
+
+        if(old_addr != null)
+            down(new Event(Event.REMOVE_ADDRESS, old_addr));
+        if(name == null || name.length() == 0) // generate a logical name if not set
+            name=Util.generateLocalName();
+        if(name != null && name.length() > 0)
+            UUID.add(local_addr, name);
+
+        Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
+        down(evt);
+        if(up_handler != null)
+            up_handler.up(evt);
+    }
 
 
     /**
@@ -1859,6 +1903,7 @@ public class JChannel extends Channel {
      * </ol>
      */
     protected void _close(boolean disconnect, boolean close_mq) {
+        UUID old_addr=local_addr;
         if(closed)
             return;
 
@@ -1873,6 +1918,8 @@ public class JChannel extends Channel {
         connected=false;
         notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
+        if(old_addr != null)
+            UUID.remove(old_addr);
     }
 
     protected void stopStack(boolean stop, boolean destroy) {
@@ -2013,7 +2060,7 @@ public class JChannel extends Channel {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
         }
         catch(TimeoutException te) {
-            log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
+            log.warn("Timeout waiting for UNBLOCK event at " + getAddress());
         }
     }
 
@@ -2029,7 +2076,7 @@ public class JChannel extends Channel {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
         }
         catch(TimeoutException te) {
-            log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
+            log.warn("Timeout waiting for UNBLOCK event at " + getAddress());
         }
     }
     
@@ -2091,9 +2138,8 @@ public class JChannel extends Channel {
             map.put("version", Version.description + ", cvs=\"" +  Version.cvs + "\"");
             if(my_view != null && !map.containsKey("view"))
                 map.put("view", my_view.toString());
-            map.put("local_addr", local_addr != null? local_addr.toString() : "null");
+            map.put("local_addr", getAddressAsString() + " [" + getAddressAsUUID() + "]");
             map.put("cluster", getClusterName());
-            map.put("member", getLocalAddressAsString() + " (" + getClusterName() + ")");
             return map;
         }
 

@@ -10,7 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.jgroups.Channel;
-import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -28,7 +27,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.17 2008/08/25 16:10:46 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.18 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups="broken",sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -96,14 +95,14 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                 for(int i=0;i < channels.length;i++) {
                     log.info("#" + (i + 1)
                                        + ": "
-                                       + channels[i].getLocalAddress()
+                                       + channels[i].getAddress()
                                        + ": "
                                        + channels[i].getView());
                 }                
             }         
 
             for(final JChannel channel:channels) {
-                assertEquals("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
+                assertEquals("View ok for channel " + channel.getAddress(), count, channel.getView().size());
             }
             assertTrue("All channels were succefully connected",successConnecting);     
         }
@@ -185,7 +184,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                                                          GroupRequest.GET_ALL,
                                                          2500);
                         for(Object o:rsp.getResults()) {
-                            assertEquals("Wrong result received at " + c.getLocalAddress(), i, o);
+                            assertEquals("Wrong result received at " + c.getAddress(), i, o);
                         }
                     }
                 }

@@ -40,7 +40,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.24 2008/11/27 16:03:20 vlada Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.25 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -270,7 +270,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     public void testLargeReturnValueUnicastCall() throws Throwable {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
-            _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
+            _testLargeValueUnicastCall(c1.getAddress(), SIZES[i]);
         }
     }
 

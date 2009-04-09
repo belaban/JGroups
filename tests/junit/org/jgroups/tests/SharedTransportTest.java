@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.25 2008/10/28 14:28:55 vlada Exp $
+ * @version $Id: SharedTransportTest.java,v 1.26 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -117,8 +117,8 @@ public class SharedTransportTest extends ChannelTestBase {
         b.setReceiver(r2);
         c.setReceiver(r3);
 
-        a.connect("a");
-        c.connect("a");
+        a.connect("cluster-1");
+        c.connect("cluster-1");
 
         View view=a.getView();
         assert view.size() == 2;
@@ -137,7 +137,7 @@ public class SharedTransportTest extends ChannelTestBase {
         r1.clear();
         r2.clear();
         r3.clear();
-        b.connect("b");
+        b.connect("cluster-2");
 
         a.send(new Message(null, null, "msg-3"));
         b.send(new Message(null, null, "msg-4"));
@@ -153,6 +153,27 @@ public class SharedTransportTest extends ChannelTestBase {
         assert list.size() == 2;
     }
 
+
+    public void testView4() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        r1=new MyReceiver("A::" + SINGLETON_1);
+        a.setReceiver(r1);
+
+        a.connect("cluster-X");
+        a.send(new Message(null, null, "msg-1"));
+
+        Util.sleep(1000); // async sending - wait a little
+        List<Message> list=r1.getList();
+        assert list.size() == 1;
+
+        a.send(new Message(null, null, "msg-2"));
+        a.send(new Message(null, null, "msg-3"));
+        a.send(new Message(null, null, "msg-4"));
+        Util.sleep(1000); // async sending - wait a little
+
+        list=r1.getList();
+        assert list.size() == 4;
+    }
 
 
     public void testSharedTransportAndNonsharedTransport() throws Exception {

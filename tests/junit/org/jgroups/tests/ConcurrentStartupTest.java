@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.49 2009/03/12 15:54:45 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.50 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -34,7 +34,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     @BeforeMethod
     protected void setUp() throws Exception {
         mod.set(1);
-    }   
+    }
 
     public void testConcurrentStartupLargeState() {
         concurrentStartupHelper(true, false);
@@ -48,14 +48,14 @@ public class ConcurrentStartupTest extends ChannelTestBase {
      * Tests concurrent startup and message sending directly after joining See
      * doc/design/ConcurrentStartupTest.txt for details. This will only work
      * 100% correctly once we have FLUSH support (JGroups 2.4)
-     * 
+     *
      * NOTE: This test is not guaranteed to pass at 100% rate until combined
      * join and state transfer using one FLUSH phase is introduced (Jgroups
      * 2.5)[1].
-     * 
+     *
      * [1] http://jira.jboss.com/jira/browse/JGRP-236
-     * 
-     * 
+     *
+     *
      */
     protected void concurrentStartupHelper(boolean largeState, boolean useDispatcher) {
         String[] names=null;
@@ -119,7 +119,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             // Sleep to ensure async message arrive
             Util.sleep(3000);
 
-            // do test verification            
+            // do test verification
             for(ConcurrentStartupChannel channel:channels) {
                 log.info(channel.getName() + "=" + channel.getList());
             }
@@ -149,26 +149,26 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
     }
 
-    protected int getMod() {       
+    protected int getMod() {
         return mod.incrementAndGet();
-    }  
+    }
 
     protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
-        
+
     	//depends on retry_timeout parameter in FLUSH
-    	private static final long TRANSFER_TIME = 1000; 
+    	private static final long TRANSFER_TIME = 1000;
         public ConcurrentStartupChannelWithLargeState(Semaphore semaphore,
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
-        
+
         public ConcurrentStartupChannelWithLargeState(JChannel ch, Semaphore semaphore,
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
             super(ch,name, semaphore, useDispatcher);
         }
-      
+
         public void setState(byte[] state) {
             Util.sleep(TRANSFER_TIME);
             super.setState(state);
@@ -191,21 +191,21 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
-        private final List<Address> l = new LinkedList<Address>();       
+        private final List<Address> l = new LinkedList<Address>();
 
-        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();       
+        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
-        
+
         public ConcurrentStartupChannel(JChannel ch,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(ch,name, semaphore, useDispatcher);
         }
 
         public void useChannel() throws Exception {
             channel.connect("test", null, null, 25000);
-            channel.send(null, null, channel.getLocalAddress());
+            channel.send(null, null, channel.getAddress());
         }
 
         List<Address> getList() {
@@ -220,7 +220,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             if(msg.getBuffer() == null)
                 return;
             Address obj = (Address)msg.getObject();
-            log.info("-- [#" + getName() + " (" + channel.getLocalAddress() + ")]: received " + obj);
+            log.info("-- [#" + getName() + " (" + channel.getAddress() + ")]: received " + obj);
             synchronized(this){
                 l.add(obj);
                 Integer key = new Integer(getMod());
@@ -245,7 +245,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                     l.addAll(tmp);
                     log.info("-- [#" + getName()
                              + " ("
-                             + channel.getLocalAddress()
+                             + channel.getAddress()
                              + ")]: state is "
                              + l);
                     Integer key = new Integer(getMod());
@@ -299,7 +299,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                     l.addAll(tmp);
                     log.info("-- [#" + getName()
                              + " ("
-                             + channel.getLocalAddress()
+                             + channel.getAddress()
                              + ")]: state is "
                              + l);
                     Integer key = new Integer(getMod());

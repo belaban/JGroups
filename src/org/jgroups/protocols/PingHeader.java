@@ -1,4 +1,4 @@
-// $Id: PingHeader.java,v 1.12 2007/11/29 11:15:58 belaban Exp $
+// $Id: PingHeader.java,v 1.13 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,10 +12,10 @@ import java.io.*;
 
 public class PingHeader extends Header implements Streamable {
     public static final byte GET_MBRS_REQ=1;   // arg = null
-    public static final byte GET_MBRS_RSP=2;   // arg = PingRsp(local_addr, coord_addr)
+    public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, coord_addr)
 
     public byte type=0;
-    public PingRsp arg=null;
+    public PingData arg=null;
     public String cluster_name=null;
     private static final long serialVersionUID=3054979699998282428L;
 
@@ -27,9 +27,14 @@ public class PingHeader extends Header implements Streamable {
         this.cluster_name=cluster_name;
     }
 
-    public PingHeader(byte type, PingRsp arg) {
+    public PingHeader(byte type, PingData arg) {
         this.type=type;
         this.arg=arg;
+    }
+
+    public PingHeader(byte type, PingData arg, String cluster_name) {
+        this(type, arg);
+        this.cluster_name=cluster_name;
     }
 
     public int size() {
@@ -75,7 +80,7 @@ public class PingHeader extends Header implements Streamable {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
-        arg=(PingRsp)in.readObject();
+        arg=(PingData)in.readObject();
         cluster_name=(String)in.readObject();
     }
 
@@ -87,7 +92,7 @@ public class PingHeader extends Header implements Streamable {
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
         type=instream.readByte();
-        arg=(PingRsp)Util.readStreamable(PingRsp.class, instream);
+        arg=(PingData)Util.readStreamable(PingData.class, instream);
         cluster_name=Util.readString(instream);
     }
 }

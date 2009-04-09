@@ -2,14 +2,14 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.*;
+import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
-import org.jgroups.protocols.PingRsp;
 import org.jgroups.protocols.TpHeader;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -102,20 +102,15 @@ public class StreamableTest {
 
 
     public static void testNonNullAddress() throws Exception {
-        Address dest, src;
-        dest=new IpAddress("228.1.2.3", 5555);
-        src=new IpAddress("127.0.0.1", 6666);
-        Message msg=new Message(dest, src, "Hello world".getBytes());
-        stream(msg);
+        stream(new Message(null, UUID.randomUUID(), "Hello world".getBytes()));
     }
 
 
     public static void testHeaders() throws Exception {
-        Address dest, src;
-        dest=new IpAddress("228.1.2.3", 5555);
-        src=new IpAddress("127.0.0.1", 6666);
+        Address dest=UUID.randomUUID();
+        Address src=UUID.randomUUID();
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, true));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, src, true));
         msg.putHeader("ping-header", hdr);
         TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
@@ -125,13 +120,12 @@ public class StreamableTest {
 
 
     public static void testAdditionalData() throws Exception {
-        IpAddress dest, src;
-        dest=new IpAddress("228.1.2.3", 5555);
+        UUID dest=UUID.randomUUID();
         dest.setAdditionalData("foo".getBytes());
-        src=new IpAddress("127.0.0.1", 6666);
+        UUID src=UUID.randomUUID();
         src.setAdditionalData("foobar".getBytes());
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, false));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, src, false));
         msg.putHeader("ping-header", hdr);
         TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
@@ -146,12 +140,12 @@ public class StreamableTest {
         Address a,b,c,d,e,f;
         View v1, v2, v3, v4, v5, view_all;
 
-        a=new IpAddress(1000);
-        b=new IpAddress(2000);
-        c=new IpAddress(3000);
-        d=new IpAddress(4000);
-        e=new IpAddress(5000);
-        f=new IpAddress(6000);
+        a=UUID.randomUUID();
+        b=UUID.randomUUID();
+        c=UUID.randomUUID();
+        d=UUID.randomUUID();
+        e=UUID.randomUUID();
+        f=UUID.randomUUID();
 
         tmp_m1=new Vector(); tmp_m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
         tmp_m1.add(a); tmp_m1.add(b); tmp_m1.add(c);
@@ -198,7 +192,7 @@ public class StreamableTest {
         int length, bufLength;
         byte[] tmp;
         Message msg2;
-        Address src;
+        Address src, dest=msg.getDest();
         int num_headers=getNumHeaders(msg);
 
         length=msg.getLength();
@@ -222,8 +216,7 @@ public class StreamableTest {
 
         Assert.assertEquals(length, msg2.getLength());
         Assert.assertEquals(bufLength, getBufLength(msg2));
-        // assertTrue(match(dest, msg2.getDest()));
-        assert msg2.getDest() == null;
+        assert match(dest, msg2.getDest());
         assert match(src, msg2.getSrc());
         Assert.assertEquals(num_headers, getNumHeaders(msg2));
     }

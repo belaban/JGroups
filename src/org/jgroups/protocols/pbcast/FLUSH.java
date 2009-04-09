@@ -294,6 +294,10 @@ public class FLUSH extends Protocol {
         case Event.RESUME:
             onResume(evt);
             return null;
+
+        case Event.SET_LOCAL_ADDRESS:
+            localAddress = (Address) evt.getArg();
+            break;
         }
         return down_prot.down(evt);
     }
@@ -344,7 +348,7 @@ public class FLUSH extends Protocol {
                     case FlushHeader.FLUSH_BYPASS:
                         return up_prot.up(evt);                     
                     case FlushHeader.START_FLUSH:
-                        Collection<Address> fp=fh.flushParticipants;
+                        Collection<? extends Address> fp=fh.flushParticipants;
                         boolean amIParticipant = (fp != null && fp.contains(localAddress)) || msg.getSrc().equals(localAddress);
                         if(amIParticipant){
                             handleStartFlush(msg, fh);
@@ -365,7 +369,7 @@ public class FLUSH extends Protocol {
                         onStopFlush();
                         break;
                     case FlushHeader.ABORT_FLUSH:                     	
-                    	Collection<Address> flushParticipants = fh.flushParticipants;
+                    	Collection<? extends Address> flushParticipants = fh.flushParticipants;
 						
                     	if(flushParticipants != null && flushParticipants.contains(localAddress)){
                     		if (log.isDebugEnabled()) {
@@ -478,10 +482,6 @@ public class FLUSH extends Protocol {
             }
             break;
 
-        case Event.SET_LOCAL_ADDRESS:
-            localAddress = (Address) evt.getArg();
-            break;
-
         case Event.SUSPECT:
             onSuspect((Address) evt.getArg());
             break;
@@ -559,7 +559,7 @@ public class FLUSH extends Protocol {
 		}
     }
 
-    private void rejectFlush(Collection<Address> participants,long viewId) {
+    private void rejectFlush(Collection<? extends Address> participants,long viewId) {
     	for(Address flushMember:participants){
     		Message reject = new Message(flushMember, localAddress, null);
             reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH,viewId,participants));
@@ -917,7 +917,7 @@ public class FLUSH extends Protocol {
 
         long viewID;
 
-        Collection<Address> flushParticipants;
+        Collection<? extends Address> flushParticipants;
 
         Digest digest = null;
         private static final long serialVersionUID=-6248843990215637687L;
@@ -934,7 +934,7 @@ public class FLUSH extends Protocol {
             this(type, viewID, null);
         }
 
-        public FlushHeader(byte type,long viewID,Collection<Address> flushView){
+        public FlushHeader(byte type,long viewID,Collection<? extends Address> flushView){
             this.type = type;
             this.viewID = viewID;
             if(flushView != null){

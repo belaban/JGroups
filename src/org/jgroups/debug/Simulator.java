@@ -1,10 +1,6 @@
 package org.jgroups.debug;
 
-import org.jgroups.Address;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -20,7 +16,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.14 2008/10/23 16:59:40 rachmatowicz Exp $
+ * @version $Id: Simulator.java,v 1.15 2009/04/09 09:11:30 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -150,13 +146,16 @@ public class Simulator {
 			p.init();
 		}
 
+        // bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        prot_stack.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+
 		for(int i=0; i < protStack.length; i++) {
 			Protocol p=protStack[i];
 			p.start();
 		}
 
 		// moved event processing to follow stack init (JGRP-843)
-		bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+
 		if(view != null) {
 			Event view_evt=new Event(Event.VIEW_CHANGE, view);
 			bottom.up(view_evt);
@@ -372,23 +371,21 @@ public class Simulator {
 			return "ProtocolAdapter";
 		}
 
-		public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+		public void sendMulticast(byte[] data, int offset, int length) throws Exception {
 		}
 
-		public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+		public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
 		}
 
 		public String getInfo() {
 			return null;
 		}
 
-		public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-		}
+        protected PhysicalAddress getPhysicalAddress() {
+            throw new UnsupportedOperationException("not implemented");
+        }
 
-		public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-		}
-
-		public void init() throws Exception {
+        public void init() throws Exception {
 			super.init();
 		}
 
@@ -407,7 +404,7 @@ public class Simulator {
 			}
 			return null;
 		}
-	}
+    }
 
 	class SendThread extends Thread {
 

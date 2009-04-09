@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.32 2008/10/21 08:16:17 vlada Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.33 2009/04/09 09:11:15 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -175,10 +175,6 @@ public class VIEW_SYNC extends Protocol {
                 View view=(View)evt.getArg();
                 handleViewChange(view);
                 break;
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
         }
 
         return up_prot.up(evt);
@@ -191,6 +187,10 @@ public class VIEW_SYNC extends Protocol {
             case Event.VIEW_CHANGE:
                 View v=(View)evt.getArg();
                 handleViewChange(v);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
                 break;
         }
         return down_prot.down(evt);

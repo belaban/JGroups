@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java.txt,v 1.3 2005/05/30 14:31:05 belaban Exp $
+// $Id: ENCRYPT.java.txt,v 1.4 2009/04/09 09:11:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -149,7 +149,7 @@ public class ENCRYPT extends Protocol {
 	    keyServer = member.size() > 0 ? false : true;
 
 	    if (member != null && member.size() > 0)
-		keyServerAddr = (Address)((PingRsp)member.firstElement()).coord_addr;
+		keyServerAddr = (Address)((PingData)member.firstElement()).coord_addr;
 	    else keyServerAddr = local_addr;
 
 	    System.out.println("keyServer = " + keyServer + "  keyServerAddr : "+keyServerAddr.toString());

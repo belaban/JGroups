@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.11 2008/05/23 08:18:54 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.12 2009/04/09 09:11:20 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -11,7 +11,6 @@ import org.jgroups.stack.Protocol;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.Properties;
 
 
 /**
@@ -125,7 +124,7 @@ public class UnicastChannelTest {
             }
         }
         ch.connect(null); // this makes it a unicast channel
-        System.out.println("server started at " + new java.util.Date() + ", listening on " + ch.getLocalAddress());
+        System.out.println("server started at " + new java.util.Date() + ", listening on " + ch.getAddress());
         while(ch.isOpen()) {
             Util.sleep(10000);
         }

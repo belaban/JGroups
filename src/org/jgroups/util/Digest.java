@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.9 2008/01/22 10:44:33 belaban Exp $
+ * @version $Id: Digest.java,v 1.10 2009/04/09 09:11:18 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -384,8 +384,7 @@ public class Digest implements Externalizable, Streamable {
         long retval=Global.SHORT_SIZE; // number of elements in 'senders'
         if(!senders.isEmpty()) {
             Address addr=senders.keySet().iterator().next();
-            int len=addr.size() +
-                    2 * Global.BYTE_SIZE; // presence byte, IpAddress vs other address
+            int len=Util.size(addr);
             len+=Entry.SIZE; // 3 longs in one Entry
             retval+=len * senders.size();
         }

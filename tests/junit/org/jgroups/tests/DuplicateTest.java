@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.9 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: DuplicateTest.java,v 1.10 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -36,9 +36,9 @@ public class DuplicateTest extends ChannelTestBase {
     @BeforeClass
     void classInit() throws Exception {
         createChannels(true, true, (short)2, (short)2);
-        a1=c1.getLocalAddress();
-        a2=c2.getLocalAddress();
-        a3=c3.getLocalAddress();
+        a1=c1.getAddress();
+        a2=c2.getAddress();
+        a3=c3.getAddress();
     }
 
     @BeforeMethod
@@ -59,25 +59,25 @@ public class DuplicateTest extends ChannelTestBase {
 
 
     public void testRegularUnicastsToSelf() throws Exception {
-        send(c1, c1.getLocalAddress(), false, 10);
+        send(c1, c1.getAddress(), false, 10);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToSelf() throws Exception {
-        send(c1, c1.getLocalAddress(), true, 10);
+        send(c1, c1.getAddress(), true, 10);
         check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testRegularUnicastsToOthers() throws Exception {
-        send(c1, c2.getLocalAddress(), false, 10);
-        send(c1, c3.getLocalAddress(), false, 10);
+        send(c1, c2.getAddress(), false, 10);
+        send(c1, c3.getAddress(), false, 10);
         check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToOthers() throws Exception {
-        send(c1, c2.getLocalAddress(), true, 10);
-        send(c1, c3.getLocalAddress(), true, 10);
+        send(c1, c2.getAddress(), true, 10);
+        send(c1, c3.getAddress(), true, 10);
         check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }

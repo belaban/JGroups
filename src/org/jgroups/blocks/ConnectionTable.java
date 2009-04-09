@@ -1,9 +1,8 @@
-// $Id: ConnectionTable.java,v 1.67 2008/10/22 08:51:13 belaban Exp $
+// $Id: ConnectionTable.java,v 1.68 2009/04/09 09:11:19 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.util.PortsManager;
 import org.jgroups.stack.IpAddress;
 
 import java.io.IOException;
@@ -58,15 +57,6 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
     }
 
 
-    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr,
-                           int srv_port, int max_port) throws Exception {
-        setReceiver(r);
-        this.bind_addr=bind_addr;
-        this.external_addr=external_addr;
-        this.srv_port=srv_port;
-        this.max_port=max_port;
-        init();
-    }
 
 
     /**
@@ -86,29 +76,17 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
      *                 then there is no limit.
      */
     public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr,
-                           int srv_port, int max_port, PortsManager pm) throws Exception {
+                           int srv_port, int max_port) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
         this.external_addr=external_addr;
         this.srv_port=srv_port;
         this.max_port=max_port;
-        this.pm=pm;
         init();
     }
 
 
-    public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
-                           long reaper_interval, long conn_expire_time) throws Exception {
-        setReceiver(r);
-        this.bind_addr=bind_addr;
-        this.external_addr=external_addr;
-        this.srv_port=srv_port;
-        this.max_port=max_port;
-        this.reaper_interval=reaper_interval;
-        this.conn_expire_time=conn_expire_time;
-        use_reaper=true;
-        init();
-    }
+
 
     /**
      * ConnectionTable including a connection reaper. Connections that have been idle for more than conn_expire_time
@@ -131,13 +109,12 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
      *                         it will be reaped
      */
     public ConnectionTable(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
-                           long reaper_interval, long conn_expire_time, PortsManager pm) throws Exception {
+                           long reaper_interval, long conn_expire_time) throws Exception {
         setReceiver(r);
         this.bind_addr=bind_addr;
         this.external_addr=external_addr;
         this.srv_port=srv_port;
         this.max_port=max_port;
-        this.pm=pm;
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
         use_reaper=true;   
@@ -338,8 +315,6 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
 
        while(true) {
            try {
-               if(start_port > 0 && pm != null)
-                   start_port=pm.getNextAvailablePort(start_port);
                if(bind_addr == null)
                    ret=new ServerSocket(start_port);
                else {

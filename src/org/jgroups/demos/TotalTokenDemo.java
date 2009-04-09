@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.11 2007/11/19 16:19:00 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.12 2009/04/09 09:11:27 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.11 $
+ *@version $Revision: 1.12 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -114,7 +114,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
         }
         receiverThread = new ReceiverThread();
         receiverThread.start();
-        Address a = channel.getLocalAddress();
+        Address a = channel.getAddress();
         if(a != null)   setTitle(a.toString());
         else setTitle("Not connected");
         control.connected();

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.15 2009/01/05 08:58:58 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.16 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -57,7 +57,7 @@ public class OOBTest extends ChannelTestBase {
      * received by B.
      */
     public void testNonBlockingUnicastOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
-        Address dest=c2.getLocalAddress();
+        Address dest=c2.getAddress();
         send(dest);
     }
 
@@ -75,7 +75,7 @@ public class OOBTest extends ChannelTestBase {
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
 
-        Address dest=c2.getLocalAddress();
+        Address dest=c2.getAddress();
         Message m1=new Message(dest, null, 1);
         Message m2=new Message(dest, null, 2);
         m2.setFlag(Message.OOB);
@@ -99,7 +99,7 @@ public class OOBTest extends ChannelTestBase {
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
 
-        Address dest=c2.getLocalAddress();
+        Address dest=c2.getAddress();
         Message m1=new Message(dest, null, 1);
         Message m2=new Message(dest, null, 2);
         m2.setFlag(Message.OOB);
@@ -165,7 +165,7 @@ public class OOBTest extends ChannelTestBase {
     // @Test(invocationCount=5)
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
-        discard.setLocalAddress(c1.getLocalAddress());
+        discard.setLocalAddress(c1.getAddress());
         discard.setDownDiscardRate(0.5);   
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);

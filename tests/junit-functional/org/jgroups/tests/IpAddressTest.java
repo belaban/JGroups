@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Collections;
 
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class IpAddressTest {
@@ -69,9 +70,7 @@ public class IpAddressTest {
         Assert.assertEquals(x3, x1);
 
         HashSet<Address> s=new HashSet<Address>();
-        s.add(x1);
-        s.add(x2);
-        s.add(x3);
+        Collections.addAll(s, x1, x2, x3);
         System.out.println("s=" + s);
         Assert.assertEquals(1, s.size());
 

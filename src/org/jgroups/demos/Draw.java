@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.56 2008/03/10 07:11:57 belaban Exp $
+// $Id: Draw.java,v 1.57 2009/04/09 09:11:27 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -215,8 +215,8 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             mainFrame.setTitle(title);
         }
         else {
-            if(channel.getLocalAddress() != null)
-                tmp+=channel.getLocalAddress();
+            if(channel.getAddress() != null)
+                tmp+=channel.getAddress();
             tmp+=" (" + member_size + ")";
             mainFrame.setTitle(tmp);
         }
@@ -231,7 +231,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     public void receive(Message msg) {
         byte[] buf=msg.getRawBuffer();
         if(buf == null) {
-            System.err.println("[" + channel.getLocalAddress() + "] received null buffer from " + msg.getSrc() +
+            System.err.println("[" + channel.getAddress() + "] received null buffer from " + msg.getSrc() +
                     ", headers: " + msg.printHeaders());
             return;
         }
@@ -261,6 +261,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             System.out.println("** MergeView=" + v);
         else
             System.out.println("** View=" + v);
+
         member_size=v.size();
         if(mainFrame != null)
             setTitle();
@@ -369,19 +370,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     public void channelConnected(Channel channel) {
         if(jmx) {
-            MBeanServer server=Util.getMBeanServer();
-            if(server != null) {
-                try {
-                    JmxConfigurator.registerChannel((JChannel)channel,
-                                                    server,
-                                                    "jgroups",
-                                                    channel.getClusterName(),
-                                                    true);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            Util.registerChannel((JChannel)channel, "jgroups");
         }
     }
 

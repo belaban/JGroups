@@ -9,7 +9,7 @@ import java.io.Serializable;
  * Simple test for multicast discovery. Use with ./conf/bare-bones.xml (without the UNICAST protocol).
  * Has no error checking and only rudimentary tracing (System.err :-))
  * @author Bela Ban
- * @version $Id: DiscoveryTest.java,v 1.1 2006/03/16 15:47:12 belaban Exp $
+ * @version $Id: DiscoveryTest.java,v 1.2 2009/04/09 09:11:20 belaban Exp $
  */
 public class DiscoveryTest {
     Channel ch;
@@ -60,7 +60,7 @@ public class DiscoveryTest {
                 switch(d.type) {
                     case Data.DISCOVERY_REQ:
                         ch.send(msg.getSrc(), null, new Data(Data.DISCOVEY_RSP,
-                                                             " my address is " + ch.getLocalAddress()));
+                                                             " my address is " + ch.getAddress()));
                         break;
                     case Data.DISCOVEY_RSP:
                         Address sender=msg.getSrc();

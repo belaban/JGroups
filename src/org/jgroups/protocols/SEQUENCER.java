@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.24 2008/10/10 13:46:12 vlada Exp $
+ * @version $Id: SEQUENCER.java,v 1.25 2009/04/09 09:11:15 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -102,6 +102,10 @@ public class SEQUENCER extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
         return down_prot.down(evt);
     }
@@ -114,11 +118,6 @@ public class SEQUENCER extends Protocol {
         SequencerHeader hdr;
 
         switch(evt.getType()) {
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
-
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 hdr=(SequencerHeader)msg.getHeader(name);

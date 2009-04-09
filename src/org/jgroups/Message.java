@@ -26,7 +26,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.94 2008/11/11 09:30:08 belaban Exp $
+ * @version $Id: Message.java,v 1.95 2009/04/09 09:11:29 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -55,15 +55,13 @@ public class Message implements Streamable {
     static final byte SRC_SET          =  2;
     static final byte BUF_SET          =  4;
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
-    static final byte IPADDR_DEST      = 16;
-    static final byte IPADDR_SRC       = 32;
-    static final byte SRC_HOST_NULL    = 64;
 
 
     // =========================== Flags ==============================
     public static final byte OOB               = 1;
     public static final byte LOW_PRIO          = 2; // not yet sure if we want this flag...
     public static final byte HIGH_PRIO         = 4; // not yet sure if we want this flag...
+    public static final byte LOOPBACK          = 8; // if message was sent to self
 
 
 
@@ -433,37 +431,7 @@ public class Message implements Streamable {
     }
 
 
-    /**
-     * Returns size of buffer, plus some constant overhead for src and dest, plus number of headers time
-     * some estimated size/header. The latter is needed because we don't want to marshal all headers just
-     * to find out their size requirements. If a header implements Sizeable, the we can get the correct
-     * size.<p> Size estimations don't have to be very accurate since this is mainly used by FRAG to
-     * determine whether to fragment a message or not. Fragmentation will then serialize the message,
-     * therefore getting the correct value.
-     */
 
-
-    /**
-     * Returns the exact size of the marshalled message. Uses method size() of each header to compute the size, so if
-     * a Header subclass doesn't implement size() we will use an approximation. However, most relevant header subclasses
-     * have size() implemented correctly. (See org.jgroups.tests.SizeTest).
-     * @return The number of bytes for the marshalled message
-     */
-    public long size() {
-        long retval=Global.BYTE_SIZE                  // leading byte
-                + Global.BYTE_SIZE                    // flags
-                + length                              // buffer
-                + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
-
-        // if(dest_addr != null)
-        // retval+=dest_addr.size();
-        if(src_addr != null)
-            retval+=(src_addr).size();
-
-        retval+=Global.SHORT_SIZE; // size (short)
-        retval+=headers.marshalledSize();
-        return retval;
-    }
 
 
     public String printObjectHeaders() {
@@ -482,41 +450,36 @@ public class Message implements Streamable {
     public void writeTo(DataOutputStream out) throws IOException {
         byte leading=0;
 
-        if(src_addr != null) {
-            leading+=SRC_SET;
-            if(src_addr instanceof IpAddress) {
-                leading+=IPADDR_SRC;
-                if(((IpAddress)src_addr).getIpAddress() == null) {
-                    leading+=SRC_HOST_NULL;
-                }
-            }
-        }
+        if(dest_addr != null)
+            leading=Util.setFlag(leading, DEST_SET);
+
+        if(src_addr != null)
+            leading=Util.setFlag(leading, SRC_SET);
+
         if(buf != null)
-            leading+=BUF_SET;
+            leading=Util.setFlag(leading, BUF_SET);
 
         // 1. write the leading byte first
         out.write(leading);
 
-        // the flags (e.g. OOB, LOW_PRIO)
+        // 2. the flags (e.g. OOB, LOW_PRIO)
         out.write(flags);
 
-        // 3. src_addr
-        if(src_addr != null) {
-            if(src_addr instanceof IpAddress) {
-                src_addr.writeTo(out);
-            }
-            else {
-                Util.writeAddress(src_addr, out);
-            }
-        }
+        // 3. dest_addr
+        if(dest_addr != null)
+            Util.writeAddress(dest_addr, out);
 
-        // 4. buf
+        // 4. src_addr
+        if(src_addr != null)
+            Util.writeAddress(src_addr, out);
+
+        // 5. buf
         if(buf != null) {
             out.writeInt(length);
             out.write(buf, offset, length);
         }
 
-        // 5. headers
+        // 6. headers
         int size=headers.size();
         out.writeShort(size);
         final Object[] data=headers.getRawData();
@@ -530,52 +493,66 @@ public class Message implements Streamable {
 
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        int len, leading;
-        String hdr_name;
-        Header hdr;
-
 
         // 1. read the leading byte first
-        leading=in.readByte();
+        byte leading=in.readByte();
 
+        // 2. the flags
         flags=in.readByte();
 
-        // 2. src_addr
-        if((leading & SRC_SET) == SRC_SET) {
-            if((leading & IPADDR_SRC) == IPADDR_SRC) {
-                src_addr=new IpAddress();
-                src_addr.readFrom(in);
-            }
-            else {
-                src_addr=Util.readAddress(in);
-            }
-        }
+        // 3. dest_addr
+        if(Util.isFlagSet(leading, DEST_SET))
+            dest_addr=Util.readAddress(in);
 
-        // 3. buf
-        if((leading & BUF_SET) == BUF_SET) {
-            len=in.readInt();
+        // 4. src_addr
+        if(Util.isFlagSet(leading, SRC_SET))
+            src_addr=Util.readAddress(in);
+
+        // 5. buf
+        if(Util.isFlagSet(leading, BUF_SET)) {
+            int len=in.readInt();
             buf=new byte[len];
             in.read(buf, 0, len);
             length=len;
         }
 
-        // 4. headers
-        len=in.readShort();
+        // 6. headers
+        int len=in.readShort();
         headers=createHeaders(len);
         Object[] data=headers.getRawData();
-        int index=0;
+        int index=0; Header hdr; String hdr_name;
         for(int i=0; i < len; i++) {
             hdr_name=in.readUTF();
             data[index++]=hdr_name;
             hdr=readHeader(in);
             data[index++]=hdr;
-            // headers.putHeader(hdr_name, hdr);
         }
     }
 
-
-
     /* --------------------------------- End of Interface Streamable ----------------------------- */
+
+
+    /**
+     * Returns the exact size of the marshalled message. Uses method size() of each header to compute the size, so if
+     * a Header subclass doesn't implement size() we will use an approximation. However, most relevant header subclasses
+     * have size() implemented correctly. (See org.jgroups.tests.SizeTest).
+     * @return The number of bytes for the marshalled message
+     */
+    public long size() {
+        long retval=Global.BYTE_SIZE   // leading byte
+                + Global.BYTE_SIZE;    // flags
+        if(dest_addr != null)
+            retval+=Util.size(dest_addr);
+        if(src_addr != null)
+            retval+=Util.size(src_addr);
+        if(buf != null)
+            retval+=Global.INT_SIZE // length (integer)
+                    + length;       // number of bytes in the buffer
+
+        retval+=Global.SHORT_SIZE;  // number of headers
+        retval+=headers.marshalledSize();
+        return retval;
+    }
 
 
 
@@ -601,6 +578,13 @@ public class Message implements Streamable {
             else
                 first=false;
             sb.append("HIGH_PRIO");
+        }
+        if(isFlagSet(LOOPBACK)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("LOOPBACK");
         }
         return sb.toString();
     }

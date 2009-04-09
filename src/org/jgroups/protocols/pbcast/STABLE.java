@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.94 2009/02/05 09:21:41 belaban Exp $
+ * @version $Id: STABLE.java,v 1.95 2009/04/09 09:11:34 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -256,10 +256,6 @@ public class STABLE extends Protocol {
             View view=(View)evt.getArg();
             handleViewChange(view);
             return retval;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
         }
         return up_prot.up(evt);
     }
@@ -305,19 +301,23 @@ public class STABLE extends Protocol {
                 Object retval=down_prot.down(evt);
                 View v=(View)evt.getArg();
                 handleViewChange(v);
-            return retval;
+                return retval;
 
-        case Event.SUSPEND_STABLE:
-            long timeout=0;
-            Object t=evt.getArg();
-            if(t != null && t instanceof Long)
-                timeout=(Long)t;
-            suspend(timeout);
-            break;
+            case Event.SUSPEND_STABLE:
+                long timeout=0;
+                Object t=evt.getArg();
+                if(t != null && t instanceof Long)
+                    timeout=(Long)t;
+                suspend(timeout);
+                break;
 
-        case Event.RESUME_STABLE:
-            resume();
-            break;
+            case Event.RESUME_STABLE:
+                resume();
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
         return down_prot.down(evt);
     }

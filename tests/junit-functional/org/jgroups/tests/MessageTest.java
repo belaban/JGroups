@@ -1,20 +1,20 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.11 2008/08/18 10:58:56 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.12 2009/04/09 09:11:24 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
@@ -301,26 +301,26 @@ public class MessageTest {
 
 
     public static void testSizeMessageWithDest() throws Exception {
-        Message msg=new Message(new IpAddress("127.0.0.1", 3333), null, null);
+        Message msg=new Message(UUID.randomUUID(), null, null);
         _testSize(msg);
     }
 
 
     public static void testSizeMessageWithSrc() throws Exception {
-        Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), null);
+        Message msg=new Message(null, UUID.randomUUID(), null);
         _testSize(msg);
     }
 
 
     public static void testSizeMessageWithDestAndSrc() throws Exception {
-        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
+        Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), null);
         _testSize(msg);
     }
 
 
 
     public static void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
-        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
+        Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), null);
         msg.setFlag(Message.OOB);
         msg.setFlag(Message.LOW_PRIO);
         _testSize(msg);
@@ -346,7 +346,7 @@ public class MessageTest {
 
 
     public static void testSizeMessageWithAdditionalData() throws Exception {
-        IpAddress dest=new IpAddress("127.0.0.1", 5555);
+        UUID dest=UUID.randomUUID();
         dest.setAdditionalData("bela".getBytes());
         Message msg=new Message(dest, null, null);
         _testSize(msg);
@@ -354,7 +354,7 @@ public class MessageTest {
 
 
     public static void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
-        Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), "bela".getBytes());
+        Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), "bela".getBytes());
         addHeaders(msg);
         _testSize(msg);
     }

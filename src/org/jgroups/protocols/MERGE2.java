@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.53 2009/02/02 16:24:36 belaban Exp $
+// $Id: MERGE2.java,v 1.54 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -126,20 +126,6 @@ public class MERGE2 extends Protocol {
     }
 
 
-
-    public Object up(Event evt) {
-        switch(evt.getType()) {
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                return up_prot.up(evt);
-
-            default:
-                return up_prot.up(evt);            // Pass up to the layer above us
-        }
-    }
-
-
     public Object down(Event evt) {
         switch(evt.getType()) {
         
@@ -164,6 +150,10 @@ public class MERGE2 extends Protocol {
                     task.stop();
                 }
                 return ret;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                return down_prot.down(evt);
 
             default:
                 return down_prot.down(evt);          // Pass on to the layer below us
@@ -198,7 +188,7 @@ public class MERGE2 extends Protocol {
         }
 
         public void findAndNotify() {
-            List<PingRsp> initial_mbrs=findInitialMembers();
+            List<PingData> initial_mbrs=findInitialMembers();
 
             Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
             if(coords.size() > 1) {
@@ -220,26 +210,26 @@ public class MERGE2 extends Protocol {
         }
 
         /**
-         * Returns a list of PingRsp pairs.
+         * Returns a list of PingData pairs.
          */
-        List<PingRsp> findInitialMembers() {
-            PingRsp tmp=new PingRsp(local_addr, local_addr, true);
-            List<PingRsp> retval=(List<PingRsp>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
+        List<PingData> findInitialMembers() {
+            PingData tmp=new PingData(local_addr, local_addr, true);
+            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
             if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
                 retval.add(tmp);
             return retval;
         }
 
         /**
-         * Finds out if there is more than 1 coordinator in the initial_mbrs vector (contains PingRsp elements).
-         * @param initial_mbrs A list of PingRsp pairs
+         * Finds out if there is more than 1 coordinator in the initial_mbrs vector (contains PingData elements).
+         * @param initial_mbrs A list of PingData pairs
          * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
          *         membership, and more than 1 for multiple coordinators
          */
-        Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
+        Vector<Address> detectMultipleCoordinators(List<PingData> initial_mbrs) {
             Vector<Address> ret=new Vector<Address>(11);
             if(initial_mbrs != null) {
-                for(PingRsp response:initial_mbrs) {
+                for(PingData response:initial_mbrs) {
                     if(response.isServer()) {
                         Address coord=response.getCoordAddress();
                         if(!ret.contains(coord))

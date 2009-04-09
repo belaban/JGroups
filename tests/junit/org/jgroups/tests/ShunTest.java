@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.20 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.21 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups="broken",sequential=false)
 public class ShunTest extends ChannelTestBase {
@@ -80,7 +80,7 @@ public class ShunTest extends ChannelTestBase {
         stack.removeProtocol("VERIFY_SUSPECT");
         Protocol transport=stack.getTransport();
         log.info(">> suspecting C2:");
-        transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
+        transport.up(new Event(Event.SUSPECT, c2.getAddress()));
 
         log.info(">> shunning C2:");
 
@@ -230,7 +230,7 @@ public class ShunTest extends ChannelTestBase {
         }
 
         public void channelShunned() {
-            System.out.println("Shunned channel is " + channel.getLocalAddress());
+            System.out.println("Shunned channel is " + channel.getAddress());
             System.out.println("Removing discard ");
             for (ShunChannel ch : channels) {
                 JChannel c = (JChannel)ch.getChannel();
@@ -298,7 +298,7 @@ public class ShunTest extends ChannelTestBase {
         public void useChannel() throws Exception {           
             channel.connect("ShunChannel");
             channel.getState(null,5000);
-            channel.send(null, null, channel.getLocalAddress());            
+            channel.send(null, null, channel.getAddress());
         }     
 
        

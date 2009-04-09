@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * true.
  * 
  * @author Bela Ban
- * @version $Id: FD.java,v 1.73 2008/10/21 12:16:15 vlada Exp $
+ * @version $Id: FD.java,v 1.74 2009/04/09 09:11:15 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
@@ -226,11 +226,6 @@ public class FD extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-
-            case Event.SET_LOCAL_ADDRESS:
-                local_addr=(Address)evt.getArg();
-                break;
-
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 FdHeader hdr=(FdHeader)msg.getHeader(name);
@@ -323,6 +318,10 @@ public class FD extends Protocol {
             case Event.UNSUSPECT:
                 unsuspect((Address)evt.getArg());
                 return down_prot.down(evt);
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
         return down_prot.down(evt);
     }

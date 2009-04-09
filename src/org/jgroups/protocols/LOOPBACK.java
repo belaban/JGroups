@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.29 2009/03/23 19:40:40 vlada Exp $
+// $Id: LOOPBACK.java,v 1.30 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,10 +6,9 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.jgroups.util.TimeScheduler;
 
 
 /**
@@ -17,6 +16,8 @@ import org.jgroups.util.TimeScheduler;
  */
 public class LOOPBACK extends TP {
     private String group_addr=null;
+    private final PhysicalAddress physical_addr=new IpAddress(12345);
+    private Address local_addr=null;
 
     public LOOPBACK() {
     }
@@ -26,20 +27,18 @@ public class LOOPBACK extends TP {
         return "LOOPBACK(local address: " + local_addr + ')';
     }
 
-    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
     }
 
-    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
     }
 
     public String getInfo() {
         return null;
     }
 
-    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-    }
-
-    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+    protected PhysicalAddress getPhysicalAddress() {
+        return physical_addr;
     }
 
     /*------------------------------ Protocol interface ------------------------------ */
@@ -49,21 +48,7 @@ public class LOOPBACK extends TP {
     }
 
 
-
-    public void init() throws Exception {
-        super.init();
-//        local_addr=new IpAddress("localhost", 10000) { // fake address
-//            public String toString() {
-//                return "<fake>";
-//            }
-//        };
-
-          //local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address
-       local_addr = new IpAddress(12345);
-    }
-
     public void destroy() {
-        System.out.println("destroy();");
         try {
             timer.stop();
         }
@@ -72,9 +57,6 @@ public class LOOPBACK extends TP {
         }
     }
 
-    public void start() throws Exception {
-        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-    }
 
 
     /**
@@ -100,6 +82,10 @@ public class LOOPBACK extends TP {
             //rsp.setDest(local_addr);
             //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
             up(new Event(Event.MSG, rsp));
+            break;
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
             break;
 
         case Event.CONNECT:

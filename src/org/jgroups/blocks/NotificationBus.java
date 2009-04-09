@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.17 2008/04/08 14:49:06 belaban Exp $
+// $Id: NotificationBus.java,v 1.18 2009/04/09 09:11:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -86,7 +86,7 @@ public class NotificationBus implements Receiver {
     public Address getLocalAddress() {
         if(local_addr != null) return local_addr;
         if(channel != null)
-            local_addr=channel.getLocalAddress();
+            local_addr=channel.getAddress();
         return local_addr;
     }
 

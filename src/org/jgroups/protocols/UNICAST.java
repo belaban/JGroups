@@ -16,13 +16,12 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledFuture;
 
 
 /**
@@ -42,20 +41,20 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.119 2009/03/19 09:54:42 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.120 2009/04/09 09:11:15 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
 
-    
+
     private static final String name="UNICAST";
-    
-    private static final long DEFAULT_FIRST_SEQNO=1;   
-    
-    
-    /* ------------------------------------------ Properties  ------------------------------------------ */    
-    
-    
+
+    private static final long DEFAULT_FIRST_SEQNO=1;
+
+
+    /* ------------------------------------------ Properties  ------------------------------------------ */
+
+
     @Property(description="If GMS should be consulted for the membership on retransmit. Default is true")
     private boolean use_gms=true;
 
@@ -64,8 +63,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     @Property(description="Whether to loop back messages sent to self. Default is false")
     private boolean loopback=false;
-    
-    
+
+
     private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
 
     /**
@@ -81,30 +80,31 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      */
     @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
     private boolean eager_lock_release=true;
-    
-    
-    
 
-    /* --------------------------------------------- JMX  ---------------------------------------------- */    
-    
-    
+    @Property(description="Time in ms after which an element in enabled_mbs will be removed")
+    private long enabled_mbrs_timeout=10000;
+
+
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
+
+
     private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
     private long num_acks_sent=0, num_acks_received=0, num_xmit_requests_received=0;
 
-    
-    
+
+
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
-    
-    
+
+
     private final Vector<Address> members=new Vector<Address>(11);
-    
-    private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);      
-    
+
+    private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
+
     private Address local_addr=null;
-    
+
     private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
-    
+
     private boolean started=false;
 
     /**
@@ -112,19 +112,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * messages to left mbrs
      */
     private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
-    /**
-     * Contains all members that were enabled for unicasts by
-     * Event.ENABLE_UNICAST_TO
-     */
-    private final BoundedList<Address> enabled_members=new BoundedList<Address>(100);
-    
+
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
 
-    
-    
-    
+
+    /** Contains all members that were enabled for unicasts by Event.ENABLE_UNICAST_TO */
+    private final EnabledMembers enabled_mbrs=new EnabledMembers(enabled_mbrs_timeout);
+
+
     @ManagedAttribute
     public int getUndeliveredMessages() {
         return undelivered_msgs.get();
@@ -173,7 +170,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public long getNumBytesReceived() {
         return num_bytes_received;
     }
-    
+
     @ManagedAttribute
     public long getNumAcksSent() {
         return num_acks_sent;
@@ -239,8 +236,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public Map<String, Object> dumpStats() {
-        Map<String, Object> m=super.dumpStats();       
-        m.put("unacked_msgs", printUnackedMessages());        
+        Map<String, Object> m=super.dumpStats();
+        m.put("unacked_msgs", printUnackedMessages());
         return m;
     }
 
@@ -257,6 +254,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         started=false;
         removeAllConnections();
         undelivered_msgs.set(0);
+        enabled_mbrs.stop();
     }
 
 
@@ -295,10 +293,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
             }
             return null;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
         }
 
         return up_prot.up(evt);   // Pass up to the layer above us
@@ -333,8 +327,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     return null;
                 }
 
-                if(!members.contains(dst) && !enabled_members.contains(dst)) {
-                    throw new IllegalArgumentException(dst + " is not a member of the group " + members + " (enabled_members=" + enabled_members + ")");
+                if(!members.contains(dst) && !enabled_mbrs.contains(dst)) {
+                    throw new IllegalArgumentException(dst + " is not a member of the group " + members + " (enabled_members=" + enabled_mbrs + ")");
                 }
 
                 Entry entry;
@@ -421,15 +415,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
                 // remove all members from enabled_members
                 synchronized(members) {
-                    for(Address mbr: members) {
-                        enabled_members.remove(mbr);
-                    }
+                    if(!members.isEmpty())
+                        enabled_mbrs.remove(members);
                 }
 
                 synchronized(previous_members) {
-                    for(Address mbr: previous_members) {
-                        enabled_members.remove(mbr);
-                    }
+                    if(!previous_members.isEmpty())
+                        enabled_mbrs.remove(previous_members);
                 }
 
                 // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-348
@@ -446,8 +438,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
             case Event.ENABLE_UNICASTS_TO:
                 Address member=(Address)evt.getArg();
-                if(!enabled_members.contains(member))
-                    enabled_members.add(member);
+                boolean already_member;
+                synchronized(members) {
+                    already_member=members.contains(member);
+                }
+                if(!already_member)
+                    enabled_mbrs.add(member);
                 boolean removed=previous_members.remove(member);
                 if(removed && log.isTraceEnabled())
                     log.trace("removing " + member + " from previous_members as result of ENABLE_UNICAST_TO event, " +
@@ -457,8 +453,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             case Event.DISABLE_UNICASTS_TO:
                 member=(Address)evt.getArg();
                 removeConnection(member);
-                enabled_members.remove(member);
+                enabled_mbrs.remove(member);
                 previous_members.remove(member);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
                 break;
         }
 
@@ -768,6 +768,91 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(received_msgs != null)
                 sb.append("received_msgs=").append(received_msgs).append('\n');
             return sb.toString();
+        }
+    }
+
+
+    private class EnabledMembers implements Runnable {
+        private final long TIMEOUT;
+
+        private ScheduledFuture<?> future=null;
+
+        /** Map of enabled members and their timeouts when the connections should be closed */
+        private final Map<Address,Long> map=new HashMap<Address,Long>();
+
+
+        public EnabledMembers(long timeout) {
+            TIMEOUT=timeout;
+        }
+
+        synchronized void add(Address ... mbrs) {
+            for(Address mbr: mbrs)
+                map.put(mbr, System.currentTimeMillis());
+            if(future == null || future.isCancelled())
+                future=timer.scheduleAtFixedRate(this, 3000, 3000, TimeUnit.MILLISECONDS);
+        }
+
+        synchronized void remove(Address ... mbrs) {
+            for(Address mbr: mbrs)
+                map.remove(mbr);
+            if(map.isEmpty()) {
+                if(future != null) {
+                    future.cancel(false);
+                    future=null;
+                }
+            }
+        }
+
+        synchronized void remove(Collection<Address> mbrs) {
+            for(Address mbr: mbrs)
+                map.remove(mbr);
+            if(map.isEmpty()) {
+                if(future != null) {
+                    future.cancel(false);
+                    future=null;
+                }
+            }
+        }
+
+        synchronized boolean contains(Address mbr) {
+            return map.containsKey(mbr);
+        }
+
+        synchronized int size() {
+            return map.size();
+        }
+
+        public void run() {
+            long current_time=System.currentTimeMillis();
+            synchronized(this) {
+                for(Iterator<Map.Entry<Address,Long>> it=map.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Address, Long> entry=it.next();
+                    Address mbr=entry.getKey();
+                    long add_time=entry.getValue();
+                    if(add_time + TIMEOUT <= current_time) {
+                        it.remove();
+                        boolean rc=removeConnection(mbr); // adds to previous_members
+                        if(rc && log.isTraceEnabled())
+                            log.trace("removed " + mbr + " from connection table (age: " + (current_time - add_time + TIMEOUT) + " ms)");
+                    }
+                }
+                if(map.isEmpty()) {
+                    if(future != null)
+                        future.cancel(false);
+                    future=null;
+                }
+            }
+        }
+
+        public synchronized void stop() {
+            if(future != null) {
+                future.cancel(false);
+                future=null;
+            }
+        }
+
+        public String toString() {
+            return map.keySet().toString();
         }
     }
 

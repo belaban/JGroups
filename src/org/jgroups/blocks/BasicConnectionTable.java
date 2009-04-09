@@ -7,7 +7,6 @@ import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.PortsManager;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -54,7 +53,6 @@ public abstract class BasicConnectionTable {
     boolean               tcp_nodelay=false;
     int                   linger=-1;
 
-    protected PortsManager pm=null;
 
    /**
     * The address which will be broadcast to the group (the externally visible address which this host should
@@ -182,10 +180,6 @@ public abstract class BasicConnectionTable {
         // 2. close the server socket (this also stops the acceptor thread)
         if(srv_sock != null) {
             try {
-                if(pm != null) {
-                    int tmp_port=srv_sock.getLocalPort();
-                    pm.updatePort(tmp_port);
-                }
                 ServerSocket tmp=srv_sock;
                 srv_sock=null;
                 tmp.close();

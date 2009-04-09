@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.49 2008/08/20 12:13:27 belaban Exp $
+// $Id: IpAddress.java,v 1.50 2009/04/09 09:11:31 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -19,7 +20,7 @@ import java.net.UnknownHostException;
  * stack (UDP). Contains an InetAddress and port.
  * @author Bela Ban
  */
-public class IpAddress implements Address {
+public class IpAddress implements PhysicalAddress {
 
 	private static final long serialVersionUID = 2592301708270771474L;
 

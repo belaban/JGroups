@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.10 2008/05/29 14:17:37 vlada Exp $
+// $Id: HTOTAL.java,v 1.11 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.10 2008/05/29 14:17:37 vlada Exp $
+ * @version $Id: HTOTAL.java,v 1.11 2009/04/09 09:11:15 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -44,56 +44,56 @@ public class HTOTAL extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-        case Event.VIEW_CHANGE:
-            determineCoordinatorAndNextMember((View)evt.getArg());
-            break;
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            Address dest=msg.getDest();
-            if(dest == null || dest.isMulticastAddress()) { // only process multipoint messages
-                if(coord == null)
-                    log.error("coordinator is null, cannot send message to coordinator");
-                else {
-                    msg.setSrc(local_addr);
-                    forwardTo(coord, msg);
+            case Event.VIEW_CHANGE:
+                determineCoordinatorAndNextMember((View)evt.getArg());
+                break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                Address dest=msg.getDest();
+                if(dest == null || dest.isMulticastAddress()) { // only process multipoint messages
+                    if(coord == null)
+                        log.error("coordinator is null, cannot send message to coordinator");
+                    else {
+                        msg.setSrc(local_addr);
+                        forwardTo(coord, msg);
+                    }
+                    return null; // handled here, don't pass down by default
                 }
-                return null; // handled here, don't pass down by default
-            }
-            break;
+                break;
         }
         return down_prot.down(evt);
     }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
-        case Event.VIEW_CHANGE:
-            determineCoordinatorAndNextMember((View)evt.getArg());
-            break;
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            HTotalHeader hdr=(HTotalHeader)msg.getHeader(getName());
+            case Event.VIEW_CHANGE:
+                determineCoordinatorAndNextMember((View)evt.getArg());
+                break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                HTotalHeader hdr=(HTotalHeader)msg.getHeader(getName());
 
-            if(hdr == null)
-                break;  // probably a unicast message, just pass it up
+                if(hdr == null)
+                    break;  // probably a unicast message, just pass it up
 
-            Message copy=msg.copy(false); // do not copy the buffer
-            if(use_multipoint_forwarding) {
-                copy.setDest(null);
-                down_prot.down(new Event(Event.MSG, copy));
-            }
-            else {
-                if(neighbor != null) {
-                    forwardTo(neighbor, copy);
+                Message copy=msg.copy(false); // do not copy the buffer
+                if(use_multipoint_forwarding) {
+                    copy.setDest(null);
+                    down_prot.down(new Event(Event.MSG, copy));
                 }
-            }
+                else {
+                    if(neighbor != null) {
+                        forwardTo(neighbor, copy);
+                    }
+                }
 
-            msg.setDest(hdr.dest); // set destination to be the original destination
-            msg.setSrc(hdr.src);   // set sender to be the original sender (important for retransmission requests)
+                msg.setDest(hdr.dest); // set destination to be the original destination
+                msg.setSrc(hdr.src);   // set sender to be the original sender (important for retransmission requests)
 
-            return up_prot.up(evt); // <-- we modify msg directly inside evt
+                return up_prot.up(evt); // <-- we modify msg directly inside evt
         }
         return up_prot.up(evt);
     }

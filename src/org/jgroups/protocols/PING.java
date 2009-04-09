@@ -1,22 +1,16 @@
-
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
+import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
+import org.jgroups.util.UUID;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -32,7 +26,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.53 2009/02/23 18:22:18 vlada Exp $
+ * @version $Id: PING.java,v 1.54 2009/04/09 09:11:15 belaban Exp $
  */
 public class PING extends Discovery {
     
@@ -173,12 +167,6 @@ public class PING extends Discovery {
     }
 
 
-    public void localAddressSet(Address addr) {
-		initializeRouterStubs();
-	}
-
-
-
     public void handleConnect() {
     	for(RouterStub client:clients){
     		try {
@@ -255,7 +243,10 @@ public class PING extends Discovery {
             }
             else {
                 // 1. Mcast GET_MBRS_REQ message
-                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
+                PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+                List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
+                PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
+                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
                 msg=new Message(null);  // mcast msg
                 msg.setFlag(Message.OOB);
                 msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
