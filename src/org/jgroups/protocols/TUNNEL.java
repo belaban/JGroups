@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.62 2009/04/09 09:11:15 belaban Exp $
+// $Id: TUNNEL.java,v 1.63 2009/04/09 14:00:01 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -322,13 +322,7 @@ public class TUNNEL extends TP {
     }
 
     protected PhysicalAddress getPhysicalAddress() {
-        //try {
-            throw new UnsupportedOperationException("needs to be implemented !");
-            // return (PhysicalAddress)stub.getLocalAddress();
-        //}
-        //catch(SocketException e) {
-          //  throw new RuntimeException(e);
-        //}
+        return (PhysicalAddress) local_addr;
     }
     
     public interface TUNNELPolicy{
