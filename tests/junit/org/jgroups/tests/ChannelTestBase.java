@@ -180,7 +180,7 @@ public class ChannelTestBase {
             if(unique) {
                 makeUnique(c, num);
             }
-            muteLocalAddress(c);
+            //muteLocalAddress(c);
             return c;
         }
 
