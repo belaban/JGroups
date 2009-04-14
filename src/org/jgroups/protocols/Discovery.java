@@ -9,6 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
+import java.io.InterruptedIOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.54 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: Discovery.java,v 1.55 2009/04/14 14:17:34 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -101,7 +102,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public abstract void sendGetMembersRequest(String cluster_name);
+    public abstract void sendGetMembersRequest(String cluster_name) throws Exception;
 
 
     public void handleDisconnect() {
@@ -221,8 +222,7 @@ public abstract class Discovery extends Protocol {
      */
 
     public Object up(Event evt) {
-        Message msg, rsp_msg;
-        PingHeader rsp_hdr;
+        Message msg;
         PingData rsp;
         Address coord;
 
@@ -326,7 +326,19 @@ public abstract class Discovery extends Protocol {
 
 
         case Event.GET_PHYSICAL_ADDRESS:
-            sendGetMembersRequest(group_addr);
+            try {
+                sendGetMembersRequest(group_addr);
+            }
+            catch(InterruptedIOException ie) {
+                if(log.isWarnEnabled()){
+                    log.warn("Discovery request for cluster " + group_addr + " interrupted");
+                }
+                Thread.currentThread().interrupt();
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled())
+                    log.error("failed sending discovery request", ex);
+            }
             return null;
         }
 
@@ -440,6 +452,12 @@ public abstract class Discovery extends Protocol {
                     public void run() {
                         try {
                             sendGetMembersRequest(cluster_name);
+                        }
+                        catch(InterruptedIOException ie) {
+                            if(log.isWarnEnabled()){
+                                log.warn("Discovery request for cluster " + cluster_name + " interrupted");
+                            }
+                            Thread.currentThread().interrupt();
                         }
                         catch(Exception ex) {
                             if(log.isErrorEnabled())
