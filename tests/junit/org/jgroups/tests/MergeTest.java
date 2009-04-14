@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.34 2008/07/24 17:36:26 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.35 2009/04/14 19:18:39 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -103,7 +103,7 @@ public class MergeTest extends ChannelTestBase {
             long stop=System.currentTimeMillis() + 35 * 1000;
             do {
                 view=channels[0].channel.getView();               
-                if(view.size() == 1)
+                if(view != null && view.size() == split)
                     break;
                 else
                     Util.sleep(1000);
@@ -160,9 +160,14 @@ public class MergeTest extends ChannelTestBase {
         
         public MergeApplication(JChannel ch,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(ch,name, semaphore, useDispatcher);
-            replaceDiscoveryProtocol((JChannel)channel);
-            addDiscardProtocol((JChannel)channel); 
-            modiftFDAndMergeSettings((JChannel)channel);
+            
+            /*
+             * no need to modify anything since we are making a copy of an
+             * already modified channel
+             * replaceDiscoveryProtocol((JChannel)channel);
+             * addDiscardProtocol((JChannel)channel);
+             * modiftFDAndMergeSettings((JChannel)channel);
+             */
         }
 
         public void useChannel() throws Exception {
