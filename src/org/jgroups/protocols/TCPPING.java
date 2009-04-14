@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.32.4.1 2008/01/21 23:32:07 vlada Exp $
+// $Id: TCPPING.java,v 1.32.4.2 2009/04/14 14:16:58 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -98,7 +98,7 @@ public class TCPPING extends Discovery {
     }
 
 
-    public void sendGetMembersRequest() {
+    public void sendGetMembersRequest() throws Exception {
 
         for(Iterator<Address> it = initial_hosts.iterator();it.hasNext();){
             final Address addr = it.next();

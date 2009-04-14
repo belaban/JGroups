@@ -7,6 +7,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
+import java.io.InterruptedIOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.6 2008/09/19 10:56:43 belaban Exp $
+ * @version $Id: Discovery.java,v 1.32.2.7 2009/04/14 14:16:58 vlada Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -66,7 +67,7 @@ public abstract class Discovery extends Protocol {
     public void localAddressSet(Address addr) {
     }
 
-    public abstract void sendGetMembersRequest();
+    public abstract void sendGetMembersRequest() throws Exception;
 
 
     public void handleDisconnect() {
@@ -404,6 +405,12 @@ public abstract class Discovery extends Protocol {
                     public void run() {
                         try {
                             sendGetMembersRequest();
+                        }
+                        catch(InterruptedIOException ie) {
+                            if(log.isWarnEnabled()){
+                                log.warn("Discovery request interrupted");
+                            }
+                            Thread.currentThread().interrupt();
                         }
                         catch(Exception ex) {
                             if(log.isErrorEnabled())
