@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.26.2.3 2008/12/08 13:18:49 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.26.2.4 2009/04/14 14:16:58 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -132,7 +132,7 @@ public class TCPGOSSIP extends Discovery {
         }
     }
 
-    public void sendGetMembersRequest() {
+    public void sendGetMembersRequest() throws Exception{
         Message msg, copy;
         PingHeader hdr;
         List tmp_mbrs;
