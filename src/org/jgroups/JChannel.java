@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.214 2009/04/09 09:11:29 belaban Exp $
+ * @version $Id: JChannel.java,v 1.215 2009/04/14 19:20:20 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -2202,7 +2202,7 @@ public class JChannel extends Channel {
                     }
                 }
                 catch(Throwable ex4) {
-                    if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex4);
+                    if(log.isErrorEnabled()) log.error("failure reopening channel" ,ex4);
                     Util.sleep(500);
                 }
             }
