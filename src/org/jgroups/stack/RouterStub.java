@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.40 2009/02/24 13:45:32 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.41 2009/04/20 17:57:17 vlada Exp $
  */
 public class RouterStub {
 
@@ -170,10 +170,10 @@ public class RouterStub {
     	return intentionallyDisconnected;
     }
     
-    public List<Address> getMembers(final String group, long timeout) throws Exception {
+    public synchronized List<Address> getMembers(final String group, long timeout) throws Exception {
     	 List<Address>mbrs = new LinkedList<Address>();
          try{
-         	output.writeByte(GossipRouter.GOSSIP_GET);
+             output.writeByte(GossipRouter.GOSSIP_GET);
              // 1. Group name
              output.writeUTF(groupname);
              output.flush();
