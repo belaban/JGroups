@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.193 2009/04/09 09:11:18 belaban Exp $
+ * @version $Id: Util.java,v 1.194 2009/04/22 14:20:27 vlada Exp $
  */
 public class Util {
 
@@ -2234,22 +2234,33 @@ public class Util {
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
      * InetSocketAddress
      */
-    public static List<InetSocketAddress> parseCommaDelimetedHosts2(String hosts, int port_range) throws UnknownHostException {
-        StringTokenizer tok=new StringTokenizer(hosts, ",");
-        String t;
-        Set<InetSocketAddress> retval=new HashSet<InetSocketAddress>();
-
-        while(tok.hasMoreTokens()) {
-            t=tok.nextToken().trim();
-            String host=t.substring(0, t.indexOf('['));
-            host=host.trim();
-            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-            for(int i=port;i < port + port_range;i++) {
-                retval.add(new InetSocketAddress(host, i));
-            }
-        }
-        return Collections.unmodifiableList(new LinkedList<InetSocketAddress>(retval));
-    }
+    public static List<InetSocketAddress> parseCommaDelimetedHosts2(String hosts, int port_range)
+            throws UnknownHostException {
+       
+      StringTokenizer tok = new StringTokenizer(hosts, ",");
+      Set<InetSocketAddress> retval = new HashSet<InetSocketAddress>();
+      String t;
+      while (tok.hasMoreTokens()) {
+         t = tok.nextToken().trim();
+         boolean hasColumn = t.indexOf(":") > 0;
+         boolean hasBrackets = t.indexOf("[") > 0 && t.indexOf("]") > 0;
+         String host = null;
+         int port = 0;
+         if (hasColumn) {
+            host = t.substring(0, t.indexOf(':')).trim();
+            port = Integer.parseInt(t.substring(t.indexOf(':') + 1));
+         } else if (hasBrackets) {
+            host = t.substring(0, t.indexOf('[')).trim();
+            port = Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
+         } else{
+            throw new IllegalArgumentException("Invalid host:port token " + t);
+         }
+         for (int i = port; i < port + port_range; i++) {
+            retval.add(new InetSocketAddress(host, i));
+         }
+      }
+      return Collections.unmodifiableList(new LinkedList<InetSocketAddress>(retval));
+   }
 
     public static List<String> parseStringList(String l, String separator) {
          List<String> tmp=new LinkedList<String>();
