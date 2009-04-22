@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.10 2009/04/20 18:03:31 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.11 2009/04/22 14:20:39 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT, "known-failures"}, sequential = true)
@@ -200,7 +200,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         gossipRouter2.start();
 
         // give time to reconnect
-        Util.sleep(6000);
+        Util.sleep(8000);
 
         channel.send(new Message(null, null, "payload"));
 
