@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.11 2006/10/23 16:16:20 belaban Exp $
+// $Id: DisconnectTest.java,v 1.11.2.1 2009/04/22 20:22:29 rachmatowicz Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.11.2.1 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -45,10 +45,10 @@ public class DisconnectTest extends TestCase {
     }
 
 
-    private String getTUNNELProps(int routerPort, int gossipPort) {
+    private String getTUNNELProps(String routerHost, String gossipHost, int routerPort, int gossipPort) {
         return
-                "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
-                "PING(gossip_host=127.0.0.1;gossip_port=" + gossipPort + "):" +
+                "TUNNEL(router_host=" + routerHost + ";router_port=" + routerPort + "):" +
+                "PING(gossip_host=" + gossipHost + ";gossip_port=" + gossipPort + "):" +
                 "FD:" +
                 "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
                 "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000;" +
@@ -69,8 +69,9 @@ public class DisconnectTest extends TestCase {
      **/
     public void testNullLocalAddress_TUNNEL() throws Exception {
         try {
-            routerPort=Utilities.startGossipRouter();
-            String props = getTUNNELProps(routerPort, routerPort);
+        	String bind_addr = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+            routerPort=Utilities.startGossipRouter(bind_addr);
+            String props = getTUNNELProps(bind_addr, bind_addr, routerPort, routerPort);
             channel = new JChannel(props);
             channel.connect("testgroup");
             assertTrue(channel.getLocalAddress() != null);
@@ -157,8 +158,9 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
         try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
+        	String bind_addr = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+            routerPort=Utilities.startGossipRouter(bind_addr);
+            String props = getTUNNELProps(bind_addr, bind_addr, routerPort, routerPort);
             channel=new JChannel(props);
             channel.connect("testgroup1");
             channel.disconnect();
@@ -179,8 +181,9 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
          try {
-             routerPort = Utilities.startGossipRouter();
-             String props=getTUNNELProps(routerPort, routerPort);
+         	 String bind_addr = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+             routerPort=Utilities.startGossipRouter(bind_addr);
+             String props = getTUNNELProps(bind_addr, bind_addr, routerPort, routerPort);
              // String props="tunnel.xml";
              JChannel coordinator=new JChannel(props);
              coordinator.connect("testgroup");
@@ -213,8 +216,9 @@ public class DisconnectTest extends TestCase {
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
         try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
+        	String bind_addr = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+            routerPort=Utilities.startGossipRouter(bind_addr);
+            String props = getTUNNELProps(bind_addr, bind_addr, routerPort, routerPort);
 
             final Promise msgPromise=new Promise();
             JChannel coordinator=new JChannel(props);
