@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.64 2009/04/09 18:06:39 vlada Exp $
+// $Id: TUNNEL.java,v 1.65 2009/04/22 14:20:24 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -83,6 +83,10 @@ public class TUNNEL extends TP {
     @Property
     public void setGossipRouterHosts(String hosts) throws UnknownHostException {
     	gossip_router_hosts.clear();
+    	//if we get passed value of List<SocketAddress>#toString() we have to strip []
+    	if(hosts.startsWith("[") && hosts.endsWith("]")){
+    	    hosts = hosts.substring(1,hosts.length()-1);
+    	}
     	gossip_router_hosts.addAll(Util.parseCommaDelimetedHosts2(hosts,1));       
     }
 
@@ -294,12 +298,15 @@ public class TUNNEL extends TP {
                 }catch(SocketException se){
                     // if(log.isWarnEnabled()) log.warn("failure in TUNNEL
                     // receiver thread", se);
+                    break;
                 }catch(IOException ioe){
                     // if(log.isWarnEnabled()) log.warn("failure in TUNNEL
                     // receiver thread", ioe);
+                    break;
                 }catch(Exception e){
                     if(log.isWarnEnabled())
                         log.warn("failure in TUNNEL receiver thread", e);
+                    break;
                 }
             }
         }
