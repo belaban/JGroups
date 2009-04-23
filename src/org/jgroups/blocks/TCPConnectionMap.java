@@ -167,7 +167,7 @@ public class TCPConnectionMap{
                     ret=new ServerSocket(start_port);
                 else {
                     // changed (bela Sept 7 2007): we accept connections on all NICs
-                    ret=new ServerSocket(start_port, 20, null);
+                    ret=new ServerSocket(start_port, 20, bind_addr);
                 }
             }
             catch(BindException bind_ex) {
