@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.55 2009/04/14 14:17:34 vlada Exp $
+ * @version $Id: Discovery.java,v 1.56 2009/04/23 14:32:42 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -90,7 +90,7 @@ public abstract class Discovery extends Protocol {
     protected final Vector<Address> members=new Vector<Address>(11);
     protected Address local_addr=null;
     protected String group_addr=null;
-    private final Set<Responses> ping_responses=new HashSet<Responses>();
+    protected final Set<Responses> ping_responses=new HashSet<Responses>();
     private final PingSenderTask sender=new PingSenderTask();
     
 
@@ -477,7 +477,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    private static class Responses {
+    protected static class Responses {
         final Promise<JoinRsp>  promise;
         final List<PingData>    ping_rsps=new LinkedList<PingData>();
         final int               num_expected_rsps;
