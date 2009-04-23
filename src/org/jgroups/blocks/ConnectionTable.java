@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.68 2009/04/09 09:11:19 belaban Exp $
+// $Id: ConnectionTable.java,v 1.69 2009/04/23 09:00:14 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -319,7 +319,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    ret=new ServerSocket(start_port);
                else {
                    // changed (bela Sept 7 2007): we accept connections on all NICs
-                   ret=new ServerSocket(start_port, backlog, null);
+                   ret=new ServerSocket(start_port, backlog, bind_addr);
                }
            }
            catch(BindException bind_ex) {
