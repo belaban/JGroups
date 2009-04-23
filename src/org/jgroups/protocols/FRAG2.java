@@ -26,16 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.36.2.1 2008/07/22 11:51:22 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.36.2.2 2009/04/23 08:17:07 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
     /** The max number of bytes in a message. If a message's buffer is bigger, it will be fragmented */
     int frag_size=1500;
-
-    /** Number of bytes that we think the headers plus src and dest will take up when
-        message is serialized by transport. This will be subtracted from frag_size */
-    int overhead=200;
 
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
@@ -57,8 +53,10 @@ public class FRAG2 extends Protocol {
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}
-    public int getOverhead() {return overhead;}
-    public void setOverhead(int o) {overhead=o;}
+    /** @deprecated overhead was removed in 2.6.10 */
+    public int getOverhead() {return 0;}
+    /** @deprecated overhead was removed in 2.6.10 */
+    public void setOverhead(int o) {}
     public long getNumberOfSentMessages() {return num_sent_msgs.get();}
     public long getNumberOfSentFragments() {return num_sent_frags.get();}
     public long getNumberOfReceivedMessages() {return num_received_msgs.get();}
@@ -82,20 +80,18 @@ public class FRAG2 extends Protocol {
 
         str=props.getProperty("overhead");
         if(str != null) {
-            overhead=Integer.parseInt(str);
             props.remove("overhead");
+            log.warn("overhead is ignored (was removed in 2.6.10)");
         }
 
         int old_frag_size=frag_size;
-        frag_size-=overhead;
         if(frag_size <=0) {
-            log.error("frag_size=" + old_frag_size + ", overhead=" + overhead +
-                      ", new frag_size=" + frag_size + ": new frag_size is invalid");
+            log.error("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
             return false;
         }
 
         if(log.isDebugEnabled())
-            log.debug("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
+            log.debug("frag_size=" + old_frag_size + ", new frag_size=" + frag_size);
 
         if(!props.isEmpty()) {
             log.error("FRAG2.setProperties(): the following properties are not recognized: " + props);
