@@ -1,18 +1,19 @@
 package org.jgroups.protocols;
 
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.Event;
 import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.UUID;
-import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -20,10 +21,9 @@ import java.util.ArrayList;
  * address information, e.g. UUID and physical addresses mappings are written to the file and the content is read and
  * added to our transport's UUID-PhysicalAddress cache.
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.1 2009/04/23 12:38:31 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.2 2009/04/23 15:01:46 belaban Exp $
  */
 public class FILE_PING extends Discovery {
-
     private static final String name="FILE_PING";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -37,6 +37,8 @@ public class FILE_PING extends Discovery {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     protected File file=null;
+
+
 
 
     public String getName() {
@@ -74,9 +76,66 @@ public class FILE_PING extends Discovery {
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
         List<PingData> other_mbrs=readFromFile();
-        if(!other_mbrs.contains(data))
-            writeToFile(data);
-        addResponses(other_mbrs);
+
+        if(!contains(local_addr, other_mbrs)) {
+            appendToFile(data);
+            other_mbrs.add(data);
+        }
+
+        boolean removed=false;
+        synchronized(members) {
+            if(!members.isEmpty()) {
+                for(Iterator<PingData> it=other_mbrs.iterator(); it.hasNext();) {
+                    PingData next=it.next();
+                    if(!members.contains(next.getAddress())) {
+                        it.remove();
+                        removed=true;
+                    }
+                }
+            }
+        }
+        if(removed) {
+            writeAllToFile(other_mbrs);
+        }
+
+        // 1. Send GET_MBRS_REQ message to members listed in the file
+        for(PingData tmp: other_mbrs) {
+            List<PhysicalAddress> dests=tmp.getPhysicalAddrs();
+            if(dests == null)
+                continue;
+            for(final PhysicalAddress dest: dests) {
+                if(dest.equals(physical_addr))
+                    continue;
+                PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+                final Message msg=new Message(dest);
+                msg.setFlag(Message.OOB);
+                msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
+                // down_prot.down(new Event(Event.MSG,  msg));
+                if(log.isTraceEnabled())
+                    log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                timer.submit(new Runnable() {
+                    public void run() {
+                        try {
+                            down_prot.down(new Event(Event.MSG, msg));
+                        }
+                        catch(Exception ex){
+                            if(log.isErrorEnabled())
+                                log.error("failed sending discovery request to " + dest, ex);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private static boolean contains(Address addr, List<PingData> list) {
+        if(addr == null || list == null)
+            return false;
+        for(PingData data: list) {
+            if(addr.equals(data.getAddress()))
+                return true;
+        }
+        return false;
     }
 
     private List<PingData> readFromFile() {
@@ -90,7 +149,6 @@ public class FILE_PING extends Discovery {
                 tmp.readFrom(in);
                 retval.add(tmp);
             }
-
         }
         catch(Exception e) {
         }
@@ -100,7 +158,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private void writeToFile(PingData data) {
+    private void appendToFile(PingData data) {
         DataOutputStream out=null;
         try {
             out=new DataOutputStream(new FileOutputStream(file, true)); // append at the end
@@ -113,8 +171,22 @@ public class FILE_PING extends Discovery {
         }
     }
 
+    private void writeAllToFile(List<PingData> list) {
+        DataOutputStream out=null;
+        try {
+            out=new DataOutputStream(new FileOutputStream(file, false)); // overwrite
+            for(PingData data: list)
+                data.writeTo(out);
+        }
+        catch(Exception e) {
+        }
+        finally {
+            Util.close(out);
+        }
+    }
 
-    private void addResponses(List<PingData> rsps) {
+
+   /* private void addResponses(List<PingData> rsps) {
         // add physical address (if available) to transport's cache
         for(PingData rsp: rsps) {
             Address logical_addr=rsp.getAddress();
@@ -131,7 +203,7 @@ public class FILE_PING extends Discovery {
                     tmp.addResponse(rsp);
             }
         }
-    }
+    }*/
 
 
 }
