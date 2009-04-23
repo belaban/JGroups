@@ -72,7 +72,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.25 2009/03/30 12:35:18 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.26 2009/04/23 18:45:28 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1873,7 +1873,7 @@ public class JChannel extends Channel {
         if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-       
+        flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
 
         //do not return until UNBLOCK event is received            
@@ -1889,7 +1889,7 @@ public class JChannel extends Channel {
         if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-        
+        flush_unblock_promise.reset();
         down(new Event(Event.RESUME, flushParticipants));
 
         // do not return until UNBLOCK event is received
