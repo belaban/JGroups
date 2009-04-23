@@ -37,9 +37,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.47 2008/10/20 10:20:12 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.48 2009/04/23 08:20:31 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
+@DeprecatedProperty(names={"overhead"})
 public class FRAG2 extends Protocol {
     
     private static final String name="FRAG2";
@@ -50,11 +51,6 @@ public class FRAG2 extends Protocol {
     @ManagedAttribute(description="Fragmentation size", writable=true)
     int frag_size=1500;
   
-    @Property(description="Estimate for message overhead. Default is 200 bytes ")
-    @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ", writable=true)
-    int overhead=200;
-
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
     
@@ -84,8 +80,10 @@ public class FRAG2 extends Protocol {
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}
-    public int getOverhead() {return overhead;}
-    public void setOverhead(int o) {overhead=o;}
+    /** @deprecated overhead was removed in 2.6.10 */
+    public int getOverhead() {return 0;}
+    /** @deprecated overhead was removed in 2.6.10 */
+    public void setOverhead(int o) {}
     public long getNumberOfSentMessages() {return num_sent_msgs.get();}
     public long getNumberOfSentFragments() {return num_sent_frags.get();}
     public long getNumberOfReceivedMessages() {return num_received_msgs.get();}
@@ -100,11 +98,8 @@ public class FRAG2 extends Protocol {
         super.init();
         
         int old_frag_size=frag_size;
-        frag_size-=overhead;
-        if(frag_size <=0) {
-            throw new Exception("frag_size=" + old_frag_size + ", overhead=" + overhead +
-                      ", new frag_size=" + frag_size + ": new frag_size is invalid");            
-        }     
+        if(frag_size <=0)
+            throw new Exception("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
         
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
