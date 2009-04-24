@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
@@ -12,33 +11,32 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 
 /**
  * Simple discovery protocol which uses a file on shared storage such as an SMB share, NFS mount or S3. The local
  * address information, e.g. UUID and physical addresses mappings are written to the file and the content is read and
- * added to our transport's UUID-PhysicalAddress cache.
+ * added to our transport's UUID-PhysicalAddress cache.<p/>
+ * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.2 2009/04/23 15:01:46 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.3 2009/04/24 08:31:21 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
+    private static final String SUFFIX=".node";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
 
     @Property(description="The absolute path of the shared file")
     @ManagedAttribute(description="location of the shared file used for discovery")
-    private String location=null;
+    private String location=File.separator + "tmp" + File.separator + "jgroups";
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-
-    protected File file=null;
-
-
+    protected File root_dir=null;
+    protected FilenameFilter filter;
 
 
     public String getName() {
@@ -47,16 +45,22 @@ public class FILE_PING extends Discovery {
 
     public void init() throws Exception {
         super.init();
-        file=new File(location);
-        boolean created=file.createNewFile();
-        if(created &&  log.isDebugEnabled())
-            log.debug("file " + file.getPath() + " created");
-        if(!file.exists())
-            throw new FileNotFoundException(file.getPath());
-        if(!file.canRead() || !file.canWrite())
-            throw new IllegalStateException("file " + file.getPath() + " is not writable");
-        if(!created && log.isDebugEnabled())
-            log.debug("file " + file.getPath() + " found");
+        root_dir=new File(location);
+        if(root_dir.exists()) {
+            if(!root_dir.isDirectory())
+                throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
+        }
+        else {
+            root_dir.mkdirs();
+        }
+        if(!root_dir.exists())
+            throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
+
+        filter=new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.endsWith(SUFFIX);
+            }
+        };
     }
 
 
@@ -72,31 +76,10 @@ public class FILE_PING extends Discovery {
 
 
     public void sendGetMembersRequest(String cluster_name) throws Exception{
+        List<PingData> other_mbrs=readAll(cluster_name);
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
-        List<PingData> other_mbrs=readFromFile();
-
-        if(!contains(local_addr, other_mbrs)) {
-            appendToFile(data);
-            other_mbrs.add(data);
-        }
-
-        boolean removed=false;
-        synchronized(members) {
-            if(!members.isEmpty()) {
-                for(Iterator<PingData> it=other_mbrs.iterator(); it.hasNext();) {
-                    PingData next=it.next();
-                    if(!members.contains(next.getAddress())) {
-                        it.remove();
-                        removed=true;
-                    }
-                }
-            }
-        }
-        if(removed) {
-            writeAllToFile(other_mbrs);
-        }
 
         // 1. Send GET_MBRS_REQ message to members listed in the file
         for(PingData tmp: other_mbrs) {
@@ -126,29 +109,41 @@ public class FILE_PING extends Discovery {
                 });
             }
         }
+
+        // Write my own data to file
+        writeToFile(data, cluster_name);
+
     }
 
-    private static boolean contains(Address addr, List<PingData> list) {
-        if(addr == null || list == null)
-            return false;
-        for(PingData data: list) {
-            if(addr.equals(data.getAddress()))
-                return true;
-        }
-        return false;
-    }
 
-    private List<PingData> readFromFile() {
+
+    /**
+     * Reads all information from the given directory under clustername
+     * @return
+     */
+   private List<PingData> readAll(String clustername) {
         List<PingData> retval=new ArrayList<PingData>();
+        File dir=new File(root_dir, clustername);
+        if(!dir.exists())
+            dir.mkdir();
+
+        File[] files=dir.listFiles(filter);
+        if(files != null) {
+            for(File file: files)
+                retval.add(readFile(file));
+        }
+        return retval;
+    }
+
+    private static PingData readFile(File file) {
+        PingData retval=null;
         DataInputStream in=null;
 
         try {
             in=new DataInputStream(new FileInputStream(file));
-            for(;;) {
-                PingData tmp=new PingData();
-                tmp.readFrom(in);
-                retval.add(tmp);
-            }
+            PingData tmp=new PingData();
+            tmp.readFrom(in);
+            return tmp;
         }
         catch(Exception e) {
         }
@@ -158,10 +153,16 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private void appendToFile(PingData data) {
+    private void writeToFile(PingData data, String clustername) {
         DataOutputStream out=null;
+        File dir=new File(root_dir, clustername);
+        if(!dir.exists())
+            dir.mkdir();
+
+        File file=new File(dir, data.getAddress().toString() + SUFFIX);
+
         try {
-            out=new DataOutputStream(new FileOutputStream(file, true)); // append at the end
+            out=new DataOutputStream(new FileOutputStream(file));
             data.writeTo(out);
         }
         catch(Exception e) {
@@ -171,19 +172,6 @@ public class FILE_PING extends Discovery {
         }
     }
 
-    private void writeAllToFile(List<PingData> list) {
-        DataOutputStream out=null;
-        try {
-            out=new DataOutputStream(new FileOutputStream(file, false)); // overwrite
-            for(PingData data: list)
-                data.writeTo(out);
-        }
-        catch(Exception e) {
-        }
-        finally {
-            Util.close(out);
-        }
-    }
 
 
    /* private void addResponses(List<PingData> rsps) {
