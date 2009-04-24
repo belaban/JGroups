@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
@@ -20,8 +21,9 @@ import java.util.List;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.4 2009/04/24 08:44:16 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5 2009/04/24 08:50:42 belaban Exp $
  */
+@Experimental
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
     private static final String SUFFIX=".node";
@@ -61,20 +63,6 @@ public class FILE_PING extends Discovery {
                 return name.endsWith(SUFFIX);
             }
         };
-    }
-
-
-    public void start() throws Exception {
-        super.start();
-
-    }
-
-    public void stop() {
-        super.stop();
-    }
-
-    public void destroy(){
-        super.destroy();
     }
 
 
@@ -176,26 +164,6 @@ public class FILE_PING extends Discovery {
         }
     }
 
-
-
-   /* private void addResponses(List<PingData> rsps) {
-        // add physical address (if available) to transport's cache
-        for(PingData rsp: rsps) {
-            Address logical_addr=rsp.getAddress();
-            List<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
-            PhysicalAddress physical_addr=physical_addrs != null && !physical_addrs.isEmpty()?
-                    physical_addrs.get(0) : null;
-            if(logical_addr != null && physical_addr != null)
-                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
-            if(logical_addr != null && rsp.getLogicalName() != null)
-                UUID.add((UUID)logical_addr, rsp.getLogicalName());
-
-            synchronized(ping_responses) {
-                for(Responses tmp: ping_responses)
-                    tmp.addResponse(rsp);
-            }
-        }
-    }*/
 
 
 }
