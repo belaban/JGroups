@@ -80,6 +80,9 @@
             This uses a shared directory into which all members write their addresses. New joiners read all addresses
             from this directory (which needs to be shared, e.g. via NFS or SMB) and ping each of the elements of
             the resulting set of members. When a member leaves, it deletes its corresponding file.
+            <para>
+                FILE_PING can be used instead of GossipRouter in cases where no external process is desired.
+            </para>
 
 			${PING}
             <para></para>
