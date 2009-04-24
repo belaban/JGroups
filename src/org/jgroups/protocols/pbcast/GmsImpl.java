@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.30 2009/03/23 19:40:38 vlada Exp $
+// $Id: GmsImpl.java,v 1.31 2009/04/24 14:02:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -46,7 +46,8 @@ public abstract class GmsImpl {
     public void               handleMergeResponse(MergeData data, ViewId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, ViewId merge_id)     {} // only processed by coords
     public void               handleMergeCancelled(ViewId merge_id)                {} // only processed by coords
-    
+    public void               handleDigestResponse(Address sender, Digest digest)  {} // only processed by coords
+
     public abstract void      handleMembershipChange(Collection<Request> requests);
     public abstract void      handleViewChange(View new_view, Digest digest);
     public          void      handleExit() {}
@@ -66,8 +67,7 @@ public abstract class GmsImpl {
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getName(), hdr);
-        if(log.isDebugEnabled()) log.debug("response=" + hdr);
-        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, sender));
+        if(log.isDebugEnabled()) log.debug("merge response=" + hdr);
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
