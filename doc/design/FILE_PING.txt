@@ -4,10 +4,28 @@ Design of FILE_PING
 ===================
 
 Author: Bela Ban
-Version: $Id: FILE_PING.txt,v 1.1 2009/04/24 07:04:18 belaban Exp $
+Version: $Id: FILE_PING.txt,v 1.2 2009/04/24 07:12:39 belaban Exp $
 
 
 Goal
 ----
+
 FILE_PING is a shared storage based discovery; new nodes read the addresses of existing members from a shared store in
-the discovery process.
+the discovery process. Members write their addresses to the store and remove them on leaving the cluster.
+
+
+Design
+------
+
+FILE_PING takes as property a 'location' which is the location of a directory in a shared store, e.g. /share/jgroups.
+Each cluster X creates a subdirectory X, this is where all files for cluster X reside.
+
+A member writes its local address (plus physical address mappings) to a file which is named after the local address.
+Example: /share/jgroups/DemoCluster/linux-433234.dat.
+
+A new member reads all files in DemoCluster and sends the discovery request to all addresses resulting from this.
+
+When a member leaves, it removes its file from DemoCluster. We could use File.removeOnExit() to do this automatically.
+(However, kill -9 doesn't remove the file).
+
+We still need to periodically clean up members who crashed (kill -9). This could be done via an age out cache.
