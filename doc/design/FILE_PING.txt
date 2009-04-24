@@ -1,0 +1,13 @@
+
+
+Design of FILE_PING
+===================
+
+Author: Bela Ban
+Version: $Id: FILE_PING.txt,v 1.1 2009/04/24 07:04:18 belaban Exp $
+
+
+Goal
+----
+FILE_PING is a shared storage based discovery; new nodes read the addresses of existing members from a shared store in
+the discovery process.
