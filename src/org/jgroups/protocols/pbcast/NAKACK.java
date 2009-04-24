@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.214 2009/04/09 09:11:34 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.215 2009/04/24 14:16:16 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -1188,7 +1188,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /**
      * Returns a message digest: for each member P the lowest, highest delivered and highest received seqno is added
      */
-    private Digest getDigest() {
+    public Digest getDigest() {
         Digest.Entry entry;
 
         Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());

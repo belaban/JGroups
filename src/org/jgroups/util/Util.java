@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.194 2009/04/22 14:20:27 vlada Exp $
+ * @version $Id: Util.java,v 1.195 2009/04/24 14:12:53 belaban Exp $
  */
 public class Util {
 
@@ -1884,6 +1884,13 @@ public class Util {
         int size=array.length;
         int index=(int)((Math.random() * size * 10) % size);
         return array[index];
+    }
+
+
+    public static View createView(Address coord, long id, Address ... members) {
+        Vector<Address> mbrs=new Vector<Address>();
+        mbrs.addAll(Arrays.asList(members));
+        return new View(coord, id, mbrs);
     }
 
 
