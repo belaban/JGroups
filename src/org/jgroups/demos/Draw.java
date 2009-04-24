@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.57 2009/04/09 09:11:27 belaban Exp $
+// $Id: Draw.java,v 1.58 2009/04/24 15:16:59 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -13,6 +13,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.List;
 import java.io.*;
 
 
@@ -38,14 +39,17 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     boolean                        jmx;
     private boolean                use_state=false;
     private long                   state_timeout=5000;
+    private boolean                use_unicasts=false;
+    private final                  List<Address> members=new ArrayList<Address>();
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
-                boolean use_blocking) throws Exception {
+                boolean use_blocking, boolean use_unicasts) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
         this.state_timeout=state_timeout;
+        this.use_unicasts=use_unicasts;
         if(no_channel)
             return;
 
@@ -94,6 +98,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
        boolean          use_blocking=false;
        String           group_name=null;
        long             state_timeout=5000;
+       boolean          use_unicasts=false;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -132,13 +137,17 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                 System.setProperty("jgroups.bind_addr", args[++i]);
                 continue;
             }
+            if("-use_unicasts".equals(args[i])) {
+                use_unicasts=true;
+                continue;
+            }
 
             help();
             return;
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_blocking);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_blocking, use_unicasts);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -167,6 +176,13 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         return new Color(red, green, blue);
     }
 
+
+    private void sendToAll(byte[] buf) throws Exception {
+        for(Address mbr: members) {
+            Message msg=new Message(mbr, null, buf);
+            channel.send(msg);
+        }
+    }
 
 
     public void go() throws Exception {
@@ -261,10 +277,11 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             System.out.println("** MergeView=" + v);
         else
             System.out.println("** View=" + v);
-
         member_size=v.size();
         if(mainFrame != null)
             setTitle();
+        members.clear();
+        members.addAll(v.getMembers());
     }
 
     public void block() {
@@ -327,7 +344,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
         try {
             byte[] buf=Util.streamableToByteBuffer(comm);
-            channel.send(new Message(null, null, buf));
+            if(use_unicasts)
+                sendToAll(buf);
+            else
+                channel.send(new Message(null, null, buf));
         }
         catch(Exception ex) {
             System.err.println(ex);
@@ -537,8 +557,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
             try {
                 byte[] buf=Util.streamableToByteBuffer(comm);
-                channel.send(new Message(null, null, buf));
-                // Thread.yield();
+                if(use_unicasts)
+                    sendToAll(buf);
+                else
+                    channel.send(new Message(null, null, buf));
             }
             catch(Exception ex) {
                 System.err.println(ex);
