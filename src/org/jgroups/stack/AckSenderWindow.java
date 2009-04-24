@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.30 2008/05/15 10:49:10 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.31 2009/04/24 13:51:10 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,6 +10,8 @@ import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.TreeSet;
+import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -29,6 +31,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     Interval                interval=new StaticInterval(400,800,1200,1600);
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
+    long                    lowest=0; // lowest seqno, used by ack()
 
 
     public interface RetransmitCommand {
@@ -76,15 +79,31 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     /**
-     * Removes the message from <code>msgs</code>, removing them also from retransmission. If
-     * sliding window protocol is used, and was queueing, check whether we can resume adding elements.
-     * Add all elements. If this goes above window_size, stop adding and back to queueing. Else
-     * set queueing to false.
+     * Removes all messages <em>less than or equal</em> to seqno from <code>msgs</code>, and cancels their retransmission.
      */
-    public void ack(long seqno) {
-        msgs.remove(new Long(seqno));
-        retransmitter.remove(seqno);
+    public synchronized void ack(long seqno) {
+        if(lowest == 0) {
+            Long tmp=getLowestSeqno();
+            if(tmp != null)
+                lowest=tmp;
     }
+
+        for(long i=lowest; i <= seqno; i++) {
+            msgs.remove(i);
+            retransmitter.remove(i);
+        }
+        lowest=seqno +1;
+    }
+
+    /** Returns the message with the lowest seqno */
+    public Message getLowestMessage() {
+        Set<Long> keys=msgs.keySet();
+        if(keys.isEmpty())
+            return null;
+        Long seqno=Collections.min(keys);
+        return seqno != null? msgs.get(seqno) : null;
+    }
+
 
     public int size() {
         return msgs.size();
@@ -128,6 +147,10 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
 
+    public Long getLowestSeqno() {
+        Set<Long> keys=msgs.keySet();
+        return keys != null? Collections.min(keys) : null;
+    }
 
 
     /* ---------------------------------- Private methods --------------------------------------- */
