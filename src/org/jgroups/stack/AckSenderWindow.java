@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.31 2009/04/24 13:51:10 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.32 2009/04/24 14:59:24 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -86,7 +86,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             Long tmp=getLowestSeqno();
             if(tmp != null)
                 lowest=tmp;
-    }
+        }
 
         for(long i=lowest; i <= seqno; i++) {
             msgs.remove(i);
