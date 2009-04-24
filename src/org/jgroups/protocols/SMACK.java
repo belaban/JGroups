@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.32 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: SMACK.java,v 1.33 2009/04/24 14:04:07 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -159,7 +159,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         if(!containsMember(sender)) {
                             Message join_rsp=new Message(sender);
                             join_rsp.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                            down_prot.down(new Event(Event.ENABLE_UNICASTS_TO, sender));
                             down_prot.down(new Event(Event.MSG, join_rsp));
                         }
                         addMember(sender);
