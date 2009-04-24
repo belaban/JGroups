@@ -63,9 +63,24 @@
     <section>
         <title>Initial membership discovery</title>
 
+        The task of the discovery is to find an initial membership, which is used to determine the current
+        coordinator. Once a coordinator is found, the joiner sends a JOIN request to the coord.
+
+
         <section>
             <title>PING</title>
             
+			${PING}
+            <para></para>
+        </section>
+
+
+        <section>
+            <title>FILE_PING</title>
+            This uses a shared directory into which all members write their addresses. New joiners read all addresses
+            from this directory (which needs to be shared, e.g. via NFS or SMB) and ping each of the elements of
+            the resulting set of members. When a member leaves, it deletes its corresponding file.
+
 			${PING}
             <para></para>
         </section>
