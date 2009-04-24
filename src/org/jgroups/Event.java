@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.65 2009/04/09 09:11:29 belaban Exp $
+ * @version $Id: Event.java,v 1.66 2009/04/24 13:51:24 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -32,7 +32,6 @@ public class Event {
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null
-    public static final int ENABLE_UNICASTS_TO                 = 67;  // arg = Address (member)
     public static final int SUSPEND					           = 68;  // arg = HashMap (used by FLUSH)
     public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg=java.io.InputStream subclass
@@ -45,7 +44,6 @@ public class Event {
     public static final int REBROADCAST				           = 78;  // arg = Digest
     public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
-    public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
     public static final int PREPARE_VIEW                       = 86;  // arg = View
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
     public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = null --> Map<Address,PhysicalAddress>
@@ -120,7 +118,6 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
-            case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
             case SUSPEND:        		 return "SUSPEND";
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
@@ -133,7 +130,6 @@ public class Event {
             case REBROADCAST:            return "REBROADCAST";
             case SHUTDOWN:               return "SHUTDOWN";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
-            case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
             case PREPARE_VIEW:           return "PREPARE_VIEW";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
