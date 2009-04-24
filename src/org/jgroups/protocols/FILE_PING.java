@@ -20,7 +20,7 @@ import java.util.List;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.3 2009/04/24 08:31:21 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.4 2009/04/24 08:44:16 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
@@ -64,6 +64,10 @@ public class FILE_PING extends Discovery {
     }
 
 
+    public void start() throws Exception {
+        super.start();
+
+    }
 
     public void stop() {
         super.stop();
@@ -112,7 +116,6 @@ public class FILE_PING extends Discovery {
 
         // Write my own data to file
         writeToFile(data, cluster_name);
-
     }
 
 
@@ -159,7 +162,8 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        File file=new File(dir, data.getAddress().toString() + SUFFIX);
+        File file=new File(dir, local_addr.toString() + SUFFIX);
+        file.deleteOnExit();
 
         try {
             out=new DataOutputStream(new FileOutputStream(file));
