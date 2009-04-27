@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.122 2009/04/24 15:54:53 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.123 2009/04/27 10:25:52 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -52,20 +52,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
-
-    /**
-     * By default, we release the lock on the sender in up() after the up()
-     * method call passed up the stack returns. However, with eager_lock_release
-     * enabled (default), we release the lock as soon as the application calls
-     * Channel.down() <em>within</em> the receive() callback. This leads to
-     * issues as the one described in
-     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is
-     * <em>still correct </em>, but messages from self might get delivered
-     * concurrently. This can be turned off by setting eager_lock_release to
-     * false.
-     */
-    @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
-    private boolean eager_lock_release=true;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
