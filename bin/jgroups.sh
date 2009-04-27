@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.7 2008/10/28 12:19:28 belaban Exp $
+# version: $Id: jgroups.sh,v 1.8 2009/04/27 15:34:13 radoslavhusar Exp $
 
 #!/bin/bash
 
@@ -9,6 +9,11 @@ JG=${JG-$HOME/JGroups}
 LIB=$JG/lib
 
 CP=$JG/classes:$JG/conf
+
+# If this is a bin dist, JARs are in the $JG directory.
+if [ ! -d $LIB ]; then
+    LIB=$JG
+fi;
 
 for i in $LIB/*.jar
 do
