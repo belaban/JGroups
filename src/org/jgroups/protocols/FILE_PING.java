@@ -18,7 +18,7 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.3 2009/04/27 08:37:23 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.4 2009/04/27 08:46:47 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
@@ -83,7 +83,7 @@ public class FILE_PING extends Discovery {
         // If we don't find any files, return immediately
         if(existing_mbrs.isEmpty() || (existing_mbrs.size() == 1 && existing_mbrs.contains(local_addr))) {
             if(promise != null) {
-                promise.setResult(true);
+                promise.setResult(null);
             }
         }
         else {
