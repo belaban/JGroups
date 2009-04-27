@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.5 2008/06/10 09:03:53 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.6 2009/04/27 11:28:08 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class AckReceiverWindowTest {
@@ -139,6 +139,24 @@ public class AckReceiverWindowTest {
 
         assert win.size() == 1;
     }
+
+    public static void testSmallerThanNextToRemove() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        Message msg;
+        for(long i=1; i <= 5; i++)
+            win.add(i, msg());
+        System.out.println("win = " + win);
+        boolean added=win.add(3, msg());
+        assert !added;
+        for(;;) {
+            msg=win.remove();
+            if(msg == null)
+                break;
+        }
+        added=win.add(3, msg());
+        assert !added;
+    }
+
 
 
     private static Message msg() {

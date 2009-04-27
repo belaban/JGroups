@@ -16,15 +16,32 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version  $Id: AckSenderWindowTest.java,v 1.6 2008/05/14 11:57:58 belaban Exp $
+ * @version  $Id: AckSenderWindowTest.java,v 1.7 2009/04/27 11:31:35 belaban Exp $
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckSenderWindowTest {
     AckSenderWindow           win=null;
     static final int          NUM_MSGS=100;
     final static long[]       xmit_timeouts={1000, 2000, 4000, 8000};
     static final double       PERCENTAGE_OFF=1.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
     final Map<Long,Entry>     msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
+
+
+    public void testAdd() {
+        win=new AckSenderWindow(null);
+        for(int i=1; i <=5; i++)
+            win.add(i, new Message());
+        System.out.println("win = " + win);
+        assert win.size() == 5;
+        win.ack(1);
+        System.out.println("win = " + win);
+        assert win.size() == 4;
+        win.ack(4);
+        System.out.println("win = " + win);
+        assert win.size() == 1;
+        win.ack(44);
+        assert win.size() == 0;
+    }
 
 
     /** Tests whether retransmits are called at correct times for 1000 messages */
