@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.32 2009/04/24 14:59:24 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.33 2009/04/27 11:31:36 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -39,6 +39,11 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
 
+    public AckSenderWindow(RetransmitCommand com) {
+        retransmit_command = com;
+        retransmitter = new Retransmitter(null, this, null);
+        retransmitter.setRetransmitTimeouts(interval);
+    }
 
     public AckSenderWindow(RetransmitCommand com, Interval interval, TimeScheduler sched) {
         retransmit_command = com;
