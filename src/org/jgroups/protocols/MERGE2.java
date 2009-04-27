@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.54 2009/04/09 09:11:15 belaban Exp $
+// $Id: MERGE2.java,v 1.55 2009/04/27 13:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,11 +6,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.View;
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -117,6 +113,12 @@ public class MERGE2 extends Protocol {
         Vector<Integer> retval=new Vector<Integer>(1);
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return retval;
+    }
+
+    /** Discovers members and detects whether we have multiple coordinator. If so, kicks off a merge */
+    @ManagedOperation
+    public void sendMergeSolicitation() {
+        task.findAndNotify();
     }
 
 
