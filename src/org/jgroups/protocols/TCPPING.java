@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.32.4.2 2009/04/14 14:16:58 vlada Exp $
+// $Id: TCPPING.java,v 1.32.4.3 2009/04/27 08:35:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,10 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Global;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 import org.jgroups.stack.IpAddress;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.net.UnknownHostException;
 
 
@@ -98,7 +98,7 @@ public class TCPPING extends Discovery {
     }
 
 
-    public void sendGetMembersRequest() throws Exception {
+    public void sendGetMembersRequest(Promise promise) throws Exception {
 
         for(Iterator<Address> it = initial_hosts.iterator();it.hasNext();){
             final Address addr = it.next();

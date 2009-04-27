@@ -1,10 +1,11 @@
-// $Id: TCPGOSSIP.java,v 1.26.2.4 2009/04/14 14:16:58 vlada Exp $
+// $Id: TCPGOSSIP.java,v 1.26.2.5 2009/04/27 08:35:47 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.util.Promise;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 
@@ -132,7 +133,7 @@ public class TCPGOSSIP extends Discovery {
         }
     }
 
-    public void sendGetMembersRequest() throws Exception{
+    public void sendGetMembersRequest(Promise promise) throws Exception{
         Message msg, copy;
         PingHeader hdr;
         List tmp_mbrs;

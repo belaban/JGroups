@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.2 2009/04/24 09:10:11 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.3 2009/04/27 08:37:23 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
@@ -75,12 +76,20 @@ public class FILE_PING extends Discovery {
     }
 
 
-    public void sendGetMembersRequest() throws Exception{
+    public void sendGetMembersRequest(Promise promise) throws Exception{
         String cluster_name=group_addr;
         List<Address> existing_mbrs=readAll(cluster_name);
 
-        // 1. Send GET_MBRS_REQ message to members listed in the file
-        for(final Address dest: existing_mbrs) {
+        // If we don't find any files, return immediately
+        if(existing_mbrs.isEmpty() || (existing_mbrs.size() == 1 && existing_mbrs.contains(local_addr))) {
+            if(promise != null) {
+                promise.setResult(true);
+            }
+        }
+        else {
+
+            // 1. Send GET_MBRS_REQ message to members listed in the file
+            for(final Address dest: existing_mbrs) {
                 if(dest.equals(local_addr))
                     continue;
                 PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
@@ -101,6 +110,7 @@ public class FILE_PING extends Discovery {
                     }
                 });
             }
+        }
 
         // Write my own data to file
         writeToFile(local_addr, cluster_name);
