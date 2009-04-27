@@ -12,7 +12,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.31 2009/03/23 19:40:38 vlada Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.32 2009/04/27 13:26:06 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -154,6 +154,8 @@ public class ParticipantGmsImpl extends GmsImpl {
 
     public void handleMergeRequest(Address sender, ViewId merge_id) {
         // only coords handle this method; reject it if we're not coord
+        if(log.isWarnEnabled())
+            log.warn("rejected merge request, as only coordinators handle them");
         sendMergeRejectedResponse(sender, merge_id);
     }
 
