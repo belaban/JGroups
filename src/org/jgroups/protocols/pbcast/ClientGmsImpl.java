@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.69 $
+ * @version $Revision: 1.70 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -74,11 +74,11 @@ public class ClientGmsImpl extends GmsImpl {
         while(!leaving) {
             if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
                 List<PingData> responses=findInitialMembers(join_promise);
-                // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+                /*// Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
                 if(join_promise.hasResult()) {
                     rsp=join_promise.getResult(gms.join_timeout); // clears the result
                     continue;
-                }
+                }*/
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
                 if(responses == null || responses.isEmpty()) {

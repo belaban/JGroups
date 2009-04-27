@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.List;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5 2009/04/24 08:50:42 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.6 2009/04/27 09:04:02 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -67,38 +68,47 @@ public class FILE_PING extends Discovery {
 
 
 
-    public void sendGetMembersRequest(String cluster_name) throws Exception{
-        List<PingData> other_mbrs=readAll(cluster_name);
+    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
+        List<PingData> existing_mbrs=readAll(cluster_name);
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
 
-        // 1. Send GET_MBRS_REQ message to members listed in the file
-        for(PingData tmp: other_mbrs) {
-            List<PhysicalAddress> dests=tmp.getPhysicalAddrs();
-            if(dests == null)
-                continue;
-            for(final PhysicalAddress dest: dests) {
-                if(dest.equals(physical_addr))
+        // If we don't find any files, return immediately
+        if(existing_mbrs.isEmpty()) {
+            if(promise != null) {
+                promise.setResult(null);
+            }
+        }
+        else {
+
+            // 1. Send GET_MBRS_REQ message to members listed in the file
+            for(PingData tmp: existing_mbrs) {
+                List<PhysicalAddress> dests=tmp.getPhysicalAddrs();
+                if(dests == null)
                     continue;
-                PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-                final Message msg=new Message(dest);
-                msg.setFlag(Message.OOB);
-                msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
-                // down_prot.down(new Event(Event.MSG,  msg));
-                if(log.isTraceEnabled())
-                    log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                timer.submit(new Runnable() {
-                    public void run() {
-                        try {
-                            down_prot.down(new Event(Event.MSG, msg));
+                for(final PhysicalAddress dest: dests) {
+                    if(dest.equals(physical_addr))
+                        continue;
+                    PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+                    final Message msg=new Message(dest);
+                    msg.setFlag(Message.OOB);
+                    msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
+                    // down_prot.down(new Event(Event.MSG,  msg));
+                    if(log.isTraceEnabled())
+                        log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                    timer.submit(new Runnable() {
+                        public void run() {
+                            try {
+                                down_prot.down(new Event(Event.MSG, msg));
+                            }
+                            catch(Exception ex){
+                                if(log.isErrorEnabled())
+                                    log.error("failed sending discovery request to " + dest, ex);
+                            }
                         }
-                        catch(Exception ex){
-                            if(log.isErrorEnabled())
-                                log.error("failed sending discovery request to " + dest, ex);
-                        }
-                    }
-                });
+                    });
+                }
             }
         }
 

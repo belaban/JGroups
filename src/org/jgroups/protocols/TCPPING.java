@@ -10,6 +10,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Promise;
 
 import java.util.*;
 
@@ -33,7 +34,7 @@ import java.util.*;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.43 2009/04/14 14:17:34 vlada Exp $
+ * @version $Id: TCPPING.java,v 1.44 2009/04/27 09:04:01 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -91,7 +92,7 @@ public class TCPPING extends Discovery {
         initial_hosts = Util.parseCommaDelimetedHosts(hosts, port_range);       
     }
     
-    public void sendGetMembersRequest(String cluster_name) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);

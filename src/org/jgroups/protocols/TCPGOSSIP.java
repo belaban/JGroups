@@ -7,6 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
+import org.jgroups.util.Promise;
 
 import java.util.*;
 import java.net.InetSocketAddress;
@@ -26,7 +27,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.37 2009/04/14 14:17:34 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.38 2009/04/27 09:04:02 belaban Exp $
  */
 public class TCPGOSSIP extends Discovery {
     
@@ -118,7 +119,7 @@ public class TCPGOSSIP extends Discovery {
 		}
     }
 
-    public void sendGetMembersRequest(String cluster_name) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
         Message msg, copy;
         PingHeader hdr;
         List<Address> tmp_mbrs = new ArrayList<Address>();
