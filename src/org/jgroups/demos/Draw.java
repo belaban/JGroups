@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.58 2009/04/24 15:16:59 belaban Exp $
+// $Id: Draw.java,v 1.59 2009/04/27 12:59:46 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -161,11 +161,12 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
-                           " [-groupname <name>] [-state] [-use_blocking] [-timeout <state timeout>] [-bind_addr <addr>]");
+                " [-groupname <name>] [-state] [-use_blocking] [-timeout <state timeout>] [-use_unicasts] " +
+                "[-bind_addr <addr>]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
-                           "whiteboard directly");
+                "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +
-                           "a URL. In the latter case, the protocol specification will be read from the URL\n");
+                "a URL. In the latter case, the protocol specification will be read from the URL\n");
     }
 
 
