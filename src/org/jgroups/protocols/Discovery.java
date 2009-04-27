@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.56 2009/04/23 14:32:42 belaban Exp $
+ * @version $Id: Discovery.java,v 1.57 2009/04/27 09:04:02 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -102,7 +102,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public abstract void sendGetMembersRequest(String cluster_name) throws Exception;
+    public abstract void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception;
 
 
     public void handleDisconnect() {
@@ -172,7 +172,7 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start(group_addr);
+        sender.start(group_addr, promise);
         try {
             return rsps.get(timeout);
         }
@@ -327,7 +327,7 @@ public abstract class Discovery extends Protocol {
 
         case Event.GET_PHYSICAL_ADDRESS:
             try {
-                sendGetMembersRequest(group_addr);
+                sendGetMembersRequest(group_addr, null);
             }
             catch(InterruptedIOException ie) {
                 if(log.isWarnEnabled()){
@@ -445,13 +445,13 @@ public abstract class Discovery extends Protocol {
 
         public PingSenderTask() {}
 
-        public synchronized void start(final String cluster_name) {
+        public synchronized void start(final String cluster_name, final Promise promise) {
             long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
                         try {
-                            sendGetMembersRequest(cluster_name);
+                            sendGetMembersRequest(cluster_name, promise);
                         }
                         catch(InterruptedIOException ie) {
                             if(log.isWarnEnabled()){
