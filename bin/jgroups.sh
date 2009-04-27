@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.8 2009/04/27 15:34:13 radoslavhusar Exp $
+# version: $Id: jgroups.sh,v 1.9 2009/04/27 15:39:53 radoslavhusar Exp $
 
 #!/bin/bash
 
@@ -20,7 +20,10 @@ do
     CP=$CP:$i
 done
 
-LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
+if [ -f $HOME:/log4j.properties ]; then
+    LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
+fi;
+
 JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
 FLAGS="-server -Xmx600M -Xms600M -Xmn500M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64 -XX:SurvivorRatio=8"
