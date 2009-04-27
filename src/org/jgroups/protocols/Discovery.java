@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.7 2009/04/14 14:16:58 vlada Exp $
+ * @version $Id: Discovery.java,v 1.32.2.8 2009/04/27 08:37:23 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -67,7 +67,7 @@ public abstract class Discovery extends Protocol {
     public void localAddressSet(Address addr) {
     }
 
-    public abstract void sendGetMembersRequest() throws Exception;
+    public abstract void sendGetMembersRequest(Promise promise) throws Exception;
 
 
     public void handleDisconnect() {
@@ -200,7 +200,7 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start();
+        sender.start(promise);
         try {
             return rsps.get(timeout);
         }
@@ -398,13 +398,13 @@ public abstract class Discovery extends Protocol {
 
         public PingSenderTask() {}
 
-        public synchronized void start() {
+        public synchronized void start(final Promise<JoinRsp> promise) {
             long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
                         try {
-                            sendGetMembersRequest();
+                            sendGetMembersRequest(promise);
                         }
                         catch(InterruptedIOException ie) {
                             if(log.isWarnEnabled()){
@@ -431,9 +431,9 @@ public abstract class Discovery extends Protocol {
 
 
     private static class Responses {
-        final Promise<JoinRsp>       promise;
-        final List<PingRsp> ping_rsps=new LinkedList<PingRsp>();
-        final int           num_expected_rsps;
+        final Promise<JoinRsp>  promise;
+        final List<PingRsp>     ping_rsps=new LinkedList<PingRsp>();
+        final int               num_expected_rsps;
         final int               num_expected_srv_rsps;
         final boolean           break_on_coord_rsp;
 
@@ -493,7 +493,7 @@ public abstract class Discovery extends Protocol {
             for(PingRsp rsp: rsps) {
                 if(rsp.isServer())
                     cnt++;
-    }
+            }
             return cnt;
         }
 
@@ -507,5 +507,5 @@ public abstract class Discovery extends Protocol {
             return false;
         }
 
-}
+    }
 }

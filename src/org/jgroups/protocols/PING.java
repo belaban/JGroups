@@ -25,7 +25,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.36.2.6 2009/04/14 14:16:58 vlada Exp $
+ * @version $Id: PING.java,v 1.36.2.7 2009/04/27 08:35:47 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -206,7 +206,7 @@ public class PING extends Discovery {
 
 
 
-    public void sendGetMembersRequest() throws Exception {
+    public void sendGetMembersRequest(Promise promise) throws Exception {
         Message       msg;
         PingHeader    hdr;
         List<Address> gossip_rsps;
