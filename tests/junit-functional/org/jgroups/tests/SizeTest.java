@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.14 2009/04/27 11:34:51 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.15 2009/04/27 12:18:08 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -399,7 +399,7 @@ public class SizeTest {
 
 
     public static void testGmsHeader() throws Exception {
-        IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        Address addr=UUID.randomUUID();
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
         _testSize(hdr);
 
