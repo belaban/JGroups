@@ -1,0 +1,43 @@
+
+Release Notes JGroups 2.6.10
+===========================
+
+Version: $Id: ReleaseNotes-2.6.10.txt,v 1.1.2.1 2009/04/28 14:25:36 vlada Exp $
+Author: Bela Ban
+
+JGroups 2.6.10 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8 and 2.6.9.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.9 and 2.6.10.
+
+Bug
+
+    * [https://jira.jboss.org/jira/browse/JGRP-958] - Support Setting of Bind Address With TCP-based Stacks
+    * [https://jira.jboss.org/jira/browse/JGRP-959] - coord.stopFlush() and coord.close() called in sequence cause flush lockup
+
+Feature Request
+
+    * [https://jira.jboss.org/jira/browse/JGRP-960] - FILE_PING: new discovery protocol
+    * [https://jira.jboss.org/jira/browse/JGRP-963] - FILE_PING: return immediately if there are no files around in the location directory (optimization)
+
+Task
+
+    * [https://jira.jboss.org/jira/browse/JGRP-953] - FRAG2: set overhead to 0 by default
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+April 2009
+
+
