@@ -18,7 +18,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.3 2009/04/28 07:36:14 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.4 2009/04/28 10:09:36 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -271,7 +271,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     private static void checkReceivedMessages(int num_msgs, MyReceiver ... receivers) {
         int total_unicasts=receivers.length * num_msgs;
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 30; i++) {
             boolean all_received=true;
             for(MyReceiver receiver: receivers) {
                 List<Message> mcasts=receiver.getMulticasts();
@@ -286,7 +286,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             }
             if(all_received)
                 break;
-            Util.sleep(1000);
+            Util.sleep(500);
         }
 
         for(MyReceiver receiver: receivers) {
