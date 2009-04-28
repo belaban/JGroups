@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.29 2009/04/24 13:49:40 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.30 2009/04/28 11:22:23 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
@@ -75,35 +75,33 @@ public class AckReceiverWindow {
      * removed in order.
      */
     public Message remove() {
-        Message retval;
+        Message retval=null;
 
         synchronized(msgs) {
-            retval=msgs.remove(next_to_remove);
-            if(retval != null) {
-                if(log.isTraceEnabled())
-                    log.trace("removed seqno=" + next_to_remove);
-                next_to_remove++;
+            long seqno=next_to_remove;
+            try {
+                retval=msgs.remove(seqno);
+            }
+            finally {
+                if(retval != null)
+                    next_to_remove=++seqno;
             }
         }
         return retval;
     }
 
     public Message remove(AtomicBoolean processing) {
-        Message retval;
-        boolean found=false;
+        Message retval=null;
 
         synchronized(msgs) {
+            long seqno=next_to_remove;
             try {
-                retval=msgs.remove(next_to_remove);
-                found=retval != null;
-                if(retval != null) {
-                    if(log.isTraceEnabled())
-                        log.trace("removed seqno=" + next_to_remove);
-                    next_to_remove++;
-                }
+                retval=msgs.remove(seqno);
             }
             finally {
-                if(!found)
+                if(retval != null)
+                    next_to_remove=++seqno;
+                else
                     processing.set(false);
             }
         }
@@ -120,8 +118,6 @@ public class AckReceiverWindow {
                     return null;
                 }
                 retval=msgs.remove(next_to_remove);
-                if(log.isTraceEnabled())
-                    log.trace("removed OOB message with seqno=" + next_to_remove);
                 next_to_remove++;
             }
         }
