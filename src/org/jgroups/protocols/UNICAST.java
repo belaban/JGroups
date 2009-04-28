@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.126 2009/04/28 10:47:45 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.127 2009/04/28 11:04:56 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -607,7 +607,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" <-- ACK(").append(sender).
-                      append(": #").append(seqno).append(')'));
+                    append(": #").append(seqno).append(')'));
         synchronized(connections) {
             entry=connections.get(sender);
         }
@@ -619,7 +619,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
-       /**
+    /**
      * We need to resend our first message with our conn_id
      * @param sender
      */
@@ -642,9 +642,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 log.warn("didn't find any messages in my sender window for " + sender);
             return;
         }
+        // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
+        // the headers and therefore we'd modify the original message in the sender retransmission window
+        // (https://jira.jboss.org/jira/browse/JGRP-965)
         Message copy=rsp.copy();
         UnicastHeader hdr=(UnicastHeader)copy.getHeader(name);
-        hdr.conn_id=entry.send_conn_id;
+        UnicastHeader newhdr=new UnicastHeader(hdr.type, hdr.seqno, entry.send_conn_id);
+        copy.putHeader(name, newhdr);
         down_prot.down(new Event(Event.MSG, copy));
     }
 
