@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.162 2009/04/27 12:57:14 belaban Exp $
+ * @version $Id: GMS.java,v 1.163 2009/04/28 07:36:15 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -45,7 +45,7 @@ public class GMS extends Protocol {
     long leave_timeout=5000;
     
     @Property(description="Timeout to complete merge. Default is 10000 msec")
-    long merge_timeout=10000; // time to wait for all MERGE_RSPS
+    long merge_timeout=5000; // time to wait for all MERGE_RSPS
     
     @ManagedAttribute(description="Shunning toggle", writable=true)
     @Property(description="Shunning toggle. Default is false")
@@ -849,8 +849,8 @@ public class GMS extends Protocol {
                         MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
                         merge_data.merge_rejected=hdr.merge_rejected;
                         if(log.isDebugEnabled()) {
-                            log.debug("Got merge response at " + local_addr + " from " + msg.getSrc() + 
-                                      ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);
+                            log.debug(local_addr + ": got merge response from " + msg.getSrc() +
+                                    ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);
                         } 
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
@@ -1282,7 +1282,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.162 2009/04/27 12:57:14 belaban Exp $
+     * @version $Id: GMS.java,v 1.163 2009/04/28 07:36:15 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
