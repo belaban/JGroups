@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.215 2009/04/24 14:16:16 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.216 2009/04/28 07:53:46 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -1189,18 +1189,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the lowest, highest delivered and highest received seqno is added
      */
     public Digest getDigest() {
-        Digest.Entry entry;
-
-        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
-        for(Address sender: members) {
-            entry=getEntry(sender);
-            if(entry == null) {
-                if(log.isErrorEnabled()) {
-                    log.error("range is null");
-                }
-                continue;
-            }
-            map.put(sender, entry);
+        final Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
+            NakReceiverWindow win=entry.getValue(); // guaranteed to be non-null (CCHM)
+            long low=win.getLowestSeen(), highest_delivered=win.getHighestDelivered(), highest_received=win.getHighestReceived();
+            map.put(sender, new Digest.Entry(low, highest_delivered, highest_received));
         }
         return new Digest(map);
     }
@@ -1364,26 +1358,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-
-    private Digest.Entry getEntry(Address sender) {
-        if(sender == null) {
-            if(log.isErrorEnabled()) {
-                log.error("sender is null");
-            }
-            return null;
-        }
-        NakReceiverWindow win=xmit_table.get(sender);
-        if(win == null) {
-            if(log.isErrorEnabled()) {
-                log.error("sender " + sender + " not found in xmit_table");
-            }
-            return null;
-        }
-        long low=win.getLowestSeen(),
-                highest_delivered=win.getHighestDelivered(),
-                highest_received=win.getHighestReceived();
-        return new Digest.Entry(low, highest_delivered, highest_received);
-    }
 
 
 
