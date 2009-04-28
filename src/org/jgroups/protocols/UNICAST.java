@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.125 2009/04/28 10:09:16 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.126 2009/04/28 10:47:45 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -510,7 +510,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                     else
                         ; // no-op: we cannot drop the message as multiple SEND_FIRST_SEQNO requests might cause
-                          // multiple different messages to have conn-ids ! 
+                          // multiple different messages to have conn-ids ! https://jira.jboss.org/jira/browse/JGRP-966
                 }
             }
         }
