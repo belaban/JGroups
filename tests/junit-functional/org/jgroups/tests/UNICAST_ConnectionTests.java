@@ -12,7 +12,7 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.1 2009/04/28 16:12:54 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.2 2009/04/28 16:14:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class UNICAST_ConnectionTests {
@@ -36,10 +36,7 @@ public class UNICAST_ConnectionTests {
     }
 
 
-    @AfterMethod
-    void stop() {
-        Util.close(c2, c1);
-    }
+    @AfterMethod void stop() {Util.close(c2, c1);}
 
 
     public void testRegularMessageReception() throws Exception {
@@ -49,6 +46,12 @@ public class UNICAST_ConnectionTests {
         int size=r2.size();
         System.out.println("size = " + size);
         assert size == 100;
+
+        for(int i=0; i < 50; i++)
+            c2.send(c1_addr, null, "msg #" + i);
+        size=r1.size();
+        System.out.println("size = " + size);
+        assert size == 50;
     }
 
 
