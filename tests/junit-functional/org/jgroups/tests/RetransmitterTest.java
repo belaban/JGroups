@@ -1,18 +1,17 @@
-// $Id: RetransmitterTest.java,v 1.4 2008/05/15 10:49:14 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.5 2009/04/28 11:52:17 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.stack.StaticInterval;
+import org.jgroups.util.TimeScheduler;
 import org.testng.Assert;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 @Test(groups=Global.FUNCTIONAL)
