@@ -8,9 +8,7 @@ import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Util;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.*;
 
 import java.util.*;
 
@@ -18,14 +16,14 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.5 2009/04/28 11:17:54 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.6 2009/04/28 11:53:49 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver ra, rb, rc;
 
-    @BeforeTest
+    @BeforeMethod
     protected void start() throws Exception {
         ra=new MyReceiver("A"); rb=new MyReceiver("B"); rc=new MyReceiver("C");
         a=createChannel(true, 3);
@@ -45,7 +43,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         assert view.size() == 3 : "view is " + view;
     }
 
-    @AfterTest
+    @AfterMethod
     protected void stop() throws Exception {
         Util.close(c,b,a);
         ra.clear(); rb.clear(); rc.clear();

@@ -5,9 +5,7 @@ import org.jgroups.protocols.FD;
 import org.jgroups.protocols.FD_ALL;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -18,14 +16,14 @@ import java.util.Set;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast tables<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingUnicastMergeTest.java,v 1.2 2009/04/24 14:48:33 belaban Exp $
+ * @version $Id: OverlappingUnicastMergeTest.java,v 1.3 2009/04/28 11:53:49 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver ra, rb, rc;
 
-    @BeforeTest
+    @BeforeMethod
     void start() throws Exception {
         ra=new MyReceiver("A"); rb=new MyReceiver("B"); rc=new MyReceiver("C");
         a=createChannel(true, 3);
@@ -47,7 +45,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
         assertEquals("view is " + view, 3, view.size());
     }
 
-    @AfterTest
+    @AfterMethod
     void tearDown() throws Exception {
         Util.close(c,b,a);
     }
@@ -73,6 +71,9 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
      * </ol>
      */
     public void testWithViewBC() throws Exception {
+
+        System.out.println("A's view: " + a.getView());
+
         // Inject view {B,C} into B and C:
         View new_view=Util.createView(b.getLocalAddress(), 10, b.getLocalAddress(), c.getLocalAddress());
         injectView(new_view, b, c);
@@ -132,7 +133,6 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
                 }
             }
         }
-        Util.sleep(1000);
         int total_msgs=num_msgs * channels.length;
         MyReceiver[] receivers=new MyReceiver[channels.length];
         for(int i=0; i < channels.length; i++)
@@ -141,6 +141,20 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     }
 
     private static void checkReceivedMessages(int num_ucasts, MyReceiver ... receivers) {
+        for(int i=0; i < 20; i++) {
+            boolean all_received=true;
+            for(MyReceiver receiver: receivers) {
+                List<Message> ucasts=receiver.getUnicasts();
+                int ucasts_received=ucasts.size();
+                if(num_ucasts != ucasts_received) {
+                    all_received=false;
+                    break;
+                }
+            }
+            if(all_received)
+                break;
+            Util.sleep(500);
+        }
         for(MyReceiver receiver: receivers) {
             List<Message> ucasts=receiver.getUnicasts();
             int ucasts_received=ucasts.size();
