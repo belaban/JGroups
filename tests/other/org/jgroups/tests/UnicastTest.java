@@ -1,10 +1,13 @@
-// $Id: UnicastTest.java,v 1.12 2009/04/09 09:11:20 belaban Exp $
+// $Id: UnicastTest.java,v 1.13 2009/04/29 12:48:45 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServer;
 import java.io.*;
 import java.util.Vector;
 
@@ -100,6 +103,16 @@ public class UnicastTest implements Runnable {
         this.busy_sleep=busy_sleep;
         channel=new JChannel(props);
         channel.connect(groupname);
+
+        try {
+            MBeanServer server=Util.getMBeanServer();
+            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getClusterName(), true);
+        }
+        catch(Throwable ex) {
+            System.err.println("registering the channel in JMX failed: " + ex);
+        }
+
+
         t=new Thread(this, "UnicastTest - receiver thread");
         t.start();
     }
@@ -188,7 +201,8 @@ public class UnicastTest implements Runnable {
         int c;
 
         while(true) {
-            System.out.print("[1] Send msgs [2] Print view [q] Quit ");
+            System.out.print("[1] Send msgs [2] Print view [3] Print connections " +
+                    "[4] Trash connection [5] Trash all connections [q] Quit ");
             System.out.flush();
             c=System.in.read();
             switch(c) {
@@ -201,10 +215,13 @@ public class UnicastTest implements Runnable {
                 printView();
                 break;
             case '3':
+                printConnections();
                 break;
             case '4':
+                removeConnection();
                 break;
             case '5':
+                removeAllConnections();
                 break;
             case '6':
                 break;
@@ -215,6 +232,24 @@ public class UnicastTest implements Runnable {
                 break;
             }
         }
+    }
+
+    private void printConnections() {
+        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
+        System.out.println("connections:\n" + unicast.printConnections());
+    }
+
+    private void removeConnection() {
+        Address member=getReceiver();
+        if(member != null) {
+            UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
+            unicast.removeConnection(member);
+        }
+    }
+
+    private void removeAllConnections() {
+        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
+        unicast.removeAllConnections();
     }
 
 
