@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.9 2009/04/27 15:39:53 radoslavhusar Exp $
+# version: $Id: jgroups.sh,v 1.10 2009/04/29 12:16:59 belaban Exp $
 
 #!/bin/bash
 
@@ -20,7 +20,7 @@ do
     CP=$CP:$i
 done
 
-if [ -f $HOME:/log4j.properties ]; then
+if [ -f $HOME/log4j.properties ]; then
     LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
 fi;
 
