@@ -4,7 +4,7 @@ New UNICAST design
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban
-Version: $Id: UNICAST.new.txt,v 1.4 2009/04/29 05:10:38 belaban Exp $
+Version: $Id: UNICAST.new.txt,v 1.5 2009/04/29 06:46:17 belaban Exp $
 
 Motivation
 ----------
@@ -58,21 +58,17 @@ from B is #7.
 
 
 A sends a message to B:
+-----------------------
 - If the entry for B is null, or the seqno=0:
     - Create an entry, set the seqno to 1 and set send-conn-id to the current time (needs to be unique, could also use UUIDs)
-    - Add send-conn-id to the UnicastHeader and send the message
+    - Send the message with the next seqno and the current conn-id and first=true
 - Else
-    - Send the message with the next seqno (and conn-id=0)
+    - Send the message with the next seqno and the current conn-id
 
 B receives a message from A:
-- If conn-id == 0
-    - If entry.recv_win != null:
-        - Add message to entry.recv_win
-    - Else
-        - Discard message
-        - Send GET_FIRST_SEQNO to A
-- Else
-    - If entry or entry.recv_win for B is null
+----------------------------
+- If first == true
+    - If entry or entry.recv_win for B == null
         - Create a new entry.recv_win with msg.seqno
         - Set entry.recv-conn-id to conn-id
     - Else:
@@ -80,11 +76,17 @@ B receives a message from A:
             - Create a new entry.recv_win with msg.seqno
             - Set entry.recv-conn-id to conn-id
         - Else
-            - NOP (prevents duplicate connection establishments)
-
+            - NOP (prevents duplicate connection establishments) // most common code path)
+- Else
+    - If entry.recv_win != null && conn-id == recv-conn-id: no-op
+    - Else
+        - Drop message
+        - Send SEND_FIRST_SEQNO to A
 
 
 A receives GET_FIRST_SEQNO from B:
+----------------------------------
+- If conn-id != send-conn-id: drop message
 - A grabs the first message in its sent_win
 - A adds the entry.send-conn-id to the UnicastHeader (if not yet present) and sends the message to B
 
