@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -13,7 +15,7 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.5 2009/04/29 04:56:35 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.6 2009/04/29 05:20:00 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class UNICAST_ConnectionTests {
@@ -72,7 +74,7 @@ public class UNICAST_ConnectionTests {
 
 
     /**
-     * Scenario #4 (A closes the connection unilaterally (B keeps it open), then reopens it and sends a message)
+     * Scenario #4 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages)
      */
     public void testAClosingUnilaterally() throws Exception {
         sendToEachOtherAndCheck(10);
@@ -86,7 +88,7 @@ public class UNICAST_ConnectionTests {
     }
 
     /**
-     * Scenario #5 (B closes the connection unilaterally (A keeps it open), then A sends a message to B)
+     * Scenario #5 (B closes the connection unilaterally (A keeps it open), then A sends messages to B)
      */
     public void testBClosingUnilaterally() throws Exception {
         sendToEachOtherAndCheck(10);
@@ -98,6 +100,27 @@ public class UNICAST_ConnectionTests {
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
     }
+
+
+    /**
+     * Scenario #6 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages,
+     * but loses the firts message
+     */
+    public void testAClosingUnilaterallyButLosingFirstMessage() throws Exception {
+        sendToEachOtherAndCheck(10);
+
+        // now close connection on A unilaterally
+        System.out.println("==== Closing the connection on A");
+        u1.removeConnection(b_addr);
+
+        // add a Drop protocol to drop the first unicast message
+        Drop drop=new Drop(true);
+        a.getProtocolStack().insertProtocol(drop, ProtocolStack.BELOW, UNICAST.class);
+
+        // then send messages from A to B
+        sendAndCheck(a, b_addr, 10, r2);
+    }
+
 
 
     /**
@@ -165,6 +188,33 @@ public class UNICAST_ConnectionTests {
 
         public String toString() {
             return name;
+        }
+    }
+
+    private static class Drop extends Protocol {
+        private volatile boolean drop_next=false;
+
+        private Drop() {
+        }
+
+        private Drop(boolean drop_next) {
+            this.drop_next=drop_next;
+        }
+
+        public String getName() {
+            return "Drop";
+        }
+
+        public void dropNext() {
+            drop_next=true;
+        }
+
+        public Object down(Event evt) {
+            if(drop_next && evt.getType() == Event.MSG) {
+                drop_next=false;
+                return null;
+            }
+            return super.down(evt);
         }
     }
 }
