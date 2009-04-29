@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version  $Id: AckSenderWindowTest.java,v 1.7 2009/04/27 11:31:35 belaban Exp $
+ * @version  $Id: AckSenderWindowTest.java,v 1.8 2009/04/29 14:07:21 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckSenderWindowTest {
@@ -27,20 +27,27 @@ public class AckSenderWindowTest {
     final Map<Long,Entry>     msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
 
 
-    public void testAdd() {
-        win=new AckSenderWindow(null);
-        for(int i=1; i <=5; i++)
-            win.add(i, new Message());
-        System.out.println("win = " + win);
-        assert win.size() == 5;
-        win.ack(1);
-        System.out.println("win = " + win);
-        assert win.size() == 4;
-        win.ack(4);
-        System.out.println("win = " + win);
-        assert win.size() == 1;
-        win.ack(44);
-        assert win.size() == 0;
+    public void testAdd() throws InterruptedException {
+        TimeScheduler timer=new TimeScheduler();
+        win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts), timer);
+        try {
+            for(int i=1; i <=5; i++)
+                win.add(i, new Message());
+            System.out.println("win = " + win);
+            assert win.size() == 5;
+            win.ack(1);
+            System.out.println("win = " + win);
+            assert win.size() == 4;
+            win.ack(4);
+            System.out.println("win = " + win);
+            assert win.size() == 1;
+            win.ack(44);
+            assert win.size() == 0;
+        }
+        finally {
+            win.reset();
+            timer.stop();
+        }
     }
 
 
