@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.128 2009/04/28 16:33:40 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.129 2009/04/29 04:56:16 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -333,7 +333,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         entry=new Entry();
                         connections.put(dst, entry);
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + ": created new connection for dst " + dst);
+                            log.trace(local_addr + ": created connection to " + dst);
                         if(cache != null && !members.contains(dst))
                             cache.add(dst);
                     }
@@ -360,7 +360,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled()) {
                             StringBuilder sb=new StringBuilder();
-                            sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno);
+                            sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).append(')');
                             if(conn_id != 0)
                                 sb.append(", conn_id=").append(conn_id);
                             log.trace(sb);
@@ -458,7 +458,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /** Called by AckSenderWindow to resend messages for which no ACK has been received yet */
     public void retransmit(long seqno, Message msg) {
         if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] --> XMIT(" + msg.getDest() + ": #" + seqno + ')');
+            log.trace(local_addr + " --> XMIT(" + msg.getDest() + ": #" + seqno + ')');
         down_prot.down(new Event(Event.MSG, msg));
         num_xmit_requests_received++;
     }
@@ -488,6 +488,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
             if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
+            sb.append(')');
             log.trace(sb);
         }
 
@@ -599,6 +600,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             entry.received_msgs.reset();
         entry.received_msgs=new AckReceiverWindow(seqno);
         entry.recv_conn_id=conn_id;
+        if(log.isTraceEnabled())
+            log.trace(local_addr + ": created receiver window for " + sender + " at seqno=#" + seqno + " for conn-id=" + conn_id);
         return entry.received_msgs;
     }
 
@@ -631,6 +634,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Entry entry;
         AckSenderWindow sender_win;
         Message rsp;
+        if(log.isTraceEnabled())
+            log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + ")");
+
         synchronized(connections) {
             entry=connections.get(sender);
             sender_win=entry != null? entry.sent_msgs : null;
@@ -695,7 +701,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         UnicastHeader hdr=new UnicastHeader(UnicastHeader.SEND_FIRST_SEQNO, 0);
         msg.putHeader(name, hdr);
         if(log.isTraceEnabled())
-            log.trace("SEND_FIRST_SEQNO --> " + dest);
+            log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + ")");
         down_prot.down(new Event(Event.MSG, msg));
     }
 
