@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.131 2009/04/29 06:56:47 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.132 2009/04/29 10:39:40 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -279,7 +279,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 src=msg.getSrc();
                 switch(hdr.type) {
                     case UnicastHeader.DATA:      // received regular message
-                        handleDataReceived(src, hdr.seqno, hdr.conn_id, msg);
+                        handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case UnicastHeader.ACK:  // received ACK for previously sent message
                         handleAckReceived(src, hdr.seqno);
@@ -343,26 +343,23 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 synchronized(entry) { // threads will only sync if they access the same entry
                     try {
                         seqno=entry.sent_msgs_seqno;
-                        UnicastHeader hdr;
-                        long conn_id=0;
-                        if(seqno == DEFAULT_FIRST_SEQNO) {
-                            conn_id=getNewConnectionId();
-                            entry.send_conn_id=conn_id;
-                            hdr=new UnicastHeader(UnicastHeader.DATA, seqno, conn_id);
-                        }
-                        else {
-                            hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
+                        boolean first=false;
+
+                        if(seqno == DEFAULT_FIRST_SEQNO) { // only happens on the first message
+                            entry.send_conn_id=getNewConnectionId();
+                            first=true;
                         }
 
+                        UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno, entry.send_conn_id, first);
+                        
                         if(entry.sent_msgs == null) { // first msg to peer 'dst'
                             entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeout), timer, this.local_addr); // use the global timer
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled()) {
                             StringBuilder sb=new StringBuilder();
-                            sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).append(')');
-                            if(conn_id != 0)
-                                sb.append(", conn_id=").append(conn_id);
+                            sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
+                                    append(", conn_id=").append(entry.send_conn_id).append(')');
                             log.trace(sb);
                         }
                         if(entry.sent_msgs != null)
@@ -483,7 +480,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    private void handleDataReceived(Address sender, long seqno, long conn_id,  Message msg) {
+    private void handleDataReceived(Address sender, long seqno, long conn_id,  boolean first, Message msg) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -497,25 +494,25 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             Entry entry=connections.get(sender);
             win=entry != null? entry.received_msgs : null;
 
-            if(conn_id == 0) {
-                if(win == null) {
-                    sendRequestForFirstSeqno(sender);
-                    return;
-                }
-            }
-            else { // conn_id != 0
+            if(first) {
                 if(entry == null || win == null) {
                     win=createReceiverWindow(sender, entry, seqno, conn_id);
                 }
                 else {
-                    if(entry.recv_conn_id != conn_id) {
+                    if(conn_id != entry.recv_conn_id) {
                         if(log.isTraceEnabled())
                             log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
                         win=createReceiverWindow(sender, entry, seqno, conn_id);
                     }
-                    else
-                        ; // no-op: we cannot drop the message as multiple SEND_FIRST_SEQNO requests might cause
-                          // multiple different messages to have conn-ids ! https://jira.jboss.org/jira/browse/JGRP-966
+                    else {
+                        ;
+                    }
+                }
+            }
+            else {
+                if(win == null || entry.recv_conn_id != conn_id) {
+                    sendRequestForFirstSeqno(sender);
+                    return; // drop message
                 }
             }
         }
@@ -657,7 +654,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // (https://jira.jboss.org/jira/browse/JGRP-965)
         Message copy=rsp.copy();
         UnicastHeader hdr=(UnicastHeader)copy.getHeader(name);
-        UnicastHeader newhdr=new UnicastHeader(hdr.type, hdr.seqno, entry.send_conn_id);
+        UnicastHeader newhdr=new UnicastHeader(hdr.type, hdr.seqno, entry.send_conn_id, true);
         copy.putHeader(name, newhdr);
         down_prot.down(new Event(Event.MSG, copy));
     }
