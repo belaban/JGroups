@@ -16,7 +16,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.6 2009/04/28 11:53:49 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.7 2009/04/29 13:16:57 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -140,6 +140,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      *      been implemented: B and C's MERGE2 protocols will never send out merge requests as they see A as coord 
      * </ol>
      */
+    @Test(enabled=false)
     public void testOverlappingMergeWithABC() throws Exception {
         sendAndCheckMessages(5, a, b, c);
 
