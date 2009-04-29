@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.133 2009/04/29 11:00:20 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.134 2009/04/29 12:14:13 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -637,8 +637,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             rsp=sender_win.getLowestMessage();
         }
         if(rsp == null) {
-            if(log.isWarnEnabled())
-                log.warn("didn't find any messages in my sender window for " + sender);
+            //if(log.isWarnEnabled())
+                // log.warn("didn't find any messages in my sender window for " + sender);
             return;
         }
         // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
