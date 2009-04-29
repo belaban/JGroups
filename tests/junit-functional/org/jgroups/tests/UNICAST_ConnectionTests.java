@@ -15,13 +15,13 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.6 2009/04/29 05:20:00 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.7 2009/04/29 05:58:37 belaban Exp $
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_ConnectionTests {
     private JChannel a, b;
     private Address a_addr, b_addr;
-    private MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
+    private MyReceiver r1, r2;
     private UNICAST u1, u2;
     private static final String props="SHARED_LOOPBACK:UNICAST";
     private static final String CLUSTER="UNICAST_ConnectionTests";
@@ -29,6 +29,8 @@ public class UNICAST_ConnectionTests {
 
     @BeforeMethod
     void start() throws Exception {
+        r1=new MyReceiver("A");
+        r2=new MyReceiver("B");
         a=new JChannel(props);
         a.connect(CLUSTER);
         a_addr=a.getAddress();
