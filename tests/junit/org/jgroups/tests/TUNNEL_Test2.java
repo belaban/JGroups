@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.11 2009/04/22 14:20:39 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.12 2009/04/29 20:19:24 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT, "known-failures"}, sequential = true)
@@ -85,12 +85,14 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         gossipRouter1.stop();
         gossipRouter2.stop();
+        // give time to reconnect
+        Util.sleep(3000);
 
         gossipRouter1.start();
         gossipRouter2.start();
 
         // give time to reconnect
-        Util.sleep(6000);
+        Util.sleep(3000);
         View view = coordinator.getView();
         assert view.size() == 2;
         assert view.containsMember(coordinator.getLocalAddress());
@@ -195,12 +197,17 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         gossipRouter1.stop();
         gossipRouter2.stop();
+        
+        // give time to reconnect
+        Util.sleep(3000);
 
         gossipRouter1.start();
         gossipRouter2.start();
-
+        
         // give time to reconnect
-        Util.sleep(8000);
+        Util.sleep(3000);
+
+        
 
         channel.send(new Message(null, null, "payload"));
 
