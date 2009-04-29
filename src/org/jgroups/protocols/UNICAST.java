@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.135 2009/04/29 12:36:06 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.136 2009/04/29 12:48:27 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -435,6 +435,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /**
      * This method is public only so it can be invoked by unit testing, but should not otherwise be used !
      */
+    @ManagedOperation(description="Trashes all connections to other nodes. This is only used for testing")
     public void removeAllConnections() {
         synchronized(connections) {
             for(Entry entry: connections.values()) {
