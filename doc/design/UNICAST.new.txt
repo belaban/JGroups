@@ -4,7 +4,7 @@ New UNICAST design
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban
-Version: $Id: UNICAST.new.txt,v 1.3 2009/04/29 05:00:35 belaban Exp $
+Version: $Id: UNICAST.new.txt,v 1.4 2009/04/29 05:10:38 belaban Exp $
 
 Motivation
 ----------
@@ -132,13 +132,25 @@ The scenarios are tested in UNICAST_ConnectionTests
 - B receive the message and creates a new entry and entry.recv_win (with msg.seqno)
 - B sets entry.recv-conn-id to msg.conn-id
 
+#6 Same as #4, but after re-establishing the connection to B, A loses the first message
+(first part of #4)
+- A creates a new sender window for B
+- A sends #1(conn-id=322649) #2(conn-id=0) #3(conn-id=0), but loses #1
+- B receives #2 first. It thinks this is part of a regular connection, so it doesn't trash its receiver window
+- B expects a seqno higher than #2 (from the prev conversation with A), and discards #2, but *acks* it nevertheless
+- A removes #2 from its sender window
+- B now finally receives #1, and creates a new receiver window for A at #1
+- A retransmits #3
+- B stores #3 but doesn't deliver it because it hasn't received #2 yet
+- However, B will *never* receive #2 from A because that seqno has been removed from A's sender window !
 
-#6 Merge where A and B are in different partitions:
+
+#7 Merge where A and B are in different partitions:
 - Both A and B removes the entries for each other in their respective connection tables
 - When the partition heals, both A and B will create new entries (see scenario #2)
 
 
-#7 Merge where A and B are in overlapping partitions A: {A}, B: {A,B}:
+#8 Merge where A and B are in overlapping partitions A: {A}, B: {A,B}:
 - (This case is currently handled by shunning, not merging)
 - A sends a message to B
 - A removed its entry for B, but B kept its entry for A
@@ -148,7 +160,7 @@ The scenarios are tested in UNICAST_ConnectionTests
   entry.recv_win with msg.seqno (same as second half of scenario #4)
 
 
-#8 Merge where A and B are in overlapping partitions A: {A,B}, B: {B}:
+#9 Merge where A and B are in overlapping partitions A: {A,B}, B: {B}:
 - A sends a message to B (msg.seqno=25)
 - B doesn't have an entry for A
 - B discards the message and sends a SEND-FIRST-SEQNO to A
