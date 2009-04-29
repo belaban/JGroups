@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.132 2009/04/29 10:39:40 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.133 2009/04/29 11:00:20 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -343,18 +343,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 synchronized(entry) { // threads will only sync if they access the same entry
                     try {
                         seqno=entry.sent_msgs_seqno;
-                        boolean first=false;
-
-                        if(seqno == DEFAULT_FIRST_SEQNO) { // only happens on the first message
+                        if(seqno == DEFAULT_FIRST_SEQNO) // only happens on the first message
                             entry.send_conn_id=getNewConnectionId();
-                            first=true;
-                        }
-
-                        UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno, entry.send_conn_id, first);
-                        
-                        if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeout), timer, this.local_addr); // use the global timer
-                        }
+                        if(entry.sent_msgs == null) // first msg to peer 'dst'
+                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeout), timer, this.local_addr);
+                        UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno, entry.send_conn_id,
+                                                            seqno == DEFAULT_FIRST_SEQNO);
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled()) {
                             StringBuilder sb=new StringBuilder();
@@ -362,13 +356,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                                     append(", conn_id=").append(entry.send_conn_id).append(')');
                             log.trace(sb);
                         }
-                        if(entry.sent_msgs != null)
-                            entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
                     }
                     catch(Throwable t) {
-                        if(entry.sent_msgs != null)
-                            entry.sent_msgs.ack(seqno); // remove seqno again, so it is not transmitted
+                        entry.sent_msgs.ack(seqno); // remove seqno again, so it is not transmitted
                         throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
                     }
                 }
@@ -498,7 +490,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if(entry == null || win == null) {
                     win=createReceiverWindow(sender, entry, seqno, conn_id);
                 }
-                else {
+                else {  // entry != null && win != null
                     if(conn_id != entry.recv_conn_id) {
                         if(log.isTraceEnabled())
                             log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
@@ -509,7 +501,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
             }
-            else {
+            else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
                 if(win == null || entry.recv_conn_id != conn_id) {
                     sendRequestForFirstSeqno(sender);
                     return; // drop message
