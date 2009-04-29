@@ -4,7 +4,7 @@ New UNICAST design
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban
-Version: $Id: UNICAST.new.txt,v 1.5 2009/04/29 06:46:17 belaban Exp $
+Version: $Id: UNICAST.new.txt,v 1.6 2009/04/29 10:38:46 belaban Exp $
 
 Motivation
 ----------
@@ -76,10 +76,9 @@ B receives a message from A:
             - Create a new entry.recv_win with msg.seqno
             - Set entry.recv-conn-id to conn-id
         - Else
-            - NOP (prevents duplicate connection establishments) // most common code path)
+            - NOP (prevents duplicate connection establishments)
 - Else
-    - If entry.recv_win != null && conn-id == recv-conn-id: no-op
-    - Else
+    - If entry.recv_win == null || conn-id != recv-conn-id: no-op
         - Drop message
         - Send SEND_FIRST_SEQNO to A
 
@@ -88,7 +87,7 @@ A receives GET_FIRST_SEQNO from B:
 ----------------------------------
 - If conn-id != send-conn-id: drop message
 - A grabs the first message in its sent_win
-- A adds the entry.send-conn-id to the UnicastHeader (if not yet present) and sends the message to B
+- A adds the entry.send-conn-id to the UnicastHeader (if not yet present), sets first=true and sends the message to B
 
 
 
