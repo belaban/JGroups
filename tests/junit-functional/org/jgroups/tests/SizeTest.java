@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.15 2009/04/27 12:18:08 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.16 2009/04/29 06:56:49 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -179,6 +179,9 @@ public class SizeTest {
         _testSize(hdr);
 
         hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649, System.currentTimeMillis());
+        _testSize(hdr);
+
+        hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649, System.currentTimeMillis(), true);
         _testSize(hdr);
     }
 

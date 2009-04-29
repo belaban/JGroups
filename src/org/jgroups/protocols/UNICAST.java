@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.130 2009/04/29 04:59:27 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.131 2009/04/29 06:56:47 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -717,8 +717,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         byte    type=DATA;
         long    seqno=0;
         long    conn_id=0;
+        boolean first=false;
 
-        static final int serialized_size=Global.BYTE_SIZE * 2 + Global.LONG_SIZE;
+        static final int serialized_size=Global.BYTE_SIZE * 2 + Global.LONG_SIZE * 2;
         private static final long serialVersionUID=-8983745221189309298L;
 
 
@@ -734,10 +735,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             this.conn_id=conn_id;
         }
 
+        public UnicastHeader(byte type, long seqno, long conn_id, boolean first) {
+            this(type, seqno, conn_id);
+            this.first=first;
+        }
+
         public String toString() {
             StringBuilder sb=new StringBuilder();
             sb.append("[UNICAST: ").append(type2Str(type)).append(", seqno=").append(seqno);
             if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
+            if(first) sb.append(", first");
             sb.append(']');
             return sb.toString();
         }
@@ -752,7 +759,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         public final int size() {
-            return conn_id != 0? serialized_size + Global.LONG_SIZE : serialized_size;
+            return serialized_size;
         }
 
 
@@ -760,6 +767,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             out.writeByte(type);
             out.writeLong(seqno);
             out.writeLong(conn_id);
+            out.writeBoolean(first);
         }
 
 
@@ -767,24 +775,21 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             type=in.readByte();
             seqno=in.readLong();
             conn_id=in.readLong();
+            first=in.readBoolean();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             out.writeLong(seqno);
-            if(conn_id != 0) {
-                out.writeBoolean(true);
-                out.writeLong(conn_id);
-            }
-            else
-                out.writeBoolean(false);
+            out.writeLong(conn_id);
+            out.writeBoolean(first);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             seqno=in.readLong();
-            if(in.readBoolean())
-                conn_id=in.readLong();
+            conn_id=in.readLong();
+            first=in.readBoolean();
         }
     }
 
