@@ -5,6 +5,7 @@ import org.jgroups.protocols.FD;
 import org.jgroups.protocols.FD_ALL;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Util;
@@ -16,7 +17,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.7 2009/04/29 13:16:57 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.8 2009/04/29 13:36:31 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -267,9 +268,19 @@ public class OverlappingMergeTest extends ChannelTestBase {
         MyReceiver[] receivers=new MyReceiver[channels.length];
         for(int i=0; i < channels.length; i++)
             receivers[i]=(MyReceiver)channels[i].getReceiver();
+
+        for(JChannel ch: channels)
+            runStableProtocol(ch);
+
         checkReceivedMessages(num_msgs, receivers);
     }
-    
+
+    private static void runStableProtocol(JChannel ch) {
+        STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
+        if(stable != null)
+            stable.runMessageGarbageCollection();
+    }
+
 
     private static void checkReceivedMessages(int num_msgs, MyReceiver ... receivers) {
         int total_unicasts=receivers.length * num_msgs;

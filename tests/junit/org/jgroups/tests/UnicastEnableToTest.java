@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.11 2009/04/24 14:01:17 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.12 2009/04/29 13:36:31 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
@@ -89,7 +89,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
         }
         Util.sleep(1500);
         if(cache != null)
-            assert cache.size() == 1;
+            assert cache.size() == 0 : "cache size is " + cache.size();
     }
 
 
