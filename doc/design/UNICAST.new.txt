@@ -4,7 +4,7 @@ New UNICAST design
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban
-Version: $Id: UNICAST.new.txt,v 1.2 2009/04/24 14:49:44 belaban Exp $
+Version: $Id: UNICAST.new.txt,v 1.3 2009/04/29 05:00:35 belaban Exp $
 
 Motivation
 ----------
@@ -92,6 +92,8 @@ A receives GET_FIRST_SEQNO from B:
 
 Scenarios
 ---------
+
+The scenarios are tested in UNICAST_ConnectionTests
 
 #1 A creates new connection to B:
 - The entry for B is null, a new entry is created and added to the connection table

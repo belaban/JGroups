@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.4 2009/04/29 04:32:25 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.5 2009/04/29 04:56:35 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class UNICAST_ConnectionTests {
@@ -81,7 +81,21 @@ public class UNICAST_ConnectionTests {
         System.out.println("==== Closing the connection on A");
         u1.removeConnection(b_addr);
 
-        // then send 50 messages from A to B
+        // then send messages from A to B
+        sendAndCheck(a, b_addr, 10, r2);
+    }
+
+    /**
+     * Scenario #5 (B closes the connection unilaterally (A keeps it open), then A sends a message to B)
+     */
+    public void testBClosingUnilaterally() throws Exception {
+        sendToEachOtherAndCheck(10);
+
+        // now close connection on A unilaterally
+        System.out.println("==== Closing the connection on B");
+        u2.removeConnection(a_addr);
+
+        // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
     }
 
