@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.136 2009/04/29 12:48:27 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.137 2009/04/29 13:08:09 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -353,7 +353,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         if(log.isTraceEnabled()) {
                             StringBuilder sb=new StringBuilder();
                             sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
-                                    append(", conn_id=").append(entry.send_conn_id).append(')');
+                                    append(", conn_id=").append(entry.send_conn_id);
+                            if(hdr.first) sb.append(", first");
+                            sb.append(')');
                             log.trace(sb);
                         }
                         entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
@@ -480,6 +482,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
             if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
+            if(first) sb.append(", first");
             sb.append(')');
             log.trace(sb);
         }
