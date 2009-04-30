@@ -54,7 +54,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.38 2009/04/30 09:54:03 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.39 2009/04/30 12:48:47 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
@@ -309,6 +309,8 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
             }
             // done=rsp_filter != null && !rsp_filter.needMoreResponses();
             done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
+            if(done && corr != null)
+                corr.done(req_id);
         }
         finally {
             completed.signalAll(); // wakes up execute()
@@ -422,6 +424,8 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
         try {
             boolean retval=!done;
             done=true;
+            if(corr != null)
+                corr.done(req_id);
             completed.signalAll();
             return retval;
         }
@@ -441,19 +445,15 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
     }
 
     public RspList get() throws InterruptedException, ExecutionException {
+        waitForResults(0);
         return getResults();
     }
 
     public RspList get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        try {
-            collectResponses(unit.toMillis(timeout));
-            return getResults();
-        }
-        catch(Exception e) {
-            TimeoutException ex=new TimeoutException();
-            ex.initCause(e);
-            throw ex;
-        }
+        boolean ok=waitForResults(unit.toMillis(timeout));
+        if(!ok)
+            throw new TimeoutException();
+        return getResults();
     }
 
     public String toString() {
@@ -514,7 +514,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
 
     /** This method runs with lock locked (called by <code>execute()</code>). */
     @GuardedBy("lock")
-    private boolean collectResponses(long timeout) throws Exception {
+    private boolean collectResponses(long timeout)  {
         if(timeout <= 0) {
             while(true) { /* Wait for responses: */
                 adjustMembership(); // may not be necessary, just to make sure...
@@ -561,6 +561,30 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
             if(log.isTraceEnabled())
                 log.trace("timed out waiting for responses");
 
+            return false;
+        }
+    }
+
+    private boolean waitForResults(long timeout)  {
+        if(timeout <= 0) {
+            while(true) { /* Wait for responses: */
+                adjustMembership(); // may not be necessary, just to make sure...
+                if(responsesComplete())
+                    return true;
+                try {completed.await();} catch(Exception e) {}
+            }
+        }
+        else {
+            long start_time=System.currentTimeMillis();
+            long timeout_time=start_time + timeout;
+            while(timeout > 0) { /* Wait for responses: */
+                if(responsesComplete())
+                    return true;
+                timeout=timeout_time - System.currentTimeMillis();
+                if(timeout > 0) {
+                    try {completed.await(timeout, TimeUnit.MILLISECONDS);} catch(Exception e) {}
+                }
+            }
             return false;
         }
     }
