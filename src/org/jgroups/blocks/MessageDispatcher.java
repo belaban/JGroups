@@ -10,6 +10,7 @@ import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.jgroups.util.NullFuture;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.concurrent.Future;
 
 
 /**
@@ -38,7 +40,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.82 2009/04/09 09:11:19 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.83 2009/04/30 09:54:33 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -469,6 +471,68 @@ public class MessageDispatcher implements RequestHandler {
 
         return _req.getResults();
     }
+
+
+    public Future<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
+                                                 RspFilter filter) {
+        GroupRequest _req=null;
+        Vector real_dests;
+        Channel tmp;
+
+        // we need to clone because we don't want to modify the original
+        // (we remove ourselves if LOCAL is false, see below) !
+        // real_dests=dests != null ? (Vector) dests.clone() : (members != null ? new Vector(members) : null);
+        if(dests != null) {
+            real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
+        }
+        else {
+            synchronized(members) {
+                real_dests=new Vector(members);
+            }
+        }
+
+        // if local delivery is off, then we should not wait for the message from the local member.
+        // therefore remove it from the membership
+        tmp=channel;
+        if(tmp == null) {
+            if(adapter != null && adapter.getTransport() instanceof Channel) {
+                tmp=(Channel) adapter.getTransport();
+            }
+        }
+
+        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
+            if(local_addr == null) {
+                local_addr=tmp.getAddress();
+            }
+            if(local_addr != null) {
+                real_dests.removeElement(local_addr);
+            }
+        }
+
+        // don't even send the message if the destination list is empty
+        if(log.isTraceEnabled())
+            log.trace("real_dests=" + real_dests);
+
+        if(real_dests.isEmpty()) {
+            if(log.isTraceEnabled())
+                log.trace("destination list is empty, won't send message");
+            return new NullFuture(); // return empty response list
+        }
+
+        _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
+        _req.setCaller(this.local_addr);
+        _req.setResponseFilter(filter);
+        try {
+            _req.execute(use_anycasting, false);
+        }
+        catch(Exception ex) {
+            throw new RuntimeException("failed executing request " + _req, ex);
+        }
+
+        return _req;
+    }
+
 
 
     /**
