@@ -14,6 +14,9 @@ import org.jgroups.util.RspList;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -51,9 +54,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.37 2008/11/14 17:08:32 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.38 2009/04/30 09:54:03 belaban Exp $
  */
-public class GroupRequest implements RspCollector, Command {
+public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
     public static final int GET_FIRST=1;
 
@@ -232,11 +235,15 @@ public class GroupRequest implements RspCollector, Command {
     }
 
     /**
-     * Sends the message. Returns when n responses have been received, or a
-     * timeout  has occurred. <em>n</em> can be the first response, all
-     * responses, or a majority  of the responses.
+     * Sends the message. Returns when n responses have been received, or a timeout  has occurred.
+     * <em>n</em> can be the first response, all responses, or a majority  of the responses.
      */
     public boolean execute(boolean use_anycasting) throws Exception {
+        return execute(use_anycasting, true);
+    }
+
+
+    public boolean execute(boolean use_anycasting, boolean block_for_results) throws Exception {
         if(corr == null && transport == null) {
             if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
             return false;
@@ -245,7 +252,7 @@ public class GroupRequest implements RspCollector, Command {
         Vector<Address> targets=null;
         lock.lock();
         try {
-            targets=new Vector<Address>(members);           
+            targets=new Vector<Address>(members);
             for(Address suspect: suspects) { // mark all suspects in 'received' array
                 Rsp rsp=requests.get(suspect);
                 if(rsp != null) {
@@ -259,7 +266,9 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         sendRequest(targets, req_id, use_anycasting);
-        
+        if(!block_for_results)
+            return true;
+
         lock.lock();
         try {
             done=false;
@@ -274,6 +283,7 @@ public class GroupRequest implements RspCollector, Command {
         }
     }
 
+
     /* ---------------------- Interface RspCollector -------------------------- */
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
@@ -283,31 +293,22 @@ public class GroupRequest implements RspCollector, Command {
     public void receiveResponse(Object response_value, Address sender) {
         lock.lock();
         try {
-            if(done) {
+            if(done)
+                return;
+
+            Rsp rsp=requests.get(sender);
+            if(rsp == null)
+                return;
+            if(!rsp.wasReceived()) {
+                boolean responseReceived =(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
+                rsp.setValue(response_value);
+                rsp.setReceived(responseReceived);
                 if(log.isTraceEnabled())
-                    log.trace("command is done; cannot add response !");
+                    log.trace(new StringBuilder("received response for request ").append(req_id)
+                            .append(", sender=").append(sender).append(", val=").append(response_value));
             }
-            else if(suspects.contains(sender)) {
-                if(log.isWarnEnabled())
-                    log.warn("received response from suspected member " + sender + "; discarding");
-            }          
-            else {
-                Rsp rsp=requests.get(sender);                
-                if(rsp != null) {
-                    if(!rsp.wasReceived()) {
-                        boolean responseReceived =(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
-                        rsp.setValue(response_value);
-                        rsp.setReceived(responseReceived);
-                        if(log.isTraceEnabled())
-                            log.trace(new StringBuilder("received response for request ").append(req_id)
-                                                                                         .append(", sender=")
-                                                                                         .append(sender)
-                                                                                         .append(", val=")
-                                                                                         .append(response_value));                        
-                    }
-                    done=rsp_filter != null && !rsp_filter.needMoreResponses();
-                }
-            }
+            // done=rsp_filter != null && !rsp_filter.needMoreResponses();
+            done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
         }
         finally {
             completed.signalAll(); // wakes up execute()
@@ -415,6 +416,45 @@ public class GroupRequest implements RspCollector, Command {
         }
     }
 
+
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        lock.lock();
+        try {
+            boolean retval=!done;
+            done=true;
+            completed.signalAll();
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public boolean isCancelled() {
+        lock.lock();
+        try {
+            return done;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public RspList get() throws InterruptedException, ExecutionException {
+        return getResults();
+    }
+
+    public RspList get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        try {
+            collectResponses(unit.toMillis(timeout));
+            return getResults();
+        }
+        catch(Exception e) {
+            TimeoutException ex=new TimeoutException();
+            ex.initCause(e);
+            throw ex;
+        }
+    }
 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
