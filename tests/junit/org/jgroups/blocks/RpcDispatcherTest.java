@@ -13,12 +13,14 @@ import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A collection of tests to test the RpcDispatcher.
@@ -40,9 +42,9 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.25 2009/04/09 09:11:28 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.26 2009/04/30 12:47:19 belaban Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;
@@ -53,7 +55,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     // specify return value sizes which may generate timeouts or OOMEs with 64Mb heap
     final static int[] HUGESIZES={10000000, 20000000};
 
-    @BeforeClass
+    @BeforeMethod
     protected void setUp() throws Exception {
         c1=createChannel(true, 3);
         final String GROUP="RpcDispatcherTest";
@@ -73,7 +75,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         assert view.size() == 3 : "view=" + view;
     }
 
-    @AfterClass
+    @AfterMethod
     protected void tearDown() throws Exception {
         disp3.stop();
         disp2.stop();
@@ -81,7 +83,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
         Util.close(c3, c2, c1);
     }
 
-    @Test(groups="first")
     public void testEmptyConstructor() throws Exception {
         RpcDispatcher d1=new RpcDispatcher(), d2=new RpcDispatcher();
         JChannel channel1=null, channel2=null;
@@ -154,7 +155,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * from servers 2 and 3 are accepted.
      *
      */
-    @Test(groups="first")
     public void testResponseFilter() {
     	
     	final long timeout = 10 * 1000 ;
@@ -181,6 +181,74 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
 
+    public void testFuture() throws Exception {
+        MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
+        Future<RspList> future;
+        future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 5000L, false, false, null);
+        assert !future.isDone();
+        assert !future.isCancelled();
+        try {
+            future.get(300, TimeUnit.MILLISECONDS);
+            assert false : "we should not get here, get(300) should have thrown a TimeoutException";
+        }
+        catch(TimeoutException e) {
+            System.out.println("got TimeoutException - as expected");
+        }
+        
+        assert !future.isDone();
+
+        RspList result=future.get(3000L, TimeUnit.MILLISECONDS);
+        System.out.println("result:\n" + result);
+        assert result != null;
+        assert result.size() == 3;
+        assert future.isDone();
+    }
+
+
+    public void testMultipleFutures() throws Exception {
+        MethodCall sleep=new MethodCall("sleep", new Object[]{100L}, new Class[]{long.class});
+        List<Future<RspList>> futures=new ArrayList<Future<RspList>>();
+        long target=System.currentTimeMillis() + 30000L;
+
+        Future<RspList> future;
+        for(int i=0; i < 10; i++) {
+            future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 30000L, false, false, null);
+            futures.add(future);
+        }
+
+        List<Future<RspList>> rsps=new ArrayList<Future<RspList>>();
+        while(!futures.isEmpty() && System.currentTimeMillis() < target) {
+            for(Iterator<Future<RspList>> it=futures.iterator(); it.hasNext();) {
+                future=it.next();
+                if(future.isDone()) {
+                    it.remove();
+                    rsps.add(future);
+                }
+            }
+            System.out.println("pending responses: " + futures.size());
+            Util.sleep(200);
+        }
+        System.out.println("\n" + rsps.size() + " responses:\n");
+        for(Future<RspList> tmp: rsps) {
+            System.out.println(tmp);
+        }
+    }
+
+
+
+
+    public void testFutureCancel() throws Exception {
+        MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
+        Future<RspList> future;
+        future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 5000L, false, false, null);
+        assert !future.isDone();
+        assert !future.isCancelled();
+        future.cancel(true);
+        assert future.isDone();
+        assert future.isCancelled();
+    }
+
+
     /**
      * Test the ability of RpcDispatcher to handle large argument and return values
      * with multicast RPC calls.
@@ -192,7 +260,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
-    @Test(groups="first",enabled=false)
     public void testLargeReturnValue() {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
@@ -225,7 +292,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
     /**
      * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
      */
-    @Test(dependsOnGroups="first")
     public void testMethodInvocationToNonExistingMembers() {
     	
     	final int timeout = 5 * 1000 ;
@@ -266,7 +332,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
-    @Test(groups="first")
     public void testLargeReturnValueUnicastCall() throws Throwable {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
@@ -425,6 +490,12 @@ public class RpcDispatcherTest extends ChannelTestBase {
             this.i=i;
         }
         public int foo() {return i;}
+        public static long sleep(long timeout) {
+            // System.out.println("sleep()");
+            long start=System.currentTimeMillis();
+            Util.sleep(timeout);
+            return System.currentTimeMillis() - start;
+        }
 
 
         public static byte[] largeReturnValue(int size) {
