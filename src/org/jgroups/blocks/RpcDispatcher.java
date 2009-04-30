@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.36 2008/10/10 14:53:30 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.37 2009/04/30 09:55:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -7,6 +7,7 @@ import org.jgroups.*;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.jgroups.util.Buffer;
+import org.jgroups.util.NullFuture;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -15,8 +16,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
-
-
+import java.util.concurrent.Future;
 
 
 /**
@@ -283,6 +283,44 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(oob)
             msg.setFlag(Message.OOB);
         RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting, filter);
+        if(log.isTraceEnabled()) log.trace("responses: " + retval);
+        return retval;
+    }
+
+    public Future<RspList> callRemoteMethodsWithFuture(Vector dests, MethodCall method_call, int mode, long timeout,
+                                                       boolean use_anycasting, boolean oob, RspFilter filter) {
+        if(dests != null && dests.isEmpty()) {
+            // don't send if dest list is empty
+            if(log.isTraceEnabled())
+                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
+                        append("() is empty: no need to send message"));
+            return new NullFuture();
+        }
+
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
+                    append(", mode=").append(mode).append(", timeout=").append(timeout));
+
+        Object buf;
+        try {
+            buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
+        }
+        catch(Exception e) {
+            // if(log.isErrorEnabled()) log.error("exception", e);
+            // we will change this in 2.4 to add the exception to the signature
+            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
+            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
+            throw new RuntimeException("failure to marshal argument(s)", e);
+        }
+
+        Message msg=new Message();
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+        if(oob)
+            msg.setFlag(Message.OOB);
+        Future<RspList>  retval=super.castMessageWithFuture(dests, msg, mode, timeout, use_anycasting, filter);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
