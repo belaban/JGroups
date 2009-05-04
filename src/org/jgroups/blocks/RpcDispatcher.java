@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.37 2009/04/30 09:55:05 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.38 2009/05/04 08:08:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -362,6 +362,22 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
         if(retval instanceof Throwable)
             throw (Throwable)retval;
+        return retval;
+    }
+
+    public Future<RspList> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
+        if(log.isTraceEnabled())
+            log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
+
+        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
+        Message msg=new Message(dest, null, null);
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+        if(oob)
+            msg.setFlag(Message.OOB);
+        Future<RspList> retval=super.sendMessageWithFuture(msg, mode, timeout);
         return retval;
     }
 
