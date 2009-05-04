@@ -42,9 +42,9 @@ import java.util.concurrent.TimeoutException;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.26 2009/04/30 12:47:19 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.27 2009/05/04 08:08:06 belaban Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=false)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;

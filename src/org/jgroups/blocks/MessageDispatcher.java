@@ -40,7 +40,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.83 2009/04/30 09:54:33 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.84 2009/05/04 08:08:07 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -525,12 +525,11 @@ public class MessageDispatcher implements RequestHandler {
         _req.setResponseFilter(filter);
         try {
             _req.execute(use_anycasting, false);
+            return _req;
         }
         catch(Exception ex) {
             throw new RuntimeException("failed executing request " + _req, ex);
         }
-
-        return _req;
     }
 
 
@@ -666,6 +665,34 @@ public class MessageDispatcher implements RequestHandler {
             throw new TimeoutException("timeout sending message to " + dest);
         }
         return rsp.getValue();
+    }
+
+    public Future<RspList> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
+        Vector mbrs=new Vector();
+        RspList rsp_list=null;
+        Object dest=msg.getDest();
+        Rsp rsp;
+        GroupRequest _req=null;
+
+        if(dest == null) {
+            if(log.isErrorEnabled())
+                log.error("the message's destination is null, cannot send message");
+            return null;
+        }
+
+        mbrs.addElement(dest);   // dummy membership (of destination address)
+
+        _req=new GroupRequest(msg, corr, mbrs, mode, timeout, 0);
+        _req.setCaller(local_addr);
+        try {
+            _req.execute(false, false);
+            if(mode == GroupRequest.GET_NONE)
+                return new NullFuture();
+            return _req;
+        }
+        catch(Exception t) {
+            throw new RuntimeException("failed executing request " + _req, t);
+        }
     }
 
 
