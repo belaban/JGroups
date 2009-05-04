@@ -1,0 +1,46 @@
+
+Release Notes JGroups 2.8
+=========================
+
+Version: $Id: ReleaseNotes-2.8.txt,v 1.1 2009/05/04 08:13:54 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+Features
+========
+
+*** TBD ***
+
+Logical addresses
+-----------------
+[https://jira.jboss.org/jira/browse/JGRP-129]
+
+
+
+Bug fixes
+=========
+
+*** TBD ***
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Torono, Canada
+
+May 2009
+
+
