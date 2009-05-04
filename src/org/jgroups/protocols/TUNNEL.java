@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.66 2009/04/29 20:19:23 vlada Exp $
+// $Id: TUNNEL.java,v 1.67 2009/05/04 19:04:55 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -300,13 +301,17 @@ public class TUNNEL extends TP {
                   input.readFully(data, 0, len);
                   receive(null/* src will be read from data */, data, 0, len);
                }
+            } catch (SocketTimeoutException ste) {
+               // do nothing - blocking read timeout caused it            
+               continue;
             } catch (SocketException se) {
-               break;
+               // do nothing
+              continue;
             } catch (IOException ioe) {
                /*
-                * This is normal course of operation 
-                * Thread should not die
-                */
+                * This is normal course of operation Thread should not die
+                */               
+               continue;
             } catch (Exception e) {
                if (log.isWarnEnabled())
                   log.warn("failure in TUNNEL receiver thread", e);
