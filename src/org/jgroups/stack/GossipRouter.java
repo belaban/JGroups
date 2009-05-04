@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -53,7 +54,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.49 2009/05/01 22:55:38 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.50 2009/05/04 19:04:57 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -148,6 +149,7 @@ public class GossipRouter {
       this.expiryTime = expiryTime;
       this.gossipRequestTimeout = gossipRequestTimeout;
       this.routingClientReplyTimeout = routingClientReplyTimeout;
+      connectionTearListeners.add(new FailureDetectionListener());
    }
 
    public GossipRouter(int port, String bindAddressString, long expiryTime,
@@ -639,6 +641,23 @@ public class GossipRouter {
    public interface ConnectionTearListener{
       public void connectionTorn(ConnectionHandler ch,Exception e);
    }
+   
+   class FailureDetectionListener implements ConnectionTearListener {
+
+      public void connectionTorn(ConnectionHandler ch, Exception e) {         
+         final Map<Address, RoutingEntry> map = routingTable.get(ch.group_name);         
+         if (map != null && !map.isEmpty()) {
+            for (final Iterator<Entry<Address, RoutingEntry>> i = map.entrySet().iterator(); i.hasNext();) {
+               final RoutingEntry entry = i.next().getValue();
+               Address logical_addr = entry.logical_addr;
+               Address broken = ch.logical_addr;
+               if ((logical_addr != null && broken != null && !logical_addr.equals(broken))) {
+                  log.warn("Notifying entry " + logical_addr + " about suspect " + ch.logical_addr);
+               }
+            }
+         }
+      }
+   }
 
    /**
     * Prints startup information.
@@ -675,6 +694,7 @@ public class GossipRouter {
       }
       
       DataOutputStream getOutputStream(){
+         update();
          return handler.output;
       }
 
@@ -790,12 +810,18 @@ public class GossipRouter {
                      removeEntry(group_name, logical_addr); 
                      break;
                }
-            } catch (IOException ioex) {
-               notifyAbnormalConnectionTear(this,ioex);
-               removeEntry(group_name, logical_addr); 
+            } catch (SocketTimeoutException ste) {
+               // do nothing - blocking read timeout caused it              
+               continue;
+            } catch (IOException ioex) {               
+               notifyAbnormalConnectionTear(this, ioex);
+               removeEntry(group_name, logical_addr);
                break;
-            } catch (Exception ex) {              
-               removeEntry(group_name, logical_addr); 
+            } catch (Exception ex) {
+               if (log.isWarnEnabled())
+                  log.warn("Exception in TUNNEL receiver thread", ex);
+               
+               removeEntry(group_name, logical_addr);
                break;
             }
          }
