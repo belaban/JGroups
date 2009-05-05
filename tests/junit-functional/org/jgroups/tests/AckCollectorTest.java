@@ -5,7 +5,6 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.TimeoutException;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -164,7 +163,7 @@ public class AckCollectorTest {
 
     public static void testOneList() throws TimeoutException, UnknownHostException {
         List tmp=new ArrayList();
-        Address addr=new IpAddress("127.0.0.1", 5555);
+        Address addr=Util.createRandomAddress();
         tmp.add(addr);
         AckCollector coll=new AckCollector(null, tmp);
         coll.ack(addr);
