@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.195 2009/04/24 14:12:53 belaban Exp $
+ * @version $Id: Util.java,v 1.196 2009/05/05 13:23:03 belaban Exp $
  */
 public class Util {
 
@@ -1893,6 +1893,13 @@ public class Util {
         return new View(coord, id, mbrs);
     }
 
+
+    public static Address createRandomAddress() {
+        UUID retval=UUID.randomUUID();
+        String name=generateLocalName();
+        UUID.add(retval, name);
+        return retval;
+    }
 
     /**
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
