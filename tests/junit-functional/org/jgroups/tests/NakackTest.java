@@ -1,4 +1,4 @@
-//$Id: NakackTest.java,v 1.8 2009/04/09 09:11:24 belaban Exp $
+//$Id: NakackTest.java,v 1.9 2009/05/05 10:53:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,8 @@ import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Digest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -139,6 +141,13 @@ public class NakackTest {
         // start the simulators
         for(int i=0; i < NUM_PEERS; i++)
             simulators[i].start();
+
+        MutableDigest digest=new MutableDigest(NUM_PEERS);
+        for(Address addr: addresses)
+            digest.add(new Digest(addr, 0, 0));
+        for(int i=0; i < NUM_PEERS; i++) {
+            layers[i].down(new Event(Event.SET_DIGEST, digest));
+        }
 
     }
 
