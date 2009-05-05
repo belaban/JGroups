@@ -2,22 +2,21 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.testng.annotations.BeforeClass;
 
-import java.util.Vector;
-import java.util.Arrays;
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: GroupRequestTest.java,v 1.9 2008/04/08 12:11:46 belaban Exp $
+ * @version $Id: GroupRequestTest.java,v 1.10 2009/05/05 13:21:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
@@ -26,9 +25,9 @@ public class GroupRequestTest {
 
     @BeforeClass
     void init() throws UnknownHostException {
-        a1=new IpAddress("127.0.0.1", 1111);
-        a2=new IpAddress("127.0.0.1", 2222);
-        a3=new IpAddress("127.0.0.1", 3333);
+        a1=Util.createRandomAddress();
+        a2=Util.createRandomAddress();
+        a3=Util.createRandomAddress();
     }
 
     @BeforeMethod
@@ -169,7 +168,7 @@ public class GroupRequestTest {
         
         dests = new Vector<Address>();
         for (int i = 0; i < destCount; i++) {
-            Address addr = new IpAddress("127.0.0.1", Integer.parseInt(String.valueOf(i) + i + i + i));
+            Address addr = Util.createRandomAddress();
             dests.add(addr);
             // how long does this simulated destination take to execute? the sum is just less than the total timeout
             responses[i] = new Message(null, addr, new Long(i));
@@ -224,9 +223,9 @@ public class GroupRequestTest {
         Vector<Address> new_dests=new Vector<Address>();
         new_dests.add(a1);
         new_dests.add(a2);
-        new_dests.add(new IpAddress("127.0.0.1", 3333));
+        new_dests.add(a1);
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
-                                        new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests),
+                                        new View(Util.createRandomAddress(), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
@@ -245,7 +244,7 @@ public class GroupRequestTest {
         Vector<Address> new_dests=new Vector<Address>();
         new_dests.add(a2);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
-                                        new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests)};
+                                        new View(Util.createRandomAddress(), 322649, new_dests)};
         MyTransport transport=new MyTransport(async, responses);
         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
 
