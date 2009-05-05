@@ -9,6 +9,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.Collection;
 
 
 /**
@@ -20,7 +21,7 @@ import java.util.Vector;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.20 2008/02/20 15:51:57 belaban Exp $
+ * @version $Id: View.java,v 1.21 2009/05/05 15:13:12 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -60,6 +61,10 @@ public class View implements Externalizable, Cloneable, Streamable {
         this.members=members;
     }
 
+    public View(ViewId vid, Collection<Address> members) {
+        this.vid=vid;
+        this.members=new Vector<Address>(members);
+    }
 
     /**
      * Creates a new view
