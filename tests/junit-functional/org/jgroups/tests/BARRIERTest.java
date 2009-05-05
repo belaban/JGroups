@@ -5,8 +5,8 @@ import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.BARRIER;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.VIEW_SYNC;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -18,11 +18,11 @@ import java.util.Vector;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.4 2008/04/08 12:18:32 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.5 2009/05/05 13:06:08 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
-    IpAddress a1;
+    Address a1;
     Vector<Address> members;
     View v;
     Simulator s;
@@ -32,7 +32,7 @@ public class BARRIERTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        a1=new IpAddress(1111);
+        a1=UUID.randomUUID();
         members=new Vector<Address>();
         members.add(a1);
         v=new View(a1, 1, members);
@@ -53,11 +53,11 @@ public class BARRIERTest {
 
 
     public void testBlocking() {
-        assert !(barrier_prot.isClosed());
+        assert !barrier_prot.isClosed();
         s.send(new Event(Event.CLOSE_BARRIER));
         assert barrier_prot.isClosed();
         s.send(new Event(Event.OPEN_BARRIER));
-        assert !(barrier_prot.isClosed());
+        assert !barrier_prot.isClosed();
     }
 
 
@@ -75,13 +75,13 @@ public class BARRIERTest {
 
         Util.sleep(500);
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
-        Assert.assertEquals(0, num_in_flight_threads);
+        assert num_in_flight_threads == 0;
 
         s.send(new Event(Event.OPEN_BARRIER));
         Util.sleep(500);
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
-        Assert.assertEquals(0, num_in_flight_threads);
-        Assert.assertEquals(5, receiver.getNumberOfReceivedMessages());
+        assert num_in_flight_threads == 0;
+        assert receiver.getNumberOfReceivedMessages() == 5;
     }
 
 
