@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.13 2008/11/12 13:37:58 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.14 2009/05/05 13:01:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
@@ -212,13 +212,13 @@ public class ConnectionTableTest {
 
         System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
 
-        assert table1.getNumConnections() == 1;
-        assert table2.getNumConnections() == 1;
+        assert table1.getNumConnections() == 1 : "table1 should have 1 connection: " + table1;
+        assert table2.getNumConnections() == 1 : "table2 should have 1 connection: " + table2;
 
         table2.stop();
         table1.stop();
-        assert table1.getNumConnections() == 0;
-        assert table2.getNumConnections() == 0;
+        assert table1.getNumConnections() == 0  : "table1 should have 0 connections: " + table1;
+        assert table2.getNumConnections() == 0  : "table2 should have 0 connections: " + table2;
     }
 
 
