@@ -31,20 +31,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.218 2009/05/04 16:10:40 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.219 2009/05/05 12:25:46 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
 
-    private static final long INITIAL_SEQNO=0;
-
     private static final String name="NAKACK";
 
-    /**
-     * the weight with which we take the previous smoothed average into account,
-     * WEIGHT should be >0 and <= 1
-     */
+    /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
     private static final double WEIGHT=0.9;
 
     private static final double INITIAL_SMOOTHED_AVG=30.0;
@@ -1150,36 +1145,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /**
-     * Remove old members from NakReceiverWindows and add new members (starting seqno=0). Essentially removes all
-     * entries from xmit_table that are not in <code>members</code>. This method is not called concurrently
-     * multiple times
+     * Remove old members from NakReceiverWindows. Essentially removes all entries from xmit_table that are not
+     * in <code>members</code>. This method is not called concurrently multiple times
      */
     private void adjustReceivers(List<Address> new_members) {
-        NakReceiverWindow win;
-
-        // 1. Remove all senders in xmit_table that are not members anymore
         for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
             Address sender=it.next();
             if(!new_members.contains(sender)) {
-                if(local_addr != null && local_addr.equals(sender)) {
-                    if(log.isErrorEnabled())
-                        log.error("will not remove myself (" + sender + ") from xmit_table, received incorrect new membership of " + new_members);
+                if(local_addr != null && local_addr.equals(sender))
                     continue;
-                }
-                win=xmit_table.get(sender);
+                NakReceiverWindow win=xmit_table.get(sender);
                 win.reset();
-                if(log.isDebugEnabled()) {
+                if(log.isDebugEnabled())
                     log.debug("removing " + sender + " from xmit_table (not member anymore)");
-                }
                 it.remove();
-            }
-        }
-
-        // 2. Add newly joined members to xmit_table (starting seqno=0)
-        for(Address sender: new_members) {
-            if(!xmit_table.containsKey(sender)) {
-                win=createNakReceiverWindow(sender, INITIAL_SEQNO, 0);
-                xmit_table.put(sender, win);
             }
         }
     }
@@ -1206,70 +1185,31 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * reset it.
      */
     private void setDigest(Digest digest) {
-        if(digest == null) {
-            if(log.isErrorEnabled()) {
-                log.error("digest or digest.senders is null");
-            }
-            return;
-        }
-
-        if(local_addr != null && digest.contains(local_addr)) {
-            clear();
-        }
-        else {
-            // remove all but local_addr (if not null)
-            for(Iterator<Map.Entry<Address,NakReceiverWindow>> it=xmit_table.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<Address,NakReceiverWindow> entry=it.next();
-                Address key=entry.getKey();
-                if(local_addr != null && local_addr.equals(key)) {
-                    ;
-                }
-                else {
-                    NakReceiverWindow win=entry.getValue();
-                    win.reset();
-                    it.remove();
-                }
-            }
-        }
-
-        Address sender;
-        Digest.Entry val;
-        long initial_seqno;
-        NakReceiverWindow win;
-
-        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            sender=entry.getKey();
-            val=entry.getValue();
-            if(sender == null || val == null) {
-                if(log.isWarnEnabled()) {
-                    log.warn("sender or value is null");
-                }
-                continue;
-            }
-            initial_seqno=val.getHighestDeliveredSeqno();
-            win=createNakReceiverWindow(sender, initial_seqno, val.getLow());
-            xmit_table.put(sender, win);
-        }
-        if(!xmit_table.containsKey(local_addr)) {
-            if(log.isWarnEnabled()) {
-                log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
-            }
-        }
+        setDigest(digest, false);
     }
 
 
     /**
-     * For all members of the digest, adjust the NakReceiverWindows in the xmit_table hashtable. If no entry
+     * For all members of the digest, adjust the NakReceiverWindows in xmit_table. If no entry
      * exists, create one with the initial seqno set to the seqno of the member in the digest. If the member already
      * exists, and is not the local address, replace it with the new entry (http://jira.jboss.com/jira/browse/JGRP-699)
+     * if the digest's seqno is greater than the seqno in the window.
      */
     private void mergeDigest(Digest digest) {
-        if(digest == null) {
-            if(log.isErrorEnabled()) {
-                log.error("digest or digest.senders is null");
-            }
+        setDigest(digest, true);
+    }
+
+
+    /**
+     * Sets or merges the digest. If there is no entry for a given member in xmit_table, create a new NakReceiverWindow.
+     * Else skip the existing entry, unless it is a merge. In this case, skip the existing entry if its seqno is
+     * greater than or equal to the one in the digest, or reset the window and create a new one if not.
+     * @param digest
+     * @param merge
+     */
+    private void setDigest(Digest digest, boolean merge) {
+        if(digest == null)
             return;
-        }
 
         StringBuilder sb=new StringBuilder();
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
@@ -1283,18 +1223,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
+
             long highest_delivered_seqno=val.getHighestDeliveredSeqno();
             long low_seqno=val.getLow();
 
             NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
-                if(local_addr != null && local_addr.equals(sender))
-                    continue;
-
                 // We only reset the window if its seqno is lower than the seqno shipped with the digest. Also, we
                 // don't reset our own window (https://jira.jboss.org/jira/browse/JGRP-948, comment 20/Apr/09 03:39 AM)
-                long my_highest_delivered_seqno=win.getHighestDelivered();
-                if(my_highest_delivered_seqno >= highest_delivered_seqno)
+                if(!merge
+                        || (local_addr != null && local_addr.equals(sender)) // never overwrite our own entry
+                        || win.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
                     continue;
 
                 win.reset(); // stops retransmission
@@ -1304,15 +1243,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             xmit_table.put(sender, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
-        merge_history.add(sb.toString());
+        if(merge)
+            merge_history.add(sb.toString());
         if(log.isDebugEnabled())
             log.debug(sb);
-
-        if(!xmit_table.containsKey(local_addr)) {
-            if(log.isWarnEnabled()) {
-                log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
-            }
-        }
     }
 
 
@@ -1579,21 +1513,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /* ------------------- End of Interface NakReceiverWindow.Listener ------------------- */
 
-    private void clear() {
-        // changed April 21 2004 (bela): SourceForge bug# 938584. We cannot delete our own messages sent between
-        // a join() and a getState(). Otherwise retransmission requests from members who missed those msgs might
-        // fail. Not to worry though: those msgs will be cleared by STABLE (message garbage collection)
-
-        // sent_msgs.clear();
-
-        for(NakReceiverWindow win: xmit_table.values()) {
-            win.reset();
-        }
-        xmit_table.clear();
-        undelivered_msgs.set(0);
-    }
-
-
     private void reset() {
         seqno_lock.lock();
         try {
@@ -1604,7 +1523,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         for(NakReceiverWindow win: xmit_table.values()) {
-            win.destroy();
+            win.reset();
         }
         xmit_table.clear();
         undelivered_msgs.set(0);

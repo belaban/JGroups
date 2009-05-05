@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.63 2009/03/19 09:55:59 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.64 2009/05/05 12:25:44 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -505,22 +505,6 @@ public class NakReceiverWindow {
             lock.writeLock().unlock();
         }
     }
-
-
-    /**
-     * Stop the retransmitter and reset the nak window<br>
-     */
-    public void destroy() {
-        lock.writeLock().lock();
-        try {
-            retransmitter.stop();
-            _reset();
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
 
 
 
