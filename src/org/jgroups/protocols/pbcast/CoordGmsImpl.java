@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.100 2009/04/28 07:36:15 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.101 2009/05/05 10:57:57 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -458,7 +458,7 @@ public class CoordGmsImpl extends GmsImpl {
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
-            gms.castViewChangeWithDest(new_view, null,join_rsp,new_mbrs);                      
+            gms.castViewChangeWithDest(new_view, join_rsp != null? join_rsp.getDigest() : null, join_rsp,new_mbrs);                      
         }
         finally {
             if(hasJoiningMembers)

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.163 2009/04/28 07:36:15 belaban Exp $
+ * @version $Id: GMS.java,v 1.164 2009/05/05 10:57:08 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -557,8 +557,12 @@ public class GMS extends Protocol {
             }
         }
 
-        if(digest != null)
-            mergeDigest(digest);
+        if(digest != null) {
+            if(new_view instanceof MergeView)
+                mergeDigest(digest);
+            else
+                setDigest(digest);
+        }
 
         if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
         if(stats) {
@@ -1282,7 +1286,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.163 2009/04/28 07:36:15 belaban Exp $
+     * @version $Id: GMS.java,v 1.164 2009/05/05 10:57:08 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
