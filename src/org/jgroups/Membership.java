@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.12 2008/01/10 08:07:26 belaban Exp $
+// $Id: Membership.java,v 1.13 2009/05/05 13:52:32 belaban Exp $
 
 package org.jgroups;
 
@@ -72,6 +72,10 @@ public class Membership implements Cloneable {
         }
     }
 
+    public void add(Address ... mbrs) {
+        for(Address mbr: mbrs)
+            add(mbr);
+    }
 
     /**
      * Adds a list of members to this membership
