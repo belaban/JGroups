@@ -23,7 +23,7 @@ import java.util.Vector;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_Test {
     Address a1, a2;
-    Vector<Address> members;
+    Vector members;
     View v;
     Simulator simulator;
 
@@ -137,7 +137,7 @@ public class UNICAST_Test {
 
     private void createStack(Protocol[] stack) throws Exception {
         a1=Util.createRandomAddress();
-        members=new Vector<Address>();
+        members=new Vector();
         members.add(a1);
         v=new View(a1, 1, members);
         simulator=new Simulator();
