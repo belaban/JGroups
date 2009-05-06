@@ -1,15 +1,12 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.UNICAST;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -25,8 +22,8 @@ import java.util.Vector;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_Test {
-    IpAddress a1, a2;
-    Vector members;
+    Address a1, a2;
+    Vector<Address> members;
     View v;
     Simulator simulator;
 
@@ -115,7 +112,7 @@ public class UNICAST_Test {
 
     private void _testReceptionOfAllMessages() throws Throwable {
         int num_received=0;
-        Receiver r=new Receiver();
+        final Receiver r=new Receiver();
         simulator.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new Message(a1, null, createPayload(SIZE, i)); // unicast message
@@ -139,8 +136,8 @@ public class UNICAST_Test {
     }
 
     private void createStack(Protocol[] stack) throws Exception {
-        a1=new IpAddress(1111);
-        members=new Vector();
+        a1=Util.createRandomAddress();
+        members=new Vector<Address>();
         members.add(a1);
         v=new View(a1, 1, members);
         simulator=new Simulator();

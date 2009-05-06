@@ -4,7 +4,6 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Util;
@@ -19,20 +18,20 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: DigestTest.java,v 1.4 2008/04/08 12:25:28 belaban Exp $
+ * @version $Id: DigestTest.java,v 1.5 2009/05/06 06:05:12 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class DigestTest {
     Digest         d, d2;
     MutableDigest  md;
-    IpAddress      a1, a2, a3;
+    Address        a1, a2, a3;
 
 
     @BeforeClass
     void beforeClass() throws Exception {
-        a1=new IpAddress(5555);
-        a2=new IpAddress(6666);
-        a3=new IpAddress(7777);
+        a1=Util.createRandomAddress();
+        a2=Util.createRandomAddress();
+        a3=Util.createRandomAddress();
     }
 
     @BeforeMethod
@@ -61,7 +60,6 @@ public class DigestTest {
     
 
     public void testDifference(){
-    	
 		Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
 	    map.put(a1, new Digest.Entry(4, 500, 501));
 	    map.put(a2, new Digest.Entry(25, 26, 26));
@@ -86,7 +84,7 @@ public class DigestTest {
 	    map3.put(a1, new Digest.Entry(4, 500, 501));
 	    map3.put(a2, new Digest.Entry(25, 26, 26));
 	    map3.put(a3, new Digest.Entry(20, 37, 33));
-	    map3.put(new IpAddress(8888), new Digest.Entry(1, 2, 3));
+	    map3.put(Util.createRandomAddress(), new Digest.Entry(1, 2, 3));
 	    Digest digest3 =new Digest(map3);
 	    
 	    diff = digest3.difference(digest);
@@ -139,7 +137,6 @@ public class DigestTest {
         System.out.println("d: " + d + "\nmd= " + md);
         assert !(d.equals(md));
     }
-
 
 
     public void testMutability() {
@@ -216,7 +213,7 @@ public class DigestTest {
         Assert.assertEquals(3, md.size());
         md.add(a1, 100, 200, 201);
         Assert.assertEquals(3, md.size());
-        md.add(new IpAddress(14526), 1,2,3);
+        md.add(Util.createRandomAddress(), 1,2,3);
         Assert.assertEquals(4, md.size());
     }
 
@@ -230,10 +227,10 @@ public class DigestTest {
 
     public void testAddDigest2() {
         MutableDigest tmp=new MutableDigest(4);
-        tmp.add(new IpAddress(1111), 1,2,3);
-        tmp.add(new IpAddress(2222), 1,2,3);
-        tmp.add(new IpAddress(5555), 1,2,3);
-        tmp.add(new IpAddress(6666), 1,2,3);
+        tmp.add(Util.createRandomAddress(), 1,2,3);
+        tmp.add(Util.createRandomAddress(), 1,2,3);
+        tmp.add(a2, 1,2,3);
+        tmp.add(a3, 1,2,3);
         md.add(tmp);
         Assert.assertEquals(5, md.size());
     }
@@ -281,13 +278,13 @@ public class DigestTest {
 
 
 
-    public void testConstructor2() {
+    public static void testConstructor2() {
         Digest dd=new Digest(3);
         Assert.assertEquals(0, dd.size());
     }
 
 
-    public void testConstructor3() {
+    public static void testConstructor3() {
         Digest dd=new MutableDigest(3);
         Assert.assertEquals(0, dd.size());
     }
@@ -418,7 +415,7 @@ public class DigestTest {
 
     public void testNonConflictingMerge() {
         MutableDigest cons_d=new  MutableDigest(5);
-        IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
+        Address ip1=Util.createRandomAddress(), ip2=Util.createRandomAddress();
 
         cons_d.add(ip1, 1, 10, 10);
         cons_d.add(ip2, 2, 20, 20);
