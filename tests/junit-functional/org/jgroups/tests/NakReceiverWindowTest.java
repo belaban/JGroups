@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.9 2008/09/23 14:50:29 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.10 2009/05/06 06:20:57 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,10 +6,10 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -38,7 +38,7 @@ public class NakReceiverWindowTest {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        sender=new IpAddress("127.0.0.1", 5555);
+        sender=Util.createRandomAddress();
     }
 
 
