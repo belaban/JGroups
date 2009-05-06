@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.16 2009/04/29 06:56:49 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.17 2009/05/06 06:20:57 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -37,8 +37,8 @@ public class SizeTest {
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData()));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (PingData)null));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (String)null));
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData(new IpAddress(4444), null, true)));
-        IpAddress self=new IpAddress("127.0.0.1", 5555);
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData(Util.createRandomAddress(), null, true)));
+        Address self=Util.createRandomAddress();
         PingData rsp=new PingData(self, self, true);
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
     }
@@ -116,7 +116,7 @@ public class SizeTest {
 
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
         IpAddress a2=new IpAddress("127.0.0.1", 6666);
-        Vector suspects=new Vector();
+        Vector<Address> suspects=new Vector<Address>();
         suspects.add(a1);
         suspects.add(a2);
         hdr=new FD.FdHeader(FD.FdHeader.SUSPECT, suspects, a1);
@@ -128,7 +128,7 @@ public class SizeTest {
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, new IpAddress("127.0.0.1", 5555));
         _testSize(sockhdr);
 
-        Set tmp=new HashSet();
+        Set<Address> tmp=new HashSet<Address>();
         tmp.add(a1);
         tmp.add(a2);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, tmp);
@@ -295,7 +295,8 @@ public class SizeTest {
 
 
     public static void testMergeView2() throws Exception {
-        Vector m1, m2 , m3, all, subgroups;
+        Vector<Address> m1, m2 , m3, all;
+        Vector<View> subgroups;
         Address a,b,c,d,e,f;
         View v1, v2, v3, view_all;
 
@@ -306,7 +307,8 @@ public class SizeTest {
         e=new IpAddress(5000);
         f=new IpAddress(6000);
 
-        m1=new Vector(); m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
+        m1=new Vector<Address>(); m2=new Vector<Address>(); m3=new Vector<Address>(); all=new Vector<Address>();
+        subgroups=new Vector<View>();
         m1.add(a); m1.add(b); m1.add(c);
         m2.add(d);
         m3.add(e); m3.add(f);
@@ -327,7 +329,8 @@ public class SizeTest {
 
 
     public static void testMergeView3() throws Exception {
-        Vector m1, m2 , m3, all, subgroups;
+        Vector<Address> m1, m2 , m3, all;
+        Vector<View> subgroups;
         Address a,b,c,d,e,f;
         View v1, v2, v3, v4, view_all;
 
@@ -338,7 +341,8 @@ public class SizeTest {
         e=new IpAddress(5000);
         f=new IpAddress(6000);
 
-        m1=new Vector(); m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
+        m1=new Vector<Address>(); m2=new Vector<Address>(); m3=new Vector<Address>(); all=new Vector<Address>();
+        subgroups=new Vector<View>();
         m1.add(a); m1.add(b); m1.add(c);
         m2.add(d);
         m3.add(e); m3.add(f);
