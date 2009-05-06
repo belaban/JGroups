@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.17 2009/05/06 06:20:57 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.18 2009/05/06 06:27:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -86,10 +86,10 @@ public class SizeTest {
 
 
     public static void testDigest() throws Exception {
-        IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        Address addr=Util.createRandomAddress();
         MutableDigest mutableDigest=new MutableDigest(2);
         mutableDigest.add(addr, 100, 200, 205);
-        mutableDigest.add(new IpAddress(2314), 102, 104, 105);
+        mutableDigest.add(Util.createRandomAddress(), 102, 104, 105);
         _testSize(mutableDigest);
 
         Digest digest=new Digest();
@@ -98,14 +98,14 @@ public class SizeTest {
         digest=new Digest(10);
         _testSize(digest);
 
-        digest=new Digest(new IpAddress("192.168.1.5", 7500), 10, 45, 50);
+        digest=new Digest(Util.createRandomAddress(), 10, 45, 50);
         _testSize(digest);
     }
 
     public static void testNakackHeader() throws Exception {
         _testSize(new NakAckHeader(NakAckHeader.MSG, 322649));
-        _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, new IpAddress("127.0.0.1", 5655)));
-        _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 100, 104, new IpAddress("127.0.0.1", 5655)));
+        _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, Util.createRandomAddress()));
+        _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 100, 104, Util.createRandomAddress()));
         _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 322649));
     }
 
@@ -114,8 +114,8 @@ public class SizeTest {
         FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
         _testSize(hdr);
 
-        IpAddress a1=new IpAddress("127.0.0.1", 5555);
-        IpAddress a2=new IpAddress("127.0.0.1", 6666);
+        PhysicalAddress a1=new IpAddress("127.0.0.1", 5555);
+        PhysicalAddress a2=new IpAddress("127.0.0.1", 6666);
         Vector<Address> suspects=new Vector<Address>();
         suspects.add(a1);
         suspects.add(a2);
