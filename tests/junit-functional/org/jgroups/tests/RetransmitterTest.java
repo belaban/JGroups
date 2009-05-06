@@ -1,4 +1,4 @@
-// $Id: RetransmitterTest.java,v 1.5 2009/04/28 11:52:17 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.6 2009/05/06 06:08:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +8,7 @@ import org.jgroups.Global;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -16,7 +17,7 @@ import org.testng.annotations.Test;
 
 @Test(groups=Global.FUNCTIONAL)
 public class RetransmitterTest {
-    private final Address sender=new org.jgroups.stack.IpAddress(5555);
+    private final Address sender=Util.createRandomAddress();
     private TimeScheduler timer;
 
     @BeforeMethod
