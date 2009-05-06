@@ -16,7 +16,7 @@ import java.util.Map;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.11 2008/08/08 17:07:29 vlada Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.12 2009/05/06 05:38:02 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {
@@ -63,7 +63,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
             throw new IllegalStateException("obj1 should not be locked");
         }
         catch (LockNotGrantedException ex) {
-            // everything is ok
+            System.out.println("got a lock not granted exception - expected");
         }
         
         lockManager2.lock("obj2", "owner2", 1000);
@@ -74,7 +74,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
             throw new IllegalStateException("obj2 should not be released");
         }
         catch (LockNotReleasedException ex) {
-            // everything is ok
+            System.out.println("got a lock not released exception, as expected");
         }
         
         lockManager1.unlock("obj2", "owner2");
