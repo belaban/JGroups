@@ -1,9 +1,8 @@
-// $Id: UtilTest.java,v 1.12 2009/04/09 09:11:24 belaban Exp $
+// $Id: UtilTest.java,v 1.13 2009/05/06 06:34:30 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -102,11 +101,7 @@ public class UtilTest {
 
     public static void testFlags() {
         final byte ONE   =   1;
-        final byte TWO   =   2;
-        final byte THREE =   4;
-        final byte FOUR  =   8;
         final byte FIVE =   16;
-        final byte SIX  =   32;
         final byte SEVEN =  64;
 
         byte flags=0;
@@ -236,18 +231,18 @@ public class UtilTest {
 
     public static void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
-        IpAddress addr=new IpAddress("localhost", 5000), addr2;
+        Address addr=Util.createRandomAddress(), addr2;
         List<String> list=new ArrayList<String>(), list2;
         list.add("Bela");
         list.add("Jeannette");
 
         buf=Util.objectToByteBuffer(addr);
-        addr2=(IpAddress)Util.objectFromByteBuffer(buf);
+        addr2=(Address)Util.objectFromByteBuffer(buf);
         System.out.println("addr=" + addr + ", addr2=" + addr2);
         Assert.assertEquals(addr, addr2);
 
         buf=Util.objectToByteBuffer(list);
-        list2=(List)Util.objectFromByteBuffer(buf);
+        list2=(List<String>)Util.objectFromByteBuffer(buf);
         System.out.println("list=" + list + ", list2=" + list2);
         Assert.assertEquals(list, list2);
 
@@ -281,9 +276,9 @@ public class UtilTest {
     public static void testMessageToByteBuffer() throws Exception {
         _testMessage(new Message());
         _testMessage(new Message(null, null, "hello world"));
-        _testMessage(new Message(null, new IpAddress("localhost", 5000), null));
-        _testMessage(new Message(null, new IpAddress("localhost", 5000), null));
-        _testMessage(new Message(null, new IpAddress("localhost", 5000), "bela"));
+        _testMessage(new Message(null, Util.createRandomAddress(), null));
+        _testMessage(new Message(null, Util.createRandomAddress(), null));
+        _testMessage(new Message(null, Util.createRandomAddress(), "bela"));
     }
 
     private static void _testMessage(Message msg) throws Exception {
@@ -342,7 +337,7 @@ public class UtilTest {
     public static void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
         Message m=new Message(null, null, "Hello");
         ViewId vid=new ViewId(null, 12345);
-        ViewId vid2=new ViewId(new IpAddress("127.0.0.1", 5555), 35623);
+        ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeGenericStreamable(m, dos);
@@ -379,11 +374,11 @@ public class UtilTest {
 
     public static void testWriteView() throws IOException, IllegalAccessException, InstantiationException {
         ViewId vid=new ViewId(null, 12345);
-        Vector members=new Vector();
+        Vector<Address> members=new Vector<Address>();
         View v;
-        IpAddress a1=new IpAddress("localhost", 1234);
-        IpAddress a2=new IpAddress("127.0.0.1", 4444);
-        IpAddress a4=new IpAddress("127.0.0.1", 7777);
+        Address a1=Util.createRandomAddress();
+        Address a2=Util.createRandomAddress();
+        Address a4=Util.createRandomAddress();
         members.add(a1);
         members.add(a2);
         members.add(a4);
@@ -421,9 +416,9 @@ public class UtilTest {
     }
 
     public static void writeAddress() throws IOException, IllegalAccessException, InstantiationException {
-        IpAddress a1=new IpAddress("localhost", 1234);
-        IpAddress a2=new IpAddress("127.0.0.1", 4444);
-        IpAddress a4=new IpAddress("127.0.0.1", 7777);
+        Address a1=Util.createRandomAddress();
+        Address a2=Util.createRandomAddress();
+        Address a4=Util.createRandomAddress();
 
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -441,7 +436,7 @@ public class UtilTest {
     }
 
     public static void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
-        IpAddress a1=null;
+        Address a1=null;
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeAddress(a1, dos);
@@ -488,8 +483,7 @@ public class UtilTest {
 
 
     public static void testLeftMembers() {
-        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
-                d=new IpAddress(4000), e=new IpAddress(5000);
+        final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
         Vector<Address> v1=new Vector<Address>();
         v1.add(a);
@@ -512,7 +506,7 @@ public class UtilTest {
     }
 
     public static void testLeftMembers2() {
-        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000), d=new IpAddress(4000);
+        final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
         Vector<Address> v1=new Vector<Address>();
         v1.add(a);
@@ -536,8 +530,8 @@ public class UtilTest {
 
 
     public static void testNewMembers() {
-        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
-                d=new IpAddress(4000), e=new IpAddress(5000);
+        final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(),
+                d=Util.createRandomAddress(), e=Util.createRandomAddress();
         List<Address> old=new ArrayList<Address>();
         List<Address> new_list=new ArrayList<Address>();
 
@@ -559,7 +553,7 @@ public class UtilTest {
     }
 
     public static void testPickRandomElement() {
-        Vector v=new Vector();
+        Vector<Integer> v=new Vector<Integer>();
         for(int i=0; i < 10; i++) {
             v.add(new Integer(i));
         }
@@ -572,7 +566,7 @@ public class UtilTest {
     }
 
     public static void testAll() {
-        ArrayList l=new ArrayList();
+        List<String> l=new ArrayList<String>();
         l.add("one"); l.add("two"); l.add("one");
         System.out.println("-- list is " + l);
         assert !(Util.all(l, "one"));
