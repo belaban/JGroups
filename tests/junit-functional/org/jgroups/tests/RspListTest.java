@@ -2,9 +2,9 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -22,11 +22,11 @@ public class RspListTest {
     @BeforeMethod
     public void setUp() throws Exception {
         rl=new RspList();
-        a1=new IpAddress(1111);
-        a2=new IpAddress(2222);
-        a3=new IpAddress(3333);
-        a4=new IpAddress(4444);
-        a5=new IpAddress(5555);
+        a1=Util.createRandomAddress();
+        a2=Util.createRandomAddress();
+        a3=Util.createRandomAddress();
+        a4=Util.createRandomAddress();
+        a5=Util.createRandomAddress();
         rsp1=new Rsp(a1);
         rsp2=new Rsp(a2, true);
         rsp3=new Rsp(a3, "hello world");
@@ -46,7 +46,7 @@ public class RspListTest {
 
 
     public void testConstructor() {
-        Collection c=new LinkedList();
+        Collection<Rsp> c=new LinkedList<Rsp>();
         c.add(rsp1); c.add(rsp2); c.add(rsp3);
         RspList tmp=new RspList(c);
         Assert.assertEquals(c.size(), tmp.size());
@@ -89,7 +89,7 @@ public class RspListTest {
 
     public void testPut() {
         Rsp rsp;
-        rsp=rl.put(new IpAddress(6666), new Rsp(new IpAddress(6666), true));
+        rsp=rl.put(Util.createRandomAddress(), new Rsp(Util.createRandomAddress(), true));
         assert rsp == null;
         rsp=rl.put(a2, rsp2);
         Assert.assertEquals(rsp, rsp2);
@@ -99,7 +99,7 @@ public class RspListTest {
 
     public void testRemove() {
         Rsp rsp;
-        rsp=rl.remove(new IpAddress(6666));
+        rsp=rl.remove(Util.createRandomAddress());
         assert rsp == null;
         rsp=rl.remove(a2);
         Assert.assertEquals(rsp, rsp2);
@@ -129,9 +129,10 @@ public class RspListTest {
 
 
     public void testAddRsp() {
-        rl.addRsp(new IpAddress(6666), new Integer(322649));
+        Address tmp=Util.createRandomAddress();
+        rl.addRsp(tmp, new Integer(322649));
         Assert.assertEquals(6, rl.size());
-        Rsp rsp=rl.get(new IpAddress(6666));
+        Rsp rsp=rl.get(tmp);
         assert rsp != null;
         assert rsp.wasReceived();
         assert !(rsp.wasSuspected());
@@ -171,11 +172,12 @@ public class RspListTest {
 
     public void testElementAt() {
         Rsp rsp;
-        Set s=new HashSet();
-        for(int i=0; i < rl.size(); i++) {
-            rsp=(Rsp)rl.elementAt(i);
-            s.add(rsp.getSender());
-        }
+        Set<Address> s=new HashSet<Address>();
+        s.addAll(rl.keySet());
+//        for(int i=0; i < rl.size(); i++) {
+//            rsp=(Rsp)rl.elementAt(i);
+//            s.add(rsp.getSender());
+//        }
         System.out.println("-- set is " + s);
         Assert.assertEquals(rl.size(), s.size());
     }
