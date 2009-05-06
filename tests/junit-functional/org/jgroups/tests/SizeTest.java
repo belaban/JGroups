@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.18 2009/05/06 06:27:31 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.19 2009/05/06 06:48:35 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -300,12 +300,12 @@ public class SizeTest {
         Address a,b,c,d,e,f;
         View v1, v2, v3, view_all;
 
-        a=new IpAddress(1000);
-        b=new IpAddress(2000);
-        c=new IpAddress(3000);
-        d=new IpAddress(4000);
-        e=new IpAddress(5000);
-        f=new IpAddress(6000);
+        a=Util.createRandomAddress();
+        b=Util.createRandomAddress();
+        c=Util.createRandomAddress();
+        d=Util.createRandomAddress();
+        e=Util.createRandomAddress();
+        f=Util.createRandomAddress();
 
         m1=new Vector<Address>(); m2=new Vector<Address>(); m3=new Vector<Address>(); all=new Vector<Address>();
         subgroups=new Vector<View>();
