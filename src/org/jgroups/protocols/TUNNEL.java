@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.67 2009/05/04 19:04:55 vlada Exp $
+// $Id: TUNNEL.java,v 1.68 2009/05/07 07:51:58 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,7 @@ import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
@@ -21,8 +22,10 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -171,8 +174,7 @@ public class TUNNEL extends TP {
       super.start();
 
       for (InetSocketAddress gr : gossip_router_hosts) {
-         RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,
-                  getPhysicalAddress());
+         RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,getPhysicalAddress());
          stub.setConnectionListener(new StubConnectionListener(stub));
          stubs.add(stub);
       }
@@ -294,23 +296,38 @@ public class TUNNEL extends TP {
             DataInputStream input = null;
             try {
                input = stub.getInputStream();
-               Address dest = Util.readAddress(input);
-               len = input.readInt();
-               if (len > 0) {
-                  data = new byte[len];
-                  input.readFully(data, 0, len);
-                  receive(null/* src will be read from data */, data, 0, len);
+               byte dataType = input.readByte();
+               switch (dataType) {
+                  case GossipRouter.MESSAGE:
+                     Address dest = Util.readAddress(input);
+                     len = input.readInt();
+                     if (len > 0) {
+                        data = new byte[len];
+                        input.readFully(data, 0, len);
+                        receive(null/* src will be read from data */, data, 0, len);
+                     }
+                     break;
+                  case GossipRouter.SUSPECT:
+                     final Address suspect = Util.readAddress(input);
+                     //https://jira.jboss.org/jira/browse/JGRP-902
+                     Thread thread = getThreadFactory().newThread(new Runnable() {
+                        public void run() {
+                           fireSuspectEvent(suspect);
+                        }
+                     },"StubReceiver-suspect"); 
+                     thread.start();
+                     break;
                }
             } catch (SocketTimeoutException ste) {
-               // do nothing - blocking read timeout caused it            
+               // do nothing - blocking read timeout caused it
                continue;
             } catch (SocketException se) {
                // do nothing
-              continue;
+               continue;
             } catch (IOException ioe) {
                /*
                 * This is normal course of operation Thread should not die
-                */               
+                */
                continue;
             } catch (Exception e) {
                if (log.isWarnEnabled())
@@ -318,6 +335,24 @@ public class TUNNEL extends TP {
                break;
             }
          }
+      }
+
+      private void fireSuspectEvent(Address suspect) {
+         Map<Address, PhysicalAddress> contents = logical_addr_cache.contents();
+         if (log.isDebugEnabled()) {
+            log.debug("At address " + getPhysicalAddress()
+                     + " finding logical address for suspect " + suspect + ", addresses are: \n"
+                     + logical_addr_cache);
+         }
+         for (Iterator<Entry<Address,PhysicalAddress>>i = contents.entrySet().iterator(); i.hasNext();) {
+            Entry<Address, PhysicalAddress> entry = i.next();
+            if(suspect.equals(entry.getValue())){
+               if (log.isDebugEnabled()) {
+                  log.debug("Raising suspect for " + entry.getKey());
+               }
+               up(new Event(Event.SUSPECT, entry.getKey()));                  
+            }
+         }       
       }
    }
 
@@ -327,8 +362,7 @@ public class TUNNEL extends TP {
 
    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length)
             throws Exception {
-      tunnel_policy
-               .sendToSingleMember(new ArrayList<RouterStub>(stubs), dest, data, offset, length);
+      tunnel_policy.sendToSingleMember(new ArrayList<RouterStub>(stubs), dest, data, offset, length);
    }
 
    public String getInfo() {

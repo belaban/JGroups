@@ -19,7 +19,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.42 2009/04/29 20:19:22 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.43 2009/05/07 07:51:57 vlada Exp $
  */
 public class RouterStub {
 
@@ -213,7 +213,7 @@ public class RouterStub {
    public synchronized void sendToSingleMember(Address dest, byte[] data, int offset, int length)
             throws Exception {
       try {
-         output.writeByte(GossipRouter.ROUTE);
+         output.writeByte(GossipRouter.MESSAGE);
          // 1. Group name
          output.writeUTF(groupname);
 

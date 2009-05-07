@@ -54,7 +54,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.50 2009/05/04 19:04:57 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.51 2009/05/07 07:51:57 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -63,7 +63,8 @@ public class GossipRouter {
    public static final byte DISCONNECT = 2; // DISCONNECT(group, addr)
    public static final byte GOSSIP_GET = 4; // GET(group) --> List<addr> (members)
    public static final byte SHUTDOWN = 9;
-   public static final byte ROUTE = 10;
+   public static final byte MESSAGE = 10;
+   public static final byte SUSPECT=11;
 
    public static final int PORT = 12001;
    public static final long EXPIRY_TIME = 30000;
@@ -626,33 +627,53 @@ public class GossipRouter {
       }
 
       synchronized (out) {
+         out.writeByte(MESSAGE);
          Util.writeAddress(dest, out);
          out.writeInt(msg.length);
          out.write(msg, 0, msg.length);
+         out.flush();
       }
    }
    
-   private void notifyAbnormalConnectionTear(ConnectionHandler ch, Exception e) {
-      for (ConnectionTearListener l : connectionTearListeners) {
-         l.connectionTorn(ch, e);
-      }
+   private void notifyAbnormalConnectionTear(final ConnectionHandler ch, final Exception e) {
+      Thread thread = getDefaultThreadPoolThreadFactory().newThread(new Runnable() {
+         public void run() {
+            for (ConnectionTearListener l : connectionTearListeners) {
+               l.connectionTorn(ch, e);
+            }
+         }
+      }, "notifyAbnormalConnectionTear");
+      thread.start();
    }
    
    public interface ConnectionTearListener{
       public void connectionTorn(ConnectionHandler ch,Exception e);
    }
    
+   /*
+    * https://jira.jboss.org/jira/browse/JGRP-902
+    */
    class FailureDetectionListener implements ConnectionTearListener {
 
-      public void connectionTorn(ConnectionHandler ch, Exception e) {         
-         final Map<Address, RoutingEntry> map = routingTable.get(ch.group_name);         
+      public void connectionTorn(ConnectionHandler ch, Exception e) {
+         final Map<Address, RoutingEntry> map = routingTable.get(ch.group_name);
          if (map != null && !map.isEmpty()) {
             for (final Iterator<Entry<Address, RoutingEntry>> i = map.entrySet().iterator(); i.hasNext();) {
                final RoutingEntry entry = i.next().getValue();
                Address logical_addr = entry.logical_addr;
                Address broken = ch.logical_addr;
                if ((logical_addr != null && broken != null && !logical_addr.equals(broken))) {
-                  log.warn("Notifying entry " + logical_addr + " about suspect " + ch.logical_addr);
+                  DataOutputStream stream = entry.getOutputStream();
+                  if (stream != null) {
+                     try {
+                        stream.writeByte(SUSPECT);
+                        Util.writeAddress(ch.logical_addr, stream);
+                        stream.flush();
+                        if(log.isDebugEnabled()){
+                           log.debug("Notified entry " + logical_addr + " about suspect " + ch.logical_addr);   
+                        }                        
+                     } catch (IOException ioe) {}
+                  }
                }
             }
          }
@@ -764,7 +785,7 @@ public class GossipRouter {
             try {
                byte command = input.readByte();
                switch (command) {
-                  case GossipRouter.ROUTE:
+                  case GossipRouter.MESSAGE:
                      // 1. Group name is first
                      String gname = input.readUTF();
 
