@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.19 2009/05/11 17:43:13 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.20 2009/05/11 22:40:59 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -26,7 +26,7 @@
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="180000"/>
-    <property name="version" value="2.4.5.GA"/>	
+    <property name="version" value="2.4.6.GA"/>	
 	
 	<!-- default properties used in all test targets -->
 	<property name="channel.conf" value="udp.xml"/>
