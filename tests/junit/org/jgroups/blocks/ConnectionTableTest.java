@@ -14,11 +14,12 @@ import java.net.UnknownHostException;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.1 2008/05/27 19:27:09 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.2 2009/05/11 17:43:15 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
-    static InetAddress loopback_addr=null;
+    static String bind_addr_str=null;
+    static InetAddress bind_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
     int active_threads=0;
@@ -27,7 +28,8 @@ public class ConnectionTableTest extends TestCase {
 
     static {
         try {
-            loopback_addr=InetAddress.getByName("127.0.0.1");
+        	bind_addr_str = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+            bind_addr=InetAddress.getByName(bind_addr_str);
         }
         catch(UnknownHostException e) {
             e.printStackTrace();
@@ -44,8 +46,8 @@ public class ConnectionTableTest extends TestCase {
         super.setUp();
         active_threads=Thread.activeCount();
         System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
-        addr1=new IpAddress(loopback_addr, PORT1);
-        addr2=new IpAddress(loopback_addr, PORT2);
+        addr1=new IpAddress(bind_addr, PORT1);
+        addr2=new IpAddress(bind_addr, PORT2);
     }
 
 
@@ -64,14 +66,14 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
-        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000);
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000, false);
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);

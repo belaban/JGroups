@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.20.2.1 2006/12/04 23:03:42 vlada Exp $
+  Version: $Id: stacks.xml,v 1.20.2.2 2009/05/11 17:43:11 rachmatowicz Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -336,12 +336,12 @@
     <stack name="tunnel"
            description="Used with a GossipRouter">
         <config>
-            <TUNNEL router_port="12001" router_host="127.0.0.1"/>
+            <TUNNEL router_port="${jgroups.tunnel.router_port:12001}" router_host="${jgroups.tunnel.router_host:127.0.0.1}"/>
             <PING timeout="2000"
                   down_thread="false" up_thread="false" num_initial_members="3"
                   gossip_refresh="10000"
-                  gossip_host="127.0.0.1"
-                  gossip_port="12001"/>
+                  gossip_host="${jgroups.tunnel.router_host:127.0.0.1}"
+                  gossip_port="${jgroups.tunnel.router_port:12001}"/>
             <MERGE2 max_interval="20000"
                     down_thread="false" up_thread="false" min_interval="5000"/>
             <FD_SOCK down_thread="false" up_thread="false"/>

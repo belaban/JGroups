@@ -13,19 +13,22 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.9 2006/10/04 12:15:37 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.9.2.1 2009/05/11 17:43:14 rachmatowicz Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
     final int    TIMES=10;
-    final int    router_port=12000;
-    final String bind_addr="127.0.0.1";
+    int    router_port = 0;
+    String router_host = null;
+    String props = null ;
     GossipRouter router;
     JChannel     ch1, ch2;
     private ViewChecker  checker;
 
-    String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
-            "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
+    private String getTUNNELProps(String routerHost, int routerPort) {
+        return
+	    "TUNNEL(router_port=" + router_port + ";router_host=" + router_host + ";loopback=true):" +
+            "PING(timeout=1000;num_initial_members=2;gossip_host=" + router_host +";gossip_port=" + router_port + "):" +
             "MERGE2(min_interval=3000;max_interval=5000):" +
             "FD(timeout=1000;max_tries=2;shun=false):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
@@ -33,7 +36,7 @@ public class MergeTest extends TestCase {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "print_local_addr=false;shun=false)";
-
+    }
 
 
     public MergeTest(String name) {
@@ -42,7 +45,14 @@ public class MergeTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        startRouter();
+        
+    	router_host = System.getProperty("jgroups.tunnel.router_host", "127.0.0.1") ;
+        router_port = Integer.parseInt(System.getProperty("jgroups.tunnel.router_port", "12001")) ;
+    	
+        startRouter(router_host, router_port);
+        
+        props = getTUNNELProps(router_host, router_port) ;
+        
         checker=new ViewChecker();
         ch1=new JChannel(props);
         ch1.setReceiver(checker);
@@ -92,7 +102,7 @@ public class MergeTest extends TestCase {
         assertEquals("view should be 1 (channels should have excluded each other", 1, v.size());
 
         System.out.println("++ simulating merge by starting the GossipRouter again");
-        startRouter();
+        startRouter(router_host, router_port);
 
         System.out.println("sleeping for 30 secs");
         // Util.sleep(30000);
@@ -108,12 +118,8 @@ public class MergeTest extends TestCase {
     }
 
 
-
-
-
-
-    private void startRouter() throws Exception {
-        router=new GossipRouter(router_port, bind_addr);
+    private void startRouter(String router_host, int router_port) throws Exception {
+        router=new GossipRouter(router_port, router_host);
         router.start();
     }
 

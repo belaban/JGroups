@@ -18,15 +18,15 @@ import org.jgroups.util.Util;
 /**
  * Tests merging with a multiplexer channel
  * @author Jerry Gauthier
- * @version $Id: MultiplexerMergeTest.java,v 1.1.2.2 2007/03/12 14:52:18 vlada Exp $
+ * @version $Id: MultiplexerMergeTest.java,v 1.1.2.3 2009/05/11 17:43:14 rachmatowicz Exp $
  */
 public class MultiplexerMergeTest extends TestCase {
 	// stack file must be on classpath
     private static final String STACK_FILE = "stacks.xml";
     private static final String STACK_NAME = "tunnel";
     // router address and port must match definition in stack
-    private static final int ROUTER_PORT = 12001;
-    private static final String BIND_ADDR = "127.0.0.1";
+    private static int router_port = 0;
+    private static String router_host = null ;
     
     private JChannelFactory factory;
     private JChannelFactory factory2;
@@ -49,7 +49,10 @@ public class MultiplexerMergeTest extends TestCase {
         factory2 = new JChannelFactory();
         factory2.setMultiplexerConfig(STACK_FILE);
         
-        startRouter();
+    	router_host = System.getProperty("jgroups.tunnel.router_host", "127.0.0.1") ;
+        router_port = Integer.parseInt(System.getProperty("jgroups.tunnel.router_port", "12001")) ;
+        
+        startRouter(router_host, router_port);
         
         ch1 = factory.createMultiplexerChannel(STACK_NAME, "foo");
         dispatcher1 = new RpcDispatcher(ch1, null, null, new Object(), false);
@@ -111,8 +114,8 @@ public class MultiplexerMergeTest extends TestCase {
         assertEquals("channel2 is supposed to have 2 members again after merge", 2, ch2.getView().size());
     }
 
-    private void startRouter() throws Exception {
-        router = new GossipRouter(ROUTER_PORT, BIND_ADDR);
+    private void startRouter(String router_host, int router_port) throws Exception {
+        router = new GossipRouter(router_port, router_host);
         router.start();
     }
 
