@@ -1,10 +1,11 @@
-// $Id: CoordGmsImpl.java,v 1.101 2009/05/05 10:57:57 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.102 2009/05/11 07:49:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.ResponseCollector;
@@ -319,6 +320,19 @@ public class CoordGmsImpl extends GmsImpl {
                 retval.add(digest);
         }
         return retval;
+    }
+
+    /**
+     * Fetches the digests from all members and installs them again. Used only for diagnosis and support; don't
+     * use this otherwise !
+     */
+    void fixDigests() {
+        Digest digest=fetchDigestsFromAllMembersInSubPartition();
+        Message msg=new Message();
+        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST);
+        hdr.my_digest=digest;
+        msg.putHeader(gms.getName(), hdr);
+        gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
     private void cancelMerge() {

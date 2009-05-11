@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
@@ -23,11 +24,11 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.164 2009/05/05 10:57:08 belaban Exp $
+ * @version $Id: GMS.java,v 1.165 2009/05/11 07:49:38 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
-public class GMS extends Protocol {
+public class GMS extends Protocol implements TP.ProbeHandler {
     
     public static final String name="GMS";
 
@@ -308,11 +309,13 @@ public class GMS extends Protocol {
 
     public void init() throws Exception {
         prev_members=new BoundedList<Address>(num_prev_mbrs);
-        timer=getTransport().getTimer();
+        TP transport=getTransport();
+        timer=transport.getTimer();
         if(timer == null)
             throw new Exception("GMS.init(): timer is null");
         if(impl != null)
             impl.init();
+        transport.registerProbeHandler(this);
     }
 
     public void start() throws Exception {
@@ -379,6 +382,11 @@ public class GMS extends Protocol {
         return impl != null && impl instanceof CoordGmsImpl;
     }
 
+    @ManagedOperation(description="Fetches digests from alll members and installs them, unblocking blocked members")
+    public void fixDigests() {
+        if(impl instanceof CoordGmsImpl)
+            ((CoordGmsImpl)impl).fixDigests();
+    }
 
     /**
      * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
@@ -863,6 +871,11 @@ public class GMS extends Protocol {
                         impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
+
+                    case GmsHeader.INSTALL_DIGEST:
+                        Digest tmp=hdr.my_digest;
+                        down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
+                        break;
                      
                     case GmsHeader.INSTALL_MERGE_VIEW_OK:                        
                         //[JGRP-700] - FLUSH: flushing should span merge
@@ -1043,6 +1056,18 @@ public class GMS extends Protocol {
     }
 
 
+    public Map<String, String> handleProbe(String... keys) {
+        for(String key: keys) {
+            if(key.equals("fix-digests")) {
+                fixDigests();
+            }
+        }
+        return null;
+    }
+
+    public String[] supportedKeys() {
+        return new String[]{"fix-digests"};
+    }
 
     /* ------------------------------- Private Methods --------------------------------- */
 
@@ -1080,6 +1105,7 @@ public class GMS extends Protocol {
         public static final byte INSTALL_MERGE_VIEW_OK=12;
         public static final byte GET_DIGEST_REQ=13;
         public static final byte GET_DIGEST_RSP=14;
+        public static final byte INSTALL_DIGEST=15;
 
 
         byte type=0;
@@ -1163,6 +1189,7 @@ public class GMS extends Protocol {
 
                 case INSTALL_MERGE_VIEW:
                 case GET_DIGEST_RSP:
+                case INSTALL_DIGEST:
                     sb.append(": view=" + view + ", digest=" + my_digest);
                     break;
 
@@ -1190,6 +1217,7 @@ public class GMS extends Protocol {
                 case INSTALL_MERGE_VIEW_OK: return "INSTALL_MERGE_VIEW_OK";
                 case GET_DIGEST_REQ: return "GET_DIGEST_REQ";
                 case GET_DIGEST_RSP: return "GET_DIGEST_RSP";
+                case INSTALL_DIGEST: return "INSTALL_DIGEST";
                 default: return "<unknown>";
             }
         }
@@ -1286,7 +1314,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.164 2009/05/05 10:57:08 belaban Exp $
+     * @version $Id: GMS.java,v 1.165 2009/05/11 07:49:38 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
