@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.18 2009/04/06 15:56:33 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.19 2009/05/11 17:43:13 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -403,6 +403,8 @@
             <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
             <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
             <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+            <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+            <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
             <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
 		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
@@ -427,6 +429,8 @@
             <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
             <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
             <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+            <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+            <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
             <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
 		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
@@ -459,6 +463,8 @@
 	            <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
 	            <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
 	            <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+	            <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+	            <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
 	            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
 			  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
 	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />	        	
