@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.219 2009/05/05 12:25:46 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.220 2009/05/11 07:02:04 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -251,8 +251,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** BoundedList<Digest>, keeps the last 10 stability messages */
     protected final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
 
-    /** Keeps a bounded list of the last N merges */
-    protected final BoundedList<String> merge_history=new BoundedList<String>(10);
+    /** Keeps a bounded list of the last N digest sets */
+    protected final BoundedList<String> digest_history=new BoundedList<String>(10);
 
     /** If true, logs messages discarded because received from other members */
     @ManagedAttribute(description="If true, logs messages discarded because received from other members", writable=true)
@@ -260,7 +260,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
-
 
 
     public NAKACK() {
@@ -313,7 +312,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(send_history != null)
             send_history.clear();
         stability_msgs.clear();
-        merge_history.clear();
+        digest_history.clear();
     }
 
     public void init() throws Exception {
@@ -472,10 +471,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
-    @ManagedOperation(description="Keeps information about the last N merges")
-    public String printMergeHistory() {
+    @ManagedOperation(description="Keeps information about the last N times a digest was set or merged")
+    public String printDigestHistory() {
         StringBuilder sb=new StringBuilder();
-        for(String tmp: merge_history)
+        for(String tmp: digest_history)
             sb.append(tmp).append("\n");
         return sb.toString();
     }
@@ -1211,7 +1210,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(digest == null)
             return;
 
-        StringBuilder sb=new StringBuilder();
+        StringBuilder sb=new StringBuilder(merge? "\n[mergeDigest()]\n" : "\n[setDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
         for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
@@ -1243,8 +1242,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             xmit_table.put(sender, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
-        if(merge)
-            merge_history.add(sb.toString());
+        digest_history.add(sb.toString());
         if(log.isDebugEnabled())
             log.debug(sb);
     }

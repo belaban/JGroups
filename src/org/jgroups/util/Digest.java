@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.10 2009/04/09 09:11:18 belaban Exp $
+ * @version $Id: Digest.java,v 1.11 2009/05/11 07:01:31 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -34,7 +34,7 @@ public class Digest implements Externalizable, Streamable {
     protected final Map<Address,Entry> senders;
     
     protected static final Log log=LogFactory.getLog(Digest.class);
-
+    private static final long serialVersionUID=6611464897656359215L;
 
 
     /** Used for externalization */
@@ -266,20 +266,14 @@ public class Digest implements Externalizable, Streamable {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
         if(senders.isEmpty()) return "[]";
-        Map.Entry<Address,Entry> entry;
-        Address key;
-        Entry val;
 
-        for(Iterator<Map.Entry<Address,Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            key=entry.getKey();
-            val=entry.getValue();
-            if(!first) {
+        for(Map.Entry<Address,Entry> entry: senders.entrySet()) {
+            Address key=entry.getKey();
+            Entry val=entry.getValue();
+            if(!first)
                 sb.append(", ");
-            }
-            else {
+            else
                 first=false;
-            }
             sb.append(key).append(": ").append('[').append(val.low_seqno).append(" : ");
             sb.append(val.highest_delivered_seqno);
             if(val.highest_received_seqno >= 0)
@@ -293,21 +287,15 @@ public class Digest implements Externalizable, Streamable {
     public String printHighestDeliveredSeqnos() {
         StringBuilder sb=new StringBuilder("[");
         boolean first=true;
-        Map.Entry<Address,Entry> entry;
-        Address key;
-        Entry val;
 
         TreeMap<Address,Entry> copy=new TreeMap<Address,Entry>(senders);
-        for(Iterator<Map.Entry<Address, Entry>> it=copy.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            key=entry.getKey();
-            val=entry.getValue();
-            if(!first) {
+        for(Map.Entry<Address,Entry> entry: copy.entrySet()) {
+            Address key=entry.getKey();
+            Entry val=entry.getValue();
+            if(!first)
                 sb.append(", ");
-            }
-            else {
+            else
                 first=false;
-            }
             sb.append(key).append("#").append(val.highest_delivered_seqno);
         }
         sb.append(']');
@@ -318,17 +306,12 @@ public class Digest implements Externalizable, Streamable {
     public String printHighestReceivedSeqnos() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        Map.Entry<Address,Entry> entry;
-        Address key;
-        Entry val;
 
-        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            key=entry.getKey();
-            val=entry.getValue();
-            if(!first) {
+        for(Map.Entry<Address,Entry> entry: senders.entrySet()) {
+            Address key=entry.getKey();
+            Entry val=entry.getValue();
+            if(!first)
                 sb.append(", ");
-            }
             else {
                 sb.append('[');
                 first=false;
@@ -411,6 +394,7 @@ public class Digest implements Externalizable, Streamable {
         private long highest_delivered_seqno=0; // the highest delivered seqno, e.g. in 1,2,4,5,7 --> 2
         private long highest_received_seqno=0; //the highest received seqno, e.g. in 1,2,4,5,7 --> 7
         final static int SIZE=Global.LONG_SIZE * 3;
+        private static final long serialVersionUID=-4468945932249281704L;
 
         public Entry() {
         }
@@ -470,7 +454,7 @@ public class Digest implements Externalizable, Streamable {
             highest_received_seqno=in.readLong();
         }
 
-        public int size() {
+        public static int size() {
             return SIZE;
         }
 
