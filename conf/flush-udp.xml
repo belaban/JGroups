@@ -2,8 +2,8 @@
 
 <config>
     <UDP
-         mcast_port="45566" 
-         mcast_addr="228.10.10.10"
+         mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+         mcast_port="${jgroups.udp.mcast_port:45566}" 
          tos="16"
          ucast_recv_buf_size="20000000"
          ucast_send_buf_size="640000"
