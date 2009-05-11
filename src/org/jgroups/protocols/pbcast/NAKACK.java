@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.*;
@@ -31,11 +32,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.220 2009/05/11 07:02:04 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.221 2009/05/11 07:17:57 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
-public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
+public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
 
     private static final String name="NAKACK";
 
@@ -334,6 +335,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             send_history=new BoundedList<XmitRequest>(stats_list_size);
             receive_history=new BoundedList<MissingMessage>(stats_list_size);
         }
+        TP transport=getTransport();
+        if(transport != null)
+            transport.registerProbeHandler(this);
     }
 
 
@@ -1531,15 +1535,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @ManagedOperation(description="TODO")
     public String printMessages() {
         StringBuilder ret=new StringBuilder();
-        Map.Entry<Address,NakReceiverWindow> entry;
-        Address addr;
-        Object w;
 
-        for(Iterator<Map.Entry<Address,NakReceiverWindow>> it=xmit_table.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            addr=entry.getKey();
-            w=entry.getValue();
-            ret.append(addr).append(": ").append(w.toString()).append('\n');
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            Address addr=entry.getKey();
+            NakReceiverWindow win=entry.getValue();
+            ret.append(addr).append(": ").append(win.toString()).append('\n');
         }
         return ret.toString();
     }
@@ -1624,6 +1624,25 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             return retval;
         }
+    }
+
+
+    // ProbeHandler interface
+    public Map<String, String> handleProbe(String... keys) {
+        Map<String,String> retval=new HashMap<String,String>();
+        for(String key: keys) {
+            if(key.equals("digest-history"))
+                retval.put(key, printDigestHistory());
+            if(key.equals("dump-digest"))
+                retval.put(key, "\n" + printMessages());
+        }
+
+        return retval;
+    }
+
+    // ProbeHandler interface
+    public String[] supportedKeys() {
+        return new String[]{"digest-history", "dump-digest"};
     }
 
 
