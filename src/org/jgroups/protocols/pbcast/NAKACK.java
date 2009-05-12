@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.221 2009/05/11 07:17:57 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.222 2009/05/12 13:46:37 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -1152,16 +1152,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * in <code>members</code>. This method is not called concurrently multiple times
      */
     private void adjustReceivers(List<Address> new_members) {
-        for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
-            Address sender=it.next();
-            if(!new_members.contains(sender)) {
-                if(local_addr != null && local_addr.equals(sender))
+        for(Address member: xmit_table.keySet()) {
+            if(!new_members.contains(member)) {
+                if(local_addr != null && local_addr.equals(member))
                     continue;
-                NakReceiverWindow win=xmit_table.get(sender);
+                NakReceiverWindow win=xmit_table.remove(member);
                 win.reset();
                 if(log.isDebugEnabled())
-                    log.debug("removing " + sender + " from xmit_table (not member anymore)");
-                it.remove();
+                    log.debug("removed " + member + " from xmit_table (not member anymore)");
             }
         }
     }
