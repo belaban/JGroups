@@ -1,11 +1,11 @@
-// $Id: NotificationBusDemo.java,v 1.8 2007/11/19 16:08:27 belaban Exp $
+// $Id: NotificationBusDemo.java,v 1.9 2009/05/13 13:07:01 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.blocks.NotificationBus;
 
@@ -54,12 +54,12 @@ public class NotificationBusDemo implements NotificationBus.Consumer {
                     bus.sendNotification(line);
                 }
                 catch(Exception e) {
-                    log.error(e);
+                    log.error(e.toString());
                 }
             }
         }
         catch(Exception ex) {
-            log.error(ex);
+            log.error(ex.toString());
         }
         finally {
             if(bus != null)

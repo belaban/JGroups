@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.242 2009/04/23 14:32:13 belaban Exp $
+ * @version $Id: TP.java,v 1.243 2009/05/13 13:06:59 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -971,7 +971,7 @@ public abstract class TP extends Protocol {
         if(hdr == null) {
             if(log.isErrorEnabled())
                 log.error(new StringBuilder("message does not have a transport header, msg is ").append(msg).
-                        append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
+                        append(", headers are ").append(msg.printHeaders()).append(", will be discarded").toString());
             return;
         }
 
@@ -990,7 +990,7 @@ public abstract class TP extends Protocol {
             if(perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
                 if(log.isWarnEnabled() && log_discard_msgs)
                     log.warn(new StringBuilder("discarded message from different cluster \"").append(ch_name).
-                            append("\" (our cluster is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+                            append("\" (our cluster is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()).toString());
             }
             else {
                 up_prot.up(new Event(Event.MSG, msg));
@@ -1027,7 +1027,7 @@ public abstract class TP extends Protocol {
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
-                log.error(new StringBuilder("failed handling data from ").append(sender), t);
+                log.error(new StringBuilder("failed handling data from ").append(sender).toString(), t);
         }
     }
 
@@ -1453,7 +1453,7 @@ public abstract class TP extends Protocol {
                             sb.append("Packet is discarded");
                         else
                             sb.append("This may cause problems");
-                        log.warn(sb);
+                        log.warn(sb.toString());
                     }
                     if(discard_incompatible_packets)
                         return;

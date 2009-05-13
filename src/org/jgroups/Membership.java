@@ -1,10 +1,10 @@
-// $Id: Membership.java,v 1.13 2009/05/05 13:52:32 belaban Exp $
+// $Id: Membership.java,v 1.14 2009/05/13 13:07:10 belaban Exp $
 
 package org.jgroups;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.util.*;
 

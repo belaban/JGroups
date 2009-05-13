@@ -1,9 +1,9 @@
-// $Id: CausalDemo.java,v 1.8 2009/04/09 09:11:27 belaban Exp $
+// $Id: CausalDemo.java,v 1.9 2009/05/13 13:07:01 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.io.Serializable;
 import java.util.Random;
@@ -144,7 +144,7 @@ public class CausalDemo implements Runnable
          }
          catch (Exception e)
          {
-            log.error(e);
+            log.error(e.toString());
          }
       }
 

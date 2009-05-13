@@ -5,11 +5,11 @@ package org.jgroups.conf;
  * Reads and maintains mapping between magic numbers and classes
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: MagicNumberReader.java,v 1.16 2008/02/25 16:24:06 belaban Exp $
+ * @version $Id: MagicNumberReader.java,v 1.17 2009/05/13 13:07:04 belaban Exp $
  */
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;

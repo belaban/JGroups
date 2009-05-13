@@ -1,8 +1,8 @@
 package org.jgroups.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.logging.Log;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.blocks.Connection;
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.196 2009/05/05 13:23:03 belaban Exp $
+ * @version $Id: Util.java,v 1.197 2009/05/13 13:07:05 belaban Exp $
  */
 public class Util {
 
@@ -2647,7 +2647,7 @@ public class Util {
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
                         "(see http://www.jboss.com/wiki/Edit.jsp?page=CrossTalking for details). ");
                 sb.append("\nException was: " + ex);
-                log.warn(sb);
+                log.warn(sb.toString());
             }
         }
         if(retval == null)

@@ -1,7 +1,7 @@
 package org.jgroups.mux;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
 import org.jgroups.annotations.Experimental;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.107 2009/04/09 09:11:25 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.108 2009/05/13 13:07:00 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")

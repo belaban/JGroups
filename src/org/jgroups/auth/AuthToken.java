@@ -2,8 +2,8 @@ package org.jgroups.auth;
 
 import org.jgroups.util.Streamable;
 import org.jgroups.Message;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.io.Serializable;
 import java.util.Properties;

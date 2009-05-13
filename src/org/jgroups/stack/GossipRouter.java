@@ -23,8 +23,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.management.MBeanServer;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -54,7 +54,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.51 2009/05/07 07:51:57 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.52 2009/05/13 13:06:56 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {

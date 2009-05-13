@@ -1,10 +1,10 @@
-// $Id: Queue.java,v 1.30 2007/08/08 09:36:23 belaban Exp $
+// $Id: Queue.java,v 1.31 2009/05/13 13:07:05 belaban Exp $
 
 package org.jgroups.util;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.TimeoutException;
 
 import java.util.*;

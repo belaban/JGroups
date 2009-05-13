@@ -1,9 +1,9 @@
-// $Id: Channel.java,v 1.48 2009/04/24 14:16:15 belaban Exp $
+// $Id: Channel.java,v 1.49 2009/05/13 13:07:10 belaban Exp $
 
 package org.jgroups;
 
 
-import org.apache.commons.logging.Log;
+import org.jgroups.logging.Log;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.ProtocolStack;

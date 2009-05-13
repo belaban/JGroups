@@ -2,10 +2,9 @@
 package org.jgroups;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Headers;
 import org.jgroups.util.Streamable;
@@ -26,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.95 2009/04/09 09:11:29 belaban Exp $
+ * @version $Id: Message.java,v 1.96 2009/05/13 13:07:10 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;

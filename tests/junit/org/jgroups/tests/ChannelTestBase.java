@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.protocols.BasicTCP;

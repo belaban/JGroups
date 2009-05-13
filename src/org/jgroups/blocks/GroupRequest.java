@@ -1,8 +1,8 @@
 package org.jgroups.blocks;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Transport;
@@ -54,7 +54,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.39 2009/04/30 12:48:47 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.40 2009/05/13 13:06:54 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */

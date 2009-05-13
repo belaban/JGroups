@@ -1,9 +1,9 @@
-// $Id: GmsImpl.java,v 1.31 2009/04/24 14:02:27 belaban Exp $
+// $Id: GmsImpl.java,v 1.32 2009/05/13 13:06:57 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import org.apache.commons.logging.Log;
 import org.jgroups.*;
+import org.jgroups.logging.Log;
 import org.jgroups.util.Digest;
 
 import java.util.Collection;
@@ -13,7 +13,7 @@ import java.util.List;
 
 public abstract class GmsImpl {
     protected GMS         gms=null;
-    protected final Log   log;
+    protected final       Log log;
     final boolean         trace;
     final boolean         warn;
     volatile boolean      leaving=false;

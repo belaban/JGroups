@@ -1,7 +1,7 @@
 package org.jgroups;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.216 2009/04/23 18:44:07 vlada Exp $
+ * @version $Id: JChannel.java,v 1.217 2009/05/13 13:07:10 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {

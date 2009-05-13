@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.222 2009/05/12 13:46:37 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.223 2009/05/13 13:06:57 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -934,7 +934,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(print_stability_history_on_failed_xmit) {
                     sb.append(" (stability history:\n").append(printStabilityHistory());
                 }
-                log.error(sb);
+                log.error(sb.toString());
             }
             return;
         }
@@ -949,7 +949,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     if(print_stability_history_on_failed_xmit) {
                         sb.append(" (stability history:\n").append(printStabilityHistory());
                     }
-                    log.warn(sb);
+                    log.warn(sb.toString());
                 }
                 continue;
             }
@@ -1246,7 +1246,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         sb.append("\n").append("resulting digest: " + getDigest());
         digest_history.add(sb.toString());
         if(log.isDebugEnabled())
-            log.debug(sb);
+            log.debug(sb.toString());
     }
 
 

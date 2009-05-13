@@ -1,10 +1,10 @@
-// $Id: AckMcastReceiverWindow.java,v 1.9 2008/01/22 10:44:36 belaban Exp $
+// $Id: AckMcastReceiverWindow.java,v 1.10 2009/05/13 13:06:56 belaban Exp $
 
 package org.jgroups.stack;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 
 import java.util.Enumeration;

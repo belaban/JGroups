@@ -1,8 +1,8 @@
-// $Id: DistributedQueue.java,v 1.22 2009/04/09 09:11:19 belaban Exp $
+// $Id: DistributedQueue.java,v 1.23 2009/05/13 13:06:54 belaban Exp $
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.RspList;

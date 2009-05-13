@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.8 2009/04/09 09:11:38 belaban Exp $
+// $Id: Whiteboard.java,v 1.9 2009/05/13 13:07:07 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -6,8 +6,8 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.applet.Applet;
 import java.awt.*;
@@ -129,7 +129,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
 				MethodCall call = new MethodCall("removeNode", new Object[] {panel.my_addr}, new String[] {Object.class.getName()}); 
                 disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             } catch (Exception e) {
-                log.error(e);
+                log.error(e.toString());
             }
             channel.close();
             disp = null;
@@ -160,7 +160,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
                     System.exit(0);
                 }
             } catch (Exception ex) {
-                log.error(ex);
+                log.error(ex.toString());
             }
 
         } else

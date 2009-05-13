@@ -3,9 +3,9 @@
 package org.jgroups.stack;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.annotations.DeprecatedProperty;
@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.65 2008/10/21 08:14:47 vlada Exp $
+ * @version $Id: Protocol.java,v 1.66 2009/05/13 13:06:56 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -45,7 +45,7 @@ public abstract class Protocol {
     
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
     protected boolean          stats=true;
-    protected final Log        log=LogFactory.getLog(this.getClass());
+    protected final Log log=LogFactory.getLog(this.getClass());
 
 
     /**

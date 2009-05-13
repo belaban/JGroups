@@ -1,10 +1,10 @@
-// $Id: AckSenderWindow.java,v 1.33 2009/04/27 11:31:36 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.34 2009/05/13 13:06:56 belaban Exp $
 
 package org.jgroups.stack;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;

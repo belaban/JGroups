@@ -1,9 +1,9 @@
-// $Id: Profiler.java,v 1.6 2005/05/30 16:14:35 belaban Exp $
+// $Id: Profiler.java,v 1.7 2009/05/13 13:07:11 belaban Exp $
 
 package org.jgroups.debug;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -43,7 +43,7 @@ public class Profiler {
             os=new FileOutputStream("profiler.dat");
         }
         catch(Exception e) {
-            log.error(e);
+            log.error(e.toString());
         }
     }
 
@@ -56,7 +56,7 @@ public class Profiler {
             os=new FileOutputStream(filename);
         }
         catch(Exception e) {
-            log.error(e);
+            log.error(e.toString());
         }
     }
 
@@ -94,7 +94,7 @@ public class Profiler {
             os.write("-----------------------------------------------------------------\n\n".getBytes());
         }
         catch(Exception e) {
-            log.error(e);
+            log.error(e.toString());
         }
         for(Enumeration e=entries.keys(); e.hasMoreElements();) {
             key=(String)e.nextElement();
@@ -104,7 +104,7 @@ public class Profiler {
                           val.tot_time + ' ' + trim(val.avg) + '\n').getBytes());
             }
             catch(Exception ex) {
-                log.error(ex);
+                log.error(ex.toString());
             }
         }
     }
@@ -147,7 +147,7 @@ public class Profiler {
             Profiler.dump();
         }
         catch(Exception e) {
-            log.error(e);
+            log.error(e.toString());
         }
     }
 }

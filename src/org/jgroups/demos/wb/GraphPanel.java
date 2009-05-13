@@ -1,11 +1,11 @@
-// $Id: GraphPanel.java,v 1.6 2006/02/16 08:22:25 belaban Exp $
+// $Id: GraphPanel.java,v 1.7 2009/05/13 13:07:07 belaban Exp $
 
 
 package org.jgroups.demos.wb;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
@@ -206,7 +206,6 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	double  bestdist = Double.MAX_VALUE, dist;
 	int     mod=e.getModifiers();
 	Node    n;
-	String  msg;
 
 	
 	if((mod & MouseEvent.BUTTON3_MASK) != 0) {
@@ -257,7 +256,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	    wb.disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    log.error(ex.toString());
 	}
 	
 	pick = null;
@@ -284,7 +283,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 	    wb.disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    log.error(e.toString());
 	}
 	repaint();
     }

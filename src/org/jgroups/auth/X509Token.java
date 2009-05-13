@@ -128,7 +128,7 @@ public class X509Token extends AuthToken {
             }
             catch(Exception e) {
                 if(log.isFatalEnabled()) {
-                    log.fatal(e);
+                    log.fatal(e.toString());
                 }
             }
         }

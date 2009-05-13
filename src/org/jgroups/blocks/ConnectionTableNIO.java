@@ -1,8 +1,8 @@
-// $Id: ConnectionTableNIO.java,v 1.42 2009/04/09 09:11:19 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.43 2009/05/13 13:06:54 belaban Exp $
 
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
+import org.jgroups.logging.Log;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
@@ -659,7 +659,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             return Selector.open();
          } catch (IOException e)
          {
-            if (log.isErrorEnabled()) log.error(e);
+            if (log.isErrorEnabled()) log.error(e.toString());
             throw new IllegalStateException(e.getMessage());
          }
 
@@ -1064,7 +1064,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          }
          catch (IOException e)
          {
-            if (log.isErrorEnabled()) log.error(e);
+            if (log.isErrorEnabled()) log.error(e.toString());
             throw new IllegalStateException(e.getMessage());
          }
       }

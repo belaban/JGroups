@@ -1,8 +1,8 @@
 package org.jgroups.blocks;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class MethodCall implements Externalizable {
 

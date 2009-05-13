@@ -2,8 +2,8 @@
 package org.jgroups.util;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Global;
 
 import java.util.concurrent.*;
@@ -38,7 +38,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.28 2008/06/23 05:58:04 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.29 2009/05/13 13:07:05 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
 

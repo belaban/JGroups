@@ -1,10 +1,10 @@
-// $Id: Retransmitter.java,v 1.25 2008/05/15 10:49:11 belaban Exp $
+// $Id: Retransmitter.java,v 1.26 2009/05/13 13:06:56 belaban Exp $
 
 package org.jgroups.stack;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class Retransmitter {
 
@@ -40,7 +40,7 @@ public class Retransmitter {
     private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
     private RetransmitCommand              cmd=null;
     private TimeScheduler                  timer=null;
-    protected static final Log             log=LogFactory.getLog(Retransmitter.class);
+    protected static final Log log=LogFactory.getLog(Retransmitter.class);
 
 
     /** Retransmit command (see Gamma et al.) used to retrieve missing messages */

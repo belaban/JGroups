@@ -8,8 +8,8 @@ package org.jgroups.persistence;
  */
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 import org.jgroups.annotations.Unsupported;
 

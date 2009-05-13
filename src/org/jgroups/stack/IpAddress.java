@@ -1,9 +1,9 @@
-// $Id: IpAddress.java,v 1.50 2009/04/09 09:11:31 belaban Exp $
+// $Id: IpAddress.java,v 1.51 2009/05/13 13:06:56 belaban Exp $
 
 package org.jgroups.stack;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
