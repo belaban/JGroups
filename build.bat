@@ -8,7 +8,7 @@ if "%JAVA_HOME%" == "" goto noJavaHome
 
 set LIB=lib
 
-set LIBS=%LIB%\log4j-1.2.6.jar;%LIB%\commons-logging.jar;%LIB%\concurrent.jar
+set LIBS=%LIB%\log4j.jar
 
 set LIBS=%LIB%\ant.jar;%LIB%\ant-junit.jar;%LIB%\ant-launcher.jar;%LIB%\junit.jar;%LIB%\xalan.jar;%LIB%\serializer.jar;
 REM echo LIBS=%LIBS%

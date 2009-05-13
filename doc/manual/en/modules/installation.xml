@@ -53,9 +53,6 @@
                 <para>INSTALL.html: this file</para>
             </listitem>
             <listitem>
-                <para>commons-logging.jar</para>
-            </listitem>
-            <listitem>
                 <para>log4j.jar. This JAR is optional, for example if JDK logging is used, we don't need it.</para>
             </listitem>
         </orderedlist>
@@ -111,9 +108,6 @@
                             <ulink url="http://xml.apache.org/">xalan.jar</ulink>: to format the output of
                             the JUnit tests using an XSLT converter to HTML
                         </para>
-                    </listitem>
-                    <listitem>
-                        <para>commons-logging.jar</para>
                     </listitem>
                     <listitem>
                         <para>log4j.jar</para>
@@ -264,7 +258,7 @@
             $ java -jar jgroups-all.jar
 
             Version:        2.6.0 pre-alpha
-            CVS:            $Id: installation.xml,v 1.5 2007/07/24 16:30:46 belaban Exp $
+            CVS:            $Id: installation.xml,v 1.6 2009/05/13 13:22:08 belaban Exp $
         </screen>
 
     </section>

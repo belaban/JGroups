@@ -51,11 +51,6 @@ directory)<br>
 The binary version contains<br>
 <ol>
   <li>jgroups-all.jar: the JGroups library including the demos</li>
-  <li>commons-logging.jar</li>
-  <li>concurrent.jar</li>
-  <li>log4j.jar</li>
-  <li>jmxri.jar: the JMX reference implementation, this is not needed
-if running in JDK 5 or higher</li>
   <li>jgroups.bat/jgroups.sh: convenience script to start demo programs
 (set the CLASSPATH etc) - see below</li>
   <li>Some sample configuration files, udp.xml, mping.xml etc<br>
@@ -95,8 +90,6 @@ org.jgroups.protocols.JMS protocol</li>
 test cases</li>
     <li><a href="http://xml.apache.org">xalan.jar</a> : to format the
 output of the JUnit tests using an XSLT converter to HTML</li>
-    <li>concurrent.jar</li>
-    <li>commons-logging.jar</li>
     <li>log4j.jar</li>
     <li>etc<br>
     </li>
@@ -166,7 +159,7 @@ java -jar jgroups-all.jar<br>
 </b><br>
 You should see the following output (more or less) if the class is
 found:
-<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.9 2006/12/27 10:17:58 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br></pre>
+<pre><br>Version:        2.2.8 RC1<br>CVS:            $Id: INSTALL.html,v 1.10 2009/05/13 13:22:05 belaban Exp $<br>History:        (see doc/history.txt for details)<br><br><br></pre>
 <h3>Running the performance tests</h3>
 <pre><br></pre>
 By default, we're running 2 senders with 10000 1K messages each, to do

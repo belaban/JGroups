@@ -8,7 +8,7 @@ set CLASSPATH=..\classes
 
 set LIB=..\lib
 
-set LIBS=%LIB%\log4j-1.2.6.jar;%LIB%\commons-logging.jar;%LIB%\concurrent.jar
+set LIBS=%LIB%\log4j.jar;
 
 
 set CP=%CLASSPATH%;%LIBS%

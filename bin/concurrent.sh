@@ -5,9 +5,7 @@ BIN=`dirname $0`
 
 LIB=$BIN/../lib
 
-LIBS=$LIB/commons-logging.jar
-
-CLASSPATH=$BIN/../classes:$CLASSPATH:$LIBS
+CLASSPATH=$BIN/../classes:$CLASSPATH
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false;

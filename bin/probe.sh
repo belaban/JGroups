@@ -8,7 +8,7 @@ BIN=`dirname $0`
 
 LIB=$BIN/../lib
 
-LIBS=$LIB/log4j-1.2.6.jar:$LIB/commons-logging.jar:$LIB/concurrent.jar
+LIBS=$LIB/log4j.jar
 
 #echo $CLASSPATH
 

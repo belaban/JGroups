@@ -16,7 +16,7 @@ USERID=bela
 
 
 #classpath for performance tests
-CLASSPATH='commons-logging.jar:log4j-1.2.6.jar:concurrent.jar:jgroups-all.jar'
+CLASSPATH='jgroups-all.jar'
 
 #finds test configuration files
 #note the running directory of this script and make sure that find command can 
