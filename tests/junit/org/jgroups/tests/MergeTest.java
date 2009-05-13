@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.35 2009/04/14 19:18:39 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.36 2009/05/13 13:57:00 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -130,7 +130,7 @@ public class MergeTest extends ChannelTestBase {
             }
             Util.sleep(1000);
         }
-        catch(Exception ex) {
+        catch(Throwable ex) {
             log.warn("Exception encountered during test", ex);
             assert false:ex.getLocalizedMessage();
         }
