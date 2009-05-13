@@ -100,4 +100,29 @@ public class Log4JLogImpl implements Log {
     public void warn(String msg, Throwable throwable) {
         logger.warn(msg, throwable);
     }
+
+    public String getLevel() {
+        Level level=logger.getLevel();
+        return level != null? level.toString() : "off";
+    }
+
+    public void setLevel(String level) {
+        Level new_level=strToLevel(level);
+        if(new_level != null)
+            logger.setLevel(new_level);
+    }
+
+
+    private static Level strToLevel(String level) {
+        if(level == null) return null;
+        level=level.toLowerCase().trim();
+        if(level.equals("fatal"))   return Level.FATAL;
+        if(level.equals("error"))   return Level.ERROR;
+        if(level.equals("warn"))    return Level.WARN;
+        if(level.equals("warning")) return Level.WARN;
+        if(level.equals("info"))    return Level.INFO;
+        if(level.equals("debug"))   return Level.DEBUG;
+        if(level.equals("trace"))   return Level.TRACE;
+        return null;
+    }
 }
