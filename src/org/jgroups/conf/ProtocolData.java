@@ -5,7 +5,7 @@ package org.jgroups.conf;
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolData.java,v 1.9 2008/11/04 08:23:04 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.10 2009/05/13 05:35:45 belaban Exp $
  */
 
 import java.util.HashMap;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class ProtocolData {
     /** Map<String,ProtocolParameter> of property keys and values */
-    private final Map<String,ProtocolParameter> mParameters=new HashMap<String,ProtocolParameter>();
+    private final Map mParameters=new HashMap();
     private final String mProtocolName;
     private final String mClassName;
 
@@ -65,7 +65,7 @@ public class ProtocolData {
         return "n/a";
     }
 
-    public Map<String,ProtocolParameter> getParameters() {
+    public Map getParameters() {
         return mParameters;
     }
 
@@ -79,7 +79,7 @@ public class ProtocolData {
         Iterator it=mParameters.keySet().iterator();
         for(int i=0; i < result.length; i++) {
             String key=(String)it.next();
-            result[i]=mParameters.get(key);
+            result[i]=(ProtocolParameter)mParameters.get(key);
         }
         return result;
     }
@@ -101,7 +101,7 @@ public class ProtocolData {
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
-                ProtocolParameter param=mParameters.get(key);
+                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
                 buf.append(param.getParameterString());
                 if(i.hasNext()) buf.append(';');
             }
@@ -116,7 +116,7 @@ public class ProtocolData {
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
-                ProtocolParameter param=mParameters.get(key);
+                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
                 buf.append(param.getParameterStringXml());
                 if(i.hasNext()) buf.append(' ');
             }
