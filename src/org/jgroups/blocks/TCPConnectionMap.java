@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
@@ -485,13 +485,10 @@ public class TCPConnectionMap{
                 if(!Version.isBinaryCompatible(version) ) {
                     if(log.isWarnEnabled())
                         log.warn(new StringBuilder("packet from ").append(client_sock.getInetAddress())
-                                                                  .append(':')
-                                                                  .append(client_sock.getPort())
-                                                                  .append(" has different version (")
-                                                                  .append(Version.print(version))
-                                                                  .append(") from ours (")
-                                                                  .append(Version.printVersion())
-                                                                  .append("). This may cause problems"));
+                                .append(':').append(client_sock.getPort()).append(" has different version (")
+                                .append(Version.print(version)).append(") from ours (")
+                                .append(Version.printVersion())
+                                .append("). This may cause problems").toString());
                 }
                 Address client_peer_addr=new IpAddress();
                 client_peer_addr.readFrom(in);

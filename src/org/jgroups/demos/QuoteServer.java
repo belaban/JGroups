@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.11 2007/07/05 08:42:04 belaban Exp $
+// $Id: QuoteServer.java,v 1.12 2009/05/13 13:07:01 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -6,8 +6,8 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.util.Date;
 import java.util.Enumeration;

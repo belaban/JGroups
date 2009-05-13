@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.persistence.PersistenceFactory;
@@ -41,7 +41,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.19 2009/04/09 09:11:19 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.20 2009/05/13 13:06:54 belaban Exp $
  */
 @Unsupported(comment="Use JBossCache instead")
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends

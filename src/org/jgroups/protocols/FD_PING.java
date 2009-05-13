@@ -1,10 +1,10 @@
 package org.jgroups.protocols;
 
-import org.apache.commons.logging.Log;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.logging.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.9 2008/12/05 09:22:28 belaban Exp $
+ * @version $Id: FD_PING.java,v 1.10 2009/05/13 13:06:59 belaban Exp $
  */
 @Unsupported
 public class FD_PING extends FD {

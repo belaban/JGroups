@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
@@ -21,7 +21,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.12 2008/05/22 09:50:22 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.13 2009/05/13 13:06:54 belaban Exp $
  */
 @Unsupported
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {

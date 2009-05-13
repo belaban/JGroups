@@ -1,8 +1,8 @@
 package org.jgroups.stack;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Message;
 
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.30 2009/04/28 11:22:23 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.31 2009/05/13 13:06:56 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;

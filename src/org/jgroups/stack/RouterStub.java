@@ -9,8 +9,8 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.protocols.TUNNEL;
 import org.jgroups.util.Util;
@@ -19,7 +19,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.43 2009/05/07 07:51:57 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.44 2009/05/13 13:06:56 belaban Exp $
  */
 public class RouterStub {
 

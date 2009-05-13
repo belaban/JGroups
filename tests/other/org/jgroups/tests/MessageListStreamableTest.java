@@ -1,14 +1,14 @@
-// $Id: MessageListStreamableTest.java,v 1.6 2008/03/31 06:15:22 vlada Exp $
+// $Id: MessageListStreamableTest.java,v 1.7 2009/05/13 13:06:58 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.6 2008/03/31 06:15:22 vlada Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.7 2009/05/13 13:06:58 belaban Exp $
  */
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;

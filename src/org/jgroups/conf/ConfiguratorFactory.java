@@ -1,8 +1,8 @@
 
 package org.jgroups.conf;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.util.Util;
@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.28 2008/11/28 14:45:18 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.29 2009/05/13 13:07:04 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=

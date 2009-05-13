@@ -144,7 +144,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
 
         }
         catch(Exception ex) {
-            log.warn(ex);
+            log.warn(ex.toString());
         }
         finally {
             for(int i=0;i < channels.size();i++) {

@@ -1,9 +1,9 @@
-// $Id: LogTest.java,v 1.5 2008/03/11 11:31:49 belaban Exp $
+// $Id: LogTest.java,v 1.6 2009/05/13 13:06:58 belaban Exp $
 
 package org.jgroups.tests;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.testng.annotations.Test;
 
 

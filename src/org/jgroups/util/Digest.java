@@ -1,7 +1,7 @@
 package org.jgroups.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.annotations.Immutable;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.11 2009/05/11 07:01:31 belaban Exp $
+ * @version $Id: Digest.java,v 1.12 2009/05/13 13:07:05 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	

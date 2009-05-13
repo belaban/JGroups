@@ -1,7 +1,7 @@
 package org.jgroups.tests.perf;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Version;
 import org.jgroups.Message;
 import org.jgroups.util.Util;

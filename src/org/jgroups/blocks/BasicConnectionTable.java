@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
@@ -577,7 +577,7 @@ public abstract class BasicConnectionTable {
                        if(log.isWarnEnabled())
                            log.warn(new StringBuilder("packet from ").append(client_addr).append(':').append(client_port).
                                    append(" has different version (").append(Version.print(version)).append(") from ours (").
-                                   append(Version.printVersion()).append("). This may cause problems"));
+                                   append(Version.printVersion()).append("). This may cause problems").toString());
                    }
                    client_peer_addr=new IpAddress();
                    client_peer_addr.readFrom(in);

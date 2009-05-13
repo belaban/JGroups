@@ -1,9 +1,9 @@
-// $Id: JChannelFactory.java,v 1.55 2008/05/29 08:22:06 belaban Exp $
+// $Id: JChannelFactory.java,v 1.56 2009/05/13 13:07:10 belaban Exp $
 
 package org.jgroups;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;

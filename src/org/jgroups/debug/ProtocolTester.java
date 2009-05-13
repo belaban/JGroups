@@ -1,10 +1,10 @@
-// $Id: ProtocolTester.java,v 1.16 2008/07/30 15:10:20 vlada Exp $
+// $Id: ProtocolTester.java,v 1.17 2009/05/13 13:07:11 belaban Exp $
 
 package org.jgroups.debug;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;

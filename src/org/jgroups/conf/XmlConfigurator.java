@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.20 2008/11/04 08:23:04 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.21 2009/05/13 13:07:04 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -8,8 +8,8 @@ package org.jgroups.conf;
  * @version 1.0
  */
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.w3c.dom.*;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;

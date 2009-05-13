@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.annotations.ManagedAttribute;
@@ -16,7 +16,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.13 2009/01/09 15:22:59 belaban Exp $
+ * @version $Id: Cache.java,v 1.14 2009/05/13 13:06:54 belaban Exp $
  */
 @Experimental
 @Unsupported

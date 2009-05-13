@@ -3,8 +3,8 @@
 
 package org.jgroups.stack;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.64 2009/05/05 12:25:44 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.65 2009/05/13 13:06:56 belaban Exp $
  */
 public class NakReceiverWindow {
 

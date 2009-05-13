@@ -41,13 +41,6 @@
             description='Lightweight Scripting for Java. Uused mainly by the BSH protocol (uncomplete) (runtime)'>
         <jar name='bsh-1.2b3.jar' />
     </module>
-    <module name='commons-logging'
-            licenseType='apache-2.0'
-            version='1.1'
-            projectHome='http://jakarta.apache.org/commons/logging/'
-            description='Apache commons logging. Used for logging (runtime)'>
-        <jar name='commons-logging.jar' />
-    </module>
     <module name='creative-commons'
             licenseType='creative-commons'
             version='2.5'

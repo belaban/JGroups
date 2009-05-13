@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.15 2008/03/31 06:15:21 vlada Exp $
+// $Id: MessageSerializationTest.java,v 1.16 2009/05/13 13:06:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -14,8 +14,8 @@ import org.jgroups.util.Buffer;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.stack.IpAddress;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 import java.net.InetAddress;
 import java.io.*;

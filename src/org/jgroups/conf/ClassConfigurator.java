@@ -1,10 +1,10 @@
-// $Id: ClassConfigurator.java,v 1.25 2008/02/25 16:24:07 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.26 2009/05/13 13:07:04 belaban Exp $
 
 package org.jgroups.conf;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.Global;
 import org.jgroups.util.Util;

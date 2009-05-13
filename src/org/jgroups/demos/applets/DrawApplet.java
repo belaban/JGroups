@@ -1,4 +1,4 @@
-// $Id: DrawApplet.java,v 1.5 2005/05/30 16:14:36 belaban Exp $
+// $Id: DrawApplet.java,v 1.6 2009/05/13 13:07:13 belaban Exp $
 
 package org.jgroups.demos.applets;
 
@@ -15,8 +15,8 @@ import java.io.DataOutputStream;
 import java.util.Random;
 import java.util.Vector;
 import org.jgroups.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 
 
@@ -68,7 +68,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 	    channel.connect(groupname);
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    log.error(e.toString());
 	}
 	receiver=new Thread(this, "DrawThread");
 	receiver.start();
@@ -152,7 +152,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 	    leave_button.setForeground(Color.blue);
 	}
 	catch(Exception e) {
-	    log.error(e);
+	    log.error(e.toString());
 	    return;
 	}
     }
@@ -197,7 +197,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 		break;
 	    }
 	    catch(Exception e) {
-		log.error(e);
+		log.error(e.toString());
 	    }
 	    if(graphics != null) {
 		graphics.setColor(new Color(r, g, b));
@@ -234,7 +234,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 	    out.reset();	
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    log.error(ex.toString());
 	}
     }
 
@@ -264,7 +264,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 	    outstream.flush();
 	}
 	catch(Exception ex) {
-	    log.error(ex);
+	    log.error(ex.toString());
 	}
     }
 
@@ -283,7 +283,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 		setVisible(false);
 	    }
 	    catch(Exception ex) {
-		log.error(ex);
+		log.error(ex.toString());
 	    }
 
 	}

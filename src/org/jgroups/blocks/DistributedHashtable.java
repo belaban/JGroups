@@ -1,9 +1,9 @@
-// $Id: DistributedHashtable.java,v 1.36 2009/04/09 09:11:19 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.37 2009/05/13 13:06:54 belaban Exp $
 
 package org.jgroups.blocks;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.persistence.CannotPersistException;
@@ -33,7 +33,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.36 2009/04/09 09:11:19 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.37 2009/05/13 13:06:54 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 @Unsupported

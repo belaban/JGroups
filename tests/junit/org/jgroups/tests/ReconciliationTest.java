@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.22 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.23 2009/05/13 13:07:12 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -220,7 +220,7 @@ public class ReconciliationTest extends ChannelTestBase {
     private void printDigests(List<JChannel> channels, String message) {
         log.info(message);
         for(JChannel channel:channels) {
-            log.info(channel.downcall(Event.GET_DIGEST_EVT));
+            log.info(channel.downcall(Event.GET_DIGEST_EVT).toString());
         }
     }
 
