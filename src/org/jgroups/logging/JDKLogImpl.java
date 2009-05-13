@@ -100,5 +100,12 @@ public class JDKLogImpl implements Log {
         logger.log(Level.SEVERE, msg, t);
     }
 
+    public String getLevel() {
+        Level level=logger.getLevel();
+        return level != null? level.toString() : "off";
+    }
+
+    public void setLevel(String level) {
+    }
 
 }

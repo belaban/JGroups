@@ -29,4 +29,17 @@ public interface Log {
     void trace(String msg, Throwable throwable);
     void warn(String msg);
     void warn(String msg, Throwable throwable);
+
+
+    // Advanced methods
+
+    /**
+     * Sets the level of a logger. This method is used to dynamically change the logging level of a running system,
+     * e.g. via JMX. The appender of a level needs to exist.
+     * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
+     * (capitalization not relevant)
+     */
+    void setLevel(String level);
+
+    String getLevel();
 }
