@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.49 2009/04/09 09:11:15 belaban Exp $
+// $Id: ENCRYPT.java,v 1.50 2009/05/13 12:36:47 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -986,7 +986,7 @@ public class ENCRYPT extends Protocol {
             temp.init(Cipher.SECRET_KEY, keySpec);
         }
         catch(Exception e) {
-            log.fatal(e);
+            log.fatal(e.toString());
             keySpec=null;
         }
         return keySpec;
