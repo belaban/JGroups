@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.202 2009/05/04 13:55:36 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.203 2009/05/13 13:22:05 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -198,8 +198,6 @@
                 <include name="EULA"/>
             </fileset>
             <fileset dir="${lib.dir}">
-                <include name="commons-logging*.jar"/>
-                <include name="log4j*.jar"/>
                 <include name="licenses/*"/>
             </fileset>
             <fileset dir="${dist.dir}">
@@ -246,7 +244,6 @@
             description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
         <jar jarfile="${dist.dir}/jgroups-service.sar">
             <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <fileset dir="${lib.dir}" includes="commons-logging*.jar,log4j*.jar"/>
             <metainf dir="${conf.dir}"
                      includes="jboss-service.xml"/>
             <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>

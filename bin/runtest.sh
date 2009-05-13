@@ -36,8 +36,7 @@ done
 CLASSPATH="$reldir/../classes${SEP}\
 $reldir/../conf${SEP}\
 $reldir/../lib/junit.jar${SEP}\
-$reldir/../lib/log4j-1.2.6.jar${SEP}\
-$reldir/../lib/commons-logging.jar"
+$reldir/../lib/log4j.jar${SEP}
 
 #if [ $cygwin = "true" ]; then
 #   CP=`cygpath -wp $CLASSPATH`

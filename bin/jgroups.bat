@@ -7,7 +7,7 @@ REM set the value of JG to the root directory in which JGroups is located
 set JG=.
 set LIB=%JG%
 
-set CP=%JG%\classes\;%JG%\conf\;%LIB%\jgroups-all.jar\;%LIB%\commons-logging.jar\;%LIB%\concurrent.jar\;%LIB%\jmxri.jar\;%LIB%\log4j.jar\;%JG%\keystore
+set CP=%JG%\classes\;%JG%\conf\;%LIB%\jgroups-all.jar\;%LIB%\log4j.jar\;%JG%\keystore
 
 set VMFLAGS=-Xmx500M -Xms500M -XX:NewRatio=1 -XX:+AggressiveHeap -verbose:gc -XX:+DisableExplicitGC -XX:ThreadStackSize=32 -XX:CompileThreshold=100
 
