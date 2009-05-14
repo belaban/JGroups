@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.168 2009/05/14 15:32:38 belaban Exp $
+ * @version $Id: GMS.java,v 1.169 2009/05/14 15:59:03 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -294,10 +294,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(impl == new_impl) // superfluous
                 return;
             impl=new_impl;
-            if(log.isDebugEnabled()) {
-                String msg=(local_addr != null? local_addr.toString()+" " : "") + "changed role to " + new_impl.getClass().getName();
-                log.debug(msg);
-            }
+            if(log.isDebugEnabled())
+                log.debug(local_addr + ": changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -312,7 +310,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         TP transport=getTransport();
         timer=transport.getTimer();
         if(timer == null)
-            throw new Exception("GMS.init(): timer is null");
+            throw new Exception("timer is null");
         if(impl != null)
             impl.init();
         transport.registerProbeHandler(this);
@@ -482,23 +480,15 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(!ackMembers.isEmpty()) {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 if(log.isTraceEnabled())
-                    log.trace("received all ACKs (" + ack_collector.expectedAcks() + ") from existing members for view " +
-                            new_view.getVid());
+                    log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
+                            ") from existing members for view " + new_view.getVid());
             }
         }
         catch(TimeoutException e) {
             if(log_collect_msgs && log.isWarnEnabled()) {
-                log.warn(local_addr + " failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                        + ") for view "
-                        + new_view
-                        + " after "
-                        + view_ack_collection_timeout
-                        + "ms, missing ACKs from "
-                        + ack_collector.printMissing()
-                        + " (received="
-                        + ack_collector.printReceived()
-                        + "), local_addr="
-                        + local_addr);
+                log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
+                        + ") for view " + new_view + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
+                        + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() + ")");
             }
         }   
         
@@ -510,22 +500,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 if(log.isTraceEnabled())
-                    log.trace("received all ACKs (" + ack_collector.receivedAcks()
-                              + ") from joiners for view " + new_view.getVid());
+                    log.trace(local_addr + ": received all ACKs (" + ack_collector.receivedAcks() +
+                            ") from joiners for view " + new_view.getVid());
             }
             catch(TimeoutException e) {
                 if(log_collect_msgs && log.isWarnEnabled()) {
-                    log.warn(local_addr + " failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                            + ") for unicasted view "
-                            + new_view
-                            + " after "
-                            + view_ack_collection_timeout
-                            + "ms, missing ACKs from "
-                            + ack_collector.printMissing()
-                            + " (received="
-                            + ack_collector.printReceived()
-                            + "), local_addr="
-                            + local_addr);
+                    log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
+                            + ") for unicast view " + new_view + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
+                            + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() + ")");
                 }
             }
         }           
@@ -559,7 +541,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
                 if(log.isWarnEnabled() && rc < 0) // only scream if view is smaller, silently discard same views
-                    log.warn("[" + local_addr + "] received view < current view;" +
+                    log.warn(local_addr + ": received view < current view;" +
                             " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
             }
@@ -572,7 +554,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 setDigest(digest);
         }
 
-        if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
+        if(log.isDebugEnabled()) log.debug(local_addr + ": view is " + new_view);
         if(stats) {
             num_views++;
             prev_views.add(new_view);
@@ -592,15 +574,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
                 if(log.isWarnEnabled())
-                    log.warn("I (" + local_addr + ") am not a member of view " + new_view +
-                            ", shunning myself and leaving the group (prev_members are " + prev_members +
-                            ", current view is " + view + ")");
+                    log.warn(local_addr + ": not member of view " + new_view + ", shunning myself and leaving " +
+                            "the group (prev_members are " + prev_members + ", current view is " + view + ")");
                 if(impl != null)
                     impl.handleExit();
                 up_prot.up(new Event(Event.EXIT));
             }
             else {
-                if(log.isWarnEnabled()) log.warn("I (" + local_addr + ") am not a member of view " + new_view + "; discarding view");
+                if(log.isWarnEnabled()) log.warn(local_addr + ": not member of view " + new_view + "; discarding it");
             }
             return;
         }
@@ -754,11 +735,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 			            
 			            if(successfulFlush) {
 			                if(log.isTraceEnabled())
-			                    log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
+			                    log.trace(local_addr + ": successful GMS flush by coordinator");
 			            }
 			            else {
-			                if(log.isWarnEnabled())
-			                    log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
+                            if(log.isWarnEnabled())
+                                log.warn(local_addr + ": GMS flush by coordinator failed");
 			            }
 			        }
 			        return successfulFlush;
@@ -784,7 +765,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     void stopFlush() {
         if(flushProtocolInStack) {
             if(log.isDebugEnabled()) {
-                log.debug(getLocalAddress() + " sending RESUME event");
+                log.debug(local_addr + ": sending RESUME event");
             }
             up_prot.up(new Event(Event.RESUME));
         }
@@ -793,7 +774,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     void stopFlush(List<Address> members) {
         
         if(log.isDebugEnabled()){
-            log.debug(getLocalAddress() + " sending RESUME event");
+            log.debug(local_addr + ": sending RESUME event");
         }
         up_prot.up(new Event(Event.RESUME,members));
     }
@@ -821,7 +802,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                         if(log.isDebugEnabled())
                             log.debug("received LEAVE_REQ for " + hdr.mbr + " from " + msg.getSrc());
                         if(hdr.mbr == null) {
-                            if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
                             return null;
                         }
                         view_handler.add(new Request(Request.LEAVE, hdr.mbr, false, null));
@@ -832,7 +812,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     case GmsHeader.VIEW:
                         View new_view=hdr.view;
                         if(new_view == null) {
-                            if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return null;
                         }
 
@@ -1312,7 +1291,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.168 2009/05/14 15:32:38 belaban Exp $
+     * @version $Id: GMS.java,v 1.169 2009/05/14 15:59:03 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
