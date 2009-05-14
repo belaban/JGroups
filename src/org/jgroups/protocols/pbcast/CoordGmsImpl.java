@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.103 2009/05/14 15:20:35 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.104 2009/05/14 15:32:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -137,8 +137,6 @@ public class CoordGmsImpl extends GmsImpl {
      * @param other_coords A list of coordinators (including myself) found by MERGE protocol
      */
     public void merge(Vector<Address> other_coords) {
-        Membership tmp;
-
         if(merging) {
             if(log.isWarnEnabled()) log.warn("merge already in progress, discarded MERGE event (I am " + gms.local_addr + ")");
             return;
@@ -155,7 +153,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         /* Establish deterministic order, so that coords can elect leader */
-        tmp=new Membership(other_coords);
+        Membership tmp=new Membership(other_coords);
         tmp.sort();
         Address  merge_leader=tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("Determining merge leader from coordinators " + tmp);
@@ -307,6 +305,7 @@ public class CoordGmsImpl extends GmsImpl {
 
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.GET_DIGEST_REQ);
         Message get_digest_req=new Message();
+        get_digest_req.setFlag(Message.OOB);
         get_digest_req.putHeader(gms.getName(), hdr);
 
         long max_wait_time=gms.merge_timeout > 0? (long)(gms.merge_timeout * 0.8) : 2000L;
