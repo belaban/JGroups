@@ -106,6 +106,22 @@ public class JDKLogImpl implements Log {
     }
 
     public void setLevel(String level) {
+        Level new_level=strToLevel(level);
+        if(new_level != null)
+            logger.setLevel(new_level);
+    }
+
+    private static Level strToLevel(String level) {
+        if(level == null) return null;
+        level=level.toLowerCase().trim();
+        if(level.equals("fatal"))   return Level.SEVERE;
+        if(level.equals("error"))   return Level.SEVERE;
+        if(level.equals("warn"))    return Level.WARNING;
+        if(level.equals("warning")) return Level.WARNING;
+        if(level.equals("info"))    return Level.INFO;
+        if(level.equals("debug"))   return Level.FINE;
+        if(level.equals("trace"))   return Level.FINER;
+        return null;
     }
 
 }
