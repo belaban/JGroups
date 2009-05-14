@@ -1,4 +1,3 @@
-// $Id: MERGE2.java,v 1.55 2009/04/27 13:15:00 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
+ * @version $Id: MERGE2.java,v 1.56 2009/05/14 09:29:14 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -200,8 +200,6 @@ public class MERGE2 extends Protocol {
                 Event evt=new Event(Event.MERGE, coords);              
                 up_prot.up(evt);               
             }
-            if(log.isTraceEnabled())
-                log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
         }
 
         /**
