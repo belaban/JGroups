@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.166 2009/05/13 13:06:57 belaban Exp $
+ * @version $Id: GMS.java,v 1.167 2009/05/14 15:20:35 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -931,10 +931,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 view_handler.add(new Request(Request.MERGE, null, false, (Vector<Address>)evt.getArg()));
                 return null;                              // don't pass up
         }
-
-        if(impl.handleUpEvent(evt))
-            return up_prot.up(evt);
-        return null;
+        return up_prot.up(evt);
     }
 
 
@@ -1114,7 +1111,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         boolean useFlushIfPresent; // used when type=JOIN_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
         Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
-        ViewId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
+        MergeId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
         boolean merge_rejected=false; // used when type=MERGE_RSP
         private static final long serialVersionUID=2369798797842183276L;
 
@@ -1241,7 +1238,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             mbr=(Address)in.readObject();
             join_rsp=(JoinRsp)in.readObject();
             my_digest=(Digest)in.readObject();
-            merge_id=(ViewId)in.readObject();
+            merge_id=(MergeId)in.readObject();
             merge_rejected=in.readBoolean();
             useFlushIfPresent=in.readBoolean();
         }
@@ -1255,7 +1252,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             Util.writeAddress(mbr, out);
             Util.writeStreamable(join_rsp, out);
             Util.writeStreamable(my_digest, out);
-            Util.writeStreamable(merge_id, out); // kludge: we know merge_id is a ViewId
+            Util.writeStreamable(merge_id, out);
             out.writeBoolean(merge_rejected);
             out.writeBoolean(useFlushIfPresent);
         }
@@ -1270,7 +1267,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             mbr=Util.readAddress(in);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
-            merge_id=(ViewId)Util.readStreamable(ViewId.class, in);
+            merge_id=(MergeId)Util.readStreamable(MergeId.class, in);
             merge_rejected=in.readBoolean();
             useFlushIfPresent=in.readBoolean();
         }
@@ -1295,7 +1292,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
             retval+=Global.BYTE_SIZE; // presence for merge_id
             if(merge_id != null)
-                retval+=merge_id.serializedSize();
+                retval+=merge_id.size();
             
             retval+=Global.BYTE_SIZE; // boolean useFlushIfPresent
             return retval;
@@ -1314,7 +1311,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.166 2009/05/13 13:06:57 belaban Exp $
+     * @version $Id: GMS.java,v 1.167 2009/05/14 15:20:35 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
