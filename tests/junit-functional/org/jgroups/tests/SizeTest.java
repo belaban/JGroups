@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.19 2009/05/06 06:48:35 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.20 2009/05/14 12:20:18 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -242,6 +242,30 @@ public class SizeTest {
 
         vid=new ViewId(new IpAddress(5555), 322649);
         _testSize(vid);
+    }
+
+
+    public static void testMergeId() throws Exception {
+        MergeId id=MergeId.create(UUID.randomUUID());
+        System.out.println("id = " + id);
+        _testSize(id);
+
+        id=MergeId.create(UUID.randomUUID());
+        System.out.println("id = " + id);
+        _testSize(id);
+
+        Address addr=UUID.randomUUID();
+        id=MergeId.create(addr);
+        System.out.println("id = " + id);
+        _testSize(id);
+
+        id=MergeId.create(addr);
+        System.out.println("id = " + id);
+        _testSize(id);
+
+        id=MergeId.create(addr);
+        System.out.println("id = " + id);
+        _testSize(id);
     }
 
 
@@ -701,6 +725,13 @@ public class SizeTest {
         byte[] serialized_form=Util.streamableToByteBuffer(vid);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
+    }
+
+    private static void _testSize(MergeId id) throws Exception {
+        long size=id.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(id);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assert serialized_form.length == size;
     }
 
     private static void _testSize(View v) throws Exception {
