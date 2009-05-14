@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.28 2009/05/13 13:07:09 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.29 2009/05/14 07:34:00 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -238,144 +238,154 @@ public class ResourceDMBean implements DynamicMBean {
                
         for(Method method:methods) {
             //does method have @ManagedAttribute annotation?
-            ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
-            if(attr != null) {
-                String methodName=method.getName();
-                if(!methodName.startsWith("get") && !methodName.startsWith("set")
-                   && !methodName.startsWith("is")) {
-                    if(log.isWarnEnabled())
-                        log.warn("method name " + methodName
-                                 + " doesn't start with \"get\", \"set\", or \"is\""
-                                 + ", but is annotated with @ManagedAttribute: will be ignored");
-                }
-                else {
-                    MBeanAttributeInfo info=null;
-                    //Is name field of @ManagedAttributed used?
-                    String attributeName=attr.name().length()>0?attr.name().trim():null;
-                    boolean writeAttribute=false;
-                    if(isSetMethod(method)) { // setter
-                        attributeName=(attributeName==null)?methodName.substring(3):attributeName;
+            if(method.isAnnotationPresent(ManagedAttribute.class)) {
+                exposeManagedAttribute(method);
+            }
+            //or @ManagedOperation
+            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
+                exposeManagedOperation(method);                
+            }                     
+        }
+    }
+
+    private void exposeManagedOperation(Method method) {
+        ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
+        String attName=method.getName();
+        if(isSetMethod(method) || isGetMethod(method)) {
+            attName=attName.substring(3);
+        }
+        else if(isIsMethod(method)) {
+            attName=attName.substring(2);
+        }
+        //expose unless we already exposed matching attribute field
+        boolean isAlreadyExposed=atts.containsKey(attName);
+        if(!isAlreadyExposed) {
+            ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
+            if(log.isDebugEnabled()) {
+                log.debug("@Operation found for method " + method.getName());
+            }
+        }
+    }
+    
+    private void exposeManagedAttribute(Method method){
+        String methodName=method.getName();
+        if(!methodName.startsWith("get") && !methodName.startsWith("set")
+           && !methodName.startsWith("is")) {
+            if(log.isWarnEnabled())
+                log.warn("method name " + methodName
+                         + " doesn't start with \"get\", \"set\", or \"is\""
+                         + ", but is annotated with @ManagedAttribute: will be ignored");
+        }
+        else {
+            ManagedAttribute attr = method.getAnnotation(ManagedAttribute.class);
+            MBeanAttributeInfo info=null;
+            //Is name field of @ManagedAttributed used?
+            String attributeName=attr.name().length()>0?attr.name().trim():null;
+            boolean writeAttribute=false;
+            if(isSetMethod(method)) { // setter
+                attributeName=(attributeName==null)?methodName.substring(3):attributeName;
+                info=new MBeanAttributeInfo(attributeName,
+                                            method.getParameterTypes()[0].getCanonicalName(),
+                                            attr.description(),
+                                            true,
+                                            true,
+                                            false);
+                writeAttribute=true;
+            }
+            else { // getter
+                if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
+                    boolean hasSetter=atts.containsKey(attributeName);
+                    //we found is method
+                    if(methodName.startsWith("is")) {
+                        attributeName=(attributeName==null)?methodName.substring(2):attributeName;
                         info=new MBeanAttributeInfo(attributeName,
-                                                    method.getParameterTypes()[0].getCanonicalName(),
+                                                    method.getReturnType().getCanonicalName(),
                                                     attr.description(),
                                                     true,
+                                                    hasSetter,
+                                                    true);
+                    }
+                    else {
+                        //this has to be get
+                        attributeName=(attributeName==null)?methodName.substring(3):attributeName;
+                        info=new MBeanAttributeInfo(attributeName,
+                                                    method.getReturnType().getCanonicalName(),
+                                                    attr.description(),
                                                     true,
+                                                    hasSetter,
                                                     false);
-                        writeAttribute=true;
                     }
-                    else { // getter
-                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                            boolean hasSetter=atts.containsKey(attributeName);
-                            //we found is method
-                            if(methodName.startsWith("is")) {
-                                attributeName=(attributeName==null)?methodName.substring(2):attributeName;
-                                info=new MBeanAttributeInfo(attributeName,
-                                                            method.getReturnType().getCanonicalName(),
-                                                            attr.description(),
-                                                            true,
-                                                            hasSetter,
-                                                            true);
-                            }
-                            else {
-                                //this has to be get
-                                attributeName=(attributeName==null)?methodName.substring(3):attributeName;
-                                info=new MBeanAttributeInfo(attributeName,
-                                                            method.getReturnType().getCanonicalName(),
-                                                            attr.description(),
-                                                            true,
-                                                            hasSetter,
-                                                            false);
-                            }
-                        }
-                        else {
-                            if(log.isWarnEnabled()) {
-                                log.warn("Method " + method.getName()
-                                         + " must have a valid return type and zero parameters");
-                            }
-                            continue;
-                        }
-                    }                                      
-                    
-                    if(log.isDebugEnabled()) {
-                        log.debug("@Attr found for method " + method.getName()
-                                  + " and registered as "
-                                  + attributeName);
+                }
+                else {
+                    if(log.isWarnEnabled()) {
+                        log.warn("Method " + method.getName()
+                                 + " must have a valid return type and zero parameters");
                     }
+                    //silently skip this method
+                    return;
+                }
+            }                                      
+            
+            if(log.isDebugEnabled()) {
+                log.debug("@Attr found for method " + method.getName()
+                          + " and registered as "
+                          + attributeName);
+            }
 
-                    AttributeEntry ae=atts.get(attributeName);
-                    //is it a read method?
-                    if(!writeAttribute) {
-                        //we already have annotated field as read
-                        if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
-                            log.warn("not adding annotated method " + method
-                                     + " since we already have read attribute");
-                        }
-                        //we already have annotated set method
-                        else if(ae instanceof MethodAttributeEntry) {
-                            MethodAttributeEntry mae=(MethodAttributeEntry)ae;
-                            if(mae.hasSetMethod()) {
-                                atts.put(attributeName,
-                                         new MethodAttributeEntry(mae.getInfo(), mae.getSetMethod(), method));
-                            }
-                        } //we don't have such entry 
-                        else {
-                            atts.put(attributeName, new MethodAttributeEntry(info, null, method));
-                        }
-                    }//is it a set method?
-                    else {                        
-                        if(ae instanceof FieldAttributeEntry) {
-                            //we already have annotated field as write
-                            if(ae.getInfo().isWritable()) {
-                                log.warn("Not adding annotated method " + methodName
-                                         + " since we already have writable attribute");
-                            }
-                            else {
-                                //we already have annotated field as read
-                                //lets make the field writable
-                                Field f = ((FieldAttributeEntry)ae).getField();
-                                MBeanAttributeInfo i=new MBeanAttributeInfo(ae.getInfo().getName(),
-                                                                            f.getType().getCanonicalName(),
-                                                                            attr.description(),
-                                                                            true,
-                                                                            Modifier.isFinal(f.getModifiers())? false: true,
-                                                                            false);                               
-                                atts.put(attributeName,new FieldAttributeEntry(i,f));
-                            }
-                        }
-                        //we already have annotated getOrIs method
-                        else if(ae instanceof MethodAttributeEntry) {
-                            MethodAttributeEntry mae=(MethodAttributeEntry)ae;
-                            if(mae.hasIsOrGetMethod()) {
-                                atts.put(attributeName,
-                                         new MethodAttributeEntry(info,
-                                                                  method,
-                                                                  mae.getIsOrGetMethod()));
-                            }
-                        } //we don't have such entry 
-                        else {
-                            atts.put(attributeName, new MethodAttributeEntry(info, method, null));
-                        }
+            AttributeEntry ae=atts.get(attributeName);
+            //is it a read method?
+            if(!writeAttribute) {
+                //we already have annotated field as read
+                if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
+                    log.warn("not adding annotated method " + method
+                             + " since we already have read attribute");
+                }
+                //we already have annotated set method
+                else if(ae instanceof MethodAttributeEntry) {
+                    MethodAttributeEntry mae=(MethodAttributeEntry)ae;
+                    if(mae.hasSetMethod()) {
+                        atts.put(attributeName,
+                                 new MethodAttributeEntry(mae.getInfo(), mae.getSetMethod(), method));
                     }
+                } //we don't have such entry 
+                else {
+                    atts.put(attributeName, new MethodAttributeEntry(info, null, method));
+                }
+            }//is it a set method?
+            else {                        
+                if(ae instanceof FieldAttributeEntry) {
+                    //we already have annotated field as write
+                    if(ae.getInfo().isWritable()) {
+                        log.warn("Not adding annotated method " + methodName
+                                 + " since we already have writable attribute");
+                    }
+                    else {
+                        //we already have annotated field as read
+                        //lets make the field writable
+                        Field f = ((FieldAttributeEntry)ae).getField();
+                        MBeanAttributeInfo i=new MBeanAttributeInfo(ae.getInfo().getName(),
+                                                                    f.getType().getCanonicalName(),
+                                                                    attr.description(),
+                                                                    true,
+                                                                    Modifier.isFinal(f.getModifiers())? false: true,
+                                                                    false);                               
+                        atts.put(attributeName,new FieldAttributeEntry(i,f));
+                    }
+                }
+                //we already have annotated getOrIs method
+                else if(ae instanceof MethodAttributeEntry) {
+                    MethodAttributeEntry mae=(MethodAttributeEntry)ae;
+                    if(mae.hasIsOrGetMethod()) {
+                        atts.put(attributeName,
+                                 new MethodAttributeEntry(info,
+                                                          method,
+                                                          mae.getIsOrGetMethod()));
+                    }
+                } //we don't have such entry 
+                else {
+                    atts.put(attributeName, new MethodAttributeEntry(info, method, null));
                 }
             }
-            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
-                ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
-                String attName=method.getName();
-                if(isSetMethod(method) || isGetMethod(method)) {
-                    attName=attName.substring(3);
-                }
-                else if(isIsMethod(method)) {
-                    attName=attName.substring(2);
-                }
-                //expose unless we already exposed matching attribute field
-                boolean isAlreadyExposed=atts.containsKey(attName);
-                if(!isAlreadyExposed) {
-                    ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
-                    if(log.isDebugEnabled()) {
-                        log.debug("@Operation found for method " + method.getName());
-                    }
-                }                
-            }                     
         }
     }
     
