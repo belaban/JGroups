@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.167 2009/05/14 15:20:35 belaban Exp $
+ * @version $Id: GMS.java,v 1.168 2009/05/14 15:32:38 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -900,6 +900,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                                 GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
                                 rsp_hdr.my_digest=retval;
                                 Message get_digest_rsp=new Message(msg.getSrc(), null, null);
+                                get_digest_rsp.setFlag(Message.OOB);
                                 get_digest_rsp.putHeader(name, rsp_hdr);
                                 down_prot.down(new Event(Event.MSG, get_digest_rsp));
                             }
@@ -1311,7 +1312,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.167 2009/05/14 15:20:35 belaban Exp $
+     * @version $Id: GMS.java,v 1.168 2009/05/14 15:32:38 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
