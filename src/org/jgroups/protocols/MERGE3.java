@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.22 2009/04/09 09:11:15 belaban Exp $
+// $Id: MERGE3.java,v 1.23 2009/05/14 09:36:32 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -76,16 +76,8 @@ public class MERGE3 extends Protocol {
                 CoordAnnouncement hdr=(CoordAnnouncement)msg.getHeader(getName());
                 if(hdr != null) {
                     if(hdr.coord_addr != null && is_coord) {
-                        boolean contains;
-                        contains=announcements.contains(hdr.coord_addr);
-                        announcements.add(hdr.coord_addr);
-                        if(log.isDebugEnabled()) {
-                            if(contains)
-                                log.debug("discarded duplicate announcement: " + hdr.coord_addr +
-                                        ", announcements=" + announcements);
-                            else
-                                log.debug("received announcement: " + hdr.coord_addr + ", announcements=" + announcements);
-                        }
+                        if(announcements.add(hdr.coord_addr) && log.isDebugEnabled())
+                            log.debug("received announcement: " + hdr.coord_addr + ", announcements=" + announcements);
 
                         if(announcements.size() > 1 && is_coord) {
                             processAnnouncements();
