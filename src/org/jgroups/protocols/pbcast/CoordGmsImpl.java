@@ -1,14 +1,14 @@
-// $Id: CoordGmsImpl.java,v 1.102 2009/05/11 07:49:38 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.103 2009/05/14 15:20:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.ResponseCollector;
+import org.jgroups.util.MergeId;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -32,7 +32,7 @@ public class CoordGmsImpl extends GmsImpl {
     /** For GET_DIGEST / DIGEST_RSP correlation */
     private final ResponseCollector<Digest> digest_collector=new ResponseCollector<Digest>();
 
-    private ViewId                  merge_id=null;
+    private MergeId                  merge_id=null;
 
     @GuardedBy("merge_canceller_lock")
     private Future<?>                  merge_canceller_future=null;
@@ -48,7 +48,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    private void setMergeId(ViewId merge_id) {
+    private void setMergeId(MergeId merge_id) {
         this.merge_id=merge_id;
         if(this.merge_id != null) {
             stopMergeCanceller();
@@ -174,7 +174,7 @@ public class CoordGmsImpl extends GmsImpl {
      * Get the view and digest and send back both (MergeData) in the form of a MERGE_RSP to the sender.
      * If a merge is already in progress, send back a MergeData with the merge_rejected field set to true.
      */
-    public void handleMergeRequest(Address sender, ViewId merge_id) {
+    public void handleMergeRequest(Address sender, MergeId merge_id) {
         Digest digest;
         View view;
 
@@ -216,7 +216,7 @@ public class CoordGmsImpl extends GmsImpl {
         sendMergeResponse(sender, view, digest);
     }
 
-    public void handleMergeResponse(MergeData data, ViewId merge_id) {                     
+    public void handleMergeResponse(MergeData data, MergeId merge_id) {
     	if(merge_id == null || this.merge_id == null) {
             if(log.isErrorEnabled())
                 log.error("merge_id (" + merge_id + ") or this.merge_id (" + this.merge_id +
@@ -243,7 +243,7 @@ public class CoordGmsImpl extends GmsImpl {
      * If merge_id is not equal to this.merge_id then discard.
      * Else cast the view/digest to all members of this group.
      */
-    public void handleMergeView(final MergeData data,final ViewId merge_id) {
+    public void handleMergeView(final MergeData data,final MergeId merge_id) {
         if(merge_id == null
                 || this.merge_id == null
                 || !this.merge_id.equals(merge_id)) {
@@ -277,7 +277,7 @@ public class CoordGmsImpl extends GmsImpl {
         gms.getViewHandler().resume(merge_id);
     }
 
-    public void handleMergeCancelled(ViewId merge_id) {
+    public void handleMergeCancelled(MergeId merge_id) {
         gms.stopFlush();
         if(merge_id != null && this.merge_id != null && this.merge_id.equals(merge_id)) {
             if(log.isDebugEnabled())
@@ -574,12 +574,9 @@ public class CoordGmsImpl extends GmsImpl {
         return gotAllResponses;
     }
 
-    /**
-     * Generates a unique merge id by taking the local address and the current time
-     */
-    private ViewId generateMergeId() {
-        return new ViewId(gms.local_addr, System.currentTimeMillis());
-        // we're (ab)using ViewId as a merge id
+    
+    private MergeId generateMergeId() {
+        return MergeId.create(gms.local_addr);
     }
 
     /**
@@ -733,7 +730,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    private void sendMergeCancelledMessage(Vector<Address> coords, ViewId merge_id) {              
+    private void sendMergeCancelledMessage(Vector<Address> coords, MergeId merge_id) {
         if(coords == null || merge_id == null) {
             if(log.isErrorEnabled()) log.error("coords or merge_id == null");
             return;
@@ -815,7 +812,7 @@ public class CoordGmsImpl extends GmsImpl {
 
             Vector<Address> coordsCopy=new Vector<Address>(coords);
             /* 1. Generate a merge_id that uniquely identifies the merge in progress */
-            ViewId generatedMergeId=generateMergeId();
+            MergeId generatedMergeId=generateMergeId();
             
             try {               
                 setMergeId(generatedMergeId);

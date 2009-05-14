@@ -1,10 +1,11 @@
-// $Id: GmsImpl.java,v 1.32 2009/05/13 13:06:57 belaban Exp $
+// $Id: GmsImpl.java,v 1.33 2009/05/14 15:20:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
 
 import java.util.Collection;
 import java.util.Vector;
@@ -42,17 +43,15 @@ public abstract class GmsImpl {
     public abstract void      unsuspect(Address mbr);
 
     public void               merge(Vector<Address> other_coords)                  {} // only processed by coord
-    public void               handleMergeRequest(Address sender, ViewId merge_id)  {} // only processed by coords
-    public void               handleMergeResponse(MergeData data, ViewId merge_id) {} // only processed by coords
-    public void               handleMergeView(MergeData data, ViewId merge_id)     {} // only processed by coords
-    public void               handleMergeCancelled(ViewId merge_id)                {} // only processed by coords
+    public void               handleMergeRequest(Address sender, MergeId merge_id)  {} // only processed by coords
+    public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
+    public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
+    public void               handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
     public void               handleDigestResponse(Address sender, Digest digest)  {} // only processed by coords
 
     public abstract void      handleMembershipChange(Collection<Request> requests);
     public abstract void      handleViewChange(View new_view, Digest digest);
     public          void      handleExit() {}
-
-    public boolean            handleUpEvent(Event evt) {return true;}
 
     public void               init() throws Exception {leaving=false;}
     public void               start() throws Exception {leaving=false;}
@@ -60,7 +59,7 @@ public abstract class GmsImpl {
 
 
 
-    protected void sendMergeRejectedResponse(Address sender, ViewId merge_id) {
+    protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
         Message msg=new Message(sender, null, null);
         msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);

@@ -4,6 +4,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
 
 import java.util.Vector;
 import java.util.Collection;
@@ -12,7 +13,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.32 2009/04/27 13:26:06 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.33 2009/05/14 15:20:35 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -152,7 +153,7 @@ public class ParticipantGmsImpl extends GmsImpl {
         gms.installView(new_view, digest);
     }
 
-    public void handleMergeRequest(Address sender, ViewId merge_id) {
+    public void handleMergeRequest(Address sender, MergeId merge_id) {
         // only coords handle this method; reject it if we're not coord
         if(log.isWarnEnabled())
             log.warn("rejected merge request, as only coordinators handle them");

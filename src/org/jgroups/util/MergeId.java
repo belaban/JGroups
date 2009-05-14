@@ -9,13 +9,14 @@ import java.io.DataInputStream;
 
 /** ID to uniquely identify a merge
  * @author Bela Ban
- * @version $Id: MergeId.java,v 1.1 2009/05/14 12:20:31 belaban Exp $
+ * @version $Id: MergeId.java,v 1.2 2009/05/14 15:20:34 belaban Exp $
  */
 public class MergeId implements Streamable {
     private Address initiator; // must be non-null
     private int id;
     private static int LAST_ID=1;
 
+    public MergeId() {}
 
     private MergeId(Address initiator, int id) {
         this.initiator=initiator;
