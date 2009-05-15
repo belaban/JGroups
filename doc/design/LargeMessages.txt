@@ -3,7 +3,7 @@ Large messages in large clusters
 ================================
 
 Author: Bela Ban
-Version: $Id: LargeMessages.txt,v 1.2 2009/05/15 10:36:04 belaban Exp $
+Version: $Id: LargeMessages.txt,v 1.3 2009/05/15 10:39:35 belaban Exp $
 
 Requirements
 ------------
@@ -36,6 +36,7 @@ Design:
 -------
 - A new protocol ACK, layered above FRAG2 (or any other fragmentation protocol)
 - When sending a message, ACK creates a list of members from which it needs to receive acks and starts a timer
+- When ACK receives a message it sends an ack back to the sender
 - When all acks have been received, ACK sends down a STABLE event, which will cause the sender's NAKACK protocol to
   purge the message
 - When the timer kicks in, it returns if all acks have been received or (if not) sends a stability message around,
