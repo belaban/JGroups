@@ -3,7 +3,7 @@ Large messages in large clusters
 ================================
 
 Author: Bela Ban
-Version: $Id: LargeMessages.txt,v 1.1 2009/05/15 10:09:28 belaban Exp $
+Version: $Id: LargeMessages.txt,v 1.2 2009/05/15 10:36:04 belaban Exp $
 
 Requirements
 ------------
@@ -16,8 +16,38 @@ Goals:
 - Receivers discard message (purge it from memory) as soon as it has been delivered to the application
 - Sender discards message as soon as it has received acks from all receivers or a timeout has elapsed
 --> We don't want to keep 200MB messages in buffers longer than necessary
+- Don't allow single receiver to bog down the whole cluster (in times and memory foot print)
 
+
+Issues with existing protocols:
+-------------------------------
+- We cannot use STABLE for agreement, so that a sender can purge a message, because one or more slow receivers could
+  prevent stability messages to be sent. This is because STABLE requires agreement from all group members, and slow
+  members won't be able to agree, at least not fast enough.
+- We therefore wait for agreement from all members, but if a timeout elapses, the sender will purge the message anyway
+- Receivers are not guaranteed to receive all messages: if the sender purged a message after not having received acks
+  from all members, the receiver will not receive that message
+- However, even with message loss, all *received* messages will be delivered in order
+- We cannot use SMACK, which uses positive acks for each message, because that would lead to too many acks. If we for
+  example send a 200MB message and it is fragmented into 2000 fragments, we don't want to send an ack / fragment, but
+  we only want to send an ack per message, so after the entire 200MB message has been received
 
 Design:
 -------
-- 
+- A new protocol ACK, layered above FRAG2 (or any other fragmentation protocol)
+- When sending a message, ACK creates a list of members from which it needs to receive acks and starts a timer
+- When all acks have been received, ACK sends down a STABLE event, which will cause the sender's NAKACK protocol to
+  purge the message
+- When the timer kicks in, it returns if all acks have been received or (if not) sends a stability message around,
+  which causes all receivers to ask for retransmission of messages they haven't received yet. The timer cancels itself
+  after N attempts or when all acks have been received
+- The receivers also start a timer when the first retransmission of a message occurs
+- If a message has not been received after a timeout, the receivers will flag that message as not-received and stop
+  retransmission requests for it. When the special not-received message is removed, it won't be passed up
+
+
+Flow control:
+-------------
+
+- We cannot have a sender block on a credit missing from a slow member
+- Solution: use max_block_times in FC, which is already implemented
