@@ -1,0 +1,23 @@
+
+Large messages in large clusters
+================================
+
+Author: Bela Ban
+Version: $Id: LargeMessages.txt,v 1.1 2009/05/15 10:09:28 belaban Exp $
+
+Requirements
+------------
+- Large cluster
+- 1 sender, many receivers
+- Sender sends messages between 10MB and 200MB, in bursts
+
+Goals:
+------
+- Receivers discard message (purge it from memory) as soon as it has been delivered to the application
+- Sender discards message as soon as it has received acks from all receivers or a timeout has elapsed
+--> We don't want to keep 200MB messages in buffers longer than necessary
+
+
+Design:
+-------
+- 
