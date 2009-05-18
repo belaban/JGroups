@@ -27,7 +27,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.5 2008/09/19 07:27:16 belaban Exp $
+ * @version $Id: Util.java,v 1.105.2.6 2009/05/18 16:13:42 galderz Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1974,6 +1974,10 @@ public class Util {
         return checkForPresence("os.name", "linux");
     }
 
+    public static boolean checkForHp() {
+       return checkForPresence("os.name", "hp");
+    }
+ 
     public static boolean checkForSolaris() {
         return checkForPresence("os.name", "sun");
     }
