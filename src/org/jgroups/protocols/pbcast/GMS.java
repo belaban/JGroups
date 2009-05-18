@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.169 2009/05/14 15:59:03 belaban Exp $
+ * @version $Id: GMS.java,v 1.170 2009/05/18 07:09:35 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -918,97 +918,37 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     
 
-    /**
-     This method is overridden to avoid hanging on getDigest(): when a JOIN is received, the coordinator needs
-     to retrieve the digest from the NAKACK layer. It therefore sends down a GET_DIGEST event, to which the NAKACK layer
-     responds with a GET_DIGEST_OK event.<p>
-     However, the GET_DIGEST_OK event will not be processed because the thread handling the JOIN request won't process
-     the GET_DIGEST_OK event until the JOIN event returns. The receiveUpEvent() method is executed by the up-handler
-     thread of the lower protocol and therefore can handle the event. All we do here is unblock the mutex on which
-     JOIN is waiting, allowing JOIN to return with a valid digest. The GET_DIGEST_OK event is then discarded, because
-     it won't be processed twice.
-     */
-//    public void receiveUpEvent(Event evt) {
-//        switch(evt.getType()) {
-//            case Event.GET_DIGEST_OK:
-//                digest_promise.setResult(evt.getArg());
-//                return; // don't pass further up
-//        }
-//        super.receiveUpEvent(evt);
-//    }
-
-
     public Object down(Event evt) {
-        Object arg=null;
-        switch(evt.getType()) {            
-            case Event.CONNECT:
-                if(print_local_addr) {
-                    System.out.println("\n---------------------------------------------------------\n" +
-                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
-                            "\n---------------------------------------------------------");
-                }
-                down_prot.down(evt);
-                if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                try {
-                    impl.join(local_addr,false);
-                }
-                catch(Throwable e) {
-                    arg=e;
-                }
-                return arg;  // don't pass down: was already passed down
-                
-            case Event.CONNECT_USE_FLUSH:
-                if(print_local_addr) {
-                    System.out.println("\n---------------------------------------------------------\n" +
-                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
-                            "\n---------------------------------------------------------");
-                }
-                down_prot.down(evt);
-                if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                try {
-                    impl.join(local_addr,true);
-                }
-                catch(Throwable e) {
-                    arg=e;
-                }
-                return arg;  // don't pass down: was already passed down     
-                
-            case Event.CONNECT_WITH_STATE_TRANSFER:
-                if(print_local_addr) {
-                    System.out.println("\n---------------------------------------------------------\n" +
-                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
-                            "\n---------------------------------------------------------");
-                }
-                down_prot.down(evt);
-                if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                try {
-                    impl.joinWithStateTransfer(local_addr,false);
-                }
-                catch(Throwable e) {
-                    arg=e;
-                }
-                return arg;  // don't pass down: was already passed down    
-            
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                if(print_local_addr) {
-                    System.out.println("\n---------------------------------------------------------\n" +
-                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
-                            "\n---------------------------------------------------------");
-                }
-                down_prot.down(evt);
-                if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                try {
-                    impl.joinWithStateTransfer(local_addr,true);
-                }
-                catch(Throwable e) {
-                    arg=e;
-                }
-                return arg;  // don't pass down: was already passed down         
+        int type=evt.getType();
 
+        switch(type) {
+            case Event.CONNECT:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                boolean use_flush=type == Event.CONNECT_USE_FLUSH || type == Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH;
+                boolean state_transfer=type == Event.CONNECT_WITH_STATE_TRANSFER
+                        || type == Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH;
+
+                if(print_local_addr) {
+                    System.out.println("\n---------------------------------------------------------\n" +
+                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
+                            "\n---------------------------------------------------------");
+                }
+                down_prot.down(evt);
+                if(local_addr == null)
+                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
+                try {
+                    if(state_transfer)
+                        impl.joinWithStateTransfer(local_addr, use_flush);
+                    else
+                        impl.join(local_addr, use_flush);
+                }
+                catch(Throwable e) {
+                    return e;
+                }
+                return null;  // don't pass down: event has already been passed down
+                
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
                 if(!(impl instanceof CoordGmsImpl)) {
@@ -1291,7 +1231,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.169 2009/05/14 15:59:03 belaban Exp $
+     * @version $Id: GMS.java,v 1.170 2009/05/18 07:09:35 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
