@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.243 2009/05/13 13:06:59 belaban Exp $
+ * @version $Id: TP.java,v 1.244 2009/05/18 15:46:05 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1016,6 +1016,8 @@ public abstract class TP extends Protocol {
         try {
             // determine whether OOB or not by looking at first byte of 'data'
             byte oob_flag=data[Global.SHORT_SIZE]; // we need to skip the first 2 bytes (version)
+
+
             if((oob_flag & OOB) == OOB) {
                 num_oob_msgs_received++;
                 dispatchToThreadPool(oob_thread_pool, sender, data, offset, length);

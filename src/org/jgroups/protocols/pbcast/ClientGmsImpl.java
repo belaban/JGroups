@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.71 $
+ * @version $Revision: 1.72 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -229,28 +229,6 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.setResult(join_rsp); // will wake up join() method
     }
 
-    public void handleLeaveResponse() {
-    }
-
-
-    public void suspect(Address mbr) {
-    }
-
-    public void unsuspect(Address mbr) {
-    }   
-    
-    public void handleMembershipChange (Collection<Request> requests) {
-    }
-
-
-    /**
-     * Does nothing. Discards all views while still client.
-     */
-    public synchronized void handleViewChange(View new_view, Digest digest) {
-        if(log.isTraceEnabled())
-            log.trace("view " + new_view.getVid() + " is discarded as we are not a participant");
-    }
-
 
     /**
      * Called by join(). Installs the view returned by calling Coord.handleJoin() and
@@ -272,13 +250,8 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-    /** Returns immediately. Clients don't handle suspect() requests */
-    // public void handleSuspect(Address mbr) {
-    // }
-
 
     /* --------------------------- Private Methods ------------------------------------ */
-
 
 
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {

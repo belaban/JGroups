@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.170 2009/05/18 07:09:35 belaban Exp $
+ * @version $Id: GMS.java,v 1.171 2009/05/18 15:46:03 belaban Exp $
  */
 @MBean(description="Group membership protocol")
-@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
+@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader"})
 public class GMS extends Protocol implements TP.ProbeHandler {
     
     public static final String name="GMS";
@@ -51,7 +51,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @ManagedAttribute(description="Shunning toggle", writable=true)
     @Property(description="Shunning toggle. Default is false")
     private boolean shun=false;
-    
+
+    @Deprecated
     @Property(description="If true this member is a designated merge leader. Default is false")
     boolean merge_leader=false; // can I initiate a merge ?
     
@@ -1231,20 +1232,19 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.170 2009/05/18 07:09:35 belaban Exp $
+     * @version $Id: GMS.java,v 1.171 2009/05/18 15:46:03 belaban Exp $
      */
     class ViewHandler implements Runnable {
-        volatile Thread                    thread;
-        Queue                              q=new Queue(); // Queue<Request>
-        boolean                            suspended=false;
-        final static long                  INTERVAL=5000;
-        private static final long          MAX_COMPLETION_TIME=10000;
+        volatile Thread                     thread;
+        Queue                               q=new Queue(); // Queue<Request>
+        volatile boolean                    suspended=false;
+        final static long                   INTERVAL=5000;
+        private static final long           MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
-        private final BoundedList<String>  history=new BoundedList<String>(20);
+        private final BoundedList<String>   history=new BoundedList<String>(20);
 
         /** Map<Object,Future>. Keeps track of Resumer tasks which have not fired yet */
-        private final Map<Object, Future>  resume_tasks=new HashMap<Object,Future>();
-        private Object                     merge_id=null;
+        private final Map<MergeId, Future>  resume_tasks=new HashMap<MergeId,Future>();
 
 
         void add(Request req) {
@@ -1290,14 +1290,35 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 resumeForce();
         }
 
+        synchronized void start(boolean unsuspend) {
+            if(q.closed())
+                q.reset();
+            if(unsuspend)
+                suspended=false;
+            if(thread == null || !thread.isAlive()) {
+                thread=getThreadFactory().newThread(this, "ViewHandler");
+                thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
+                thread.start();
+            }
+        }
+
+        synchronized void stop(boolean flush) {
+            q.close(flush);
+            synchronized(resume_tasks) {
+                for(Future<?> future: resume_tasks.values()) {
+                    future.cancel(true);
+                }
+                resume_tasks.clear();
+            }
+        }
+
         /**
          * Waits until the current request has been processes, then clears the queue and discards new
          * requests from now on
          */
-        public synchronized void suspend(Object merge_id) {
+        public synchronized void suspend(MergeId merge_id) {
             if(!suspended) {
                 suspended=true;
-                this.merge_id=merge_id;
                 q.clear();
                 waitUntilCompleted(MAX_COMPLETION_TIME);
                 q.close(true);
@@ -1307,25 +1328,20 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 if(old_future != null)
                     old_future.cancel(true);
             }
-                }
+        }
 
 
-        public synchronized void resume(Object merge_id) {
-            if(suspended) {
-                boolean same_merge_id=this.merge_id != null && merge_id != null && this.merge_id.equals(merge_id);
-                same_merge_id=same_merge_id || (this.merge_id == null && merge_id == null);
+        public synchronized void resume(MergeId merge_id) {
+            if(!suspended)
+                return;
 
-                if(same_merge_id) {
-                    synchronized(resume_tasks) {
-                        Future<?> future=resume_tasks.get(merge_id);
-                        if(future != null) {
-                            future.cancel(false);
-                            resume_tasks.remove(merge_id);
-                        }
-                    }
-                }
-                resumeForce();
-            }            
+            Future future;
+            synchronized(resume_tasks) {
+                future=resume_tasks.remove(merge_id);
+            }
+            if(future != null)
+                future.cancel(true);
+            resumeForce();
         }
 
         public synchronized void resumeForce() {
@@ -1418,40 +1434,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             }
         }
 
-
-
-
-        synchronized void start(boolean unsuspend) {
-            if(q.closed())
-                q.reset();
-            if(unsuspend) {
-                suspended=false;
-                Future<?> future;
-                synchronized(resume_tasks) {
-                    future=resume_tasks.remove(merge_id);
-                }
-                if(future != null)
-                    future.cancel(true);
-            }
-            merge_id=null;
-            if(thread == null || !thread.isAlive()) {
-                thread=getThreadFactory().newThread(this, "ViewHandler");                
-                thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
-                thread.start();
-            }
-        }
-
-        synchronized void stop(boolean flush) {
-            q.close(flush);
-            synchronized(resume_tasks) {
-                for(Future<?> future: resume_tasks.values()) {
-                    future.cancel(true);
-                }
-                resume_tasks.clear();
-            }
-            merge_id=null;
-            // resumeForce();
-        }
     }
 
 
@@ -1464,31 +1446,31 @@ public class GMS extends Protocol implements TP.ProbeHandler {
      * will never be used...
      */
     static class Resumer implements Runnable {
-        final Object                      token;
-        final Map<Object,Future> tasks;
+        final MergeId                     token;
+        final Map<MergeId,Future>         tasks;
         final ViewHandler                 handler;
 
 
-        public Resumer(final Object token, final Map<Object,Future> t, final ViewHandler handler) {
+        public Resumer(final MergeId token, final Map<MergeId,Future> t, final ViewHandler handler) {
             this.token=token;
             this.tasks=t;
             this.handler=handler;
         }
 
         public void run() {
-            boolean execute=true;
+            boolean executed=true;
             synchronized(tasks) {
                 Future future=tasks.get(token);
                 if(future != null) {
                     future.cancel(false);
-                    execute=true;
+                    executed=true;
                 }
                 else {
-                    execute=false;
+                    executed=false;
                 }
                 tasks.remove(token);
             }
-            if(execute) {
+            if(executed) {
                 handler.resume(token);
             }
         }

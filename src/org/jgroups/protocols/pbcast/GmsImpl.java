@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.33 2009/05/14 15:20:35 belaban Exp $
+// $Id: GmsImpl.java,v 1.34 2009/05/18 15:46:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,22 +36,22 @@ public abstract class GmsImpl {
     
     public abstract void      leave(Address mbr);
 
-    public abstract void      handleJoinResponse(JoinRsp join_rsp);
-    public abstract void      handleLeaveResponse();
+    public void               handleJoinResponse(JoinRsp join_rsp) {}
+    public void               handleLeaveResponse() {}
 
-    public abstract void      suspect(Address mbr);
-    public abstract void      unsuspect(Address mbr);
+    public void               suspect(Address mbr)   {}
+    public void               unsuspect(Address mbr) {}
 
-    public void               merge(Vector<Address> other_coords)                  {} // only processed by coord
+    public void               merge(Vector<Address> other_coords)                   {} // only processed by coord
     public void               handleMergeRequest(Address sender, MergeId merge_id)  {} // only processed by coords
     public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
     public void               handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
-    public void               handleDigestResponse(Address sender, Digest digest)  {} // only processed by coords
+    public void               handleDigestResponse(Address sender, Digest digest)   {} // only processed by coords
 
-    public abstract void      handleMembershipChange(Collection<Request> requests);
-    public abstract void      handleViewChange(View new_view, Digest digest);
-    public          void      handleExit() {}
+    public void               handleMembershipChange(Collection<Request> requests)  {}
+    public void               handleViewChange(View new_view, Digest digest)        {}
+    public void               handleExit() {}
 
     public void               init() throws Exception {leaving=false;}
     public void               start() throws Exception {leaving=false;}
