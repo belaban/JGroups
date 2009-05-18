@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the fragmentation (FRAG2) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_DEPENDENT})
+@Test(groups={Global.STACK_INDEPENDENT})
 public class FRAG2_Test extends ChannelTestBase {
     private IpAddress a1;
     private Vector<Address> members;
