@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.197 2009/05/13 13:07:05 belaban Exp $
+ * @version $Id: Util.java,v 1.198 2009/05/18 16:20:36 galderz Exp $
  */
 public class Util {
 
@@ -2733,6 +2733,10 @@ public class Util {
         return checkForPresence("os.name", "linux");
     }
 
+    public static boolean checkForHp() {
+       return checkForPresence("os.name", "hp");
+    }
+ 
     public static boolean checkForSolaris() {
         return checkForPresence("os.name", "sun");
     }

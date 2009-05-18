@@ -40,7 +40,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.198 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: UDP.java,v 1.199 2009/05/18 16:20:35 galderz Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -56,7 +56,7 @@ public class UDP extends TP {
 
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForMax();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForMax() || Util.checkForHp();
     }
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
