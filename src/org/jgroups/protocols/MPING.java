@@ -21,7 +21,7 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.19.2.3 2009/01/06 04:45:09 jiwils Exp $
+ * @version $Id: MPING.java,v 1.19.2.4 2009/05/18 16:13:40 galderz Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -38,10 +38,12 @@ public class MPING extends PING implements Runnable {
 
 
     private static final boolean is_linux; // are we running on Linux ?
+    private static final boolean is_hp; // are we running on HP-UX ?
 
 
     static {
         is_linux=Util.checkForLinux();
+        is_hp=Util.checkForHp();
     }
 
 
@@ -163,7 +165,7 @@ public class MPING extends PING implements Runnable {
 
 
     public void start() throws Exception {
-        if(is_linux) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+        if(is_linux || is_hp) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
             mcast_sock=Util.createMulticastSocket(mcast_addr, mcast_port, log);
         else
             mcast_sock=new MulticastSocket(mcast_port);

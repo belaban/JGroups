@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123.2.7 2009/01/06 04:12:41 jiwils Exp $
+ * @version $Id: UDP.java,v 1.123.2.8 2009/05/18 16:13:40 galderz Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -56,9 +56,11 @@ public class UDP extends TP implements Runnable {
     private static volatile BoundedList last_ports_used=null;
 
     private static final boolean is_linux; // are we running on Linux ?
+    private static final boolean is_hp; // are we running on HP-UX ?
 
     static {
         is_linux=Util.checkForLinux();
+        is_hp=Util.checkForHp();
     }
 
 
@@ -469,7 +471,7 @@ public class UDP extends TP implements Runnable {
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
-            if(is_linux)
+            if(is_linux || is_hp)
                 mcast_recv_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
             else
                 mcast_recv_sock=new MulticastSocket(mcast_port);
