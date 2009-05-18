@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.16 2009/01/05 08:33:20 belaban Exp $
+ * @version $Id: UDP.java,v 1.156.2.17 2009/05/18 16:18:21 galderz Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -60,7 +60,7 @@ public class UDP extends TP implements Runnable {
     private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
     }
 
     /** IP multicast socket for <em>sending</em> and <em>receiving</em> multicast packets */
