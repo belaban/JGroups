@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.60 2009/05/13 13:06:56 belaban Exp $
+ * @version $Id: Configurator.java,v 1.61 2009/05/19 12:59:58 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -461,7 +461,8 @@ public class Configurator implements ProtocolStackFactory {
                         Object converted=null;
                         try {
                             converted=propertyConverter.convert(field.getType(), props, propertyValue);
-                            setField(field, obj, converted);
+                            if(converted != null)
+                                setField(field, obj, converted);
                         }
                         catch(Exception e) {
                             String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
