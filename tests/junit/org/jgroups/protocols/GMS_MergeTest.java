@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
+ * @version $Id: GMS_MergeTest.java,v 1.2 2009/05/19 15:35:32 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT})
 public class GMS_MergeTest extends ChannelTestBase {

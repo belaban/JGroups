@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.105 2009/05/18 15:46:03 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.106 2009/05/19 15:35:30 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -68,6 +68,17 @@ public class CoordGmsImpl extends GmsImpl {
                     startMergeCanceller();
             }
             return match;
+        }
+        finally {
+            merge_lock.unlock();
+        }
+    }
+
+    /** Only used for testing, might get removed any time. Do not use ! */
+    public MergeId getMergeId() {
+        merge_lock.lock();
+        try {
+            return merge_id;
         }
         finally {
             merge_lock.unlock();
