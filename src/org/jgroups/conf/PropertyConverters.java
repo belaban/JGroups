@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.7 2009/03/16 17:38:31 vlada Exp $
+ * @version $Id: PropertyConverters.java,v 1.8 2009/05/19 12:59:59 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -83,7 +83,8 @@ public class PropertyConverters {
             if(tmp != null && tmp.length > 0){
                 return tmp;
             }else{
-                throw new Exception ("Invalid long array specified in " + propertyValue);
+                // throw new Exception ("Invalid long array specified in " + propertyValue);
+                return null;
             }
         }
 
