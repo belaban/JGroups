@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.171 2009/05/18 15:46:03 belaban Exp $
+ * @version $Id: GMS.java,v 1.172 2009/05/19 15:35:30 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader"})
@@ -182,6 +182,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public int getNumMembers() {return members != null? members.size() : 0;}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
+
+    public long getMergeTimeout() {
+        return merge_timeout;
+    }
+
     /** @deprecated */
     public long getJoinRetryTimeout() {return -1;}
     /** @deprecated */
@@ -221,7 +226,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public long getMaxBundlingTime() {
         return max_bundling_time;
     }
-
 
     public void setMaxBundlingTime(long max_bundling_time) {
         this.max_bundling_time=max_bundling_time;
@@ -266,6 +270,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         return coord != null && local_addr != null && local_addr.equals(coord);
     }
 
+    public MergeId getMergeId() {
+        return impl instanceof CoordGmsImpl? ((CoordGmsImpl)impl).getMergeId() : null;
+    }
 
     public void setLogCollectMessages(boolean flag) {
         log_collect_msgs=flag;
@@ -773,7 +780,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
     
     void stopFlush(List<Address> members) {
-        
         if(log.isDebugEnabled()){
             log.debug(local_addr + ": sending RESUME event");
         }
@@ -1077,6 +1083,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             return mbr;
         }
 
+        public MergeId getMergeId() {
+            return merge_id;
+        }
+
+        public void setMergeId(MergeId merge_id) {
+            this.merge_id=merge_id;
+        }
+
         public String toString() {
             StringBuilder sb=new StringBuilder("GmsHeader");
             sb.append('[' + type2String(type) + ']');
@@ -1232,7 +1246,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.171 2009/05/18 15:46:03 belaban Exp $
+     * @version $Id: GMS.java,v 1.172 2009/05/19 15:35:30 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
