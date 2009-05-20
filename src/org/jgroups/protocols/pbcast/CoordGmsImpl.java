@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.106 2009/05/19 15:35:30 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.107 2009/05/20 11:30:56 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -205,7 +205,7 @@ public class CoordGmsImpl extends GmsImpl {
      * If a merge is already in progress, send back a MergeData with the merge_rejected field set to true.
      */
     public void handleMergeRequest(Address sender, MergeId merge_id) {
-        boolean success=setMergeId(null, merge_id);
+        boolean success=matchMergeId(merge_id) || setMergeId(null, merge_id);
         if(!success) {
             if(log.isErrorEnabled()) log.error(gms.local_addr + ": merge is already in progress");
             sendMergeRejectedResponse(sender, merge_id);
@@ -237,7 +237,7 @@ public class CoordGmsImpl extends GmsImpl {
     public void handleMergeResponse(MergeData data, MergeId merge_id) {
         if(!matchMergeId(merge_id)) {
             if(log.isErrorEnabled())
-                log.error("this.merge_id (" + this.merge_id + ") is different from merge_id (" + merge_id + ')');
+                log.error(gms.local_addr + ": this.merge_id (" + this.merge_id + ") is different from merge_id (" + merge_id + ')');
             return;
         }
         merge_rsps.add(data.getSender(), data);
@@ -767,9 +767,15 @@ public class CoordGmsImpl extends GmsImpl {
             MergeId new_merge_id=MergeId.create(gms.local_addr);
             Vector<Address> coordsCopy=new Vector<Address>(coords);
 
-            try {               
+            try {
+                boolean success=setMergeId(null, new_merge_id);
+                if(!success) {
+                    log.warn("failed to set my own merge_id (" + merge_id + ") to " + new_merge_id);
+                    return;
+                }
+
                 /* 2. Fetch the current Views/Digests from all subgroup coordinators */
-                boolean success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
+                success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
                 if(!success)
                     throw new Exception("merge aborted, merge leader did not get data from all subgroup coordinators " + coords);
 
