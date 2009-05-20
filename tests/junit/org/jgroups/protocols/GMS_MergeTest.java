@@ -3,29 +3,24 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.util.Util;
-import org.jgroups.util.MergeId;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.debug.Simulator;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
-import org.testng.annotations.*;
+import org.jgroups.util.MergeId;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
-import java.nio.ByteBuffer;
-import java.util.Vector;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.3 2009/05/20 06:53:41 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.4 2009/05/20 11:31:23 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
-    static final String props="SHARED_LOOPBACK:PING(timeout=50):pbcast.NAKACK:UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
+    static final String props="SHARED_LOOPBACK:PING(timeout=50):pbcast.NAKACK(log_discard_msgs=false)" +
+            ":UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
 
 
 
@@ -86,15 +81,49 @@ public class GMS_MergeTest extends ChannelTestBase {
             String[][] partitions=generate(new String[]{"A", "B"}, new String[]{"C", "D"});
             createPartitions(channels, partitions);
             print(channels);
+            checkViews(channels, "A", "A", "B");
+            checkViews(channels, "B", "A", "B");
+            checkViews(channels, "C", "C", "D");
+            checkViews(channels, "D", "C", "D");
+
+
+            Address leader=determineLeader(channels, "A", "C");
+            System.out.println("\n==== injecting merge event into " + leader + " ====");
+            injectMergeEvent(channels, leader, "A", "C");
+
+            for(int i=0; i < 20; i++) {
+                // print(channels);
+                System.out.print(".");
+                if(allChannelsHaveViewOf(channels, 4))
+                    break;
+                Util.sleep(500);
+            }
+            System.out.println("\n");
+            print(channels);
+            assertAllChannelsHaveViewOf(channels, 4);
+
         }
         finally {
             close(channels);
         }
     }
 
+    private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
+        for(JChannel ch: channels) {
+            if(ch.getView().size() != count)
+                return false;
+        }
+        return true;
+    }
+
+    private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
+        for(JChannel ch: channels)
+            assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView();
+    }
 
 
     private static void close(JChannel[] channels) {
+        if(channels == null) return;
         for(int i=channels.length -1; i <= 0; i--) {
             JChannel ch=channels[i];
             Util.close(ch);
@@ -115,8 +144,38 @@ public class GMS_MergeTest extends ChannelTestBase {
 
     private static void createPartitions(JChannel[] channels, String[]... partitions) throws Exception {
         checkUniqueness(partitions);
-
+        List<View> views=new ArrayList<View>(partitions.length);
+        for(String[] partition: partitions) {
+            View view=createView(partition, channels);
+            views.add(view);
+        }
+        applyViews(views, channels);
     }
+
+    private static void injectMergeEvent(JChannel[] channels, String leader, String ... coordinators) {
+        Address leader_addr=leader != null? findAddress(leader, channels) : determineLeader(channels);
+        injectMergeEvent(channels, leader_addr, coordinators);
+    }
+
+    private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
+        Vector<Address> coords=new Vector<Address>();
+        for(String tmp: coordinators)
+            coords.add(findAddress(tmp, channels));
+
+        JChannel coord=findChannel(leader_addr, channels);
+        GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
+        gms.setLevel("trace");
+        gms.up(new Event(Event.MERGE, coords));
+    }
+
+    private static Address determineLeader(JChannel[] channels, String ... coords) {
+        Membership membership=new Membership();
+        for(String coord: coords)
+            membership.add(findAddress(coord, channels));
+        membership.sort();
+        return membership.elementAt(0);
+    }
+
 
     private static String[][] generate(String[] ... partitions) {
         String[][] retval=new String[partitions.length][];
@@ -130,6 +189,64 @@ public class GMS_MergeTest extends ChannelTestBase {
             for(String tmp: partition) {
                 if(!set.add(tmp))
                     throw new Exception("partitions are overlapping: element " + tmp + " is in multiple partitions");
+            }
+        }
+    }
+
+    private static View createView(String[] partition, JChannel[] channels) throws Exception {
+        Vector<Address> members=new Vector<Address>(partition.length);
+        for(String tmp: partition) {
+            Address addr=findAddress(tmp, channels);
+            if(addr == null)
+                throw new Exception(tmp + " not associated with a channel");
+            members.add(addr);
+        }
+        return new View(members.firstElement(), 5, members);
+    }
+
+    private static void checkViews(JChannel[] channels, String channel_name, String ... members) {
+        JChannel ch=findChannel(channel_name, channels);
+        View view=ch.getView();
+        assert view.size() == members.length : "view is " + view + ", members: " + Arrays.toString(members);
+        for(String member: members) {
+            Address addr=findAddress(member, channels);
+            assert view.getMembers().contains(addr) : "view " + view + " does not contain " + addr;
+        }
+    }
+
+    private static JChannel findChannel(String tmp, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getName().equals(tmp))
+                return ch;
+        }
+        return null;
+    }
+
+    private static JChannel findChannel(Address addr, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getAddress().equals(addr))
+                return ch;
+        }
+        return null;
+    }
+
+    private static Address findAddress(String tmp, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getName().equals(tmp))
+                return ch.getAddress();
+        }
+        return null;
+    }
+
+    private static void applyViews(List<View> views, JChannel[] channels) {
+        for(View view: views) {
+            Collection<Address> members=view.getMembers();
+            for(JChannel ch: channels) {
+                Address addr=ch.getAddress();
+                if(members.contains(addr)) {
+                    GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+                    gms.installView(view);
+                }
             }
         }
     }

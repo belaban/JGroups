@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.172 2009/05/19 15:35:30 belaban Exp $
+ * @version $Id: GMS.java,v 1.173 2009/05/20 11:31:11 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader"})
@@ -462,7 +462,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
      */
     public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {
         if(log.isTraceEnabled())
-            log.trace("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
+            log.trace(local_addr + ": mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
        
         Message view_change_msg=new Message(); // bcast to all members
         GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
@@ -475,6 +475,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
         if(!ackMembers.isEmpty())
             ack_collector.reset(ackMembers);
+        else
+            ack_collector.reset(null);
                
         
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
@@ -1246,7 +1248,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.172 2009/05/19 15:35:30 belaban Exp $
+     * @version $Id: GMS.java,v 1.173 2009/05/20 11:31:11 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
