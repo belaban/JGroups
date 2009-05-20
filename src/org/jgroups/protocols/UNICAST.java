@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.137 2009/04/29 13:08:09 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.138 2009/05/20 11:44:45 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -246,7 +246,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(timer == null)
             throw new Exception("timer is null");
         if(max_retransmit_time > 0)
-            cache=new AgeOutCache(timer, max_retransmit_time, this);
+            cache=new AgeOutCache<Address>(timer, max_retransmit_time, this);
         started=true;
     }
 
@@ -637,7 +637,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             sender_win=entry != null? entry.sent_msgs : null;
             if(sender_win == null) {
                 if(log.isErrorEnabled())
-                    log.error("sender window for " + sender + " not found");
+                    log.error(local_addr + ": sender window for " + sender + " not found");
                 return;
             }
             rsp=sender_win.getLowestMessage();
