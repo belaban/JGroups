@@ -1,22 +1,18 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.MPING;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -24,197 +20,199 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.36 2009/05/13 13:57:00 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.37 2009/05/20 14:23:03 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
    
     @Test
-    public void testMerging2Members() {
-        String[] names = {"A", "B"};
-        mergeHelper(names);
+    public void testMerging2Members() throws Exception {
+        mergeHelper("MergeTest.testMerging2Members", "A", "B");
     }
     
     @Test
-    public void testMerging4Members() {
-        String[] names = {"A", "B", "C", "D"};
-        mergeHelper(names);
+    public void testMerging4Members() throws Exception {
+        mergeHelper("MergeTest.testMerging4Members", "A", "B", "C", "D");
     }
 
-    /**
-     *
-     * 
-     */
-    protected void mergeHelper(String[] names) {
-        int count=names.length;
 
-        //List<MergeApplication> channels = new ArrayList<MergeApplication>();
-        MergeApplication[] channels=new MergeApplication[count];
+    protected void mergeHelper(String cluster_name, String ... members) throws Exception {
+        JChannel[] channels=null;
         try {
-            // Create a semaphore and take all its permits
-            Semaphore semaphore=new Semaphore(count);
-            semaphore.acquire(count);
+            channels=createChannels(cluster_name, members);
+            print(channels);
 
-            // Create activation threads that will block on the semaphore
-            for(int i=0;i < count;i++) {
-                if(i == 0)
-                    channels[i]=new MergeApplication(names[i], semaphore, false);
-                else
-                    channels[i]=new MergeApplication((JChannel)channels[0].getChannel(),
-                                                     names[i],
-                                                     semaphore,
-                                                     false);
-
-                // Release one ticket at a time to allow the thread to start
-                // working
-                channels[i].start();
-                semaphore.release(1);
-                //sleep at least a second and max second and a half
-                Util.sleepRandom(1500);
+            System.out.println("\ncreating partitions: ");
+            createPartitions(channels, members);
+            print(channels);
+            for(String member: members) {
+                JChannel ch=findChannel(member, channels);
+                assert ch.getView().size() == 1 : "view of " + ch.getAddress() + ": " + ch.getView();
             }
 
-            // Make sure everyone is in sync
-
-            blockUntilViewsReceived(channels, 60000);
-
-            // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
-
-            int split=count / 2;
-
-            for(int i=0;i < split;i++) {
-                DISCARD discard=(DISCARD)((JChannel)channels[i].getChannel()).getProtocolStack()
-                                                                             .findProtocol("DISCARD");
-                for(int j=split;j < count;j++) {
-                    discard.addIgnoreMember(channels[j].getLocalAddress());
-                }
+            System.out.println("\n==== injecting merge event ====");
+            for(String member: members) {
+                injectMergeEvent(channels, member, members);
             }
-
-            for(int i=count - 1;i >= split;i--) {
-                DISCARD discard=(DISCARD)((JChannel)channels[i].getChannel()).getProtocolStack()
-                                                                             .findProtocol("DISCARD");
-                for(int j=0;j < split;j++) {
-                    discard.addIgnoreMember(channels[j].getLocalAddress());
-                }
-            }
-
-            log.info("Waiting for split to be detected...");
-            View view;
-            long stop=System.currentTimeMillis() + 35 * 1000;
-            do {
-                view=channels[0].channel.getView();               
-                if(view != null && view.size() == split)
+            for(int i=0; i < 20; i++) {
+                System.out.print(".");
+                if(allChannelsHaveViewOf(channels, members.length))
                     break;
-                else
-                    Util.sleep(1000);
-            }while(System.currentTimeMillis() < stop);
-
-            // Util.sleep(35*1000);
-
-            log.info("Waiting for merging to kick in....");
-
-            for(int i=0;i < count;i++) {
-                channels[i].getChannel().getProtocolStack().removeProtocol("DISCARD");
+                Util.sleep(500);
             }
-
-            //Either merge properly or time out...
-            //we check that each channel again has correct view
-            blockUntilViewsReceived(channels, 60000);
-
-            // Re-acquire the semaphore tickets; when we have them all
-            // we know the threads are done
-            boolean acquired=semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
-            if(!acquired) {
-                log.warn("Most likely a bug, analyse the stack below:");
-                log.warn(Util.dumpThreads());
-            }
-            Util.sleep(1000);
-        }
-        catch(Throwable ex) {
-            log.warn("Exception encountered during test", ex);
-            assert false:ex.getLocalizedMessage();
+            System.out.println("\n");
+            print(channels);
+            assertAllChannelsHaveViewOf(channels, members.length);
         }
         finally {
-            List<MergeApplication> channelsReversed=Arrays.asList(channels);
-            Collections.reverse(channelsReversed);
-            for(MergeApplication channel:channelsReversed) {
-                channel.cleanup();
-                Util.sleep(2000);
+            if(channels != null)
+                close(channels);
+        }
+    }
+
+    private JChannel[] createChannels(String cluster_name, String[] members) throws Exception {
+        JChannel[] retval=new JChannel[members.length];
+        JChannel ch=null;
+        for(int i=0; i < retval.length; i++) {
+            JChannel tmp;
+            if(ch == null) {
+                ch=createChannel(true, members.length);
+                tmp=ch;
             }
-            if(useBlocking()) {
-                for(MergeApplication channel:channels) {
-                    checkEventStateTransferSequence(channel);
-                }
+            else {
+                tmp=createChannel(ch);
             }
+            tmp.setName(members[i]);
+            tmp.connect(cluster_name);
+            retval[i]=tmp;
+        }
+
+        return retval;
+    }
+
+    private static void close(JChannel[] channels) {
+        if(channels == null) return;
+        for(int i=channels.length -1; i <= 0; i--) {
+            JChannel ch=channels[i];
+            Util.close(ch);
+        }
+    }
+
+
+    private static void createPartitions(JChannel[] channels, String ... partitions) throws Exception {
+        checkUniqueness(partitions);
+        List<View> views=new ArrayList<View>(partitions.length);
+        for(String partition: partitions) {
+            View view=createView(partition, channels);
+            views.add(view);
+        }
+        applyViews(views, channels);
+    }
+
+
+    private static void checkUniqueness(String[] ... partitions) throws Exception {
+         Set<String> set=new HashSet<String>();
+         for(String[] partition: partitions) {
+             for(String tmp: partition) {
+                 if(!set.add(tmp))
+                     throw new Exception("partitions are overlapping: element " + tmp + " is in multiple partitions");
+             }
+         }
+     }
+
+    private static void injectMergeEvent(JChannel[] channels, String leader, String ... coordinators) {
+        Address leader_addr=leader != null? findAddress(leader, channels) : determineLeader(channels);
+        injectMergeEvent(channels, leader_addr, coordinators);
+    }
+
+    private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
+        Vector<Address> coords=new Vector<Address>();
+        for(String tmp: coordinators)
+            coords.add(findAddress(tmp, channels));
+
+        JChannel coord=findChannel(leader_addr, channels);
+        GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
+        gms.setLevel("trace");
+        gms.up(new Event(Event.MERGE, coords));
+    }
+
+
+     private static View createView(String partition, JChannel[] channels) throws Exception {
+         Vector<Address> members=new Vector<Address>();
+         Address addr=findAddress(partition, channels);
+         if(addr == null)
+             throw new Exception(partition + " not associated with a channel");
+         members.add(addr);
+         return new View(members.firstElement(), 10, members);
+     }
+
+
+     private static JChannel findChannel(String tmp, JChannel[] channels) {
+         for(JChannel ch: channels) {
+             if(ch.getName().equals(tmp))
+                 return ch;
+         }
+         return null;
+     }
+
+     private static JChannel findChannel(Address addr, JChannel[] channels) {
+         for(JChannel ch: channels) {
+             if(ch.getAddress().equals(addr))
+                 return ch;
+         }
+         return null;
+     }
+
+    private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
+         for(JChannel ch: channels) {
+             if(ch.getView().size() != count)
+                 return false;
+         }
+         return true;
+     }
+
+     private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
+         for(JChannel ch: channels)
+             assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView();
+     }
+
+
+    private static Address determineLeader(JChannel[] channels, String ... coords) {
+        Membership membership=new Membership();
+        for(String coord: coords)
+            membership.add(findAddress(coord, channels));
+        membership.sort();
+        return membership.elementAt(0);
+    }
+
+     private static Address findAddress(String tmp, JChannel[] channels) {
+         for(JChannel ch: channels) {
+             if(ch.getName().equals(tmp))
+                 return ch.getAddress();
+         }
+         return null;
+     }
+
+     private static void applyViews(List<View> views, JChannel[] channels) {
+         for(View view: views) {
+             Collection<Address> members=view.getMembers();
+             for(JChannel ch: channels) {
+                 Address addr=ch.getAddress();
+                 if(members.contains(addr)) {
+                     GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+                     gms.installView(view);
+                 }
+             }
+         }
+     }
+    
+
+    private static void print(JChannel[] channels) {
+        for(JChannel ch: channels) {
+            System.out.println(ch.getName() + ": " + ch.getView());
         }
     }
     
-    protected class MergeApplication extends PushChannelApplicationWithSemaphore {      
 
-        public MergeApplication(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(name, semaphore, useDispatcher);
-            replaceDiscoveryProtocol((JChannel)channel);
-            addDiscardProtocol((JChannel)channel); 
-            modiftFDAndMergeSettings((JChannel)channel);
-        }
-        
-        public MergeApplication(JChannel ch,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(ch,name, semaphore, useDispatcher);
-            
-            /*
-             * no need to modify anything since we are making a copy of an
-             * already modified channel
-             * replaceDiscoveryProtocol((JChannel)channel);
-             * addDiscardProtocol((JChannel)channel);
-             * modiftFDAndMergeSettings((JChannel)channel);
-             */
-        }
-
-        public void useChannel() throws Exception {
-            channel.connect("MergeApplication");           
-        }         
-    }
-    
-    
-    private static void addDiscardProtocol(JChannel ch) throws Exception {
-        ProtocolStack stack=ch.getProtocolStack();
-        Protocol transport=stack.getTransport();
-        DISCARD discard=new DISCARD();
-        discard.setProtocolStack(ch.getProtocolStack());
-        discard.start();
-        stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
-    }
-    
-    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
-        ProtocolStack stack=ch.getProtocolStack();
-        Protocol discovery=stack.removeProtocol("TCPPING");
-        if(discovery != null){
-            Protocol transport = stack.getTransport();
-            MPING mping=new MPING();
-            InetAddress bindAddress=Util.getBindAddress(new Properties());
-            mping.setBindAddr(bindAddress);
-            mping.setMulticastAddress("230.3.3.3");
-            mping.setMcastPort(7777);            
-            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
-            mping.setProtocolStack(ch.getProtocolStack());
-            mping.init();
-            mping.start();            
-            log.info("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
-        }        
-    }
-
-    private static void modiftFDAndMergeSettings(JChannel ch) {
-        ProtocolStack stack=ch.getProtocolStack();
-
-        FD fd=(FD)stack.findProtocol("FD");
-        if(fd != null) {
-            fd.setMaxTries(3);
-            fd.setTimeout(1000);
-        }
-        MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
-        if(merge != null) {
-            merge.setMinInterval(5000);
-            merge.setMaxInterval(10000);
-        }
-    }
+   
 }
