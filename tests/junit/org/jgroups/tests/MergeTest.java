@@ -1,26 +1,18 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.37 2009/05/20 14:23:03 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.38 2009/05/20 14:30:30 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -83,6 +75,9 @@ public class MergeTest extends ChannelTestBase {
                 tmp=createChannel(ch);
             }
             tmp.setName(members[i]);
+            NAKACK nakack=(NAKACK)tmp.getProtocolStack().findProtocol(NAKACK.class);
+            if(nakack != null)
+                nakack.setLogDiscardMessages(false);
             tmp.connect(cluster_name);
             retval[i]=tmp;
         }
