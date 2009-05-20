@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.4 2009/05/20 11:31:23 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.5 2009/05/20 11:46:48 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
