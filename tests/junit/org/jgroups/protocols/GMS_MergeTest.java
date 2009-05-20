@@ -6,8 +6,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -15,23 +13,13 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.5 2009/05/20 11:46:48 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.6 2009/05/20 12:25:34 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String props="SHARED_LOOPBACK:PING(timeout=50):pbcast.NAKACK(log_discard_msgs=false)" +
             ":UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
 
-
-
-    @BeforeClass
-    void setUp() throws Exception {
-    }
-
-
-    @AfterClass
-    void tearDown() throws Exception {
-    }
 
 
     /**
@@ -41,7 +29,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     public static void testMergeRequestTimeout() throws Exception {
         JChannel c1=new JChannel(props);
         try {
-            c1.connect("GMS_MergeTest");
+            c1.connect("GMS_MergeTest.testMergeRequestTimeout()");
             Message merge_request=new Message();
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
             MergeId new_merge_id=MergeId.create(c1.getAddress());
@@ -72,7 +60,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     public static void testSimpleMerge() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create("A", "B", "C", "D");
+            channels=create("GMS_MergeTest.testSimpleMerge()", "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -92,7 +80,6 @@ public class GMS_MergeTest extends ChannelTestBase {
             injectMergeEvent(channels, leader, "A", "C");
 
             for(int i=0; i < 20; i++) {
-                // print(channels);
                 System.out.print(".");
                 if(allChannelsHaveViewOf(channels, 4))
                     break;
@@ -101,12 +88,98 @@ public class GMS_MergeTest extends ChannelTestBase {
             System.out.println("\n");
             print(channels);
             assertAllChannelsHaveViewOf(channels, 4);
-
         }
         finally {
             close(channels);
         }
     }
+
+
+    public static void testConcurrentMergeTwoPartitions() throws Exception {
+        JChannel[] channels=null;
+        try {
+            channels=create("GMS_MergeTest.testConcurrentMergeTwoPartitions", "A", "B", "C", "D");
+            print(channels);
+            View view=channels[channels.length -1].getView();
+            assert view.size() == channels.length : "view is " + view;
+
+            System.out.println("\ncreating partitions: ");
+            String[][] partitions=generate(new String[]{"A", "B"}, new String[]{"C", "D"});
+            createPartitions(channels, partitions);
+            print(channels);
+            checkViews(channels, "A", "A", "B");
+            checkViews(channels, "B", "A", "B");
+            checkViews(channels, "C", "C", "D");
+            checkViews(channels, "D", "C", "D");
+
+            System.out.println("\n==== injecting merge event into A and C concurrently ====");
+            injectMergeEvent(channels, "C", "A", "C");
+            injectMergeEvent(channels, "A", "A", "C");
+            
+            for(int i=0; i < 20; i++) {
+                System.out.print(".");
+                if(allChannelsHaveViewOf(channels, 4))
+                    break;
+                Util.sleep(500);
+            }
+            System.out.println("\n");
+            print(channels);
+            assertAllChannelsHaveViewOf(channels, 4);
+        }
+        finally {
+            close(channels);
+        }
+    }
+
+
+    public static void testConcurrentMergeMultiplePartitions() throws Exception {
+        JChannel[] channels=null;
+        try {
+            channels=create("GMS_MergeTest.testConcurrentMergeMultiplePartitions", "A", "B", "C", "D", "E", "F", "G", "H");
+            print(channels);
+            View view=channels[channels.length -1].getView();
+            assert view.size() == channels.length : "view is " + view;
+            assertAllChannelsHaveViewOf(channels, 8);
+
+            System.out.println("\ncreating partitions: ");
+            String[][] partitions=generate(new String[]{"A", "B"},
+                                           new String[]{"C", "D"},
+                                           new String[]{"E", "F"},
+                                           new String[]{"G", "H"});
+            createPartitions(channels, partitions);
+            print(channels);
+            checkViews(channels, "A", "A", "B");
+            checkViews(channels, "B", "A", "B");
+            checkViews(channels, "C", "C", "D");
+            checkViews(channels, "D", "C", "D");
+            checkViews(channels, "E", "E", "F");
+            checkViews(channels, "F", "E", "F");
+            checkViews(channels, "G", "G", "H");
+            checkViews(channels, "H", "G", "H");
+
+
+            System.out.println("\n==== injecting merge event into A, C, E and G concurrently ====");
+            injectMergeEvent(channels, "G", "A", "C", "E", "G");
+            injectMergeEvent(channels, "E", "A", "C", "E", "G");
+            injectMergeEvent(channels, "A", "A", "C", "E", "G");
+            injectMergeEvent(channels, "C", "A", "C", "E", "G");
+
+            for(int i=0; i < 20; i++) {
+                System.out.print(".");
+                if(allChannelsHaveViewOf(channels, 8))
+                    break;
+                Util.sleep(1000);
+            }
+            System.out.println("\n");
+            print(channels);
+            assertAllChannelsHaveViewOf(channels, 8);
+        }
+        finally {
+            close(channels);
+        }
+    }
+
+
 
     private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
         for(JChannel ch: channels) {
@@ -131,13 +204,13 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    private static JChannel[] create(String ... names) throws Exception {
+    private static JChannel[] create(String cluster_name, String ... names) throws Exception {
         JChannel[] retval=new JChannel[names.length];
         for(int i=0; i < retval.length; i++) {
             JChannel ch=new JChannel(props);
             ch.setName(names[i]);
             retval[i]=ch;
-            ch.connect("GMS_MergeTest");
+            ch.connect(cluster_name);
         }
         return retval;
     }
@@ -201,7 +274,7 @@ public class GMS_MergeTest extends ChannelTestBase {
                 throw new Exception(tmp + " not associated with a channel");
             members.add(addr);
         }
-        return new View(members.firstElement(), 5, members);
+        return new View(members.firstElement(), 10, members);
     }
 
     private static void checkViews(JChannel[] channels, String channel_name, String ... members) {
