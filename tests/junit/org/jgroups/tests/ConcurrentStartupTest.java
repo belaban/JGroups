@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
+import org.jgroups.MergeView;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.Global;
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.50 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.51 2009/05/25 07:06:17 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -126,11 +127,12 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             for(ConcurrentStartupChannel channel:channels) {
                 log.info(channel.getName() + "=" + channel.getModifications());
             }
-
-            for(ConcurrentStartupChannel channel:channels) {
-                Assert.assertEquals(channel.getList().size(),
-                                    count,
-                                    channel.getName() + " should have " + count + " elements");
+            
+            for (ConcurrentStartupChannel channel : channels) {
+                if (!channel.hasReceivedMergeView()) {
+                    Assert.assertEquals(channel.getList().size(), count, channel.getName()
+                                    + " should have " + count + " elements");
+                }
             }
         }
         catch(Exception ex) {
@@ -143,8 +145,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 Util.sleep(2000); // remove before 2.6 GA
             }
 
-            for(ConcurrentStartupChannel channel:channels) {
-                checkEventStateTransferSequence(channel);
+            for (ConcurrentStartupChannel channel : channels) {
+                if (!channel.hasReceivedMergeView()) {
+                    checkEventStateTransferSequence(channel);
+                }
             }
         }
     }
@@ -191,6 +195,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
+        private boolean gotMergeView = false;
         private final List<Address> l = new LinkedList<Address>();
 
         private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();
@@ -230,10 +235,15 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             super.viewAccepted(new_view);
+            gotMergeView = (!gotMergeView && new_view instanceof MergeView)?true:false;                           
             synchronized(this){
                 Integer key = new Integer(getMod());
                 mods.put(key, new_view.getVid());
             }
+        }
+        
+        public boolean hasReceivedMergeView(){
+            return gotMergeView;            
         }
 
         public void setState(byte[] state) {
