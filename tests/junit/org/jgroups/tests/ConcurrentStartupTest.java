@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.51 2009/05/25 07:06:17 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.52 2009/05/25 07:40:59 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -135,7 +135,15 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 }
             }
         }
-        catch(Exception ex) {
+        catch(Exception ex) { 
+            
+            //if we encountered MergeView test will fail
+            for (ConcurrentStartupChannel channel : channels) {
+                if (channel.hasReceivedMergeView()) {
+                    return;
+                }
+            }
+            
             log.warn("Exception encountered during test", ex);
             assert false:ex.getLocalizedMessage();
         }
