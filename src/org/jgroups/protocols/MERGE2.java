@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.56 2009/05/14 09:29:14 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.57 2009/05/25 13:31:45 vlada Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -141,6 +141,8 @@ public class MERGE2 extends Protocol {
                 Address coord=mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     is_coord=true;
+                    if(log.isDebugEnabled())
+                        log.debug(local_addr +  " is scheduling a FindSubgroupsTask since it is a coordinator");
                     task.start(); // start task if we became coordinator (doesn't start if already running)
                 }
                 else {
@@ -149,6 +151,8 @@ public class MERGE2 extends Protocol {
                     if(is_coord) {
                         is_coord=false;
                     }
+                    if(log.isDebugEnabled())
+                        log.debug(local_addr +  " is scheduling a FindSubgroupsTask since it is a coordinator");
                     task.stop();
                 }
                 return ret;
