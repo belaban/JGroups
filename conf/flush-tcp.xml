@@ -40,8 +40,8 @@
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="1"
              num_initial_members="3"/>
-    <MERGE2 max_interval="100000"
-              min_interval="20000"/>
+    <MERGE2 max_interval="30000"
+              min_interval="10000"/>
     <FD_SOCK/>
     <FD timeout="10000" max_tries="5"   shun="true"/>
     <VERIFY_SUSPECT timeout="1500"  />
