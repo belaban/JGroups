@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.59 2009/05/27 12:03:02 vlada Exp $
+ * @version $Id: MERGE2.java,v 1.60 2009/05/28 07:03:12 vlada Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -135,16 +135,12 @@ public class MERGE2 extends Protocol {
                 Object ret=down_prot.down(evt);
                 Vector<Address> mbrs=((View)evt.getArg()).getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
-                    if(log.isDebugEnabled())
-                        log.debug(local_addr +  " is stopping a FindSubgroupsTask since it has no members in a view");
                     task.stop();
                     return ret;
                 }
                 Address coord=mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     is_coord=true;
-                    if(log.isDebugEnabled())
-                        log.debug(local_addr +  " is scheduling a FindSubgroupsTask since it is a coordinator");
                     task.start(); // start task if we became coordinator (doesn't start if already running)
                 }
                 else {
@@ -153,8 +149,6 @@ public class MERGE2 extends Protocol {
                     if(is_coord) {
                         is_coord=false;
                     }
-                    if(log.isDebugEnabled())
-                        log.debug(local_addr +  " is stopping a FindSubgroupsTask since it is not a coordinator");
                     task.stop();
                 }
                 return ret;
@@ -205,6 +199,10 @@ public class MERGE2 extends Protocol {
                 
                 Event evt=new Event(Event.MERGE, coords);              
                 up_prot.up(evt);               
+            }
+            else {
+                if(log.isDebugEnabled())
+                    log.debug(local_addr +  " did not find multiple coordinators among " + initial_mbrs);
             }
         }
 
