@@ -658,8 +658,11 @@ public class ChannelTestBase extends TestCase {
         }
 
         StringBuilder sb = new StringBuilder();
-        for (Channel c : channels) {            
-            sb.append(c.getLocalAddress()+ ",view=" +c.getView().getMembers()+"|");
+        for (Channel c : channels) {   
+            Address address = c.getLocalAddress();
+            if(address != null) {
+               sb.append(address+ ",view=" +c.getView().getMembers()+"|");
+            }
         }
         throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
     }
