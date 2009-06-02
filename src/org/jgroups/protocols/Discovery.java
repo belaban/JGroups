@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.57 2009/04/27 09:04:02 belaban Exp $
+ * @version $Id: Discovery.java,v 1.58 2009/06/02 13:53:36 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -277,19 +277,18 @@ public abstract class Discovery extends Protocol {
                 if(return_entire_cache) {
                     Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                     if(cache != null) {
-                        Address src=msg.getSrc();
                         for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
                             Address logical_addr=entry.getKey();
                             PhysicalAddress physical_addr=entry.getValue();
                             sendDiscoveryResponse(logical_addr, Arrays.asList(physical_addr), coord, is_server,
-                                                  UUID.get(logical_addr), src);
+                                                  UUID.get(logical_addr), msg.getSrc());
                         }
                     }
                 }
                 else {
                     PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
                     sendDiscoveryResponse(local_addr, Arrays.asList(physical_addr), coord, is_server,
-                                          org.jgroups.util.UUID.get(local_addr), msg.getSrc());
+                                          UUID.get(local_addr), msg.getSrc());
                 }
                 return null;
 
