@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.61 2009/06/02 09:14:38 vlada Exp $
+ * @version $Id: MERGE2.java,v 1.62 2009/06/02 11:55:20 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -220,12 +220,11 @@ public class MERGE2 extends Protocol {
             PingData tmp=new PingData(local_addr, local_addr, true);
             List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
             if(retval == null) return Collections.emptyList();
-            else if(is_coord && local_addr != null) {
-               //let's make sure that we add ourself as a coordinator 
-               if(retval.contains(tmp)){
-                  retval.remove(tmp);
-               }
-               retval.add(tmp);
+            if(is_coord && local_addr != null) {
+                //let's make sure that we add ourself as a coordinator
+                if(retval.contains(tmp))
+                    retval.remove(tmp);
+                retval.add(tmp);
             } 
             return retval;
         }
