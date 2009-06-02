@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.58 2009/06/02 13:53:36 belaban Exp $
+ * @version $Id: Discovery.java,v 1.59 2009/06/02 15:10:25 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -295,9 +295,6 @@ public abstract class Discovery extends Protocol {
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
                 rsp=hdr.arg;
 
-                if(log.isTraceEnabled())
-                    log.trace("received GET_MBRS_RSP, rsp=" + rsp);
-
                 // add physical address (if available) to transport's cache
                 if(rsp != null) {
                     Address logical_addr=rsp.getAddress();
@@ -310,12 +307,15 @@ public abstract class Discovery extends Protocol {
                         down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                     if(logical_addr != null && rsp.getLogicalName() != null)
                         UUID.add((UUID)logical_addr, rsp.getLogicalName());
+
+                    if(log.isTraceEnabled())
+                        log.trace("received GET_MBRS_RSP, rsp=" + rsp);
+                    synchronized(ping_responses) {
+                        for(Responses rsps: ping_responses)
+                            rsps.addResponse(rsp);
+                    }
                 }
                 
-                synchronized(ping_responses) {
-                    for(Responses rsps: ping_responses)
-                        rsps.addResponse(rsp);
-                }
                 return null;
 
             default:
