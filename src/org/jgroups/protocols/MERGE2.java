@@ -1,4 +1,3 @@
-
 package org.jgroups.protocols;
 
 
@@ -10,6 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.Future;
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.60 2009/05/28 07:03:12 vlada Exp $
+ * @version $Id: MERGE2.java,v 1.61 2009/06/02 09:14:38 vlada Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -192,7 +192,7 @@ public class MERGE2 extends Protocol {
         public void findAndNotify() {
             List<PingData> initial_mbrs=findInitialMembers();
 
-            Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
+            List<Address> coords=detectMultipleCoordinators(initial_mbrs);
             if(coords.size() > 1) {
                 if(log.isDebugEnabled())
                     log.debug(local_addr + " found multiple coordinators: " + coords + "; sending up MERGE event");
@@ -219,8 +219,14 @@ public class MERGE2 extends Protocol {
         List<PingData> findInitialMembers() {
             PingData tmp=new PingData(local_addr, local_addr, true);
             List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
-            if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
-                retval.add(tmp);
+            if(retval == null) return Collections.emptyList();
+            else if(is_coord && local_addr != null) {
+               //let's make sure that we add ourself as a coordinator 
+               if(retval.contains(tmp)){
+                  retval.remove(tmp);
+               }
+               retval.add(tmp);
+            } 
             return retval;
         }
 
@@ -230,17 +236,15 @@ public class MERGE2 extends Protocol {
          * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
          *         membership, and more than 1 for multiple coordinators
          */
-        Vector<Address> detectMultipleCoordinators(List<PingData> initial_mbrs) {
-            Vector<Address> ret=new Vector<Address>(11);
-            if(initial_mbrs != null) {
-                for(PingData response:initial_mbrs) {
-                    if(response.isServer()) {
-                        Address coord=response.getCoordAddress();
-                        if(!ret.contains(coord))
-                            ret.add(coord);
-                    }
-                }
-            }
+        List<Address> detectMultipleCoordinators(List<PingData> initial_mbrs) {
+            Vector<Address> ret=new Vector<Address>();
+             for(PingData response:initial_mbrs) {
+                 if(response.isServer()) {
+                     Address coord=response.getCoordAddress();
+                     if(!ret.contains(coord))
+                         ret.add(coord);
+                 }
+             }            
             return ret;
         }
     }
