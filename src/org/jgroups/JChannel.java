@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.locks.Lock;
 
 /**
  * JChannel is a pure Java implementation of Channel.
@@ -74,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.217 2009/05/13 13:07:10 belaban Exp $
+ * @version $Id: JChannel.java,v 1.218 2009/06/03 09:11:40 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1722,13 +1723,15 @@ public class JChannel extends Channel {
         String tmp=configurator.getProtocolStackString();
         tmp=Util.substituteVariable(tmp); // replace vars with system props
 
-        prot_stack=new ProtocolStack(this, tmp);
-        try {
-            prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
-            properties=tmp;
-        }
-        catch(Throwable e) {
-            throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+        synchronized(getClass()) {
+            prot_stack=new ProtocolStack(this, tmp);
+            try {
+                prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
+                properties=tmp;
+            }
+            catch(Throwable e) {
+                throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+            }
         }
     }
 
@@ -1737,13 +1740,16 @@ public class JChannel extends Channel {
             throw new IllegalArgumentException("channel is null");
         if(log.isInfoEnabled())
             log.info("JGroups version: " + Version.description);
-        prot_stack=new ProtocolStack(this, null);
-        try {
-            prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
-            getProperties();
-        }
-        catch(Throwable e) {
-            throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+
+        synchronized(getClass()) {
+            prot_stack=new ProtocolStack(this, null);
+            try {
+                prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
+                getProperties();
+            }
+            catch(Throwable e) {
+                throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+            }
         }
     }
 
