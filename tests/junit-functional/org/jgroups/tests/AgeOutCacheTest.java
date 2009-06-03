@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.4 2009/06/03 07:48:59 vlada Exp $
+ * @version $Id: AgeOutCacheTest.java,v 1.5 2009/06/03 08:37:42 vlada Exp $
  */
 @Test(groups = Global.FUNCTIONAL, sequential = true)
 public class AgeOutCacheTest {
@@ -51,13 +51,12 @@ public class AgeOutCacheTest {
       for (int i = 1; i <= 5; i++)
          cache.add(i);
       System.out.println("cache:\n" + cache);
-      Util.sleep(500);
       cache.remove(3);
       cache.remove(5);
       cache.remove(6); // not existent
       System.out.println("cache:\n" + cache);
       assert cache.size() == 3;
-      Util.sleep(700);
+      Util.sleep(1300);
       assert cache.size() == 0;
    }
 
