@@ -113,8 +113,6 @@ public class FLUSH extends Protocol {
     
     @GuardedBy("sharedLock")
     private boolean flushCompleted = false;
-    
-    private volatile boolean allowMessagesToPassUp = false;
 
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
     
@@ -193,7 +191,6 @@ public class FLUSH extends Protocol {
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
-        allowMessagesToPassUp = false;
     }
 
     public void stop() {
@@ -434,9 +431,6 @@ public class FLUSH extends Protocol {
                 if(dest != null && !dest.isMulticastAddress()) {
                     return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny applies to multicasts
                 }
-
-                if(!allowMessagesToPassUp)
-                    return null;
             }
             break;
 
@@ -630,7 +624,6 @@ public class FLUSH extends Protocol {
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
-            allowMessagesToPassUp = true;
             flushCompleted = false;
         }
 
