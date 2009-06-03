@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.59 2009/06/02 15:10:25 belaban Exp $
+ * @version $Id: Discovery.java,v 1.60 2009/06/03 07:29:07 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -297,6 +297,7 @@ public abstract class Discovery extends Protocol {
 
                 // add physical address (if available) to transport's cache
                 if(rsp != null) {
+                    Address response_sender=msg.getSrc();
                     Address logical_addr=rsp.getAddress();
                     if(logical_addr == null)
                         logical_addr=msg.getSrc();
@@ -309,13 +310,14 @@ public abstract class Discovery extends Protocol {
                         UUID.add((UUID)logical_addr, rsp.getLogicalName());
 
                     if(log.isTraceEnabled())
-                        log.trace("received GET_MBRS_RSP, rsp=" + rsp);
+                        log.trace("received GET_MBRS_RSP from " + response_sender + ": " + rsp);
                     synchronized(ping_responses) {
-                        for(Responses rsps: ping_responses)
-                            rsps.addResponse(rsp);
+                        for(Responses rsps: ping_responses) {
+                            boolean overwrite=logical_addr.equals(response_sender);
+                            rsps.addResponse(rsp, overwrite);
+                        }
                     }
                 }
-                
                 return null;
 
             default:
@@ -491,11 +493,15 @@ public abstract class Discovery extends Protocol {
         }
 
         public void addResponse(PingData rsp) {
+            addResponse(rsp, false);
+        }
+
+        public void addResponse(PingData rsp, boolean overwrite) {
             if(rsp == null)
                 return;
             promise.getLock().lock();
             try {
-                if(!ping_rsps.contains(rsp)) {
+                if(!ping_rsps.contains(rsp) || overwrite) {
                     ping_rsps.add(rsp);
                     promise.getCond().signalAll();
                 }
