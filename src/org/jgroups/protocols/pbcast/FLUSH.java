@@ -64,10 +64,7 @@ public class FLUSH extends Protocol {
 
     @Property(description="Reconcilliation phase toggle. Default is true")
     private boolean enable_reconciliation = true;
-    
-    @Property(description="Max number of attempts to quiet the cluster during first flush phase. Default is 4")
-    private int flush_retry_count = 4;
-
+   
     
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     
