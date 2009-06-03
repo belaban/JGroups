@@ -13,9 +13,9 @@ import java.util.concurrent.ScheduledExecutorService;
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.3 2009/06/03 07:48:07 vlada Exp $
+ * @version $Id: AgeOutCacheTest.java,v 1.4 2009/06/03 07:48:59 vlada Exp $
  */
-@Test(groups = Global.FUNCTIONAL, sequential = false)
+@Test(groups = Global.FUNCTIONAL, sequential = true)
 public class AgeOutCacheTest {
    ScheduledExecutorService timer;
 
