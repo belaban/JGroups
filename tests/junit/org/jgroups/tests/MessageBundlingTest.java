@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.17 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.18 2009/06/04 09:01:46 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class MessageBundlingTest extends ChannelTestBase {
@@ -25,7 +25,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     private final static long LATENCY=1500L;
     private final static long SLEEP=5000L;
     private static final boolean BUNDLING=true;
-    private static final int MAX_BYTES=20000;
+    private static final int MAX_BYTES=64000;
 
 
     
@@ -46,7 +46,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     public void testLatencyWithoutMessageBundling() throws Exception {
         createChannels("testLatencyWithoutMessageBundling");
         Message tmp=new Message();
-        setBundling(ch1, false, 20000, 30);
+        setBundling(ch1, false, MAX_BYTES, 30);
         r2.setNumExpectedMesssages(1);
         Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
