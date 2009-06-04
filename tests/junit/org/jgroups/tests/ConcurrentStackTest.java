@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.12 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.13 2009/06/04 07:35:54 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
@@ -77,7 +77,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
         Exception ex=null;
 
         try {
-            barrier.await((long)(EXPECTED * SLEEPTIME * 1.3), TimeUnit.MILLISECONDS); // wait for all receivers
+            barrier.await((long)(EXPECTED * SLEEPTIME * 1.5), TimeUnit.MILLISECONDS); // wait for all receivers
         }
         catch(java.util.concurrent.TimeoutException e) {
             ex=e;
