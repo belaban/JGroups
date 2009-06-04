@@ -21,7 +21,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.13 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.14 2009/06/04 09:39:19 belaban Exp $
  */
 @Unsupported
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
@@ -224,7 +224,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         throws LockNotGrantedException, ChannelException
     {
         if (!(lockId instanceof Serializable) || !(owner instanceof Serializable))
-            throw new ClassCastException("DistributedLockManager works only with serializable objects.");
+            throw new IllegalArgumentException("DistributedLockManager works only with serializable objects.");
 
         boolean acquired = votingAdapter.vote(
             new AcquireLockDecree(lockId, owner, id), timeout);
@@ -702,6 +702,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
          */
         public Object getKey() { return lockId; }
 
+        public Object getRequester() {
+            return requester;
+        }
+
         /**
          * This is a place-holder for future lock expiration code.
          */
@@ -729,8 +733,11 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         }
 
         public boolean equals(Object other) {
-
             return other instanceof LockDecree && ((LockDecree)other).lockId.equals(this.lockId);
+        }
+
+        public String toString() {
+            return "lockId=" + lockId + ", requester=" + requester + ", managerId=" + managerId + ", committed=" + commited;
         }
     }
 
