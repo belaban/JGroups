@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.9 2009/06/04 07:29:49 vlada Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.10 2009/06/04 09:18:00 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -42,8 +42,11 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         Receiver r1=new Receiver(), r2=new Receiver();
         c1.setReceiver(r1);
         c2.setReceiver(r2);
+        
         c1.connect("TransportThreadPoolTest");
         c2.connect("TransportThreadPoolTest");
+        
+        blockUntilViewsReceived(2,5000,c1,c2);
 
         c1.send(null, null, "hello world");
         c2.send(null, null, "bela");
