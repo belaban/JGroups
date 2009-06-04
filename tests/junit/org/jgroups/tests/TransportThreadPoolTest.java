@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.10 2009/06/04 09:18:00 vlada Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.11 2009/06/04 17:31:28 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -47,18 +47,18 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c2.connect("TransportThreadPoolTest");
         
         blockUntilViewsReceived(2,5000,c1,c2);
-
-        c1.send(null, null, "hello world");
-        c2.send(null, null, "bela");
-
+        
         TP transport=c1.getProtocolStack().getTransport();
-        ExecutorService thread_pool=Executors.newCachedThreadPool();
+        ExecutorService thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
 
         transport=c2.getProtocolStack().getTransport();
-        thread_pool=Executors.newCachedThreadPool();
+        thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
 
+        c1.send(null, null, "hello world");
+        c2.send(null, null, "bela");
+    
         c1.send(null, null, "message 3");
         c2.send(null, null, "message 4");
         
