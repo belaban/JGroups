@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.48 2009/04/23 08:20:31 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.49 2009/06/04 07:37:30 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -100,7 +100,15 @@ public class FRAG2 extends Protocol {
         int old_frag_size=frag_size;
         if(frag_size <=0)
             throw new Exception("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
-        
+
+        TP transport=getTransport();
+        if(transport != null && transport.isEnableBundling()) {
+            int max_bundle_size=transport.getMaxBundleSize();
+            if(frag_size >= max_bundle_size)
+                throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
+                        max_bundle_size + ")");
+        }
+
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
         up_prot.up(new Event(Event.CONFIG, info));
