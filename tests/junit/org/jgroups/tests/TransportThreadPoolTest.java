@@ -12,12 +12,14 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.8 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.9 2009/06/04 07:29:49 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -46,10 +48,6 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c1.send(null, null, "hello world");
         c2.send(null, null, "bela");
 
-        Util.sleep(500); // need to sleep because message sending is asynchronous
-        assert r1.getMsgs().size() == 2;
-        assert r2.getMsgs().size() == 2;
-
         TP transport=c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newCachedThreadPool();
         transport.setDefaultThreadPool(thread_pool);
@@ -60,7 +58,9 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
         c1.send(null, null, "message 3");
         c2.send(null, null, "message 4");
-        Util.sleep(500);
+        
+        r1.getLatch().await(2000, TimeUnit.MILLISECONDS);
+        r1.getLatch().await(2000, TimeUnit.MILLISECONDS);
 
         System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs()));
         assert r1.getMsgs().size() == 4;
@@ -79,13 +79,20 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
     private static class Receiver extends ReceiverAdapter {
         List<Message> msgs=new LinkedList<Message>();
+        
+        final CountDownLatch latch = new CountDownLatch(4);
 
         public List<Message> getMsgs() {
             return msgs;
         }
+        
+        public CountDownLatch getLatch(){
+           return latch;
+        }
 
         public void receive(Message msg) {
             msgs.add(msg);
+            latch.countDown();
         }
     }
 }
