@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent FLUSH and partial FLUSHes
  * 
  * @author Manik Surtani
- * @version $Id: ConcurrentFlushTest.java,v 1.12 2009/06/04 07:18:03 vlada Exp $
+ * @version $Id: ConcurrentFlushTest.java,v 1.13 2009/06/04 07:20:18 vlada Exp $
  */
 @Test(groups = Global.FLUSH, sequential = true)
 public class ConcurrentFlushTest extends ChannelTestBase {
@@ -171,11 +171,12 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
       // at this stage both channels should have started a flush
       stopFlushLatch.countDown();
-
-      assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
       
       t1.join();
       t2.join();
+
+      assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
+      
 
       assert l1.blockReceived;
       assert l1.unblockReceived;
@@ -259,11 +260,11 @@ public class ConcurrentFlushTest extends ChannelTestBase {
 
       // at this stage both channels should have started a flush?
       stopFlushLatch.countDown();
-
-      assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
-
+      
       t1.join();
       t2.join();
+
+      assertTrue(flushStopReceived.await(60, TimeUnit.SECONDS));
 
       assertTrue(l1.blockReceived);
       assertTrue(l1.unblockReceived);
