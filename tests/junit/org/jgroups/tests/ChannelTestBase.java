@@ -674,7 +674,10 @@ public class ChannelTestBase {
     
     protected static boolean isViewComplete(Channel channel, int memberCount) {
 
-       List<Address> members=channel.getView().getMembers();
+       View view = channel.getView();
+       if(view == null) return false;
+       
+       List<Address> members=view.getMembers();
        if(members == null || memberCount > members.size()) {
            return false;
        }
