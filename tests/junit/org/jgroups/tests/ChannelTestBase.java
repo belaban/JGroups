@@ -282,7 +282,7 @@ public class ChannelTestBase {
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable,ExtendedReceiver {
+    protected abstract class ChannelApplication implements EventSequence, Runnable, ChannelRetrievable,ExtendedReceiver {
         protected Channel   channel;
         protected Thread    thread;
         protected Throwable exception;
@@ -603,9 +603,8 @@ public class ChannelTestBase {
         return true;
     }
     
-    protected interface MemberRetrievable {
-        public List<Address> getMembers();
-        public Address getLocalAddress();
+    protected interface ChannelRetrievable {
+        public Channel getChannel();
     }
 
 
@@ -613,100 +612,92 @@ public class ChannelTestBase {
     /**
      * Checks each channel in the parameter array to see if it has the exact same view as other channels in an array.
      */
-    protected static boolean areViewsComplete(MemberRetrievable[] channels, int memberCount) {
+    protected static boolean areViewsComplete(ChannelRetrievable[] channels, int memberCount) {
         for(int i=0; i < memberCount; i++) {
             if(!isViewComplete(channels[i], memberCount)) {
                 return false;
             }
         }
-
         return true;
     }
+    
+    protected static boolean areViewsComplete(int memberCount, Channel... c) {       
+       for(Channel channel:c) {
+           if(!isViewComplete(channel,memberCount)) {
+               return false;
+           }
+       }
+       return true;
+   }
 
     /**
      * Loops, continually calling
-     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
+     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.ChannelRetrievable[], int)}
      * until it either returns true or <code>timeout</code> ms have elapsed.
      * @param channels channels which must all have consistent views
      * @param timeout  max number of ms to loop
      * @throws RuntimeException if <code>timeout</code> ms have elapse without all channels
      *                          having the same number of members.
      */
-    protected static void blockUntilViewsReceived(MemberRetrievable[] channels, long timeout) {
-        blockUntilViewsReceived(channels, channels.length, timeout);
+    protected static void blockUntilViewsReceived(ChannelRetrievable[] channels, long timeout) {
+       long failTime=System.currentTimeMillis() + timeout;
+
+       while(System.currentTimeMillis() < failTime) {
+           Util.sleep(100);
+           if(areViewsComplete(channels, channels.length)) {
+               return;
+           }
+       }
+       throw new RuntimeException("timed out before caches had complete views");
     }
 
-    protected static void blockUntilViewsReceived(Collection channels, long timeout) {
-        blockUntilViewsReceived(channels, channels.size(), timeout);
+    protected static boolean isViewComplete(ChannelRetrievable channel, int memberCount) {
+        return isViewComplete(channel.getChannel(),memberCount);
     }
+    
+    protected static void blockUntilViewsReceived(int count, long timeout, Channel... c) {
+       long failTime=System.currentTimeMillis() + timeout;
 
-    /**
-     * Loops, continually calling
-     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
-     * until it either returns true or <code>timeout</code> ms have elapsed.
-     * @param channels channels which must all have consistent views
-     * @param timeout  max number of ms to loop
-     * @throws RuntimeException if <code>timeout</code> ms have elapse without all channels
-     *                          having the same number of members.
-     */
-    protected static void blockUntilViewsReceived(MemberRetrievable[] channels, int count, long timeout) {
-        long failTime=System.currentTimeMillis() + timeout;
+       while(System.currentTimeMillis() < failTime) {
+           Util.sleep(100);
+           if(areViewsComplete(count,c)) {
+               return;
+           }
+       }
 
-        while(System.currentTimeMillis() < failTime) {
-            Util.sleep(100);
-            if(areViewsComplete(channels, count)) {
-                return;
-            }
-        }
-
-        StringBuilder sb=new StringBuilder();
-        for(MemberRetrievable c : channels) {
-            sb.append(c.getLocalAddress() + ",view=" + c.getMembers() + "|");
-        }
-        throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
+       StringBuilder sb=new StringBuilder();
+       for(Channel channel : c) {
+           sb.append(channel.getAddress() + ",view=" + channel.getView().getMembers() + "|");
+       }
+       throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
     }
+    
+    protected static boolean isViewComplete(Channel channel, int memberCount) {
 
-    protected static void blockUntilViewsReceived(Collection channels, int count, long timeout) {
-        long failTime=System.currentTimeMillis() + timeout;
+       List<Address> members=channel.getView().getMembers();
+       if(members == null || memberCount > members.size()) {
+           return false;
+       }
+       else if(memberCount < members.size()) {
+           // This is an exceptional condition
+           StringBuilder sb=new StringBuilder("Channel at address ");
+           sb.append(channel.getAddress());
+           sb.append(" had ");
+           sb.append(members.size());
+           sb.append(" members; expecting ");
+           sb.append(memberCount);
+           sb.append(". Members were (");
+           for(int j=0; j < members.size(); j++) {
+               if(j > 0) {
+                   sb.append(", ");
+               }
+               sb.append(members.get(j));
+           }
+           sb.append(')');
 
-        while(System.currentTimeMillis() < failTime) {
-            Util.sleep(100);
-            if(areViewsComplete((MemberRetrievable[])channels.toArray(new MemberRetrievable[channels.size()]), count)) {
-                return;
-            }
-        }
+           throw new IllegalStateException(sb.toString());
+       }
 
-        throw new RuntimeException("timed out before caches had complete views");
-    }
-
-    protected static boolean isViewComplete(MemberRetrievable channel, int memberCount) {
-
-        List members=channel.getMembers();
-        if(members == null || memberCount > members.size()) {
-            return false;
-        }
-        else if(memberCount < members.size()) {
-            // This is an exceptional condition
-            StringBuilder sb=new StringBuilder("Channel at address ");
-            sb.append(channel.getLocalAddress());
-            sb.append(" had ");
-            sb.append(members.size());
-            sb.append(" members; expecting ");
-            sb.append(memberCount);
-            sb.append(". Members were (");
-            for(int j=0; j < members.size(); j++) {
-                if(j > 0) {
-                    sb.append(", ");
-                }
-                sb.append(members.get(j));
-            }
-            sb.append(')');
-
-            throw new IllegalStateException(sb.toString());
-        }
-
-        return true;
-    }
-
-
+       return true;
+   }
 }

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.78 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.79 2009/06/04 09:18:00 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class FlushTest extends ChannelTestBase {
@@ -289,7 +289,7 @@ public class FlushTest extends ChannelTestBase {
     private void _testChannels(String names[], int connectType) {
         int count = names.length;
 
-        ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
+        List<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
         try{
             // Create a semaphore and take all its permits
             Semaphore semaphore = new Semaphore(count);
@@ -315,7 +315,7 @@ public class FlushTest extends ChannelTestBase {
                 Util.sleep(1000);
             }
 
-            blockUntilViewsReceived(channels, 10000);
+            blockUntilViewsReceived(channels.toArray(new ChannelRetrievable[channels.size()]), 10000);
 
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(1000);

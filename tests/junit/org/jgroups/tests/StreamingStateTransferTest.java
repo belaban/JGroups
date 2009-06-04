@@ -90,7 +90,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 }
             }
 
-            blockUntilViewsReceived(channels, 60000);
+            blockUntilViewsReceived(channels.toArray(new ChannelRetrievable[channels.size()]), 60000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
