@@ -9,8 +9,8 @@
 
     <bookinfo>
         <title>JGroups tutorial</title>
-        <pubdate>$Date: 2007/07/18 14:26:26 $</pubdate>
-        <releaseinfo>$Id: master.xml,v 1.4 2007/07/18 14:26:26 belaban Exp $</releaseinfo>
+        <pubdate>$Date: 2009/06/05 07:24:45 $</pubdate>
+        <releaseinfo>$Id: master.xml,v 1.5 2009/06/05 07:24:45 belaban Exp $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -34,8 +34,11 @@
             <holder>Red Hat Inc</holder>
         </copyright>
         <legalnotice>
-            <para>This document is copyrighted. Copies are allowed for
-                personal use. Redistribution only with written permission of the author(s).</para>
+            <para>This document is licensed under the
+                <ulink url="http://creativecommons.org/licenses/by-sa/3.0/us/legalcode">
+                    Creative Commons Attribution-ShareAlike (CC-BY-SA) 3.0
+                </ulink>
+            </para>
         </legalnotice>
     </bookinfo>
 
