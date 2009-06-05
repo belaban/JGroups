@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.11 2009/06/04 17:31:28 vlada Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.12 2009/06/05 07:42:30 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -55,6 +55,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         transport=c2.getProtocolStack().getTransport();
         thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
+        
+        Util.sleep(2000);
 
         c1.send(null, null, "hello world");
         c2.send(null, null, "bela");
@@ -62,8 +64,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c1.send(null, null, "message 3");
         c2.send(null, null, "message 4");
         
-        r1.getLatch().await(2000, TimeUnit.MILLISECONDS);
-        r1.getLatch().await(2000, TimeUnit.MILLISECONDS);
+        r1.getLatch().await(3000, TimeUnit.MILLISECONDS);
+        r1.getLatch().await(3000, TimeUnit.MILLISECONDS);
 
         System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs()));
         assert r1.getMsgs().size() == 4;
