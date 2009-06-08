@@ -17,7 +17,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.8 2009/04/29 13:36:31 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.9 2009/06/08 12:55:40 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -28,12 +28,15 @@ public class OverlappingMergeTest extends ChannelTestBase {
     protected void start() throws Exception {
         ra=new MyReceiver("A"); rb=new MyReceiver("B"); rc=new MyReceiver("C");
         a=createChannel(true, 3);
+        a.setName("A");
         a.setReceiver(ra);
 
         b=createChannel(a);
+        b.setName("B");
         b.setReceiver(rb);
 
-        c=createChannel(a); 
+        c=createChannel(a);
+        c.setName("C");
         c.setReceiver(rc);
         modifyConfigs(a, b, c);
 
@@ -141,7 +144,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      *      been implemented: B and C's MERGE2 protocols will never send out merge requests as they see A as coord 
      * </ol>
      */
-    @Test(enabled=false)
+    @Test(enabled=true)
     public void testOverlappingMergeWithABC() throws Exception {
         sendAndCheckMessages(5, a, b, c);
 
@@ -165,7 +168,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         Vector<Address> coords=new Vector<Address>(2);
         coords.add(a.getLocalAddress());
         Event merge_evt=new Event(Event.MERGE, coords);
-        System.out.println("\n==== Injecting a merge event (leader=" + a + ") ====");
+        System.out.println("\n==== Injecting a merge event (leader=" + a.getAddress() + ") ====");
         injectMergeEvent(merge_evt, a);
 
         System.out.println("\n==== checking views after merge ====:");
@@ -226,8 +229,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     private static void injectView(View view, JChannel ... channels) {
         for(JChannel ch: channels) {
-            ch.down(new Event(Event.VIEW_CHANGE, view));
-            ch.up(new Event(Event.VIEW_CHANGE, view));
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.installView(view);
         }
         for(JChannel ch: channels) {
             MyReceiver receiver=(MyReceiver)ch.getReceiver();
