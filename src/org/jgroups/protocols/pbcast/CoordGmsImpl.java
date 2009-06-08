@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.108 2009/06/08 08:19:18 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.109 2009/06/08 12:56:21 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -595,10 +595,10 @@ public class CoordGmsImpl extends GmsImpl {
         // determine the new digest
         Digest new_digest=consolidateDigests(merge_rsps, new_mbrs.size());
         if(new_digest == null) {
-            if(log.isErrorEnabled()) log.error("Merge leader " + gms.local_addr + "could not consolidate digest for merge");
+            if(log.isErrorEnabled()) log.error("Merge leader " + gms.local_addr + ": could not consolidate digest for merge");
             return null;
         }
-        if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + " consolidated view=" + new_view +
+        if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + ": consolidated view=" + new_view +
                 "\nconsolidated digest=" + new_digest);
         ret=new MergeData(gms.local_addr, new_view, new_digest);
         return ret;
@@ -802,7 +802,7 @@ public class CoordGmsImpl extends GmsImpl {
                 /*5. if flush is in stack stop the flush for entire cluster [JGRP-700] - FLUSH: flushing should span merge */
                 gms.stopFlush();
                 if(log.isDebugEnabled())
-                    log.debug("Merge leader " + gms.local_addr + " completed merge task");
+                    log.debug("Merge leader " + gms.local_addr + ": completed merge task");
                 thread=null;
             }
         }
