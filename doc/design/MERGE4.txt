@@ -3,5 +3,46 @@ MERGE4
 ------
 
 Author: Bela Ban
-Version: $Id: MERGE4.txt,v 1.1 2009/06/08 14:43:08 belaban Exp $
+Version: $Id: MERGE4.txt,v 1.2 2009/06/08 14:59:18 belaban Exp $
 JIRA: https://jira.jboss.org/jira/browse/JGRP-937
+
+Goal
+----
+
+To merge asymmetric partitions, e.g. A: {A,B,C}, B: {A,B}, C: {A,C}. The current merge algorithm wouldn't merge these
+partitions because B and C are not coordinators and therefore don't participate in the merge.
+
+The implementation involves creating a new protocol (MERGE4) and modifying GMS and CoordGmsImpl.
+
+MERGE4
+------
+- Periodically run a discovery
+- The Discovery protocol is changed such that each participant additionally returns its view
+- If the discovery responses result in more than 1 view, send up a MERGE event with a list of all different views
+
+GMS / CoordGmsImpl
+------------------
+- On MERGE(V1,V2,V3,...):
+  - Determine all coordinators, e.g. A for V1 and V2, D for V3
+  - Determine the membership for each coord, e.g. {A,B,C} for A and {D,E,F} for D
+  - Send a MERGE-REQ to A and D
+    - The MERGE-REQ for A includes {A,B,C}, the MERGE-REQ for D includes {D,E,F}
+  - A and D fetch digest information from {A,B,C} (A) and {D,E,F} (D) respectively
+  - This information is consolidated in A (merge leader) and installed in both partitions
+
+- Example:
+  - A: V3 {A,B,C}
+  - B: V1 {A,B}
+  - C: V2 {A,C}
+  - D: V7 {D,E,F}
+  - E: V6 {D,E}
+  - F: V5 {D,F}
+
+  - MERGE4 sends up a MERGE(V1,V2,V3,V5,V6,V7)
+  - CoordGmsImpl determines that the coords are A and D and the merge leader is A
+  - A sends a MERGE-REQ(A,B,C} to A and a MERGE-REQ(D,E,F} to D
+  - A fetches the digest and view for A,B,C and returns it to A
+  - D fetches the digest and view for D,E,F and returns it to A
+  - A consolidates the digests and views (into a MergeView) and tells A and D to install the new MergeView plus digests
+  
+  
