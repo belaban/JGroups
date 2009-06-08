@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.110 2009/06/08 13:04:25 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.111 2009/06/08 14:41:50 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -230,7 +230,7 @@ public class CoordGmsImpl extends GmsImpl {
             cancelMerge(merge_id);
             return;
         }
-        Digest digest=fetchDigestsFromAllMembersInSubPartition();
+        Digest digest=fetchDigestsFromAllMembersInSubPartition(view.getMembers());
         sendMergeResponse(sender, view, digest, merge_id);
     }
 
@@ -295,8 +295,7 @@ public class CoordGmsImpl extends GmsImpl {
      * Multicasts a GET_DIGEST_REQ to all current members and waits for all responses (GET_DIGEST_RSP) or N ms.
      * @return
      */
-    private Digest fetchDigestsFromAllMembersInSubPartition() {
-        Collection<Address> current_mbrs=gms.view != null? new ArrayList<Address>(gms.view.getMembers()) : null;
+    private Digest fetchDigestsFromAllMembersInSubPartition(List<Address> current_mbrs) {
         if(current_mbrs == null)
             return null;
 
@@ -323,7 +322,7 @@ public class CoordGmsImpl extends GmsImpl {
      * use this otherwise !
      */
     void fixDigests() {
-        Digest digest=fetchDigestsFromAllMembersInSubPartition();
+        Digest digest=fetchDigestsFromAllMembersInSubPartition(gms.view.getMembers());
         Message msg=new Message();
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST);
         hdr.my_digest=digest;
@@ -523,7 +522,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug(gms.local_addr + ": sending MERGE_REQ to " + coords);
             
-        for(Address coord:coords) {
+        for(Address coord: coords) {
             Message msg=new Message(coord, null, null);
             msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
