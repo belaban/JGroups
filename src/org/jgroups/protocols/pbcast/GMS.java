@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.174 2009/06/08 08:19:18 belaban Exp $
+ * @version $Id: GMS.java,v 1.175 2009/06/08 08:38:15 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -380,7 +380,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         return impl != null && impl instanceof CoordGmsImpl;
     }
 
-    @ManagedOperation(description="Fetches digests from alll members and installs them, unblocking blocked members")
+    @ManagedOperation(description="Fetches digests from all members and installs them, unblocking blocked members")
     public void fixDigests() {
         if(impl instanceof CoordGmsImpl)
             ((CoordGmsImpl)impl).fixDigests();
@@ -1240,7 +1240,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.174 2009/06/08 08:19:18 belaban Exp $
+     * @version $Id: GMS.java,v 1.175 2009/06/08 08:38:15 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
