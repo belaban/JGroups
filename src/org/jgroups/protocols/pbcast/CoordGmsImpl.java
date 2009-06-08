@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.107 2009/05/20 11:30:56 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.108 2009/06/08 08:19:18 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -385,15 +385,9 @@ public class CoordGmsImpl extends GmsImpl {
         for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
             Address mbr=it.next();
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
-                JoinRsp join_rsp;
-                if(gms.reject_join_from_existing_member) {
-                    join_rsp=new JoinRsp("member " + mbr + " is already part of the group, JOIN request is rejected");
-                }
-                else {
-                    if(log.isWarnEnabled())
-                        log.warn(mbr + " already present; returning existing view " + gms.view);
-                    join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
-                }
+                if(log.isWarnEnabled())
+                    log.warn(mbr + " already present; returning existing view " + gms.view);
+                JoinRsp join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
                 gms.sendJoinResponse(join_rsp, mbr);
                 it.remove();
             }
@@ -426,14 +420,12 @@ public class CoordGmsImpl extends GmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            boolean successfulFlush = useFlushIfPresent?gms.startFlush(new_view):true;
+            boolean successfulFlush =!useFlushIfPresent || gms.startFlush(new_view);
             if(!successfulFlush && hasJoiningMembers){
-                //see http://jira.jboss.org/jira/browse/JGRP-759
-                //We should NOT send back a join response if the flush fails. 
-                //The joiner should block until the previous FLUSH completed
-                //we still have to send potential leave responses
-                sendLeaveResponses(leaving_mbrs); 
-                //but let the joining client timeout and send another join request
+                // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
+                // The joiner should block until the previous FLUSH completed
+                sendLeaveResponses(leaving_mbrs); // we still have to send potential leave responses
+                // but let the joining client timeout and send another join request
                 return;
             }
             

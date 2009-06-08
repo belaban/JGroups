@@ -24,10 +24,11 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.173 2009/05/20 11:31:11 belaban Exp $
+ * @version $Id: GMS.java,v 1.174 2009/06/08 08:19:18 belaban Exp $
  */
 @MBean(description="Group membership protocol")
-@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader"})
+@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
+        "reject_join_from_existing_member"})
 public class GMS extends Protocol implements TP.ProbeHandler {
     
     public static final String name="GMS";
@@ -93,15 +94,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Timeout to resume ViewHandler. Default is 20000 msec")
     long resume_task_timeout=20000;
 
-    /**
-     * If we receive a JOIN request from P and P is already in the current
-     * membership, then we send back a JOIN response with an error message when
-     * this property is set to true (Channel.connect() will fail). Otherwise, we
-     * return the current view
-     */
-    @Property(description="Should repeated join requests from existing members be treated as errors. Default is true")
-    boolean reject_join_from_existing_member=true;
-    
     @Property(description="Use flush for view changes. Default is true")
     boolean use_flush_if_present=true;
     
@@ -1248,7 +1240,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.173 2009/05/20 11:31:11 belaban Exp $
+     * @version $Id: GMS.java,v 1.174 2009/06/08 08:19:18 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
