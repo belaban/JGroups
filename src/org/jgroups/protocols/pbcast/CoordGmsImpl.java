@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.109 2009/06/08 12:56:21 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.110 2009/06/08 13:04:25 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -555,20 +555,14 @@ public class CoordGmsImpl extends GmsImpl {
      *          not to be null and to contain at least 1 member.
      */
     private MergeData consolidateMergeData(Vector<MergeData> merge_rsps) {
-        MergeData ret;       
         long logical_time=0; // for new_vid
-        ViewId new_vid, tmp_vid;
-        MergeView new_view;
-        View tmp_view;
-        Membership new_mbrs=new Membership();       
-        Address new_coord;
-        Vector<View> subgroups=new Vector<View>(11);
-        // contains a list of Views, each View is a subgroup
+        Membership new_mbrs=new Membership();
+        Vector<View> subgroups=new Vector<View>(11); // contains a list of Views, each View is a subgroup
 
-        for(MergeData tmp_data:merge_rsps) {           
-            tmp_view=tmp_data.getView();
+        for(MergeData tmp_data: merge_rsps) {
+            View tmp_view=tmp_data.getView();
             if(tmp_view != null) {
-                tmp_vid=tmp_view.getVid();
+                ViewId tmp_vid=tmp_view.getVid();
                 if(tmp_vid != null) {
                     // compute the new view id (max of all vids +1)
                     logical_time=Math.max(logical_time, tmp_vid.getId());
@@ -581,16 +575,16 @@ public class CoordGmsImpl extends GmsImpl {
 
         // the new coordinator is the first member of the consolidated & sorted membership list
         new_mbrs.sort();       
-        new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
+        Address new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
         if(new_coord == null) {
             if(log.isErrorEnabled()) log.error("new_coord == null");
             return null;
         }
         // should be the highest view ID seen up to now plus 1
-        new_vid=new ViewId(new_coord, logical_time + 1);
+        ViewId new_vid=new ViewId(new_coord, logical_time + 1);
 
         // determine the new view
-        new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
+        MergeView new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
 
         // determine the new digest
         Digest new_digest=consolidateDigests(merge_rsps, new_mbrs.size());
@@ -600,8 +594,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + ": consolidated view=" + new_view +
                 "\nconsolidated digest=" + new_digest);
-        ret=new MergeData(gms.local_addr, new_view, new_digest);
-        return ret;
+        return new MergeData(gms.local_addr, new_view, new_digest);
     }
 
     /**
@@ -773,7 +766,6 @@ public class CoordGmsImpl extends GmsImpl {
 
                 /* 3. Remove rejected MergeData elements from merge_rsp and coords (so we'll send the new view
                  * only to members who accepted the merge request) */
-                MergeData combined_merge_data=null;
                 removeRejectedMergeRequests(coords);
                 if(merge_rsps.size() <= 1)
                     throw new Exception(gms.local_addr + ": did not get merge responses from all subgroup coordinators  (" + merge_rsps + ")");
@@ -783,7 +775,7 @@ public class CoordGmsImpl extends GmsImpl {
 
                 /* 4. Combine all views and digests into 1 View/1 Digest */
                 Vector<MergeData> merge_data=new Vector<MergeData>(merge_rsps.getResults().values());
-                combined_merge_data=consolidateMergeData(merge_data);
+                MergeData combined_merge_data=consolidateMergeData(merge_data);
                 if(combined_merge_data == null)
                     throw new Exception(gms.local_addr + ": could not consolidate merge");
                 /* 4. Send the new View/Digest to all coordinators (including myself). On reception, they will
