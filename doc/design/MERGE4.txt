@@ -1,0 +1,7 @@
+
+MERGE4
+------
+
+Author: Bela Ban
+Version: $Id: MERGE4.txt,v 1.1 2009/06/08 14:43:08 belaban Exp $
+JIRA: https://jira.jboss.org/jira/browse/JGRP-937
