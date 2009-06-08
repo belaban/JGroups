@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.72 $
+ * @version $Revision: 1.73 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -38,10 +38,7 @@ public class ClientGmsImpl extends GmsImpl {
     	joinInternal(address, false,useFlushIfPresent);
     }
     
-
-    @Override
-	public void joinWithStateTransfer(Address local_addr,
-			boolean useFlushIfPresent) {
+	public void joinWithStateTransfer(Address local_addr, boolean useFlushIfPresent) {
     	joinInternal(local_addr,true,useFlushIfPresent);
 	}
 
@@ -151,7 +148,6 @@ public class ClientGmsImpl extends GmsImpl {
                     throw new SecurityException(failure);
 
                 // 2. Install digest
-                // See if the digest does not have senders, this seems to happen on high volume startup
                 if(rsp.getDigest() == null || rsp.getDigest().getSenders() == null) {
                     if(log.isWarnEnabled())
                         log.warn("digest response has no senders: digest=" + rsp.getDigest());
