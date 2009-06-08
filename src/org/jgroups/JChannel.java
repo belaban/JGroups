@@ -75,7 +75,7 @@ import java.util.concurrent.locks.Lock;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.218 2009/06/03 09:11:40 belaban Exp $
+ * @version $Id: JChannel.java,v 1.219 2009/06/08 13:03:59 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -622,7 +622,9 @@ public class JChannel extends Channel {
         _close(true, true); // by default disconnect before closing channel and close mq
     }
 
-    
+    /**
+     * Shuts down a channel without disconnecting. To be used by tests only, don't use for application purposes
+     */
     @ManagedOperation(description="Shuts down the channel without disconnecting")
     public synchronized void shutdown() {
         down(new Event(Event.SHUTDOWN));
