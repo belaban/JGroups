@@ -34,7 +34,7 @@ import java.util.*;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.46 2009/05/29 08:46:20 vlada Exp $
+ * @version $Id: TCPPING.java,v 1.47 2009/06/09 08:42:04 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -89,7 +89,7 @@ public class TCPPING extends Discovery {
        
     public void start() throws Exception {        
         super.start();
-        initial_hosts = Util.parseCommaDelimetedHosts(hosts, port_range);       
+        initial_hosts = Util.parseCommaDelimitedHosts(hosts, port_range);       
     }
     
     public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
