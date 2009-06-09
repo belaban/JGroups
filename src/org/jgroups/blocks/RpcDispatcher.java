@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.38 2009/05/04 08:08:07 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.39 2009/06/09 15:24:41 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -434,7 +434,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
                     throw new Exception("MethodCall uses ID=" + method_call.getId() + ", but method_lookup has not been set");
                 Method m=method_lookup.findMethod(method_call.getId());
                 if(m == null)
-                    throw new Exception("no method foudn for " + method_call.getId());
+                    throw new Exception("no method found for " + method_call.getId());
                 method_call.setMethod(m);
             }
             
