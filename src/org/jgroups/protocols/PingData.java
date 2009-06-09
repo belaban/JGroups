@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -18,11 +19,12 @@ import java.util.ArrayList;
  * Encapsulates information about a cluster node, e.g. local address, coordinator's addresss, logical name and
  * physical address(es)
  * @author Bela Ban
- * @version $Id: PingData.java,v 1.2 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: PingData.java,v 1.3 2009/06/09 15:53:17 belaban Exp $
  */
 public class PingData implements Streamable {
     private Address own_addr=null;
     private Address coord_addr=null;
+    private View view=null;
     private boolean is_server=false;
     private String logical_name=null;
     private List<PhysicalAddress> physical_addrs=null;
@@ -62,6 +64,14 @@ public class PingData implements Streamable {
 
     public Address getCoordAddress() {
         return coord_addr;
+    }
+
+    public View getView() {
+        return view;
+    }
+
+    public void setView(View view) {
+        this.view=view;
     }
 
     public boolean isServer() {
@@ -106,6 +116,7 @@ public class PingData implements Streamable {
     public void writeTo(DataOutputStream outstream) throws IOException {
         Util.writeAddress(own_addr, outstream);
         Util.writeAddress(coord_addr, outstream);
+        Util.writeStreamable(view, outstream);
         outstream.writeBoolean(is_server);
         Util.writeString(logical_name, outstream);
         Util.writeAddresses(physical_addrs, outstream);
@@ -114,16 +125,18 @@ public class PingData implements Streamable {
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
         own_addr=Util.readAddress(instream);
         coord_addr=Util.readAddress(instream);
+        view=(View)Util.readStreamable(View.class, instream);
         is_server=instream.readBoolean();
         logical_name=Util.readString(instream);
         physical_addrs=(List<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
     }
 
     public int size() {
-        int retval=Global.BYTE_SIZE; // for is_server
-
+        int retval=Global.BYTE_SIZE * 2; // for is_server and presence of view
         retval+=Util.size(own_addr);
         retval+=Util.size(coord_addr);
+        if(view != null)
+            retval+=view.serializedSize();
         retval+=Global.BYTE_SIZE;     // presence byte for logical_name
         if(logical_name != null)
             retval+=logical_name.length() +2;
