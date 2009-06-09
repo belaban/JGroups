@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.20 2009/05/14 12:20:18 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.21 2009/06/09 15:52:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -82,6 +82,10 @@ public class SizeTest {
         list.add(new IpAddress("127.0.0.1", 7500));
         data=new PingData(null, null, false, "node-1", list);
         _testSize(data);
+
+        View view=Util.createView(coord, 322649, coord, own, UUID.randomUUID());
+        data.setView(view);
+        _testSize(data);
     }
 
 
@@ -114,8 +118,8 @@ public class SizeTest {
         FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
         _testSize(hdr);
 
-        PhysicalAddress a1=new IpAddress("127.0.0.1", 5555);
-        PhysicalAddress a2=new IpAddress("127.0.0.1", 6666);
+        IpAddress a1=new IpAddress("127.0.0.1", 5555);
+        IpAddress a2=new IpAddress("127.0.0.1", 6666);
         Vector<Address> suspects=new Vector<Address>();
         suspects.add(a1);
         suspects.add(a2);
@@ -135,7 +139,7 @@ public class SizeTest {
         _testSize(sockhdr);
 
 
-        Hashtable cache=new Hashtable();
+        Map<Address,IpAddress> cache=new Hashtable<Address,IpAddress>();
         cache.put(a1, a2);
         cache.put(a2, a1);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, cache);
@@ -188,8 +192,8 @@ public class SizeTest {
 
     public static void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
-        IpAddress addr=new IpAddress("127.0.0.1", 5555);
-        Map map=new HashMap();
+        Address addr=UUID.randomUUID();
+        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
         map.put(addr, new Digest.Entry(100, 200, 205));
         Digest digest=new Digest(map);
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
@@ -224,7 +228,7 @@ public class SizeTest {
 
 
     public static void testAddressVector() throws Exception {
-        Vector v=new Vector();
+        Vector<Address> v=new Vector<Address>();
         _testSize(v);
         v.add(new IpAddress(1111));
         _testSize(v);
@@ -273,13 +277,13 @@ public class SizeTest {
         View v=new View();
         _testSize(v);
 
-        ViewId vid=new ViewId(new IpAddress(1111), 322649);
-        Vector mbrs=new Vector();
+        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
+        Vector<Address> mbrs=new Vector<Address>();
         v=new View(vid, mbrs);
         _testSize(v);
-        mbrs.add(new IpAddress(3333));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
-        mbrs.add(new IpAddress(1111));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
     }
 
@@ -289,15 +293,15 @@ public class SizeTest {
         v.addPayload("name", "Bela Ban");
         _testSize(v);
 
-        ViewId vid=new ViewId(new IpAddress(1111), 322649);
-        Vector mbrs=new Vector();
+        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
+        Vector<Address> mbrs=new Vector<Address>();
         v=new View(vid, mbrs);
         v.addPayload("id", 322649);
         v.addPayload("name", "Michelle");
         _testSize(v);
-        mbrs.add(new IpAddress(3333));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
-        mbrs.add(new IpAddress(1111));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
     }
 
@@ -306,13 +310,13 @@ public class SizeTest {
         View v=new MergeView();
         _testSize(v);
 
-        ViewId vid=new ViewId(new IpAddress(1111), 322649);
-        Vector mbrs=new Vector();
+        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
+        Vector<Address> mbrs=new Vector<Address>();
         v=new MergeView(vid, mbrs, null);
         _testSize(v);
-        mbrs.add(new IpAddress(3333));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
-        mbrs.add(new IpAddress(1111));
+        mbrs.add(UUID.randomUUID());
         _testSize(v);
     }
 
@@ -373,7 +377,7 @@ public class SizeTest {
         all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
 
         v1=new View(a, 1, m1);
-        v2=new MergeView(d, 2, m2, new Vector());
+        v2=new MergeView(d, 2, m2, new Vector<View>());
         v3=new View(e, 3, m3);
         v4=new MergeView(e, 4, m3, null);
         subgroups.add(v1);
@@ -390,7 +394,7 @@ public class SizeTest {
 
     public static void testViewSyncHeader() throws Exception {
         Address creator=new IpAddress("localhost", 12345);
-        Vector members=new Vector();
+        Vector<Address> members=new Vector<Address>();
         members.add(new IpAddress(5555));
         members.add(creator);
         View view=new View(creator, 322649, members);
@@ -401,7 +405,7 @@ public class SizeTest {
         hdr=new VIEW_SYNC.ViewSyncHeader(VIEW_SYNC.ViewSyncHeader.VIEW_SYNC, view);
         _testSize(hdr);
 
-        Vector subgroups=new Vector();
+        Vector<View> subgroups=new Vector<View>();
         subgroups.add(view);
         view=new MergeView(creator, 322649, members, subgroups);
         hdr=new VIEW_SYNC.ViewSyncHeader(VIEW_SYNC.ViewSyncHeader.VIEW_SYNC, view);
@@ -412,7 +416,7 @@ public class SizeTest {
 
     public static void testJoinRsp() throws Exception {
         JoinRsp rsp;
-        Vector members=new Vector();
+        Vector<Address> members=new Vector<Address>();
 
         members.add(new IpAddress(1111));
         members.add(new IpAddress(2222));
@@ -434,7 +438,7 @@ public class SizeTest {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
         _testSize(hdr);
 
-        Vector members=new Vector();
+        Vector<Address> members=new Vector<Address>();
         members.add(addr);
         members.add(addr);
         View v=new View(addr, 33, members);
@@ -628,7 +632,7 @@ public class SizeTest {
         _testSize(hdr);
 
         hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
-        java.util.List l=new LinkedList();
+        java.util.List<Address> l=new LinkedList<Address>();
         l.add(new IpAddress(1111));
         l.add(new IpAddress(2222));
         hdr.dest_mbrs=l;
@@ -741,7 +745,7 @@ public class SizeTest {
         Assert.assertEquals(serialized_form.length, size);
     }
 
-    private static void _testSize(Collection coll) throws Exception {
+    private static void _testSize(Collection<Address> coll) throws Exception {
         long size=Util.size(coll);
         byte[] serialized_form=Util.collectionToByteBuffer(coll);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
