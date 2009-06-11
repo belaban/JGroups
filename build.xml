@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.206 2009/06/08 08:24:15 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.207 2009/06/11 10:13:48 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -565,6 +565,7 @@
     <macrodef name="prot-properties-to-doc">
         <attribute name="input" default="${protocols.xml}"/>
         <sequential>
+            <echo message="Replacing variables in @{input}"/>
 		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
             <arg value="@{input}"/>
         </java>
