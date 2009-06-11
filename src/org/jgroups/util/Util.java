@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.199 2009/06/09 08:42:05 belaban Exp $
+ * @version $Id: Util.java,v 1.200 2009/06/11 11:24:55 belaban Exp $
  */
 public class Util {
 
@@ -715,6 +715,30 @@ public class Util {
         }
     }
 
+
+    public static void writeView(View view, DataOutputStream out) throws IOException {
+        if(view == null) {
+            out.writeBoolean(false);
+            return;
+        }
+        out.writeBoolean(true);
+        out.writeBoolean(view instanceof MergeView);
+        view.writeTo(out);
+    }
+
+    public static View readView(DataInputStream in) throws IOException, InstantiationException, IllegalAccessException {
+        if(in.readBoolean() == false)
+            return null;
+        boolean isMergeView=in.readBoolean();
+        View view;
+        if(isMergeView)
+            view=new MergeView();
+        else
+            view=new View();
+        view.readFrom(in);
+        return view;
+    }
+
     public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
         byte flags=0;
         boolean streamable_addr=true;
@@ -771,6 +795,13 @@ public class Util {
                 retval+=addr.size();
             }
         }
+        return retval;
+    }
+
+    public static int size(View view) {
+        int retval=Global.BYTE_SIZE; // presence
+        if(view != null)
+            retval+=view.serializedSize() + Global.BYTE_SIZE; // merge view or regular view
         return retval;
     }
 
