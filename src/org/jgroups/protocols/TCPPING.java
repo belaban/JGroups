@@ -7,10 +7,12 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Promise;
+import org.jgroups.util.BoundedList;
 
 import java.util.*;
 
@@ -34,7 +36,7 @@ import java.util.*;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.47 2009/06/09 08:42:04 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.48 2009/06/11 12:51:45 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -45,10 +47,12 @@ public class TCPPING extends Discovery {
     @Property(description="Number of ports to be probed for initial membership. Default is 1")
     private int port_range=1; 
     
-    @Property(name="initial_hosts", description="Comma delimeted list of hosts to be contacted for initial membership")
+    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership")
     private String hosts;
-    
-    
+
+    @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
+    @ManagedAttribute(writable=false)
+    protected int max_dynamic_hosts=100;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     /**
@@ -56,7 +60,11 @@ public class TCPPING extends Discovery {
      */
     private List<IpAddress> initial_hosts;
 
+    /** https://jira.jboss.org/jira/browse/JGRP-989 */
+    protected final BoundedList<PhysicalAddress> dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
 
+
+    
     public TCPPING() {
         return_entire_cache=true;
     }
@@ -86,6 +94,11 @@ public class TCPPING extends Discovery {
     public void setPortRange(int port_range) {
         this.port_range=port_range;
     }
+
+    @ManagedAttribute
+    public String getDynamicHostList() {
+        return dynamic_hosts.toString();
+    }
        
     public void start() throws Exception {        
         super.start();
@@ -96,10 +109,14 @@ public class TCPPING extends Discovery {
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-        for(final Address addr: initial_hosts) {
+
+        Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
+        combined_target_members.addAll(dynamic_hosts);
+
+        for(final Address addr: combined_target_members) {
             if(addr.equals(physical_addr))
                 continue;
-            final Message msg = new Message(addr, null, null);
+            final Message msg=new Message(addr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(NAME, hdr);
             if(log.isTraceEnabled())
@@ -116,6 +133,21 @@ public class TCPPING extends Discovery {
                 }
             });
         }
+    }
+
+    public Object down(Event evt) {
+        Object retval=super.down(evt);
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                for(Address logical_addr: members) {
+                    PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, logical_addr));
+                    if(physical_addr != null && !initial_hosts.contains(physical_addr)) {
+                        dynamic_hosts.addIfAbsent(physical_addr);
+                    }
+                }
+                break;
+        }
+        return retval;
     }
 }
 
