@@ -110,7 +110,7 @@ public class StreamableTest {
         Address dest=UUID.randomUUID();
         Address src=UUID.randomUUID();
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, src, true));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), true));
         msg.putHeader("ping-header", hdr);
         TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
@@ -125,7 +125,7 @@ public class StreamableTest {
         UUID src=UUID.randomUUID();
         src.setAdditionalData("foobar".getBytes());
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, src, false));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), false));
         msg.putHeader("ping-header", hdr);
         TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);

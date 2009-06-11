@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.62 2009/06/02 11:55:20 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.63 2009/06/11 11:26:01 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -61,6 +61,8 @@ public class MERGE2 extends Protocol {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     private Address local_addr=null;
+
+    private View view;
     
     private final FindSubgroupsTask task=new FindSubgroupsTask();   
     
@@ -133,7 +135,8 @@ public class MERGE2 extends Protocol {
         
             case Event.VIEW_CHANGE:
                 Object ret=down_prot.down(evt);
-                Vector<Address> mbrs=((View)evt.getArg()).getMembers();
+                view=(View)evt.getArg();
+                Vector<Address> mbrs=view.getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     task.stop();
                     return ret;
@@ -217,7 +220,7 @@ public class MERGE2 extends Protocol {
          * Returns a list of PingData pairs.
          */
         List<PingData> findInitialMembers() {
-            PingData tmp=new PingData(local_addr, local_addr, true);
+            PingData tmp=new PingData(local_addr, view, true);
             List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
             if(retval == null) return Collections.emptyList();
             if(is_coord && local_addr != null) {

@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.61 2009/06/09 11:47:38 belaban Exp $
+ * @version $Id: Discovery.java,v 1.62 2009/06/11 11:26:01 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -87,6 +87,7 @@ public abstract class Discovery extends Protocol {
     private volatile boolean is_server=false;
     protected TimeScheduler timer=null;
 
+    protected View view;
     protected final Vector<Address> members=new Vector<Address>(11);
     protected Address local_addr=null;
     protected String group_addr=null;
@@ -221,6 +222,7 @@ public abstract class Discovery extends Protocol {
      * @param evt - the event that has been sent from the layer below
      */
 
+    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         
         switch(evt.getType()) {
@@ -374,7 +376,8 @@ public abstract class Discovery extends Protocol {
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 Vector<Address> tmp;
-                if((tmp=((View)evt.getArg()).getMembers()) != null) {
+                view=(View)evt.getArg();
+                if((tmp=view.getMembers()) != null) {
                     synchronized(members) {
                         members.clear();
                         members.addAll(tmp);
@@ -422,7 +425,7 @@ public abstract class Discovery extends Protocol {
 
     private void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
                                        Address coord, boolean is_server, String logical_name, Address sender) {
-        PingData ping_rsp=new PingData(logical_addr, coord, is_server, logical_name, physical_addrs);
+        PingData ping_rsp=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
         Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
         PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
