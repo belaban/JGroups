@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.21 2009/06/09 15:52:55 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.22 2009/06/11 11:25:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -39,7 +39,9 @@ public class SizeTest {
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (String)null));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData(Util.createRandomAddress(), null, true)));
         Address self=Util.createRandomAddress();
-        PingData rsp=new PingData(self, self, true);
+        PingData rsp=new PingData(self, Util.createView(self, 1, self), true);
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
+        rsp=new PingData(self, Util.createView(self, 1, self, Util.createRandomAddress(), Util.createRandomAddress()), true);
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
     }
  
@@ -56,16 +58,16 @@ public class SizeTest {
         data=new PingData(null, null, false);
         _testSize(data);
 
-        data=new PingData(own, coord, false);
+        data=new PingData(own, Util.createView(coord, 22, coord, Util.createRandomAddress()), false);
         _testSize(data);
 
         data=new PingData(null, null, false, "node-1", null);
         _testSize(data);
 
-        data=new PingData(own, coord, false, "node-1", null);
+        data=new PingData(own, Util.createView(coord, 22, coord), false, "node-1", null);
         _testSize(data);
 
-        data=new PingData(own, coord, false, "node-1", new ArrayList<PhysicalAddress>(7));
+        data=new PingData(own, Util.createView(coord, 22, coord), false, "node-1", new ArrayList<PhysicalAddress>(7));
         _testSize(data);
 
         data=new PingData(null, null, false, "node-1", new ArrayList<PhysicalAddress>(7));
