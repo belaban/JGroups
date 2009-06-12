@@ -12,7 +12,7 @@ import java.util.*;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.38 2009/05/20 14:30:30 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.39 2009/06/12 09:58:45 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -121,55 +121,63 @@ public class MergeTest extends ChannelTestBase {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        Vector<Address> coords=new Vector<Address>();
+        List<View> views=new ArrayList<View>();
         for(String tmp: coordinators)
-            coords.add(findAddress(tmp, channels));
+            views.add(findView(tmp, channels));
 
         JChannel coord=findChannel(leader_addr, channels);
         GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
         gms.setLevel("trace");
-        gms.up(new Event(Event.MERGE, coords));
+        gms.up(new Event(Event.MERGE, views));
     }
 
 
-     private static View createView(String partition, JChannel[] channels) throws Exception {
-         Vector<Address> members=new Vector<Address>();
-         Address addr=findAddress(partition, channels);
-         if(addr == null)
-             throw new Exception(partition + " not associated with a channel");
-         members.add(addr);
-         return new View(members.firstElement(), 10, members);
-     }
+    private static View createView(String partition, JChannel[] channels) throws Exception {
+        Vector<Address> members=new Vector<Address>();
+        Address addr=findAddress(partition, channels);
+        if(addr == null)
+            throw new Exception(partition + " not associated with a channel");
+        members.add(addr);
+        return new View(members.firstElement(), 10, members);
+    }
 
 
-     private static JChannel findChannel(String tmp, JChannel[] channels) {
-         for(JChannel ch: channels) {
-             if(ch.getName().equals(tmp))
-                 return ch;
-         }
-         return null;
-     }
+    private static JChannel findChannel(String tmp, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getName().equals(tmp))
+                return ch;
+        }
+        return null;
+    }
 
-     private static JChannel findChannel(Address addr, JChannel[] channels) {
-         for(JChannel ch: channels) {
-             if(ch.getAddress().equals(addr))
-                 return ch;
-         }
-         return null;
-     }
+    private static JChannel findChannel(Address addr, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getAddress().equals(addr))
+                return ch;
+        }
+        return null;
+    }
+
+    private static View findView(String tmp, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getName().equals(tmp))
+                return ch.getView();
+        }
+        return null;
+    }
 
     private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
-         for(JChannel ch: channels) {
-             if(ch.getView().size() != count)
-                 return false;
-         }
-         return true;
-     }
+        for(JChannel ch: channels) {
+            if(ch.getView().size() != count)
+                return false;
+        }
+        return true;
+    }
 
-     private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
-         for(JChannel ch: channels)
-             assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView();
-     }
+    private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
+        for(JChannel ch: channels)
+            assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView();
+    }
 
 
     private static Address determineLeader(JChannel[] channels, String ... coords) {

@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.6 2009/05/20 12:25:34 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.7 2009/06/12 09:58:46 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -231,14 +231,14 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        Vector<Address> coords=new Vector<Address>();
+        List<View> views=new ArrayList<View>();
         for(String tmp: coordinators)
-            coords.add(findAddress(tmp, channels));
+            views.add(findView(tmp, channels));
 
         JChannel coord=findChannel(leader_addr, channels);
         GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
         gms.setLevel("trace");
-        gms.up(new Event(Event.MERGE, coords));
+        gms.up(new Event(Event.MERGE, views));
     }
 
     private static Address determineLeader(JChannel[] channels, String ... coords) {
@@ -307,6 +307,14 @@ public class GMS_MergeTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             if(ch.getName().equals(tmp))
                 return ch.getAddress();
+        }
+        return null;
+    }
+
+    private static View findView(String tmp, JChannel[] channels) {
+        for(JChannel ch: channels) {
+            if(ch.getName().equals(tmp))
+                return ch.getView();
         }
         return null;
     }

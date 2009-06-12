@@ -1,4 +1,3 @@
-// $Id: MERGE3.java,v 1.23 2009/05/14 09:36:32 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -10,10 +9,9 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -27,17 +25,21 @@ import java.util.concurrent.Future;
  * somewhere above this protocol (typically in the GMS protocol).<p>
  * This protocol works as follows:
  * <ul>
- * <li>If coordinator: periodically broadcast a "I'm the coordinator" message. If a coordinator receives such
- * a message, it immediately initiates a merge by sending up a MERGE event
+ * <li>If coordinator: periodically broadcast its view. If another coordinator receives such a message, and its own
+ * view differs from the received view, it immediately initiates a merge by sending up a MERGE event,
+ * containing the received view and its own view
  * <p>
  *
- * Provides: sends MERGE event with list of coordinators up the stack<br>
+ * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
+ * @version $Id: MERGE3.java,v 1.24 2009/06/12 09:58:34 belaban Exp $
  */
 @Experimental
 @DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE3 extends Protocol {
     Address local_addr=null;
+    View view;
+
     @Property
     long min_interval=5000;     // minimum time between executions of the FindSubgroups task
     @Property
@@ -46,8 +48,6 @@ public class MERGE3 extends Protocol {
     final Vector<Address>  mbrs=new Vector<Address>();
     TimeScheduler timer=null;
     Future<?> announcer_task_future=null;
-    CoordinatorAnnouncer announcer_task=null;
-    final Set<Address> announcements=Collections.synchronizedSet(new HashSet<Address>());
 
 
     public String getName() {
@@ -75,12 +75,15 @@ public class MERGE3 extends Protocol {
                 Message msg=(Message)evt.getArg();
                 CoordAnnouncement hdr=(CoordAnnouncement)msg.getHeader(getName());
                 if(hdr != null) {
-                    if(hdr.coord_addr != null && is_coord) {
-                        if(announcements.add(hdr.coord_addr) && log.isDebugEnabled())
-                            log.debug("received announcement: " + hdr.coord_addr + ", announcements=" + announcements);
-
-                        if(announcements.size() > 1 && is_coord) {
-                            processAnnouncements();
+                    if(is_coord) {
+                        ViewId other=hdr.view.getViewId();
+                        if(!Util.sameViewId(other, view.getViewId())) {
+                            List<View> views=new ArrayList<View>();
+                            views.add(view);
+                            views.add(hdr.view);
+                            if(log.isDebugEnabled())
+                                log.debug("detected different views (" + Util.print(views) + "), sending up MERGE event");
+                            up_prot.up(new Event(Event.MERGE, views));
                         }
                     }
                     return null;
@@ -101,7 +104,8 @@ public class MERGE3 extends Protocol {
 
             case Event.VIEW_CHANGE:
                 down_prot.down(evt);
-                tmp=((View)evt.getArg()).getMembers();
+                view=(View)evt.getArg();
+                tmp=view.getMembers();
                 mbrs.clear();
                 mbrs.addAll(tmp);
                 coord=mbrs.elementAt(0);
@@ -129,11 +133,7 @@ public class MERGE3 extends Protocol {
 
     void startCoordAnnouncerTask() {
         if(announcer_task_future == null || announcer_task_future.isDone()) {
-            announcements.add(local_addr);
-            announcer_task=new CoordinatorAnnouncer();
-            announcer_task_future=timer.scheduleWithDynamicInterval(announcer_task);
-            if(log.isDebugEnabled())
-                log.debug("coordinator announcement task started, announcements=" + announcements);
+            announcer_task_future=timer.scheduleWithDynamicInterval(new CoordinatorAnnouncer());
         }
     }
 
@@ -142,10 +142,6 @@ public class MERGE3 extends Protocol {
             announcer_task_future.cancel(false);
             announcer_task_future=null;
         }
-        announcer_task=null;
-        announcements.clear();
-        if(log.isDebugEnabled())
-            log.debug("coordinator announcement task stopped");
     }
 
 
@@ -159,27 +155,13 @@ public class MERGE3 extends Protocol {
 
 
 
-    void sendCoordinatorAnnouncement(Address coord) {
-        Message coord_announcement=new Message(); // multicast to all
-        CoordAnnouncement hdr=new CoordAnnouncement(coord);
-        coord_announcement.putHeader(getName(), hdr);
-        down_prot.down(new Event(Event.MSG, coord_announcement));
+    void sendView() {
+        Message view_announcement=new Message(); // multicast to all
+        CoordAnnouncement hdr=new CoordAnnouncement(view);
+        view_announcement.putHeader(getName(), hdr);
+        down_prot.down(new Event(Event.MSG, view_announcement));
     }
 
-    void processAnnouncements() {
-        if(announcements.size() > 1) {
-            Vector<Address> coords=new Vector<Address>(announcements);  // create a clone
-            if(coords.size() > 1) {
-                if(log.isDebugEnabled())
-                    log.debug("passing up MERGE event, coords=" + coords);
-                
-                Event evt=new Event(Event.MERGE, coords);
-                up_prot.up(evt);               
-            }
-            announcements.clear();
-            announcements.add(local_addr);
-        }
-    }
 
 
     class CoordinatorAnnouncer implements TimeScheduler.Task {
@@ -189,28 +171,41 @@ public class MERGE3 extends Protocol {
 
         public void run() {
             if(is_coord)
-                sendCoordinatorAnnouncement(local_addr);
+                sendView();
         }
     }
 
 
 
-    public static class CoordAnnouncement extends Header {
-        Address coord_addr=null;
+    public static class CoordAnnouncement extends Header implements Streamable {
+        private View view;
+        private static final long serialVersionUID=-7117394462953444971L;
 
         public CoordAnnouncement() {
         }
 
-        public CoordAnnouncement(Address coord) {
-            this.coord_addr=coord;
+        public CoordAnnouncement(View view) {
+            this.view=view;
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            coord_addr=(Address)in.readObject();
+            view=(View)in.readObject();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(coord_addr);
+            out.writeObject(view);
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeView(view, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            view=Util.readView(in);
+        }
+
+        public int size() {
+            return Util.size(view);
         }
     }
 
