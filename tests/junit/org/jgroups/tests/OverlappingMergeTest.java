@@ -17,7 +17,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.9 2009/06/08 12:55:40 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.10 2009/06/12 09:58:45 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -102,9 +102,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("\n ==== Digests are:\n" + dumpDigests(a,b,c));
 
         // start merging
-        Vector<Address> coords=new Vector<Address>(2);
-        coords.add(a.getLocalAddress()); coords.add(b.getLocalAddress());
-        Event merge_evt=new Event(Event.MERGE, coords);
+        List<View> views=new ArrayList<View>();
+        views.add(a.getView());
+        views.add(b.getView());
+        views.add(c.getView());
+        Event merge_evt=new Event(Event.MERGE, views);
         JChannel merge_leader=determineMergeLeader(a, b);
         System.out.println("\n==== Injecting a merge event (leader=" + merge_leader.getLocalAddress() + ") ====");
         injectMergeEvent(merge_evt, merge_leader);
@@ -165,9 +167,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
 
         // start merging
-        Vector<Address> coords=new Vector<Address>(2);
-        coords.add(a.getLocalAddress());
-        Event merge_evt=new Event(Event.MERGE, coords);
+        List<View> views=new ArrayList<View>();
+        views.add(a.getView());
+        views.add(b.getView());
+        views.add(c.getView());
+        Event merge_evt=new Event(Event.MERGE, views);
         System.out.println("\n==== Injecting a merge event (leader=" + a.getAddress() + ") ====");
         injectMergeEvent(merge_evt, a);
 
