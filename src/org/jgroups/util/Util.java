@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.200 2009/06/11 11:24:55 belaban Exp $
+ * @version $Id: Util.java,v 1.201 2009/06/12 09:56:51 belaban Exp $
  */
 public class Util {
 
@@ -1191,6 +1191,10 @@ public class Util {
             return obj2.equals(obj1);
     }
 
+    public static boolean sameViewId(ViewId one, ViewId two) {
+        return one.getId() == two.getId() && one.getCoordAddress().equals(two.getCoordAddress());
+    }
+
 
     public static boolean match(long[] a1, long[] a2) {
         if(a1 == null && a2 == null)
@@ -1971,6 +1975,21 @@ public class Util {
         sb.append(')');
         return sb.toString();
     }
+
+
+    public static String print(Collection<View> views) {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        for(View view: views) {
+            if(first)
+                first=false;
+            else
+                sb.append(", ");
+            sb.append(view.getVid());
+        }
+        return sb.toString();
+    }
+
 
 
     public static String printPingData(List<PingData> rsps) {

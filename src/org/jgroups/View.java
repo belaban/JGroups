@@ -21,7 +21,7 @@ import java.util.Collection;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.21 2009/05/05 15:13:12 belaban Exp $
+ * @version $Id: View.java,v 1.22 2009/06/12 09:57:13 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -87,6 +87,8 @@ public class View implements Externalizable, Cloneable, Streamable {
     public ViewId getVid() {
         return vid;
     }
+
+    public ViewId getViewId() {return vid;}
 
     /**
      * returns the creator of this view

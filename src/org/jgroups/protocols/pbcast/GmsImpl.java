@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.34 2009/05/18 15:46:03 belaban Exp $
+// $Id: GmsImpl.java,v 1.35 2009/06/12 09:59:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
+import org.jgroups.util.Util;
 
 import java.util.Collection;
 import java.util.Vector;
@@ -42,7 +43,7 @@ public abstract class GmsImpl {
     public void               suspect(Address mbr)   {}
     public void               unsuspect(Address mbr) {}
 
-    public void               merge(Vector<Address> other_coords)                   {} // only processed by coord
+    public void               merge(List<View> views)                               {} // only processed by coord
     public void               handleMergeRequest(Address sender, MergeId merge_id)  {} // only processed by coords
     public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
@@ -102,26 +103,27 @@ public abstract class GmsImpl {
         int              type=-1;
         Address          mbr;
         boolean          suspected;
-        Vector<Address>  coordinators;
+        List<View>       views; // different view on MERGE
         View             view;
         Digest           digest;
         List<Address>    target_members;
-        boolean useFlushIfPresent;
+        boolean          useFlushIfPresent;
 
-        Request(int type) {
-            this.type=type;
-        }
 
-        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators,boolean useFlushPresent) {
+        Request(int type, Address mbr, boolean suspected) {
             this.type=type;
             this.mbr=mbr;
             this.suspected=suspected;
-            this.coordinators=coordinators;
+        }
+
+        Request(int type, Address mbr, boolean suspected, List<View> views, boolean useFlushPresent) {
+            this(type, mbr, suspected);
+            this.views=views;
             this.useFlushIfPresent=useFlushPresent;
         }
         
-        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators) {
-        	this(type,mbr,suspected,coordinators,true);
+        Request(int type, Address mbr, boolean suspected, List<View> views) {
+        	this(type, mbr, suspected, views, true);
         }
 
         public int getType() {
@@ -134,7 +136,7 @@ public abstract class GmsImpl {
                 case JOIN_WITH_STATE_TRANSFER:    return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
                 case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
                 case SUSPECT: return "SUSPECT(" + mbr + ")";
-                case MERGE:   return "MERGE(" + coordinators + ")";               
+                case MERGE:   return "MERGE(" + Util.print(views) + ")";               
             }
             return "<invalid (type=" + type + ")";
         }

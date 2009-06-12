@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.33 2009/05/14 15:20:35 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.34 2009/06/12 09:59:25 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -92,7 +92,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
     public void suspect(Address mbr) {
         Collection<Request> suspected=new LinkedHashSet<Request>(1);
-        suspected.add(new Request(Request.SUSPECT,mbr,true,null));
+        suspected.add(new Request(Request.SUSPECT,mbr,true));
         handleMembershipChange(suspected);
     }
 
@@ -129,7 +129,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
             for(Address mbr: suspectedMembers) {
-                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true, null));
+                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true));
                 gms.ack_collector.suspect(mbr);
             }
         }
