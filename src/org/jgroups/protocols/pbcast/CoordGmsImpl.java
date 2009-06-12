@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.111 2009/06/08 14:41:50 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.112 2009/06/12 10:00:00 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -152,7 +152,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(mbr.equals(gms.local_addr))
             leaving=true;
-        gms.getViewHandler().add(new Request(Request.LEAVE, mbr, false, null));
+        gms.getViewHandler().add(new Request(Request.LEAVE, mbr, false));
         gms.getViewHandler().stop(true); // wait until all requests have been processed, then close the queue and leave
         gms.getViewHandler().waitUntilCompleted(gms.leave_timeout);
     }
@@ -164,7 +164,7 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }        
         Collection<Request> suspected=new LinkedHashSet<Request>(1);
-        suspected.add(new Request(Request.SUSPECT,mbr,true,null));
+        suspected.add(new Request(Request.SUSPECT,mbr,true));
         handleMembershipChange(suspected);
     }
 
@@ -172,27 +172,28 @@ public class CoordGmsImpl extends GmsImpl {
     /**
      * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
      * See description of protocol in DESIGN.
-     * @param other_coords A list of coordinators (including myself) found by MERGE protocol
+     * @param views A List of different views detected by the merge protocol
      */
-    public void merge(Vector<Address> other_coords) {
+    public void merge(List<View> views) {
         if(isMergeInProgress()) {
             if(log.isWarnEnabled()) log.warn(gms.local_addr + ": merge is already running (merge_id=" + merge_id + ")");
             return;
         }       
-        if(other_coords == null || other_coords.size() <= 1) {
-            if(log.isWarnEnabled()) log.warn("found no other sub-partition coordinators, will not start merge.");
+        Collection<Address> coords=determineCoords(views);
+        if(coords == null || coords.size() <= 1) {
+            if(log.isWarnEnabled()) log.warn("found no other sub-partitions, will not start merge.");
             return;
         }
 
         /* Establish deterministic order, so that coords can elect leader */
-        Membership tmp=new Membership(other_coords);
+        Membership tmp=new Membership(coords);
         tmp.sort();
         Address  merge_leader=tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("determining merge leader from coordinators " + tmp);
         if(merge_leader.equals(gms.local_addr)) {
             if(log.isDebugEnabled())
-                log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + other_coords);
-            merge_task.start(other_coords);
+                log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + coords);
+            merge_task.start(coords);
         }
         else {
             if(log.isDebugEnabled()) log.debug("I (" + gms.local_addr + ") am not the merge leader, " +
@@ -614,6 +615,18 @@ public class CoordGmsImpl extends GmsImpl {
         return retval.copy();
     }
 
+    protected static Collection<Address> determineCoords(List<View> views) {
+        Set<Address> retval=new HashSet<Address>();
+        if(views != null) {
+            for(View view: views) {
+                Address coord=view.getCreator();
+                if(coord != null)
+                    retval.add(coord);
+            }
+        }
+        return retval;
+    }
+
     /**
      * Sends the new view and digest to all subgroup coordinors in coords. Each coord will in turn
      * <ol>
@@ -727,7 +740,7 @@ public class CoordGmsImpl extends GmsImpl {
         /**
          * @param all_coords Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
          */
-        public synchronized void start(Vector<Address> all_coords) {
+        public synchronized void start(Collection<Address> all_coords) {
             if(thread == null || thread.isAlive()) {
                 this.coords=new Vector<Address>(all_coords);
                 thread=gms.getThreadFactory().newThread(this, "MergeTask");

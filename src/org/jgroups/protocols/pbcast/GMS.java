@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.175 2009/06/08 08:38:15 belaban Exp $
+ * @version $Id: GMS.java,v 1.176 2009/06/12 09:59:40 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -791,10 +791,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     break;
                 switch(hdr.type) {
                     case GmsHeader.JOIN_REQ:
-                        view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null,hdr.useFlushIfPresent));
+                        view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null, hdr.useFlushIfPresent));
                         break;
                     case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null,hdr.useFlushIfPresent));
+                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null, hdr.useFlushIfPresent));
                         break;    
                     case GmsHeader.JOIN_RSP:
                         impl.handleJoinResponse(hdr.join_rsp);
@@ -805,7 +805,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                         if(hdr.mbr == null) {
                             return null;
                         }
-                        view_handler.add(new Request(Request.LEAVE, hdr.mbr, false, null));
+                        view_handler.add(new Request(Request.LEAVE, hdr.mbr, false));
                         break;
                     case GmsHeader.LEAVE_RSP:
                         impl.handleLeaveResponse();
@@ -899,7 +899,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
             case Event.SUSPECT:
                 Address suspected=(Address)evt.getArg();
-                view_handler.add(new Request(Request.SUSPECT, suspected, true, null));
+                view_handler.add(new Request(Request.SUSPECT, suspected, true));
                 ack_collector.suspect(suspected);
                 merge_ack_collector.suspect(suspected);
                 break;                               // pass up
@@ -909,7 +909,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 return null;                              // discard
 
             case Event.MERGE:
-                view_handler.add(new Request(Request.MERGE, null, false, (Vector<Address>)evt.getArg()));
+                view_handler.add(new Request(Request.MERGE, null, false, (List<View>)evt.getArg()));
                 return null;                              // don't pass up
         }
         return up_prot.up(evt);
@@ -1240,7 +1240,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.175 2009/06/08 08:38:15 belaban Exp $
+     * @version $Id: GMS.java,v 1.176 2009/06/12 09:59:40 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
@@ -1435,7 +1435,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 case Request.MERGE:
                     if(requests.size() > 1)
                         log.error("more than one MERGE request to process, ignoring the others");
-                    impl.merge(firstReq.coordinators);
+                    impl.merge(firstReq.views);
                     break;                
                 default:
                     log.error("request " + firstReq.type + " is unknown; discarded");

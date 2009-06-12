@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.66 2009/04/24 13:51:24 belaban Exp $
+ * @version $Id: Event.java,v 1.67 2009/06/12 09:56:04 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -16,7 +16,7 @@ public class Event {
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise (or null (merge2))
-    public static final int MERGE                              = 14;  // arg = Vector of Objects
+    public static final int MERGE                              = 14;  // arg = List<View>
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
     public static final int GET_APPLSTATE                      = 17;  // get state from appl (arg=StateTransferInfo)
@@ -111,7 +111,7 @@ public class Event {
             case STABLE:                 return "STABLE";
             case GET_DIGEST:             return "GET_DIGEST";
             case SET_DIGEST:             return "SET_DIGEST";
-            case MERGE:                  return "MERGE"; // Added by gianlucac@tin.it to support partitions merging in GMS
+            case MERGE:                  return "MERGE";
             case EXIT:                   return "EXIT";
             case UNSUSPECT:              return "UNSUSPECT";
             case MERGE_DIGEST:           return "MERGE_DIGEST";
