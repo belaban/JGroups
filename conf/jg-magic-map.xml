@@ -40,4 +40,5 @@
     <class id="67" name="org.jgroups.protocols.AuthHeader"/>
     <class id="68" name="org.jgroups.util.UUID"/>
     <class id="69" name="org.jgroups.protocols.MERGE3$CoordAnnouncement"/>
+    <class id="70" name="org.jgroups.protocols.MERGEFAST$MergefastHeader"/>
 </magic-number-class-mapping>
