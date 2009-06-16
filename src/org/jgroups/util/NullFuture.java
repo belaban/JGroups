@@ -7,9 +7,9 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * @author Bela Ban
- * @version $Id: NullFuture.java,v 1.1 2009/04/30 09:51:59 belaban Exp $
+ * @version $Id: NullFuture.java,v 1.2 2009/06/16 08:29:14 belaban Exp $
  */
-public class NullFuture implements Future<RspList> {
+public class NullFuture<T> implements Future<RspList> {
     public boolean cancel(boolean mayInterruptIfRunning) {
         return true;
     }
