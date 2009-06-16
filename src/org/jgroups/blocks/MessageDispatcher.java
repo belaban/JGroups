@@ -7,10 +7,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
-import org.jgroups.util.NullFuture;
+import org.jgroups.util.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.85 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.86 2009/06/16 08:29:15 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -667,11 +664,9 @@ public class MessageDispatcher implements RequestHandler {
         return rsp.getValue();
     }
 
-    public Future<RspList> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
+    public <T> Future<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
         Vector mbrs=new Vector();
-        RspList rsp_list=null;
         Object dest=msg.getDest();
-        Rsp rsp;
         GroupRequest _req=null;
 
         if(dest == null) {
@@ -688,7 +683,7 @@ public class MessageDispatcher implements RequestHandler {
             _req.execute(false, false);
             if(mode == GroupRequest.GET_NONE)
                 return new NullFuture();
-            return _req;
+            return new SingleFuture<T>(_req);
         }
         catch(Exception t) {
             throw new RuntimeException("failed executing request " + _req, t);
