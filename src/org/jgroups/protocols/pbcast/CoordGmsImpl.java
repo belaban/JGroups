@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.52.2.2 2007/04/27 08:03:55 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.52.2.3 2009/06/16 13:35:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -89,7 +89,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     public void suspect(Address mbr) {
         if(mbr.equals(gms.local_addr)) {
-            if(log.isWarnEnabled()) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
+            if(log.isWarnEnabled()) log.warn("I am the coord and I'm suspected -- will probably leave shortly");
             return;
         }
         Collection emptyVector=new LinkedHashSet(0);
