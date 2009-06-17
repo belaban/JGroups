@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.35 2009/06/12 09:59:10 belaban Exp $
+// $Id: GmsImpl.java,v 1.36 2009/06/17 11:31:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -44,7 +44,7 @@ public abstract class GmsImpl {
     public void               unsuspect(Address mbr) {}
 
     public void               merge(List<View> views)                               {} // only processed by coord
-    public void               handleMergeRequest(Address sender, MergeId merge_id)  {} // only processed by coords
+    public void               handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {} // only processed by coords
     public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
     public void               handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
@@ -84,7 +84,7 @@ public abstract class GmsImpl {
        approach would be to keep track of the primary partition and return the first member if we
        are the primary partition.
      */
-    protected boolean iWouldBeCoordinator(Vector new_mbrs) {
+    protected boolean iWouldBeCoordinator(Vector<Address> new_mbrs) {
         Membership tmp_mbrs=gms.members.copy();
         tmp_mbrs.merge(new_mbrs, null);
         tmp_mbrs.sort();
