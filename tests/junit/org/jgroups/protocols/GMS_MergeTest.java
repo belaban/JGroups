@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.7 2009/06/12 09:58:46 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.8 2009/06/17 11:30:42 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -211,6 +211,8 @@ public class GMS_MergeTest extends ChannelTestBase {
             ch.setName(names[i]);
             retval[i]=ch;
             ch.connect(cluster_name);
+            if(i == 0)
+                Util.sleep(3000);
         }
         return retval;
     }

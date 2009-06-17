@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.201 2009/06/12 09:56:51 belaban Exp $
+ * @version $Id: Util.java,v 1.202 2009/06/17 11:28:04 belaban Exp $
  */
 public class Util {
 
@@ -1956,25 +1956,6 @@ public class Util {
         return retval;
     }
 
-
-    public static String printMembers(Vector v) {
-        StringBuilder sb=new StringBuilder("(");
-        boolean first=true;
-        Object el;
-
-        if(v != null) {
-            for(int i=0; i < v.size(); i++) {
-                if(!first)
-                    sb.append(", ");
-                else
-                    first=false;
-                el=v.elementAt(i);
-                sb.append(el);
-            }
-        }
-        sb.append(')');
-        return sb.toString();
-    }
 
 
     public static String print(Collection<View> views) {
