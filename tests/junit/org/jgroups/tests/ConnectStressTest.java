@@ -20,7 +20,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.38 2008/11/12 13:32:56 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.39 2009/06/17 11:29:32 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=false)
 public class ConnectStressTest {
@@ -40,35 +40,37 @@ public class ConnectStressTest {
 
     public void testConcurrentJoinsAndLeaves() throws Exception {
         for(int i=0; i < threads.length; i++) {
-            threads[i]=new MyThread(i, barrier);
+            threads[i]=new MyThread(i+1, barrier);
             threads[i].start();
         }
 
         barrier.await(); // causes all threads to call Channel.connect()
+        System.out.println("*** Starting the connect phase ***");
 
-        // coordinator attempts to get complete view within 50 (5*10) seconds
-        int min=NUM, max=0;
-        for(int i=0; i < 20; i++) {
-            for(MyThread thread: threads) {
-                JChannel ch=thread.getChannel();
-                View view=ch.getView();
-                if(view != null) {
-                    int size=view.size();
-                    min=Math.min(size, NUM);
-                    max=Math.max(size, max);
-                }
+        long target_time=System.currentTimeMillis() + 30000L;
+        while(System.currentTimeMillis() < target_time) {
+            View view=threads[0].getChannel().getView();
+            if(view != null) {
+                int size=view.size();
+                if(size >= NUM)
+                    break;
             }
-
-            if(min >= NUM && max >= NUM)
-                break;
-            System.out.println("min=" + min + ", max=" + max);
-            Util.sleep(2000);
+            Util.sleep(1000L);
         }
 
-        System.out.println("reached " + NUM + " members: min=" + min + ", max=" + max);
-        assert min >= NUM && max >= NUM : "min=" + min + ", max=" + max + ", expected: " + NUM;
+        for(MyThread thread: threads) {
+            View view=thread.getChannel().getView();
+            System.out.println("#" + thread.getName() + ": " + (view != null? view.getViewId() + ", size=" + view.size() : view));
+        }
 
-        System.out.println("Starting the disconnect phase");
+        for(MyThread thread: threads) {
+            View view=thread.getChannel().getView();
+            int size=view.size();
+            assert size == NUM : "view doesn't have size of " + NUM + ": " + view;
+        }
+
+
+        System.out.println("*** Starting the disconnect phase ***");
 
         for(int i=0; i < threads.length; i++) {
             MyThread thread=threads[i];
