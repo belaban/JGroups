@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.49 2009/05/13 13:07:10 belaban Exp $
+// $Id: Channel.java,v 1.50 2009/06/17 16:20:01 belaban Exp $
 
 package org.jgroups;
 
@@ -52,7 +52,9 @@ public abstract class Channel implements Transport {
     public static final int SUSPECT=2;
     public static final int LOCAL=3;
     public static final int GET_STATE_EVENTS=4;
+    @Deprecated
     public static final int AUTO_RECONNECT=5;
+    @Deprecated
     public static final int AUTO_GETSTATE=6;
 
 
@@ -572,29 +574,6 @@ public abstract class Channel implements Transport {
         }
     }
 
-    protected void notifyChannelShunned() {
-        if(channel_listeners == null) return;
-        for(ChannelListener channelListener: channel_listeners) {
-            try {
-                channelListener.channelShunned();
-            }
-            catch(Throwable t) {
-                getLog().error("exception in channelShunned() callback", t);
-            }
-        }
-    }
-
-    protected void notifyChannelReconnected(Address addr) {
-        if(channel_listeners == null) return;
-        for(ChannelListener channelListener: channel_listeners) {
-            try {
-                channelListener.channelReconnected(addr);
-            }
-            catch(Throwable t) {
-                getLog().error("exception in channelReconnected() callback", t);
-            }
-        }
-    }
-
+   
 
 }

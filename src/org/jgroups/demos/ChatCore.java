@@ -44,8 +44,6 @@ public abstract class ChatCore implements MessageListener, MembershipListener {
 
 		try {
 			channel = new JChannel(props);
-			channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-			channel.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
 			System.out.println("Connecting to " + group_name);
 			channel.connect(group_name);
 			ad = new PullPushAdapter(channel, this, this);

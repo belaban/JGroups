@@ -32,7 +32,7 @@
                    max_bytes="400000"/>
     <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
-                shun="true"/>
+                />
      <FC max_credits="2000000"
          min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />

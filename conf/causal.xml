@@ -11,6 +11,6 @@
 <UNICAST timeout="1200,2400,3600"/>
 <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" max_bytes="0"/>
 <FRAG frag_size="8192"  />
-<pbcast.GMS print_local_addr="true" join_timeout="3000" shun="true"/>
+<pbcast.GMS print_local_addr="true" join_timeout="3000" />
 <CAUSAL />
 </config> 

@@ -6,7 +6,7 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.7 2007/11/19 16:02:15 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.8 2009/06/17 16:20:00 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
@@ -29,7 +29,7 @@
                     loopback="false"/>
                 <PING timeout="2000" num_initial_members="3"/>
                 <MERGE2 min_interval="10000" max_interval="20000"/>
-                <FD shun="true"/>
+                <FD />
                 <VERIFY_SUSPECT timeout="1500"/>
                 <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800"
                       />
@@ -37,7 +37,7 @@
                 <pbcast.STABLE desired_avg_gossip="20000"/>
                 <FRAG frag_size="8192"/>
                 <pbcast.GMS join_timeout="5000"
-                    shun="true" print_local_addr="true"/>
+                     print_local_addr="true"/>
                 <pbcast.STATE_TRANSFER  />
             </config>
         </attribute>

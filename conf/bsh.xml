@@ -8,7 +8,7 @@
         loopback="true" ucast_send_buf_size="32000" ip_ttl="32"/>
     <PING timeout="2000" num_initial_members="3"/>
     <MERGE2 max_interval="10000" min_interval="5000"/>
-    <FD timeout="2000" max_tries="3" shun="true"/>
+    <FD timeout="2000" max_tries="3" />
     <VERIFY_SUSPECT timeout="1500"/>
     <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800"/>
     <org.jgroups.protocols.UNICAST timeout="1200,2400,3600"/>
@@ -16,5 +16,5 @@
         desired_avg_gossip="20000" max_bytes="0"/>
     <FRAG frag_size="8192"  />
     <BSH />
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" shun="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000" />
 </config>

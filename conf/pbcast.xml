@@ -14,5 +14,5 @@
     <pbcast.PBCAST desired_avg_gossip="8000" max_queue="20" gc_lag="30" mcast_gossip="true"/>
     <UNICAST timeout="1200,2400,3000"/>
     <FRAG frag_size="8192"  />
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" shun="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="3000" />
 </config>

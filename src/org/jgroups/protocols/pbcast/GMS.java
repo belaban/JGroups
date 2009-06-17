@@ -24,11 +24,11 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.177 2009/06/17 11:29:16 belaban Exp $
+ * @version $Id: GMS.java,v 1.178 2009/06/17 16:20:05 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
-        "reject_join_from_existing_member"})
+        "reject_join_from_existing_member", "shun"})
 public class GMS extends Protocol implements TP.ProbeHandler {
     
     public static final String name="GMS";
@@ -48,15 +48,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     
     @Property(description="Timeout to complete merge. Default is 10000 msec")
     long merge_timeout=5000; // time to wait for all MERGE_RSPS
-    
-    @ManagedAttribute(description="Shunning toggle", writable=true)
-    @Property(description="Shunning toggle. Default is false")
-    private boolean shun=false;
 
-    @Deprecated
-    @Property(description="If true this member is a designated merge leader. Default is false")
-    boolean merge_leader=false; // can I initiate a merge ?
-    
     @Property(description="Print local address of this member after connect. Default is true")
     private boolean print_local_addr=true;
     
@@ -180,11 +172,13 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
     /** @deprecated */
-    public long getJoinRetryTimeout() {return -1;}
+    public static long getJoinRetryTimeout() {return -1;}
     /** @deprecated */
     public void setJoinRetryTimeout(long t) {}
-    public boolean isShun() {return shun;}
-    public void setShun(boolean s) {shun=s;}
+    @Deprecated
+    public static boolean isShun() {return false;}
+    @Deprecated
+    public void setShun(boolean s) {}
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
@@ -568,23 +562,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
 
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
-        This ensures that messages sent in view V1 are only received by members of V1 */
+           This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            // only shun if this member was previously part of the group. avoids problem where multiple
-            // members (e.g. X,Y,Z) join {A,B} concurrently, X is joined first, and Y and Z get view
-            // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
-            // bela Nov 20 2003
-            if(shun && local_addr != null && prev_members.contains(local_addr)) {
-                if(log.isWarnEnabled())
-                    log.warn(local_addr + ": not member of view " + new_view + ", shunning myself and leaving " +
-                            "the group (prev_members are " + prev_members + ", current view is " + view + ")");
-                if(impl != null)
-                    impl.handleExit();
-                up_prot.up(new Event(Event.EXIT));
-            }
-            else {
-                if(log.isWarnEnabled()) log.warn(local_addr + ": not member of view " + new_view + "; discarding it");
-            }
+            if(log.isWarnEnabled()) log.warn(local_addr + ": not member of view " + new_view + "; discarding it");
             return;
         }
 
@@ -1251,7 +1231,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.177 2009/06/17 11:29:16 belaban Exp $
+     * @version $Id: GMS.java,v 1.178 2009/06/17 16:20:05 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

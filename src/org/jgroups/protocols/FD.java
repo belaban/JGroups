@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.75 2009/06/17 14:49:12 belaban Exp $
+ * @version $Id: FD.java,v 1.76 2009/06/17 16:20:03 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -236,9 +236,8 @@ public class FD extends Protocol {
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
                             if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
-                            for(int i=0; i < hdr.mbrs.size(); i++) {
-                                Address m=hdr.mbrs.elementAt(i);
-                                if(local_addr != null && m.equals(local_addr)) {
+                            for(Address mbr: hdr.mbrs) {
+                                if(local_addr != null && mbr.equals(local_addr)) {
                                     if(log.isWarnEnabled())
                                         log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT " +
                                                 "message and sending back a HEARTBEAT_ACK");
@@ -248,15 +247,15 @@ public class FD extends Protocol {
                                 else {
                                     lock.lock();
                                     try {
-                                        pingable_mbrs.remove(m);
+                                        pingable_mbrs.remove(mbr);
                                         restartMonitor();
                                     }
                                     finally {
                                         lock.unlock();
                                     }
                                 }
-                                up_prot.up(new Event(Event.SUSPECT, m));
-                                down_prot.down(new Event(Event.SUSPECT, m));
+                                up_prot.up(new Event(Event.SUSPECT, mbr));
+                                down_prot.down(new Event(Event.SUSPECT, mbr));
                             }
                         }
                         break;
@@ -353,7 +352,7 @@ public class FD extends Protocol {
 
 
         byte    type=HEARTBEAT;
-        Vector<Address>  mbrs=null;
+        Collection<Address> mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
         private static final long serialVersionUID=-6387039473828820899L;
 
@@ -365,7 +364,7 @@ public class FD extends Protocol {
             this.type=type;
         }
 
-        public FdHeader(byte type, Vector<Address> mbrs, Address from) {
+        public FdHeader(byte type, Collection<Address> mbrs, Address from) {
             this(type);
             this.mbrs=mbrs;
             this.from=from;
@@ -392,8 +391,7 @@ public class FD extends Protocol {
             else {
                 out.writeBoolean(true);
                 out.writeInt(mbrs.size());
-                for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) {
-                    Address addr=it.next();
+                for(Address addr: mbrs) {
                     out.writeObject(addr);
                 }
             }
@@ -433,7 +431,7 @@ public class FD extends Protocol {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            mbrs=(Vector<Address>)Util.readAddresses(in, Vector.class);
+            mbrs=(Collection<Address>)Util.readAddresses(in, Vector.class);
             from=Util.readAddress(in);
         }
 

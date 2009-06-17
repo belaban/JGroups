@@ -1,7 +1,7 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.13 2008/09/25 14:20:45 belaban Exp $
+Version: $Id: discard.xml,v 1.14 2009/06/17 16:20:00 belaban Exp $
  -->
 <config>
     <UDP 
@@ -31,7 +31,7 @@ Version: $Id: discard.xml,v 1.13 2008/09/25 14:20:45 belaban Exp $
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
                    max_bytes="500000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
-                shun="true"/>
+                />
     <FC max_credits="2000000"
         min_threshold="0.20"/>
     <FRAG2 frag_size="60000"  />

@@ -13,19 +13,20 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * Encapsulates information about a cluster node, e.g. local address, coordinator's addresss, logical name and
  * physical address(es)
  * @author Bela Ban
- * @version $Id: PingData.java,v 1.4 2009/06/11 11:26:01 belaban Exp $
+ * @version $Id: PingData.java,v 1.5 2009/06/17 16:20:03 belaban Exp $
  */
 public class PingData implements Streamable {
     private Address own_addr=null;
     private View view=null;
     private boolean is_server=false;
     private String logical_name=null;
-    private List<PhysicalAddress> physical_addrs=null;
+    private Collection<PhysicalAddress> physical_addrs=null;
 
 
     public PingData() {
@@ -82,7 +83,7 @@ public class PingData implements Streamable {
         return logical_name;
     }
 
-    public List<PhysicalAddress> getPhysicalAddrs() {
+    public Collection<PhysicalAddress> getPhysicalAddrs() {
         return physical_addrs;
     }
 
@@ -126,7 +127,7 @@ public class PingData implements Streamable {
         view=Util.readView(instream);
         is_server=instream.readBoolean();
         logical_name=Util.readString(instream);
-        physical_addrs=(List<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
+        physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
     }
 
     public int size() {

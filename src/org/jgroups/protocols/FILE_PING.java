@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
 
 
 /**
@@ -22,7 +23,7 @@ import java.util.List;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.6 2009/04/27 09:04:02 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.7 2009/06/17 16:20:03 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -84,7 +85,7 @@ public class FILE_PING extends Discovery {
 
             // 1. Send GET_MBRS_REQ message to members listed in the file
             for(PingData tmp: existing_mbrs) {
-                List<PhysicalAddress> dests=tmp.getPhysicalAddrs();
+                Collection<PhysicalAddress> dests=tmp.getPhysicalAddrs();
                 if(dests == null)
                     continue;
                 for(final PhysicalAddress dest: dests) {

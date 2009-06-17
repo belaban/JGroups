@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.27 2009/05/13 13:06:54 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.28 2009/06/17 16:20:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -34,7 +34,7 @@ import java.util.List;
  * @version $Revision
  * @deprecated Use {@link org.jgroups.Receiver} instead, this class will be removed in JGroups 3.0
  */
-public class PullPushAdapter implements Runnable, ChannelListener {
+public class PullPushAdapter extends ChannelListenerAdapter implements Runnable {
     protected Transport       transport=null;
     protected MessageListener listener=null;           // main message receiver
     protected final List      membership_listeners=new ArrayList();
@@ -421,16 +421,6 @@ public class PullPushAdapter implements Runnable, ChannelListener {
 
     public void channelClosed(Channel channel) {
     }
-
-    public void channelShunned() {
-        if(log.isTraceEnabled())
-            log.trace("channel is shunned");
-    }
-
-    public void channelReconnected(Address addr) {
-        start();
-    }
-
 
 
 

@@ -27,7 +27,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.55 2009/04/09 09:11:25 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.56 2009/06/17 16:20:10 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -399,22 +399,11 @@ public class MuxChannel extends JChannel {
         else {
             View serviceView=mux.getServiceView(getId());
             boolean fetchState=serviceView != null && serviceView.size() > 1;
-            if(fetchState) {
-                return mux.getState(target, my_id, timeout);
-            }
-            else {
-                return false;
-            }
+            return fetchState && mux.getState(target, my_id, timeout);
         }
     }
 
-    void fireChannelShunned(){
-        notifyChannelShunned();
-    }
-      
-    void fireChannelReconnected(Address address){
-        notifyChannelReconnected(address);
-    }
+
     
     public void returnState(byte[] state) {
         mux.getChannel().returnState(state, id);
