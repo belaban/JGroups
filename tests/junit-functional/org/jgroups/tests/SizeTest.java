@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.22 2009/06/11 11:25:27 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.23 2009/06/17 11:30:12 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -447,6 +447,9 @@ public class SizeTest {
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, v);
         _testSize(hdr);
 
+        Collection<Address> mbrs=new ArrayList<Address>();
+        Collections.addAll(mbrs, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ, mbrs);
     }
 
 
