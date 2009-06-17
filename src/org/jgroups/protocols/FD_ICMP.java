@@ -22,7 +22,7 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.11 2008/06/02 15:50:09 vlada Exp $
+ * @version $Id: FD_ICMP.java,v 1.12 2009/06/17 14:49:12 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {
@@ -112,7 +112,7 @@ public class FD_ICMP extends FD {
                 if(log.isTraceEnabled())
                     log.trace("pinging " + host + " (ping_dest=" + ping_dest + ") using interface " + intf);
                 start=System.currentTimeMillis();
-                Boolean rc=(Boolean)is_reacheable.invoke(host, new Object[]{intf, new Integer(ttl), new Integer((int)timeout)});
+                Boolean rc=(Boolean)is_reacheable.invoke(host, intf, new Integer(ttl), new Integer((int)timeout));
                 stop=System.currentTimeMillis();
                 num_heartbeats++;
                 if(rc.booleanValue()) { // success

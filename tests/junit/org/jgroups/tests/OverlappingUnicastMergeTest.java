@@ -16,7 +16,7 @@ import java.util.Set;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast tables<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingUnicastMergeTest.java,v 1.3 2009/04/28 11:53:49 belaban Exp $
+ * @version $Id: OverlappingUnicastMergeTest.java,v 1.4 2009/06/17 14:49:10 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingUnicastMergeTest extends ChannelTestBase {
@@ -174,15 +174,6 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-
-            FD fd=(FD)stack.findProtocol(FD.class);
-            if(fd != null)
-                fd.setShun(false);
-
-            FD_ALL fd_all=(FD_ALL)stack.findProtocol(FD_ALL.class);
-            if(fd_all != null)
-                fd_all.setShun(false);
-
             stack.removeProtocol("MERGE2");
             stack.removeProtocol("VERIFY_SUSPECT");
             stack.removeProtocol("FC");
