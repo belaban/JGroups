@@ -77,7 +77,7 @@ public class HashtableTest {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true):" +
+            "print_local_addr=true):" +
             "pbcast.STATE_TRANSFER";
 	
 	

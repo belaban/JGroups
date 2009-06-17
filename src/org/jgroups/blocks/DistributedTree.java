@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.21 2009/05/13 13:06:54 belaban Exp $
+// $Id: DistributedTree.java,v 1.22 2009/06/17 16:29:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -43,8 +43,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
             "UNICAST(timeout=5000):" +
             "FRAG(down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true):" +
-            // trace=true is not supported anymore
+            "print_local_addr=true):" +
             "pbcast.STATE_TRANSFER()";
     static final long state_timeout=5000;   // wait 5 secs max to obtain state
 

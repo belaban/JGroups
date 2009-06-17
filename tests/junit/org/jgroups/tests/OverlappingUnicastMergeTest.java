@@ -16,7 +16,7 @@ import java.util.Set;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast tables<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingUnicastMergeTest.java,v 1.4 2009/06/17 14:49:10 belaban Exp $
+ * @version $Id: OverlappingUnicastMergeTest.java,v 1.5 2009/06/17 16:28:57 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingUnicastMergeTest extends ChannelTestBase {
@@ -59,7 +59,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
      * Verifies that unicasts are received correctly by all participants after an overlapping merge. The following steps
      * are executed:
      * <ol>
-     * <li/>Group is {A,B,C}, disable shunning in all members. A is the coordinator
+     * <li/>Group is {A,B,C}, A is the coordinator
      * <li/>MERGE2 is removed from all members
      * <li/>VERIFY_SUSPECT is removed from all members
      * <li/>Everyone sends 5 unicast messages to everyone else

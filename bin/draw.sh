@@ -39,7 +39,7 @@ pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):\
 UNICAST(timeout=600,1200,2400,4800):\
 pbcast.STABLE(desired_avg_gossip=20000):\
 FRAG(frag_size=8096;down_thread=false;up_thread=false):\
-pbcast.GMS(join_timeout=5000;shun=false;print_local_addr=true)"
+pbcast.GMS(join_timeout=5000;print_local_addr=true)"
 
 
 if [ "$cygwin" = "true" ]; then

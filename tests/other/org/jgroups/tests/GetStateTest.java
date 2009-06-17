@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.12 2008/01/22 10:44:28 belaban Exp $
+// $Id: GetStateTest.java,v 1.13 2009/06/17 16:28:59 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -37,7 +37,7 @@ public class GetStateTest implements Runnable {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true):" +
+            "print_local_addr=true):" +
             "pbcast.STATE_TRANSFER";
 
 
