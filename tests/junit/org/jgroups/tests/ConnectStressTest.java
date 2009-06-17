@@ -3,11 +3,10 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.Global;
 import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.VIEW_SYNC;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
@@ -20,7 +19,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.39 2009/06/17 11:29:32 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.40 2009/06/17 16:35:44 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=false)
 public class ConnectStressTest {
@@ -117,7 +116,6 @@ public class ConnectStressTest {
     }
 
     private static void changeProperties(JChannel ch) {
-        ch.setOpt(Channel.AUTO_RECONNECT, true);
         ProtocolStack stack=ch.getProtocolStack();
         GMS gms=(GMS)stack.findProtocol("GMS");
         if(gms != null) {
@@ -130,9 +128,6 @@ public class ConnectStressTest {
             merge.setMinInterval(2000);
             merge.setMaxInterval(5000);
         }
-        VIEW_SYNC sync=(VIEW_SYNC)stack.findProtocol(VIEW_SYNC.class);
-        if(sync != null)
-            sync.setAverageSendInterval(5000);
         NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
         if(nakack != null)
             nakack.setLogDiscardMsgs(false);

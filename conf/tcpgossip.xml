@@ -14,6 +14,5 @@
     <pbcast.NAKACK gc_lag="100" retransmit_timeout="600,1200,2400,4800"/>
     <UNICAST timeout="300,600,1200" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"  max_bytes="0" />
-    <VIEW_SYNC avg_send_interval="60000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="5000" />
 </config>

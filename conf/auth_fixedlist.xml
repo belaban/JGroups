@@ -28,7 +28,6 @@
         desired_avg_gossip="20000"
         max_bytes="0"/>
     <FRAG frag_size="8192"/>
-    <VIEW_SYNC avg_send_interval="60000"   />
     <AUTH auth_class="org.jgroups.auth.FixedMembershipToken"
           fixed_members_value="127.0.0.1/1010*127.0.0.1/1011"
           fixed_members_seperator="*" />
