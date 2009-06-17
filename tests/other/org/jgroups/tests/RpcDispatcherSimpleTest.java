@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * methods.
  *
  * @author Bela Ban
- * @version $Id: RpcDispatcherSimpleTest.java,v 1.1 2006/08/28 05:54:33 belaban Exp $
+ * @version $Id: RpcDispatcherSimpleTest.java,v 1.2 2009/06/17 16:35:46 belaban Exp $
  */
 public class RpcDispatcherSimpleTest {
     Channel channel;
@@ -37,7 +37,6 @@ public class RpcDispatcherSimpleTest {
 
     public void start(int num, long interval) throws Exception {
         channel=new JChannel(props);
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherTestGroup");
 

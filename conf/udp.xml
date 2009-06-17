@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.31 2009/06/17 16:20:00 belaban Exp $
+  version: $Id: udp.xml,v 1.32 2009/06/17 16:35:43 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -58,7 +58,6 @@
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="1000000"/>
-    <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
 
                 view_bundling="true"/>

@@ -69,7 +69,6 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
             else {
                 c=createChannel(first);
             }
-            c.setOpt(Channel.AUTO_RECONNECT, true);
             ReplicatedHashMap<Address,Integer> map=new ReplicatedHashMap<Address,Integer>(c);
             channels.add(map);
             map.addNotifier(n);

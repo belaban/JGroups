@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.10 2009/06/17 16:28:56 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.11 2009/06/17 16:35:45 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -148,7 +148,6 @@ public class ConfiguratorTest {
                 "discard_delivered_msgs=true):" +
                 "UNICAST(loopback=false;timeout=300,600,1200,2400,3600):" +
                 "pbcast.STABLE(desired_avg_gossip=50000;max_bytes=1000000;stability_delay=1000):" +
-                "VIEW_SYNC(avg_send_interval=60000):" +
                 "pbcast.GMS(print_local_addr=true;view_bundling=true;join_timeout=3000):" +
                 "FC(max_block_time=10000;max_credits=5000000;min_threshold=0.25):" +
                 "FRAG2(frag_size=60000):" +

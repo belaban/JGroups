@@ -5,7 +5,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
     author: Bela Ban
-    version: $Id: flush-tcp-nio.xml,v 1.8 2009/06/17 16:20:00 belaban Exp $
+    version: $Id: flush-tcp-nio.xml,v 1.9 2009/06/17 16:35:43 belaban Exp $
 -->
 <config>
     <TCP_NIO
@@ -60,7 +60,6 @@
     <UNICAST timeout="300,600,1200" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
-    <VIEW_SYNC avg_send_interval="60000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
 
                 view_bundling="true"/>
