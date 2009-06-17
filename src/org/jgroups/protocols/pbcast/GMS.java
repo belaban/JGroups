@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.176 2009/06/12 09:59:40 belaban Exp $
+ * @version $Id: GMS.java,v 1.177 2009/06/17 11:29:16 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -291,11 +291,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
-            if(impl == new_impl) // superfluous
+            if(impl == new_impl) // unnecessary ?
                 return;
             impl=new_impl;
             if(log.isDebugEnabled())
-                log.debug(local_addr + ": changed role to " + new_impl.getClass().getName());
+                log.debug(local_addr != null? local_addr + ": " : "" + "changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -780,7 +780,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         up_prot.up(new Event(Event.RESUME,members));
     }
 
-
+    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         switch(evt.getType()) {
 
@@ -812,9 +812,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                         break;
                     case GmsHeader.VIEW:
                         View new_view=hdr.view;
-                        if(new_view == null) {
+                        if(new_view == null)
                             return null;
-                        }
 
                         Address coord=msg.getSrc();
                         if(!new_view.containsMember(coord)) {
@@ -834,7 +833,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
                     case GmsHeader.MERGE_REQ:
                         down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
-                        impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
+                        impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, hdr.mbrs);
                         break;
 
                     case GmsHeader.MERGE_RSP:
@@ -918,7 +917,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
     
-
+    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         int type=evt.getType();
 
@@ -1029,6 +1028,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
         Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
+        Collection<? extends Address> mbrs=null; // used with MERGE_REQ
         boolean useFlushIfPresent; // used when type=JOIN_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
         Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
@@ -1061,6 +1061,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         
         public GmsHeader(byte type, Address mbr) {
         	this(type,mbr,true);
+        }
+
+        public GmsHeader(byte type, Collection<Address> mbrs) {
+            this(type);
+            this.mbrs=mbrs;
         }
 
         /** Used for JOIN_RSP header */
@@ -1105,7 +1110,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     break;
 
                 case MERGE_REQ:
-                    sb.append(": merge_id=" + merge_id);
+                    sb.append(": merge_id=" + merge_id).append(", mbrs=" + mbrs);
                     break;
 
                 case MERGE_RSP:
@@ -1153,6 +1158,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             out.writeByte(type);
             out.writeObject(view);
             out.writeObject(mbr);
+            out.writeObject(mbrs);
             out.writeObject(join_rsp);
             out.writeObject(my_digest);
             out.writeObject(merge_id);
@@ -1160,11 +1166,12 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             out.writeBoolean(useFlushIfPresent);
         }
 
-
+        @SuppressWarnings("unchecked")
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
             view=(View)in.readObject();
             mbr=(Address)in.readObject();
+            mbrs=(Collection<Address>)in.readObject();
             join_rsp=(JoinRsp)in.readObject();
             my_digest=(Digest)in.readObject();
             merge_id=(MergeId)in.readObject();
@@ -1179,6 +1186,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             out.writeBoolean(isMergeView);
             Util.writeStreamable(view, out);
             Util.writeAddress(mbr, out);
+            Util.writeAddresses(mbrs, out);
             Util.writeStreamable(join_rsp, out);
             Util.writeStreamable(my_digest, out);
             Util.writeStreamable(merge_id, out);
@@ -1194,6 +1202,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             else
                 view=(View)Util.readStreamable(View.class, in);
             mbr=Util.readAddress(in);
+            mbrs=Util.readAddresses(in, ArrayList.class);
             join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
             merge_id=(MergeId)Util.readStreamable(MergeId.class, in);
@@ -1210,6 +1219,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 retval+=view.serializedSize();
 
             retval+=Util.size(mbr);
+
+            retval+=Util.size(mbrs);
 
             retval+=Global.BYTE_SIZE; // presence of join_rsp
             if(join_rsp != null)
@@ -1240,7 +1251,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.176 2009/06/12 09:59:40 belaban Exp $
+     * @version $Id: GMS.java,v 1.177 2009/06/17 11:29:16 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
