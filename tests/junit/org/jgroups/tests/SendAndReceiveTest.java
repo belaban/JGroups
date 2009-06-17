@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.13 2008/04/14 08:18:39 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.14 2009/06/17 16:28:57 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -33,7 +33,7 @@ public class SendAndReceiveTest {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true)";
+            "print_local_addr=true)";
 
         String props2="UDP(loopback=false;mcast_addr=228.8.8.8;mcast_port=27000;ip_ttl=1;" +
                 "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
@@ -47,7 +47,7 @@ public class SendAndReceiveTest {
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=8096):" +
                 "pbcast.GMS(join_timeout=5000;" +
-                "shun=false;print_local_addr=true)";
+                "print_local_addr=true)";
 
     String props3="SHARED_LOOPBACK:" +
             "PING(timeout=2000;num_initial_members=3):" +
@@ -59,7 +59,7 @@ public class SendAndReceiveTest {
              "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true)";
+            "print_local_addr=true)";
 
 
 

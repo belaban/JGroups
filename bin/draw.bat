@@ -15,7 +15,7 @@ set PROPS=%PROPS%:pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800)
 set PROPS=%PROPS%:UNICAST(timeout=600,1200,2400,4800)
 set PROPS=%PROPS%:pbcast.STABLE(desired_avg_gossip=20000)
 set PROPS=%PROPS%:FRAG(frag_size=8096;down_thread=false;up_thread=false)
-set PROPS=%PROPS%:pbcast.GMS(join_timeout=5000;shun=false;print_local_addr=true)
+set PROPS=%PROPS%:pbcast.GMS(join_timeout=5000;print_local_addr=true)
 
 @echo on
 java -classpath %CPATH% %JAVA_OPTS% org.jgroups.demos.Draw -props %PROPS%

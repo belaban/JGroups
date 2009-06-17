@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * Tests custom protocol.
  * Author: Lenny Phan
- * Version: $Id: CustomProtocolTest.java,v 1.4 2008/04/08 08:29:41 belaban Exp $
+ * Version: $Id: CustomProtocolTest.java,v 1.5 2009/06/17 16:28:56 belaban Exp $
  */
 public class CustomProtocolTest {
 
@@ -23,7 +23,7 @@ public class CustomProtocolTest {
             "pbcast.STABLE(desired_avg_gossip=10000):" +
             "FRAG:" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=true;print_local_addr=true)";
+            "print_local_addr=true)";
 
     @Test(groups=Global.FUNCTIONAL)
     public static void testMyProtocol() throws Exception {

@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.14 2007/11/19 16:08:26 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.15 2009/06/17 16:28:59 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -40,7 +40,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true)";
+            "print_local_addr=true)";
 
 
     static class MyCollector implements RspCollector {

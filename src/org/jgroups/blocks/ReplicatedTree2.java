@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree2.java,v 1.3 2009/05/13 13:06:54 belaban Exp $
+// $Id: ReplicatedTree2.java,v 1.4 2009/06/17 16:29:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -58,7 +58,7 @@ public class ReplicatedTree2 implements Runnable, MessageListener, MembershipLis
             "UNICAST(timeout=5000):" +
             "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=true):" +
+            "print_local_addr=true):" +
             "pbcast.STATE_TRANSFER";
     // "PERF(details=true)";
 

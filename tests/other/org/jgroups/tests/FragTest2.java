@@ -1,4 +1,4 @@
-// $Id: FragTest2.java,v 1.9 2007/11/19 16:08:26 belaban Exp $
+// $Id: FragTest2.java,v 1.10 2009/06/17 16:28:59 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -48,8 +48,7 @@ public class FragTest2 {
                 "UNICAST(timeout=2000):" +
                 "pbcast.STABLE(desired_avg_gossip=5000):" +
                 "FRAG(frag_size=" + frag_size + "):" +
-                "pbcast.GMS(join_timeout=5000;" +
-                "shun=false;print_local_addr=true)";
+                "pbcast.GMS(join_timeout=5000;print_local_addr=true)";
     }
 
 
