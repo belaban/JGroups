@@ -355,6 +355,15 @@ public abstract class BasicConnectionTable {
        boolean established() {
            return receiverThread != null;
        }
+       
+       /**
+        * Returns true if underlying socket to peer is closed
+        *  
+        * @return
+        */
+       boolean isSocketClosed() {
+           return !(sock != null && sock.isConnected());
+       }
 
 
        void setPeerAddress(Address peer_addr) {

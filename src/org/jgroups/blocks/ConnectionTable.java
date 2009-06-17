@@ -1,8 +1,9 @@
-// $Id: ConnectionTable.java,v 1.49 2006/09/30 16:17:30 belaban Exp $
+// $Id: ConnectionTable.java,v 1.49.2.1 2009/06/17 07:22:13 vlada Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
+import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -289,18 +290,34 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                conn.setPeerAddress(peer_addr);
 
                synchronized(conns) {
-                   if(conns.containsKey(peer_addr)) {
-                       if(log.isTraceEnabled())
-                           log.trace(peer_addr + " is already there, will reuse connection");
-                       //conn.destroy();
-                       //continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
-                   }
-                   else {
-                       // conns.put(peer_addr, conn);
-                       addConnection(peer_addr, conn);
-                       notifyConnectionOpened(peer_addr);
-                   }
-               }
+                  Connection tmp=(Connection) conns.get(peer_addr);
+                  //Vladimir Nov, 5th, 2007
+                  //we might have a connection to peer but is that 
+                  //connection still open? 
+                  boolean connectionOpen  = tmp != null && !tmp.isSocketClosed();
+                  if(connectionOpen) {                       
+                      if(peer_addr.compareTo(local_addr) > 0) {
+                          if(log.isTraceEnabled())
+                              log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
+                                      local_addr + "), replacing our existing connection");
+                          // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
+                          remove(peer_addr);
+                          addConnection(peer_addr,  conn);                           
+                          notifyConnectionOpened(peer_addr);
+                      }
+                      else {
+                          if(log.isTraceEnabled())
+                              log.trace("peer's address (" + peer_addr + ") is smaller than our local address (" +
+                                      local_addr + "), rejecting peer connection request");
+                          conn.destroy();
+                          continue;
+                      }                      
+                  }
+                  else {                       
+                      addConnection(peer_addr, conn);
+                      notifyConnectionOpened(peer_addr);
+                  }
+              }
 
                conn.init(); // starts handler thread on this socket
            }
@@ -317,8 +334,6 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    break;  // socket was closed, therefore stop
            }
        }
-       if(client_sock != null)
-           try {client_sock.close();} catch(IOException e) {}
        if(log.isTraceEnabled())
            log.trace(Thread.currentThread().getName() + " terminated");
    }
