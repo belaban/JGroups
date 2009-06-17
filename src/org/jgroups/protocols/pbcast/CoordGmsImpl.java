@@ -9,6 +9,7 @@ import org.jgroups.util.*;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.114 2009/06/16 13:39:55 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.115 2009/06/17 11:34:01 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -172,28 +173,23 @@ public class CoordGmsImpl extends GmsImpl {
     /**
      * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
      * See description of protocol in DESIGN.
-     * @param views A List of different views detected by the merge protocol
+     * @param views A List of <em>different</em> views detected by the merge protocol
      */
     public void merge(List<View> views) {
         if(isMergeInProgress()) {
             if(log.isTraceEnabled()) log.trace(gms.local_addr + ": merge is already running (merge_id=" + merge_id + ")");
             return;
-        }       
-        Collection<Address> coords=determineCoords(views);
-        if(coords == null || coords.size() <= 1) {
-            if(log.isWarnEnabled()) log.warn("found no other sub-partitions, will not start merge.");
-            return;
         }
 
-        /* Establish deterministic order, so that coords can elect leader */
-        Membership tmp=new Membership(coords);
+        Collection<Address> coords=determineCoords(views);
+        Membership tmp=new Membership(coords); // establish a deterministic order, so that coords can elect leader
         tmp.sort();
-        Address  merge_leader=tmp.elementAt(0);
+        Address merge_leader=tmp.elementAt(0);
         if(log.isDebugEnabled()) log.debug("determining merge leader from coordinators " + tmp);
         if(merge_leader.equals(gms.local_addr)) {
             if(log.isDebugEnabled())
                 log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + coords);
-            merge_task.start(coords);
+            merge_task.start(views);
         }
         else {
             if(log.isDebugEnabled()) log.debug("I (" + gms.local_addr + ") am not the merge leader, " +
@@ -204,8 +200,11 @@ public class CoordGmsImpl extends GmsImpl {
     /**
      * Get the view and digest and send back both (MergeData) in the form of a MERGE_RSP to the sender.
      * If a merge is already in progress, send back a MergeData with the merge_rejected field set to true.
+     * @param sender The address of the merge leader
+     * @param merge_id The merge ID
+     * @param mbrs The set of members from which we expect responses
      */
-    public void handleMergeRequest(Address sender, MergeId merge_id) {
+    public void handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) {
         boolean success=matchMergeId(merge_id) || setMergeId(null, merge_id);
         if(!success) {
             if(log.isErrorEnabled()) log.error(gms.local_addr + ": merge is already in progress");
@@ -215,8 +214,18 @@ public class CoordGmsImpl extends GmsImpl {
 
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
         gms.getViewHandler().suspend(merge_id);
-        if(log.isDebugEnabled()) log.debug(gms.local_addr + ": got merge request from " + sender + ", merge_id=" + merge_id);
-        View view=new View(gms.view_id.copy(), gms.members.getMembers());
+        if(log.isDebugEnabled())
+            log.debug(gms.local_addr + ": got merge request from " + sender + ", merge_id=" + merge_id + ", mbrs=" + mbrs);
+
+        // merge the membership of the current view with mbrs
+        List<Address> members=new LinkedList<Address>(gms.members.getMembers());
+        if(mbrs != null) { // didn't use a set because we didn't want to change the membership order at this time (although not incorrect)
+            for(Address mbr: mbrs) {
+                if(!members.contains(mbr))
+                    members.add(mbr);
+            }
+        }
+        View view=new View(gms.view_id.copy(), new Vector<Address>(members));
         
         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
         //[JGRP-770] - Concurrent startup of many channels doesn't stabilize
@@ -231,7 +240,7 @@ public class CoordGmsImpl extends GmsImpl {
             cancelMerge(merge_id);
             return;
         }
-        Digest digest=fetchDigestsFromAllMembersInSubPartition(view.getMembers());
+        Digest digest=fetchDigestsFromAllMembersInSubPartition(members);
         sendMergeResponse(sender, view, digest, merge_id);
     }
 
@@ -512,21 +521,23 @@ public class CoordGmsImpl extends GmsImpl {
      * response have been received, or timeout msecs have elapsed (whichever is first).<p>
      * If a subgroup coordinator rejects the MERGE_REQ (e.g. because of participation in a different merge),
      * <em>that member will be removed from coords !</em>
-     * @param coords A list of Addresses of subgroup coordinators (inluding myself)
+     * @param coords A map of coordinatgor addresses and associated membership lists
      * @param new_merge_id The new merge id
      * @param timeout Max number of msecs to wait for the merge responses from the subgroup coords
      */
-    private boolean getMergeDataFromSubgroupCoordinators(final Vector<Address> coords, MergeId new_merge_id, long timeout) {
+    private boolean getMergeDataFromSubgroupCoordinators(Map<Address,Collection<Address>> coords, MergeId new_merge_id, long timeout) {
     	boolean gotAllResponses = false;
         long start=System.currentTimeMillis();        
-        merge_rsps.reset(coords);
+        merge_rsps.reset(coords.keySet());
         if(log.isDebugEnabled())
-            log.debug(gms.local_addr + ": sending MERGE_REQ to " + coords);
+            log.debug(gms.local_addr + ": sending MERGE_REQ to " + coords.keySet());
             
-        for(Address coord: coords) {
+        for(Map.Entry<Address,Collection<Address>> entry: coords.entrySet()) {
+            Address coord=entry.getKey();
+            Collection<Address> mbrs=entry.getValue();
             Message msg=new Message(coord, null, null);
             msg.setFlag(Message.OOB);
-            GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
+            GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ, mbrs);
             hdr.mbr=gms.local_addr;
             hdr.merge_id=new_merge_id;
             msg.putHeader(gms.getName(), hdr);
@@ -630,12 +641,11 @@ public class CoordGmsImpl extends GmsImpl {
     /**
      * Sends the new view and digest to all subgroup coordinors in coords. Each coord will in turn
      * <ol>
-     * <li>cast the new view and digest to all the members of its subgroup (MergeView)
-     * <li>on reception of the view, if it is a MergeView, each member will set the digest and install
-     *     the new view
+     * <li>broadcast the new view and digest to all the members of its subgroup (MergeView)
+     * <li>on reception of the view, if it is a MergeView, each member will set the digest and install the new view
      * </ol>
      */
-    private void sendMergeView(Vector<Address> coords, MergeData combined_merge_data, MergeId merge_id) {
+    private void sendMergeView(Collection<Address> coords, MergeData combined_merge_data, MergeId merge_id) {
         if(coords == null || combined_merge_data == null)
             return;
 
@@ -695,12 +705,11 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    private void sendMergeCancelledMessage(Vector<Address> coords, MergeId merge_id) {
-        if(coords == null || merge_id == null) {
-            if(log.isErrorEnabled()) log.error("coords or merge_id == null");
+    private void sendMergeCancelledMessage(Collection<Address> coords, MergeId merge_id) {
+        if(coords == null || merge_id == null)
             return;
-        }
-        for(Address coord:coords) {            
+        
+        for(Address coord:coords) {
             Message msg=new Message(coord, null, null);
             // msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
@@ -712,13 +721,13 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     /** Removed rejected merge requests from merge_rsps and coords. This method has a lock on merge_rsps */
-    private void removeRejectedMergeRequests(Vector<Address> coords) {
+    private void removeRejectedMergeRequests(Collection<Address> coords) {
         for(Map.Entry<Address,MergeData> entry: merge_rsps.getResults().entrySet()) {
             Address member=entry.getKey();
             MergeData data=entry.getValue();
             if(data.merge_rejected) {
                 if(data.getSender() != null)
-                    coords.removeElement(data.getSender());
+                    coords.remove(data.getSender());
                 merge_rsps.remove(member);
             }
         }
@@ -734,18 +743,37 @@ public class CoordGmsImpl extends GmsImpl {
      * subgroup.
      */
     private class MergeTask implements Runnable {
-        Thread thread=null;
-        Vector<Address> coords=null; // list of subgroup coordinators to be contacted
+        private Thread thread=null;
+
+        /** List of all subpartition coordinators and their members */
+        private final Map<Address,Collection<Address>> coords=new ConcurrentHashMap<Address,Collection<Address>>();
 
         /**
          * @param all_coords Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
          */
-        public synchronized void start(Collection<Address> all_coords) {
+        public synchronized void start(Collection<View> views) {
             if(thread == null || thread.isAlive()) {
-                this.coords=new Vector<Address>(all_coords);
+                coords.clear();
+                determineCoordsAndMembers(views);
                 thread=gms.getThreadFactory().newThread(this, "MergeTask");
                 thread.setDaemon(true);
                 thread.start();
+            }
+        }
+
+        /**
+         * Adds all different coordinators of the views into the hashmap and sets their members
+         * @param views
+         */
+        private void determineCoordsAndMembers(Collection<View> views) {
+            for(View view: views) {
+                Address coord=view.getCreator();
+                if(coord != null) {
+                    Collection<Address> members=coords.get(coord);
+                    if(members == null)
+                        coords.put(coord, members=new HashSet<Address>());
+                    members.addAll(view.getMembers());
+                }
             }
         }
 
@@ -762,7 +790,7 @@ public class CoordGmsImpl extends GmsImpl {
 
             // 1. Generate merge_id
             MergeId new_merge_id=MergeId.create(gms.local_addr);
-            Vector<Address> coordsCopy=new Vector<Address>(coords);
+            Collection<Address> coordsCopy=null;
 
             try {
                 boolean success=setMergeId(null, new_merge_id);
@@ -771,32 +799,34 @@ public class CoordGmsImpl extends GmsImpl {
                     return;
                 }
 
+                coordsCopy=new ArrayList<Address>(coords.keySet());
+
                 /* 2. Fetch the current Views/Digests from all subgroup coordinators */
                 success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
                 if(!success)
-                    throw new Exception("merge aborted, merge leader did not get data from all subgroup coordinators " + coords);
+                    throw new Exception("merge leader did not get data from all partition coordinators " + coords.keySet());
 
                 /* 3. Remove rejected MergeData elements from merge_rsp and coords (so we'll send the new view
                  * only to members who accepted the merge request) */
-                removeRejectedMergeRequests(coords);
-                if(merge_rsps.size() <= 1)
-                    throw new Exception(gms.local_addr + ": did not get merge responses from all subgroup coordinators  (" + merge_rsps + ")");
+                removeRejectedMergeRequests(coords.keySet());
+                if(merge_rsps.size() == 0)
+                    throw new Exception("did not get any merge responses from partition coordinators");
 
-                if(!coords.contains(gms.local_addr)) // another member might have invoked a merge req on us before we got there...
-                    throw new Exception(gms.local_addr + ": merge leader rejected merge request");
+                if(!coords.keySet().contains(gms.local_addr)) // another member might have invoked a merge req on us before we got there...
+                    throw new Exception("merge leader rejected merge request");
 
                 /* 4. Combine all views and digests into 1 View/1 Digest */
                 Vector<MergeData> merge_data=new Vector<MergeData>(merge_rsps.getResults().values());
                 MergeData combined_merge_data=consolidateMergeData(merge_data);
                 if(combined_merge_data == null)
-                    throw new Exception(gms.local_addr + ": could not consolidate merge");
+                    throw new Exception("could not consolidate merge");
                 /* 4. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */
-                sendMergeView(coords, combined_merge_data, new_merge_id);
+                sendMergeView(coords.keySet(), combined_merge_data, new_merge_id);
             }
             catch(Throwable ex) {
                 if(log.isWarnEnabled())
-                    log.warn(ex.getLocalizedMessage());
+                    log.warn(gms.local_addr + ": " + ex.getLocalizedMessage() + ", merge is cancelled");
                 sendMergeCancelledMessage(coordsCopy, new_merge_id);
             }
             finally {
@@ -806,7 +836,7 @@ public class CoordGmsImpl extends GmsImpl {
                 /*5. if flush is in stack stop the flush for entire cluster [JGRP-700] - FLUSH: flushing should span merge */
                 gms.stopFlush();
                 if(log.isDebugEnabled())
-                    log.debug("Merge leader " + gms.local_addr + ": completed merge task");
+                    log.debug(gms.local_addr + ": merge leader completed merge task");
                 thread=null;
             }
         }
