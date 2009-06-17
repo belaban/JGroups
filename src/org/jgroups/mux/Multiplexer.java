@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.108 2009/05/13 13:07:00 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.109 2009/06/17 16:20:10 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -100,11 +100,8 @@ public class Multiplexer implements UpHandler {
 
     public Multiplexer(JChannel channel) {
         if(channel == null || !channel.isOpen())
-            throw new IllegalArgumentException("Channel " + channel
-                                               + " cannot be used for Multiplexer");
-
+            throw new IllegalArgumentException("Channel " + channel + " cannot be used for Multiplexer");
         this.channel=channel;
-        this.channel.addChannelListener(new MultiplexerChannelListener());
         this.channel.setUpHandler(this);
         this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
 
@@ -417,10 +414,6 @@ public class Multiplexer implements UpHandler {
 
             case Event.UNBLOCK: // process queued-up MergeViews
                 passToAllMuxChannels(evt);
-                break;
-            case Event.EXIT:
-                //we are being shunned, close all services
-                closeAll();
                 break;
 
             default:
@@ -1111,52 +1104,7 @@ public class Multiplexer implements UpHandler {
         return null;
     }
 
-    private class MultiplexerChannelListener extends ChannelListenerAdapter {
 
-        //handle reconnecting of services after being shunned and
-        //then reconnected back
-        @Override
-        public void channelReconnected(Address addr) {
-            if(log.isDebugEnabled())
-                log.debug("Reconnecting services " + services.keySet());
-
-            for(MuxChannel mux_ch:services.values()) {
-                try {
-                    if(log.isDebugEnabled())
-                        log.debug("Reconnecting service " + mux_ch.getId());
-
-                    mux_ch.open();
-                    boolean reconnect=((Boolean)mux_ch.getOpt(Channel.AUTO_RECONNECT)).booleanValue();
-                    boolean getState=((Boolean)mux_ch.getOpt(Channel.AUTO_GETSTATE)).booleanValue();
-                    boolean fetchAndGetState=reconnect && getState;
-                    if(fetchAndGetState) {
-                        mux_ch.connect(mux_ch.getClusterName(), null, null, 10000);
-                        mux_ch.fireChannelReconnected(mux_ch.getAddress());
-                    }
-                    else {
-                        if(reconnect) {
-                            mux_ch.connect(mux_ch.getClusterName());
-                            mux_ch.fireChannelReconnected(mux_ch.getAddress());
-                        }
-                        if(getState) {
-                            mux_ch.getState(null, 5000);
-                        }
-                    }
-                }
-                catch(ChannelException e) {
-                    if(log.isErrorEnabled())
-                        log.error("MuxChannel reconnect failed " + e);
-                }
-            }
-        }
-
-        @Override
-        public void channelShunned() {
-            for(MuxChannel mux_ch:services.values()) {
-                mux_ch.fireChannelShunned();
-            }
-        }
-    }
 
     private static class Task implements Runnable {
         Exchanger<Object> exchanger;

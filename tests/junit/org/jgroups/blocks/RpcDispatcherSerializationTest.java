@@ -27,7 +27,6 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         channel=createChannel(true);
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, target);
         channel.connect("RpcDispatcherSerializationTest");
 

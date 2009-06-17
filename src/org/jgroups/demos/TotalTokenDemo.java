@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.12 2009/04/09 09:11:27 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.13 2009/06/17 16:20:13 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.12 $
+ *@version $Revision: 1.13 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -220,17 +220,11 @@ public class TotalTokenDemo extends JFrame implements Runnable
                     if (tmp instanceof View)
                     {
                         View vw = (View) tmp;
-                        control.viewNumber.setText("" + vw.getVid().getId());
-                        control.numMessagesInLastView.setText("" + counter);
+                        control.viewNumber.setText(String.valueOf(vw.getVid().getId()));
+                        control.numMessagesInLastView.setText(String.valueOf(counter));
                         counter = 0;
                         v.clear();
                         continue;
-                    }
-
-                    if (tmp instanceof ExitEvent)
-                    {
-                        System.out.println("received EXIT");
-                        break;
                     }
 
                     if (!(tmp instanceof Message))

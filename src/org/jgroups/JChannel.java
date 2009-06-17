@@ -1,12 +1,12 @@
 package org.jgroups;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
@@ -26,7 +26,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.locks.Lock;
 
 /**
  * JChannel is a pure Java implementation of Channel.
@@ -75,7 +74,7 @@ import java.util.concurrent.locks.Lock;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.219 2009/06/08 13:03:59 belaban Exp $
+ * @version $Id: JChannel.java,v 1.220 2009/06/17 16:20:01 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -99,17 +98,12 @@ public class JChannel extends Channel {
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     private ProtocolStack prot_stack=null;
 
-    /** Thread responsible for closing a channel and potentially reconnecting to it (e.g., when shunned). */
-    protected CloserThread closer=null;
-
     private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
 
     private final Promise<Boolean> flush_unblock_promise=new Promise<Boolean>();
 
-    /*if the states is fetched automatically, this is the default timeout, 5 secs*/
-    private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 5 secs*/
     private static final long FLUSH_UNBLOCK_TIMEOUT=5000;
     
@@ -121,15 +115,6 @@ public class JChannel extends Channel {
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     @ManagedAttribute(description="Flag indicating whether to receive this channel's own messages",writable=true)
     private boolean receive_local_msgs=true;
-    
-    /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
-    @ManagedAttribute(description="Toggles whether the channel will reconnect after shun",writable=true)
-    private boolean auto_reconnect=true;
-    
-    /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
-     *setting this to true, automatically forces auto_reconnect to true*/
-    @ManagedAttribute(description="Toggles whether state should to be retrieved after reconnect",writable=true)
-    private boolean auto_getstate=false;
     
     /*channel connected flag*/
     protected boolean connected=false;
@@ -299,8 +284,6 @@ public class JChannel extends Channel {
      */
     public JChannel(JChannel ch) throws ChannelException {
         init(ch);
-        auto_reconnect=ch.auto_reconnect;
-        auto_getstate=ch.auto_getstate;
         receive_blocks=ch.receive_blocks;
         receive_local_msgs=ch.receive_local_msgs;
         receive_blocks=ch.receive_blocks;
@@ -974,22 +957,13 @@ public class JChannel extends Channel {
                 break;
 
             case AUTO_RECONNECT:
-                if(value instanceof Boolean)
-                    auto_reconnect=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isWarnEnabled())
+                    log.warn("Option AUTO_RECONNECT has been deprecated and is ignored");
                 break;
 
             case AUTO_GETSTATE:
-                if(value instanceof Boolean) {
-                    auto_getstate=((Boolean)value).booleanValue();
-                    if(auto_getstate)
-                        auto_reconnect=true;
-                }
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isWarnEnabled())
+                    log.warn("Option AUTO_GETSTATE has been deprecated and is ignored");
                 break;
 
             default:
@@ -1014,9 +988,9 @@ public class JChannel extends Channel {
             case SUSPECT:
             	return Boolean.TRUE;
             case AUTO_RECONNECT:
-                return auto_reconnect ? Boolean.TRUE : Boolean.FALSE;
+                return false;
             case AUTO_GETSTATE:
-                return auto_getstate ? Boolean.TRUE : Boolean.FALSE;
+                return false;
             case GET_STATE_EVENTS:
                 return Boolean.TRUE;
             case LOCAL:
@@ -1472,10 +1446,6 @@ public class JChannel extends Channel {
             case Event.GET_LOCAL_ADDRESS:
                 return local_addr;
 
-            case Event.EXIT:
-                handleExit(evt);
-                return null;  // no need to pass event up; already done in handleExit()
-
             default:
                 break;
         }
@@ -1704,8 +1674,6 @@ public class JChannel extends Channel {
         if(details) {
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
-            sb.append("auto_reconnect=").append(auto_reconnect).append('\n');
-            sb.append("auto_getstate=").append(auto_getstate).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
             sb.append("props=").append(getProperties()).append('\n');
         }
@@ -1891,8 +1859,6 @@ public class JChannel extends Channel {
             case Event.STATE_TRANSFER_INPUTSTREAM:
             	info = (StateTransferInfo)evt.getArg();
                 return new StreamingSetStateEvent(info.inputStream,info.state_id);
-            case Event.EXIT:
-                return new ExitEvent();
             default:
                 return evt;
         }
@@ -1955,27 +1921,6 @@ public class JChannel extends Channel {
         mq.close(flush_entries);
     }
 
-
-    /**
-     * Creates a separate thread to close the protocol stack.
-     * This is needed because the thread that called JChannel.up() with the EXIT event would
-     * hang waiting for up() to return, while up() actually tries to kill that very thread.
-     * This way, we return immediately and allow the thread to terminate.
-     */
-    private synchronized void handleExit(Event evt) {
-        notifyChannelShunned();
-        if(!auto_reconnect)
-            return;
-
-        if(closer != null && !closer.isAlive())
-            closer=null;
-        if(closer == null) {
-            if(log.isDebugEnabled())
-                log.debug("received an EXIT event, will leave the channel");
-            closer=new CloserThread(evt);
-            closer.start();
-        }
-    }
 
     public boolean flushSupported() {
         return flush_supported;
@@ -2156,106 +2101,5 @@ public class JChannel extends Channel {
         }
     }
 
-    class CloserThread extends Thread {
-        final Event exitEvent;              
-
-        CloserThread(Event evt) {
-            super(Util.getGlobalThreadGroup(), "CloserThread");
-            this.exitEvent=evt;            
-            setDaemon(true);
-        }
-
-
-        public void run() {
-            String old_cluster_name=cluster_name; // remember because close() will null it
-            try {
-                if(log.isDebugEnabled())
-                    log.debug("CloserThread - closing the channel " + local_addr);
-                
-                _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
-            }
-            catch(Throwable ex1) {
-                if(log.isErrorEnabled())
-                    log.error("failed closing the channel", ex1);
-            }
-
-            try {
-                if(up_handler != null)
-                    up_handler.up(exitEvent);
-                else {
-                    if(receiver == null)
-                        mq.add(exitEvent);
-                }
-            }
-            catch(Throwable ex2) {
-                if(log.isErrorEnabled())
-                    log.error("failed passing up EXIT event", ex2);
-            }
-
-            if(mq != null) {
-                Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
-                try { mq.close(false); } catch(Throwable ex3) {}
-            }
-
-            for(int i=0; i < 5; i++) {
-                try {
-                    if(closed == false)
-                        break;
-                    if(log.isDebugEnabled()) log.debug("reconnecting to cluster " + old_cluster_name);
-                    open();
-                    if(additional_data != null) {
-                        // send previously set additional_data down the stack - other protocols (e.g. TP) use it
-                        Map<String,Object> m=new HashMap<String,Object>(additional_data);
-                        down(new Event(Event.CONFIG, m));
-                    }
-                }
-                catch(Throwable ex4) {
-                    if(log.isErrorEnabled()) log.error("failure reopening channel" ,ex4);
-                    Util.sleep(500);
-                }
-            }
-
-            if(closed) { // still closed; reopening failed above
-                if(log.isErrorEnabled())
-                    log.error("failed reopening channel, terminating closer thread");
-                closer=null;
-                return;
-            }
-
-            while(!connected) {
-                try {
-                    connect(old_cluster_name);
-                    notifyChannelReconnected(local_addr);
-                }
-                catch(Throwable ex5) {
-                    if(log.isErrorEnabled()) log.error("failure reconnecting to channel, retrying", ex5);
-                    Util.sleep(1000); // sleep 1 sec between reconnect attempts
-                    if(!isOpen()){
-                        //other thread closed the channel in the meantime, give up from reconnecting
-                        break;
-                    }
-                }
-            }
-    
-
-            boolean canFetchState = auto_getstate && state_transfer_supported && connected;
-            if(canFetchState) {
-                if(log.isDebugEnabled())
-                    log.debug("fetching the state (auto_getstate=true)");
-                try {
-                    boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
-                    if(log.isDebugEnabled()) {
-                        if(rc)
-                            log.debug("CloserThread - state was retrieved successfully");
-                        else
-                            log.debug("CloserThread - state transfer failed");
-                    }
-                }
-                catch(Throwable ex6) {
-                    if(log.isErrorEnabled())
-                        log.error("failed auto-fetching state", ex6);
-                }
-            }
-        }
-    }
+  
 }

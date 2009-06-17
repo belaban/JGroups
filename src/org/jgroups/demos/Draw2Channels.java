@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.13 2009/04/09 09:11:27 belaban Exp $
+// $Id: Draw2Channels.java,v 1.14 2009/06/17 16:20:13 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -355,7 +355,6 @@ public class Draw2Channels implements ActionListener {
         }
 
         public void channelShunned() {
-            System.out.println("received EXIT, waiting for ChannelReconnected callback");
         }
 
         public void channelReconnected(Address addr) {

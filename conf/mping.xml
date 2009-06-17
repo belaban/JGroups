@@ -2,7 +2,7 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.13 2009/03/31 12:35:29 vlada Exp $
+Version: $Id: mping.xml,v 1.14 2009/06/17 16:20:00 belaban Exp $
 Author: Bela Ban
  -->
 
@@ -36,5 +36,5 @@ Author: Bela Ban
     <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" 
                 join_timeout="5000" 
-                shun="true"/>
+                />
 </config>

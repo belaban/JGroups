@@ -17,7 +17,7 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.18 2008/08/08 17:07:19 vlada Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.19 2009/06/17 16:20:12 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT,"known-failures"})
 public class STATE_TRANSFER_Test extends ChannelTestBase {
@@ -39,7 +39,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         coord=null;
     }
 
-    class Coordinator implements ChannelListener {
+    class Coordinator extends ChannelListenerAdapter {
 
         private JChannel channel=null;
         private int cnt=0;  // the state
@@ -60,20 +60,6 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
             channel.connect(GROUP_NAME);
         }
 
-        public void channelConnected(Channel channel) {
-        }
-
-        public void channelDisconnected(Channel channel) {
-        }
-
-        public void channelClosed(Channel channel) {
-        }
-
-        public void channelShunned() {
-        }
-
-        public void channelReconnected(Address addr) {     // n/a. now
-        }
 
         public void recvLoop() throws Exception {
             Thread task=new Thread(new Runnable() {
@@ -82,10 +68,6 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
                     while(!closed) {
                         try {
                             tmp=channel.receive(0);
-                            if(tmp instanceof ExitEvent) {
-                                // System.err.println("-- received EXIT, waiting for ChannelReconnected callback");
-                                break;
-                            }
                             if(tmp instanceof GetStateEvent) {
                                 synchronized(Coordinator.this) {
                                     // System.err.println("--  GetStateEvent, cnt=" + cnt);
@@ -162,9 +144,6 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
             for(;counter < timeout;SECONDS.sleep(1),counter++) {
                 try {
                     tmp=channel.receive(0);
-                    if(tmp instanceof ExitEvent) {
-                        break;
-                    }
                     if(tmp instanceof SetStateEvent) {
                         cnt=((Integer)Util.objectFromByteBuffer(((SetStateEvent)tmp).getArg())).intValue();
                         // System.err.println("--  SetStateEvent, cnt=" + cnt);

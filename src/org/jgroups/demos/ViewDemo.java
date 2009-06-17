@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.15 2007/12/29 16:39:24 belaban Exp $
+// $Id: ViewDemo.java,v 1.16 2009/06/17 16:20:13 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -36,8 +36,6 @@ public class ViewDemo extends ReceiverAdapter {
 
         channel=new JChannel(props);
         channel.setReceiver(this);
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-
         if(use_additional_data) {
             Map<String,Object> m=new HashMap<String,Object>();
             m.put("additional_data", "bela".getBytes());

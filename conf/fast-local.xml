@@ -5,7 +5,7 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.1 2008/09/26 16:01:28 belaban Exp $
+  Version: $Id: fast-local.xml,v 1.2 2009/06/17 16:20:00 belaban Exp $
 -->
 
 <config>
@@ -61,7 +61,7 @@
                    max_bytes="1000000"/>
     <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                shun="false"
+                
                 view_bundling="true"/>
     <FC max_credits="1000000"
                     min_threshold="0.20"/>

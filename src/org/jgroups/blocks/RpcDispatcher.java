@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.40 2009/06/16 08:29:15 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.41 2009/06/17 16:20:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -527,37 +527,9 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public void channelShunned() {
-
-        synchronized(additionalChannelListeners) {
-            for(Iterator i = additionalChannelListeners.iterator(); i.hasNext(); ) {
-                ChannelListener l = (ChannelListener)i.next();
-                try {
-                    l.channelShunned();
-                }
-                catch(Throwable t) {
-                    log.warn("channel listener failed", t);
-                }
-            }
-        }
     }
 
     public void channelReconnected(Address new_addr) {
-        if(log.isTraceEnabled())
-            log.trace("channel has been rejoined, old local_addr=" + local_addr + ", new local_addr=" + new_addr);
-        this.local_addr=new_addr;
-        start();
-
-        synchronized(additionalChannelListeners) {
-            for(Iterator i = additionalChannelListeners.iterator(); i.hasNext(); ) {
-                ChannelListener l = (ChannelListener)i.next();
-                try {
-                    l.channelReconnected(new_addr);
-                }
-                catch(Throwable t) {
-                   log.warn("channel listener failed", t);
-                }
-            }
-        }
     }
     /* ----------------------------------------------------------------------- */
 

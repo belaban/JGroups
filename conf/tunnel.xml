@@ -11,7 +11,7 @@
     <PING timeout="2000"/>
     <MERGE2 max_interval="20000"
               min_interval="5000"/>    
-    <FD timeout="2000" max_tries="3"   shun="true"/>
+    <FD timeout="2000" max_tries="3"   />
     <VERIFY_SUSPECT timeout="1500"  />
     <pbcast.NAKACK
                    use_mcast_xmit="false" gc_lag="0"
@@ -21,7 +21,7 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                shun="false"
+
                 view_bundling="true"
                 view_ack_collection_timeout="5000"/>
     <FC max_credits="2000000"

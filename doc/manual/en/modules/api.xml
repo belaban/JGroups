@@ -547,7 +547,7 @@
                 "UNICAST(timeout=5000;min_wait_time=2000):" +
                 "FRAG:" +
                 "pbcast.GMS(initial_mbrs_timeout=4000;join_timeout=5000;" +
-                "shun=false;print_local_addr=false)";
+                "print_local_addr=false)";
           
                 JChannel channel;
                 try {
@@ -629,7 +629,7 @@
                   &lt;MERGE2 max_interval="30000"
                           min_interval="10000"/&gt;
                   &lt;FD_SOCK/&gt;
-                  &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
+                  &lt;FD timeout="10000" max_tries="5" /&gt;
                   &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
                   &lt;BARRIER /&gt;
                   &lt;pbcast.NAKACK
@@ -641,7 +641,6 @@
                                  max_bytes="400000"/&gt;
                   &lt;VIEW_SYNC avg_send_interval="60000"   /&gt;
                   &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
-                              shun="false"
                               view_bundling="true"/&gt;
                   &lt;FC max_credits="20000000"
                                   min_threshold="0.10"/&gt;
@@ -734,7 +733,8 @@
 
           <listitem>
             <para>When set to true, a shunned channel will leave the group and
-            then try to automatically re-join. Default is false</para>
+            then try to automatically re-join. Default is false. Note that in 2.8, shunning has been removed, therefore
+            this option has been deprecated.</para>
           </listitem>
         </varlistentry>
 
@@ -744,7 +744,8 @@
           <listitem>
             <para>When set to true a shunned channel, after reconnection, will
             attempt to fetch the state from the coordinator. This requires
-            AUTO_RECONNECT to be true as well. Default is false.</para>
+            AUTO_RECONNECT to be true as well. Default is false. Note that in 2.8, shunning has been removed, therefore
+            this option has been deprecated.</para>
           </listitem>
         </varlistentry>
       </variablelist>

@@ -1380,6 +1380,11 @@
         <title>Misc</title>
         <section>
             <title>Shunning</title>
+
+            <para>
+                Note that in 2.8, shunning has been removed, so the sections below only apply to versions up to 2.7.
+            </para>
+
             Let's say we have 4 members in a group: {A,B,C,D}. When a member (say D) is expelled from the group, e.g.
             because it didn't respond to are-you-alive messages, and later comes back, then it is shunned. Shunning
             causes a member to leave the group and re-join, if this is enabled on the Channel. To enable automatic

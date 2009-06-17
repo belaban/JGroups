@@ -5,7 +5,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: ChannelCallbackTest.java,v 1.1 2005/12/09 14:15:14 belaban Exp $
+ * @version $Id: ChannelCallbackTest.java,v 1.2 2009/06/17 16:20:14 belaban Exp $
  */
 public class ChannelCallbackTest extends ReceiverAdapter implements ChannelListener {
     JChannel channel;
@@ -58,11 +58,9 @@ public class ChannelCallbackTest extends ReceiverAdapter implements ChannelListe
     }
 
     public void channelShunned() {
-        System.out.println("-- channel shunned");
     }
 
     public void channelReconnected(Address addr) {
-        System.out.println("-- channel reconnected: " + addr);
     }
 
 }

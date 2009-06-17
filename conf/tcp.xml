@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.27 2009/05/28 07:05:05 vlada Exp $
+    version: $Id: tcp.xml,v 1.28 2009/06/17 16:20:00 belaban Exp $
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -44,7 +44,7 @@
     <MERGE2 max_interval="30000"
               min_interval="10000"/>
     <FD_SOCK/>
-    <FD timeout="10000" max_tries="5" shun="true"/>
+    <FD timeout="10000" max_tries="5" />
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
     <pbcast.NAKACK
@@ -56,7 +56,7 @@
                    max_bytes="400000"/>
     <VIEW_SYNC avg_send_interval="60000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                shun="true"
+
                 view_bundling="true"/>
     <FC max_credits="2000000"
         min_threshold="0.10"/>

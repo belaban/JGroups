@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.36 2009/06/17 11:31:03 belaban Exp $
+// $Id: GmsImpl.java,v 1.37 2009/06/17 16:20:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -52,7 +52,6 @@ public abstract class GmsImpl {
 
     public void               handleMembershipChange(Collection<Request> requests)  {}
     public void               handleViewChange(View new_view, Digest digest)        {}
-    public void               handleExit() {}
 
     public void               init() throws Exception {leaving=false;}
     public void               start() throws Exception {leaving=false;}

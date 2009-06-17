@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.59 2009/04/27 12:59:46 belaban Exp $
+// $Id: Draw.java,v 1.60 2009/06/17 16:20:13 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -56,14 +56,12 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         channel=new JChannel(props);
         if(use_blocking)
             channel.setOpt(Channel.BLOCK, Boolean.TRUE);
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
     }
 
     public Draw(Channel channel) throws Exception {
         this.channel=channel;
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
     }
@@ -71,7 +69,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     public Draw(Channel channel, boolean use_state, long state_timeout) throws Exception {
         this.channel=channel;
-        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
         this.use_state=use_state;
@@ -414,12 +411,9 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     }
 
     public void channelShunned() {
-        System.out.println("-- received EXIT, waiting for ChannelReconnected callback");
-        setTitle(" Draw Demo - shunned ");
     }
 
     public void channelReconnected(Address addr) {
-        setTitle();
     }
 
 
