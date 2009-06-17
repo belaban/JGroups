@@ -25,9 +25,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.26 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.27 2009/06/17 14:49:12 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
+@DeprecatedProperty(names={"shun"})
 public class FD_ALL extends Protocol {
     
     private final static String name="FD_ALL";
@@ -45,12 +46,6 @@ public class FD_ALL extends Protocol {
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
     boolean msg_counts_as_heartbeat=false;
-
-    @Property(description="Shun switch. Default is true")
-    @ManagedAttribute(description="Shun switch. Default is true", writable=true)
-    boolean shun=true;
-
-    
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
     @ManagedAttribute(description="Number of heartbeats sent")
@@ -107,8 +102,10 @@ public class FD_ALL extends Protocol {
     public void setTimeout(long timeout) {this.timeout=timeout;}
     public long getInterval() {return interval;}
     public void setInterval(long interval) {this.interval=interval;}
-    public boolean isShun() {return shun;}
-    public void setShun(boolean flag) {this.shun=flag;}
+    @Deprecated
+    public static boolean isShun() {return false;}
+    @Deprecated
+    public void setShun(boolean flag) {}
     
     @ManagedAttribute(description="Are heartbeat tasks running")
     public boolean isRunning() {
@@ -174,15 +171,6 @@ public class FD_ALL extends Protocol {
                         sender=msg.getSrc();
                         if(sender.equals(local_addr))
                             break;
-                   
-
-                        // Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
-                        //    the sender to leave the group (and possibly rejoin it later)
-                        if(shun && !members.contains(sender)) {
-                            shunInvalidHeartbeatSender(sender);
-                            break;
-                        }
-
                         update(sender); // updates the heartbeat entry for 'sender'
                         num_heartbeats_received++;
                         break;          // don't pass up !
@@ -191,13 +179,6 @@ public class FD_ALL extends Protocol {
                         if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
                         down_prot.down(new Event(Event.SUSPECT, hdr.suspected_mbr));
                         up_prot.up(new Event(Event.SUSPECT, hdr.suspected_mbr));
-                        break;
-
-                    case Header.NOT_MEMBER:
-                        if(shun) {
-                            if(log.isDebugEnabled()) log.debug("Received NOT_MEMBER event from " + sender + " I'm being shunned; exiting");
-                            up_prot.up(new Event(Event.EXIT));
-                        }
                         break;
                 }
                 return null;            
@@ -311,36 +292,6 @@ public class FD_ALL extends Protocol {
     }
 
 
-    /**
-     * If sender is not a member, send a NOT_MEMBER to sender (after n pings
-     * received)
-     */
-    private void shunInvalidHeartbeatSender(Address sender) {
-        int num_pings=0;
-        Message shun_msg;
-
-        if(invalid_pingers.containsKey(sender)) {
-            num_pings=invalid_pingers.get(sender).intValue();
-            if(num_pings >= 3) {
-                if(log.isDebugEnabled())
-                    log.debug(sender + " is not in " + members + " ! Shunning it");
-                shun_msg=new Message(sender, null, null);
-                shun_msg.setFlag(Message.OOB);
-                shun_msg.putHeader(getName(), new Header(Header.NOT_MEMBER));
-                down_prot.down(new Event(Event.MSG, shun_msg));
-                invalid_pingers.remove(sender);
-            }
-            else {
-                num_pings++;
-                invalid_pingers.put(sender, new Integer(num_pings));
-            }
-        }
-        else {
-            num_pings++;
-            invalid_pingers.put(sender, Integer.valueOf(num_pings));
-        }
-    }
-
 
     private String printTimeStamps() {
         StringBuilder sb=new StringBuilder();
@@ -368,14 +319,13 @@ public class FD_ALL extends Protocol {
     public static class Header extends org.jgroups.Header implements Streamable {
         public static final byte HEARTBEAT  = 0;
         public static final byte SUSPECT    = 1;
-        public static final byte NOT_MEMBER = 2;  // received as response by pinged mbr when we are not a member
-
 
         byte    type=Header.HEARTBEAT;
         Address suspected_mbr=null;
+        private static final long serialVersionUID=-7990140921380154212L;
 
 
-       /** used for externalization */
+        /** used for externalization */
         public Header() {
         }
 
@@ -395,8 +345,6 @@ public class FD_ALL extends Protocol {
                     return "heartbeat";
                 case FD_ALL.Header.SUSPECT:
                     return "SUSPECT (suspected_mbr=" + suspected_mbr + ")";
-                case FD_ALL.Header.NOT_MEMBER:
-                    return "NOT_MEMBER";
                 default:
                     return "unknown type (" + type + ")";
             }

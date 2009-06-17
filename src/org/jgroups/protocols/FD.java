@@ -3,11 +3,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -36,16 +32,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * When a message is received from the monitored neighbor member, it causes the
  * pinger thread to 'skip' sending the next are-you-alive message. Thus, traffic
  * is reduced.
- * <p>
- * When we receive a ping from a member that's not in the membership list, we
- * shun it by sending it a NOT_MEMBER message. That member will then leave the
- * group (and possibly rejoin). This is only done if <code>shun</code> is
- * true.
- * 
+ *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.74 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: FD.java,v 1.75 2009/06/17 14:49:12 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
+@DeprecatedProperty(names={"shun"})
 public class FD extends Protocol {
     
     private final static String name="FD";
@@ -55,10 +47,6 @@ public class FD extends Protocol {
     @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P. Default is 3000 msec")
     @ManagedAttribute(description="Timeout in msec to suspect a node P if neither a heartbeat nor data were received from P", writable=true)
     long timeout=3000; 
-
-    @Property(description="Shun switch. Default is true")
-    @ManagedAttribute(description="Shun switch", writable=true)
-    boolean shun=true;
 
     @Property(description="Number of times to send heartbeat. Default is 2")
     @ManagedAttribute(description="Number of times to send a are-you-alive msg", writable=true)
@@ -98,9 +86,6 @@ public class FD extends Protocol {
     @GuardedBy("lock")
     protected final List<Address> pingable_mbrs=new ArrayList<Address>();
    
-    @GuardedBy("lock")
-    private final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7);
-
     private TimeScheduler timer=null;
 
     @GuardedBy("lock")
@@ -128,8 +113,10 @@ public class FD extends Protocol {
     public int getMaxTries() {return max_tries;}
     public void setMaxTries(int max_tries) {this.max_tries=max_tries;}
     public int getCurrentNumTries() {return num_tries;}
-    public boolean isShun() {return shun;}
-    public void setShun(boolean flag) {this.shun=flag;}
+    @Deprecated
+    public static boolean isShun() {return false;}
+    @Deprecated
+    public void setShun(boolean flag) {}
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
@@ -240,11 +227,6 @@ public class FD extends Protocol {
                         if(log.isTraceEnabled())
                             log.trace("received are-you-alive from " + hb_sender + ", sending response");
                         sendHeartbeatResponse(hb_sender);
-
-                        // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
-                        //    the sender to leave the group (and possibly rejoin it later)
-                        if(shun)
-                            shunInvalidHeartbeatSender(hb_sender);
                         break;                                     // don't pass up !
 
                     case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
@@ -276,13 +258,6 @@ public class FD extends Protocol {
                                 up_prot.up(new Event(Event.SUSPECT, m));
                                 down_prot.down(new Event(Event.SUSPECT, m));
                             }
-                        }
-                        break;
-
-                    case FdHeader.NOT_MEMBER:
-                        if(shun) {
-                            if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
-                            up_prot.up(new Event(Event.EXIT));
                         }
                         break;
                 }
@@ -369,51 +344,12 @@ public class FD extends Protocol {
     }
 
 
-    /**
-     * If sender is not a member, send a NOT_MEMBER to sender (after n pings received)
-     */
-    private void shunInvalidHeartbeatSender(Address hb_sender) {
-        int num_pings=0;
-        Message shun_msg=null;
-
-        lock.lock();
-        try {
-            if(hb_sender != null && members != null && !members.contains(hb_sender)) {
-                if(invalid_pingers.containsKey(hb_sender)) {
-                    num_pings=invalid_pingers.get(hb_sender).intValue();
-                    if(num_pings >= max_tries) {
-                        if(log.isDebugEnabled())
-                            log.debug(hb_sender + " is not in " + members + " ! Shunning it");
-                        shun_msg=new Message(hb_sender, null, null);
-                        shun_msg.setFlag(Message.OOB);
-                        shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
-                        invalid_pingers.remove(hb_sender);
-                    }
-                    else {
-                        num_pings++;
-                        invalid_pingers.put(hb_sender, new Integer(num_pings));
-                    }
-                }
-                else {
-                    num_pings++;
-                    invalid_pingers.put(hb_sender, new Integer(num_pings));
-                }
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-
-        if(shun_msg != null)
-            down_prot.down(new Event(Event.MSG, shun_msg));
-    }
 
 
     public static class FdHeader extends Header implements Streamable {
         public static final byte HEARTBEAT=0;
         public static final byte HEARTBEAT_ACK=1;
         public static final byte SUSPECT=2;
-        public static final byte NOT_MEMBER=3;  // received as response by pinged mbr when we are not a member
 
 
         byte    type=HEARTBEAT;
@@ -444,8 +380,6 @@ public class FD extends Protocol {
                     return "heartbeat ack";
                 case SUSPECT:
                     return "SUSPECT (suspected_mbrs=" + mbrs + ", from=" + from + ")";
-                case NOT_MEMBER:
-                    return "NOT_MEMBER";
                 default:
                     return "unknown type (" + type + ")";
             }
