@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.60 2009/06/17 16:20:13 belaban Exp $
+// $Id: Draw.java,v 1.61 2009/06/18 14:48:34 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -271,15 +271,33 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     }
 
     public void viewAccepted(View v) {
-        if(v instanceof MergeView)
-            System.out.println("** MergeView=" + v);
-        else
-            System.out.println("** View=" + v);
         member_size=v.size();
         if(mainFrame != null)
             setTitle();
         members.clear();
         members.addAll(v.getMembers());
+
+        if(v instanceof MergeView) {
+            System.out.println("** MergeView=" + v);
+
+            // This is an example of a simple merge function, which fetches the state from the coordinator
+            // on a merge and overwrites all of its own state
+            if(!members.isEmpty()) {
+                Address coord=members.get(0);
+                Address local_addr=channel.getAddress();
+                if(local_addr != null && !local_addr.equals(coord)) {
+                    try {
+                        System.out.println("fetching state from " + coord);
+                        channel.getState(coord, 5000);
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        else
+            System.out.println("** View=" + v);
     }
 
     public void block() {
