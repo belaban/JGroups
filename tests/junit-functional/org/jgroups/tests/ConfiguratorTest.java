@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.11 2009/06/17 16:35:45 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.12 2009/06/18 08:26:55 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -155,7 +155,7 @@ public class ConfiguratorTest {
         
         Vector<Configurator.ProtocolConfiguration> ret=new Configurator().parseConfigurations(config);
         System.out.println("config:\n" + ret);
-        Assert.assertEquals(15, ret.size());
+        Assert.assertEquals(14, ret.size());
 
         config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_SIMPLE(s=22;d=33):MERGE2(a=22)";
         ret=new Configurator().parseConfigurations(config);
