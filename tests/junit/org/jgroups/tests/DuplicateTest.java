@@ -16,7 +16,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Tests whether UNICAST or NAKACK prevent delivery of duplicate messages. JGroups guarantees that a message is
@@ -24,14 +23,13 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.10 2009/04/09 09:11:17 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.11 2009/06/18 13:05:25 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
     private JChannel c1, c2, c3;
     protected Address a1, a2, a3;
     private MyReceiver r1, r2, r3;
-
 
     @BeforeClass
     void classInit() throws Exception {
@@ -145,24 +143,8 @@ public class DuplicateTest extends ChannelTestBase {
 
              sender_channel.send(msg);
          }
-         // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
-         // can for example delay message delivery
-         Util.sleep(2000);
      }
 
-
-   /* private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
-        long seqno=1;
-        for(int i=0; i < num_msgs; i++) {
-            Message msg=new Message(dest, null, seqno++);
-            if(oob)
-                msg.setFlag(Message.OOB);
-            sender_channel.send(msg);
-        }
-        // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
-        // can for example delay message delivery
-        Util.sleep(500);
-    }*/
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
@@ -184,17 +166,33 @@ public class DuplicateTest extends ChannelTestBase {
 
     private static void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
         Map<Address, List<Long>> msgs=receiver.getMsgs();
+
+        for(int i=0; i < 10; i++) {
+            if(msgs.size() == expected_size)
+                break;
+            Util.sleep(500);
+        }
         assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
+
+
         for(Tuple<Address,Integer> tuple: vals) {
             Address addr=tuple.getVal1();
             List<Long> list=msgs.get(addr);
             System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
             assert list != null : "no list available for " + addr;
+
+            int expected_values=tuple.getVal2();
+            for(int i=0; i < 10; i++) {
+                if(list.size() == expected_values)
+                    break;
+                Util.sleep(500);
+            }
+
             assert list.size() == tuple.getVal2() : "list's size is not " + tuple.getVal2() +", list: " + list;
             if(!oob) // if OOB messages, ordering is not guaranteed
                 check(addr, list);
             else
-                checkPresence(addr, list);
+                checkPresence(list);
         }
     }
 
@@ -207,7 +205,7 @@ public class DuplicateTest extends ChannelTestBase {
         }
     }
 
-    private static void checkPresence(Address addr, List<Long> list) {
+    private static void checkPresence(List<Long> list) {
         for(long l=1; l <= 10; l++) {
             assert list.contains(l) : l + " is not in the list " + list;
         }
@@ -218,7 +216,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         final String name;
-        private final ConcurrentMap<Address, List<Long>> msgs=new ConcurrentHashMap<Address,List<Long>>();
+        private final Map<Address, List<Long>> msgs=new ConcurrentHashMap<Address,List<Long>>();
 
         public MyReceiver(String name) {
             this.name=name;
@@ -228,25 +226,28 @@ public class DuplicateTest extends ChannelTestBase {
             return name;
         }
 
-        public ConcurrentMap<Address, List<Long>> getMsgs() {
+        public Map<Address, List<Long>> getMsgs() {
             return msgs;
         }
 
         public void receive(Message msg) {
             Address addr=msg.getSrc();
             Long val=(Long)msg.getObject();
-            List<Long> list=msgs.get(addr);
-            if(list == null) {
-                list=new LinkedList<Long>();
-                List<Long> tmp=msgs.putIfAbsent(addr, list);
-                if(tmp != null)
-                    list=tmp;
+
+            synchronized(msgs) {
+                List<Long> list=msgs.get(addr);
+                if(list == null) {
+                    list=new LinkedList<Long>();
+                    msgs.put(addr, list);
+                }
+                list.add(val);
             }
-            list.add(val);
         }
 
         public void clear() {
-            msgs.clear();
+            synchronized(msgs) {
+                msgs.clear();
+            }
         }
 
 
