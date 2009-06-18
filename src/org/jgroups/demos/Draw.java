@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.61 2009/06/18 14:48:34 belaban Exp $
+// $Id: Draw.java,v 1.62 2009/06/18 14:52:26 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -282,7 +282,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
             // This is an example of a simple merge function, which fetches the state from the coordinator
             // on a merge and overwrites all of its own state
-            if(!members.isEmpty()) {
+            if(use_state && !members.isEmpty()) {
                 Address coord=members.get(0);
                 Address local_addr=channel.getAddress();
                 if(local_addr != null && !local_addr.equals(coord)) {
