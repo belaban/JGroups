@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.246 2009/06/19 07:39:25 belaban Exp $
+ * @version $Id: TP.java,v 1.247 2009/06/19 15:42:08 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -108,14 +108,7 @@ public abstract class TP extends Protocol {
     @Property(name="end_port", deprecatedMessage="end_port is deprecated; use port_range instead")
     protected int port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
-    /**
-     * @deprecated In 2.8 with the introduction of logical addresses
-     */
-    @Deprecated
-    @Property(description="tries to make sure ephemeral ports are used",
-              deprecatedMessage="Not used anymore since logical addresses make this superfluous (2.8)")
-    protected boolean prevent_port_reuse=false;
-
+  
     /**
      * If true, messages sent to self are treated specially: unicast messages are looped back immediately,
      * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
@@ -223,22 +216,6 @@ public abstract class TP extends Protocol {
 
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
-
-    @Property(description="Path to a file to store currently used ports on this machine",
-              deprecatedMessage="With the addition of logical addresses, the port manager has been deprecated")
-    protected String persistent_ports_file=null;
-
-    @Property(name="ports_expiry_time",
-              description="Timeout to expire ports used with PortManager. Default is 30000 msec",
-              deprecatedMessage="With the addition of logical addresses, the port manager has been deprecated")
-    protected long pm_expiry_time=30000L;
-
-    /**
-     * @deprecated With the addition of logical addresses, we don't need port manager any longer (since 2.8)
-     */
-    @Property(description="Switch to enable tracking of currently used ports on this machine. Default is false",
-              deprecatedMessage="With the addition of logical addresses, the port manager has been deprecated")
-    protected boolean persistent_ports=false;
 
 
     /**
