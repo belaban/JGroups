@@ -6,21 +6,23 @@ import org.jgroups.View;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Simple receiver which buffers all messages
  * @author Bela Ban
- * @version $Id: MyReceiver.java,v 1.1 2009/05/15 07:16:14 belaban Exp $
+ * @version $Id: MyReceiver.java,v 1.2 2009/06/19 14:45:41 belaban Exp $
  */
 public class MyReceiver extends ReceiverAdapter {
-    private final List<Message> msgs=new ArrayList<Message>();
+    private final Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();
     private final String name;
 
     public MyReceiver(String name) {
         this.name=name;
     }
 
-    public List<Message> getMsgs() {
+    public Collection<Message> getMsgs() {
         return msgs;
     }
 
