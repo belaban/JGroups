@@ -42,6 +42,7 @@ public class AUTH extends Protocol {
     public void setAuthClass(String class_name) throws Exception {
         Object obj=Class.forName(class_name).newInstance();
         auth_plugin=(AuthToken)obj;
+        auth_plugin.setAuth(this);
     }
 
     public final String getName() {

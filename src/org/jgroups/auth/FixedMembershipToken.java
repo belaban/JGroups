@@ -22,6 +22,9 @@
 package org.jgroups.auth;
 
 import org.jgroups.Message;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
@@ -34,24 +37,25 @@ import java.util.StringTokenizer;
 
 /**
  * <p>
- * The FixedMemberShipToken object predefines a list of IP addresses and Ports that can join the group.
+ * The FixedMemberShipToken object predefines a list of IP addresses and ports that can join the group.
  * </p>
  * <p>
  * Configuration parameters for this example are shown below:
  * </p>
  * <ul>
- * <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be seperated by a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>
+ * <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be seperated by
+ *     a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>
  * <li>fixed_members_seperator (required) = The seperator used between IP addresses - e.g. *</li>
  * </ul>
  * @author Chris Mills (millsy@jboss.com)
  */
 public class FixedMembershipToken extends AuthToken {
-
     private List<String> memberList=null;
     private String token="emptyToken";
 
     @Property
     private String fixed_members_seperator=",";
+    private static final long serialVersionUID=4717069536900221681L;
 
     public FixedMembershipToken() {
     }
@@ -60,37 +64,48 @@ public class FixedMembershipToken extends AuthToken {
         return "org.jgroups.auth.FixedMembershipToken";
     }
 
+    @Property
+    public void setFixedMembersSeparator(String value) {
+        fixed_members_seperator=value;
+    }
+
     public boolean authenticate(AuthToken token, Message msg) {
         if((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
-            //Found a valid Token to authenticate against
-            FixedMembershipToken serverToken=(FixedMembershipToken)token;
+            PhysicalAddress src=(PhysicalAddress)auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));
+            if(src == null) {
+                if(log.isErrorEnabled())
+                    log.error("didn't find physical address for " + msg.getSrc());
+                return false;
+            }
 
-            String sourceAddressWithPort=msg.getSrc().toString();
+            String sourceAddressWithPort=src.toString();
             String sourceAddressWithoutPort=sourceAddressWithPort.substring(0, sourceAddressWithPort.indexOf(":"));
 
             if(log.isDebugEnabled()) {
                 log.debug("AUTHToken received from " + sourceAddressWithPort);
             }
 
-            if((this.memberList.contains(sourceAddressWithPort)) || (this.memberList.contains(sourceAddressWithoutPort))) {
-                //validated
-                if(log.isDebugEnabled()) {
-                    log.debug("FixedMembershipToken match");
+            for(String member: memberList) {
+                if(hasPort(member)) {
+                    if(member.equals(sourceAddressWithPort))
+                        return true;
                 }
-                return true;
+                else {
+                    if(member.equals(sourceAddressWithoutPort))
+                        return true;
+                }
             }
-            else {
-//                if(log.isWarnEnabled()){
-//                    log.warn("Authentication failed on FixedMembershipToken");
-//                }
-                return false;
-            }
+            return false;
         }
 
         if(log.isWarnEnabled()) {
             log.warn("Invalid AuthToken instance - wrong type or null");
         }
         return false;
+    }
+
+    private static boolean hasPort(String member) {
+        return member.contains(":");
     }
 
     @Property(name="fixed_members_value")
