@@ -355,7 +355,7 @@ public abstract class BasicConnectionTable {
        boolean established() {
            return receiverThread != null;
        }
-       
+
        /**
         * Returns true if underlying socket to peer is closed
         *  
@@ -512,8 +512,8 @@ public abstract class BasicConnectionTable {
                if(Version.isBinaryCompatible(version) == false) {
                    if(log.isWarnEnabled())
                        log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
-                              append(" has different version (").append(Version.print(version)).append(") from ours (").
-                                append(Version.printVersion()).append("). This may cause problems"));
+                              append(" has different version (").append(version).append(") from ours (").
+                                append(Version.version).append("). This may cause problems"));
                }
                client_peer_addr=new IpAddress();
                client_peer_addr.readFrom(in);

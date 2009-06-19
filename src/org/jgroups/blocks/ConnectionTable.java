@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.49.2.1 2009/06/17 07:22:13 vlada Exp $
+// $Id: ConnectionTable.java,v 1.49.6.1 2009/06/19 23:50:06 jiwils Exp $
 
 package org.jgroups.blocks;
 
