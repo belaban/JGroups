@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: ResponseCollectorTest.java,v 1.3 2009/05/06 06:48:35 belaban Exp $
+ * @version $Id: ResponseCollectorTest.java,v 1.4 2009/06/19 15:17:50 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class ResponseCollectorTest {
@@ -96,7 +96,7 @@ public class ResponseCollectorTest {
             }
         }.start();
 
-        boolean rc=coll.waitForAllResponses(700);
+        boolean rc=coll.waitForAllResponses(1500);
         System.out.println("coll = " + coll);
         assert rc;
         assert coll.hasAllResponses();

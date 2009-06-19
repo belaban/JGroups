@@ -19,14 +19,14 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.40 2009/06/17 16:35:44 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.41 2009/06/19 15:17:51 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=false)
-public class ConnectStressTest {
+public class ConnectStressTest extends ChannelTestBase {
     static final int            NUM=20;
     private final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
     private final MyThread[]    threads=new MyThread[NUM];
-    static final String         groupname="ConcurrentTestDemo";
+    static final String         groupname="ConcurrentStressTest";
     static final String         props="udp.xml";
 
 
@@ -38,8 +38,17 @@ public class ConnectStressTest {
 
 
     public void testConcurrentJoinsAndLeaves() throws Exception {
+        JChannel first=null;
         for(int i=0; i < threads.length; i++) {
-            threads[i]=new MyThread(i+1, barrier);
+            JChannel ch=null;
+            if(i == 0) {
+                ch=createChannel(true, NUM);
+                first=ch;
+            }
+            else
+                ch=createChannel(first);
+            changeProperties(ch);
+            threads[i]=new MyThread(ch, i+1, barrier);
             threads[i].start();
         }
 
@@ -84,10 +93,11 @@ public class ConnectStressTest {
 
     public static class MyThread extends Thread {
         private final CyclicBarrier barrier;
-        private JChannel ch=null;
+        private final JChannel ch;
 
-        public MyThread(int i, CyclicBarrier barrier) {
+        public MyThread(JChannel channel, int i, CyclicBarrier barrier) {
             super("thread #" + i);
+            this.ch=channel;
             this.barrier=barrier;
         }
 
@@ -105,8 +115,6 @@ public class ConnectStressTest {
 
         public void run() {
             try {
-                ch=new JChannel(props);
-                changeProperties(ch);
                 barrier.await(); // wait for all threads to be running
                 ch.connect(groupname);
             }
