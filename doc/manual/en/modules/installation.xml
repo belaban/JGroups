@@ -22,7 +22,7 @@
 
         <itemizedlist>
             <listitem>
-                <para>JGroups 2.5 requires JDK 5 or higher.</para>
+                <para>JGroups 2.5 requires JDK 1.5 or higher.</para>
             </listitem>
             <listitem>
                 <para>There is no JNI code present so it should run on all platforms.</para>
@@ -53,13 +53,12 @@
                 <para>INSTALL.html: this file</para>
             </listitem>
             <listitem>
-                <para>log4j.jar. This JAR is optional, for example if JDK logging is used, we don't need it.</para>
+                <para>log4j.jar. This JAR is optional, for example if JDK logging is used, we don't need it. Note that
+                commons-logging is not a requirement any more since version 2.8.</para>
             </listitem>
         </orderedlist>
 
-        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>, and you're ready to start using
-            JGroups. If you want to use the JGroups JMS protocol (<classname>org.jgroups.protocols.JMS</classname>),
-            then you will also need to place jms.jar somewhere in your CLASSPATH.
+        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>, and you're ready to start using JGroups.
         </para>
 
     </section>
@@ -90,17 +89,7 @@
                         <para>
                             <ulink url="http://jakarta.apache.org/ant/">Ant
                             </ulink>
-                            JARs: used to build JGroups. If you already have
-                            Ant installed, you won't need these files
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>jms.jar: JMS library. Needed only if you intend to
-                            run the org.jgroups.protocols.JMS protocol</para>
-                    </listitem>
-                    <listitem>
-                        <para>junit.jar: to run the
-                            <ulink url="http://www.junit.org/">JUnit</ulink> test cases
+                            JARs: used to build JGroups. If you already have Ant installed, you won't need these files
                         </para>
                     </listitem>
                     <listitem>
@@ -151,8 +140,7 @@
             </listitem>
             <listitem>
                 <para>To generate the JARs:
-                    <userinput>$&gt; ./build.sh
-                        jar</userinput>
+                    <userinput>$&gt; ./build.sh jar</userinput>
                 </para>
             </listitem>
             <listitem>
@@ -163,13 +151,13 @@
                     <listitem>
                         <para>
                             <filename>jgroups-core.jar</filename>
-                            - the core JGroups libraries
+                            - the core JGroups library
                         </para>
                     </listitem>
                     <listitem>
                         <para>
                             <filename>jgroups-all.jar</filename>
-                            - the complete JGroups libraries including demos and unit tests
+                            - the complete JGroups library including demos and unit tests
                         </para>
                     </listitem>
                 </itemizedlist>
@@ -258,7 +246,7 @@
             $ java -jar jgroups-all.jar
 
             Version:        2.6.0 pre-alpha
-            CVS:            $Id: installation.xml,v 1.6 2009/05/13 13:22:08 belaban Exp $
+            CVS:            $Id: installation.xml,v 1.7 2009/06/19 14:05:56 belaban Exp $
         </screen>
 
     </section>
