@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.79 2009/06/04 09:18:00 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.80 2009/06/19 11:59:55 belaban Exp $
  */
-@Test(groups=Global.FLUSH,sequential=true)
+@Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
 
     @Test
@@ -130,7 +130,7 @@ public class FlushTest extends ChannelTestBase {
 			Util.startFlush(c2);
 
 			// and then kill the flush coordinator
-			((JChannel) c2).shutdown();
+			c2.shutdown();
 
 			Util.sleep(8000);
 
@@ -163,7 +163,7 @@ public class FlushTest extends ChannelTestBase {
 			Util.startFlush(c2);
 
 			// and then kill the flush coordinator
-			((JChannel) c3).shutdown();
+			c3.shutdown();
 
 			c2.stopFlush();
 			Util.sleep(8000);
@@ -197,8 +197,8 @@ public class FlushTest extends ChannelTestBase {
 			Util.startFlush(c2);
 
 			// and then kill members other than flush coordinator
-			((JChannel) c3).shutdown();
-			((JChannel) c1).shutdown();
+			c3.shutdown();
+			c1.shutdown();
 
 			c2.stopFlush();
 			Util.sleep(8000);
