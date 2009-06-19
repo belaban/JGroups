@@ -30,28 +30,7 @@
       externalizable). The byte array is then returned. This method is often
       used to serialize objects into the byte buffer of a message. The second
       method returns a reconstructed object from a buffer. Both methods throw
-      an exception if the object cannot be serialized or unseriali</para>
-    </section>
-
-    <section>
-      <title>printMessage()</title>
-
-      <para>Prints the message given as argument in readable format. Returns a
-      string.</para>
-    </section>
-
-    <section>
-      <title>activeThreads()</title>
-
-      <para>Returns a strings containing a pretty-printed list of currently
-      running threads.</para>
-    </section>
-
-    <section>
-      <title>printMembers()</title>
-
-      <para>Given a list of member addresses, pretty-prints the members and
-      returns a string.</para>
+      an exception if the object cannot be serialized or unserialized.</para>
     </section>
   </section>
 
@@ -60,32 +39,6 @@
 
     <para>These interfaces are used with some of the APIs presented below,
     therefore they are listed first.</para>
-
-    <section>
-      <title>Transport</title>
-
-      <para>Interface <classname>Transport</classname> looks as
-      follows:</para>
-
-      <screen>
-                public interface Transport {
-                    public void send(Message msg) throws Exception;
-                    public Object receive(long timeout) throws Exception;
-                }
-            </screen>
-
-      <para>It defines a very small subset of the functionality of a channel,
-      essentially only the methods for sending and receiving messages. There
-      are a number of classes that implement <classname>Transport</classname>
-      , among others <classname>Channel</classname> . Many building blocks
-      (see <xref linkend="user-building-blocks" /> ) require nothing else than
-      a bare-bone facility to send and receive messages; therefore the
-      <classname>Transport</classname> interface was created. It increases the
-      genericness and portability of building blocks: being so simple, the
-      <classname>Transport</classname> interface can easily be ported to a
-      different toolkit, without requiring any modifications to building
-      blocks.</para>
-    </section>
 
     <section>
       <title>MessageListener</title>
@@ -134,11 +87,6 @@
                 }
             </screen>
 
-      <para>Method <methodname>receive()</methodname> will be called when a
-      message is received. The <methodname>getState()</methodname> and
-      <methodname>setState()</methodname> methods are used to fetch and set
-      the group state (e.g. when joining). Refer to <xref
-      linkend="GetState" /> for a discussion of state transfer.</para>
     </section>
 
     <section id="MembershipListener">
@@ -178,14 +126,11 @@
          </para>
 
         <para>
-            Therefore, block() can be used to send pending messages or complete some other work. However,
-            sending of messages should be done on a different thread, e.g. the current thread blocks on a mutex,
-            starts a different thread which notifies the mutex once the work has been done.
+            Therefore, block() can be used to send pending messages or complete some other work.
          </para>
 
         <para>
-            Note that block() should take a small amount of time to complete, otherwise the entire FLUSH protocol
-            is blocked.
+            Note that block() should be brief, or else the entire FLUSH protocol is blocked.
         </para>
     </section>
 
@@ -204,7 +149,7 @@
 
           <para>
               The <methodname>unblock()</methodname> method is called
-              to notify the member that the flush protocol has completed and the member can resume
+              to notify the member that the FLUSH protocol has completed and the member can resume
               sending messages. If the member did not stop sending messages on block(), FLUSH simply blocked them and
               will resume, so no action is required from a member. Implementation of the unblock() callback is optional.
           </para>
@@ -216,13 +161,13 @@
     <section>
       <title>ChannelListener</title>
 
-      <screen>
+        <screen>
                 public interface ChannelListener {
                     void channelConnected(Channel channel);
                     void channelDisconnected(Channel channel);
                     void channelClosed(Channel channel);
-                    void channelShunned();
-                    void channelReconnected(Address addr);
+                    void channelShunned(); // deprecated in 2.8
+                    void channelReconnected(Address addr); // deprecated in 2.8
                 }
             </screen>
 
@@ -241,11 +186,15 @@
                 }
             </screen>
 
-      <para>A Receiver can be used to receive all relevant messages and view
+      <para>A Receiver can be used to receive messages and view
       changes in push-style; rather than having to pull these events from a
       channel, they will be dispatched to the receiver as soon as they have
       been received. This saves one thread (application thread, pulling
       messages from a channel, or the PullPushAdapter thread</para>
+        <para>
+            Note that <methodname>JChannel.receive()</methodname> has been deprecated and will be removed in 3.0. The
+            preferred way of receiving messages is now via a Receiver callback (push style).
+        </para>
     </section>
 
     <section>
@@ -256,19 +205,15 @@
                 }
             </screen>
 
-      <para>This is a receiver who will be able to handle partial state
-      transfer</para>
+      <para>This is a receiver who will be able to handle partial state transfer</para>
     </section>
 
     <note>
-      <title>Merging of Extended interfaces with their super
-      interfaces</title>
+      <title>Merging of Extended interfaces with their super interfaces</title>
 
-      <para>The Extended- interfaces (ExtendedMessageListener,
-      ExtendedReceiver) will be merged with their parents in the 3.0 release
-      of JGroups. The reason is that this will create an API backwards
-      incompatibility, which we didn't want to introduce in the 2.x
-      series.</para>
+        <para>The Extended- interfaces (ExtendedMessageListener, ExtendedReceiver) will be merged with their parents in
+            the 3.0 release of JGroups. The reason is that this will create an API backwards
+            incompatibility, which we didn't want to introduce in the 2.x series.</para>
     </note>
   </section>
 
@@ -279,8 +224,7 @@
     member. The interface for such an address is Address, which requires
     concrete implementations to provide methods for comparison and sorting of
     addresses, and for determination whether the address is a multicast
-    address. JGroups addresses have to implement the following
-    interface:</para>
+    address. JGroups addresses have to implement the following interface:</para>
 
     <screen>
             public interface Address extends Externalizable, Comparable, Cloneable {
@@ -292,6 +236,11 @@
             }
         </screen>
 
+    <para>
+        <emphasis>Please never use implementations of Address directly; Address should always be used
+        as an opaque identifier of a cluster node !</emphasis>
+    </para>
+
     <para>Actual implementations of addresses are often generated by the
     bottommost protocol layer (e.g. UDP or TCP). This allows for all possible
     sorts of addresses to be used with JGroups, e.g. ATM.</para>
@@ -299,19 +248,23 @@
     <para>In JChannel, it is the IP address of the host on which the stack is
     running and the port on which the stack is receiving incoming messages; it
     is represented by the concrete class
-    <classname>org.jgroups.stack.IpAddress</classname> . Instances of this
+    <classname>org.jgroups.stack.IpAddress</classname>. Instances of this
     class are only used <emphasis>within</emphasis> the JChannel protocol
     stack; <emphasis>users of a channel see addresses (of any kind) only as
-    Addresses</emphasis> . Since an address uniquely identifies a channel, and
+    Addresses</emphasis>. Since an address uniquely identifies a channel, and
     therefore a group member, it can be used to send messages to that group
     member, e.g. in Messages (see next section).</para>
+      <para>
+          In 2.8, the default implementation of Address was changed from <classname>IpAddress</classname> to
+          <classname>org.jgroups.util.UUID</classname>.
+      </para>
   </section>
 
   <section>
     <title>Message</title>
 
     <para>Data is sent between members in the form of messages (
-    <classname>Message</classname> ). A message can be sent by a member to a
+    <classname>org.jgroups.Message</classname> ). A message can be sent by a member to a
     <emphasis>single member</emphasis> , or to <emphasis>all
     members</emphasis> of the group of which the channel is an endpoint. The
     structure of a message is shown in <xref linkend="MessageFig" /> .</para>
@@ -424,16 +377,15 @@
     member of a view (error checking code omitted):</para>
 
     <screen>
-            View myview=channel.getView();
-            Address first=myview.getMembers().first();
+            View view=channel.getView();
+            Address first=view.getMembers().first();
             Message msg=new Message(first, null, "Hello world");
             channel.send(msg);
         </screen>
 
     <para>Whenever an application is notified that a new view has been
     installed (e.g. by
-    <methodname>MembershipListener.viewAccepted()</methodname> or
-    <methodname>Channel.receive()</methodname> ), the view is already set in
+    <methodname>Receiver.viewAccepted()</methodname>, the view is already set in
     the channel. For example, calling
     <methodname>Channel.getView()</methodname> in a
     <methodname>viewAccepted()</methodname> callback would return the same
@@ -446,7 +398,7 @@
       <para>The ViewId is used to uniquely number views. It consists of the
       address of the view creator and a sequence number. ViewIds can be
       compared for equality and put in a hashtable as they implement equals()
-      and hashCode() methods.</para>
+      and hashCode() methods.<footnote>Note that the latter 2 methods only take the ID into account.</footnote></para>
     </section>
 
     <section id="MergeView">
@@ -465,16 +417,9 @@
     </section>
   </section>
 
-  <section>
-    <title>Membership</title>
-
-    <para>This class can be used for keeping rack of members instead of a
-    Vector class. It adds several functions, such as duplicate elimination,
-    merging with other Membership instances and sorting.</para>
-  </section>
 
   <section>
-    <title>Channel</title>
+    <title>JChannel</title>
 
     <para>In order to join a group and send messages, a process has to create
     a channel. A channel is like a socket. When a client connects to a
@@ -515,72 +460,36 @@
     <section>
       <title>Creating a channel</title>
 
-      <para>A channel can be created in two ways: an instance of a subclass of
-      <classname>Channel</classname> is created directly using its public
-      constructor (e.g. <methodname>new JChannel()</methodname> ), or a
-      channel factory is created, which -- upon request -- creates instances
-      of channels. We will only look at the first method of creating channel:
-      by direct instantiation. Note that instantiation may differ between the
-      various channel implementations. As example we will look at
-      <classname>JChannel</classname> .</para>
+      <para>
+          A channel can be created in two ways: an instance of a subclass of
+          <classname>Channel</classname> is created directly using its public
+          constructor (e.g. <methodname>new JChannel()</methodname> ), or a
+          channel factory is created, which -- upon request -- creates instances
+          of channels. We will only look at the first method of creating channel:
+          by direct instantiation.
+      </para>
 
-      <para>The public constructor of <classname>JChannel</classname> looks as
-      follows:</para>
-
-      <screen>
-                public JChannel(Object properties) throws ChannelException {}
-            </screen>
-
-      <para>It creates an instance of <classname>JChannel</classname> . The
-      <parameter>properties</parameter> argument defines the composition of
-      the protocol stack (number and type of layers, parameters for each
-      layer, and their order). For JChannel, this has to be a String.
-      An example of a channel creation is:</para>
+        <para>
+            The public constructor of <classname>JChannel</classname> looks as follows:
+        </para>
 
       <screen>
-                String props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
-                "PING(timeout=3000;num_initial_members=6):" +
-                "FD(timeout=5000):" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.STABLE(desired_avg_gossip=10000):" +
-                "pbcast.NAKACK(gc_lag=10;retransmit_timeout=3000):" +
-                "UNICAST(timeout=5000;min_wait_time=2000):" +
-                "FRAG:" +
-                "pbcast.GMS(initial_mbrs_timeout=4000;join_timeout=5000;" +
-                "print_local_addr=false)";
-          
-                JChannel channel;
-                try {
-                channel=new JChannel(props);
-                }
-                catch(Exception ex) {
-                // channel creation failed
-                }
-            </screen>
+                public JChannel(String props) throws ChannelException {}
+      </screen>
 
-      <para>The argument is a colon-delimited string of protocols, specified
-      from bottom to top (left to right). The example properties argument will
-      be used to create a protocol stack that uses IP Multicast (UDP) as
-      bottom protocol, the PING protocol to locate the initial members, FD for
-      failure detection, VERIFY_SUSPECT for double-checking of suspected
-      members, STABLE for garbage collection of messages received by all
-      members, NAKACK for lossless delivery of multicast messages, UNICAST for
-      lossless delivery of unicast messages and GMS for group membership
-      (handling of join or leave requests).</para>
+        <para>It creates an instance of <classname>JChannel</classname> . The
+            <parameter>props</parameter> argument points to an XML file containing the configuration
+            of the protocol stack to be used. This can be a String, but there are also other constructors which
+            take for example a DOM element or a URL (more on this later).
+        </para>
 
-      <para>If the properties argument is null, the default properties will be
+      <para>If the props argument is null, the default properties will be
       used. An exception will be thrown if the channel cannot be created.
       Possible causes include protocols that were specified in the property
       argument, but were not found, or wrong parameters to protocols.</para>
 
-      <section>
-        <title>Using XML to define a protocol stack</title>
 
-        <para>In version 2.0 of JGroups an XML-based scheme to define protocol
-        stacks was introduced. Instead of specifying a string containing the
-        protocol spec, an URL pointing to a valid protocol stack definition
-        can be given. For example, the Draw demo can be launched as
-        follows:</para>
+        <para>For example, the Draw demo can be launched as follows:</para>
 
         <screen>
                     java org.javagroups.demos.Draw -props file:/home/bela/vsync.xml
@@ -684,7 +593,8 @@
           <para><emphasis>Note that all members in a group have to have the same
               protocol stack.</emphasis></para>
 
-      </section>
+
+
     </section>
 
 
@@ -709,9 +619,7 @@
           <term><constant>Channel.BLOCK</constant></term>
 
           <listitem>
-            <para>The argument is a boolean object. If true, block messages
-            will be received. If this option is set to true, views will also
-            be set to true. Default is false.</para>
+            <para>The argument is a boolean object. If true, block messages will be received.</para>
           </listitem>
         </varlistentry>
 
@@ -762,6 +670,33 @@
     </section>
 
     <section>
+        <title>Giving the channel a logical name</title>
+        <para>
+            A channel can be given a logical name which is then used instead of the channel's address. A logical name
+            might show the function of a channel, e.g. "HostA-HTTP-Cluster", which is more legible than a UUID
+            3c7e52ea-4087-1859-e0a9-77a0d2f69f29.
+        </para>
+        <para>
+            For example, when we have 3 channels, using logical names we might see a view "{A,B,C}", which is nicer than
+            "{56f3f99e-2fc0-8282-9eb0-866f542ae437, ee0be4af-0b45-8ed6-3f6e-92548bfa5cde, 9241a071-10ce-a931-f675-ff2e3240e1ad} !"
+        </para>
+        <para>
+            If no logical name is set, JGroups generates one, using the hostname and a random number, e.g. linux-3442.
+            If this is not desired and the UUIDs should be shown, use system property -Djgroups.print_uuids=true.
+        </para>
+        <para>
+            The logical name can be set using:
+            <screen>
+                public void setName(String logical_name);
+            </screen>
+        </para>
+        <para>
+            This should be done before connecting a channel. Note that the logical name stays with a channel until
+            the channel is destroyed, whereas a UUID is created on each connection.
+        </para>
+    </section>
+
+    <section>
       <title>Connecting to a channel</title>
 
       <para>When a client wants to join a group, it
@@ -783,7 +718,7 @@
       <para>The method returns as soon as the group has been joined
       successfully. If the channel is in the closed state (see <xref
       linkend="ChannelStatesFig" /> ), an exception will be thrown. If there
-      are no other members, i.e. no other client has connected to a group with
+      are no other members, i.e. no other member has connected to a group with
       this name, then a new group is created and the member joined. The first
       member of a group becomes its <emphasis>coordinator</emphasis> . A
       coordinator is in charge of multicasting new views whenever the
@@ -835,7 +770,7 @@
                 public Address getLocalAddress();
             </screen>
 
-      <para>Method <methodname>getClusterlName()</methodname> returns the name
+      <para>Method <methodname>getClusterName()</methodname> returns the name
       of the cluster in which the channel is a member:</para>
 
       <screen>

@@ -25,22 +25,9 @@
   <para>The architecture of JGroups is shown in <xref
   linkend="ArchitectureFig"/>.</para>
 
-    <!--mediaobject>
-        <imageobject>
-            <imagedata align="center" fileref="images/Architecture.png"/>
-        </imageobject
-
-
-     <textobject>
-      <phrase>A diagram representing JGroups architecture.</phrase>
-     </textobject>
-    </mediaobject>
-    -->
-
     <figure id="ArchitectureFig"><title>The architecture of JGroups</title>
         <graphic fileref="images/Architecture.png" format="PNG" align="center"  />
     </figure>
-
 
 
   <para>It consists of 3 parts: (1) the Channel API used by
