@@ -22,6 +22,8 @@
 package org.jgroups.auth;
 
 import org.jgroups.Message;
+import org.jgroups.Event;
+import org.jgroups.Address;
 import org.jgroups.util.Util;
 
 import java.util.Properties;
@@ -49,7 +51,7 @@ public class FixedMembershipToken extends AuthToken {
     private static final String FIXED_MEMBERS_ATTR = "fixed_members_value";
     private static final String FIXED_MEMBERS_SEPERATOR_ATTR = "fixed_members_seperator";
 
-    private List memberList = null;
+    private List<String> memberList = null;
     private String token = "emptyToken";
 
     public FixedMembershipToken(){
@@ -59,40 +61,43 @@ public class FixedMembershipToken extends AuthToken {
         return "org.jgroups.auth.FixedMembershipToken";
     }
 
-    public boolean authenticate(AuthToken token, Message msg){
-        if((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)){
-            //Found a valid Token to authenticate against
-            FixedMembershipToken serverToken = (FixedMembershipToken) token;
 
-            String sourceAddressWithPort = msg.getSrc().toString();
-            String sourceAddressWithoutPort = sourceAddressWithPort.substring(0, sourceAddressWithPort.indexOf(":"));
 
-            if(log.isDebugEnabled()){
+    public boolean authenticate(AuthToken token, Message msg) {
+        if((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
+            Address src=msg.getSrc();
+            String sourceAddressWithPort=src.toString();
+            String sourceAddressWithoutPort=sourceAddressWithPort.substring(0, sourceAddressWithPort.indexOf(":"));
+
+            if(log.isDebugEnabled()) {
                 log.debug("AUTHToken received from " + sourceAddressWithPort);
             }
 
-            if((this.memberList.contains(sourceAddressWithPort)) || (this.memberList.contains(sourceAddressWithoutPort))){
-                //validated
-                if(log.isDebugEnabled()){
-                    log.debug("FixedMembershipToken match");
+            for(String member: memberList) {
+                if(hasPort(member)) {
+                    if(member.equals(sourceAddressWithPort))
+                        return true;
                 }
-                return true;
-            }else{
-                if(log.isWarnEnabled()){
-                    log.warn("Authentication failed on FixedMembershipToken");
+                else {
+                    if(member.equals(sourceAddressWithoutPort))
+                        return true;
                 }
-                return false;
             }
+            return false;
         }
 
-        if(log.isWarnEnabled()){
+        if(log.isWarnEnabled()) {
             log.warn("Invalid AuthToken instance - wrong type or null");
         }
         return false;
     }
 
+    private static boolean hasPort(String member) {
+        return member.contains(":");
+    }
+
     public void setValue(Properties properties){
-        memberList = new ArrayList();
+        memberList = new ArrayList<String>();
         StringTokenizer memberListTokenizer = new StringTokenizer((String)properties.get(FixedMembershipToken.FIXED_MEMBERS_ATTR),
                 (String)properties.get(FixedMembershipToken.FIXED_MEMBERS_SEPERATOR_ATTR));
         while(memberListTokenizer.hasMoreTokens()){
