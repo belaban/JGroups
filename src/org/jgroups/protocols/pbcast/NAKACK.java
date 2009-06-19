@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.225 2009/05/20 11:31:24 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.226 2009/06/19 15:42:07 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -113,19 +113,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @ManagedAttribute(description="Discard delivered messages", writable=true)
     private boolean discard_delivered_msgs=false;
 
-    /**
-     * By default, we release the lock on the sender in up() after the up()
-     * method call passed up the stack returns. However, with eager_lock_release
-     * enabled (default), we release the lock as soon as the application calls
-     * Channel.down() <em>within</em> the receive() callback. This leads to
-     * issues as the one described in
-     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is
-     * <em>still correct </em>, but messages from self might get delivered
-     * concurrently. This can be turned off by setting eager_lock_release to
-     * false.
-     */
-    @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
-    private boolean eager_lock_release=false;
 
     /**
      * If value is > 0, the retransmit buffer is bounded: only the
