@@ -37,6 +37,7 @@ public class AUTH extends Protocol{
             try{
                 Object obj = Class.forName(authClassString).newInstance();
                 serverSideToken = (AuthToken) obj;
+                serverSideToken.setAuth(this);
                 serverSideToken.setValue(props);
             }catch(Exception e){
                 if(log.isFatalEnabled()){
