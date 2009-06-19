@@ -669,7 +669,7 @@ public class ChannelTestBase {
        for(Channel channel : c) {
            sb.append(channel.getAddress() + ",view=" + channel.getView().getMembers() + "|");
        }
-       throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
+       throw new RuntimeException("timed out before caches had complete views. Views are " + sb);
     }
     
     protected static boolean isViewComplete(Channel channel, int memberCount) {
