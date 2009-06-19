@@ -12,14 +12,12 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Collection;
+import java.util.concurrent.*;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.12 2009/06/05 07:42:30 vlada Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.13 2009/06/19 14:37:59 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -73,7 +71,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
     }
 
 
-    private static String print(List<Message> msgs) {
+    private static String print(Collection<Message> msgs) {
         StringBuilder sb=new StringBuilder();
         for(Message msg: msgs) {
             sb.append("\"" + msg.getObject() + "\"").append(" ");
@@ -83,11 +81,11 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
 
     private static class Receiver extends ReceiverAdapter {
-        List<Message> msgs=new LinkedList<Message>();
+        Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();
         
         final CountDownLatch latch = new CountDownLatch(4);
 
-        public List<Message> getMsgs() {
+        public Collection<Message> getMsgs() {
             return msgs;
         }
         
