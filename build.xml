@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.208 2009/06/18 13:50:32 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.209 2009/06/19 11:36:17 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -445,17 +445,6 @@
                 />
     </target>
 
-    <target name="single" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <runtest testname.ext="udp"
-                 threadcount="10"
-                 parallel="methods"
-                 initial.mcast.addr="235.1.1.1"
-                 initial.mcast.port="25001"
-                 initial.tcp.port="25001"
-                 testng.xmlfile="testng-single.xml"
-                />
-    </target>
 
     <target name="udp" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
