@@ -35,7 +35,7 @@ import org.w3c.dom.Element;
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.6 2009/01/23 15:24:43 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.7 2009/06/22 10:01:44 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -152,7 +152,7 @@ public class XMLSchemaGenerator {
 				if (field.isAnnotationPresent(Property.class)) {
 					String property = field.getName();
 					Property annotation = field.getAnnotation(Property.class);
-					boolean annotationRedefinesName = annotation.name().length() > 0;
+					boolean annotationRedefinesName = annotation.name().length() > 0 && annotation.deprecatedMessage().length()==0;
 					if(annotationRedefinesName){
 						property = annotation.name();
 					}
