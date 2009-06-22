@@ -2,7 +2,6 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -19,7 +18,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.42 2009/06/22 07:31:25 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.43 2009/06/22 11:46:31 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=false)
 public class ConnectStressTest extends ChannelTestBase {
@@ -27,7 +26,6 @@ public class ConnectStressTest extends ChannelTestBase {
     private final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
     private final MyThread[]    threads=new MyThread[NUM];
     static final String         groupname="ConcurrentStressTest";
-    static final String         props="udp.xml";
 
 
 
