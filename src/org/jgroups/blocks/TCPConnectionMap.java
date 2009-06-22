@@ -183,7 +183,7 @@ public class TCPConnectionMap{
             }
             catch(IOException io_ex) {
                 if(log.isErrorEnabled())
-                    log.error("exception is " + io_ex);
+                    log.error("exception binding to " + bind_addr + "::" + start_port + io_ex);
             }           
             break;
         }
