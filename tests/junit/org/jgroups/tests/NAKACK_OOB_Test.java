@@ -8,43 +8,39 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.12 2008/08/08 17:07:12 vlada Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.13 2009/06/22 10:33:22 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class NAKACK_OOB_Test extends ChannelTestBase {
-    JChannel ch1, ch2, ch3;
+    JChannel c1, c2, c3;
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ch1=createChannel(true, 3);
-        ch2=createChannel(ch1);
-        ch3=createChannel(ch1);
+        c1=createChannel(true, 3);
+        c2=createChannel(c1);
+        c3=createChannel(c1);
     }
 
     @AfterMethod
     public void tearDown() throws Exception {
-        Util.close(ch3, ch2, ch1);
+        Util.close(c3, c2, c1);
     }
 
 
     /**
      * Tests http://jira.jboss.com/jira/browse/JGRP-379: we send 1, 2, 3, 4(OOB) and 5 to the cluster.
      * Message with seqno 3 is discarded two times, so retransmission will make the receivers receive it *after* 4.
-     * Because 4 is marked as OOB, we will deliver 4 *immediately* (before 3 and 5), so the sequence of the messages
-     * at the receivers is 1 - 2 - 4 -3 - 5.
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      * @throws Exception
      */
@@ -53,63 +49,73 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         NAKACK_OOB_Test.MyReceiver receiver1=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver2=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver3=new NAKACK_OOB_Test.MyReceiver();
-        ch1.setReceiver(receiver1);
-        ch2.setReceiver(receiver2);
-        ch3.setReceiver(receiver3);
+        c1.setReceiver(receiver1);
+        c2.setReceiver(receiver2);
+        c3.setReceiver(receiver3);
 
-        // all channels will discard messages with seqno #3 two times, the let them pass
-        ch1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
-        ch2.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
-        ch3.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
+        c1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
 
-        ch1.connect("NAKACK_OOB_Test");
-        ch2.connect("NAKACK_OOB_Test");
-        ch3.connect("NAKACK_OOB_Test");
+        c1.connect("NAKACK_OOB_Test");
+        c2.connect("NAKACK_OOB_Test");
+        c3.connect("NAKACK_OOB_Test");
 
-        Assert.assertEquals(3, ch3.getView().getMembers().size());
+        assert c3.getView().getMembers().size() == 3 : "view is " + c3.getView() + ", expected view of 3 members";
 
         for(int i=1; i <=5; i++) {
             Message msg=new Message(null, null, new Long(i));
             if(i == 4)
                 msg.setFlag(Message.OOB);
             System.out.println("-- sending message #" + i);
-            ch1.send(msg);
+            c1.send(msg);
             Util.sleep(100);
         }
 
-        Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
+        Collection<Long> seqnos1=receiver1.getSeqnos();
+        Collection<Long> seqnos2=receiver2.getSeqnos();
+        Collection<Long> seqnos3=receiver3.getSeqnos();
 
-        List<Long> seqnos1=receiver1.getSeqnos();
-        List<Long> seqnos2=receiver2.getSeqnos();
-        List<Long> seqnos3=receiver3.getSeqnos();
+        // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
+        long target_time=System.currentTimeMillis() + 5000;
+        do {
+            if(seqnos1.size() >= 5 && seqnos2.size() >= 5 && seqnos3.size() >= 5)
+                break;
+            Util.sleep(500);
+        }
+        while(target_time > System.currentTimeMillis());
 
         System.out.println("sequence numbers:");
-        System.out.println("ch1: " + seqnos1);
-        System.out.println("ch2: " + seqnos2);
-        System.out.println("ch3: " + seqnos3);
+        System.out.println("c1: " + seqnos1);
+        System.out.println("c2: " + seqnos2);
+        System.out.println("c3: " + seqnos3);
 
-        // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
-        Long[] expected_seqnos=new Long[]{1L,2L,4L,3L,5L};
-        for(int i=0; i < expected_seqnos.length; i++) {
-            Long expected_seqno=expected_seqnos[i];
-            Long received_seqno=seqnos1.get(i);
-            Assert.assertEquals(expected_seqno, received_seqno);
-            received_seqno=seqnos2.get(i);
-            Assert.assertEquals(expected_seqno, received_seqno);
-            received_seqno=seqnos3.get(i);
-            Assert.assertEquals(expected_seqno, received_seqno);
+        // check if 4 is received before 3 in seqnos1-3
+        check4IsBefore3(seqnos1, seqnos2, seqnos3);
+    }
+
+    private static void check4IsBefore3(Collection<Long> ... lists) {
+        for(Collection<Long> list: lists) {
+            int index3=-1, index4=-1;
+            int current=0;
+            for(Long val: list) {
+                if(val.equals((long)3))
+                    index3=current;
+                if(val.equals((long)4))
+                    index4=current;
+                current++;
+            }
+            assert index4 < index3 : "4 needs to be ahead of 3 in list " + list;
         }
     }
 
 
     public static class MyReceiver extends ReceiverAdapter {
         /** List<Long> of unicast sequence numbers */
-        List<Long> seqnos=Collections.synchronizedList(new LinkedList<Long>());
+        Collection<Long> seqnos=new ConcurrentLinkedQueue<Long>();
 
         public MyReceiver() {
         }
 
-        public List<Long> getSeqnos() {
+        public Collection<Long> getSeqnos() {
             return seqnos;
         }
 
@@ -119,6 +125,8 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
                 seqnos.add(num);
             }
         }
+
+        public int size() {return seqnos.size();}
     }
 
 }

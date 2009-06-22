@@ -8,10 +8,10 @@ import org.jgroups.stack.Protocol;
 
 /**
  * Discards a message whose sequence number (in the payload, as a Long) matches seqno 2 times,
- * before passing it up. Used for unit testing
+ * before passing it down. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.8 2008/10/21 12:10:30 vlada Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.9 2009/06/22 10:33:14 belaban Exp $
  */
 @Unsupported
 public class DISCARD_PAYLOAD extends Protocol {
@@ -28,7 +28,8 @@ public class DISCARD_PAYLOAD extends Protocol {
         return "DISCARD_PAYLOAD";
     }   
 
-    public Object up(Event evt) {
+
+    public Object down(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
             if(msg.getLength() > 0) {
@@ -46,7 +47,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                             }
                         }
                         if(val == duplicate) { // inject a duplicate message
-                            super.up(evt); // pass it up, will passed up a second time by the default up_prot.up(evt)
+                            super.down(evt); // pass it down, will passed down a second time by the default down_prot.down(evt)
                         }
                     }
                 }
@@ -55,6 +56,6 @@ public class DISCARD_PAYLOAD extends Protocol {
                 }
             }
         }
-        return up_prot.up(evt);
+        return down_prot.down(evt);
     }
 }
