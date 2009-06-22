@@ -19,7 +19,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.41 2009/06/19 15:17:51 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.42 2009/06/22 07:31:25 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=false)
 public class ConnectStressTest extends ChannelTestBase {
@@ -74,7 +74,7 @@ public class ConnectStressTest extends ChannelTestBase {
         for(MyThread thread: threads) {
             View view=thread.getChannel().getView();
             int size=view.size();
-            assert size == NUM : "view doesn't have size of " + NUM + ": " + view;
+            assert size == NUM : "view doesn't have size of " + NUM + " (has " + size + "): " + view;
         }
 
 
