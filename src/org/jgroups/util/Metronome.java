@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Condition;
 
 /**
  * @author Bela Ban
- * @version $Id: Metronome.java,v 1.1 2009/06/22 16:15:21 belaban Exp $
+ * @version $Id: Metronome.java,v 1.2 2009/06/22 16:26:03 belaban Exp $
  */
 public class Metronome implements Runnable {
     private final Set<Thread> threads=new HashSet<Thread>();
@@ -81,7 +81,7 @@ public class Metronome implements Runnable {
                     Thread.State state=tmp.getState();
                     if(state != Thread.State.WAITING && state != Thread.State.BLOCKED) {
                         all_blocked=false;
-                        System.out.println("state of " + tmp + ": " + state);
+                        // System.out.println("state of " + tmp + ": " + state);
                         break;
                     }
                 }
