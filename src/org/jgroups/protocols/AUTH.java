@@ -136,11 +136,7 @@ public class AUTH extends Protocol{
                 //should be a failure
                 sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
             }
-        }else{
-            //if debug
-            if(log.isDebugEnabled()){
-                log.debug("Message not a JOIN_REQ - ignoring it");
-            }
+        } else {
             return up_prot.up(evt);
         }
         return null;
