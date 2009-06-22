@@ -11,11 +11,12 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 
 /**
  * @author Bela Ban
- * @version $Id: QueueTest.java,v 1.3 2008/04/15 15:16:36 belaban Exp $
+ * @version $Id: QueueTest.java,v 1.4 2009/06/22 14:34:30 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {
@@ -33,11 +34,7 @@ public class QueueTest {
 
         assert queue.peek().equals("Q2");
         assert queue.remove().equals("Q2");
-
-        queue.addAtHead("Q4");
         queue.add("Q5");
-        assert queue.peek().equals("Q4");
-        assert queue.remove().equals("Q4");
 
         queue.close(true);
 
@@ -136,7 +133,7 @@ public class QueueTest {
 
     public static void testAddAll() throws QueueClosedException {
         final Queue queue=new Queue();
-        ArrayList l=new ArrayList();
+        List<String> l=new ArrayList<String>();
         l.add("one");
         l.add("two");
         l.add("three");
@@ -610,7 +607,7 @@ public class QueueTest {
         int num_dead=0;
 
         for(int i=0; i < removers.length; i++) {
-            removers[i]=new RemoveOneItemWithTimeout(i, 1000, queue);
+            removers[i]=new RemoveOneItemWithTimeout(i, 5000, queue);
             removers[i].start();
         }
 
@@ -619,19 +616,30 @@ public class QueueTest {
         System.out.println("-- adding element 100");
         queue.add(new Long(100));
 
-        Util.sleep(500);
+        long target_time=System.currentTimeMillis() + 10000L;
+        do {
+            int num_rsps=0;
+            for(int i=0; i < removers.length; i++) {
+                if(removers[i].getRetval() != null)
+                    num_rsps++;
+            }
+            if(num_rsps == 2)
+                break;
+            Util.sleep(500);
+        }
+        while(target_time > System.currentTimeMillis());
 
         for(int i=0; i < removers.length; i++) {
-            System.out.println("remover #" + i + " is " + (removers[i].isAlive()? "alive" : "terminated"));
-            if(!removers[i].isAlive()) {
+            Long retval=removers[i].getRetval();
+            System.out.println("Thread #" + removers[i].rank + ": retval=" + retval);
+            if(retval == null)
                 num_dead++;
-            }
         }
 
-        assert num_dead == 2;
+        assert num_dead == 8 : "num_dead should have been 8 but was " + num_dead;
 
         System.out.println("closing queue - causing all remaining threads to terminate");
-        queue.close(false); // will cause all threads still blocking on peek() to return
+        queue.close(false); // will cause all threads still blocking on remove() to return
 
         Util.sleep(500);
 
@@ -642,7 +650,7 @@ public class QueueTest {
                 num_dead++;
             }
         }
-        assert num_dead == 10;
+        assert num_dead == 10 : "num_dead should have been 10 but was " + num_dead;
     }
 
 
@@ -661,6 +669,7 @@ public class QueueTest {
             adders[i].start();
         }
 
+        Util.sleep(500);
         while(num_items < (adders.length * items)) {
             queue.remove();
             num_items++;
@@ -675,7 +684,7 @@ public class QueueTest {
             }
         }
 
-        assert num_dead == 10;
+        assert num_dead == 10 : "num_dead should have been 10 but was " + num_dead;
         queue.close(false); // will cause all threads still blocking on peek() to return
     }
 
@@ -833,9 +842,9 @@ public class QueueTest {
 
     static class RemoveOneItemWithTimeout extends Thread {
         Long retval=null;
-        int rank=0;
-        long timeout=0;
-        Queue queue;
+        final int rank;
+        final long timeout;
+        final Queue queue;
 
         RemoveOneItemWithTimeout(int rank, long timeout, Queue queue) {
             super("RemoveOneItem thread #" + rank);
@@ -846,19 +855,15 @@ public class QueueTest {
         }
 
         public void run() {
-            boolean finished=false;
-            while(!finished) {
-                try {
-                    retval=(Long)queue.remove(timeout);
-                    // System.out.println("Thread #" + rank + " removed element (" + retval + ")");
-                    finished=true;
-                }
-                catch(QueueClosedException closed) {
-                    System.err.println("Thread #" + rank + ": queue was closed");
-                    finished=true;
-                }
-                catch(TimeoutException e) {
-                }
+            try {
+                retval=(Long)queue.remove(timeout);
+                System.out.println("Thread #" + rank + ": retrieved " + retval);
+            }
+            catch(QueueClosedException closed) {
+                System.err.println("Thread #" + rank + ": queue was closed");
+            }
+            catch(TimeoutException e) {
+                System.out.println("Thread #" + rank + ": timeout occurred");
             }
         }
 

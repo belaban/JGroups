@@ -1,7 +1,7 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="tcp"
        parallel="methods"
-       thread-count="15"
+       thread-count="5"
         >
 
     <test name="tcp" junit="false" time-out="80000">

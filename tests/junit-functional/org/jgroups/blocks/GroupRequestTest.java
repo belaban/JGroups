@@ -16,7 +16,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: GroupRequestTest.java,v 1.10 2009/05/05 13:21:31 belaban Exp $
+ * @version $Id: GroupRequestTest.java,v 1.11 2009/06/22 14:34:29 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
@@ -160,7 +160,7 @@ public class GroupRequestTest {
         int destCount = 10;
         
         // total timeout to hear from all members
-        final long timeout = destCount * 300;
+        final long timeout = destCount * 1000;
         
         // how long each destination should delay
         final long delay = 75L;
