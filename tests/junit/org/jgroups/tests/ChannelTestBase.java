@@ -213,13 +213,6 @@ public class ChannelTestBase {
             return ch;
         }
 
-        private void muteLocalAddress(Channel c) {
-            ProtocolStack stack=c.getProtocolStack();
-            Protocol gms=stack.findProtocol(GMS.class);
-            if(gms != null) {
-                ((GMS)gms).setPrintLocalAddress(false);
-            }
-        }
 
         protected void makeUnique(Channel channel, int num) throws Exception {
             String str=Util.getProperty(new String[] { Global.UDP_MCAST_ADDR,
