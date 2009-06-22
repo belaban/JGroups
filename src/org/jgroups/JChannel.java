@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.220 2009/06/17 16:20:01 belaban Exp $
+ * @version $Id: JChannel.java,v 1.221 2009/06/22 14:34:33 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -622,7 +622,9 @@ public class JChannel extends Channel {
      * <li> Sets up the protocol stack by calling ProtocolStack.setup
      * <li> Sets the closed flag to false
      * </ol>
+     * @deprecated With the removal of shunning, this method should not be used anymore
      */
+    @Deprecated
     public synchronized void open() throws ChannelException {
         if(!closed)
             throw new ChannelException("channel is already open");
@@ -782,6 +784,7 @@ public class JChannel extends Channel {
      * new view if view is received<BR>
      * Does the same thing as JChannel.receive but doesn't remove the object from the
      * receiver queue
+     * * @deprecated Use a {@link Receiver} instead
      */
     public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
 

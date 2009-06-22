@@ -1,7 +1,7 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="udp"
        parallel="methods"
-       thread-count="15"
+       thread-count="10"
         >
 
     <test name="udp" junit="false" time-out="80000">

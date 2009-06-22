@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: ResponseCollectorTest.java,v 1.4 2009/06/19 15:17:50 belaban Exp $
+ * @version $Id: ResponseCollectorTest.java,v 1.5 2009/06/22 14:34:30 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class ResponseCollectorTest {
@@ -61,7 +61,7 @@ public class ResponseCollectorTest {
             }
         }.start();
 
-        rc=coll.waitForAllResponses(700);
+        rc=coll.waitForAllResponses(5000);
         System.out.println("coll = " + coll);
         assert rc;
         assert coll.hasAllResponses();
@@ -73,8 +73,9 @@ public class ResponseCollectorTest {
         new Thread() {
             public void run() {
                 coll.add(a, 1);
-                Util.sleep(500);
+                Util.sleep(1000);
                 coll.add(b, 2);
+                Util.sleep(1000);
                 coll.add(c, 3);
             }
         }.start();
@@ -82,7 +83,7 @@ public class ResponseCollectorTest {
         boolean rc=coll.waitForAllResponses(400);
         System.out.println("coll = " + coll);
         assert !rc;
-        assert !coll.hasAllResponses();
+        assert !coll.hasAllResponses() : "collector had all responses (not expected)";
     }
 
     public static void testWaitForAllResponsesAndReset() {
@@ -90,13 +91,13 @@ public class ResponseCollectorTest {
 
         new Thread() {
             public void run() {
-                Util.sleep(500);
+                Util.sleep(1000);
                 coll.add(a, 1);
                 coll.reset();
             }
         }.start();
 
-        boolean rc=coll.waitForAllResponses(1500);
+        boolean rc=coll.waitForAllResponses(5000);
         System.out.println("coll = " + coll);
         assert rc;
         assert coll.hasAllResponses();

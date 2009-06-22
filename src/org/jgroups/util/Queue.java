@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.31 2009/05/13 13:07:05 belaban Exp $
+// $Id: Queue.java,v 1.32 2009/06/22 14:34:26 belaban Exp $
 
 package org.jgroups.util;
 
@@ -24,10 +24,10 @@ public class Queue {
     private Element head=null, tail=null;
 
     /*flag to determine the state of the queue*/
-    private boolean closed=false;
+    private volatile boolean closed=false;
 
     /*current size of the queue*/
-    private int size=0;
+    private volatile int size=0;
 
     /* Lock object for synchronization. Is notified when element is added */
     private final Object  mutex=new Object();
@@ -199,50 +199,6 @@ public class Queue {
 
 
     /**
-     * Adds a new object to the head of the queue
-     * basically (obj.equals(queue.remove(queue.add(obj)))) returns true
-     * If the queue has been closed with close(true) no exception will be
-     * thrown if the queue has not been flushed yet.
-     * @param obj - the object to be added to the queue
-     * @exception QueueClosedException exception if closed() returns true
-     */
-    public void addAtHead(Object obj) throws QueueClosedException {
-        if(obj == null) {
-            if(log.isErrorEnabled()) log.error("argument must not be null");
-            return;
-        }
-
-        /*lock the queue from other threads*/
-        synchronized(mutex) {
-           if(closed)
-              throw new QueueClosedException();
-           if(this.num_markers > 0)
-              throw new QueueClosedException("Queue.addAtHead(): queue has been closed. You can not add more elements. " +
-                                             "Waiting for removal of remaining elements.");
-
-            Element el=new Element(obj);
-            /*check the head element in the list*/
-            if(head == null) {
-                /*this is the first object, we could have done add(obj) here*/
-                head=el;
-                tail=head;
-                size=1;
-            }
-            else {
-                /*set the head element to be the child of this one*/
-                el.next=head;
-                /*set the head to point to the recently added object*/
-                head=el;
-                /*increase the size*/
-                size++;
-            }
-            /*wake up all the threads that are waiting for the lock to be released*/
-            mutex.notifyAll();
-        }
-    }
-
-
-    /**
      * Removes 1 element from head or <B>blocks</B>
      * until next element has been added or until queue has been closed
      * @return the first element to be taken of the queue
@@ -297,10 +253,12 @@ public class Queue {
                 throw new QueueClosedException();
 
             /*if the queue size is zero, we want to wait until a new object is added*/
-            if(size == 0) {
+            long target_time=System.currentTimeMillis() + timeout;
+            long current_time;
+            while(!closed && size == 0 && target_time > (current_time=System.currentTimeMillis())) {
                 try {
                     /*release the mutex lock and wait no more than timeout ms*/
-                    mutex.wait(timeout);
+                    mutex.wait(target_time - current_time);
                 }
                 catch(InterruptedException ex) {
                 }

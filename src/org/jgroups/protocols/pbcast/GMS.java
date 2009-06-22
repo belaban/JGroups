@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.179 2009/06/22 11:11:47 belaban Exp $
+ * @version $Id: GMS.java,v 1.180 2009/06/22 14:34:34 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -1231,7 +1231,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.179 2009/06/22 11:11:47 belaban Exp $
+     * @version $Id: GMS.java,v 1.180 2009/06/22 14:34:34 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
@@ -1246,21 +1246,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         private final Map<MergeId, Future>  resume_tasks=new HashMap<MergeId,Future>();
 
 
-        void add(Request req) {
-            add(req, false, false);
-        }
-
-        synchronized void add(Request req, boolean at_head, boolean unsuspend) {
-            if(suspended && !unsuspend) {
+        synchronized void add(Request req) {
+            if(suspended) {
                 log.warn("queue is suspended; request " + req + " is discarded");
                 return;
             }
-            start(unsuspend);
+            start();
             try {
-                if(at_head)
-                    q.addAtHead(req);
-                else
-                    q.add(req);
+                q.add(req);
                 history.add(new Date() + ": " + req.toString());
             }
             catch(QueueClosedException e) {
@@ -1289,11 +1282,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 resumeForce();
         }
 
-        synchronized void start(boolean unsuspend) {
+        synchronized void start() {
             if(q.closed())
                 q.reset();
-            if(unsuspend)
-                suspended=false;
             if(thread == null || !thread.isAlive()) {
                 thread=getThreadFactory().newThread(this, "ViewHandler");
                 thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave

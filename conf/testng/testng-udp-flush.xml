@@ -1,7 +1,7 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="udp-flush"
        parallel="methods"
-       thread-count="1">
+       thread-count="10">
 
 
 	<parameter name="channel.conf" value="flush-udp.xml"/>

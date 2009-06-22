@@ -78,7 +78,7 @@ public class AckCollectorTest {
             }
         }.start();
         try {
-            ac.waitForAllAcks(1000);
+            ac.waitForAllAcks(5000);
             assert true : "we should not get a timeout exception here";
         }
         catch(TimeoutException e) {
@@ -95,16 +95,16 @@ public class AckCollectorTest {
             public void run() {
                 ac.ack("one");
                 System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
+                Util.sleep(200);
                 ac.ack("two");
                 System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
+                Util.sleep(200);
                 ac.ack("three");
                 System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
+                Util.sleep(200);
                 ac.ack("four");
                 System.out.println("AckCollector: " + ac);
-                Util.sleep(100);
+                Util.sleep(200);
                 ac.ack("five");
                 System.out.println("AckCollector: " + ac);
             }
@@ -152,7 +152,7 @@ public class AckCollectorTest {
             }
         }.start();
         System.out.println("initial AckCollector: " + ac);
-        ac.waitForAllAcks(2000);
+        ac.waitForAllAcks(5000);
         System.out.println("new AckCollector: " + ac);
     }
 
