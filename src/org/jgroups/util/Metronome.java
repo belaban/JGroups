@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Condition;
 
 /**
  * @author Bela Ban
- * @version $Id: Metronome.java,v 1.2 2009/06/22 16:26:03 belaban Exp $
+ * @version $Id: Metronome.java,v 1.3 2009/06/22 16:33:32 belaban Exp $
  */
 public class Metronome implements Runnable {
     private final Set<Thread> threads=new HashSet<Thread>();
@@ -37,6 +37,16 @@ public class Metronome implements Runnable {
     public void remove(final Thread thread) {
         synchronized(threads) {
             threads.remove(thread);
+        }
+    }
+
+    public int getTick() {
+        lock.lock();
+        try {
+            return tick;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
