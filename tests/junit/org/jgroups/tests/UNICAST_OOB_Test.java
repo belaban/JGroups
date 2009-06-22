@@ -21,22 +21,22 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.10 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.11 2009/06/22 10:33:22 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
-    JChannel ch1, ch2;
+    JChannel c1, c2;
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch1=createChannel(true, 2);
-        ch2=createChannel(ch1);
+        c1=createChannel(true, 2);
+        c2=createChannel(c1);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        Util.close(ch2, ch1);
+        Util.close(c2, c1);
     }
 
 
@@ -50,42 +50,57 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
 
 
     /**
+     * Check that 4 is received before 3
      */
     private void sendMessages(boolean oob) throws Exception {
         DISCARD_PAYLOAD prot1=new DISCARD_PAYLOAD();
         MyReceiver receiver=new MyReceiver();
-        ch2.setReceiver(receiver);
+        c2.setReceiver(receiver);
 
-        // the second channel will discard the unicast messages with seqno #3 two times, the let them pass
-        ch2.getProtocolStack().insertProtocol(prot1, ProtocolStack.BELOW, UNICAST.class);
+        // the first channel will discard the unicast messages with seqno #3 two times, the let them pass down
+        c1.getProtocolStack().insertProtocol(prot1, ProtocolStack.BELOW, UNICAST.class);
 
-        ch1.connect("UNICAST_OOB_Test");
-        ch2.connect("UNICAST_OOB_Test");
-        assert ch2.getView().size() == 2 : "ch2.view is " + ch2.getView();
+        c1.connect("UNICAST_OOB_Test");
+        c2.connect("UNICAST_OOB_Test");
+        assert c2.getView().size() == 2 : "ch2.view is " + c2.getView();
 
-        Address dest=ch2.getAddress();
+        Address dest=c2.getAddress();
         for(int i=1; i <=5; i++) {
             Message msg=new Message(dest, null, new Long(i));
             if(i == 4 && oob)
                 msg.setFlag(Message.OOB);
             System.out.println("-- sending message #" + i);
-            ch1.send(msg);
+            c1.send(msg);
             Util.sleep(100);
         }
 
-        Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
+        // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
+        long target_time=System.currentTimeMillis() + 5000;
+        do {
+            if(receiver.size() >= 5)
+                break;
+            Util.sleep(500);
+        }
+        while(target_time > System.currentTimeMillis());
+
 
         List<Long> seqnos=receiver.getSeqnos();
         System.out.println("sequence numbers: " + seqnos);
 
-        // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
-        Long[] expected_seqnos=oob?
-                new Long[]{new Long(1), new Long(2), new Long(4), new Long(3), new Long(5)} : // OOB
-                new Long[]{new Long(1), new Long(2), new Long(3), new Long(4), new Long(5)};  // regular
-        for(int i=0; i < expected_seqnos.length; i++) {
-            Long expected_seqno=expected_seqnos[i];
-            Long received_seqno=seqnos.get(i);
-            assert expected_seqno.equals(received_seqno);
+        if(!oob) {
+            for(int i=0; i < 5; i++)
+                assert seqnos.get(i) == i+1 : " seqno is " + seqnos.get(i) + ", but expected " + i+1;
+        }
+        else {
+            // 4 needs to be received before 3. Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !
+            int index_3=-1, index_4=-1;
+            for(int i=0; i < 5; i++) {
+                if(seqnos.get(i) == 3)
+                    index_3=i;
+                if(seqnos.get(i) == 4)
+                    index_4=i;
+            }
+            assert index_4 < index_3 : "4 must come before 3 in list " + seqnos;
         }
     }
 
@@ -109,6 +124,8 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
                 seqnos.add(num);
             }
         }
+
+        public int size() {return seqnos.size();}
     }
 
   
