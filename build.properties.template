@@ -4,7 +4,7 @@
 # the one you want to use. Note that 'localhost' usually resolved to 127.0.0.1,
 # which may not work on Linux unless you have a multicast route set up for loopback
 jgroups.bind_addr=localhost
-jgroups.tcpping.initial_hosts=localhost[7800]
+jgroups.tcpping.initial_hosts=localhost[7800],localhost[7801]
 jgroups.udp.mcast_addr=232.10.10.10
 jgroups.udp.mcast_port=45588
 jgroups.udp.ip_ttl=5
