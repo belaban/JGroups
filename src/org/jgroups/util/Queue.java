@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.32 2009/06/22 14:34:26 belaban Exp $
+// $Id: Queue.java,v 1.33 2009/06/25 11:32:25 belaban Exp $
 
 package org.jgroups.util;
 
@@ -253,12 +253,10 @@ public class Queue {
                 throw new QueueClosedException();
 
             /*if the queue size is zero, we want to wait until a new object is added*/
-            long target_time=System.currentTimeMillis() + timeout;
-            long current_time;
-            while(!closed && size == 0 && target_time > (current_time=System.currentTimeMillis())) {
+            if(size == 0) {
                 try {
                     /*release the mutex lock and wait no more than timeout ms*/
-                    mutex.wait(target_time - current_time);
+                    mutex.wait(timeout);
                 }
                 catch(InterruptedException ex) {
                 }
