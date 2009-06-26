@@ -2,13 +2,14 @@ package org.jgroups.util;
 
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 
 /**
  * @author Bela Ban
- * @version $Id: Metronome.java,v 1.3 2009/06/22 16:33:32 belaban Exp $
+ * @version $Id: Metronome.java,v 1.4 2009/06/26 07:29:06 belaban Exp $
  */
 public class Metronome implements Runnable {
     private final Set<Thread> threads=new HashSet<Thread>();
@@ -23,9 +24,9 @@ public class Metronome implements Runnable {
         this.interval=interval;
     }
 
-    public void add(final Thread thread) {
+    public void add(final Thread ... thread) {
         synchronized(threads) {
-            threads.add(thread);
+            threads.addAll(Arrays.asList(thread));
             if(worker == null || !worker.isAlive()) {
                 worker=new Thread(this, "MetronomeThread");
                 worker.setDaemon(true);
