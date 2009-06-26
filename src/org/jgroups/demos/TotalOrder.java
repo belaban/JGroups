@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.14 2007/11/19 16:17:45 belaban Exp $
+// $Id: TotalOrder.java,v 1.15 2009/06/26 07:35:15 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -311,7 +311,6 @@ public class TotalOrder extends Frame {
     void startReceiver() {
         if(receiver == null) {
             receiver=new ReceiverThread();
-            receiver.setPriority(Thread.MAX_PRIORITY);
             receiver.start();
         }
     }
