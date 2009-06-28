@@ -54,7 +54,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.40 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.41 2009/06/28 16:12:15 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
@@ -514,7 +514,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
 
     /** This method runs with lock locked (called by <code>execute()</code>). */
     @GuardedBy("lock")
-    private boolean collectResponses(long timeout)  {
+    private boolean collectResponses(long timeout) throws InterruptedException {
         if(timeout <= 0) {
             while(true) { /* Wait for responses: */
                 adjustMembership(); // may not be necessary, just to make sure...
@@ -527,11 +527,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
                     }
                     return true;
                 }
-                try {
-                    completed.await();
-                }
-                catch(Exception e) {
-                }
+                completed.await();
             }
         }
         else {
@@ -548,11 +544,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
                 }
                 timeout=timeout_time - System.currentTimeMillis();
                 if(timeout > 0) {
-                    try {
-                        completed.await(timeout, TimeUnit.MILLISECONDS);
-                    }
-                    catch(Exception e) {
-                    }
+                    completed.await(timeout, TimeUnit.MILLISECONDS);
                 }
             }
             if(corr != null) {
