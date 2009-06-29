@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.247 2009/06/19 15:42:08 belaban Exp $
+ * @version $Id: TP.java,v 1.248 2009/06/29 07:22:36 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1801,6 +1801,10 @@ public abstract class TP extends Protocol {
         }
     }
 
+    /**
+     * Used when the transport is shared (singleton_name is not null). Maintains the cluster name, local address and
+     * view
+     */
     public static class ProtocolAdapter extends Protocol implements ProbeHandler {
         String cluster_name;
         final String transport_name;
