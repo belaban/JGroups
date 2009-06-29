@@ -17,6 +17,8 @@ import org.testng.annotations.Test;
 @Test(groups = Global.FLUSH, sequential = true)
 public class FlushWithChannelJoinsAndFailuresTest extends ChannelTestBase {
 
+   private static final String cName = "FlushWithChannelFailuresTest";
+   
    @Test
    public void testAndLoop() throws Exception {
 
@@ -29,7 +31,7 @@ public class FlushWithChannelJoinsAndFailuresTest extends ChannelTestBase {
          else{
             channels[j]= createChannel((JChannel)channels[0]);
          }         
-         channels[j].connect("FlushWithChannelFailuresTest");         
+         channels[j].connect(cName);         
       }
       
       for (int i = 1; i <= 4; i++) {
@@ -44,13 +46,13 @@ public class FlushWithChannelJoinsAndFailuresTest extends ChannelTestBase {
          
          //now create members again 
          channels[0]= createChannel((JChannel)channels[1]);
-         channels[0].connect("FlushWithChannelFailuresTest");      
+         channels[0].connect(cName);      
          channels[4]= createChannel((JChannel)channels[1]);
-         channels[4].connect("FlushWithChannelFailuresTest");      
+         channels[4].connect(cName);      
          channels[5]= createChannel((JChannel)channels[1]);
-         channels[5].connect("FlushWithChannelFailuresTest");  
+         channels[5].connect(cName);  
          channels[8]= createChannel((JChannel)channels[1]);
-         channels[8].connect("FlushWithChannelFailuresTest");  
+         channels[8].connect(cName);  
                   
          System.out.println("***** Round " + i + " done *****");
       }
