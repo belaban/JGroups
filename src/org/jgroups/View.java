@@ -21,7 +21,7 @@ import java.util.Collection;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.22 2009/06/12 09:57:13 belaban Exp $
+ * @version $Id: View.java,v 1.23 2009/06/30 07:51:25 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -38,7 +38,8 @@ public class View implements Externalizable, Cloneable, Streamable {
      * or leaves the group.
      */
     protected Vector<Address> members=null;
-    
+
+    @Deprecated
     protected Map<String, Object> payload=null;
     private static final long serialVersionUID=7027860705519930293L;
 
@@ -189,6 +190,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * exceed 65000 bytes !
      * @param key
      * @param value
+     * @deprecated Will be removed in 3.0
      */
     public void addPayload(String key, Object value) {
         if(payload == null) {
@@ -197,10 +199,22 @@ public class View implements Externalizable, Cloneable, Streamable {
         payload.put(key, value);
     }
 
+    /**
+     *
+     * @param key
+     * @return
+     * @deprecated Will be removed in 3.0
+     */
     public Object removePayload(String key) {
         return payload != null? payload.remove(key) : null;
     }
 
+    /**
+     *
+     * @param key
+     * @return
+     * @deprecated Will be removed in 3.0
+     */
     public Object getPayload(String key) {
         if(payload != null)
             return payload.get(key);
