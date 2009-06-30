@@ -4,7 +4,7 @@ Transport Next Generation
 -------------------------
 
 Author: Bela Ban
-Version: $Id: TransportNetGen,v 1.2 2009/02/06 12:01:38 belaban Exp $
+Version: $Id: TransportNextGen,v 1.1 2009/06/30 11:57:16 belaban Exp $
 
 The next version of the transport (org.jgroups.protocols.TP) should be NIO based: TP has an NIO selector, and subclasses
 such as TCP or UDP only register NIO channels with TP. For example, UDP would create 2 NIO channels, a unicast and a
