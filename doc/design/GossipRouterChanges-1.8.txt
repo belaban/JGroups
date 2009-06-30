@@ -1,0 +1,22 @@
+
+
+Changes to GossipRouter in 2.8
+==============================
+Author: Bela Ban
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.1 2009/06/30 12:03:07 belaban Exp $
+
+
+Motivation
+----------
+
+The changes are mainly due to logical addresses and shared transport.
+
+TCPGOSSIP currently doesn't work, as the GossipRouter doesn't return logical addresses *and* their associated physical
+addresses, but only returns logical addresses (UUIDs) [1].
+
+In TUNNEL, RouterStubs are conceptually associated with a single channel, and cannot process traffic from multiple
+channels on top of a shared transport.
+
+
+[1] https://jira.jboss.org/jira/browse/JGRP-1005
+[2] https://jira.jboss.org/jira/browse/JGRP-924
