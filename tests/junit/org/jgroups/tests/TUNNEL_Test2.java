@@ -17,14 +17,14 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.14 2009/04/30 15:38:38 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.15 2009/06/30 10:19:37 belaban Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT,"known-failures"}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
     private GossipRouter gossipRouter1, gossipRouter2;
-    private static final String props = "tunnel2.xml";
+    private static final String props ="tunnel.xml";
 
     @BeforeMethod
     void startRouter() throws Exception {
