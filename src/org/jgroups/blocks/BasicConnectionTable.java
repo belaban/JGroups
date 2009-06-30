@@ -229,6 +229,11 @@ public abstract class BasicConnectionTable {
            return;
        }
 
+       if(dest.equals(local_addr)) {
+           receive(local_addr, data, offset, length);
+           return;
+       }
+
        // 1. Try to obtain correct Connection (or create one if not yet existent)
        try {
            conn=getConnection(dest);
