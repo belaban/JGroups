@@ -48,6 +48,11 @@
             <enabled>true</enabled>
          </snapshots>
       </repository>
+      <repository>
+         <id>testng</id>
+         <name>testng Repository</name>
+         <url>http://testng.org/maven/</url>         
+      </repository>
    </repositories>
    <dependencies>
       <dependency>
@@ -71,7 +76,7 @@
       <dependency>
          <groupId>org.testng</groupId>
          <artifactId>testng</artifactId>
-         <version>5.8</version>
+         <version>5.9</version>
          <classifier>jdk15</classifier>
       </dependency>     
       <dependency>
