@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.1 2009/06/30 12:03:07 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.2 2009/06/30 12:21:44 belaban Exp $
 
 
 Motivation
@@ -17,6 +17,37 @@ addresses, but only returns logical addresses (UUIDs) [1].
 In TUNNEL, RouterStubs are conceptually associated with a single channel, and cannot process traffic from multiple
 channels on top of a shared transport.
 
-
 [1] https://jira.jboss.org/jira/browse/JGRP-1005
 [2] https://jira.jboss.org/jira/browse/JGRP-924
+
+
+Design overview
+---------------
+
+A RouterStub will simply establish a TCP connection with a GossipRouter, but doesn't send the CONNECT message on
+socket establishment. This is typically done in init() of TUNNEL (or TCPGOSSIP).
+
+On channel connection, a CONNECT(groupname, logical_addr, logical_name, physical_addresses) is sent to the
+GossipRouter.
+
+On a GET-MEMBERS(groupname), the GR returns a list of <logical-addr, logical-name, physical-addresses> elements.
+
+On a ROUTE(groupname, logical_addr, message), the GR pick the single destination (if logical-addr is not null) and
+routes the message. If logical_addr is null, then the GR routes the message to all members keyed by groupname.
+
+The GossipRouter maintains the following data structures:
+
+- Membership:
+  - A hashmap with groupnames as keys and (logical) address lists as values
+  - This is modified by CONNECT and DISCONNECT messages
+
+- ConnectionTable:
+  - A hashmap with logical_addrs as keys and ConnectionEntry's as values. A key represents a single member and a value
+    contains Socket, and input and output streams. The ConnectionEntry has a thread listening for messages on the
+    input stream, and it also has a list of logical_addrs for which is can receive messages.
+  - When the socket in the ConnectionEntry is closed by the peer, we remove all entries associated with all
+    logical_addrs of ConnectionEntry from the other data structures.
+
+- AddressMappings:
+  - Maintains a hashmap with logical_addrs as keys and the physical_addrs as value
+  - This is used to map logical addresses to their physical addresses, and is only used by TCPGOSSIP
