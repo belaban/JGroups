@@ -54,7 +54,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.52 2009/05/13 13:06:56 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.53 2009/06/30 10:20:50 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -338,23 +338,23 @@ public class GossipRouter {
 
       if (routingTable.isEmpty()) {
          sb.append("empty ").append(label).append(" table");
-      } else {
-         for (Iterator<String> i = routingTable.keySet().iterator(); i.hasNext();) {
-            String gname = i.next();
-            sb.append("GROUP: '" + gname + "'\n");
-            Map<Address, RoutingEntry> map = routingTable.get(gname);
-            if (map == null) {
-               sb.append("\tnull list of addresses\n");
-            } else if (map.isEmpty()) {
-               sb.append("\tempty list of addresses\n");
-            } else {
-               for (Iterator<RoutingEntry> j = map.values().iterator(); j.hasNext();) {
-                  sb.append('\t').append(i.next()).append('\n');
-               }
-            }
-         }
       }
-      return sb.toString();
+      else {
+          for(Map.Entry<String,ConcurrentMap<Address,RoutingEntry>> entry: routingTable.entrySet()) {
+              String gname = entry.getKey();
+              sb.append("GROUP: '" + gname + "'\n");
+              Map<Address, RoutingEntry> map = entry.getValue();
+              if (map == null || map.isEmpty()) {
+                  sb.append("\tnull\n");
+              }
+              else {
+                  for (RoutingEntry re: map.values()) {
+                      sb.append('\t').append(re).append('\n');
+                  }
+              }
+          }
+      }
+       return sb.toString();
    }
 
    private void mainLoop() {
