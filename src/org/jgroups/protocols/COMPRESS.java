@@ -17,7 +17,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.12.2.1 2007/04/27 08:03:50 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.12.2.2 2009/07/01 17:08:41 dereed Exp $
  */
 public class COMPRESS extends Protocol {
     Deflater[] deflater_pool=null;
@@ -147,13 +147,18 @@ public class COMPRESS extends Protocol {
                     deflater.deflate(compressed_payload);
                     compressed_size=deflater.getTotalOut();
                 }
-                byte[] new_payload=new byte[compressed_size];
-                System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
-                msg.setBuffer(new_payload);
-                msg.putHeader(name, new CompressHeader(length));
-                if(log.isTraceEnabled())
-                    log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes (inflater #" +
-                    tmp_index + ")");
+                if ( compressed_size < length ) { // JGRP-1000
+                    byte[] new_payload=new byte[compressed_size];
+                    System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
+                    msg.setBuffer(new_payload);
+                    msg.putHeader(name, new CompressHeader(length));
+                    if(log.isTraceEnabled())
+                        log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes (inflater #" + tmp_index + ")");
+                }
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace("Skipping compression since the compressed message is larger than the original");
+                }
             }
         }
         passDown(evt);
