@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.9 2008/10/28 14:16:09 vlada Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.10 2009/07/01 13:43:10 vlada Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -56,6 +56,28 @@ public class SharedTransportTest extends ChannelTestBase {
             System.out.println("b was not able to join the same cluster (\"x\") as expected");
         }
     }
+    
+    /** 
+     * https://jira.jboss.org/jira/browse/JGRP-1006
+     * @throws Exception
+     */
+   public void testShunReconnect() throws Exception {
+      int size = 10;
+      JChannel chs[] = new JChannel[size];
+      for (int i = 0; i < size; i++) {
+         chs[i] = createSharedChannel(SINGLETON_1);
+         chs[i].connect("" + i);
+      }
+
+      for (JChannel c : chs) {
+         c.up(new Event(Event.EXIT));
+      }
+
+      Util.sleep(5000);
+      for (JChannel c : chs) {
+         assertEquals(1, c.getView().size());
+      }
+   }
 
     public void testView() throws Exception {
         a=createSharedChannel(SINGLETON_1);
