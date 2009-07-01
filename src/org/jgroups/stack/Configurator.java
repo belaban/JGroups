@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.8 2008/10/29 08:31:05 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.9 2009/07/01 13:43:11 vlada Exp $
  */
 public class Configurator {
 
@@ -486,12 +486,12 @@ public class Configurator {
             protocol_config=protocol_configs.elementAt(i);
             singleton_name=protocol_config.getProperties().getProperty(Global.SINGLETON_NAME);
             if(singleton_name != null && singleton_name.trim().length() > 0) {
-                synchronized(stack) {
+               Map<String,Tuple<TP,Short>> singleton_transports=ProtocolStack.getSingletonTransports();
+               synchronized(singleton_transports) {
                     if(i > 0) { // crude way to check whether protocol is a transport
                         throw new IllegalArgumentException("Property 'singleton_name' can only be used in a transport" +
                                 " protocol (was used in " + protocol_config.getProtocolName() + ")");
-                    }
-                    Map<String,Tuple<TP,Short>> singleton_transports=ProtocolStack.getSingletonTransports();
+                    }                    
                     Tuple<TP,Short> val=singleton_transports.get(singleton_name);
                     layer=val != null? val.getVal1() : null;
                     if(layer != null) {
