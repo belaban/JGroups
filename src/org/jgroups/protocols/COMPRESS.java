@@ -21,7 +21,7 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.22 2008/11/28 05:52:11 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.23 2009/07/01 17:37:20 dereed Exp $
  */
 public class COMPRESS extends Protocol {   
     
@@ -101,12 +101,19 @@ public class COMPRESS extends Protocol {
                     deflater.finish();
                     deflater.deflate(compressed_payload);
                     compressed_size=deflater.getTotalOut();
-                    byte[] new_payload=new byte[compressed_size];
-                    System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
-                    msg.setBuffer(new_payload);
-                    msg.putHeader(name, new CompressHeader(length));
-                    if(log.isTraceEnabled())
-                        log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+
+                    if ( compressed_size < length ) { // JGRP-1000
+                        byte[] new_payload=new byte[compressed_size];
+                        System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
+                        msg.setBuffer(new_payload);
+                        msg.putHeader(name, new CompressHeader(length));
+                        if(log.isTraceEnabled())
+                            log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+                    }
+                    else {
+                        if(log.isTraceEnabled())
+                            log.trace("Skipping compression since the compressed message is larger than the original");
+                    }
                 }
                 catch(InterruptedException e) {
                     Thread.currentThread().interrupt(); // set interrupt flag again
