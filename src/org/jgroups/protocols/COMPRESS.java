@@ -19,7 +19,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.19.4.1 2008/11/28 06:08:35 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.19.4.2 2009/07/01 17:35:04 dereed Exp $
  */
 public class COMPRESS extends Protocol {
     BlockingQueue<Deflater> deflater_pool=null;
@@ -120,12 +120,19 @@ public class COMPRESS extends Protocol {
                     deflater.finish();
                     deflater.deflate(compressed_payload);
                     compressed_size=deflater.getTotalOut();
-                    byte[] new_payload=new byte[compressed_size];
-                    System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
-                    msg.setBuffer(new_payload);
-                    msg.putHeader(name, new CompressHeader(length));
-                    if(log.isTraceEnabled())
-                        log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+
+                    if ( compressed_size < length ) { // JGRP-1000
+                        byte[] new_payload=new byte[compressed_size];
+                        System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
+                        msg.setBuffer(new_payload);
+                        msg.putHeader(name, new CompressHeader(length));
+                        if(log.isTraceEnabled())
+                            log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
+                    }
+                    else {
+                        if(log.isTraceEnabled())
+                            log.trace("Skipping compression since the compressed message is larger than the original");
+                    }
                 }
                 catch(InterruptedException e) {
                     Thread.currentThread().interrupt(); // set interrupt flag again
