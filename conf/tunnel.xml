@@ -7,7 +7,7 @@
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups file:schema/JGroups-2.8.xsd">
-    <TUNNEL gossip_router_hosts="127.0.0.1[12002],127.0.0.1[12003]"/>
+    <TUNNEL gossip_router_hosts="127.0.0.1[12001],127.0.0.1[12002]"/>
     <PING timeout="2000"/>
     <MERGE2 max_interval="20000"
               min_interval="5000"/>    
@@ -21,7 +21,6 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-
                 view_bundling="true"
                 view_ack_collection_timeout="5000"/>
     <FC max_credits="2000000"
