@@ -19,7 +19,7 @@ import java.util.List;
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
  * response.
  * @author Bela Ban
- * @version $Id: PING.java,v 1.59 2009/07/02 13:39:46 belaban Exp $
+ * @version $Id: PING.java,v 1.60 2009/07/02 13:43:14 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "port_range", "socket_conn_timeout",
         "socket_read_timeout", "discovery_timeout"})
@@ -33,7 +33,6 @@ public class PING extends Discovery {
             "discovery message is not received within discovery_timeout ms, a warning will be logged")
     private long discovery_timeout=0L;
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
     protected final Promise<Boolean>   discovery_reception=new Promise<Boolean>();
@@ -44,23 +43,12 @@ public class PING extends Discovery {
         return name;
     }
     
-    public void init() throws Exception {
-        super.init();
-    }
-
-
-
 
     public void stop() {
         super.stop();
         discovery_reception.reset();
     }
     
-    public void destroy(){
-        super.destroy();
-    }
-
-
 
     public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
         //  Mcast GET_MBRS_REQ message
@@ -83,7 +71,6 @@ public class PING extends Discovery {
                 discovery_reception.setResult(true);
             }
         }
-
         return super.up(evt);
     }
 
