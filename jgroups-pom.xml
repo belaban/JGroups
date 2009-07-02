@@ -48,11 +48,6 @@
             <enabled>true</enabled>
          </snapshots>
       </repository>
-      <repository>
-         <id>testng</id>
-         <name>testng Repository</name>
-         <url>http://testng.org/maven/</url>         
-      </repository>
    </repositories>
    <dependencies>
       <dependency>
