@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentMap;
  * Copied from TestNG (www.testng.org) and modified
  * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.14 2008/11/12 16:01:21 rachmatowicz Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.15 2009/07/02 07:26:10 vlada Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMethodListener {
     private String output_dir=null;
@@ -36,15 +36,15 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     private PrintStream old_stdout=System.out;
     private PrintStream old_stderr=System.err;
 
-    private final ConcurrentMap<Class,List<ITestResult>> classes=new ConcurrentHashMap<Class,List<ITestResult>>();
+    private final ConcurrentMap<Class<?>,List<ITestResult>> classes=new ConcurrentHashMap<Class<?>,List<ITestResult>>();
 
     /** Map to keep systemout and systemerr associated with a class */
-    private final ConcurrentMap<Class,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class,Tuple<StringBuffer,StringBuffer>>();
+    private final ConcurrentMap<Class<?>,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class<?>,Tuple<StringBuffer,StringBuffer>>();
 
-    public static InheritableThreadLocal<Class> local=new InheritableThreadLocal<Class>();
+    public static InheritableThreadLocal<Class<?>> local=new InheritableThreadLocal<Class<?>>();
 
     class MyOutput extends PrintStream {
-        final int type; // 1 == stdout, 2 == stderr
+        final int type; 
 
         public MyOutput(String fileName,int type) throws FileNotFoundException {
             super(fileName);
@@ -91,9 +91,8 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         }
 
         private synchronized void append(String x, boolean newline) {
-            Class clazz=local.get();
+            Class<?> clazz=local.get();
             if(clazz != null) {
-                // System.err.println("PRINT [" + Thread.currentThread() + "]: " + clazz.getName() + ": " + x);
                 Tuple<StringBuffer,StringBuffer> tuple=outputs.get(clazz);
                 if(tuple != null) {
                     StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
@@ -114,7 +113,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
 
     /** Invoked before any method (configuration or test) is invoked */
     public void beforeInvocation(IInvokedMethod method, ITestResult tr) {
-        Class real_class=tr.getTestClass().getRealClass();
+        Class<?> real_class=tr.getTestClass().getRealClass();
 
         local.set(real_class);
 
@@ -125,8 +124,6 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         }
 
         outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer())) ;
-
-        // print(old_stdout, "before OK:   ", real_class.getName(), tr.getName());
     }
 
     /** Invoked after any method (configuration or test) is invoked */
@@ -136,18 +133,18 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
 
     /* Moved code from onTestStart() to beforeInvocation() to avoid output leaks (JGRP-850) */ 
     public void onTestStart(ITestResult result) {
-        // old_stdout.println(Thread.currentThread() + " running " + real_class.getName() + "." + result.getName() + "()");
+        
     }
 
     /** Invoked each time a test succeeds */
     public void onTestSuccess(ITestResult tr) {
-        Class real_class=tr.getTestClass().getRealClass();
+        Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(real_class, tr);
         print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
     }
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
-        Class real_class=tr.getTestClass().getRealClass();
+        Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
         print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
     }
@@ -156,7 +153,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
      * Invoked each time a test fails.
      */
     public void onTestFailure(ITestResult tr) {
-        Class real_class=tr.getTestClass().getRealClass();
+        Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
         print(old_stderr, "FAIL: ", real_class.getName(), tr.getName());
     }
@@ -165,7 +162,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
      * Invoked each time a test is skipped.
      */
     public void onTestSkipped(ITestResult tr) {
-        Class real_class=tr.getTestClass().getRealClass();
+        Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
         print(old_stdout, "SKIP: ", real_class.getName(), tr.getName());
     }
@@ -178,10 +175,9 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
                     + "."
                     + method_name
                     + "()");
-        // out.println(msg  + classname + "." + method_name + "()");
     }
 
-    private void addTest(Class clazz, ITestResult result) {
+    private void addTest(Class<?> clazz, ITestResult result) {
         List<ITestResult> results=classes.get(clazz);
         if(results == null) {
             results=new LinkedList<ITestResult>();
@@ -248,34 +244,12 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     public void onFinish(ITestContext context) {
         System.setOut(old_stdout);
         System.setErr(old_stderr);
-
-        /*
-         * Not needed since we dump test output files as soon as all methods in a test class complete
-         * 
-         * 
-         * try {
-            generateReport();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }*/
-    }
-
-    /**
-     * generate the XML report given what we know from all the test results
-     */
-    protected void generateReport() throws IOException {
-        for(Map.Entry<Class,List<ITestResult>> entry:classes.entrySet()) {
-            Class clazz=entry.getKey();
-            List<ITestResult> results=entry.getValue();
-            generateReport(clazz, results);
-        }
     }
     
     /**
      * generate the XML report given what we know from all the test results
      */
-    protected void generateReport(Class clazz, List<ITestResult> results) throws IOException {
+    protected void generateReport(Class<?> clazz, List<ITestResult> results) throws IOException {
 
         int num_failures=getFailures(results);
         int num_skips=getSkips(results);
@@ -381,9 +355,9 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
                                      FileWriter out) throws IOException {
         Test annotation=method.getAnnotation(Test.class);
         if(annotation != null && ex != null) {
-            Class[] expected_exceptions=annotation.expectedExceptions();
+            Class<?>[] expected_exceptions=annotation.expectedExceptions();
             for(int i=0;i < expected_exceptions.length;i++) {
-                Class expected_exception=expected_exceptions[i];
+                Class<?> expected_exception=expected_exceptions[i];
                 if(expected_exception.equals(ex.getClass())) {
                     return;
                 }
