@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.63 2009/06/17 16:20:03 belaban Exp $
+ * @version $Id: Discovery.java,v 1.64 2009/07/02 14:45:14 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -269,25 +269,20 @@ public abstract class Discovery extends Protocol {
                                 UUID.add((UUID)logical_addr, hdr.arg.getLogicalName());
                         }
 
-                        Address coord;
-                        synchronized(members) {
-                            coord=!members.isEmpty()? members.firstElement() : local_addr;
-                        }
-
                         if(return_entire_cache) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
                                     Address logical_addr=entry.getKey();
                                     PhysicalAddress physical_addr=entry.getValue();
-                                    sendDiscoveryResponse(logical_addr, Arrays.asList(physical_addr), coord, is_server,
+                                    sendDiscoveryResponse(logical_addr, Arrays.asList(physical_addr), is_server,
                                                           UUID.get(logical_addr), msg.getSrc());
                                 }
                             }
                         }
                         else {
                             PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                            sendDiscoveryResponse(local_addr, Arrays.asList(physical_addr), coord, is_server,
+                            sendDiscoveryResponse(local_addr, Arrays.asList(physical_addr), is_server,
                                                   UUID.get(local_addr), msg.getSrc());
                         }
                         return null;
@@ -424,7 +419,7 @@ public abstract class Discovery extends Protocol {
 
 
     private void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
-                                       Address coord, boolean is_server, String logical_name, Address sender) {
+                                       boolean is_server, String logical_name, Address sender) {
         PingData ping_rsp=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
         Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
