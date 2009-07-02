@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.68 2009/05/07 07:51:58 vlada Exp $
+// $Id: TUNNEL.java,v 1.69 2009/07/02 14:49:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -391,7 +391,8 @@ public class TUNNEL extends TP {
       public void sendToAllMembers(List<RouterStub> stubs, byte[] data, int offset, int length)
                throws Exception {
          boolean sent = false;
-         Collections.shuffle(stubs);
+          if(stubs.size() > 1)
+              Collections.shuffle(stubs);  // todo: why is this needed ?
          for (RouterStub stub : stubs) {
             try {
                stub.sendToAllMembers(data, offset, length);
@@ -418,7 +419,8 @@ public class TUNNEL extends TP {
       public void sendToSingleMember(List<RouterStub> stubs, Address dest, byte[] data, int offset,
                int length) throws Exception {
          boolean sent = false;
-         Collections.shuffle(stubs);
+          if(stubs.size() > 1)
+              Collections.shuffle(stubs); // todo: why is this needed ?
          for (RouterStub stub : stubs) {
             try {
                stub.sendToSingleMember(dest, data, offset, length);
