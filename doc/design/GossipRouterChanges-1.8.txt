@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.3 2009/06/30 12:44:55 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.4 2009/07/02 13:02:21 belaban Exp $
 
 
 Motivation
@@ -58,7 +58,7 @@ Implementation
 
 RouterStub
 ----------
-- When started, the RouterStub eatsblishes a socket to the GossipRouter's address:port given
+- When started, the RouterStub establishes a socket to the GossipRouter's address:port given
 - When the connection is closed by the GR, the stub goes into reconnecting mode. When reconnected, it issues
   a notification so registered listeners can send a CONNECT (see below) to the GR again
 - When the CONNECT event is received by TUNNEL / TCPGOSSIP, RouterStub.connect() is called with
@@ -73,19 +73,39 @@ GossipRouter
 ------------
 
 - On accept():
+  - Create a new ConnectionEntry on a new thread (from the thread pool)
+  - This stores the client the socket, input and output stream, then listens on the input stream
+  - We might add the ConnectionEntry to a separate list, just to keep track of open connections
 
 - On CONNECT(groupname, logical_addr, logical_name, physical_addrs):
+  - Received by the thread in ConnectionEntry
+  - The ConnectionEntry adds the logical address to its connection-list
+  - An entry for ConnectionTable is created, key is the logical addr, value the ConnectionEntry
+    (This is used for fast message routing)
 
-- On DISCONNECT:
+
+- On DISCONNECT(logical_addr):
+  - Close the socket in ConnectionEntry
+  - Remove the entry for logical_addr from all tables
 
 - On peer (RouterStub) closing the socket:
+  - The ConnectionEntry gets an exception when listening on the input stream
+  - We remove the entries in connection-list from all tables
 
 - On GET_MEMBERS(groupname):
+  - Grabs the members for groupname (from Membership  and AddressMappings) and passes them back, for each member:
+    - The logical address
+    - The logical name
+    - (if available) a list of physical addresses
 
-- On ROUTE(groupname, logical_addr, message):
-
+- On ROUTE(groupname, dest, message):
+  - If dest == null (multicast):
+    - Grab all ConnectionEntry's from ConnectionTable and send the message
+  - Else (unicast)
+    - Find the ConnectionEntry form 'dest' and send the message
 
 TUNNEL
 ------
 
 - On stub reconnect:
+  - Send a CONNECT message. With a shared transort, this has to be done for all channels sharing the transport
