@@ -1,9 +1,11 @@
-// $Id: GossipData.java,v 1.5 2008/02/29 12:19:52 belaban Exp $
+// $Id: GossipData.java,v 1.6 2009/07/03 15:15:29 belaban Exp $
 
 package org.jgroups.stack;
 
 
 import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -12,6 +14,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Collection;
+import java.util.ArrayList;
 
 
 /**
@@ -23,6 +27,7 @@ public class GossipData implements Streamable {
     String         group=null;  // CONNECT, GET_REQ and GET_RSP
     Address        addr=null;   // CONNECT
     List<Address>  mbrs=null;   // GET_RSP
+    private Collection<PhysicalAddress> physical_addrs=null; // GET_RSP, GET_REQ
 
     public GossipData() { // for streamable
     }
@@ -36,6 +41,11 @@ public class GossipData implements Streamable {
         this.group=group;
         this.addr=addr;
         this.mbrs=mbrs;
+    }
+
+    public GossipData(byte type, String group, Address addr, List<Address> mbrs, List<PhysicalAddress> physical_addrs) {
+        this(type, group, addr, mbrs);
+        this.physical_addrs=physical_addrs;
     }
 
 
@@ -52,7 +62,10 @@ public class GossipData implements Streamable {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(GossipRouter.type2String(type)).append( "(").append("group=").append(group).append(", addr=").append(addr);
-        sb.append(", mbrs=").append(mbrs);
+        if(mbrs != null && !mbrs.isEmpty())
+            sb.append(", mbrs=").append(mbrs);
+        if(physical_addrs != null && !physical_addrs.isEmpty())
+            sb.append(", physical_addrs=").append(Util.printListWithDelimiter(physical_addrs, ", "));
         return sb.toString();
     }
 
@@ -62,6 +75,7 @@ public class GossipData implements Streamable {
         Util.writeString(group, out);
         Util.writeAddress(addr, out);
         Util.writeAddresses(mbrs, out);
+        Util.writeAddresses(physical_addrs, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -69,6 +83,19 @@ public class GossipData implements Streamable {
         group=Util.readString(in);
         addr=Util.readAddress(in);
         mbrs=(List<Address>)Util.readAddresses(in, LinkedList.class);
+        physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(in, ArrayList.class);
+    }
+
+
+    public int size() {
+        int retval=Global.BYTE_SIZE; // type
+        retval+=Global.BYTE_SIZE;     // presence byte for group
+        if(group != null)
+            retval+=group.length() +2;
+        retval+=Util.size(addr);
+        retval+=Util.size(mbrs);
+        retval+=Util.size(physical_addrs);
+        return retval;
     }
 
 
