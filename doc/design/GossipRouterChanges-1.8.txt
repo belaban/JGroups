@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.5 2009/07/03 07:18:27 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.6 2009/07/03 08:29:16 belaban Exp $
 
 
 Motivation
@@ -75,8 +75,12 @@ GossipRouter
 
 - On accept():
   - Create a new ConnectionEntry on a new thread (from the thread pool)
-  - This stores the client the socket, input and output stream, then listens on the input stream
+  - This stores the client socket, input and output stream, then listens on the input stream
   - We might add the ConnectionEntry to a separate list, just to keep track of open connections
+
+- On peer (RouterStub) closing the socket:
+  - The ConnectionEntry gets an exception when listening on the input stream
+  - We remove the entries in connection-list from all tables
 
 - On CONNECT(groupname, logical_addr, logical_name, physical_addrs) [received by ConnectionEntry.run()]:
   - The ConnectionEntry adds the logical address to its connection-list
@@ -90,9 +94,6 @@ GossipRouter
   - Close the socket in ConnectionEntry
   - Remove the entry for logical_addr from all tables (Membership, AddressMappings)
 
-- On peer (RouterStub) closing the socket:
-  - The ConnectionEntry gets an exception when listening on the input stream
-  - We remove the entries in connection-list from all tables
 
 - On GET_MEMBERS(groupname):
   - Grabs the members for groupname (from Membership and AddressMappings) and passes them back, for each member:
