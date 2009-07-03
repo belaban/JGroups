@@ -4,8 +4,11 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+
+import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -14,12 +17,11 @@ import java.net.UnknownHostException;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.2 2009/05/11 17:43:15 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.1.4.1 2009/07/03 20:44:16 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
-    static String bind_addr_str=null;
-    static InetAddress bind_addr=null;
+    static InetAddress loopback_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
     int active_threads=0;
@@ -28,8 +30,7 @@ public class ConnectionTableTest extends TestCase {
 
     static {
         try {
-        	bind_addr_str = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
-            bind_addr=InetAddress.getByName(bind_addr_str);
+            loopback_addr=InetAddress.getByName("127.0.0.1");
         }
         catch(UnknownHostException e) {
             e.printStackTrace();
@@ -46,8 +47,8 @@ public class ConnectionTableTest extends TestCase {
         super.setUp();
         active_threads=Thread.activeCount();
         System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
-        addr1=new IpAddress(bind_addr, PORT1);
-        addr2=new IpAddress(bind_addr, PORT2);
+        addr1=new IpAddress(loopback_addr, PORT1);
+        addr2=new IpAddress(loopback_addr, PORT2);
     }
 
 
@@ -63,17 +64,98 @@ public class ConnectionTableTest extends TestCase {
         super.tearDown();
     }
 
+    /**
+     * A connects to B and B connects to A at the same time. This test makes sure we only have <em>one</em> connection,
+     * not two, e.g. a spurious connection. Tests http://jira.jboss.com/jira/browse/JGRP-549
+     */
+    public void testConcurrentConnect() throws Exception {
+        Sender sender1, sender2;
+        CyclicBarrier barrier=new CyclicBarrier(3);
+
+        ct1=new ConnectionTable(loopback_addr, PORT1);
+        ct1.start();
+        ct2=new ConnectionTable(loopback_addr, PORT2);
+        ct2.start();
+        BasicConnectionTable.Receiver dummy=new BasicConnectionTable.Receiver() {
+            public void receive(Address sender, byte[] data, int offset, int length) {}
+        };
+        ct1.setReceiver(dummy);
+        ct2.setReceiver(dummy);
+
+        sender1=new Sender((ConnectionTable)ct1, barrier, addr2, 0);
+        sender2=new Sender((ConnectionTable)ct2, barrier, addr1, 0);
+
+        sender1.start(); sender2.start();
+        Util.sleep(100);
+
+        int num_conns;
+        System.out.println("ct1: " + ct1 + "ct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assert num_conns == 0;
+        num_conns=ct2.getNumConnections();
+        assert num_conns == 0;
+
+        barrier.attemptBarrier(10*1000);
+        sender1.join();
+        sender2.join();
+       
+        
+        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assert num_conns == 1 : "num_conns is " + num_conns;
+        num_conns=ct2.getNumConnections();
+        assert num_conns == 1;
+        
+        Util.sleep(500);
+        
+        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assert num_conns == 1;
+        num_conns=ct2.getNumConnections();
+        assert num_conns == 1;
+        
+        Connection connection = ct1.getConnection(addr2);
+        assert !(connection.isSocketClosed()) : "valid connection to peer";
+        connection = ct2.getConnection(addr1);
+        assert !(connection.isSocketClosed()) : "valid connection to peer";
+    }
+
+
+    private static class Sender extends Thread {
+        final ConnectionTable conn_table;
+        final CyclicBarrier   barrier;
+        final Address         dest;
+        final long            sleep_time;
+
+        public Sender(ConnectionTable conn_table, CyclicBarrier barrier, Address dest, long sleep_time) {
+            this.conn_table=conn_table;
+            this.barrier=barrier;
+            this.dest=dest;
+            this.sleep_time=sleep_time;
+        }
+
+        public void run() {
+            try {
+                barrier.attemptBarrier(10*1000);
+                if(sleep_time > 0)
+                    Util.sleep(sleep_time);
+                conn_table.send(dest, data, 0, data.length);
+            }
+            catch(Exception e) {
+            }
+        }
+    }
 
 
     public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000);
-        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000, false);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);
@@ -87,8 +169,9 @@ public class ConnectionTableTest extends TestCase {
         table2.send(addr2, data, 0, data.length); // send to self
         table2.send(addr1, data, 0, data.length); // send to other
 
-        assertEquals(2, table1.getNumConnections());
-        assertEquals(2, table2.getNumConnections());
+        // JGRP-549: ConnectionTable now loops back messages to self
+        assertEquals(1, table1.getNumConnections());
+        assertEquals(1, table2.getNumConnections());
 
         table2.stop();
         table1.stop();
