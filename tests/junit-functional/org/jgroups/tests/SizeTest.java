@@ -9,6 +9,8 @@ import org.jgroups.mux.ServiceInfo;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.GossipData;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 import org.testng.Assert;
@@ -21,7 +23,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.24 2009/06/17 16:35:45 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.25 2009/07/03 15:15:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -53,7 +55,7 @@ public class SizeTest {
         final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
         final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
         final PhysicalAddress physical_addr_3=new IpAddress("192.134.2.1", 6655);
-
+        final Address self=Util.createRandomAddress();
 
         data=new PingData(null, null, false);
         _testSize(data);
@@ -87,6 +89,43 @@ public class SizeTest {
 
         View view=Util.createView(coord, 322649, coord, own, UUID.randomUUID());
         data.setView(view);
+        _testSize(data);
+
+         data=new PingData(self, Util.createView(self, 1, self), true, "logical-name", null);
+        _testSize(data);
+    }
+
+    public static void testGossipData() throws Exception {
+        GossipData data;
+        final Address own=org.jgroups.util.UUID.randomUUID();
+        final Address coord=org.jgroups.util.UUID.randomUUID();
+        UUID.add((UUID)own, "own");
+        UUID.add((UUID)coord, "coord");
+
+        final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
+        final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
+        final PhysicalAddress physical_addr_3=new IpAddress("192.134.2.1", 6655);
+
+        _testSize(new GossipData());
+
+        data=new GossipData((byte)1);
+        _testSize(data);
+
+        data=new GossipData((byte)1, "DemoCluster", own, null, null);
+        _testSize(data);
+
+        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), null);
+        _testSize(data);
+
+        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord),
+                            Arrays.asList(physical_addr_1, physical_addr_2, physical_addr_3));
+        _testSize(data);
+
+        List<PhysicalAddress> list=new ArrayList<PhysicalAddress>();
+        list.add(physical_addr_1);
+        list.add(physical_addr_2);
+        list.add(physical_addr_3);
+        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), list); 
         _testSize(data);
     }
 
@@ -730,6 +769,14 @@ public class SizeTest {
     }
 
     private static void _testSize(PingData data) throws Exception {
+        System.out.println("\ndata: " + data);
+        long size=data.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(data);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;
+    }
+
+    private static void _testSize(GossipData data) throws Exception {
         System.out.println("\ndata: " + data);
         long size=data.size();
         byte[] serialized_form=Util.streamableToByteBuffer(data);
