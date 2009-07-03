@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.7 2009/07/03 09:10:20 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.8 2009/07/03 12:42:50 belaban Exp $
 
 
 Motivation
@@ -37,14 +37,10 @@ routes the message. If logical_addr is null, then the GR routes the message to a
 
 The GossipRouter maintains the following data structures:
 
-- Membership:
-  - A hashmap with groupnames as keys and (logical) address lists as values
-  - This is modified by CONNECT and DISCONNECT messages
-
-- ConnectionTable:
-  - A hashmap with logical_addrs as keys and ConnectionHandler's as values. A key represents a single member and a value
-    contains the client socket (received as a result of accept()), and input and output streams.
-    The ConnectionHandler has a thread listening for messages on the
+- RoutingTable:
+  - A hashmap with groupnames as keys and hashmaps as values
+  - The 2nd level hashmaps have logical addresses as keys and ConnectionHandlers as values
+  - A ConnectionHandler represent a physical connection to a client. It has a thread listening for messages on the
     input stream, and it also has a list of logical_addrs from which it received CONNECT messages.
   - When the socket in the ConnectionHandler is closed by the peer, we remove all entries associated with all
     logical_addrs of ConnectionHandler from the other data structures.
@@ -67,7 +63,7 @@ RouterStub
   - the logical address
   - the logical name
   - a list of physical addresses (might be null, only used by TCPGOSSIP)
-  - This generates a CONNECT message which is sent to the GossipRouter
+- This generates a CONNECT message which is sent to the GossipRouter
 
 
 GossipRouter
@@ -76,7 +72,7 @@ GossipRouter
 - On accept():
   - Create a new ConnectionHandler on a new thread (from the thread pool)
   - This stores the client socket, input and output stream, then listens on the input stream
-  - We might add the ConnectionHandler to a separate list, just to keep track of open connections
+  [- We might add the ConnectionHandler to a separate list, just to keep track of open connections]
 
 - On peer (RouterStub) closing the socket:
   - The ConnectionHandler gets an exception when listening on the input stream
@@ -84,26 +80,25 @@ GossipRouter
 
 - On CONNECT(groupname, logical_addr, logical_name, physical_addrs) [received by ConnectionHandler.run()]:
   - The ConnectionHandler adds the logical address to its connection-list
-  - An entry is added to ConnectionTable, key is the logical addr, value the ConnectionHandler (this)
-    (This is used for fast message routing)
-  - An entry is added to Membership
+  - An entry is added to RoutingTable under groupname, and the value (hashmap) is updated:
+    - key is the logical addr, value the ConnectionHandler (this)
   - If CONNECT ships with non-null physical_addrs, then an entry is added to AddressMappings
 
 
 - On DISCONNECT(logical_addr):
   - Close the socket in ConnectionHandler
-  - Remove the entry for logical_addr from all tables (Membership, AddressMappings)
+  - Remove the entry for logical_addr from all tables (RoutingTable, AddressMappings)
 
 
 - On GET_MEMBERS(groupname):
-  - Grabs the members for groupname (from Membership and AddressMappings) and passes them back, for each member:
+  - Grabs the members for groupname (from RoutingTable and AddressMappings) and passes them back, for each member:
     - The logical address
     - The logical name
     - (if available) a list of physical addresses
 
 - On ROUTE(groupname, dest, message):
   - If dest == null (multicast):
-    - Grab all ConnectionHandler's from ConnectionTable for groupname and send the message to all
+    - Grab all ConnectionHandler's from RoutingTable for groupname and send the message to all
   - Else (unicast)
     - Find the ConnectionHandler keyed by 'dest' and send the message to it
 
