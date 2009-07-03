@@ -1,6 +1,7 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -44,7 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.54 2009/07/03 09:10:19 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.55 2009/07/03 14:36:46 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -56,7 +57,6 @@ public class GossipRouter {
    public static final byte SUSPECT=11;
 
    public static final int  PORT = 12001;
-   public static final long EXPIRY_TIME = 30000;
    public static final long GOSSIP_REQUEST_TIMEOUT = 1000;
    public static final long ROUTING_CLIENT_REPLY_TIMEOUT = 120000;
 
@@ -65,9 +65,6 @@ public class GossipRouter {
 
    @ManagedAttribute(description = "address to which the GossipRouter should bind", writable = true, name = "bindAddress")
    private String bindAddressString;
-
-   @ManagedAttribute(description = "time (in msecs) until a cached 'gossip' member entry expires", writable = true)
-   private long expiryTime = 30000;
 
    @ManagedAttribute(description = "number of millisecs the main thread waits to receive a gossip request "
             + "after connection was established; upon expiration, the router initiates "
@@ -82,15 +79,16 @@ public class GossipRouter {
    // Maintains associations between groups and their members
    private final ConcurrentMap<String, ConcurrentMap<Address, RoutingEntry>> routingTable = new ConcurrentHashMap<String, ConcurrentMap<Address, RoutingEntry>>();
 
+   /** Store physical address(es) associated with a logical address. Used mainly by TCPGOSSIP */
+   private final Map<Address,List<PhysicalAddress>> address_mappings=new ConcurrentHashMap<Address,List<PhysicalAddress>>();
+
    private ServerSocket srvSock = null;
    private InetAddress  bindAddress = null;
 
-   @Property(description = "Time (in millis) for setting SO_LINGER on sockets returned from accept(). "
-            + "0 means do not set SO_LINGER")
+   @Property(description = "Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER")
    private long linger_timeout = 2000L;
 
-   @Property(description = "Time (in millis) for SO_TIMEOUT on sockets returned from accept(). "
-            + "0 means don't set SO_TIMEOUT")
+   @Property(description = "Time (in ms) for SO_TIMEOUT on sockets returned from accept(). 0 means don't set SO_TIMEOUT")
    private long sock_read_timeout = 5000L;
 
    @Property(description = "The max queue size of backlogged connections")
@@ -105,9 +103,6 @@ public class GossipRouter {
    protected List<ConnectionTearListener> connectionTearListeners = new CopyOnWriteArrayList<ConnectionTearListener>();
 
    protected ThreadFactory default_thread_factory = new DefaultThreadFactory(Util.getGlobalThreadGroup(), "gossip-handlers", true, true);
-
-   // the cache sweeper
-   protected Timer timer = null;
 
    protected final Log log = LogFactory.getLog(this.getClass());
 
@@ -124,27 +119,20 @@ public class GossipRouter {
    }
 
    public GossipRouter(int port, String bindAddressString) {
-      this(port, bindAddressString, EXPIRY_TIME);
+      this(port, bindAddressString, GOSSIP_REQUEST_TIMEOUT, ROUTING_CLIENT_REPLY_TIMEOUT);
    }
 
-   public GossipRouter(int port, String bindAddressString, long expiryTime) {
-      this(port, bindAddressString, expiryTime, GOSSIP_REQUEST_TIMEOUT,
-               ROUTING_CLIENT_REPLY_TIMEOUT);
-   }
-
-   public GossipRouter(int port, String bindAddressString, long expiryTime,
-            long gossipRequestTimeout, long routingClientReplyTimeout) {
+   public GossipRouter(int port, String bindAddressString, long gossipRequestTimeout, long routingClientReplyTimeout) {
       this.port = port;
       this.bindAddressString = bindAddressString;
-      this.expiryTime = expiryTime;
       this.gossipRequestTimeout = gossipRequestTimeout;
       this.routingClientReplyTimeout = routingClientReplyTimeout;
       connectionTearListeners.add(new FailureDetectionListener());
    }
 
-   public GossipRouter(int port, String bindAddressString, long expiryTime,
+   public GossipRouter(int port, String bindAddressString,
             long gossipRequestTimeout, long routingClientReplyTimeout, boolean jmx) {
-      this(port, bindAddressString, expiryTime, gossipRequestTimeout, routingClientReplyTimeout);
+      this(port, bindAddressString, gossipRequestTimeout, routingClientReplyTimeout);
       this.jmx = jmx;
    }
 
@@ -172,12 +160,14 @@ public class GossipRouter {
       this.backlog = backlog;
    }
 
+    @Deprecated
    public void setExpiryTime(long expiryTime) {
-      this.expiryTime = expiryTime;
+
    }
 
-   public long getExpiryTime() {
-      return expiryTime;
+    @Deprecated
+   public static long getExpiryTime() {
+        return 0;
    }
 
    public void setGossipRequestTimeout(long gossipRequestTimeout) {
@@ -278,15 +268,6 @@ public class GossipRouter {
          }
       });
 
-      // starts the cache sweeper as daemon thread, so we won't block on it
-      // upon termination
-      timer = new Timer(true);
-      timer.schedule(new TimerTask() {
-         public void run() {
-            sweep();
-         }
-      }, expiryTime, expiryTime);
-
        try {
            mainLoop();
        }
@@ -301,8 +282,6 @@ public class GossipRouter {
    @ManagedOperation(description = "Always called before destroy(). Closes connections and frees resources")
    public void stop() {
       up = false;
-
-      timer.cancel();
       if (srvSock != null) {
          shutdown();
          Util.close(srvSock);
@@ -447,41 +426,7 @@ public class GossipRouter {
       }
    }
 
-   /**
-    * Removes expired gossip entries (entries older than EXPIRY_TIME msec).
-    * 
-    * @since 2.2.1
-    */
-   private void sweep() {
-      long diff, currentTime = System.currentTimeMillis();
-      int num_entries_removed = 0;
 
-      for (Iterator<Entry<String, ConcurrentMap<Address, RoutingEntry>>> it = routingTable
-               .entrySet().iterator(); it.hasNext();) {
-         Entry<String, ConcurrentMap<Address, RoutingEntry>> entry = it.next();
-         Map<Address, RoutingEntry> map = entry.getValue();
-         if (map == null || map.isEmpty()) {
-            it.remove();
-            continue;
-         }
-         for (Iterator<Entry<Address, RoutingEntry>> it2 = map.entrySet().iterator(); it2.hasNext();) {
-            Entry<Address, RoutingEntry> entry2 = it2.next();
-            RoutingEntry ae = entry2.getValue();
-            diff = currentTime - ae.timestamp;
-            if (diff > expiryTime) {
-               it2.remove();
-               if (log.isTraceEnabled())
-                  log.trace("removed " + ae.logical_addr + " (" + diff + " msecs old)");
-               num_entries_removed++;
-            }
-         }
-      }
-
-      if (num_entries_removed > 0) {
-         if (log.isTraceEnabled())
-            log.trace("done (removed " + num_entries_removed + " entries)");
-      }
-   }
 
    private void route(Address dest, String dest_group, byte[] msg, Address sender) {
       if (dest == null) { // send to all members in group dest.getChannelName()
@@ -833,7 +778,6 @@ public class GossipRouter {
    public static void main(String[] args) throws Exception {
       String arg;
       int port = 12001;
-      long expiry = GossipRouter.EXPIRY_TIME;
       long timeout = GossipRouter.GOSSIP_REQUEST_TIMEOUT;
       long routingTimeout = GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT;
 
@@ -860,7 +804,7 @@ public class GossipRouter {
             continue;
          }
          if ("-expiry".equals(arg)) {
-            expiry = Long.parseLong(args[++i]);
+             System.err.println("-expiry has been deprecated and will be ignored");
             continue;
          }
          if ("-jmx".equals(arg)) {
@@ -893,7 +837,7 @@ public class GossipRouter {
       System.out.println("GossipRouter is starting. CTRL-C to exit JVM");
 
       try {
-         router = new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout, jmx);
+         router = new GossipRouter(port, bind_addr, timeout, routingTimeout, jmx);
 
          if (backlog > 0)
             router.setBacklog(backlog);
@@ -924,9 +868,6 @@ public class GossipRouter {
       System.out.println("    -backlog <backlog>    - Max queue size of backlogged connections. Must be");
       System.out.println("                            greater than zero or the default of 1000 will be");
       System.out.println("                            used.");
-      System.out.println();
-      System.out.println("    -expiry <msecs>       - Time until a gossip cache entry expires. 30000 is");
-      System.out.println("                            the default value.");
       System.out.println();
       System.out.println("    -jmx                  - Expose attributes and operations via JMX.");
       System.out.println();
