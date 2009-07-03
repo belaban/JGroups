@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.4 2009/07/02 13:02:21 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.5 2009/07/03 07:18:27 belaban Exp $
 
 
 Motivation
@@ -43,8 +43,9 @@ The GossipRouter maintains the following data structures:
 
 - ConnectionTable:
   - A hashmap with logical_addrs as keys and ConnectionEntry's as values. A key represents a single member and a value
-    contains Socket, and input and output streams. The ConnectionEntry has a thread listening for messages on the
-    input stream, and it also has a list of logical_addrs for which is can receive messages.
+    contains the client socket (received as a result of accept()), and input and output streams.
+    The ConnectionEntry has a thread listening for messages on the
+    input stream, and it also has a list of logical_addrs from which it received CONNECT messages.
   - When the socket in the ConnectionEntry is closed by the peer, we remove all entries associated with all
     logical_addrs of ConnectionEntry from the other data structures.
 
@@ -77,32 +78,33 @@ GossipRouter
   - This stores the client the socket, input and output stream, then listens on the input stream
   - We might add the ConnectionEntry to a separate list, just to keep track of open connections
 
-- On CONNECT(groupname, logical_addr, logical_name, physical_addrs):
-  - Received by the thread in ConnectionEntry
+- On CONNECT(groupname, logical_addr, logical_name, physical_addrs) [received by ConnectionEntry.run()]:
   - The ConnectionEntry adds the logical address to its connection-list
-  - An entry for ConnectionTable is created, key is the logical addr, value the ConnectionEntry
+  - An entry is added to ConnectionTable, key is the logical addr, value the ConnectionEntry (this)
     (This is used for fast message routing)
+  - An entry is added to Membership
+  - If CONNECT ships with non-null physical_addrs, then an entry is added to AddressMappings
 
 
 - On DISCONNECT(logical_addr):
   - Close the socket in ConnectionEntry
-  - Remove the entry for logical_addr from all tables
+  - Remove the entry for logical_addr from all tables (Membership, AddressMappings)
 
 - On peer (RouterStub) closing the socket:
   - The ConnectionEntry gets an exception when listening on the input stream
   - We remove the entries in connection-list from all tables
 
 - On GET_MEMBERS(groupname):
-  - Grabs the members for groupname (from Membership  and AddressMappings) and passes them back, for each member:
+  - Grabs the members for groupname (from Membership and AddressMappings) and passes them back, for each member:
     - The logical address
     - The logical name
     - (if available) a list of physical addresses
 
 - On ROUTE(groupname, dest, message):
   - If dest == null (multicast):
-    - Grab all ConnectionEntry's from ConnectionTable and send the message
+    - Grab all ConnectionEntry's from ConnectionTable for groupname and send the message to all
   - Else (unicast)
-    - Find the ConnectionEntry form 'dest' and send the message
+    - Find the ConnectionEntry keyed by 'dest' and send the message to it
 
 TUNNEL
 ------
