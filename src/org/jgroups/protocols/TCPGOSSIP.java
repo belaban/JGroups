@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
@@ -27,17 +28,15 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.38 2009/04/27 09:04:02 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.39 2009/07/03 14:36:48 belaban Exp $
  */
+@DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
     
     private final static String name="TCPGOSSIP";    
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    
-    @Property(description="Rate of continious refresh registering of underlying gossip client with gossip server. Default is 20000 msec")
-    long gossip_refresh_rate=20000;
     @Property(description="Max time for socket creation. Default is 1000 msec")
     int sock_conn_timeout=1000;
     @Property(description="Max time in milliseconds to block on a read. 0 blocks forever")
@@ -47,7 +46,7 @@ public class TCPGOSSIP extends Discovery {
 
     
     List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
-    List<RouterStub> stubs = new ArrayList<RouterStub>();
+    final List<RouterStub> stubs = new ArrayList<RouterStub>();
 
     public String getName() {
         return name;
@@ -55,16 +54,12 @@ public class TCPGOSSIP extends Discovery {
     
     public void init() throws Exception {
         super.init();
-        if(initial_hosts == null || initial_hosts.isEmpty()) {
+        if(initial_hosts == null || initial_hosts.isEmpty())
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
-        }
-
-        if(timeout <= sock_conn_timeout) {
-            throw new IllegalArgumentException("timeout (" + timeout
-                                               + ") must be greater than sock_conn_timeout ("
-                                               + sock_conn_timeout
-                                               + ")");
-        }
+        
+        if(timeout <= sock_conn_timeout)
+            throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout ("
+                    + sock_conn_timeout + ")");
     }
     
     @Property
