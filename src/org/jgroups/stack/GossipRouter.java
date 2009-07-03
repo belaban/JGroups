@@ -1,44 +1,31 @@
 package org.jgroups.stack;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.management.MBeanServer;
-
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServer;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.*;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
  * layer sending packets point-to-point to each other member, it sends the packet to the router
- * which - depending on the target address - multicasts or unicasts it to the group / or single
- * member.
+ * which - depending on the target address - multicasts or unicasts it to the group / or single member.
  * <p>
  * This class is especially interesting for applets which cannot directly make connections (neither
  * UDP nor TCP) to a host different from the one they were loaded from. Therefore, an applet would
@@ -51,14 +38,16 @@ import org.jgroups.util.Util;
  * 1.2), is to use point-to-point UDP communication via the gossip server. However, then the appplet
  * has to be signed which involves additional administrative effort on the part of the user.
  * <p>
+ * Note that a GossipRouter is also a good way of running JGroups in Amazon's EC2 environment which (as of summer 09)
+ * doesn't support IP multicasting.
  * 
  * @author Bela Ban
+ * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.53 2009/06/30 10:20:50 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.54 2009/07/03 09:10:19 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
-   public static final byte EOF=-1;
    public static final byte CONNECT = 1; // CONNECT(group, addr) --> local address
    public static final byte DISCONNECT = 2; // DISCONNECT(group, addr)
    public static final byte GOSSIP_GET = 4; // GET(group) --> List<addr> (members)
@@ -66,7 +55,7 @@ public class GossipRouter {
    public static final byte MESSAGE = 10;
    public static final byte SUSPECT=11;
 
-   public static final int PORT = 12001;
+   public static final int  PORT = 12001;
    public static final long EXPIRY_TIME = 30000;
    public static final long GOSSIP_REQUEST_TIMEOUT = 1000;
    public static final long ROUTING_CLIENT_REPLY_TIMEOUT = 120000;
@@ -94,7 +83,7 @@ public class GossipRouter {
    private final ConcurrentMap<String, ConcurrentMap<Address, RoutingEntry>> routingTable = new ConcurrentHashMap<String, ConcurrentMap<Address, RoutingEntry>>();
 
    private ServerSocket srvSock = null;
-   private InetAddress bindAddress = null;
+   private InetAddress  bindAddress = null;
 
    @Property(description = "Time (in millis) for setting SO_LINGER on sockets returned from accept(). "
             + "0 means do not set SO_LINGER")
@@ -255,8 +244,6 @@ public class GossipRouter {
       }
    }
 
-   public void create() throws Exception {
-   }
 
    /**
     * Lifecycle operation. Called after create(). When this method is called, the managed attributes
@@ -266,9 +253,8 @@ public class GossipRouter {
    @ManagedOperation(description = "Lifecycle operation. Called after create(). When this method is called, "
             + "the managed attributes have already been set. Brings the Router into a fully functional state.")
    public void start() throws Exception {
-      if (srvSock != null) {
+      if (srvSock != null)
          throw new Exception("Router already started.");
-      }
 
       if (jmx && !registered) {
          MBeanServer server = Util.getMBeanServer();
@@ -292,14 +278,6 @@ public class GossipRouter {
          }
       });
 
-      // start the main server thread
-      new Thread(new Runnable() {
-         public void run() {
-            mainLoop();
-            cleanup();
-         }
-      }, "GossipRouter").start();
-
       // starts the cache sweeper as daemon thread, so we won't block on it
       // upon termination
       timer = new Timer(true);
@@ -308,6 +286,13 @@ public class GossipRouter {
             sweep();
          }
       }, expiryTime, expiryTime);
+
+       try {
+           mainLoop();
+       }
+       finally {
+           cleanup();
+       }
    }
 
    /**
@@ -564,7 +549,7 @@ public class GossipRouter {
    }
 
    private void removeEntry(String groupname, Address logical_addr) {
-      Map<Address, RoutingEntry> val = routingTable.get(groupname);
+      final Map<Address, RoutingEntry> val = routingTable.get(groupname);
       if (val == null)
          return;
       synchronized (val) {
@@ -585,7 +570,7 @@ public class GossipRouter {
       Map<Address, RoutingEntry> val = routingTable.get(group_name);
       if (val == null)
          return null;
-      return (RoutingEntry) val.get(logical_addr);
+      return val.get(logical_addr);
    }
 
    private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
@@ -614,9 +599,6 @@ public class GossipRouter {
       }
    }
 
-   /**
-    * @throws IOException
-    */
    private void sendToMember(Address dest, DataOutputStream out, byte[] msg, Address sender)
             throws IOException {
       if (out == null)
@@ -740,7 +722,7 @@ public class GossipRouter {
    }
 
    /**
-    * 
+    * Handles the requests from a client (RouterStub)
     */
    class ConnectionHandler implements Runnable {
       private volatile boolean active = true;
@@ -826,14 +808,13 @@ public class GossipRouter {
                      removeEntry(group_name, logical_addr);
                      close();
                      break;
-                  case GossipRouter.EOF:
+                  case -1: // EOF
                      notifyAbnormalConnectionTear(this,null);
                      removeEntry(group_name, logical_addr); 
                      break;
                }
             } catch (SocketTimeoutException ste) {
-               // do nothing - blocking read timeout caused it              
-               continue;
+               continue; // do nothing - blocking read timeout caused it             
             } catch (IOException ioex) {               
                notifyAbnormalConnectionTear(this, ioex);
                removeEntry(group_name, logical_addr);
@@ -886,17 +867,15 @@ public class GossipRouter {
             jmx = true;
             continue;
          }
-         // this option is not used and should be deprecated/removed
-         // in a future release
+         // this option is not used and should be deprecated/removed in a future release
          if ("-timeout".equals(arg)) {
-            System.out.println("    -timeout is depracted and will be ignored");
+            System.out.println("    -timeout is deprecated and will be ignored");
             ++i;
             continue;
          }
-         // this option is not used and should be deprecated/removed
-         // in a future release
+         // this option is not used and should be deprecated/removed in a future release
          if ("-rtimeout".equals(arg)) {
-            System.out.println("    -rtimeout is depracted and will be ignored");
+            System.out.println("    -rtimeout is deprecated and will be ignored");
             ++i;
             continue;
          }
@@ -911,7 +890,7 @@ public class GossipRouter {
          help();
          return;
       }
-      System.out.println("GossipRouter is starting. Enter quit to exit JVM");
+      System.out.println("GossipRouter is starting. CTRL-C to exit JVM");
 
       try {
          router = new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout, jmx);
@@ -929,17 +908,10 @@ public class GossipRouter {
       } catch (Exception e) {
          System.err.println(e);
       }
-      String quit = "";
-      while (!quit.startsWith("quit")) {
-         Scanner in = new Scanner(System.in);
-         try {
-            quit = in.nextLine();
-         } catch (Exception e) {
-         }
+       finally {
+          router.stop();
+          router.cleanup();
       }
-
-      router.stop();
-      router.cleanup();
    }
 
    static void help() {

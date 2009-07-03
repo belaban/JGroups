@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.6 2009/07/03 08:29:16 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.7 2009/07/03 09:10:20 belaban Exp $
 
 
 Motivation
@@ -42,12 +42,12 @@ The GossipRouter maintains the following data structures:
   - This is modified by CONNECT and DISCONNECT messages
 
 - ConnectionTable:
-  - A hashmap with logical_addrs as keys and ConnectionEntry's as values. A key represents a single member and a value
+  - A hashmap with logical_addrs as keys and ConnectionHandler's as values. A key represents a single member and a value
     contains the client socket (received as a result of accept()), and input and output streams.
-    The ConnectionEntry has a thread listening for messages on the
+    The ConnectionHandler has a thread listening for messages on the
     input stream, and it also has a list of logical_addrs from which it received CONNECT messages.
-  - When the socket in the ConnectionEntry is closed by the peer, we remove all entries associated with all
-    logical_addrs of ConnectionEntry from the other data structures.
+  - When the socket in the ConnectionHandler is closed by the peer, we remove all entries associated with all
+    logical_addrs of ConnectionHandler from the other data structures.
 
 - AddressMappings:
   - Maintains a hashmap with logical_addrs as keys and the physical_addrs as value
@@ -74,24 +74,24 @@ GossipRouter
 ------------
 
 - On accept():
-  - Create a new ConnectionEntry on a new thread (from the thread pool)
+  - Create a new ConnectionHandler on a new thread (from the thread pool)
   - This stores the client socket, input and output stream, then listens on the input stream
-  - We might add the ConnectionEntry to a separate list, just to keep track of open connections
+  - We might add the ConnectionHandler to a separate list, just to keep track of open connections
 
 - On peer (RouterStub) closing the socket:
-  - The ConnectionEntry gets an exception when listening on the input stream
+  - The ConnectionHandler gets an exception when listening on the input stream
   - We remove the entries in connection-list from all tables
 
-- On CONNECT(groupname, logical_addr, logical_name, physical_addrs) [received by ConnectionEntry.run()]:
-  - The ConnectionEntry adds the logical address to its connection-list
-  - An entry is added to ConnectionTable, key is the logical addr, value the ConnectionEntry (this)
+- On CONNECT(groupname, logical_addr, logical_name, physical_addrs) [received by ConnectionHandler.run()]:
+  - The ConnectionHandler adds the logical address to its connection-list
+  - An entry is added to ConnectionTable, key is the logical addr, value the ConnectionHandler (this)
     (This is used for fast message routing)
   - An entry is added to Membership
   - If CONNECT ships with non-null physical_addrs, then an entry is added to AddressMappings
 
 
 - On DISCONNECT(logical_addr):
-  - Close the socket in ConnectionEntry
+  - Close the socket in ConnectionHandler
   - Remove the entry for logical_addr from all tables (Membership, AddressMappings)
 
 
@@ -103,9 +103,9 @@ GossipRouter
 
 - On ROUTE(groupname, dest, message):
   - If dest == null (multicast):
-    - Grab all ConnectionEntry's from ConnectionTable for groupname and send the message to all
+    - Grab all ConnectionHandler's from ConnectionTable for groupname and send the message to all
   - Else (unicast)
-    - Find the ConnectionEntry keyed by 'dest' and send the message to it
+    - Find the ConnectionHandler keyed by 'dest' and send the message to it
 
 TUNNEL
 ------
