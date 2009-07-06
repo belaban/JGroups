@@ -3,7 +3,7 @@
 Changes to GossipRouter in 2.8
 ==============================
 Author: Bela Ban
-Version: $Id: GossipRouterChanges-1.8.txt,v 1.8 2009/07/03 12:42:50 belaban Exp $
+Version: $Id: GossipRouterChanges-1.8.txt,v 1.9 2009/07/06 08:55:06 belaban Exp $
 
 
 Motivation
@@ -86,8 +86,8 @@ GossipRouter
 
 
 - On DISCONNECT(logical_addr):
-  - Close the socket in ConnectionHandler
   - Remove the entry for logical_addr from all tables (RoutingTable, AddressMappings)
+  - Do *not* close the socket in ConnectionHandler: others may still be connected through the same connection !
 
 
 - On GET_MEMBERS(groupname):
