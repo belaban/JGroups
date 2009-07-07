@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.12 2008/02/27 16:58:44 belaban Exp $
+// $Id: ChannelFactory.java,v 1.13 2009/07/07 06:09:03 belaban Exp $
 
 package org.jgroups;
 
@@ -13,8 +13,9 @@ import java.net.URL;
  * creation methodologies.
  * 
  * @see JChannelFactory
- * 
+ * @deprecated Might get removed in 3.0. Use your own method of injecting channels
  */
+@Deprecated
 public interface ChannelFactory {
 
     /**
