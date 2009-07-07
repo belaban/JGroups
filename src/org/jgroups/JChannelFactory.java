@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.56 2009/05/13 13:07:10 belaban Exp $
+// $Id: JChannelFactory.java,v 1.57 2009/07/07 06:09:03 belaban Exp $
 
 package org.jgroups;
 
@@ -30,7 +30,10 @@ import java.util.*;
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
  * interface.
  * See {@link JChannel} for a discussion of channel properties.
+ * @see JChannelFactory
+ * @deprecated Might get removed in 3.0. Use your own method of injecting channels
  */
+@Deprecated
 @MBean(description="Factory to create channels")
 public class JChannelFactory implements ChannelFactory {
     private ProtocolStackConfigurator configurator;
