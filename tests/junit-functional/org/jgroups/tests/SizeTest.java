@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.25 2009/07/03 15:15:31 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.26 2009/07/08 15:30:33 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -111,7 +111,7 @@ public class SizeTest {
         data=new GossipData((byte)1);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, null, null);
+        data=new GossipData((byte)1, "DemoCluster", own, (List<Address>)null, null);
         _testSize(data);
 
         data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), null);
@@ -126,6 +126,20 @@ public class SizeTest {
         list.add(physical_addr_2);
         list.add(physical_addr_3);
         data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), list); 
+        _testSize(data);
+
+        data=new GossipData((byte)1, "demo", own, "logical_name", null);
+        _testSize(data);
+
+        data=new GossipData((byte)1, "demo", own, new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(data);
+
+        byte[] buffer=new byte[10];
+        buffer[2]='B';
+        buffer[3]='e';
+        buffer[4]='l';
+        buffer[5]='a';
+        data=new GossipData((byte)1, "demo", own, buffer, 2, 4);
         _testSize(data);
     }
 

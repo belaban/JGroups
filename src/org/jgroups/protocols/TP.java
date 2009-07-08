@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.248 2009/06/29 07:22:36 belaban Exp $
+ * @version $Id: TP.java,v 1.249 2009/07/08 15:30:32 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -65,9 +65,9 @@ public abstract class TP extends Protocol {
         f.setMaximumFractionDigits(2);
     }
 
-    private ExposedByteArrayOutputStream out_stream=null;
-    private ExposedDataOutputStream      dos=null;
-    private final Lock                   out_stream_lock=new ReentrantLock();
+    protected ExposedByteArrayOutputStream out_stream=null;
+    protected ExposedDataOutputStream      dos=null;
+    protected final Lock                   out_stream_lock=new ReentrantLock();
 
 
 
@@ -1027,8 +1027,8 @@ public abstract class TP extends Protocol {
 
 
 
-    /** Internal method to serialize and send a message. This method is not reentrant */
-    private void send(Message msg, Address dest, boolean multicast) throws Exception {
+    /** Serializes and sends a message. This method is not reentrant */
+    protected void send(Message msg, Address dest, boolean multicast) throws Exception {
 
         // bundle only regular messages; send OOB messages directly
         if(enable_bundling && !msg.isFlagSet(Message.OOB)) {
@@ -1055,7 +1055,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private void doSend(Buffer buf, Address dest, boolean multicast) throws Exception {
+    protected void doSend(Buffer buf, Address dest, boolean multicast) throws Exception {
         if(stats) {
             num_msgs_sent++;
             num_bytes_sent+=buf.getLength();
@@ -1097,7 +1097,7 @@ public abstract class TP extends Protocol {
      * @return
      * @throws java.io.IOException
      */
-    private static void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
+    protected static void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
         if(multicast)
@@ -1108,7 +1108,7 @@ public abstract class TP extends Protocol {
         msg.writeTo(dos);
     }
 
-    private static Message readMessage(DataInputStream instream) throws Exception {
+    protected static Message readMessage(DataInputStream instream) throws Exception {
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
         return msg;
