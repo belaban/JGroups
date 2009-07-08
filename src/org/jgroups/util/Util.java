@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.203 2009/06/17 16:20:16 belaban Exp $
+ * @version $Id: Util.java,v 1.204 2009/07/08 15:29:42 belaban Exp $
  */
 public class Util {
 
@@ -1086,10 +1086,14 @@ public class Util {
 
 
     public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
+        writeByteBuffer(buf, 0, buf.length, out);
+    }
+
+     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutputStream out) throws IOException {
         if(buf != null) {
             out.write(1);
-            out.writeInt(buf.length);
-            out.write(buf, 0, buf.length);
+            out.writeInt(length);
+            out.write(buf, offset, length);
         }
         else {
             out.write(0);
