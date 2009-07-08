@@ -4,11 +4,13 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Tuple;
 
 import java.util.*;
 import java.net.InetSocketAddress;
@@ -28,7 +30,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.39 2009/07/03 14:36:48 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.40 2009/07/08 15:29:30 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -71,7 +73,7 @@ public class TCPGOSSIP extends Discovery {
 		super.stop();
 		for (RouterStub stub : stubs) {
 			try {
-				stub.disconnect();
+				stub.disconnect(group_addr, local_addr);
 			} 
 			catch (Exception e) {
 			}
@@ -90,13 +92,18 @@ public class TCPGOSSIP extends Discovery {
             
             // init stubs
 			for (InetSocketAddress host : initial_hosts) {
-				stubs.add(new RouterStub(host.getHostName(), host.getPort(),null, local_addr));
+				stubs.add(new RouterStub(host.getHostName(), host.getPort(),null));
 			}
-            
-            //and connect
+
+            String logical_name=org.jgroups.util.UUID.get(local_addr);
+            PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            List<PhysicalAddress> physical_addrs=physical_addr != null? new ArrayList<PhysicalAddress>() : null;
+            if(physical_addr != null)
+                physical_addrs.add(physical_addr);
+
             for (RouterStub stub : stubs) {
     			try {
-    				stub.connect(group_addr);
+    				stub.connect(group_addr, local_addr, logical_name, physical_addrs);
     			} 
     			catch (Exception e) {
     			}
@@ -107,7 +114,7 @@ public class TCPGOSSIP extends Discovery {
     public void handleDisconnect() {
     	for (RouterStub stub : stubs) {
 			try {
-				stub.disconnect();
+				stub.disconnect(group_addr, local_addr);
 			} 
 			catch (Exception e) {
 			}
@@ -128,8 +135,24 @@ public class TCPGOSSIP extends Discovery {
         
         for (RouterStub stub : stubs) {
 			try {
-				tmp_mbrs.addAll(stub.getMembers(group_addr, sock_conn_timeout));
-			} 
+                List<PingData> rsps=stub.getMembers(group_addr);
+                for(PingData rsp: rsps) {
+                    Address logical_addr=rsp.getAddress();
+                    tmp_mbrs.add(logical_addr);
+
+                    // 1. Set physical addresses
+                    Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
+                    if(physical_addrs != null) {
+                        for(PhysicalAddress physical_addr: physical_addrs)
+                            down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
+                    }
+                    
+                    // 2. Set logical name
+                    String logical_name=rsp.getLogicalName();
+                    if(logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
+                        org.jgroups.util.UUID.add((org.jgroups.util.UUID)logical_addr, logical_name);
+                }
+			}
 			catch (Exception e) {
 			}
 		}
