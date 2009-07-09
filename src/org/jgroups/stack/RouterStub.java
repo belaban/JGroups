@@ -1,27 +1,26 @@
 package org.jgroups.stack;
 
+import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.PingData;
+import org.jgroups.protocols.TUNNEL;
+import org.jgroups.util.Util;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.ArrayList;
-
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.protocols.TUNNEL;
-import org.jgroups.protocols.PingData;
-import org.jgroups.util.Util;
+import java.util.List;
 
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.45 2009/07/08 15:30:31 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.46 2009/07/09 13:59:39 belaban Exp $
  */
 public class RouterStub {
 
@@ -50,8 +49,6 @@ public class RouterStub {
 
     private int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
     // forever, or until the sock is closed)
-
-    private volatile boolean intentionallyDisconnected=false;
 
     public interface ConnectionListener {
         void connectionStatusChange(ConnectionStatus state);
@@ -87,6 +84,10 @@ public class RouterStub {
 
     public boolean isConnected() {
         return connectionState == ConnectionStatus.CONNECTED;
+    }
+
+    public ConnectionStatus getConnectionStatus() {
+        return connectionState;
     }
 
     public void setConnectionListener(ConnectionListener conn_listener) {
@@ -142,9 +143,6 @@ public class RouterStub {
         Util.close(sock);
     }
 
-    public boolean isIntentionallyDisconnected() {
-        return intentionallyDisconnected;
-    }
 
     public synchronized List<PingData> getMembers(final String group) throws Exception {
         List<PingData> retval=new ArrayList<PingData>();
