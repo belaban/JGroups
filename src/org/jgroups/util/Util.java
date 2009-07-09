@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.204 2009/07/08 15:29:42 belaban Exp $
+ * @version $Id: Util.java,v 1.205 2009/07/09 07:05:00 belaban Exp $
  */
 public class Util {
 
@@ -2256,8 +2256,7 @@ public class Util {
     }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
-     * IpAddresses
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Returns a list of IpAddresses
      */
     public static List<IpAddress> parseCommaDelimitedHosts(String hosts, int port_range) throws UnknownHostException {
         StringTokenizer tok=new StringTokenizer(hosts, ",");
