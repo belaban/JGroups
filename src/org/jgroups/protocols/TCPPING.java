@@ -15,6 +15,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.BoundedList;
 
 import java.util.*;
+import java.net.UnknownHostException;
 
 
 /**
@@ -36,7 +37,7 @@ import java.util.*;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.48 2009/06/11 12:51:45 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.49 2009/07/09 07:08:29 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -102,7 +103,15 @@ public class TCPPING extends Discovery {
        
     public void start() throws Exception {        
         super.start();
-        initial_hosts = Util.parseCommaDelimitedHosts(hosts, port_range);       
+        try {
+            initial_hosts = Util.parseCommaDelimitedHosts(hosts, port_range);
+        }
+        catch(UnknownHostException ex) {
+            throw ex;
+        }
+        catch(Exception t) {
+            throw new Exception("failed to parse 'initial_hosts'", t);
+        }
     }
     
     public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
