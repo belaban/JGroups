@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.71 2009/07/09 12:38:23 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.72 2009/07/09 13:58:49 belaban Exp $
  */
 public class TUNNEL extends TP {
 
@@ -227,12 +227,10 @@ public class TUNNEL extends TP {
             final Runnable reconnector = new Runnable() {
                public void run() {
                   try {
-                     if (!stub.isIntentionallyDisconnected()) {
-                        if (log.isDebugEnabled()) {
-                           log.debug("Reconnecting to router at " + stub.getGossipRouterAddress());
-                        }
-                        // stub.connect(channel_name);
-                     }
+                      if (log.isDebugEnabled()) {
+                          log.debug("Reconnecting to router at " + stub.getGossipRouterAddress());
+                      }
+                      // stub.connect(channel_name);
                   } catch (Exception ex) {
                      if (log.isWarnEnabled())
                          log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress(), ex);
