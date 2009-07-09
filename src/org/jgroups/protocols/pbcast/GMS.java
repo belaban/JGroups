@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.180 2009/06/22 14:34:34 belaban Exp $
+ * @version $Id: GMS.java,v 1.181 2009/07/09 06:38:16 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -51,6 +51,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     @Property(description="Print local address of this member after connect. Default is true")
     private boolean print_local_addr=true;
+
+    @Property(description="Print physical address(es) on startup")
+    private boolean print_physical_addrs=true;
     
     @Property(description="If true this member can never become coordinator. Default is false")
     boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
@@ -911,9 +914,12 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                         || type == Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH;
 
                 if(print_local_addr) {
-                    System.out.println("\n---------------------------------------------------------\n" +
-                            "GMS: address is " + local_addr + " (cluster=" + evt.getArg() + ")" +
-                            "\n---------------------------------------------------------");
+                    PhysicalAddress physical_addr=print_physical_addrs?
+                            (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
+                    System.out.println("\n-------------------------------------------------------------------\n" +
+                            "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
+                            (physical_addr != null? ", physical address=" + physical_addr : "") +
+                            "\n-------------------------------------------------------------------");
                 }
                 down_prot.down(evt);
                 if(local_addr == null)
@@ -1231,7 +1237,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.180 2009/06/22 14:34:34 belaban Exp $
+     * @version $Id: GMS.java,v 1.181 2009/07/09 06:38:16 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
