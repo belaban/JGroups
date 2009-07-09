@@ -13,6 +13,8 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
 
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
@@ -30,10 +32,10 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.40 2009/07/08 15:29:30 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.41 2009/07/09 13:59:40 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
-public class TCPGOSSIP extends Discovery {
+public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
     
     private final static String name="TCPGOSSIP";    
 
@@ -41,14 +43,20 @@ public class TCPGOSSIP extends Discovery {
     
     @Property(description="Max time for socket creation. Default is 1000 msec")
     int sock_conn_timeout=1000;
+
     @Property(description="Max time in milliseconds to block on a read. 0 blocks forever")
     int sock_read_timeout=3000;
+
+    @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter")
+    long reconnect_interval=10000L;
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
     List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
-    final List<RouterStub> stubs = new ArrayList<RouterStub>();
+    final List<RouterStub>  stubs=new ArrayList<RouterStub>();
+    Future<?> reconnect_future=null;
+    protected volatile boolean running=true;
 
     public String getName() {
         return name;
@@ -69,8 +77,14 @@ public class TCPGOSSIP extends Discovery {
         initial_hosts=Util.parseCommaDelimetedHosts2(hosts,1);       
     }
 
+    public void start() throws Exception {
+        super.start();
+        running=true;
+    }
+
     public void stop() {
 		super.stop();
+        running=false;
 		for (RouterStub stub : stubs) {
 			try {
 				stub.disconnect(group_addr, local_addr);
@@ -78,7 +92,9 @@ public class TCPGOSSIP extends Discovery {
 			catch (Exception e) {
 			}
 		}
+        stopReconnector();
 	}
+
     public void handleConnect() {
         if(group_addr == null || local_addr == null) {
             if(log.isErrorEnabled())
@@ -90,26 +106,15 @@ public class TCPGOSSIP extends Discovery {
              
             stubs.clear();
             
-            // init stubs
-			for (InetSocketAddress host : initial_hosts) {
-				stubs.add(new RouterStub(host.getHostName(), host.getPort(),null));
+            for (InetSocketAddress host : initial_hosts) {
+                RouterStub stub=new RouterStub(host.getHostName(), host.getPort(), null);
+                stub.setConnectionListener(this);
+				stubs.add(stub);
 			}
-
-            String logical_name=org.jgroups.util.UUID.get(local_addr);
-            PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-            List<PhysicalAddress> physical_addrs=physical_addr != null? new ArrayList<PhysicalAddress>() : null;
-            if(physical_addr != null)
-                physical_addrs.add(physical_addr);
-
-            for (RouterStub stub : stubs) {
-    			try {
-    				stub.connect(group_addr, local_addr, logical_name, physical_addrs);
-    			} 
-    			catch (Exception e) {
-    			}
-    		}
+            connect(group_addr, local_addr);
         }
     }
+
 
     public void handleDisconnect() {
     	for (RouterStub stub : stubs) {
@@ -121,24 +126,30 @@ public class TCPGOSSIP extends Discovery {
 		}
     }
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
-        Message msg, copy;
-        PingHeader hdr;
-        List<Address> tmp_mbrs = new ArrayList<Address>();
-        Address mbr_addr;
+    public void connectionStatusChange(RouterStub.ConnectionStatus state) {
+        if(log.isDebugEnabled())
+            log.debug("connection changed to " + state);
+        if(state == RouterStub.ConnectionStatus.CONNECTED)
+            stopReconnector();
+        else
+            startReconnector();
+    }
 
+    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
         if(group_addr == null) {
-            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");            
+            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get membership");            
             return;
         }
+        
+        final List<Address> initial_mbrs=new ArrayList<Address>();
         if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
         
-        for (RouterStub stub : stubs) {
+        for(RouterStub stub : stubs) {
 			try {
                 List<PingData> rsps=stub.getMembers(group_addr);
                 for(PingData rsp: rsps) {
                     Address logical_addr=rsp.getAddress();
-                    tmp_mbrs.add(logical_addr);
+                    initial_mbrs.add(logical_addr);
 
                     // 1. Set physical addresses
                     Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
@@ -157,24 +168,65 @@ public class TCPGOSSIP extends Discovery {
 			}
 		}
         
-        if(tmp_mbrs.isEmpty()) {
-            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");           
+        if(initial_mbrs.isEmpty()) {
+            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: found no members");
             return;
         }
-        if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
-
-        hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
-        msg=new Message(null);
-        msg.setFlag(Message.OOB);
-        msg.putHeader(name, hdr);
-
-        for(Iterator<Address> it=tmp_mbrs.iterator(); it.hasNext();) {
-            mbr_addr=it.next();
-            copy=msg.copy();
-            copy.setDest(mbr_addr);
-            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
-            down_prot.down(new Event(Event.MSG, copy));
+        if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + initial_mbrs);
+        
+        for(Address mbr_addr: initial_mbrs) {
+            Message msg=new Message(mbr_addr);
+            msg.setFlag(Message.OOB);
+            PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
+            msg.putHeader(name, hdr);
+            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);
+            down_prot.down(new Event(Event.MSG, msg));
         }
+    }
+
+    synchronized void startReconnector() {
+        if(running && (reconnect_future == null || reconnect_future.isDone())) {
+            if(log.isDebugEnabled())
+                log.debug("starting reconnector");
+            reconnect_future=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    connect(group_addr, local_addr);
+                }
+            }, 0, reconnect_interval, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    synchronized void stopReconnector() {
+        if(reconnect_future != null) {
+            reconnect_future.cancel(true);
+            reconnect_future=null;
+            if(log.isDebugEnabled())
+                log.debug("stopping reconnector");
+        }
+    }
+
+    protected void connect(String group, Address logical_addr) {
+        String logical_name=org.jgroups.util.UUID.get(logical_addr);
+        PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        List<PhysicalAddress> physical_addrs=physical_addr != null? new ArrayList<PhysicalAddress>() : null;
+        if(physical_addr != null)
+            physical_addrs.add(physical_addr);
+
+        int num_faulty_conns=0;
+        for (RouterStub stub : stubs) {
+            try {
+                if(log.isTraceEnabled())
+                    log.trace("tring to connect to " + stub.getGossipRouterAddress());
+                stub.connect(group, logical_addr, logical_name, physical_addrs);
+            }
+            catch(Exception e) {
+                if(log.isErrorEnabled())
+                log.error("failed connecting to " + stub.getGossipRouterAddress() + ": " +  e);
+                num_faulty_conns++;
+            }
+        }
+        if(num_faulty_conns == 0)
+            stopReconnector();
     }
 }
 
