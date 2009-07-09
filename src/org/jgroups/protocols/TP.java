@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.249 2009/07/08 15:30:32 belaban Exp $
+ * @version $Id: TP.java,v 1.250 2009/07/09 12:38:23 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1812,6 +1812,7 @@ public abstract class TP extends Protocol {
         final Set<Address> members=new CopyOnWriteArraySet<Address>();
         final ThreadFactory factory;
         Address local_addr;
+        public static final ThreadLocal<Address> thread_local=new ThreadLocal<Address>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, String transport_name, Protocol up, Protocol down, String pattern) {
             this.cluster_name=cluster_name;
@@ -1826,6 +1827,7 @@ public abstract class TP extends Protocol {
                 factory.setAddress(local_addr.toString());
             if(cluster_name != null)
                 factory.setClusterName(cluster_name);
+            thread_local.set(local_addr);
         }
 
         @ManagedAttribute(description="Name of the cluster to which this adapter proxies")
@@ -1901,6 +1903,7 @@ public abstract class TP extends Protocol {
                     if(addr != null) {
                         local_addr=addr;
                         factory.setAddress(addr.toString()); // used for thread naming
+                        thread_local.set(addr);
                     }
                     break;
             }
