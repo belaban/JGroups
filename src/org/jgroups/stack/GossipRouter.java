@@ -47,7 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.56 2009/07/08 15:30:10 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.57 2009/07/09 13:01:28 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -338,7 +338,7 @@ public class GossipRouter {
                     for(Map.Entry<Address,ConnectionHandler> en: map.entrySet()) {
                         sb.append(en.getKey() + ": ");
                         ConnectionHandler handler=en.getValue();
-                        sb.append("sock=" +handler.sock);
+                        sb.append("sock=" +handler.sock).append("\n");
                     }
                 }
                 sb.append("\n");
