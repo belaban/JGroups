@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.70 2009/07/08 15:30:32 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.71 2009/07/09 12:38:23 belaban Exp $
  */
 public class TUNNEL extends TP {
 
@@ -206,8 +206,10 @@ public class TUNNEL extends TP {
 
              if(!isSingleton())
                  tunnel_policy.connect(stubs, group, local_addr, logical_name, physical_addrs);
-             else
-                ; //tunnel_policy.connect(...);
+             else {
+                 Address local=ProtocolAdapter.thread_local.get();
+                 tunnel_policy.connect(stubs, group, local, logical_name, physical_addrs);
+             }
             break;
 
          case Event.DISCONNECT:
