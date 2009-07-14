@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.34 2009/07/14 21:37:24 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.35 2009/07/14 23:05:39 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -479,7 +479,7 @@
 
 
     <target name="runtests-functional" depends="compile, copy-build-properties">
-        <testrunner-functional set="all.tests">Tests running with parameters:
+        <testrunner-functional set="${testset}">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
             threadcount=${threadcount}
@@ -707,6 +707,15 @@
         </antcall>
     </target>
 
+    <target name="one-test-functional"
+            description="Runs a single junit test indicated by -Dtest=testname parameter, e.g. -Dtest=Deadlock2Test (no package names needed)">
+        <antcall target="runtests-functional">
+            <param name="testset" value="one.test"/>
+            <param name="test.verbose" value="true"/>
+        	<param name="testname.ext" value="one-test"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
+        </antcall>
+    </target>
 
 
 
