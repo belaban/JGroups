@@ -10,7 +10,7 @@
 		sender doesn't receive ack within timeout, message
 		will be retransmitted). Compared to smack.xml, this stack uses TUNNEL as transport-->
 <config>
-    <UDP mcast_port="45566" use_incoming_packet_handler="false" mcast_addr="228.8.8.8" use_outgoing_packet_handler="false" ip_ttl="32"/>
+    <UDP mcast_port="${jgroups.udp.mcast_port:45566}" use_incoming_packet_handler="false" mcast_addr="${jgroups.udp.mcast_addr:228.8.8.8}" use_outgoing_packet_handler="false" ip_ttl="${jgroups.udp.ip_ttl:32}"/>
     <FD_SIMPLE timeout="3000"   interval="2000" max_missed_hbs="3"/>
     <UNICAST timeout="1200,2400,3000"   use_gms="false"/>
     <SMACK max_xmits="20" timeout="1000,1500,2000"  />

@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.35.2.8 2008/06/17 08:22:36 belaban Exp $
+  Version: $Id: stacks.xml,v 1.35.2.9 2009/07/14 21:37:23 rachmatowicz Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -370,7 +370,7 @@
     <stack name="tunnel"
            description="Used with a GossipRouter">
         <config>
-            <TUNNEL router_port="12001" router_host="127.0.0.1"/>
+            <TUNNEL router_port="${jgroups.tunnel.router_port:12001}" router_host="${jgroups.tunnel.router_host:127.0.0.1}"/>
             <PING timeout="2000"
                     num_initial_members="3"
                   gossip_refresh="10000"

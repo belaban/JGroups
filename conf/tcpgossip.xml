@@ -6,7 +6,7 @@
 
 <config>
     <TCP start_port="7800" bind_addr="localhost" loopback="true"/>
-    <TCPGOSSIP timeout="3000" initial_hosts="localhost[12000]" num_initial_members="3"/>
+    <TCPGOSSIP timeout="3000" initial_hosts="${jgroups.tcpgossip.initial_hosts:localhost[12000]}" num_initial_members="3"/>
     <FD timeout="2000" max_tries="4"/>
     <VERIFY_SUSPECT timeout="1500"  />
     <pbcast.NAKACK gc_lag="100" retransmit_timeout="600,1200,2400,4800"/>
