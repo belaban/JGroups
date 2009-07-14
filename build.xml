@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.35 2009/07/14 23:05:39 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.36 2009/07/14 23:39:19 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -369,7 +369,6 @@
 		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
-            <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
