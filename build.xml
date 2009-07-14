@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.33 2009/04/28 14:25:37 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.34 2009/07/14 21:37:24 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -37,6 +37,14 @@
     <property name="threadcount" value="false"/>
     <property name="test.verbose" value="false"/>
 
+    <!-- properties to determine IP version used -->
+    <condition property="java.net.preferIPv4Stack" value="true" else="false">
+      <isfalse value="${jgroups.useIPv6}"/>
+    </condition>
+
+    <condition property="java.net.preferIPv6Addresses" value="true" else="false">
+      <istrue value="${jgroups.useIPv6}"/>
+    </condition>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
@@ -352,6 +360,13 @@
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+            <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+            <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+            <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+            <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
+            <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
             <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
@@ -385,7 +400,10 @@
                 <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
                 <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
                 <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>                
+                <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+                <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+    		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
                 <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
                 <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
@@ -418,7 +436,13 @@
             <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+                <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+                <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+                <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
+                <jvmarg value="-Djgroups.tunnel.router_host=${jgroups.tunnel.router_host}"/>
+                <jvmarg value="-Djgroups.tunnel.router_port=${jgroups.tunnel.router_port}"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+    		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
                 <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
                 <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
@@ -449,6 +473,7 @@
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
             testname.ext=${testname.ext}
+		 	usingIPv6=${jgroups.useIPv6}
         </testrunner>
     </target>
 
@@ -462,6 +487,7 @@
             testname.ext=${testname.ext}
             formatter.class=${formatter.class}
         	junit.excludes=${junit.excludes}
+		 	usingIPv6=${jgroups.useIPv6}
         </testrunner-functional>
     </target>
 	
@@ -544,6 +570,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="udp.xml"/>
             <param name="channel.conf.flush" value="flush-udp.xml"/>
+        	<param name="testname.ext" value="udp"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
 
@@ -552,6 +579,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
+        	<param name="testname.ext" value="tcp"/>
 			<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
 
@@ -644,6 +672,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp-nio.xml"/>
             <param name="channel.conf.flush" value="flush-tcp-nio.xml"/>
+        	<param name="testname.ext" value="tcp-nio"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
@@ -673,6 +702,7 @@
         <antcall target="runtests">
             <param name="testset" value="one.test"/>
             <param name="test.verbose" value="true"/>
+        	<param name="testname.ext" value="one-test"/>
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>

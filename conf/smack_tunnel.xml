@@ -5,7 +5,7 @@
 <!-- input file: smack_tunnel.old.xml -->
 
 <config>
-    <TUNNEL router_port="12001" router_host="localhost"/>
+    <TUNNEL router_port="${jgroups.tunnel.router_port:12001}" router_host="${jgroups.tunnel.router_host:localhost}"/>
     <FD_SIMPLE timeout="3000"   interval="2000" max_missed_hbs="3"/>
     <UNICAST timeout="1200,2400,3000"   use_gms="false"/>
     <SMACK max_xmits="20" timeout="1000,1500,2000"  />

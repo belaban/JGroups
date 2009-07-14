@@ -8,3 +8,7 @@ jgroups.tcpping.initial_hosts=localhost[7800]
 jgroups.udp.mcast_addr=232.15.15.15
 jgroups.udp.mcast_port=45588
 jgroups.udp.ip_ttl=5
+jgroups.tunnel.router_host=localhost
+jgroups.tunnel.router_port=12001
+# use true for IPv6 and false for IPv4 
+jgroups.useIPv6=false
