@@ -16,19 +16,23 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.7.2.3 2008/06/09 14:43:41 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.7.2.4 2009/07/15 15:07:42 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
-    static InetAddress loopback_addr=null;
+    static String bind_addr_str=null;
+    static InetAddress bind_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
+    // needed as OSs need not release ports immediately after a socket has closed
+    int port_range = 3 ;
 
     final static int PORT1=7521, PORT2=8931;
 
     static {
         try {
-            loopback_addr=InetAddress.getByName("127.0.0.1");
+        	bind_addr_str = System.getProperty("jgroups.bind_addr", "127.0.0.1") ;
+            bind_addr=InetAddress.getByName(bind_addr_str);
         }
         catch(UnknownHostException e) {
             e.printStackTrace();
@@ -43,8 +47,8 @@ public class ConnectionTableTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        addr1=new IpAddress(loopback_addr, PORT1);
-        addr2=new IpAddress(loopback_addr, PORT2);
+        addr1=new IpAddress(bind_addr, PORT1);
+        addr2=new IpAddress(bind_addr, PORT2);
     }
 
 
@@ -68,9 +72,9 @@ public class ConnectionTableTest extends TestCase {
         Sender sender1, sender2;
         CyclicBarrier barrier=new CyclicBarrier(3);
 
-        ct1=new ConnectionTable(loopback_addr, PORT1);
+        ct1=new ConnectionTable(bind_addr, PORT1);
         ct1.start();
-        ct2=new ConnectionTable(loopback_addr, PORT2);
+        ct2=new ConnectionTable(bind_addr, PORT2);
         ct2.start();
         BasicConnectionTable.Receiver dummy=new BasicConnectionTable.Receiver() {
             public void receive(Address sender, byte[] data, int offset, int length) {}
@@ -170,28 +174,28 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTableNoSendQueues() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000);
         ct1.setUseSendQueues(false);
         ct1.start();
-        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000);
         ct2.setUseSendQueues(false);
         ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableWithSendQueues() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000);
         ct1.start();
-        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000);
         ct2.start();
         _testStop(ct1, ct2);
     }
 
 
     public void testStopConnectionTableNIONoSendQueues() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000, false);
         ct1.setUseSendQueues(false);       
-        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000, false);
         ct2.setUseSendQueues(false);
         ct1.start();
         ct2.start();
@@ -200,8 +204,8 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTableNIOWithSendQueues() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000, false);
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);
