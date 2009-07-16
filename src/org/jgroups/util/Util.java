@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.12 2009/05/18 16:18:22 galderz Exp $
+ * @version $Id: Util.java,v 1.137.2.13 2009/07/16 16:55:31 rachmatowicz Exp $
  */
 public class Util {
 
@@ -2142,7 +2142,8 @@ public class Util {
                 StringBuilder sb=new StringBuilder();
                 String type=mcast_addr != null ? mcast_addr instanceof Inet4Address? "IPv4" : "IPv6" : "n/a";
                 sb.append("could not bind to " + mcast_addr + " (" + type + " address)");
-                sb.append("; make sure your mcast_addr is of the same type as the IP stack (IPv4 or IPv6).");
+                sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
+                sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
                         "(see http://www.jboss.com/wiki/Edit.jsp?page=CrossTalking for details). ");
                 sb.append("\nException was: " + ex);
