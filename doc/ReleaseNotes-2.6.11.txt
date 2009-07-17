@@ -1,0 +1,42 @@
+Release Notes JGroups 2.6.11
+============================
+
+Version: $Id: ReleaseNotes-2.6.11.txt,v 1.1.2.1 2009/07/17 13:58:42 rachmatowicz Exp $
+Author: Bela Ban
+
+JGroups 2.6.11 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5, 2.6.6, 2.6.7, 2.6.8, 2.6.9 and 2.6.10.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.10 and 2.6.11.
+
+Release Notes - JGroups - Version 2.6.11
+
+** Bug
+    * [JGRP-912] - Failed to parse the jgroups.xml file
+    * [JGRP-956] - Binding to mcast address in UDP.java is not working on Linux with IPv6
+    * [JGRP-984] - JGroups can not parse IPV6 literals in TCPPING protocol configuration
+    * [JGRP-985] - Flush and join problems during constant node failures and constant joins
+    * [JGRP-986] - FLUSH: relax event sequencing for a joining member
+    * [JGRP-997] - AUTH: incorrect matching of src against memberList
+    * [JGRP-1000] - COMPRESS corrupts some messages
+    * [JGRP-1006] - Shared transport: shunned multiple channels can not reconnect 
+
+** Task
+    * [JGRP-982] - Extend linux method of creating multicast socket to HP-UX
+    * [JGRP-1004] - GroupRequest: don't ignore InterruptedException
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+July 2009
+
+
