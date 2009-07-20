@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Tests whether UNICAST or NAKACK prevent delivery of duplicate messages. JGroups guarantees that a message is
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.11 2009/06/18 13:05:25 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.12 2009/07/20 13:28:12 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -237,7 +238,7 @@ public class DuplicateTest extends ChannelTestBase {
             synchronized(msgs) {
                 List<Long> list=msgs.get(addr);
                 if(list == null) {
-                    list=new LinkedList<Long>();
+                    list=new CopyOnWriteArrayList<Long>();
                     msgs.put(addr, list);
                 }
                 list.add(val);
