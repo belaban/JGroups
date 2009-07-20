@@ -268,7 +268,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                             handleStateReq(hdr);
                             break;
                         case StateHeader.STATE_RSP :
-                            handleStateRsp(hdr);
+                            // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                            if(isDigestNeeded())
+                                down_prot.down(new Event(Event.CLOSE_BARRIER));
+                            try {
+                                handleStateRsp(hdr);
+                            }
+                            finally {
+                                if(isDigestNeeded())
+                                    down_prot.down(new Event(Event.OPEN_BARRIER));
+                            }
                             break;
                         case StateHeader.STATE_PART :
                             try {
