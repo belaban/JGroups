@@ -45,18 +45,23 @@ public abstract class BasicTCP extends TP {
     int send_queue_size=10000;
     
     @Property(description="Receiver buffer size in bytes. Default is 150000 bytes")
+    @ManagedAttribute(writable=false)
     int recv_buf_size=150000;
     
     @Property(description="Send buffer size in bytes. Default is 150000 bytes")
+    @ManagedAttribute(writable=false)
     int send_buf_size=150000;
     
     @Property(description="Max time allowed for a socket creation in ConnectionTable. Default is 2000 msec")
+    @ManagedAttribute(writable=false)
     int sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
     
     @Property(description="Max time to block on reading of peer address. Default is 1000 msec")
+    @ManagedAttribute(writable=false)
     int peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
     @Property(description="Should TCP no delay flag be turned on. Default is false")
+    @ManagedAttribute(writable=false)
     boolean tcp_nodelay=false;
     
     @Property(description="SO_LINGER in msec. Default of -1 disables it")

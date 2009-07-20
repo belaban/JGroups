@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.24 2009/04/09 09:11:16 belaban Exp $
+// $Id: CloseTest.java,v 1.25 2009/07/20 12:36:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -231,24 +231,7 @@ public class CloseTest extends ChannelTestBase {
         }
     }
 
-    @Test
-    public void testCreationAndCloseLoop() throws Exception {
-        System.out.println("-- creating channel --");
-        ch.set(createChannel(true));
-        final String GROUP=getUniqueClusterName("CloseTest.testCreationAndCloseLoop");
-        for(int i=1; i <= 5; i++) {
-            System.out.println("-- connecting channel (attempt #" + i + " ) --");
-            ch.get().connect(GROUP);
-            System.out.println("-- closing channel --");
-            ch.get().close();
-
-            System.out.println("-- reopening channel --");
-            ch.get().open();
-            new DefaultChannelTestFactory().makeUnique(ch.get(), 1);
-        }
-        ch.get().close();
-    }
-
+   
 
     @Test
     public void testMultipleConnectsAndDisconnects() throws Exception {
