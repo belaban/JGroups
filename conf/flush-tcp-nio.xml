@@ -5,14 +5,14 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
     author: Bela Ban
-    version: $Id: flush-tcp-nio.xml,v 1.10 2009/07/02 12:22:16 belaban Exp $
+    version: $Id: flush-tcp-nio.xml,v 1.11 2009/07/20 12:28:22 belaban Exp $
 -->
 <config>
     <TCP_NIO
             bind_port="7800"
             loopback="true"
-            recv_buf_size="20000000"
-            send_buf_size="640000"
+            recv_buf_size="${tcp.recv_buf_size:20000000}"
+            send_buf_size="${tcp.send_buf_size:640000}"
             discard_incompatible_packets="true"
             max_bundle_size="64000"
             max_bundle_timeout="30"
