@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.9 2009/07/20 16:46:15 belaban Exp $
+ * @version $Id: AgeOutCacheTest.java,v 1.10 2009/07/20 16:50:40 belaban Exp $
  */
 @Test(groups = Global.FUNCTIONAL, sequential = true)
 public class AgeOutCacheTest {
@@ -61,18 +61,18 @@ public class AgeOutCacheTest {
     }
 
 
-    public void testExists() {
+    public void testContains() {
         AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 5000L);
         for (int i = 1; i <= 5; i++)
             cache.add(i);
         System.out.println("cache:\n" + cache);
-        assert cache.exists(3);
+        assert cache.contains(3);
         cache.remove(3);
         System.out.println("cache:\n" + cache);
-        assert !cache.exists(3);
+        assert !cache.contains(3);
         cache.clear();
         assert cache.size() == 0;
-        assert !cache.exists(4);
+        assert !cache.contains(4);
     }
 
     public void testGradualExpiration() {
