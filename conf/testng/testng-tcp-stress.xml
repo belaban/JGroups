@@ -1,20 +1,14 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="tcp"
        parallel="methods"
-       thread-count="5"
+       thread-count="1"
         >
 
     <test name="tcp" junit="false" time-out="80000">
         <parameter name="channel.conf" value="tcp.xml"/>
         <groups>
             <run>
-            	<include name="base"/>       
-            	<include name="stack-dependent"/>
-            	<exclude name="stack-independent"/>
-                <exclude name="broken"/>
-                <exclude name="known-failures"/>
-                <exclude name="flush"/>
-                <exclude name="stress"/>
+            	<include name="stress"/>
             </run>
         </groups>
         <packages>
