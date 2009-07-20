@@ -170,7 +170,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     public Vector<Integer> requiredDownServices() {
         Vector<Integer> retval = new Vector<Integer>();
         retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.SET_DIGEST));
+        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
         return retval;
     }
 
@@ -449,7 +449,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     log.warn("digest received from " + hdr.sender
                             + " is null, skipping setting digest !");
             } else {
-                down_prot.down(new Event(Event.SET_DIGEST, tmp_digest));
+                down_prot.down(new Event(Event.OVERWRITE_DIGEST, tmp_digest));
             }
         }
         if (use_default_transport) {
