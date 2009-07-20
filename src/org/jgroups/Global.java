@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.42 2009/04/09 09:11:29 belaban Exp $
+ * @version $Id: Global.java,v 1.43 2009/07/20 13:03:50 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -61,6 +61,7 @@ public class Global {
     public static final String STACK_DEPENDENT="stack-dependent";
     public static final String STACK_INDEPENDENT="stack-independent";
     public static final String FLUSH="flush";
+    public static final String STRESS="stress";
     public static final String INITIAL_MCAST_ADDR="INITIAL_MCAST_ADDR";
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";
     public static final String INITIAL_TCP_PORT="INITIAL_TCP_PORT";
