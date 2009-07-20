@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.226 2009/06/19 15:42:07 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.227 2009/07/20 16:21:41 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -513,6 +513,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Vector<Integer> retval=new Vector<Integer>(5);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
+        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
         retval.addElement(new Integer(Event.MERGE_DIGEST));
         return retval;
     }
@@ -573,6 +574,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.SET_DIGEST:
                 setDigest((Digest)evt.getArg());
+                return null;
+
+            case Event.OVERWRITE_DIGEST:
+                overwriteDigest((Digest)evt.getArg());
                 return null;
 
             case Event.MERGE_DIGEST:
@@ -1188,13 +1193,47 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         setDigest(digest, true);
     }
 
+    /**
+     * Overwrites existing entries, but does NOT remove entries not found in the digest
+     * @param digest
+     */
+    private void overwriteDigest(Digest digest) {
+        if(digest == null)
+            return;
+
+        StringBuilder sb=new StringBuilder("\n[overwriteDigest()]\n");
+        sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
+
+        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
+            Address sender=entry.getKey();
+            Digest.Entry val=entry.getValue();
+            if(sender == null || val == null)
+                continue;
+
+            long highest_delivered_seqno=val.getHighestDeliveredSeqno();
+            long low_seqno=val.getLow();
+
+            NakReceiverWindow win=xmit_table.get(sender);
+            if(win != null) {
+                win.reset(); // stops retransmission
+                xmit_table.remove(sender);
+            }
+            win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
+            xmit_table.put(sender, win);
+        }
+        sb.append("\n").append("resulting digest: " + getDigest());
+        digest_history.add(sb.toString());
+        if(log.isDebugEnabled())
+            log.debug(sb.toString());
+    }
+
 
     /**
      * Sets or merges the digest. If there is no entry for a given member in xmit_table, create a new NakReceiverWindow.
      * Else skip the existing entry, unless it is a merge. In this case, skip the existing entry if its seqno is
      * greater than or equal to the one in the digest, or reset the window and create a new one if not.
-     * @param digest
-     * @param merge
+     * @param digest The digest
+     * @param merge Whether to merge the new digest with our own, or not
      */
     private void setDigest(Digest digest, boolean merge) {
         if(digest == null)
@@ -1206,12 +1245,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
             Address sender=entry.getKey();
             Digest.Entry val=entry.getValue();
-            if(sender == null || val == null) {
-                if(log.isWarnEnabled()) {
-                    log.warn("sender or value is null");
-                }
+            if(sender == null || val == null)
                 continue;
-            }
 
             long highest_delivered_seqno=val.getHighestDeliveredSeqno();
             long low_seqno=val.getLow();

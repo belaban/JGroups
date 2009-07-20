@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.68 2009/06/17 16:20:01 belaban Exp $
+ * @version $Id: Event.java,v 1.69 2009/07/20 16:21:42 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -26,6 +26,7 @@ public class Event {
     public static final int STABLE                             = 30;  // arg = long[] (stable seqnos for mbrs)
     public static final int GET_DIGEST                         = 39;  //
     public static final int SET_DIGEST                         = 41;  // arg = Digest
+    public static final int OVERWRITE_DIGEST                   = 42;  // arg = Digest
     public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
     public static final int MERGE_DIGEST                       = 53;  // arg = Digest
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
@@ -110,6 +111,7 @@ public class Event {
             case STABLE:                 return "STABLE";
             case GET_DIGEST:             return "GET_DIGEST";
             case SET_DIGEST:             return "SET_DIGEST";
+            case OVERWRITE_DIGEST:       return "OVERWRITE_DIGEST";
             case MERGE:                  return "MERGE";
             case UNSUSPECT:              return "UNSUSPECT";
             case MERGE_DIGEST:           return "MERGE_DIGEST";

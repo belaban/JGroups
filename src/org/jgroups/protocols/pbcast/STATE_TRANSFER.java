@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.84 2009/07/20 13:05:08 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.85 2009/07/20 16:21:41 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -85,7 +85,7 @@ public class STATE_TRANSFER extends Protocol {
     public Vector<Integer> requiredDownServices() {
         Vector<Integer> retval=new Vector<Integer>();
         retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.SET_DIGEST));
+        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
         return retval;
     }
 
@@ -417,7 +417,7 @@ public class STATE_TRANSFER extends Protocol {
 
         waiting_for_state_response=false;
         if(digest_needed && tmp_digest != null) {
-            down_prot.down(new Event(Event.SET_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
+            down_prot.down(new Event(Event.OVERWRITE_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
         }
         stop=System.currentTimeMillis();
 
