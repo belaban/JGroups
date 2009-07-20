@@ -18,9 +18,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.43 2009/06/22 11:46:31 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.44 2009/07/20 13:03:39 belaban Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=false)
+@Test(groups={Global.STACK_DEPENDENT, Global.STRESS}, sequential=true)
 public class ConnectStressTest extends ChannelTestBase {
     static final int            NUM=20;
     private final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
@@ -53,7 +53,7 @@ public class ConnectStressTest extends ChannelTestBase {
         barrier.await(); // causes all threads to call Channel.connect()
         System.out.println("*** Starting the connect phase ***");
 
-        long target_time=System.currentTimeMillis() + 30000L;
+        long target_time=System.currentTimeMillis() + 60000L;
         while(System.currentTimeMillis() < target_time) {
             View view=threads[0].getChannel().getView();
             if(view != null) {
@@ -131,8 +131,8 @@ public class ConnectStressTest extends ChannelTestBase {
         }
         MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
         if(merge != null) {
-            merge.setMinInterval(2000);
-            merge.setMaxInterval(5000);
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
         }
         NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
         if(nakack != null)
