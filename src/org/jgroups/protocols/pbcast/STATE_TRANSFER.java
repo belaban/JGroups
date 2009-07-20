@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.83 2009/04/09 09:11:34 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.84 2009/07/20 13:05:08 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -56,7 +56,7 @@ public class STATE_TRANSFER extends Protocol {
     private final Map<String,Set<Address>> state_requesters=new HashMap<String,Set<Address>>();
 
     /** set to true while waiting for a STATE_RSP */
-    private boolean waiting_for_state_response=false;
+    private volatile boolean waiting_for_state_response=false;
 
     private boolean flushProtocolInStack=false;
 
@@ -124,7 +124,16 @@ public class STATE_TRANSFER extends Protocol {
                         handleStateReq(hdr);
                         break;
                     case StateHeader.STATE_RSP:
-                        handleStateRsp(hdr, msg.getBuffer());
+                        // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                        if(isDigestNeeded())
+                            down_prot.down(new Event(Event.CLOSE_BARRIER));
+                        try {
+                            handleStateRsp(hdr, msg.getBuffer());
+                        }
+                        finally {
+                            if(isDigestNeeded())
+                                down_prot.down(new Event(Event.OPEN_BARRIER));
+                        }
                         break;
                     default:
                         if(log.isErrorEnabled())
@@ -402,42 +411,24 @@ public class STATE_TRANSFER extends Protocol {
     }
 
     /** Set the digest and the send the state up to the application */
-    void handleStateRsp(StateHeader hdr, byte[] state) {
-        Address sender=hdr.sender;
+    private void handleStateRsp(StateHeader hdr, byte[] state) {
         Digest tmp_digest=hdr.my_digest;
-        String id=hdr.state_id;
-        Address state_sender=hdr.sender;
+        boolean digest_needed=isDigestNeeded();
 
         waiting_for_state_response=false;
-        if(isDigestNeeded()) {
-            if(tmp_digest == null) {
-                if(log.isWarnEnabled())
-                    log.warn("digest received from " + sender
-                             + " is null, skipping setting digest !");
-            }
-            else
-                down_prot.down(new Event(Event.SET_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
+        if(digest_needed && tmp_digest != null) {
+            down_prot.down(new Event(Event.SET_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
         }
         stop=System.currentTimeMillis();
 
-        // resume sending and handling of message garbage collection gossip messages,
-        // fixes bugs #943480 and #938584). Wakes up a previously suspended message garbage
-        // collection protocol (e.g. STABLE)
+        // resume sending and handling of message garbage collection gossip messages, fixes bugs #943480 and #938584).
+        // Wakes up a previously suspended message garbage collection protocol (e.g. STABLE)
         if(log.isDebugEnabled())
             log.debug("passing down a RESUME_STABLE event");
         down_prot.down(new Event(Event.RESUME_STABLE));
 
-        if(state == null) {
-            if(log.isWarnEnabled())
-                log.warn("state received from " + sender
-                         + " is null, will return null state to application");
-        }
-        else
-            log.debug("received state, size=" + state.length
-                      + " bytes. Time="
-                      + (stop - start)
-                      + " milliseconds");
-        StateTransferInfo info=new StateTransferInfo(state_sender, id, 0L, state);
+        log.debug("received state, size=" + (state == null? "0" : state.length) + " bytes. Time=" + (stop - start) + " milliseconds");
+        StateTransferInfo info=new StateTransferInfo(hdr.sender, hdr.state_id, 0L, state);
         up_prot.up(new Event(Event.GET_STATE_OK, info));
     }
 
