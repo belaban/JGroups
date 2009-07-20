@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.210 2009/06/22 14:34:32 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.211 2009/07/20 13:55:39 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -418,6 +418,7 @@
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
+            <antcall target="tcp-stress"/>
         	<antcall target="udp-flush"/>
         	<antcall target="tcp-flush"/>
         </sequential>
@@ -483,6 +484,26 @@
                  initial.mcast.port="25300"
                  initial.tcp.port="25300"
                  testng.xmlfile="testng-tcp.xml"
+                 tcp.recv.buf.size="50000"
+                 tcp.send.buf.size="10000"
+                />
+    </target>
+
+    <target name="tcp-stress" depends="postcompile">
+    	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
+    	<property name="build.properties.file" value="build.properties"/>
+    	<property file="${build.properties.file}"/>
+
+    	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
+        <runtest testname.ext="tcp"
+                 threadcount="1"
+                 parallel="tests"
+                 initial.mcast.addr="235.30.30.30"
+                 initial.mcast.port="25300"
+                 initial.tcp.port="25300"
+                 testng.xmlfile="testng-tcp-stress.xml"
+                 tcp.recv.buf.size="50000"
+                 tcp.send.buf.size="10000"
                 />
     </target>
 
@@ -498,6 +519,8 @@
                  initial.mcast.port="25400"
                  initial.tcp.port="25400"
                  testng.xmlfile="testng-tcp-flush.xml"
+                 tcp.recv.buf.size="50000"
+                 tcp.send.buf.size="10000"
                 />
     </target>
 
@@ -528,6 +551,8 @@
         <attribute name="initial.mcast.addr" default="235.1.2.3"/>
         <attribute name="initial.mcast.port" default="23000"/>
         <attribute name="initial.tcp.port" default="23000"/>
+        <attribute name="tcp.recv.buf.size" default="200000"/>
+        <attribute name="tcp.send.buf.size" default="64000"/>
         <sequential>
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
@@ -541,11 +566,14 @@
                 <sysproperty key="INITIAL_MCAST_ADDR" value="@{initial.mcast.addr}"/>
                 <sysproperty key="INITIAL_MCAST_PORT" value="@{initial.mcast.port}"/>
                 <sysproperty key="INITIAL_TCP_PORT" value="@{initial.tcp.port}"/>
+                <sysproperty key="tcp.recv_buf_size" value="@{tcp.recv.buf.size}"/>
+                <sysproperty key="tcp.send_buf_size" value="@{tcp.send.buf.size}"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+                <jvmarg value="-Xmx300M"/>
             </testng>
         </sequential>
     </macrodef>
