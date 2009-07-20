@@ -18,10 +18,10 @@ import org.testng.annotations.BeforeMethod;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.17 2008/10/31 10:12:51 belaban Exp $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.18 2009/07/20 16:20:41 belaban Exp $
  * @see TUNNELDeadLockTest#testStress
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNELDeadLockTest extends ChannelTestBase {
     private JChannel channel;
     private Promise promise;
