@@ -21,7 +21,7 @@ import java.util.*;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.76.2.1 2008/02/13 02:13:24 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.76.2.2 2009/07/20 14:52:07 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -117,7 +117,16 @@ public class STATE_TRANSFER extends Protocol {
                 handleStateReq(hdr);
                 break;
             case StateHeader.STATE_RSP:
-                handleStateRsp(hdr, msg.getBuffer());               
+                // fix for https://jira.jboss.org/jira/browse/JGRP-1013
+                if(isDigestNeeded())
+                    down_prot.down(new Event(Event.CLOSE_BARRIER));
+                try {
+                    handleStateRsp(hdr, msg.getBuffer());
+                }
+                finally {
+                    if(isDigestNeeded())
+                        down_prot.down(new Event(Event.OPEN_BARRIER));
+                }
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
