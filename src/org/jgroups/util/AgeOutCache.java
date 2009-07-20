@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 
 /** Cache which removes its elements after a certain time
  * @author Bela Ban
- * @version $Id: AgeOutCache.java,v 1.4 2009/07/20 16:46:16 belaban Exp $
+ * @version $Id: AgeOutCache.java,v 1.5 2009/07/20 16:50:41 belaban Exp $
  */
 public class AgeOutCache<K> {
     private final ScheduledExecutorService timer;
@@ -65,7 +65,7 @@ public class AgeOutCache<K> {
             future.cancel(true);
     }
 
-    public boolean exists(K key) {
+    public boolean contains(K key) {
         return key != null && map.containsKey(key);
     }
 
