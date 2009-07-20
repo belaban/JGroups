@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.29 2008/08/08 17:07:11 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.30 2009/07/20 12:36:59 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
@@ -104,7 +104,8 @@ public class StateTransferTest extends ChannelTestBase {
         }
         finally {
             for(StateTransferApplication app:apps) {
-                app.cleanup();
+                if(app != null)
+                    app.cleanup();
             }
         }
     }
