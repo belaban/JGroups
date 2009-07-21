@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.250 2009/07/09 12:38:23 belaban Exp $
+ * @version $Id: TP.java,v 1.251 2009/07/21 06:51:20 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -368,9 +368,9 @@ public abstract class TP extends Protocol {
         }
     };
 
-    /** Time when the last request for a physical address was sent. Used to prevent request floods */
-    protected long last_who_has_request=System.currentTimeMillis();
-
+    /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
+     * them after 5000ms */
+    protected AgeOutCache<Address> who_has_cache=null;
 
 
     /**
@@ -719,6 +719,8 @@ public abstract class TP extends Protocol {
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
         timer=new TimeScheduler(timer_thread_factory, num_timer_threads);
+
+        who_has_cache=new AgeOutCache<Address>(timer, 5000L);
 
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1072,11 +1074,11 @@ public abstract class TP extends Protocol {
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
         PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
         if(physical_dest == null) {
-            if(System.currentTimeMillis() - last_who_has_request >= 5000) { // send only every 5 secs max
+            if(!who_has_cache.contains(dest)) {
+                who_has_cache.add(dest);
                 if(log.isWarnEnabled())
                     log.warn("no physical address for " + dest + ", dropping message");
                 up_prot.up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
-                last_who_has_request=System.currentTimeMillis();
             }
             return;
         }
