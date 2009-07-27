@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mbean PUBLIC 
+	  "-//JBoss//DTD JBOSS XMBEAN 1.0//EN"
+	  "http://www.jboss.org/j2ee/dtd/jboss_xmbean_1_0.dtd">
+
+  <mbean>
+     <description>JGroups GossipRouter</description>
+
+     <!--
+     <descriptors>
+	   <persistPolicy value="OnUpdate"/>
+	   <persistLocation value="/tmp"/>
+	   <persistName value="gs.test"/>
+     </descriptors>
+     -->
+
+     <class>org.jgroups.stack.GossipRouter</class>
+
+     <!-- Constructors -->
+     <constructor>
+	   <description>The default constructor</description>
+	   <name>GossipRouter</name>
+     </constructor>
+
+     <!-- Attributes -->
+     <attribute access="read-write" getMethod="getPort" setMethod="setPort">
+	   <description>The local TCP port.</description>
+	   <name>Port</name>
+	   <type>int</type>
+	   <!-- the ModelMBean descriptors -->
+	   <descriptors>
+	     <currencyTimeLimit value="-1" />
+	     <!-- <value value="0" /> -->
+	     <!-- <persistPolicy value="OnUpdate"/> -->
+	   </descriptors>
+     </attribute>
+
+     <attribute access="read-write" getMethod="getBindAddress" setMethod="setBindAddress">
+	   <description>The local address the server will bind to.</description>
+	   <name>BindAddress</name>
+	   <type>java.lang.String</type>
+     </attribute>
+
+     <attribute access="read-write" getMethod="getExpiryTime" setMethod="setExpiryTime">
+	   <description>Time (msec) until a cached gossip member entry expires.</description>
+	   <name>ExpiryTime</name>
+	   <type>long</type>
+     </attribute>
+     
+     <attribute access="read-write" getMethod="getBacklog" setMethod="setBacklog">
+	   <description>Max queue size of backlogged connections. Must be greater than zero or the default of 1000 will be used.</description>
+	   <name>Backlog</name>
+	   <type>int</type>
+     </attribute>
+
+     <attribute access="read-write" getMethod="getLingerTimeout" setMethod="setLingerTimeout">
+	   <description>Time for setting SO_LINGER on connections. 0 means do not set SO_LINGER. Must be greater than or equal to zero or the default of 2000 will be used.</description>
+	   <name>LingerTimeout</name>
+	   <type>long</type>
+     </attribute>
+
+
+     <attribute access="read-write" getMethod="getSocketReadTimeout" setMethod="setSocketReadTimeout">
+	   <description>Time for setting SO_TIMEOUT on connections. 0 means do not set SO_TIMEOUT. Must be greater than or equal to zero or the default of 3000 will be used.</description>
+	   <name>SocketReadTimeout</name>
+	   <type>long</type>
+     </attribute>
+
+
+     <attribute access="read-only" getMethod="isStarted">
+	   <description>Returns true if the router is operational.</description>
+	   <name>Started</name>
+	   <type>boolean</type>
+     </attribute>
+
+     <!-- JBoss MBean Life Cycle Operations -->
+     <operation>
+	   <description>Not used</description>
+	   <name>create</name>
+     </operation>
+
+     <operation>
+	   <description>The start lifecycle operation. Brings the Router in fully functional state.</description>
+	   <name>start</name>
+     </operation>
+
+     <operation>
+	   <description>The stop lifecycle operation. Close connections and frees resources.</description>
+	   <name>stop</name>
+     </operation>
+
+     <operation>
+	   <description>Not used</description>
+	   <name>destroy</name>
+     </operation>
+
+     <!-- Ordinary Operations -->
+     <operation>
+	   <description>Dumps the routing table.</description>
+	   <name>dumpRoutingTable</name>
+	   <return-type>java.lang.String</return-type>
+     </operation>
+
+  </mbean>
