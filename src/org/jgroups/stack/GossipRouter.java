@@ -56,7 +56,7 @@ import org.jgroups.util.Util;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.26.2.10 2009/07/30 08:57:13 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.26.2.11 2009/07/30 09:11:28 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -416,7 +416,19 @@ public class GossipRouter {
                 GossipRouter.this.stop();
             }
         });
-    
+
+        // start the main server thread
+        new Thread(new Runnable() {
+            public void run() {
+                try{
+                   mainLoop();
+                }
+                finally {
+                   cleanup();
+                }
+            }
+        }, "GossipRouter").start();
+
         // starts the cache sweeper as daemon thread, so we won't block on it
         // upon termination
         timer=new Timer(true);
@@ -425,12 +437,6 @@ public class GossipRouter {
                 sweep();
             }
         }, expiryTime, expiryTime);
-        
-        try {
-           mainLoop();
-        } finally {
-           cleanup();
-        }
     }
 
     /**
@@ -1174,11 +1180,12 @@ public class GossipRouter {
             if (soLinger >= 0)
                 router.setLingerTimeout(soLinger);
 
-            router.start();
+            router.start();                                    
         }
         catch(Exception e) {
             System.err.println(e);
-        }
+        }        
+        Thread.currentThread().join();
     }
 
     static void help() {
