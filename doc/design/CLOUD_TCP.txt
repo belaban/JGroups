@@ -4,7 +4,7 @@ Changes to TCP to make it scale better in a cloud
 =================================================
 
 Author: Bela Ban
-Version: $Id: CLOUD_TCP.txt,v 1.1 2009/07/31 12:13:49 belaban Exp $
+Version: $Id: CLOUD_TCP.txt,v 1.2 2009/07/31 12:18:01 belaban Exp $
 
 
 Problem:
@@ -17,3 +17,19 @@ With TCP, we send a cluster wide message to N-1 nodes (with UDP, we send it only
 increasing clusters. Even if we parallelize this, all the traffic from us to each node has to go through the switch,
 taxing our full-duplex line to the switch.
 
+Solution:
+---------
+
+Eliminate the N-1 problem by sending a cluster-wide message only to our neighbor. The neighbor then sends it to its
+neighbor and so on. Each message has a header with a TTL, which is equal to the cluster size. When a (cluster wide)
+message is received, we decrement the TTL in the header and forward it to our neighbor (unless the TTL is 0, then we
+discard it).
+
+For retransmissions, we send an XMIT-REQ to the original sender the first time, then to its neighbor, then to the
+next neighbor and so on.
+
+
+Implementation:
+---------------
+
+This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TCP !).
