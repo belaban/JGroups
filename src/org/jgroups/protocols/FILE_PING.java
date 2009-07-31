@@ -18,7 +18,7 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.4 2009/04/27 08:46:47 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.5 2009/07/31 10:51:00 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     private static final String name="FILE_PING";
@@ -122,7 +122,7 @@ public class FILE_PING extends Discovery {
      * Reads all information from the given directory under clustername
      * @return
      */
-   private List<Address> readAll(String clustername) {
+   protected List<Address> readAll(String clustername) {
         List<Address> retval=new ArrayList<Address>();
         File dir=new File(root_dir, clustername);
         if(!dir.exists())
@@ -136,7 +136,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private static Address readFile(File file) {
+    protected static Address readFile(File file) {
         Address retval=null;
         DataInputStream in=null;
 
@@ -152,7 +152,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private void writeToFile(Address addr, String clustername) {
+    protected void writeToFile(Address addr, String clustername) {
         DataOutputStream out=null;
         File dir=new File(root_dir, clustername);
         if(!dir.exists())
