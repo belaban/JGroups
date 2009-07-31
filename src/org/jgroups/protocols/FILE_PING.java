@@ -18,17 +18,17 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.5 2009/07/31 10:51:00 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.6 2009/07/31 10:51:53 belaban Exp $
  */
 public class FILE_PING extends Discovery {
-    private static final String name="FILE_PING";
-    private static final String SUFFIX=".node";
+    protected static final String name="FILE_PING";
+    protected static final String SUFFIX=".node";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
 
     // location of the shared directory used for discovery"
-    private String location=File.separator + "tmp" + File.separator + "jgroups";
+    protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
