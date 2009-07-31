@@ -4,7 +4,7 @@ Changes to TCP to make it scale better in a cloud
 =================================================
 
 Author: Bela Ban
-Version: $Id: CLOUD_TCP.txt,v 1.2 2009/07/31 12:18:01 belaban Exp $
+Version: $Id: CLOUD_TCP.txt,v 1.3 2009/07/31 13:06:59 belaban Exp $
 
 
 Problem:
@@ -32,4 +32,9 @@ next neighbor and so on.
 Implementation:
 ---------------
 
-This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TCP !).
+This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TCP !)
+
+Take a look at Ron Levy's EPFL paper [1] for a similar approach.
+
+
+[1] http://infoscience.epfl.ch/getfile.py?docid=7701&name=paper&format=pdf&version=1
