@@ -23,19 +23,19 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.7 2009/06/17 16:20:03 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.8 2009/07/31 10:52:31 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
-    private static final String name="FILE_PING";
-    private static final String SUFFIX=".node";
+    protected static final String name="FILE_PING";
+    protected static final String SUFFIX=".node";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
 
     @Property(description="The absolute path of the shared file")
     @ManagedAttribute(description="location of the shared file used for discovery")
-    private String location=File.separator + "tmp" + File.separator + "jgroups";
+    protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -123,7 +123,7 @@ public class FILE_PING extends Discovery {
      * Reads all information from the given directory under clustername
      * @return
      */
-   private List<PingData> readAll(String clustername) {
+   protected List<PingData> readAll(String clustername) {
         List<PingData> retval=new ArrayList<PingData>();
         File dir=new File(root_dir, clustername);
         if(!dir.exists())
@@ -137,7 +137,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private static PingData readFile(File file) {
+    protected static PingData readFile(File file) {
         PingData retval=null;
         DataInputStream in=null;
 
@@ -155,7 +155,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    private void writeToFile(PingData data, String clustername) {
+    protected void writeToFile(PingData data, String clustername) {
         DataOutputStream out=null;
         File dir=new File(root_dir, clustername);
         if(!dir.exists())
