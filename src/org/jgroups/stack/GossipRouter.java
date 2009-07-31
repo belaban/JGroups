@@ -1,41 +1,22 @@
 
 package org.jgroups.stack;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.Address;
+import org.jgroups.Version;
+import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.Version;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.ShutdownRejectedExecutionHandler;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.ThreadManagerThreadPoolExecutor;
-import org.jgroups.util.Util;
+import java.util.concurrent.*;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP).
@@ -56,7 +37,7 @@ import org.jgroups.util.Util;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.26.2.11 2009/07/30 09:11:28 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.26.2.12 2009/07/31 12:53:01 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -1185,7 +1166,6 @@ public class GossipRouter {
         catch(Exception e) {
             System.err.println(e);
         }        
-        Thread.currentThread().join();
     }
 
     static void help() {
