@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.Event;
 import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -30,7 +31,7 @@ import java.util.*;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.1.2.1 2009/08/03 13:08:44 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.1.2.2 2009/08/03 13:19:32 belaban Exp $
  */
 public class S3_PING extends FILE_PING {
 
@@ -94,6 +95,7 @@ public class S3_PING extends FILE_PING {
         }
         super.stop();
     }
+
 
     protected List<Address> readAll(String clustername) {
         if(clustername == null)
