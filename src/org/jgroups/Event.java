@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.54.2.2 2008/07/30 11:51:45 belaban Exp $
+// $Id: Event.java,v 1.54.2.3 2009/08/03 12:43:19 belaban Exp $
 
 package org.jgroups;
 
@@ -10,7 +10,7 @@ package org.jgroups;
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
-    public static final int CONNECT                            =  2;  // arg = clster name (string)
+    public static final int CONNECT                            =  2;  // arg = cluster name (string)
     public static final int DISCONNECT                         =  4;  // arg = member address (Address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
     public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
