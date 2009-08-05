@@ -24,13 +24,14 @@ import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import static java.lang.String.valueOf;
 
 
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.1.2.3 2009/08/05 10:05:11 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.1.2.4 2009/08/05 10:14:32 belaban Exp $
  */
 public class S3_PING extends FILE_PING {
 
@@ -271,7 +272,7 @@ public class S3_PING extends FILE_PING {
                 throw new IllegalArgumentException("Invalid Location: " + location);
 
             // validate bucket name
-            if(!Utils.validateBucketName(bucket, callingFormat, location != null))
+            if(!Utils.validateBucketName(bucket, callingFormat))
                 throw new IllegalArgumentException("Invalid Bucket Name: " + bucket);
 
             HttpURLConnection request=makeRequest("PUT", bucket, "", null, headers);
@@ -511,8 +512,7 @@ public class S3_PING extends FILE_PING {
          * @param headers A Map of String to List of Strings representing the http
          *                headers to pass (can be null).
          */
-        public GetResponse getBucketACL(String bucket, Map headers)
-                throws MalformedURLException, IOException {
+        public GetResponse getBucketACL(String bucket, Map headers) throws IOException {
             return getACL(bucket, "", headers);
         }
 
@@ -523,8 +523,7 @@ public class S3_PING extends FILE_PING {
          * @param headers A Map of String to List of Strings representing the http
          *                headers to pass (can be null).
          */
-        public GetResponse getACL(String bucket, String key, Map headers)
-                throws MalformedURLException, IOException {
+        public GetResponse getACL(String bucket, String key, Map headers) throws IOException {
             if(key == null) key="";
 
             Map pathArgs=new HashMap();
@@ -539,11 +538,9 @@ public class S3_PING extends FILE_PING {
          * Write a new ACL for a given bucket
          * @param aclXMLDoc The xml representation of the ACL as a String
          * @param bucket    The name of the bucket where the object lives.
-         * @param headers   A Map of String to List of Strings representing the http
-         *                  headers to pass (can be null).
+         * @param headers   A Map of String to List of Strings representing the http headers to pass (can be null).
          */
-        public Response putBucketACL(String bucket, String aclXMLDoc, Map headers)
-                throws MalformedURLException, IOException {
+        public Response putBucketACL(String bucket, String aclXMLDoc, Map headers) throws IOException {
             return putACL(bucket, "", aclXMLDoc, headers);
         }
 
@@ -556,7 +553,7 @@ public class S3_PING extends FILE_PING {
          *                  headers to pass (can be null).
          */
         public Response putACL(String bucket, String key, String aclXMLDoc, Map headers)
-                throws MalformedURLException, IOException {
+                throws IOException {
             S3Object object=new S3Object(aclXMLDoc.getBytes(), null);
 
             Map pathArgs=new HashMap();
@@ -572,7 +569,7 @@ public class S3_PING extends FILE_PING {
         }
 
         public LocationResponse getBucketLocation(String bucket)
-                throws MalformedURLException, IOException {
+                throws IOException {
             Map pathArgs=new HashMap();
             pathArgs.put("location", null);
             return new LocationResponse(makeRequest("GET", bucket, "", pathArgs, null));
@@ -585,7 +582,7 @@ public class S3_PING extends FILE_PING {
          *                headers to pass (can be null).
          */
         public ListAllMyBucketsResponse listAllMyBuckets(Map headers)
-                throws MalformedURLException, IOException {
+                throws IOException {
             return new ListAllMyBucketsResponse(makeRequest("GET", "", "", null, headers));
         }
 
@@ -603,7 +600,7 @@ public class S3_PING extends FILE_PING {
          * @throws IOException
          */
         private HttpURLConnection makeRequest(String method, String bucketName, String key, Map pathArgs, Map headers)
-                throws MalformedURLException, IOException {
+                throws IOException {
             return makeRequest(method, bucketName, key, pathArgs, headers, null);
         }
 
@@ -611,7 +608,7 @@ public class S3_PING extends FILE_PING {
         /**
          * Make a new HttpURLConnection.
          * @param method     The HTTP method to use (GET, PUT, DELETE)
-         * @param bucketName The bucket name this request affects
+         * @param bucket     The bucket name this request affects
          * @param key        The key this request is for
          * @param pathArgs   parameters if any to be sent along this request
          * @param headers    A Map of String to List of Strings representing the http
@@ -620,14 +617,14 @@ public class S3_PING extends FILE_PING {
          */
         private HttpURLConnection makeRequest(String method, String bucket, String key, Map pathArgs, Map headers,
                                               S3Object object)
-                throws MalformedURLException, IOException {
-            CallingFormat callingFormat=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
-            if(isSecure && callingFormat != CallingFormat.getPathCallingFormat() && bucket.indexOf(".") != -1) {
+                throws IOException {
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
                 System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
             }
 
             // build the domain based on the calling format
-            URL url=callingFormat.getURL(isSecure, server, this.port, bucket, key, pathArgs);
+            URL url=format.getURL(isSecure, server, this.port, bucket, key, pathArgs);
 
             HttpURLConnection connection=(HttpURLConnection)url.openConnection();
             connection.setRequestMethod(method);
@@ -635,7 +632,7 @@ public class S3_PING extends FILE_PING {
             // subdomain-style urls may encounter http redirects.
             // Ensure that redirects are supported.
             if(!connection.getInstanceFollowRedirects()
-                    && callingFormat.supportsLocatedBuckets())
+                    && format.supportsLocatedBuckets())
                 throw new RuntimeException("HTTP redirect support required.");
 
             addHeaders(connection, headers);
@@ -651,7 +648,7 @@ public class S3_PING extends FILE_PING {
          * @param headers    A Map of String to List of Strings representing the http
          *                   headers to pass (can be null).
          */
-        private void addHeaders(HttpURLConnection connection, Map headers) {
+        private static void addHeaders(HttpURLConnection connection, Map headers) {
             addHeaders(connection, headers, "");
         }
 
@@ -661,7 +658,7 @@ public class S3_PING extends FILE_PING {
          * @param metadata   A Map of String to List of Strings representing the s3
          *                   metadata for this resource.
          */
-        private void addMetadataHeaders(HttpURLConnection connection, Map metadata) {
+        private static void addMetadataHeaders(HttpURLConnection connection, Map metadata) {
             addHeaders(connection, metadata, Utils.METADATA_PREFIX);
         }
 
@@ -672,7 +669,7 @@ public class S3_PING extends FILE_PING {
          *                   headers to pass (can be null).
          * @param prefix     The string to prepend to each key before adding it to the connection.
          */
-        private void addHeaders(HttpURLConnection connection, Map headers, String prefix) {
+        private static void addHeaders(HttpURLConnection connection, Map headers, String prefix) {
             if(headers != null) {
                 for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
                     String key=(String)i.next();
@@ -789,7 +786,7 @@ public class S3_PING extends FILE_PING {
          * Examines the response's header fields and returns a Map from String to List of Strings
          * representing the object's metadata.
          */
-        private Map extractMetadata(HttpURLConnection connection) {
+        private static Map extractMetadata(HttpURLConnection connection) {
             TreeMap metadata=new TreeMap();
             Map headers=connection.getHeaderFields();
             for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
@@ -835,7 +832,7 @@ public class S3_PING extends FILE_PING {
                     xr.setErrorHandler(handler);
 
                     xr.parse(new InputSource(connection.getInputStream()));
-                    this.location=handler.location;
+                    this.location=handler.loc;
                 }
                 catch(SAXException e) {
                     throw new RuntimeException("Unexpected error parsing ListAllMyBuckets xml", e);
@@ -859,8 +856,8 @@ public class S3_PING extends FILE_PING {
         /**
          * Helper class to parse LocationConstraint response XML
          */
-        class LocationResponseHandler extends DefaultHandler {
-            String location=null;
+        static class LocationResponseHandler extends DefaultHandler {
+            String loc=null;
             private StringBuffer currText=null;
 
             public void startDocument() {
@@ -874,7 +871,7 @@ public class S3_PING extends FILE_PING {
 
             public void endElement(String uri, String name, String qName) {
                 if(name.equals("LocationConstraint")) {
-                    location=this.currText.toString();
+                    loc=this.currText.toString();
                     this.currText=null;
                 }
             }
@@ -994,7 +991,7 @@ public class S3_PING extends FILE_PING {
             }
         }
 
-        class ListBucketHandler extends DefaultHandler {
+        static class ListBucketHandler extends DefaultHandler {
 
             private String name=null;
             private String prefix=null;
@@ -1181,7 +1178,7 @@ public class S3_PING extends FILE_PING {
             }
         }
 
-        class ListAllMyBucketsHandler extends DefaultHandler {
+        static class ListAllMyBucketsHandler extends DefaultHandler {
 
             private List entries=null;
             private Bucket currBucket=null;
@@ -1425,7 +1422,7 @@ public class S3_PING extends FILE_PING {
             }
 
             // build the path using the bucket and key
-            if(bucketName != null && !bucketName.equals("")) {
+            if(bucketName != null && bucketName.length() != 0) {
                 buf.append("/" + bucketName);
             }
 
@@ -1459,8 +1456,6 @@ public class S3_PING extends FILE_PING {
 
         /**
          * Calculate the HMAC/SHA1 on a string.
-         * @param data     Data to sign
-         * @param passcode Passcode to sign it with
          * @return Signature
          * @throws java.security.NoSuchAlgorithmException
          *          If the algorithm does not exist.  Unlikely
@@ -1532,7 +1527,7 @@ public class S3_PING extends FILE_PING {
          * @return a string representation of pathArgs
          */
         public static String convertPathArgsHashToString(Map pathArgs) {
-            StringBuffer pathArgsString=new StringBuffer();
+            StringBuilder pathArgsString=new StringBuilder();
             String argumentValue;
             boolean firstRun=true;
             if(pathArgs != null) {
@@ -1592,7 +1587,7 @@ public class S3_PING extends FILE_PING {
          * @return String of all headers, with commas.
          */
         private static String concatenateList(List values) {
-            StringBuffer buf=new StringBuffer();
+            StringBuilder buf=new StringBuilder();
             for(int i=0, size=values.size(); i < size; ++i) {
                 buf.append(((String)values.get(i)).replaceAll("\n", "").trim());
                 if(i != (size - 1)) {
@@ -1605,7 +1600,7 @@ public class S3_PING extends FILE_PING {
         /**
          * Validate bucket-name
          */
-        static boolean validateBucketName(String bucketName, CallingFormat callingFormat, boolean located) {
+        static boolean validateBucketName(String bucketName, CallingFormat callingFormat) {
             if(callingFormat == CallingFormat.getPathCallingFormat()) {
                 final int MIN_BUCKET_LENGTH=3;
                 final int MAX_BUCKET_LENGTH=255;
@@ -2272,10 +2267,10 @@ public class S3_PING extends FILE_PING {
                     return 3;
                 }
                 catch(Exception e) {
-                    System.out.println("" + source[srcOffset] + ": " + (DECODABET[source[srcOffset]]));
-                    System.out.println("" + source[srcOffset + 1] + ": " + (DECODABET[source[srcOffset + 1]]));
-                    System.out.println("" + source[srcOffset + 2] + ": " + (DECODABET[source[srcOffset + 2]]));
-                    System.out.println("" + source[srcOffset + 3] + ": " + (DECODABET[source[srcOffset + 3]]));
+                    System.out.println(valueOf(source[srcOffset]) + ": " + (DECODABET[source[srcOffset]]));
+                    System.out.println(valueOf(source[srcOffset + 1]) + ": " + (DECODABET[source[srcOffset + 1]]));
+                    System.out.println(valueOf(source[srcOffset + 2]) + ": " + (DECODABET[source[srcOffset + 2]]));
+                    System.out.println(String.valueOf(source[srcOffset + 3]) + ": " + (DECODABET[source[srcOffset + 3]]));
                     return -1;
                 }   //e nd catch
             }
@@ -2439,12 +2434,14 @@ public class S3_PING extends FILE_PING {
             }   // end catch
             finally {
                 try {
-                    bais.close();
+                    if(bais != null)
+                        bais.close();
                 }
                 catch(Exception e) {
                 }
                 try {
-                    ois.close();
+                    if(ois != null)
+                        ois.close();
                 }
                 catch(Exception e) {
                 }
@@ -2476,7 +2473,8 @@ public class S3_PING extends FILE_PING {
             }   // end catch: IOException
             finally {
                 try {
-                    bos.close();
+                    if(bos != null)
+                        bos.close();
                 }
                 catch(Exception e) {
                 }
@@ -2507,7 +2505,8 @@ public class S3_PING extends FILE_PING {
             }   // end catch: IOException
             finally {
                 try {
-                    bos.close();
+                    if(bos != null)
+                        bos.close();
                 }
                 catch(Exception e) {
                 }
@@ -2560,7 +2559,8 @@ public class S3_PING extends FILE_PING {
             }   // end catch: IOException
             finally {
                 try {
-                    bis.close();
+                    if(bis != null)
+                        bis.close();
                 }
                 catch(Exception e) {
                 }
@@ -2605,7 +2605,8 @@ public class S3_PING extends FILE_PING {
             }   // end catch: IOException
             finally {
                 try {
-                    bis.close();
+                    if(bis != null)
+                        bis.close();
                 }
                 catch(Exception e) {
                 }
