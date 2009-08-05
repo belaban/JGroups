@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.72 2009/07/09 13:58:49 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.73 2009/08/05 12:17:23 belaban Exp $
  */
 public class TUNNEL extends TP {
 
@@ -198,18 +198,12 @@ public class TUNNEL extends TP {
          case Event.CONNECT_WITH_STATE_TRANSFER:
          case Event.CONNECT_USE_FLUSH:
          case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-
              String group=(String)evt.getArg();
-             PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+             Address local=!isSingleton()? local_addr : ProtocolAdapter.thread_local.get();
+             PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
              List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
-             String logical_name=org.jgroups.util.UUID.get(local_addr);
-
-             if(!isSingleton())
-                 tunnel_policy.connect(stubs, group, local_addr, logical_name, physical_addrs);
-             else {
-                 Address local=ProtocolAdapter.thread_local.get();
-                 tunnel_policy.connect(stubs, group, local, logical_name, physical_addrs);
-             }
+             String logical_name=org.jgroups.util.UUID.get(local);
+             tunnel_policy.connect(stubs, group, local, logical_name, physical_addrs);
             break;
 
          case Event.DISCONNECT:
