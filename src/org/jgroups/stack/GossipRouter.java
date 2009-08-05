@@ -47,7 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.57 2009/07/09 13:01:28 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.58 2009/08/05 12:17:12 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -632,7 +632,7 @@ public class GossipRouter {
                                 org.jgroups.util.UUID.add((org.jgroups.util.UUID)addr, logical_name);
                             
                             // group name, logical address, logical name, physical addresses (could be null)
-                            logical_addrs.add(addr);
+                            logical_addrs.add(addr); // allows us to remove the entries for this connection on socket close
 
                             map=routingTable.get(group);
                             if(map == null) {
