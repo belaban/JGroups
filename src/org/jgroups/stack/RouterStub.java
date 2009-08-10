@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -20,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.46 2009/07/09 13:59:39 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.47 2009/08/10 14:22:12 belaban Exp $
  */
 public class RouterStub {
 
@@ -100,6 +101,13 @@ public class RouterStub {
      * @param group The name of the group under which to register
      */
     public synchronized void connect(String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs) throws Exception {
+        doConnect();
+        GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
+        request.writeTo(output);
+        output.flush();
+    }
+
+    public synchronized void doConnect() throws Exception {
         if(!isConnected()) {
             try {
                 sock=new Socket();
@@ -121,11 +129,23 @@ public class RouterStub {
                 throw e;
             }
         }
-
-        GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
-        request.writeTo(output);
-        output.flush();
     }
+
+    /**
+     * Checks whether the connection is open
+     * @return
+     */
+    public synchronized void checkConnection() {
+        GossipData request=new GossipData(GossipRouter.PING);
+        try {
+            request.writeTo(output);
+            output.flush();
+        }
+        catch(IOException e) {
+            connectionStateChanged(ConnectionStatus.DISCONNECTED);
+        }
+    }
+
 
     public synchronized void disconnect(String group, Address addr) {
         try {
