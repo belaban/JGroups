@@ -47,7 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.58 2009/08/05 12:17:12 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.59 2009/08/10 14:21:30 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -57,6 +57,7 @@ public class GossipRouter {
     public static final byte SHUTDOWN=9;
     public static final byte MESSAGE=10;
     public static final byte SUSPECT=11;
+    public static final byte PING=12;
 
     public static final int PORT=12001;
 
@@ -652,6 +653,10 @@ public class GossipRouter {
                             }
                             break;
 
+                        case GossipRouter.PING:
+                            // do nothing here - client doesn't expect response data
+                            break;
+
                         case GossipRouter.MESSAGE:
                             if(request.buffer == null || request.buffer.length == 0) {
                                 if(log.isWarnEnabled())
@@ -675,7 +680,7 @@ public class GossipRouter {
                                 for(Address logical_addr: map.keySet()) {
                                     physical_addrs=address_mappings.get(logical_addr);
                                     PingData rsp=new PingData(logical_addr, null, true, UUID.get(logical_addr),
-                                                              new ArrayList<PhysicalAddress>(physical_addrs));
+                                                              physical_addrs != null? new ArrayList<PhysicalAddress>(physical_addrs) : null);
                                     mbrs.add(rsp);
                                 }
                             }
