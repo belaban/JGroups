@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
@@ -37,8 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.74 2009/08/10 10:57:46 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.75 2009/08/10 12:49:49 belaban Exp $
  */
+@Experimental
 public class TUNNEL extends TP {
 
    /*
