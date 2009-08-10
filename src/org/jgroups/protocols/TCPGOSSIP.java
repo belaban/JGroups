@@ -32,7 +32,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.41 2009/07/09 13:59:40 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.42 2009/08/10 14:39:37 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -56,6 +56,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
     List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
     final List<RouterStub>  stubs=new ArrayList<RouterStub>();
     Future<?> reconnect_future=null;
+    Future<?> connection_checker=null;
     protected volatile boolean running=true;
 
     public String getName() {
@@ -71,7 +72,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout ("
                     + sock_conn_timeout + ")");
     }
-    
+
     @Property
     public void setInitialHosts(String hosts) throws UnknownHostException {
         initial_hosts=Util.parseCommaDelimetedHosts2(hosts,1);       
@@ -112,6 +113,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 				stubs.add(stub);
 			}
             connect(group_addr, local_addr);
+            startConnectionChecker();
         }
     }
 
@@ -124,6 +126,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 			catch (Exception e) {
 			}
 		}
+        stopConnectionChecker();
     }
 
     public void connectionStatusChange(RouterStub.ConnectionStatus state) {
@@ -137,36 +140,39 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 
     public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
         if(group_addr == null) {
-            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get membership");            
+            if(log.isErrorEnabled()) log.error("cluster_name is null, cannot get membership");            
             return;
         }
         
-        final List<Address> initial_mbrs=new ArrayList<Address>();
         if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
-        
-        for(RouterStub stub : stubs) {
-			try {
-                List<PingData> rsps=stub.getMembers(group_addr);
-                for(PingData rsp: rsps) {
-                    Address logical_addr=rsp.getAddress();
-                    initial_mbrs.add(logical_addr);
 
-                    // 1. Set physical addresses
-                    Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
-                    if(physical_addrs != null) {
-                        for(PhysicalAddress physical_addr: physical_addrs)
-                            down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
-                    }
-                    
-                    // 2. Set logical name
-                    String logical_name=rsp.getLogicalName();
-                    if(logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
-                        org.jgroups.util.UUID.add((org.jgroups.util.UUID)logical_addr, logical_name);
-                }
-			}
-			catch (Exception e) {
+        final List<PingData> responses=new LinkedList<PingData>();
+        for(RouterStub stub : stubs) {
+            try {
+                List<PingData> rsps=stub.getMembers(group_addr);
+                responses.addAll(rsps);
+            }
+            catch(Throwable e) {
 			}
 		}
+
+        final Set<Address> initial_mbrs=new HashSet<Address>();
+        for(PingData rsp: responses) {
+            Address logical_addr=rsp.getAddress();
+            initial_mbrs.add(logical_addr);
+
+            // 1. Set physical addresses
+            Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
+            if(physical_addrs != null) {
+                for(PhysicalAddress physical_addr: physical_addrs)
+                    down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
+            }
+
+            // 2. Set logical name
+            String logical_name=rsp.getLogicalName();
+            if(logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
+                org.jgroups.util.UUID.add((org.jgroups.util.UUID)logical_addr, logical_name);
+        }
         
         if(initial_mbrs.isEmpty()) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: found no members");
@@ -198,12 +204,36 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 
     synchronized void stopReconnector() {
         if(reconnect_future != null) {
-            reconnect_future.cancel(true);
+            reconnect_future.cancel(false);
             reconnect_future=null;
             if(log.isDebugEnabled())
                 log.debug("stopping reconnector");
         }
     }
+
+    synchronized void startConnectionChecker() {
+        if(running && (connection_checker == null || connection_checker.isDone())) {
+            if(log.isDebugEnabled())
+                log.debug("starting connection checker");
+            connection_checker=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    for(RouterStub stub: stubs) {
+                        stub.checkConnection();
+                    }
+                }
+            }, 0, reconnect_interval, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    synchronized void stopConnectionChecker() {
+        if(connection_checker != null) {
+            connection_checker.cancel(false);
+            connection_checker=null;
+            if(log.isDebugEnabled())
+                log.debug("stopping connection checker");
+        }
+    }
+
 
     protected void connect(String group, Address logical_addr) {
         String logical_name=org.jgroups.util.UUID.get(logical_addr);
@@ -216,7 +246,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
         for (RouterStub stub : stubs) {
             try {
                 if(log.isTraceEnabled())
-                    log.trace("tring to connect to " + stub.getGossipRouterAddress());
+                    log.trace("trying to connect to " + stub.getGossipRouterAddress());
                 stub.connect(group, logical_addr, logical_name, physical_addrs);
             }
             catch(Exception e) {
