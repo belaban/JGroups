@@ -47,7 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.59 2009/08/10 14:21:30 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.60 2009/08/10 14:58:24 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -88,7 +88,7 @@ public class GossipRouter {
     private int backlog=1000;
 
     @ManagedAttribute(description="operational status", name="running")
-    private boolean up=false;
+    private volatile boolean up=false;
 
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
@@ -256,7 +256,12 @@ public class GossipRouter {
             }
         });
 
-        mainLoop();
+        // start the main server thread
+        new Thread(new Runnable() {
+            public void run() {
+                mainLoop();
+            }
+        }, "GossipRouter").start();
     }
 
     /**
