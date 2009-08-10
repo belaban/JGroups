@@ -4,11 +4,9 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.RouterStub;
-import org.jgroups.stack.GossipData;
+import org.jgroups.stack.*;
 import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -39,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.73 2009/08/05 12:17:23 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.74 2009/08/10 10:57:46 belaban Exp $
  */
 public class TUNNEL extends TP {
 
@@ -224,7 +222,23 @@ public class TUNNEL extends TP {
                       if (log.isDebugEnabled()) {
                           log.debug("Reconnecting to router at " + stub.getGossipRouterAddress());
                       }
-                      // stub.connect(channel_name);
+
+                      if(!isSingleton()){
+                          PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+                          List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
+                          stub.connect(channel_name, local_addr, UUID.get(local_addr), physical_addrs);
+                      }
+                      else {
+                          for(Protocol p: up_prots.values()) {
+                              if(p instanceof ProtocolAdapter) {
+                                  Address local=((ProtocolAdapter)p).local_addr;
+                                  String cluster_name=((ProtocolAdapter)p).cluster_name;
+                                  PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
+                                  List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
+                                  stub.connect(cluster_name, local, UUID.get(local), physical_addrs);
+                              }
+                          }
+                      }
                   } catch (Exception ex) {
                      if (log.isWarnEnabled())
                          log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress(), ex);
