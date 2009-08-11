@@ -2,7 +2,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.1 2009/05/04 08:13:54 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.2 2009/08/11 10:55:14 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -24,13 +24,52 @@ Logical addresses
 Bug fixes
 =========
 
-*** TBD ***
+Merge and UNICAST sequencing problem
+------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-659]
+
+During a merge, the seqnos in UNICAST could get screwed up and UNICAST would either buffer all subsequent messages,
+resulting in out-of-memory exceptions, or discard them, resulting in missing messages. Fixed vy a redesign of UNICAST,
+the design is described in JGroups/doc/design/UNICAST.new.txt.
+
+
+Shared transport: 'members' variable incorrect
+----------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-910]
+
+The cluster name and local address variable made no sense in a shared transport. The solution was to get these vars
+from TP$ProtocolAdapter
+
+
+MERGE: issue with overlapping merges (NAKACK / UNICAST)
+-------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-940]
+
+Fixed issues when merge sub partitions overlapped, e.g. {A,B} with {B,C,D}
+
+
+MERGE: merging digests based on hearsay
+---------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-948]
+
+When a merge happens, we get digests from all members. However, every digest contains information about *all*
+cluster members. Any information about a member P which doesn't originate from P itself can be stale. The solution
+was to ignore digests about P not sent by P itself
+
+
+MERGE: UNICAST can lose messages on merging
+-------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-952]
+
+Extreme edge case ! However, the redesign of UNICAST (JGroups/doc/design/UNICAST.new.txt) fixes this issue.
+
+
 
 
 
 Manual
 ------
-The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+The manual is online at http://www.jgroups.org/manual/html/index.html
 
 
 
@@ -41,6 +80,6 @@ Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Torono, Canada
 
-May 2009
+August 2009
 
 
