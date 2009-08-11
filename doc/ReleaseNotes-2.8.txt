@@ -2,7 +2,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.2 2009/08/11 10:55:14 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.3 2009/08/11 11:16:45 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -13,11 +13,63 @@ Below is a summary (with links to the detailed description) of the major new fea
 Features
 ========
 
-*** TBD ***
 
 Logical addresses
 -----------------
 [https://jira.jboss.org/jira/browse/JGRP-129]
+[https://jira.jboss.org/jira/browse/JGRP-130]
+
+Logical addresses prevent reincarnation issues: when a member address is IP:port and the port is fixed, then - when
+a member is restarted - it will get the same IP address and port. Therefore, for JGroups it is the *same* member !
+Since a member's address is associated with state (e.g. retransmission tables and seqnos) in various protocols, some
+protocols might delete the state, other might not (if they haven't received the view excluding the member yet). This can
+lead to no messages being processed for a reincarnated member, or all messages being queued.
+How to set a logical name in a channel is described in http://www.jgroups.org/manual/html/index.html ("JChannel").
+
+A blog entry about logical addresses is at http://belaban.blogspot.com/2009/02/whats-cool-about-logical-addresses.html.
+
+
+GossipRouter: major overhaul
+----------------------------
+[https://jira.jboss.org/jira/browse/JGRP-340]
+[https://jira.jboss.org/jira/browse/JGRP-430]
+
+Simplification and streamlining of GossipRouter. New features such as use of multiple GossipRouters in TUNNEL.
+
+
+Schema for protocol stack configuration
+---------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-448]
+
+We now have an XSD schema for the config, so that XML editors can validate a config against the schema and provide
+auto-completion of available protocols/attributes.
+
+
+STREAMING_STATE_TRANSFER: investigate use of UDP datagrams instead of TCP socket
+--------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-911]
+
+STREAMING_STATE_TRANSFER can now use whatever transport is configured (e.g. UDP), or it can override that and fall
+back to the existing implementation of using a TCP connection.
+
+
+MERGE4: get rid of shunning and use only merging (getting rid of shunfests)
+---------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-937]
+
+This is *not* actually a new protocol: MERGE{2}, MERGEFAST etc can continue to e used, but the changes are in GMS. This
+feature provides support for merging of overlapping sub-partitions, e.g. {A,B} with {A,B,C}.
+The design is at JGroups/doc/design/MERGE4.txt.
+
+
+Logging: configure at runtime
+-----------------------------
+[https://jira.jboss.org/jira/browse/JGRP-938]
+
+Logging levels in any of the protocols can now be changed at run time using JMX, e.g. NAKACK nak; nak.setLevel("trace");
+
+
+
 
 
 
@@ -64,11 +116,18 @@ MERGE: UNICAST can lose messages on merging
 Extreme edge case ! However, the redesign of UNICAST (JGroups/doc/design/UNICAST.new.txt) fixes this issue.
 
 
+COMPRESS corrupts some messages
+-------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1000]
+
+This can happen when a compressed message is *greater* than the uncompressed original !
+
 
 
 
 Manual
-------
+======
+
 The manual is online at http://www.jgroups.org/manual/html/index.html
 
 
