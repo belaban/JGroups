@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.181 2009/07/09 06:38:16 belaban Exp $
+ * @version $Id: GMS.java,v 1.182 2009/08/11 10:05:38 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -487,10 +487,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(log_collect_msgs && log.isWarnEnabled()) {
                 log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
                         + ") for view " + new_view + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
-                        + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() + ")");
+                        + ack_collector.printMissing());
             }
-        }   
-        
+        }
+
         if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
             ack_collector.reset(new ArrayList<Address>(newMembers));
             for(Address joiner: newMembers) {
@@ -499,19 +499,19 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
                 if(log.isTraceEnabled())
-                    log.trace(local_addr + ": received all ACKs (" + ack_collector.receivedAcks() +
+                    log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
                             ") from joiners for view " + new_view.getVid());
             }
             catch(TimeoutException e) {
                 if(log_collect_msgs && log.isWarnEnabled()) {
                     log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
                             + ") for unicast view " + new_view + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
-                            + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() + ")");
+                            + ack_collector.printMissing());
                 }
             }
+            }
         }           
-    }
-    
+
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);        
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
@@ -613,8 +613,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 becomeCoordinator();
             }
             else {
-                if(haveCoordinatorRole() && !local_addr.equals(coord))
+                if(haveCoordinatorRole() && !local_addr.equals(coord)) {
                     becomeParticipant();
+                    merge_ack_collector.reset(null); // we don't need this one anymore
+                }
             }
         }
     }
@@ -1237,7 +1239,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.181 2009/07/09 06:38:16 belaban Exp $
+     * @version $Id: GMS.java,v 1.182 2009/08/11 10:05:38 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
