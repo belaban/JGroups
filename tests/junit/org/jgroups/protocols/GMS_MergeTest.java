@@ -13,11 +13,11 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.8 2009/06/17 11:30:42 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.9 2009/08/11 07:29:07 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
-    static final String props="SHARED_LOOPBACK:PING(timeout=50):pbcast.NAKACK(log_discard_msgs=false)" +
+    static final String props="SHARED_LOOPBACK:PING(timeout=1000):pbcast.NAKACK(log_discard_msgs=false)" +
             ":UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
 
 
