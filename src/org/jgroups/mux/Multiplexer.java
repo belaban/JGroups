@@ -5,7 +5,6 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
@@ -36,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.17 2009/03/16 21:18:41 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.18 2009/08/11 11:28:28 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -642,7 +641,7 @@ public class Multiplexer implements UpHandler {
             }
 
             //initialize collector and ...
-            service_ack_collector.reset(null, muxChannels);
+            service_ack_collector.reset(muxChannels);
             int size=service_ack_collector.size();            
 
             //then send a message
@@ -664,9 +663,7 @@ public class Multiplexer implements UpHandler {
                          + service_ack_timeout
                          + "ms, missing ACKs from "
                          + service_ack_collector.printMissing()
-                         + " (received="
-                         + service_ack_collector.printReceived()
-                         + "), local_addr="
+                         + ", local_addr="
                          + getLocalAddress());
             }
         }

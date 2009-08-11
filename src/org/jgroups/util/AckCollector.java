@@ -3,18 +3,16 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.TimeoutException;
 import org.jgroups.View;
-import org.jgroups.ViewId;
 
 import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.14.2.1 2009/02/05 09:13:29 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.14.2.2 2009/08/11 11:28:03 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
     private final List<Object>     missing_acks;
-    private final Set<Object>      received_acks=new HashSet<Object>();
     private final Promise<Boolean> all_acks_received=new Promise<Boolean>();
     private final Set<Address>     suspected_mbrs=new HashSet<Address>();
 
@@ -23,7 +21,7 @@ public class AckCollector {
         missing_acks=new ArrayList<Object>();
     }
 
-    public AckCollector(ViewId v, List<Object> l) {
+    public AckCollector(List<Object> l) {
         missing_acks=new ArrayList<Object>(l);      
     }
 
@@ -33,17 +31,15 @@ public class AckCollector {
         }
     }
 
-    public String printReceived() {
-        synchronized(this) {
-            return received_acks.toString();
-        }
-    }    
+    @Deprecated
+    public static String printReceived() {
+        return "n/a";
+    }
 
-    public void reset(ViewId v, List<Address> members) {
+    public void reset(List<Address> members) {
         synchronized(this) {
             suspected_mbrs.clear();           
             missing_acks.clear();
-            received_acks.clear();
             if(members != null && !members.isEmpty())
                 missing_acks.addAll(members);
             missing_acks.removeAll(suspected_mbrs);
@@ -60,7 +56,6 @@ public class AckCollector {
     public void ack(Object member) {
         synchronized(this) {
             missing_acks.remove(member);
-            received_acks.add(member);
             if(missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
@@ -102,6 +97,6 @@ public class AckCollector {
     }
 
     public String toString() {
-        return "missing=" + printMissing() + ", received=" + printReceived();
+        return "missing=" + printMissing();
     }
 }

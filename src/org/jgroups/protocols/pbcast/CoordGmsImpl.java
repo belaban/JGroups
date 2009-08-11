@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.17 2009/06/16 13:37:51 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.18 2009/08/11 11:29:03 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -668,7 +668,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug(gms.local_addr + " is sending merge view " + v.getVid() + " to coordinators " + coords);
         
-        gms.merge_ack_collector.reset(v.getVid(), coords);
+        gms.merge_ack_collector.reset(coords);
         int size=gms.merge_ack_collector.size();
         long timeout=gms.view_ack_collection_timeout;         
         
@@ -705,9 +705,7 @@ public class CoordGmsImpl extends GmsImpl {
                          + timeout
                          + "ms, missing ACKs from "
                          + gms.merge_ack_collector.printMissing()
-                         + " (received="
-                         + gms.merge_ack_collector.printReceived()
-                         + "), local_addr="
+                         + ", local_addr="
                          + gms.local_addr);
             }
         }
