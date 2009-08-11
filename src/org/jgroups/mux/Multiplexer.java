@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.109 2009/06/17 16:20:10 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.110 2009/08/11 09:44:59 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -656,9 +656,7 @@ public class Multiplexer implements UpHandler {
                          + service_ack_timeout
                          + "ms, missing ACKs from "
                          + service_ack_collector.printMissing()
-                         + " (received="
-                         + service_ack_collector.printReceived()
-                         + "), local_addr="
+                         + ", local_addr="
                          + getLocalAddress());
             }
         }
