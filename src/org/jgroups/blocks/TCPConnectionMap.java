@@ -591,7 +591,7 @@ public class TCPConnectionMap{
                         try {
                             _send(data, 0, data.length, false);
                         }
-                        catch(Exception ignored) {
+                        catch(Throwable ignored) {
                         }
                     }
                 }
