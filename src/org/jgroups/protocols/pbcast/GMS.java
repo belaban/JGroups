@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.21 2009/04/09 21:12:01 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.22 2009/08/11 11:28:53 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -383,7 +383,7 @@ public class GMS extends Protocol {
         if(newMembers != null && !newMembers.isEmpty()) {
             ackMembers.removeAll(newMembers);
         }
-        ack_collector.reset(new_view.getVid(), ackMembers);   
+        ack_collector.reset(ackMembers);   
                
         
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
@@ -408,14 +408,12 @@ public class GMS extends Protocol {
                      + view_ack_collection_timeout
                      + "ms, missing ACKs from "
                      + ack_collector.printMissing()
-                     + " (received="
-                     + ack_collector.printReceived()
-                     + "), local_addr="
+                     + ", local_addr="
                      + local_addr);
         }   
         
         if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
-            ack_collector.reset(new_view.getVid(), new ArrayList<Address>(newMembers));
+            ack_collector.reset(new ArrayList<Address>(newMembers));
             for(Address joiner:newMembers) {
                 sendJoinResponse(jr, joiner);
             }
@@ -434,9 +432,7 @@ public class GMS extends Protocol {
                          + view_ack_collection_timeout
                          + "ms, missing ACKs from "
                          + ack_collector.printMissing()
-                         + " (received="
-                         + ack_collector.printReceived()
-                         + "), local_addr="
+                         + ", local_addr="
                          + local_addr);
             }
         }           
@@ -555,8 +551,10 @@ public class GMS extends Protocol {
                 becomeCoordinator();
             }
             else {
-                if(haveCoordinatorRole() && !local_addr.equals(coord))
+                if(haveCoordinatorRole() && !local_addr.equals(coord)) {
                     becomeParticipant();
+                    merge_ack_collector.reset(null);
+                }
             }
         }
     }
@@ -1273,7 +1271,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.21 2009/04/09 21:12:01 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.22 2009/08/11 11:28:53 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
