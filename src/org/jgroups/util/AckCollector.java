@@ -8,13 +8,13 @@ import org.jgroups.ViewId;
 import java.util.*;
 
 /**
+ * Collects acks from a number of nodes, waits for all acks. Can also be time bounded
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.18 2009/08/11 09:30:32 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.19 2009/08/11 10:04:03 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
     private final List<Object>     missing_acks;
-    private final Set<Object>      received_acks=new HashSet<Object>();
     private final Promise<Boolean> all_acks_received=new Promise<Boolean>();
     private final Set<Address>     suspected_mbrs=new HashSet<Address>();
     private int                    expected_acks=0;
@@ -38,10 +38,9 @@ public class AckCollector {
         }
     }
 
-    public String printReceived() {
-        synchronized(this) {
-            return received_acks.toString();
-        }
+    @Deprecated
+    public static String printReceived() {
+        return "n/a";
     }
 
     public String printSuspected() {
@@ -54,7 +53,6 @@ public class AckCollector {
         synchronized(this) {
             suspected_mbrs.clear();           
             missing_acks.clear();
-            received_acks.clear();
             if(members != null && !members.isEmpty()) {
                 missing_acks.addAll(members);
                 expected_acks=members.size();
@@ -70,10 +68,9 @@ public class AckCollector {
         }
     }
 
-    public int receivedAcks() {
-        synchronized(this) {
-            return received_acks.size();
-        }
+    @Deprecated
+    public static int receivedAcks() {
+        return -1;
     }
 
     public int expectedAcks() {
@@ -85,7 +82,6 @@ public class AckCollector {
     public void ack(Object member) {
         synchronized(this) {
             missing_acks.remove(member);
-            received_acks.add(member);
             if(missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
@@ -127,6 +123,6 @@ public class AckCollector {
     }
 
     public String toString() {
-        return "missing=" + printMissing() + ", received=" + printReceived();
+        return "missing=" + printMissing();
     }
 }
