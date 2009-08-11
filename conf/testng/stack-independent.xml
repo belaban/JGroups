@@ -9,7 +9,7 @@
                 <include name="stack-independent"/>                
                 <exclude name="broken"/>
                 <exclude name="known-failures"/>
-                <exclude name="gossip-router"/>
+                <!--<exclude name="gossip-router"/>s-->
             </run>
         </groups>
         <packages>
