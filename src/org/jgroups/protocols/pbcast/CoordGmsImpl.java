@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.18 2009/08/11 11:29:03 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.19 2009/08/17 12:22:10 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -195,19 +195,23 @@ public class CoordGmsImpl extends GmsImpl {
         //[JGRP-700] - FLUSH: flushing should span merge
         
         /*if flush is in stack, let this coordinator flush its cluster island */
-        boolean suceesfulFlush = gms.startFlush(view);
-        if(suceesfulFlush) {
-            digest=gms.getDigest();
-            sendMergeResponse(sender, view, digest);
-            if(log.isDebugEnabled())
-                log.debug(gms.local_addr + " responded to " + sender + ", merge_id=" + merge_id);
-        }
-        else {
-            sendMergeRejectedResponse(sender, merge_id);
-            gms.getViewHandler().resume(merge_id);
-            merging=false;
-            if(log.isWarnEnabled())
-                log.warn("Since flush failed at " + gms.local_addr + " rejected merge to "+ sender+ ", merge_id="+ merge_id);
+        boolean suceesfulFlush = false;
+        try {
+            suceesfulFlush = gms.startFlush(view);
+        } finally {
+            if (suceesfulFlush) {
+                digest = gms.getDigest();
+                sendMergeResponse(sender, view, digest);
+                if (log.isDebugEnabled())
+                    log.debug(gms.local_addr + " responded to " + sender+ ", merge_id=" + merge_id);
+            } else {
+                sendMergeRejectedResponse(sender, merge_id);
+                gms.getViewHandler().resume(merge_id);
+                merging = false;
+                if (log.isWarnEnabled())
+                    log.warn("Since flush failed at " + gms.local_addr + " rejected merge to "
+                                    + sender + ", merge_id=" + merge_id);
+            }
         }
     }
 
