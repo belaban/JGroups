@@ -234,7 +234,8 @@ public class FLUSH extends Protocol {
                 if (log.isDebugEnabled())
                     log.debug("At " + localAddress
                                     + " timed out waiting for flush responses after "
-                                    + start_flush_timeout + " msec");
+                                    + start_flush_timeout + " msec. Rejecting flush to participants " + flushParticipants);                
+                rejectFlush(flushParticipants, currentViewId());
             }
         }
         return successfulFlush;
