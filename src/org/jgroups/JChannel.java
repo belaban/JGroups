@@ -72,7 +72,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.26 2009/04/23 18:45:28 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.27 2009/08/17 09:14:43 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -470,10 +470,9 @@ public class JChannel extends Channel {
                                 + target, e);
                     }
                 }
-
             }
             finally {
-                if(flushSupported() && canFetchState)
+                if(flushSupported())
                     stopFlush();
             }
         }
