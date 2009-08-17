@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.64 2009/06/12 09:58:34 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.65 2009/08/17 06:47:36 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -180,7 +180,7 @@ public class MERGE2 extends Protocol {
                     public void run() {
                         findAndNotify();
                     }
-                },  2500, computeInterval(), TimeUnit.MILLISECONDS);
+                },  computeInterval(), computeInterval(), TimeUnit.MILLISECONDS);
             }
         }
 
