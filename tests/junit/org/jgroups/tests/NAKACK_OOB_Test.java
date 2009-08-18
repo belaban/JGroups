@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.13 2009/06/22 10:33:22 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.14 2009/08/18 10:50:30 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class NAKACK_OOB_Test extends ChannelTestBase {
@@ -75,7 +75,7 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         Collection<Long> seqnos3=receiver3.getSeqnos();
 
         // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
-        long target_time=System.currentTimeMillis() + 5000;
+        long target_time=System.currentTimeMillis() + 20000;
         do {
             if(seqnos1.size() >= 5 && seqnos2.size() >= 5 && seqnos3.size() >= 5)
                 break;
@@ -87,25 +87,26 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         System.out.println("c1: " + seqnos1);
         System.out.println("c2: " + seqnos2);
         System.out.println("c3: " + seqnos3);
-
-        // check if 4 is received before 3 in seqnos1-3
-        check4IsBefore3(seqnos1, seqnos2, seqnos3);
+        checkOrder(seqnos1, seqnos2, seqnos3);
     }
 
-    private static void check4IsBefore3(Collection<Long> ... lists) {
+    /**
+     * Checks whether the numbers are in order *after* removing 4: the latter is OOB and can therefore appear anywhere
+     * in the sequence
+     * @param lists
+     */
+    private static void checkOrder(Collection<Long> ... lists) throws Exception {
         for(Collection<Long> list: lists) {
-            int index3=-1, index4=-1;
-            int current=0;
-            for(Long val: list) {
-                if(val.equals((long)3))
-                    index3=current;
-                if(val.equals((long)4))
-                    index4=current;
-                current++;
+            list.remove(4L);
+            long prev_val=0;
+            for(long val: list) {
+                if(val <= prev_val)
+                    throw new Exception("elements are not ordered in list: " + list);
+                prev_val=val;
             }
-            assert index4 < index3 : "4 needs to be ahead of 3 in list " + list;
         }
     }
+
 
 
     public static class MyReceiver extends ReceiverAdapter {
