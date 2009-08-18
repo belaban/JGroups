@@ -1,4 +1,4 @@
-// $Id: Queue.java,v 1.33 2009/06/25 11:32:25 belaban Exp $
+// $Id: Queue.java,v 1.34 2009/08/18 11:52:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -242,6 +242,11 @@ public class Queue {
      * Removes 1 element from the head.
      * If the queue is empty the operation will wait for timeout ms.
      * if no object is added during the timeout time, a Timout exception is thrown
+     * (bela Aug 2009) Note that the semantics of remove(long timeout) are weird - the method waits until an element has
+     * been added, but doesn't do so in a loop ! So if we have 10 threads waiting on an empty queue, and 1 thread
+     * adds an element, all 10 threads will return (but only 1 will have the element), therefore 9 will throw
+     * a TimeoutException ! If I change this to the 'correct' semantics, however (e.g. the method removeWait() below),
+     * GMS.ViewHandler doesn't work correctly anymore. I won't change this now, as Queue will get removed anyway in 3.0.
      * @param timeout - the number of milli seconds this operation will wait before it times out
      * @return the first object in the queue
      */
@@ -276,6 +281,40 @@ public class Queue {
 //                throw new QueueClosedException();
 //            }
             /*at this point we actually did receive a value from the queue, return it*/
+            return retval;
+        }
+    }
+
+
+    public Object removeWait(long timeout) throws QueueClosedException, TimeoutException {
+        synchronized(mutex) {
+            if(closed)
+                throw new QueueClosedException();
+
+            final long end_time=System.currentTimeMillis() + timeout;
+            long wait_time, current_time;
+
+            /*if the queue size is zero, we want to wait until a new object is added*/
+            while(size == 0 && (current_time=System.currentTimeMillis()) < end_time) {
+                if(closed)
+                    throw new QueueClosedException();
+                try {
+                    /*release the mutex lock and wait no more than timeout ms*/
+                    wait_time=end_time - current_time;  // guarnteed to be > 0
+                    mutex.wait(wait_time);
+                }
+                catch(InterruptedException ex) {
+                }
+            }
+            /*we either timed out, or got notified by the mutex lock object*/
+            if(closed)
+                throw new QueueClosedException();
+
+            /*get the next value*/
+            Object retval=removeInternal();
+            /*null result means we timed out*/
+            if(retval == null) throw new TimeoutException("timeout=" + timeout + "ms");
+
             return retval;
         }
     }
