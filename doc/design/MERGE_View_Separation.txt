@@ -4,7 +4,7 @@ Separation of merges from view handling
 =======================================
 
 Author: Bela Ban
-Version: $Id: MERGE_View_Separation.txt,v 1.1 2009/08/19 06:01:49 belaban Exp $
+Version: $Id: MERGE_View_Separation.txt,v 1.2 2009/08/19 06:02:40 belaban Exp $
 JIRA: https://jira.jboss.org/jira/browse/JGRP-1009
 
 Goal:
@@ -35,3 +35,8 @@ On reception of a JOIN/JOIN_WITH_STATE/LEAVE/SUSPECT event
 
 On reception of a MERGE event
 -----------------------------
+
+
+On reception of a MERGE-REQ
+---------------------------
+
