@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.50 2009/06/17 16:20:01 belaban Exp $
+// $Id: Channel.java,v 1.51 2009/08/19 10:14:51 belaban Exp $
 
 package org.jgroups;
 
@@ -327,6 +327,12 @@ public abstract class Channel implements Transport {
      */
     abstract public String getName();
 
+    /**
+     * Sets the logical name for the channel. The name will stay associated with this channel for the channel's
+     * lifetime (until close() is called). This method should be called <em>before</em> calling connect().<br/>
+     * @param name
+     */
+    abstract public void setName(String name);
 
     /**
      Returns the group address of the group of which the channel is a member. This is
