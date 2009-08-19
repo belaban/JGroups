@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.14 2009/08/19 05:51:24 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.15 2009/08/19 12:57:23 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -44,7 +44,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c1.connect("TransportThreadPoolTest");
         c2.connect("TransportThreadPoolTest");
         
-        blockUntilViewsReceived(2, 5000, c1, c2);
+        Util.blockUntilViewsReceived(5000, 500, c1, c2);
         assert c2.getView().size() == 2 : "view is " + c2.getView() + ", but should have had a size of 2";
         
         TP transport=c1.getProtocolStack().getTransport();

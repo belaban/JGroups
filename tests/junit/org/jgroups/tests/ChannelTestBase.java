@@ -598,22 +598,7 @@ public class ChannelTestBase {
         return isViewComplete(channel.getChannel(),memberCount);
     }
     
-    protected static void blockUntilViewsReceived(int count, long timeout, Channel... c) {
-       long failTime=System.currentTimeMillis() + timeout;
 
-       while(System.currentTimeMillis() < failTime) {
-           Util.sleep(100);
-           if(areViewsComplete(count,c)) {
-               return;
-           }
-       }
-
-       StringBuilder sb=new StringBuilder();
-       for(Channel channel : c) {
-           sb.append(channel.getAddress() + ",view=" + channel.getView().getMembers() + "|");
-       }
-       throw new RuntimeException("timed out before caches had complete views. Views are " + sb);
-    }
     
     protected static boolean isViewComplete(Channel channel, int memberCount) {
 
