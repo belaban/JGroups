@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: QueueTest.java,v 1.4 2009/06/22 14:34:30 belaban Exp $
+ * @version $Id: QueueTest.java,v 1.5 2009/08/19 05:52:11 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {
@@ -595,7 +595,7 @@ public class QueueTest {
             }
         }
 
-        assert num_dead == 2;
+        assert num_dead == 2 : "num_dead was " + num_dead + ", but expected 2";
     }
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
@@ -607,7 +607,7 @@ public class QueueTest {
         int num_dead=0;
 
         for(int i=0; i < removers.length; i++) {
-            removers[i]=new RemoveOneItemWithTimeout(i, 5000, queue);
+            removers[i]=new RemoveOneItemWithTimeout(i, 15000, queue);
             removers[i].start();
         }
 
@@ -630,17 +630,16 @@ public class QueueTest {
         while(target_time > System.currentTimeMillis());
 
         for(int i=0; i < removers.length; i++) {
-            Long retval=removers[i].getRetval();
-            System.out.println("Thread #" + removers[i].rank + ": retval=" + retval);
-            if(retval == null)
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
+            if(!removers[i].isAlive()) {
                 num_dead++;
+            }
         }
 
-        assert num_dead == 8 : "num_dead should have been 8 but was " + num_dead;
+        assert num_dead == 2 : "num_dead should have been 2 but was " + num_dead;
 
         System.out.println("closing queue - causing all remaining threads to terminate");
         queue.close(false); // will cause all threads still blocking on remove() to return
-
         Util.sleep(500);
 
         num_dead=0;
@@ -856,11 +855,11 @@ public class QueueTest {
 
         public void run() {
             try {
-                retval=(Long)queue.remove(timeout);
+                retval=(Long)queue.removeWait(timeout);
                 System.out.println("Thread #" + rank + ": retrieved " + retval);
             }
             catch(QueueClosedException closed) {
-                System.err.println("Thread #" + rank + ": queue was closed");
+                System.out.println("Thread #" + rank + ": queue was closed");
             }
             catch(TimeoutException e) {
                 System.out.println("Thread #" + rank + ": timeout occurred");

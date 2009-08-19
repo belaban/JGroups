@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.13 2009/06/19 14:37:59 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.14 2009/08/19 05:51:24 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
@@ -44,7 +44,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c1.connect("TransportThreadPoolTest");
         c2.connect("TransportThreadPoolTest");
         
-        blockUntilViewsReceived(2,5000,c1,c2);
+        blockUntilViewsReceived(2, 5000, c1, c2);
+        assert c2.getView().size() == 2 : "view is " + c2.getView() + ", but should have had a size of 2";
         
         TP transport=c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newFixedThreadPool(2);
@@ -54,18 +55,19 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
         
-        Util.sleep(2000);
-
         c1.send(null, null, "hello world");
         c2.send(null, null, "bela");
-    
         c1.send(null, null, "message 3");
         c2.send(null, null, "message 4");
+
+        long start=System.currentTimeMillis();
         
         r1.getLatch().await(3000, TimeUnit.MILLISECONDS);
-        r1.getLatch().await(3000, TimeUnit.MILLISECONDS);
+        r2.getLatch().await(3000, TimeUnit.MILLISECONDS);
 
-        System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs()));
+        long diff=System.currentTimeMillis() - start;
+        System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs())
+                + "\ntook " + diff + " ms");
         assert r1.getMsgs().size() == 4;
         assert r2.getMsgs().size() == 4;
     }
