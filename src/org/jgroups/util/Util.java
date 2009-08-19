@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.205 2009/07/09 07:05:00 belaban Exp $
+ * @version $Id: Util.java,v 1.206 2009/08/19 12:33:57 belaban Exp $
  */
 public class Util {
 
@@ -168,6 +168,35 @@ public class Util {
         assertNotNull(null, val);
     }
 
+
+    /**
+     * Blocks until all channels have the same view
+     * @param timeout How long to wait (max in ms)
+     * @param interval Check every interval ms
+     * @param channels The channels which should form the view. The expected view size is channels.length.
+     * Must be non-null
+     */
+    public static void blockUntilViewsReceived(long timeout, long interval, Channel ... channels) throws TimeoutException {
+        final int expected_size=channels.length;
+
+        if(interval > timeout)
+            throw new IllegalArgumentException("interval needs to be smaller than timeout");
+        final long end_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < end_time) {
+            boolean all_ok=true;
+            for(Channel ch: channels) {
+                View view=ch.getView();
+                if(view == null || view.size() != expected_size) {
+                    all_ok=false;
+                    break;
+                }
+            }
+            if(all_ok)
+                return;
+            Util.sleep(interval);
+        }
+        throw new TimeoutException();
+    }
 
 
     /**
