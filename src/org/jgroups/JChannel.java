@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.221 2009/06/22 14:34:33 belaban Exp $
+ * @version $Id: JChannel.java,v 1.222 2009/08/19 06:14:17 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -514,52 +514,46 @@ public class JChannel extends Channel {
         boolean joinSuccessful=false;
         boolean canFetchState=false;
         // only connect if we are not a unicast channel
-        if(cluster_name != null) {
+        if(cluster_name == null)
+            return;
 
-            try {
-            	Event connect_event = null;
-            	if (useFlushIfPresent) {
-    				connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name);
-    			} else {
-    				connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-    			}
-                Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
-                joinSuccessful=!(res != null && res instanceof Exception);
-                if(!joinSuccessful) {
-                    stopStack(true, false);
-                    init();
-                    throw new ChannelException("connect() failed", (Throwable)res);
-                }
+        try {
+            Event connect_event=null;
+            if(useFlushIfPresent)
+                connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name);
+            else
+                connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
 
-                connected=true;
-                notifyChannelConnected(this);
-                canFetchState=getView() != null && getView().size() > 1;
+            Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
+            joinSuccessful=!(res != null && res instanceof Exception);
+            if(!joinSuccessful) {
+                stopStack(true, false);
+                init();
+                throw new ChannelException("connect() failed", (Throwable)res);
+            }
 
-                // if I am not the only member in cluster then
-                if(canFetchState) {
-                    try {
-                        // fetch state from target
-                        stateTransferOk=getState(target, state_id, timeout, false);
-                        if(!stateTransferOk) {
-                            throw new StateTransferException(getAddress() + " could not fetch state "
-                                    + state_id
-                                    + " from "
-                                    + target);
-                        }
-                    }
-                    catch(Exception e) {
-                        throw new StateTransferException(getAddress() + " could not fetch state "
-                                + state_id
-                                + " from "
-                                + target, e);
+            connected=true;
+            notifyChannelConnected(this);
+            canFetchState=getView() != null && getView().size() > 1;
+
+            // if I am not the only member in cluster then
+            if(canFetchState) {
+                try {
+                    // fetch state from target
+                    stateTransferOk=getState(target, state_id, timeout, false);
+                    if(!stateTransferOk) {
+                        throw new StateTransferException(getAddress() + " could not fetch state from " + target);
                     }
                 }
+                catch(Exception e) {
+                    throw new StateTransferException(getAddress() + " could not fetch state from " + target, e);
+                }
+            }
 
-            }
-            finally {
-                if(flushSupported() && canFetchState)
-                    stopFlush();
-            }
+        }
+        finally {
+            if(flushSupported())
+                stopFlush();
         }
     }
 
