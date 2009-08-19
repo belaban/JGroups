@@ -4,7 +4,7 @@ Separation of merges from view handling
 =======================================
 
 Author: Bela Ban
-Version: $Id: MERGE_View_Separation.txt,v 1.2 2009/08/19 06:02:40 belaban Exp $
+Version: $Id: MERGE_View_Separation.txt,v 1.3 2009/08/19 06:35:06 belaban Exp $
 JIRA: https://jira.jboss.org/jira/browse/JGRP-1009
 
 Goal:
@@ -31,6 +31,7 @@ There are 3 types of events we need to take into acccount:
 
 On reception of a JOIN/JOIN_WITH_STATE/LEAVE/SUSPECT event
 ----------------------------------------------------------
+- If the
 
 
 On reception of a MERGE event
@@ -40,3 +41,10 @@ On reception of a MERGE event
 On reception of a MERGE-REQ
 ---------------------------
 
+
+
+Issues:
+-------
+
+- What if the client sends a JOIN_WITH_STATE, the coord processes the JOIN, but suspends the queue after it and before
+  processing the GET_STATE ?
