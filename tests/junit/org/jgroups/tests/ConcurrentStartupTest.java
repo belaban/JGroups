@@ -1,16 +1,10 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.MergeView;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.Global;
+import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.LinkedList;
@@ -25,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.52 2009/05/25 07:40:59 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.53 2009/08/19 07:09:49 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -46,7 +40,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     /**
-     * Tests concurrent startup and message sending directly after joining See
+     * Tests concurrent startup and message sending directly after joining. See
      * doc/design/ConcurrentStartupTest.txt for details. This will only work
      * 100% correctly once we have FLUSH support (JGroups 2.4)
      *
@@ -130,8 +124,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             
             for (ConcurrentStartupChannel channel : channels) {
                 if (!channel.hasReceivedMergeView()) {
-                    Assert.assertEquals(channel.getList().size(), count, channel.getName()
-                                    + " should have " + count + " elements");
+                    assert channel.getList().size() == count : channel.getName() + " should have " + count + " elements";
                 }
             }
         }
@@ -243,7 +236,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             super.viewAccepted(new_view);
-            gotMergeView = (!gotMergeView && new_view instanceof MergeView)?true:false;                           
+            gotMergeView =(!gotMergeView && new_view instanceof MergeView);                           
             synchronized(this){
                 Integer key = new Integer(getMod());
                 mods.put(key, new_view.getVid());
@@ -254,6 +247,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             return gotMergeView;            
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(byte[] state) {
             super.setState(state);
             try{
@@ -306,6 +300,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) {
             super.setState(istream);
             ObjectInputStream ois = null;
