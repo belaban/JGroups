@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.30 2009/07/20 12:36:59 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.31 2009/08/19 10:26:06 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
@@ -225,12 +225,12 @@ public class StateTransferTest extends ChannelTestBase {
             try {
                 acquired=semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
                 if(!acquired) {
-                    throw new Exception(name + " cannot acquire semaphore");
+                    throw new Exception(channel.getAddress() + " cannot acquire semaphore");
                 }
                 useChannel();
             }
             catch(Exception e) {
-                log.error(name + ": " + e.getLocalizedMessage(), e);
+                log.error(channel.getAddress() + ": " + e.getLocalizedMessage(), e);
                 // Save it for the test to check
                 exception=e;
             }
