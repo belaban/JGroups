@@ -1,0 +1,37 @@
+
+
+Separation of merges from view handling
+=======================================
+
+Author: Bela Ban
+Version: $Id: MERGE_View_Separation.txt,v 1.1 2009/08/19 06:01:49 belaban Exp $
+JIRA: https://jira.jboss.org/jira/browse/JGRP-1009
+
+Goal:
+-----
+
+We don't want concurrent merges and view changes (join or leave processing). During a merge, join and leave requests
+will be discarded. Likewise, during a join/leave processing, merge requests will be discarded.
+
+We already do discard join or leave requests during a merge (ViewHandler is suspended), but not the other way round.
+
+JGRP-1009 leaves to spurious merges: when a join or leave request is being processed and the views are being
+disseminated, if a merge is permitted to occur during this, the merge leader might detect different views
+(due to them arriving at different members at different times, maybe a few millisconds apart) and initiate a merge.
+
+This won't happen when the merge is discarded during a view processing / installation.
+
+Design:
+-------
+
+There are 3 types of events we need to take into acccount:
+- The coord receiving a JOIN/JOIN_WITH_STATE/LEAVE/SUSPECT event (anything which leads to a new view being installed)
+- The coord receiving a MERGE event (e.g. from MERGE2 somewhere below in the stack)
+- The coord receiving a MERGE-REQ request (from a coord in a different partition)
+
+On reception of a JOIN/JOIN_WITH_STATE/LEAVE/SUSPECT event
+----------------------------------------------------------
+
+
+On reception of a MERGE event
+-----------------------------
