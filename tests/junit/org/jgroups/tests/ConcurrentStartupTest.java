@@ -7,10 +7,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.53 2009/08/19 07:09:49 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.54 2009/08/19 11:46:20 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -28,7 +25,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        mod.set(1);
+        mod.set(0);
     }
 
     public void testConcurrentStartupLargeState() {
@@ -88,69 +85,57 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                                                                  useDispatcher);
                 }
 
-                // Release one ticket at a time to allow the thread to start
-                // working
+                // Release one ticket at a time to allow the thread to start working
                 channels[i].start();
                 semaphore.release(1);
-                //sleep a second and half thus avoiding merges
-                Util.sleep(1500);
+                if(i == 0)
+                    Util.sleep(1500); // sleep to avoid merges
             }
 
             // Make sure everyone is in sync
-
             blockUntilViewsReceived(channels, 60000);
+            System.out.println("all nodes have the same view");
 
-            // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
-
-            // Reacquire the semaphore tickets; when we have them all
-            // we know the threads are done
+            // Re-acquire the semaphore tickets; when we have them all we know the threads are done
             boolean acquired=semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
             if(!acquired) {
                 log.warn("Most likely a bug, analyse the stack below:");
                 log.warn(Util.dumpThreads());
             }
 
-            // Sleep to ensure async message arrive
-            Util.sleep(3000);
+            // Sleep to ensure async messages arrive
+            System.out.println("Waiting for all channels to have received the 4 messages:");
+            long end_time=System.currentTimeMillis() + 5000L;
+            while(System.currentTimeMillis() < end_time) {
+                boolean terminate=true;
+                for(ConcurrentStartupChannel ch: channels) {
+                    if(ch.getList().size() != 4) {
+                        terminate=false;
+                        break;
+                    }
+                }
+                if(terminate)
+                    break;
+                else
+                    Util.sleep(500);
+            }
 
-            // do test verification
-            for(ConcurrentStartupChannel channel:channels) {
-                log.info(channel.getName() + "=" + channel.getList());
+            for(ConcurrentStartupChannel channel:channels)
+                log.info(channel.getName() + ": state=" + channel.getList());
+
+            for(ConcurrentStartupChannel ch: channels) {
+                List<Address> list=ch.getList();
+                assert list.size() == count : ": list is " + list + ", should have " + count + " elements";
             }
-            for(ConcurrentStartupChannel channel:channels) {
-                log.info(channel.getName() + "=" + channel.getModifications());
-            }
-            
-            for (ConcurrentStartupChannel channel : channels) {
-                if (!channel.hasReceivedMergeView()) {
-                    assert channel.getList().size() == count : channel.getName() + " should have " + count + " elements";
-                }
-            }
+            System.out.println("done, all messages received by all channels");
+            for (ConcurrentStartupChannel channel : channels)
+                checkEventStateTransferSequence(channel);
         }
-        catch(Exception ex) { 
-            
-            //if we encountered MergeView test will fail
-            for (ConcurrentStartupChannel channel : channels) {
-                if (channel.hasReceivedMergeView()) {
-                    return;
-                }
-            }
-            
-            log.warn("Exception encountered during test", ex);
-            assert false:ex.getLocalizedMessage();
+        catch(Exception ex) {
         }
         finally {
-            for(ConcurrentStartupChannel channel:channels) {
+            for(ConcurrentStartupChannel channel: channels)
                 channel.cleanup();
-                Util.sleep(2000); // remove before 2.6 GA
-            }
-
-            for (ConcurrentStartupChannel channel : channels) {
-                if (!channel.hasReceivedMergeView()) {
-                    checkEventStateTransferSequence(channel);
-                }
-            }
         }
     }
 
@@ -197,9 +182,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
         private boolean gotMergeView = false;
-        private final List<Address> l = new LinkedList<Address>();
-
-        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();
+        private final List<Address> state=new LinkedList<Address>();
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
@@ -215,32 +198,25 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
 
         List<Address> getList() {
-            return l;
+            synchronized(state) {
+                return state;
+            }
         }
 
-        Map<Integer,Object> getModifications() {
-            return mods;
-        }
 
         public void receive(Message msg) {
             if(msg.getBuffer() == null)
                 return;
             Address obj = (Address)msg.getObject();
-            log.info("-- [#" + getName() + " (" + channel.getAddress() + ")]: received " + obj);
-            synchronized(this){
-                l.add(obj);
-                Integer key = new Integer(getMod());
-                mods.put(key, obj);
+            log.info(channel.getAddress() + ": received " + obj);
+            synchronized(state) {
+                state.add(obj);
             }
         }
 
         public void viewAccepted(View new_view) {
             super.viewAccepted(new_view);
             gotMergeView =(!gotMergeView && new_view instanceof MergeView);                           
-            synchronized(this){
-                Integer key = new Integer(getMod());
-                mods.put(key, new_view.getVid());
-            }
         }
         
         public boolean hasReceivedMergeView(){
@@ -252,16 +228,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             super.setState(state);
             try{
                 List<Address> tmp = (List) Util.objectFromByteBuffer(state);
-                synchronized(this){
-                    l.clear();
-                    l.addAll(tmp);
-                    log.info("-- [#" + getName()
-                             + " ("
-                             + channel.getAddress()
-                             + ")]: state is "
-                             + l);
-                    Integer key = new Integer(getMod());
-                    mods.put(key, tmp);
+                synchronized(this.state) {
+                    this.state.clear();
+                    this.state.addAll(tmp);
+                    log.info(channel.getAddress() + ": state is " + this.state);
                 }
             }catch(Exception e){
                 e.printStackTrace();
@@ -271,8 +241,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         public byte[] getState() {
             super.getState();
             List<Address> tmp = null;
-            synchronized(this){
-                tmp = new LinkedList<Address>(l);
+            synchronized(state) {
+                tmp = new LinkedList<Address>(state);
                 try{
                     return Util.objectToByteBuffer(tmp);
                 }catch(Exception e){
@@ -288,8 +258,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             try{
                 oos = new ObjectOutputStream(ostream);
                 List<Address> tmp = null;
-                synchronized(this){
-                    tmp = new LinkedList<Address>(l);
+                synchronized(state) {
+                    tmp = new LinkedList<Address>(state);
                 }
                 oos.writeObject(tmp);
                 oos.flush();
@@ -307,16 +277,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             try{
                 ois = new ObjectInputStream(istream);
                 List<Address> tmp = (List) ois.readObject();
-                synchronized(this){
-                    l.clear();
-                    l.addAll(tmp);
-                    log.info("-- [#" + getName()
-                             + " ("
-                             + channel.getAddress()
-                             + ")]: state is "
-                             + l);
-                    Integer key = new Integer(getMod());
-                    mods.put(key, tmp);
+                synchronized(state){
+                    state.clear();
+                    state.addAll(tmp);
+                    log.info(channel.getAddress() + ": state is " + state);
                 }
             }catch(Exception e){
                 e.printStackTrace();

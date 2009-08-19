@@ -1,20 +1,22 @@
 package org.jgroups.tests;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
-import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.UDP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.AssertJUnit;
-import org.testng.annotations.*;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -275,17 +277,16 @@ public class ChannelTestBase {
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication implements EventSequence, Runnable, ChannelRetrievable,ExtendedReceiver {
+    protected abstract class ChannelApplication extends ExtendedReceiverAdapter implements EventSequence, Runnable, ChannelRetrievable  {
         protected Channel   channel;
         protected Thread    thread;
         protected Throwable exception;
-        protected String    name;
         protected RpcDispatcher dispatcher;
         protected List<Object> events;
        
         public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
-            this.name=name;
             channel=createChannel(true,4);
+            channel.setName(name);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
                 dispatcher=new RpcDispatcher(channel, this, this, this);
@@ -296,8 +297,8 @@ public class ChannelTestBase {
         }
         
         public ChannelApplication(JChannel copySource,String name,  boolean useDispatcher) throws Exception {
-            this.name=name;
             channel=createChannel(copySource);
+            channel.setName(name);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
                 dispatcher=new RpcDispatcher(channel, this, this, this);
@@ -318,7 +319,7 @@ public class ChannelTestBase {
                 useChannel();
             }
             catch(Exception e) {
-                log.error(name + ": " + e.getLocalizedMessage(), e);
+                log.error(channel.getName() + ": " + e.getLocalizedMessage(), e);
                 exception=e; // Save it for the test to check
             }
         }
@@ -340,14 +341,6 @@ public class ChannelTestBase {
         public void start() {
             thread=new Thread(this, getName());
             thread.start();
-            Address a=getLocalAddress();
-            boolean connected=a != null;
-            if(connected) {
-                log.info("Thread for channel " + a + "[" + getName() + "] started");
-            }
-            else {
-                log.info("Thread for channel [" + getName() + "] started");
-            }
         }
 
 
@@ -356,27 +349,18 @@ public class ChannelTestBase {
         }
 
         public String getName() {
-            return name;
+            return channel != null? channel.getName() : "n/a";
         }
 
         public void cleanup() {
-            if(thread != null && thread.isAlive()) {
+            channel.setReceiver(null);
+            if(thread != null && thread.isAlive())
                 thread.interrupt();
-            }
-            Address a=getLocalAddress();
-            boolean connected=a != null;
-            if(connected) {
-                log.info("Closing channel " + a + "[" + getName() + "]");
-            }
-            else {
-                log.info("Closing channel [" + getName() + "]");
-            }
             try {
                 channel.close();
-                log.info("Closed channel " + a + "[" + getName() + "]");
             }
             catch(Throwable t) {
-                log.warn("Got exception while closing channel " + a + "[" + getName() + "]");
+                log.warn("Exception while closing channel " + getName(), t);
             }
         }
         
@@ -387,86 +371,54 @@ public class ChannelTestBase {
 
         public void block() {
             events.add(new BlockEvent());
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] in blocking");
         }
 
         public byte[] getState() {
             events.add(new GetStateEvent(null, null));
-            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "] ");
             return null;
         }
 
         public void getState(OutputStream ostream) {
             events.add(new GetStateEvent(null, null));
-            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "]");
         }
 
         public byte[] getState(String state_id) {
             events.add(new GetStateEvent(null, state_id));
-            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + " state id =" + state_id);
             return null;
         }
 
         public void getState(String state_id, OutputStream ostream) {
             events.add(new GetStateEvent(null, state_id));
-            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "] state id =" + state_id);
-        }
-
-        public void receive(Message msg) {
         }
 
         public void setState(byte[] state) {
             events.add(new SetStateEvent(null, null));
-            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "] ");
         }
 
         public void setState(InputStream istream) {
             events.add(new SetStateEvent(null, null));
-            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "]");
         }
 
         public void setState(String state_id, byte[] state) {
             events.add(new SetStateEvent(null, null));
-            log.debug("Channel setState " + getLocalAddress()
-                    + "["
-                    + getName()
-                    + "] state id ="
-                    + state_id
-                    + ", state size is "
-                    + state.length);
         }
 
         public void setState(String state_id, InputStream istream) {
             events.add(new SetStateEvent(null, null));
-            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "] state id " + state_id);
-        }
-
-        public void suspect(Address suspected_mbr) {
-            log.debug("Channel " + getLocalAddress()
-                    + "["
-                    + getName()
-                    + "] suspecting "
-                    + suspected_mbr);
         }
 
         public void unblock() {
             events.add(new UnblockEvent());
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] unblocking");
         }
 
         public void viewAccepted(View new_view) {
             events.add(new_view);
-            log.info("Channel " + getLocalAddress()
-                    + "["
-                    + getName()
-                    + "] accepted view "
-                    + new_view);
+            log.info(getLocalAddress() + ": view=" + new_view);
         }
     }
 
     /**
-     * Channel with semaphore allows application to go through fine-grained
-     * synchronous step control.
+     * Channel with semaphore allows application to go through fine-grained synchronous step control.
      * <p/>
      * PushChannelApplicationWithSemaphore application will not proceed to
      * useChannel() until it acquires permit from semphore. After useChannel()
@@ -499,14 +451,13 @@ public class ChannelTestBase {
             boolean acquired=false;
             try {
                 acquired=semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
-                if(!acquired) {
-                    throw new Exception(name + " cannot acquire semaphore");
-                }
+                if(!acquired)
+                    throw new Exception(channel.getAddress() + ": cannot acquire semaphore");
 
                 useChannel();
             }
             catch(Exception e) {
-                log.error(name + ": " + e.getLocalizedMessage(), e);
+                log.error(channel.getName() + ": " + e.getLocalizedMessage(), e);
                 exception=e; // Save it for the test to check
             }
             finally {
@@ -517,8 +468,7 @@ public class ChannelTestBase {
         }
     }
     
-    protected void checkEventStateTransferSequence(EventSequence receiver) {
-
+    protected static void checkEventStateTransferSequence(EventSequence receiver) {
         List<Object> events=receiver.getEvents();
         assertNotNull(events);
         final String validSequence="([b][vgs]*[u])+";     
@@ -536,7 +486,7 @@ public class ChannelTestBase {
      * in the trace is represented by a letter.
      */
     protected static String translateEventTrace(List<Object> et) throws Exception {
-        StringBuffer eventString=new StringBuffer();
+        StringBuilder eventString=new StringBuilder();
         for(Iterator<Object> it=et.iterator();it.hasNext();) {
             Object obj=it.next();
             if(obj instanceof BlockEvent)
@@ -676,7 +626,7 @@ public class ChannelTestBase {
        }
        else if(memberCount < members.size()) {
            // This is an exceptional condition
-           StringBuilder sb=new StringBuilder("Channel at address ");
+           StringBuilder sb=new StringBuilder("Channel ");
            sb.append(channel.getAddress());
            sb.append(" had ");
            sb.append(members.size());
