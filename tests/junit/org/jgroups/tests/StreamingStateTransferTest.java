@@ -12,10 +12,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -43,14 +40,8 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         transferHelper(channelNames, true);
     }
 
-    private void transferHelper(String channelNames[], boolean useDispatcher) {
-        transferHelper(channelNames, false, false, useDispatcher);
-    }
 
-    private void transferHelper(String channelNames[],
-                                boolean crash,
-                                boolean largeTransfer,
-                                boolean useDispatcher) {
+    private void transferHelper(String channelNames[], boolean useDispatcher) {
         int channelCount=channelNames.length;
         ArrayList<StreamingStateTransferApplication> channels=new ArrayList<StreamingStateTransferApplication>(channelCount);
 
@@ -68,29 +59,28 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                     channel=new StreamingStateTransferApplication(channelNames[i],
                                                                   semaphore,
                                                                   useDispatcher,
-                                                                  largeTransfer);
+                                                                  false);
                 else
                     channel=new StreamingStateTransferApplication((JChannel)channels.get(0)
                                                                                     .getChannel(),
                                                                   channelNames[i],
                                                                   semaphore,
                                                                   useDispatcher,
-                                                                  largeTransfer);
+                                                                  false);
 
                 // Start threads and let them join the channel
                 channels.add(channel);
                 semaphore.release(1);
                 channel.start();
                 Util.sleep(2000);
-
-                if(crash && !crashed && i > 2) {
-                    StreamingStateTransferApplication coord=channels.remove(0);
-                    coord.cleanup();
-                    crashed=true;
-                }
             }
 
-            blockUntilViewsReceived(channels.toArray(new ChannelRetrievable[channels.size()]), 60000);
+            Channel[] tmp=new Channel[channels.size()];
+            int cnt=0;
+            for(StreamingStateTransferApplication app: channels) {
+                tmp[cnt++]=app.getChannel();
+            }
+            Util.blockUntilViewsReceived(60000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -210,7 +200,6 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 channel.send(null, null, new Integer(i));
             }
             channel.getState(null, 25000);
-            channel.getState(null, name, 25000);
         }
 
         public void getState(OutputStream ostream) {
@@ -306,7 +295,6 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             Object nameTransfer=null;
             try {
                 nameTransfer=Util.objectFromByteBuffer(state);
-                assertEquals("Got partial state requested ", nameTransfer, name);
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -341,7 +329,6 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             ObjectInputStream ois=null;
             try {
                 ois=new ObjectInputStream(istream);
-                assertEquals("Got partial state requested ", ois.readObject(), name);
             }
             catch(Exception e) {
                 e.printStackTrace();
