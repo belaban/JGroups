@@ -14,9 +14,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the TLS
+ * Tests the concurrent stack (TP)
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.13 2009/06/04 07:35:54 vlada Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.14 2009/08/20 09:08:48 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
@@ -41,23 +41,12 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-
     @Test
-    public void testSequentialDelivery() throws Exception {
-        doIt(false);
-    }
-
-    @Test
-    public void testConcurrentDelivery() throws Exception {
-        doIt(true);
-    }
-
-
-    private void doIt(boolean concurrent) throws Exception {
+    public void testFifoDelivery() throws Exception {
         long start, stop, diff;
-        setConcurrent(ch1, concurrent);
-        setConcurrent(ch2, concurrent);
-        setConcurrent(ch3, concurrent);
+        modifyDefaultThreadPool(ch1);
+        modifyDefaultThreadPool(ch2);
+        modifyDefaultThreadPool(ch3);
 
         MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
         ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
@@ -92,13 +81,6 @@ public class ConcurrentStackTest extends ChannelTestBase {
         checkFIFO(r1);
         checkFIFO(r2);
         checkFIFO(r3);
-        /*
-         * TODO Vladimir Feb 15th 2007
-         * Re-enable once acceptable bounds are known for all stacks
-         * checkTime(diff, threadless);
-         * 
-         * */
-
         if(ex != null)
             throw ex;
     }
@@ -150,9 +132,8 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
 
 
-    private static void setConcurrent(JChannel ch1, boolean concurrent) {
+    private static void modifyDefaultThreadPool(JChannel ch1) {
         TP transport=ch1.getProtocolStack().getTransport();
-        transport.setUseConcurrentStack(concurrent);
         ThreadPoolExecutor default_pool=(ThreadPoolExecutor)transport.getDefaultThreadPool();
         if(default_pool != null) {
             default_pool.setCorePoolSize(1);
@@ -163,8 +144,8 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
 
     private class Sender implements Runnable {
-        Channel ch;
-        Address local_addr;
+        final Channel ch;
+        final Address local_addr;
 
         public Sender(Channel ch) {
             this.ch=ch;
