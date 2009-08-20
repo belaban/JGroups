@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.jgroups.util.MyReceiver;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -20,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Tests the FLUSH protocol. Adds a FLUSH layer on top of the stack unless already present. Should work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.81 2009/08/20 11:35:03 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.82 2009/08/20 11:40:22 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
