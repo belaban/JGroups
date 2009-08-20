@@ -16,10 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the concurrent stack (TP)
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.14 2009/08/20 09:08:48 belaban Exp $
+ * @version $Id: FifoOrderTest.java,v 1.7 2009/08/20 09:14:04 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
-public class ConcurrentStackTest extends ChannelTestBase {    
+public class FifoOrderTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
     final static int NUM=25, EXPECTED=NUM * 3;
     final static long SLEEPTIME=100;
@@ -66,6 +66,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
         Exception ex=null;
 
         try {
+            System.out.println("waiting for all messages to be received");
             barrier.await((long)(EXPECTED * SLEEPTIME * 1.5), TimeUnit.MILLISECONDS); // wait for all receivers
         }
         catch(java.util.concurrent.TimeoutException e) {
@@ -204,6 +205,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
                 msgs.add(pair);
             }
             if(count.incrementAndGet() >= EXPECTED) {
+                System.out.println("[" + name + "]: received all messages (" + count.get() + ")");
                 try {
                     barrier.await();
                 }
