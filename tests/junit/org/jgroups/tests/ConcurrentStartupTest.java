@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * for details. This will only work 100% correctly with FLUSH support.<br/>
  * [1] http://jira.jboss.com/jira/browse/JGRP-236
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.55 2009/08/19 12:57:13 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.56 2009/08/20 07:47:04 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -44,8 +44,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                     channels[i]=new ConcurrentStartupChannel((JChannel)channels[0].getChannel(), names[i], semaphore);
                 channels[i].start();
                 semaphore.release(1);
-                //if(i == 0)
-                  //  Util.sleep(1500); // sleep after the first node to avoid merges
+                if(i == 0)
+                    Util.sleep(1500); // sleep after the first node to educe the chances of a merge
             }
 
             // Make sure everyone is in sync
@@ -96,6 +96,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         catch(Exception ex) {
         }
         finally {
+            for(ConcurrentStartupChannel channel: channels)
+                channel.getChannel().setReceiver(null); // silence the receivers so they don't logs views
             for(ConcurrentStartupChannel channel: channels)
                 channel.cleanup();
         }
