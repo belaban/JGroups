@@ -20,8 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * for details. This will only work 100% correctly with FLUSH support.<br/>
  * [1] http://jira.jboss.com/jira/browse/JGRP-236
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.57 2009/08/20 10:40:40 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.58 2009/08/20 10:54:13 belaban Exp $
  */
+
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
     private AtomicInteger mod = new AtomicInteger(0);
@@ -115,7 +116,6 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore) throws Exception{
             super(name, semaphore, false);
-            Util.addFlush(channel, new FLUSH());
         }
 
         public ConcurrentStartupChannel(JChannel ch,String name,Semaphore semaphore) throws Exception{
