@@ -1,171 +1,224 @@
 package org.jgroups.tests;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.AfterMethod;
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/** Tests FIFO order or messages
+/**
+ * Tests the concurrent stack (TP)
  * @author Bela Ban
- * @version $Id: FifoOrderTest.java,v 1.4 2008/10/13 14:21:12 vlada Exp $
+ * @version $Id: FifoOrderTest.java,v 1.6 2009/08/20 09:10:37 belaban Exp $
  */
-@Test(groups="broken",sequential=true)
-public class FifoOrderTest extends ChannelTestBase {
-    private static final int NUM_MSGS=5000;
-    private static final int NUM_NODES=4;
-    private final JChannel[] channels=new JChannel[NUM_NODES];
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+public class FifoOrderTest extends ChannelTestBase {    
+    JChannel ch1, ch2, ch3;
+    final static int NUM=25, EXPECTED=NUM * 3;
+    final static long SLEEPTIME=100;
+    CyclicBarrier barrier;
 
-    
 
     @BeforeMethod
-    void setup() throws Exception {
-        channels[0]=createChannel(true, 4);
-        channels[0].connect("FifoOrderTest-Group");
-        for(int i=1; i < channels.length; i++) {
-            channels[i]=createChannel(channels[0]);
-        }
-        for(int i=1; i < channels.length; i++) {
-            channels[i].connect("FifoOrderTest-Group");
-        }
-        for(int i=0; i < channels.length; i++) {
-            log.info("view[" + i + "]: " + channels[i].getView());
-        }
-        assert channels[0].getView().size() == NUM_NODES;
+    void setUp() throws Exception {
+        barrier=new CyclicBarrier(4);
+        ch1=createChannel(true,3);
+        ch2=createChannel(ch1);
+        ch3=createChannel(ch1);
     }
-
 
     @AfterMethod
-    void cleanup() {
-        for(int i=channels.length -1; i <=0 ; i--) {
-            channels[i].disconnect();
-        }
-        for(int i=channels.length -1; i <=0 ; i--) {
-            channels[i].close();
-        }
-
-    }
-
-    
-    public void testFIFO() {
-        MyReceiver receiver=new MyReceiver();
-        for(JChannel channel: channels) {
-            channel.setReceiver(receiver);
-        }
-
-        Sender[] senders=new Sender[NUM_NODES];
-        for(int i=0; i < channels.length; i++) {
-            senders[i]=new Sender(i, channels[i]);
-            senders[i].start();
-        }
-
-        for(Sender sender: senders) {
-            try {
-                sender.join();
-            }
-            catch(InterruptedException e) {
-            }
-        }
-
-        while(true) {
-            Util.sleep(2000);
-            long[] seqnos=receiver.getSeqnos();
-            if(receiver.isDone())
-                break;
-            log.info("seqnos: " + Arrays.toString(seqnos));
-        }
-
-        long[] seqnos=receiver.getSeqnos();
-        log.info("seqnos: " + Arrays.toString(seqnos));
-        for(long seqno: seqnos)
-            assert seqno == NUM_MSGS;
-
-        if(!receiver.isCorrect()) {
-            assert false : receiver.getErrorMessages();
-        }
+    protected void tearDown() throws Exception {
+        Util.close(ch3, ch2, ch1);
+        barrier.reset();
     }
 
 
-    class Sender extends Thread {
-        final int index;
-        final JChannel ch;
-        static final int LENGTH=Global.LONG_SIZE + Global.BYTE_SIZE;
+    @Test
+    public void testFifoDelivery() throws Exception {
+        long start, stop, diff;
+        modifyDefaultThreadPool(ch1);
+        modifyDefaultThreadPool(ch2);
+        modifyDefaultThreadPool(ch3);
 
-        public Sender(int index, JChannel ch) {
-            this.index=index;
+        MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
+        ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
+
+        ch1.connect("ConcurrentStackTest");
+        ch2.connect("ConcurrentStackTest");
+        ch3.connect("ConcurrentStackTest");
+        View v=ch3.getView();
+        assert v.size() == 3 : "view is " + v;
+
+        new Thread(new Sender(ch1)) {}.start();
+        new Thread(new Sender(ch2)) {}.start();
+        new Thread(new Sender(ch3)) {}.start();
+        barrier.await(); // start senders
+        start=System.currentTimeMillis();
+
+        Exception ex=null;
+
+        try {
+            barrier.await((long)(EXPECTED * SLEEPTIME * 1.5), TimeUnit.MILLISECONDS); // wait for all receivers
+        }
+        catch(java.util.concurrent.TimeoutException e) {
+            ex=e;
+        }
+
+
+        stop=System.currentTimeMillis();
+        diff=stop - start;
+
+        System.out.println("Total time: " + diff + " ms\n");
+
+        checkFIFO(r1);
+        checkFIFO(r2);
+        checkFIFO(r3);
+        if(ex != null)
+            throw ex;
+    }
+
+    private void checkFIFO(MyReceiver r) {
+        List<Pair<Address,Integer>> msgs=r.getMessages();
+        Map<Address,List<Integer>> map=new HashMap<Address,List<Integer>>();
+        for(Pair<Address,Integer> p: msgs) {
+            Address sender=p.key;
+            List<Integer> list=map.get(sender);
+            if(list == null) {
+                list=new LinkedList<Integer>();
+                map.put(sender, list);
+            }
+            list.add(p.val);
+        }
+
+        boolean fifo=true;
+        List<Address> incorrect_receivers=new LinkedList<Address>();
+        System.out.println("Checking FIFO for " + r.getName() + ":");
+        for(Address addr: map.keySet()) {
+            List<Integer> list=map.get(addr);
+            print(addr, list);
+            if(!verifyFIFO(list)) {
+                fifo=false;
+                incorrect_receivers.add(addr);
+            }
+        }
+        System.out.print("\n");
+
+        if(!fifo)
+            assert false : "The following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
+    }
+
+
+    private static boolean verifyFIFO(List<Integer> list) {
+        List<Integer> list2=new LinkedList<Integer>(list);
+        Collections.sort(list2);
+        return list.equals(list2);
+    }
+
+    private static void print(Address addr, List<Integer> list) {
+        StringBuilder sb=new StringBuilder();
+        sb.append(addr).append(": ");
+        for(Integer i: list)
+            sb.append(i).append(" ");
+        System.out.println(sb);
+    }
+
+
+
+    private static void modifyDefaultThreadPool(JChannel ch1) {
+        TP transport=ch1.getProtocolStack().getTransport();
+        ThreadPoolExecutor default_pool=(ThreadPoolExecutor)transport.getDefaultThreadPool();
+        if(default_pool != null) {
+            default_pool.setCorePoolSize(1);
+            default_pool.setMaximumPoolSize(100);
+        }
+        transport.setThreadPoolQueueEnabled(false);
+    }
+
+
+    private class Sender implements Runnable {
+        final Channel ch;
+        final Address local_addr;
+
+        public Sender(Channel ch) {
             this.ch=ch;
+            local_addr=ch.getAddress();
         }
 
         public void run() {
-            for(int i=1; i <= NUM_MSGS; i++) {
-                ByteBuffer buf=ByteBuffer.allocate(LENGTH);
-                buf.put((byte)index); buf.putLong(i);
-                buf.rewind();
-                Message msg=new Message(null, null, buf.array());
-                try {
+            Message msg;
+            try {
+                barrier.await();
+            }
+            catch(Throwable t) {
+                return;
+            }
+
+            for(int i=1; i <= NUM; i++) {
+                msg=new Message(null, null, new Integer(i));
+                try {                    
                     ch.send(msg);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
                 }
             }
-            log.info("Sender #" + index + " done (sent " + NUM_MSGS + " msgs");
         }
     }
 
-    class MyReceiver extends ReceiverAdapter {
-        private final long[] seqnos=new long[NUM_NODES];
-        private final StringBuilder sb=new StringBuilder();
-        private static final int print=NUM_MSGS / 10;
-        private boolean correct=true;
 
-        MyReceiver() {
-            for(int i=0; i < seqnos.length; i++)
-                seqnos[i]=1;
+    private class Pair<K,V> {
+        K key;
+        V val;
+
+        public Pair(K key, V val) {
+            this.key=key;
+            this.val=val;
         }
 
-        public long[] getSeqnos() {
-            return seqnos;
+        public String toString() {
+            return key + "::" + val;
         }
+    }
 
-        public boolean isCorrect() {
-            return correct;
-        }
+    private class MyReceiver extends ReceiverAdapter {
+        String name;
+        final List<Pair<Address,Integer>> msgs=new LinkedList<Pair<Address,Integer>>();
+        AtomicInteger count=new AtomicInteger(0);
 
-        public String getErrorMessages() {
-            return sb.toString();
+        public MyReceiver(String name) {
+            this.name=name;
         }
 
         public void receive(Message msg) {
-            ByteBuffer buf=ByteBuffer.wrap(msg.getBuffer());
-            int index=buf.get();
-            long new_seqno=buf.getLong();
-            Address sender=msg.getSrc();
-
-            long current_seqno=seqnos[index];
-            if(current_seqno +1 == new_seqno) {
-                seqnos[index]++;
-                if(new_seqno % print == 0) {
-                    log.info(sender + ": " + new_seqno);
-                }
+            Util.sleep(SLEEPTIME);
+            Pair<Address,Integer> pair=new Pair<Address,Integer>(msg.getSrc(), (Integer)msg.getObject());           
+            synchronized(msgs) {
+                msgs.add(pair);
             }
-            else {
-                synchronized(sb) {
-                    sb.append(sender + ": ").append(current_seqno).append("\n");
+            if(count.incrementAndGet() >= EXPECTED) {
+                try {
+                    barrier.await();
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
 
+        public List<Pair<Address,Integer>> getMessages() {return msgs;}
 
-        public boolean isDone() {
-            for(long seqno: seqnos) {
-                if(seqno < NUM_MSGS)
-                    return false;
-            }
-            return true;
+        public String getName() {
+            return name;
         }
     }
+
+
 }
