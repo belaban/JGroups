@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.94 2009/04/09 09:11:31 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.95 2009/08/20 11:36:06 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -542,6 +542,23 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
+    public void insertProtocolAtTop(Protocol prot) {
+        if(prot == null)
+            throw new IllegalArgumentException("prot needs to be non-null");
+
+        // check if prot already exists (we cannot have more than 1 protocol of a given class)
+        Class<? extends Protocol> clazz=prot.getClass();
+        Protocol existing_instance=findProtocol(clazz);
+        if(existing_instance != null)
+            return;
+
+        top_prot.up_prot=prot;
+        prot.down_prot=top_prot;
+        prot.up_prot=this;
+        top_prot=prot;
+        if(log.isDebugEnabled())
+            log.debug("inserted " + prot + " on top of the stack");
+    }
 
 
     /**
