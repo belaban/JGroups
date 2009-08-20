@@ -10,7 +10,9 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingData;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -29,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.206 2009/08/19 12:33:57 belaban Exp $
+ * @version $Id: Util.java,v 1.207 2009/08/20 11:35:50 belaban Exp $
  */
 public class Util {
 
@@ -164,10 +166,6 @@ public class Util {
     }
 
 
-    public static void assertNull(Object val) {
-        assertNotNull(null, val);
-    }
-
 
     /**
      * Blocks until all channels have the same view
@@ -196,6 +194,14 @@ public class Util {
             Util.sleep(interval);
         }
         throw new TimeoutException();
+    }
+
+
+    public static void addFlush(Channel ch, FLUSH flush) {
+        if(ch == null || flush == null)
+            throw new IllegalArgumentException("ch and flush have to be non-null");
+        ProtocolStack stack=ch.getProtocolStack();
+        stack.insertProtocolAtTop(flush);
     }
 
 
