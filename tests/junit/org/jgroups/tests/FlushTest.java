@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.jgroups.util.MyReceiver;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -16,11 +17,10 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and
- * configured to use FLUSH
+ * Tests the FLUSH protocol. Adds a FLUSH layer on top of the stack unless already present. Should work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.80 2009/06/19 11:59:55 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.81 2009/08/20 11:35:03 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
@@ -36,10 +36,10 @@ public class FlushTest extends ChannelTestBase {
         s.release(1);
 
         // Make sure everyone is in sync
-        blockUntilViewsReceived(receivers, 60000);
-
-        // Sleep to ensure the threads get all the semaphore tickets
-        Util.sleep(1000);
+        Channel[] tmp=new Channel[receivers.length];
+        for(int i=0; i < receivers.length; i++)
+            tmp[i]=receivers[i].getChannel();
+        Util.blockUntilViewsReceived(60000, 1000, tmp);
 
         // Reacquire the semaphore tickets; when we have them all
         // we know the threads are done
@@ -88,7 +88,6 @@ public class FlushTest extends ChannelTestBase {
         JChannel c1=null;
         JChannel c2=null;
         try {
-
             c1=createChannel(true, 2);
             c1.setReceiver(new SimpleReplier(c1, true));
             c1.connect("testStateTransferFollowedByUnicast");
@@ -126,18 +125,14 @@ public class FlushTest extends ChannelTestBase {
 			c3 = createChannel(c1);
 			c3.connect("testFlushWithCrashedFlushCoordinator");
 
-			// start flush
 			Util.startFlush(c2);
+			c2.shutdown(); // kill the flush coordinator
 
-			// and then kill the flush coordinator
-			c2.shutdown();
+			Util.blockUntilViewsReceived(10000, 500, c1, c3);
 
-			Util.sleep(8000);
-
-			// cluster should not hang and two remaining members should have a
-			// correct view
-			assertTrue("corret view size", c1.getView().size() == 2);
-			assertTrue("corret view size", c3.getView().size() == 2);
+			// cluster should not hang and two remaining members should have a correct view
+			assertTrue("correct view size", c1.getView().size() == 2);
+			assertTrue("correct view size", c3.getView().size() == 2);
 		} finally {
 			Util.close(c3, c2, c1);
 		}
@@ -159,19 +154,16 @@ public class FlushTest extends ChannelTestBase {
 			c3 = createChannel(c1);
 			c3.connect("testFlushWithCrashedFlushCoordinator");
 
-			// start flush
 			Util.startFlush(c2);
-
-			// and then kill the flush coordinator
-			c3.shutdown();
+			c3.shutdown(); // kill the flush coordinator
 
 			c2.stopFlush();
-			Util.sleep(8000);
+			Util.blockUntilViewsReceived(10000, 500, c1, c2);
 
 			// cluster should not hang and two remaining members should have a
 			// correct view
-			assertTrue("corret view size", c1.getView().size() == 2);
-			assertTrue("corret view size", c2.getView().size() == 2);
+			assertTrue("correct view size", c1.getView().size() == 2);
+			assertTrue("correct view size", c2.getView().size() == 2);
 		} finally {
 			Util.close(c3, c2, c1);
 		}
@@ -201,11 +193,11 @@ public class FlushTest extends ChannelTestBase {
 			c1.shutdown();
 
 			c2.stopFlush();
-			Util.sleep(8000);
+			Util.blockUntilViewsReceived(10000, 500, c2);
 
 			// cluster should not hang and one remaining member should have a
 			// correct view
-			assertTrue("corret view size", c2.getView().size() == 1);
+			assertTrue("correct view size", c2.getView().size() == 1);
 		} finally {
 			Util.close(c3, c2, c1);
 		}
@@ -241,13 +233,7 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    /**
-     * Tests emition of block/unblock/get|set state events in both mux and bare
-     * channel mode. In mux mode this test creates getFactoryCount() real
-     * channels and creates only one mux application on top of each channel. In
-     * bare channel mode 4 real channels are created.
-     *
-     */
+    /** Tests the emition of block/unblock/get|set state events */
     @Test
     public void testBlockingNoStateTransfer() {
         String[] names = {"A", "B", "C", "D"};
@@ -255,29 +241,14 @@ public class FlushTest extends ChannelTestBase {
     }
 
 
-
-
-
-    /**
-     * Tests emition of block/unblock/set|get state events for both mux and bare
-     * channel depending on mux.on parameter. In mux mode there will be only one
-     * mux channel for each "real" channel created and the number of real
-     * channels created is getMuxFactoryCount().
-     *
-     */
+    /** Tests the emition of block/unblock/get|set state events */
     @Test
     public void testBlockingWithStateTransfer() {
         String[] names = {"A", "B", "C", "D"};
         _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
     }
 
-    /**
-     * Tests emition of block/unblock/set|get state events for both mux and bare
-     * channel depending on mux.on parameter. In mux mode there will be only one
-     * mux channel for each "real" channel created and the number of real
-     * channels created is getMuxFactoryCount().
-     *
-     */
+    /** Tests the emition of block/unblock/get|set state events */
     @Test
     public void testBlockingWithConnectAndStateTransfer() {
         String[] names = {"A", "B", "C", "D"};
@@ -298,7 +269,7 @@ public class FlushTest extends ChannelTestBase {
             // Create channels and their threads that will block on the
             // semaphore
             boolean first = true;
-            for(String channelName:names){
+            for(String channelName: names){
                 FlushTestReceiver channel = null;
                 if(first)
                     channel=new FlushTestReceiver(channelName, semaphore, 0, connectType);
@@ -306,38 +277,41 @@ public class FlushTest extends ChannelTestBase {
                     channel=new FlushTestReceiver((JChannel)channels.get(0).getChannel(),channelName, semaphore, 0, connectType);
                 }
                 channels.add(channel);
-                first = false;
 
-                // Release one ticket at a time to allow the thread to start
-                // working
+
+                // Release one ticket at a time to allow the thread to start working
                 channel.start();
                 semaphore.release(1);
-                Util.sleep(1000);
+                if(first)
+                    Util.sleep(3000); // minimize changes of a merge happening
+                first = false;
             }
 
-            blockUntilViewsReceived(channels.toArray(new ChannelRetrievable[channels.size()]), 10000);
-
-            // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(1000);
+            Channel[] tmp=new Channel[channels.size()];
+            int cnt=0;
+            for(FlushTestReceiver receiver: channels)
+                tmp[cnt++]=receiver.getChannel();
+            Util.blockUntilViewsReceived(10000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
             semaphore.tryAcquire(count, 40, TimeUnit.SECONDS);
 
-        }catch(Exception ex){
+        } catch(Exception ex) {
             log.warn("Exception encountered during test", ex);
             assert false : "Exception encountered during test execution: " + ex;
-        }finally{
+        }
+        finally {
 
-            //close all channels and ....
-            for(FlushTestReceiver app:channels){
+            for(FlushTestReceiver app: channels)
+                app.getChannel().setReceiver(null);
+            for(FlushTestReceiver app: channels)
                 app.cleanup();
-                Util.sleep(2000);
-            }
 
             // verify block/unblock/view/get|set state sequences for all members
 			for (FlushTestReceiver receiver : channels) {
 				checkEventStateTransferSequence(receiver);
+                System.out.println("event sequence for " + receiver.getChannel().getAddress() + " is OK");
 			}
         }
     }
@@ -393,29 +367,14 @@ public class FlushTest extends ChannelTestBase {
             return new LinkedList<Object>(events);
         }
 
-        public void block() {
-            events.add(new BlockEvent());
-        }
-
-        public void unblock() {
-            events.add(new UnblockEvent());
-        }
-
-        public void viewAccepted(View new_view) {
-            events.add(new_view);
-        }
 
         public byte[] getState() {
             events.add(new GetStateEvent(null, null));
             return new byte[] { 'b', 'e', 'l', 'a' };
         }
 
-        public void setState(byte[] state) {
-            events.add(new SetStateEvent(null, null));
-        }
-
         public void getState(OutputStream ostream) {
-            events.add(new GetStateEvent(null, null));
+            super.getState(ostream);
             byte[] payload = new byte[] { 'b', 'e', 'l', 'a' };
             try{
                 ostream.write(payload);
@@ -427,7 +386,7 @@ public class FlushTest extends ChannelTestBase {
         }
 
         public void setState(InputStream istream) {
-            events.add(new SetStateEvent(null, null));
+            super.setState(istream);
             byte[] payload = new byte[4];
             try{
                 istream.read(payload);
