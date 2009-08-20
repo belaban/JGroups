@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * for details. This will only work 100% correctly with FLUSH support.<br/>
  * [1] http://jira.jboss.com/jira/browse/JGRP-236
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.56 2009/08/20 07:47:04 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.57 2009/08/20 10:40:40 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -114,6 +115,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore) throws Exception{
             super(name, semaphore, false);
+            Util.addFlush(channel, new FLUSH());
         }
 
         public ConcurrentStartupChannel(JChannel ch,String name,Semaphore semaphore) throws Exception{
