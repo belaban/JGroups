@@ -8,6 +8,7 @@ import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -40,6 +41,8 @@ public class ChannelTestBase {
 
     protected boolean use_blocking=false;
 
+    protected boolean use_flush=false;
+
     private String bind_addr="127.0.0.1";
 
     protected final Log log=LogFactory.getLog(this.getClass());
@@ -58,16 +61,10 @@ public class ChannelTestBase {
 
 		List<String> groups = Arrays.asList(annotation.groups());
 		boolean testRequiresFlush = groups.contains(Global.FLUSH);
-		
-		//don't change chconf - should be equal to optional parameter above
-		if (testRequiresFlush && chconf.equals("udp.xml")) {
-			this.channel_conf = "flush-udp.xml";
-			this.use_blocking = true;
-		} else {
-			this.channel_conf = chconf;
-			this.use_blocking = Boolean.parseBoolean(use_blocking);
-		}
 
+        this.use_blocking=testRequiresFlush || Boolean.parseBoolean(use_blocking);
+        this.use_flush=testRequiresFlush;
+        this.channel_conf = chconf;
 		bind_addr = Util.getBindAddress(null).getHostAddress();
 	}
 
@@ -83,6 +80,10 @@ public class ChannelTestBase {
 
     protected void setUseBlocking(boolean flag) {
         use_blocking=flag;
+    }
+
+    protected boolean useFlush() {
+          return use_flush;
     }
 
     protected final static void assertTrue(boolean condition) {
@@ -174,15 +175,14 @@ public class ChannelTestBase {
     protected class DefaultChannelTestFactory {
         
         public JChannel createChannel() throws Exception {
-            return createChannel(channel_conf, useBlocking());
+            return createChannel(channel_conf);
         }
 
         public Channel createChannel(boolean unique, int num) throws Exception {
-            JChannel c=createChannel(channel_conf, useBlocking());
+            JChannel c=createChannel(channel_conf);
             if(unique) {
                 makeUnique(c, num);
             }
-            //muteLocalAddress(c);
             return c;
         }
 
@@ -198,12 +198,14 @@ public class ChannelTestBase {
                 Object value=entry.getValue();
                 retval.setOpt(key, value);
             }
+            if(useFlush())
+                Util.addFlush(retval, new FLUSH());
             return retval;
         }
 
-        private JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
+        private JChannel createChannel(String configFile) throws Exception {
             Map<Integer, Object> channelOptions=new HashMap<Integer, Object>();
-            channelOptions.put(Channel.BLOCK, useBlocking);
+            channelOptions.put(Channel.BLOCK, useBlocking());
 
             log.info("Using configuration file " + configFile);
             JChannel ch=new JChannel(configFile);
@@ -212,6 +214,8 @@ public class ChannelTestBase {
                 Object value=entry.getValue();
                 ch.setOpt(key, value);
             }
+            if(useFlush())
+                Util.addFlush(ch, new FLUSH());
             return ch;
         }
 
@@ -283,21 +287,19 @@ public class ChannelTestBase {
         protected Throwable exception;
         protected RpcDispatcher dispatcher;
         protected List<Object> events;
-       
+
+
         public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
             channel=createChannel(true,4);
-            channel.setName(name);
-            events=Collections.synchronizedList(new LinkedList<Object>());
-            if(useDispatcher) {
-                dispatcher=new RpcDispatcher(channel, this, this, this);
-            }
-            else {
-                channel.setReceiver(this);
-            }
+            init(name, useDispatcher);
         }
         
         public ChannelApplication(JChannel copySource,String name,  boolean useDispatcher) throws Exception {
             channel=createChannel(copySource);
+            init(name, useDispatcher);
+        }
+
+        protected void init(String name,  boolean useDispatcher) {
             channel.setName(name);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
