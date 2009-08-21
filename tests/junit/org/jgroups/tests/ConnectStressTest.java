@@ -18,7 +18,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.44 2009/07/20 13:03:39 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.45 2009/08/21 07:06:54 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT, Global.STRESS}, sequential=true)
 public class ConnectStressTest extends ChannelTestBase {
@@ -58,6 +58,7 @@ public class ConnectStressTest extends ChannelTestBase {
             View view=threads[0].getChannel().getView();
             if(view != null) {
                 int size=view.size();
+                System.out.println("channel[0].view has " + size + " members (expected: " + NUM + ")");
                 if(size >= NUM)
                     break;
             }
@@ -66,7 +67,7 @@ public class ConnectStressTest extends ChannelTestBase {
 
         for(MyThread thread: threads) {
             View view=thread.getChannel().getView();
-            System.out.println("#" + thread.getName() + ": " + (view != null? view.getViewId() + ", size=" + view.size() : view));
+            System.out.println(thread.getName() + ": size=" + view.size() + ", view-id: " + view.getViewId());
         }
 
         for(MyThread thread: threads) {
@@ -131,8 +132,8 @@ public class ConnectStressTest extends ChannelTestBase {
         }
         MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
         if(merge != null) {
-            merge.setMinInterval(5000);
-            merge.setMaxInterval(10000);
+            merge.setMinInterval(2000);
+            merge.setMaxInterval(5000);
         }
         NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
         if(nakack != null)
