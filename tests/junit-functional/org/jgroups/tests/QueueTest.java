@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: QueueTest.java,v 1.5 2009/08/19 05:52:11 belaban Exp $
+ * @version $Id: QueueTest.java,v 1.6 2009/08/21 07:20:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {
@@ -587,7 +587,20 @@ public class QueueTest {
         System.out.println("-- adding element 100");
         queue.add(new Long(100));
 
-        Util.sleep(500);
+        long target_time=System.currentTimeMillis() + 10000L;
+        do {
+            int num=0;
+            for(int i=0; i < removers.length; i++) {
+                if(!removers[i].isAlive())
+                    num++;
+            }
+            if(num == 2)
+                break;
+            Util.sleep(500);
+        }
+        while(target_time > System.currentTimeMillis());
+
+
         for(int i=0; i < removers.length; i++) {
             System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
             if(!removers[i].isAlive()) {
@@ -596,6 +609,7 @@ public class QueueTest {
         }
 
         assert num_dead == 2 : "num_dead was " + num_dead + ", but expected 2";
+        queue.close(false);
     }
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate

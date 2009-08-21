@@ -8,7 +8,6 @@ import org.jgroups.protocols.VIEW_SYNC;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,7 +17,7 @@ import java.util.Vector;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.5 2009/05/05 13:06:08 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.6 2009/08/21 07:20:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
@@ -81,7 +80,8 @@ public class BARRIERTest {
         Util.sleep(500);
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
-        assert receiver.getNumberOfReceivedMessages() == 5;
+        int received_msgs=receiver.getNumberOfReceivedMessages();
+        assert received_msgs == 5 : "expected " + 5 + " messages but got " + received_msgs;
     }
 
 
