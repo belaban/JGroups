@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.222 2009/08/19 06:14:17 belaban Exp $
+ * @version $Id: JChannel.java,v 1.223 2009/08/21 22:27:25 graywatson Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -542,11 +542,15 @@ public class JChannel extends Channel {
                     // fetch state from target
                     stateTransferOk=getState(target, state_id, timeout, false);
                     if(!stateTransferOk) {
-                        throw new StateTransferException(getAddress() + " could not fetch state from " + target);
+                        throw new StateTransferException(getAddress() + " could not fetch state "
+                            + (state_id == null ? "(full)" : state_id) + " from "
+                            + (target == null ? "(all)" : target));
                     }
                 }
                 catch(Exception e) {
-                    throw new StateTransferException(getAddress() + " could not fetch state from " + target, e);
+                    throw new StateTransferException(getAddress() + " could not fetch state "
+                        + (state_id == null ? "(full)" : state_id) + " from "
+                        + (target == null ? "(all)" : target), e);
                 }
             }
 
