@@ -18,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.33 2009/08/21 06:20:13 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.34 2009/08/21 06:43:56 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
-    static final int MSG_SEND_COUNT=10000;
+    static final int MSG_SEND_COUNT=5000;
     static final String[] names= { "A", "B", "C", "D"};
     static final int APP_COUNT=names.length;
 
@@ -64,7 +64,7 @@ public class StateTransferTest extends ChannelTestBase {
                 if(i == 0)
                     Util.sleep(3000);
                 else
-                    Util.sleep(500); // delay startup, so state transfer is done while sending
+                    Util.sleep(1000); // delay startup, so state transfer is done while sending
             }
 
             // Make sure everyone is in sync
@@ -84,7 +84,7 @@ public class StateTransferTest extends ChannelTestBase {
 
             // Sleep to ensure async messages arrive
             System.out.println("Waiting for all channels to have received the " + MSG_SEND_COUNT * APP_COUNT + " messages:");
-            long end_time=System.currentTimeMillis() + 20000L;
+            long end_time=System.currentTimeMillis() + 40000L;
             while(System.currentTimeMillis() < end_time) {
                 boolean terminate=true;
                 for(StateTransferApplication app: apps) {
@@ -119,10 +119,10 @@ public class StateTransferTest extends ChannelTestBase {
             }
         }
         finally {
-            for(StateTransferApplication app:apps) {
-                if(app != null)
-                    app.cleanup();
-            }
+            for(StateTransferApplication app: apps)
+                app.getChannel().setReceiver(null);
+            for(StateTransferApplication app: apps)
+                app.cleanup();
         }
     }
 
@@ -152,13 +152,16 @@ public class StateTransferTest extends ChannelTestBase {
         public void receive(Message msg) {
             Object[] data=(Object[])msg.getObject();
             int num_received=0;
+            boolean changed=false;
             synchronized(map) {
+                int tmp_size=map.size();
                 map.put(data[0], data[1]);
                 num_received=map.size();
+                changed=tmp_size != num_received;
             }
 
-            if(num_received % 1000 == 0)
-                log.info("received " + num_received);
+            if(changed && num_received % 1000 == 0)
+                log.info(channel.getAddress() + ": received " + num_received);
 
             // are we done?
             if(num_received >= MSG_SEND_COUNT * APP_COUNT)
@@ -183,11 +186,12 @@ public class StateTransferTest extends ChannelTestBase {
                 try {
                     Map<Object,Object> tmp=(Map<Object,Object>)Util.objectFromByteBuffer(state);
                     map.putAll(tmp);
+                    log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
                 }
                 catch(Exception e) {
                     e.printStackTrace();
                 }
-                log.info("received state, map has " + map.size() + " elements");
+
             }
         }
 
@@ -212,7 +216,7 @@ public class StateTransferTest extends ChannelTestBase {
                     Map<Object,Object> tmp=(Map<Object,Object>)in.readObject();
                     Util.close(in);
                     map.putAll(tmp);
-                    log.info("received state, map has " + map.size() + " elements");
+                    log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -231,13 +235,14 @@ public class StateTransferTest extends ChannelTestBase {
             }
             catch(Exception e) {
                 log.error(channel.getAddress() + ": " + e.getLocalizedMessage(), e);
-                // Save it for the test to check
                 exception=e;
             }
         }
 
         protected void useChannel() throws Exception {
-            channel.connect("StateTransferTest", null, null, 10000);
+            System.out.println(channel.getName() + ": connecting and fetching the state");
+            channel.connect("StateTransferTest", null, null, 30000);
+            System.out.println(channel.getName() + ": state transfer is done");
             Object[] data=new Object[2];
             for(int i=from; i < to; i++) {
                 data[0]=new Integer(i);
@@ -248,7 +253,7 @@ public class StateTransferTest extends ChannelTestBase {
                         Util.sleep(50);
 
                     if(i % 1000 == 0)
-                        log.info("sent " + i);
+                        log.info(channel.getAddress() + ": sent " + i);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
