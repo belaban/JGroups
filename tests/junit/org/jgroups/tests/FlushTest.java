@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Tests the FLUSH protocol. Adds a FLUSH layer on top of the stack unless already present. Should work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.82 2009/08/20 11:40:22 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.83 2009/08/21 06:20:13 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
@@ -346,7 +346,7 @@ public class FlushTest extends ChannelTestBase {
                                     Semaphore semaphore,
                                     int msgCount,
                                     int connectMethod) throws Exception{
-            super(ch,name, semaphore,false);
+            super(ch,name, semaphore);
             this.connectMethod = connectMethod;
             this.msgCount = msgCount;
             events = Collections.synchronizedList(new LinkedList<Object>());

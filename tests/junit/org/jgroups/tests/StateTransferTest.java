@@ -14,12 +14,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.32 2009/08/21 06:15:57 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.33 2009/08/21 06:20:13 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
@@ -139,7 +138,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
         
         public StateTransferApplication(JChannel copySource,Semaphore semaphore, String name, int from, int to) throws Exception {
-            super(copySource,name, semaphore,false);
+            super(copySource,name, semaphore);
             this.from=from;
             this.to=to;
         }
