@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.BasicTCP;
@@ -285,29 +284,23 @@ public class ChannelTestBase {
         protected Channel   channel;
         protected Thread    thread;
         protected Throwable exception;
-        protected RpcDispatcher dispatcher;
         protected List<Object> events;
 
 
-        public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
+        public ChannelApplication(String name) throws Exception {
             channel=createChannel(true,4);
-            init(name, useDispatcher);
+            init(name);
         }
         
-        public ChannelApplication(JChannel copySource,String name,  boolean useDispatcher) throws Exception {
+        public ChannelApplication(JChannel copySource,String name) throws Exception {
             channel=createChannel(copySource);
-            init(name, useDispatcher);
+            init(name);
         }
 
-        protected void init(String name,  boolean useDispatcher) {
-            channel.setName(name);
+        protected void init(String name) {
             events=Collections.synchronizedList(new LinkedList<Object>());
-            if(useDispatcher) {
-                dispatcher=new RpcDispatcher(channel, this, this, this);
-            }
-            else {
-                channel.setReceiver(this);
-            }
+            channel.setName(name);
+            channel.setReceiver(this);
         }
 
         /**
@@ -429,22 +422,14 @@ public class ChannelTestBase {
     protected abstract class PushChannelApplicationWithSemaphore extends ChannelApplication {
         protected Semaphore semaphore;
 
-        public PushChannelApplicationWithSemaphore(String name,
-                                                   Semaphore semaphore,
-                                                   boolean useDispatcher) throws Exception {
-            super(name, useDispatcher);
+        public PushChannelApplicationWithSemaphore(String name, Semaphore semaphore) throws Exception {
+            super(name);
             this.semaphore=semaphore;
         }
         
-        public PushChannelApplicationWithSemaphore(JChannel copySource, String name,
-                                                   Semaphore semaphore,
-                                                   boolean useDispatcher) throws Exception {
-            super(copySource,name, useDispatcher);
+        public PushChannelApplicationWithSemaphore(JChannel copySource, String name, Semaphore semaphore) throws Exception {
+            super(copySource,name);
             this.semaphore=semaphore;
-        }
-
-        protected PushChannelApplicationWithSemaphore(String name, Semaphore semaphore) throws Exception {
-            this(name, semaphore, false);
         }
 
 
