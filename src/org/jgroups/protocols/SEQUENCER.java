@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.25 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.26 2009/08/21 20:36:43 graywatson Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -184,18 +184,32 @@ public class SEQUENCER extends Protocol {
         }
         for(Message msg: copy.values()) {
             msg.setDest(coord);
+            if (log.isTraceEnabled()) {
+                log.trace("resending msg " + msg + " to coord (" + coord + ")");
+            }
             down_prot.down(new Event(Event.MSG, msg));
+            if (log.isTraceEnabled()) {
+                log.trace("done resending msg " + msg + " to coord (" + coord + ")");
+            }
         }
     }
 
 
     private void forwardToCoord(Message msg, long seqno) {
+        if (log.isTraceEnabled()) {
+            log.trace("forwarding msg " + msg + " (seqno " + seqno
+                    + ") to coord (" + coord + ")");
+        }
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
         synchronized(forward_table) {
             forward_table.put(new Long(seqno), msg);
         }
         down_prot.down(new Event(Event.MSG, msg));
         forwarded_msgs++;
+        if (log.isTraceEnabled()) {
+            log.trace("done forwarding msg " + msg + " (seqno " + seqno
+                    + ") to coord (" + coord + ")");
+        }
     }
 
     private void broadcast(Message msg) {
@@ -203,7 +217,13 @@ public class SEQUENCER extends Protocol {
         hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
         msg.setDest(null); // mcast
         msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
+        if (log.isTraceEnabled()) {
+            log.trace("broadcasting msg " + msg + " (seqno " + hdr.getSeqno() + ")");
+        }
         down_prot.down(new Event(Event.MSG, msg));
+        if (log.isTraceEnabled()) {
+            log.trace("done broadcasting msg " + msg + " (seqno " + hdr.getSeqno() + ")");
+        }
         bcast_msgs++;
     }
 
@@ -221,6 +241,9 @@ public class SEQUENCER extends Protocol {
             return;
         }
         long msg_seqno=hdr.getSeqno();
+        if (log.isTraceEnabled()) {
+            log.trace("delivering msg " + msg + " (seqno " + msg_seqno + "), original sender " + original_sender);
+        }
 
         // this is the ack for the message sent by myself
         if(original_sender.equals(local_addr)) {
@@ -243,6 +266,9 @@ public class SEQUENCER extends Protocol {
         Message tmp=msg.copy(true);
         tmp.setSrc(original_sender);
         up_prot.up(new Event(Event.MSG, tmp));
+        if (log.isTraceEnabled()) {
+            log.trace("done delivering msg " + tmp);
+        }
     }
 
     /* ----------------------------- End of Private Methods -------------------------------- */
