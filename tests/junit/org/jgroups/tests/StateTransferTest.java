@@ -17,16 +17,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Tests correct state transfer while other members continue sending messages to
- * the group
+ * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.31 2009/08/19 10:26:06 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.32 2009/08/21 06:15:57 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
-    private static final int MSG_SEND_COUNT=10000;
-
-    private static final int APP_COUNT=2;
+    static final int MSG_SEND_COUNT=10000;
+    static final String[] names= { "A", "B", "C", "D"};
+    static final int APP_COUNT=names.length;
 
     @Test
     public void testStateTransferFromSelfWithRegularChannel() throws Exception {
@@ -43,24 +42,18 @@ public class StateTransferTest extends ChannelTestBase {
 
     @Test
     public void testStateTransferWhileSending() throws Exception {
+
         StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
         try {
-            // Create a semaphore and take all its permits
             Semaphore semaphore=new Semaphore(APP_COUNT);
             semaphore.acquire(APP_COUNT);
 
             int from=0, to=MSG_SEND_COUNT;
-            String[] names= { "A", "B" };
-
             for(int i=0;i < apps.length;i++) {
                 if(i == 0)
                     apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
                 else
-                    apps[i]=new StateTransferApplication((JChannel)apps[0].getChannel(),
-                                                         semaphore,
-                                                         names[i],
-                                                         from,
-                                                         to);
+                    apps[i]=new StateTransferApplication((JChannel)apps[0].getChannel(), semaphore, names[i], from, to);
                 from+=MSG_SEND_COUNT;
                 to+=MSG_SEND_COUNT;
             }
@@ -69,14 +62,18 @@ public class StateTransferTest extends ChannelTestBase {
                 StateTransferApplication app=apps[i];
                 app.start();
                 semaphore.release();
-                Util.sleep(4000);
+                if(i == 0)
+                    Util.sleep(3000);
+                else
+                    Util.sleep(500); // delay startup, so state transfer is done while sending
             }
 
             // Make sure everyone is in sync
+            Channel[] tmp=new Channel[apps.length];
+            for(int i=0; i < apps.length; i++)
+                tmp[i]=apps[i].getChannel();
 
-            blockUntilViewsReceived(apps, 60000);
-
-            Util.sleep(1000);
+            Util.blockUntilViewsReceived(60000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -86,13 +83,33 @@ public class StateTransferTest extends ChannelTestBase {
                 log.warn(Util.dumpThreads());
             }
 
+            // Sleep to ensure async messages arrive
+            System.out.println("Waiting for all channels to have received the " + MSG_SEND_COUNT * APP_COUNT + " messages:");
+            long end_time=System.currentTimeMillis() + 20000L;
+            while(System.currentTimeMillis() < end_time) {
+                boolean terminate=true;
+                for(StateTransferApplication app: apps) {
+                    Map map=app.getMap();
+                    if(map.size() != MSG_SEND_COUNT * APP_COUNT) {
+                        terminate=false;
+                        break;
+                    }
+                }
+                if(terminate)
+                    break;
+                else
+                    Util.sleep(500);
+            }
+
             // have we received all and the correct messages?
+            System.out.println("++++++++++++++++++++++++++++++++++++++");
             for(int i=0;i < apps.length;i++) {
                 StateTransferApplication w=apps[i];
                 Map m=w.getMap();
                 log.info("map has " + m.size() + " elements");
                 assert m.size() == MSG_SEND_COUNT * APP_COUNT;
             }
+            System.out.println("++++++++++++++++++++++++++++++++++++++");
 
             Set keys=apps[0].getMap().keySet();
             for(int i=0;i < apps.length;i++) {
@@ -112,10 +129,7 @@ public class StateTransferTest extends ChannelTestBase {
 
 
     protected class StateTransferApplication extends PushChannelApplicationWithSemaphore {
-        private final ReentrantLock mapLock=new ReentrantLock();
-
-        private Map map=new HashMap(MSG_SEND_COUNT * APP_COUNT);
-
+        private final Map<Object,Object> map=new HashMap<Object,Object>(MSG_SEND_COUNT * APP_COUNT);
         private int from, to;
 
         public StateTransferApplication(Semaphore semaphore, String name, int from, int to) throws Exception {
@@ -130,20 +144,19 @@ public class StateTransferTest extends ChannelTestBase {
             this.to=to;
         }
 
-        public Map getMap() {
-            Map result=null;
-            mapLock.lock();
-            result=Collections.unmodifiableMap(map);
-            mapLock.unlock();
-            return result;
+        public Map<Object,Object> getMap() {
+            synchronized(map) {
+                return Collections.unmodifiableMap(map);
+            }
         }
 
         public void receive(Message msg) {
             Object[] data=(Object[])msg.getObject();
-            mapLock.lock();
-            map.put(data[0], data[1]);
-            int num_received=map.size();
-            mapLock.unlock();
+            int num_received=0;
+            synchronized(map) {
+                map.put(data[0], data[1]);
+                num_received=map.size();
+            }
 
             if(num_received % 1000 == 0)
                 log.info("received " + num_received);
@@ -154,69 +167,57 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         public byte[] getState() {
-            byte[] result=null;
-            mapLock.lock();
-            try {
-                result=Util.objectToByteBuffer(map);
+            synchronized(map) {
+                try {
+                    return Util.objectToByteBuffer(map);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-            finally {
-                mapLock.unlock();
-            }
-            return result;
+            return null;
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(byte[] state) {
-            mapLock.lock();
-            try {
-                map=(Map)Util.objectFromByteBuffer(state);
+            synchronized(map) {
+                try {
+                    Map<Object,Object> tmp=(Map<Object,Object>)Util.objectFromByteBuffer(state);
+                    map.putAll(tmp);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+                log.info("received state, map has " + map.size() + " elements");
             }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-            finally {
-                mapLock.unlock();
-            }
-            log.info("received state, map has " + map.size() + " elements");
-
         }
 
         public void getState(OutputStream ostream) {
-            ObjectOutputStream out;
-            mapLock.lock();
-            try {
-                out=new ObjectOutputStream(ostream);
-                out.writeObject(map);
-                out.close();
+            synchronized(map) {
+                try {
+                    ObjectOutputStream out=new ObjectOutputStream(ostream);
+                    out.writeObject(map);
+                    out.close();
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
             }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
-            finally {
-                mapLock.unlock();
-            }
-
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) {
-            ObjectInputStream in;
-            mapLock.lock();
-            try {
-                in=new ObjectInputStream(istream);
-                map=(Map)in.readObject();
-                log.info("received state, map has " + map.size() + " elements");
-                in.close();
-            }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
-            catch(ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            finally {
-                mapLock.unlock();
+            synchronized(map) {
+                try {
+                    ObjectInputStream in=new ObjectInputStream(istream);
+                    Map<Object,Object> tmp=(Map<Object,Object>)in.readObject();
+                    Util.close(in);
+                    map.putAll(tmp);
+                    log.info("received state, map has " + map.size() + " elements");
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
