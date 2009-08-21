@@ -599,12 +599,13 @@ public class FLUSH extends Protocol {
     }
 
     private void onStopFlush() {
-        if (stats) {
+        if (stats && startFlushTime > 0) {
             long stopFlushTime = System.currentTimeMillis();
             totalTimeInFlush += (stopFlushTime - startFlushTime);
             if (numberOfFlushes > 0) {
                 averageFlushDuration = totalTimeInFlush / (double) numberOfFlushes;
             }
+            startFlushTime = 0;
         }
 
         synchronized (sharedLock) {
