@@ -18,7 +18,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.10 2008/04/14 08:18:40 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.11 2009/08/21 07:11:44 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
@@ -100,14 +100,17 @@ public class SequencerFailoverTest {
 
     private static void verifyNumberOfMessages(int num_msgs, MyReceiver receiver) throws Exception {
         List<Integer> msgs=receiver.getList();
-        System.out.println("list has " + msgs.size() + " msgs (should have " + NUM_MSGS + ")");
-        Assert.assertEquals(num_msgs, msgs.size());
+        int size=msgs.size();
+        assert num_msgs == size : "list has " + size + " msgs (should have " + num_msgs + ")";
+        System.out.println("list has " + size + " msgs: OK");
+        System.out.println("Verifying message order:");
         int i=1;
         for(Integer tmp: msgs) {
             if(tmp != i)
                 throw new Exception("expected " + i + ", but got " + tmp);
             i++;
         }
+        System.out.println("message order is OK");
     }
 
 
