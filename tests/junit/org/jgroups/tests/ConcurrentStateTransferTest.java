@@ -1,112 +1,61 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.16 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.17 2009/08/21 05:53:21 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
-    private final AtomicInteger mod = new AtomicInteger(1);
-
-    @BeforeMethod
-    public void setUp() throws Exception {
-        mod.set(1);
-    }    
-
-    
-    @Test
-    public void testConcurrentLargeStateTransfer() {
-        concurrentStateTranferHelper(true, false);
-    }
-
-    @Test
-    public void testConcurrentSmallStateTranfer() {
-        concurrentStateTranferHelper(false, true);
-    }
 
     /**
-     * Tests concurrent state transfer. This test should pass at 100% rate when
-     * [1] is solved.
-     * 
+     * Tests concurrent state transfer. This test should pass at 100% rate when [1] is solved.
      * [1]http://jira.jboss.com/jira/browse/JGRP-332
-     * 
-     * 
      */
-    protected void concurrentStateTranferHelper(boolean largeState, boolean useDispatcher) {
-        String[] names=new String[] { "A", "B", "C", "D" };
-
-        int count=names.length;
-        ConcurrentStateTransfer[] channels=new ConcurrentStateTransfer[count];
-
-        // Create a semaphore and take all its tickets
-        Semaphore semaphore=new Semaphore(count);
+    @Test
+    public void testConcurrentStateTransfer() {
+        final String[] names=new String[] { "A", "B", "C", "D" };
+        final int count=names.length;
+        final ConcurrentStateTransfer[] channels=new ConcurrentStateTransfer[count];
+        final Semaphore semaphore=new Semaphore(count);
 
         try {
-
             semaphore.acquire(count);
             // Create activation threads that will block on the semaphore
             for(int i=0;i < count;i++) {
-                if(largeState) {
-                    if(i == 0)
-                        channels[i]=new ConcurrentLargeStateTransfer(names[i],
-                                                                     semaphore,
-                                                                     useDispatcher);
-                    else
-                        channels[i]=new ConcurrentLargeStateTransfer((JChannel)channels[0].getChannel(),
-                                                                     names[i],
-                                                                     semaphore,
-                                                                     useDispatcher);
-
-                }
-                else {
-                    if(i == 0)
-                        channels[i]=new ConcurrentStateTransfer(names[i], semaphore, useDispatcher);
-                    else
-                        channels[i]=new ConcurrentStateTransfer((JChannel)channels[0].getChannel(),
-                                                                names[i],
-                                                                semaphore,
-                                                                useDispatcher);
-                }
+                if(i == 0)
+                    channels[i]=new ConcurrentStateTransfer(names[i], semaphore, false);
+                else
+                    channels[i]=new ConcurrentStateTransfer((JChannel)channels[0].getChannel(),
+                                                            names[i],
+                                                            semaphore, false);
 
                 // Start threads and let them join the channel
                 channels[i].start();
-                //Util.sleep(2000);
+                if(i == 0)
+                    Util.sleep(3000);
             }
 
             // Make sure everyone is in sync
+            Channel[] tmp=new Channel[channels.length];
+            for(int i=0; i < channels.length; i++)
+                tmp[i]=channels[i].getChannel();
+            Util.blockUntilViewsReceived(60000, 1000, tmp);
 
-            blockUntilViewsReceived(channels, 60000);
-
-            Util.sleep(2000);
-            // Unleash hell !
-            semaphore.release(count);
-
-            // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
+            semaphore.release(count); // Unleash hell !
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -116,16 +65,26 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
                 log.warn(Util.dumpThreads());
             }
 
-            // Sleep to ensure async message arrive
-            Util.sleep(2000);
+            System.out.println("Waiting for all channels to have received the " + count + " messages:");
+            long end_time=System.currentTimeMillis() + 10000L;
+            while(System.currentTimeMillis() < end_time) {
+                boolean terminate=true;
+                for(ConcurrentStateTransfer ch: channels) {
+                    if(ch.getList().size() != count) {
+                        terminate=false;
+                        break;
+                    }
+                }
+                if(terminate)
+                    break;
+                else
+                    Util.sleep(500);
+            }
 
-            // do test verification            
-            for(ConcurrentStateTransfer channel:channels) {
-                log.info(channel.getName() + "=" + channel.getList());
-            }
-            for(ConcurrentStateTransfer channel:channels) {
-                log.info(channel.getName() + "=" + channel.getModifications());
-            }
+            System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++");
+            for(ConcurrentStateTransfer channel:channels)
+                log.info(channel.getName() + ": state=" + channel.getList());
+            System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++");
 
             for(ConcurrentStateTransfer channel:channels) {
                 Assert.assertEquals(channel.getList().size(),
@@ -138,27 +97,21 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             assert false:ex.getLocalizedMessage();
         }
         finally {
-            for(ConcurrentStateTransfer channel:channels) {
+            for(ConcurrentStateTransfer ch: channels)
+                ch.getChannel().setReceiver(null);
+            for(ConcurrentStateTransfer channel:channels)
                 channel.cleanup();
-                Util.sleep(2000); 
-            }
-            for(ConcurrentStateTransfer channel:channels) {
+            for(ConcurrentStateTransfer channel:channels)
                 checkEventStateTransferSequence(channel);
-            }
         }
     }
     
-    protected int getMod() {       
-        return mod.incrementAndGet();
-    } 
 
     protected class ConcurrentStateTransfer extends PushChannelApplicationWithSemaphore{
-        private final List<Address> l = new LinkedList<Address>();
-
+        private final Set<Address> list=new HashSet<Address>();
         Channel ch; 
+        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();
 
-        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();       
-      
 
         public ConcurrentStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
@@ -171,16 +124,12 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         }
 
         public void useChannel() throws Exception {
-            boolean success = channel.getState(null, 30000);
-            log.info("channel.getState at " + getName()
-                     + getLocalAddress()
-                     + " returned "
-                     + success);
+            channel.getState(null, 30000);
             channel.send(null, null, channel.getAddress());
         }       
         
-        List<Address> getList() {
-            return l;
+        Set<Address> getList() {
+            return list;
         }
 
         Map<Integer,Object> getModifications() {
@@ -191,36 +140,21 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             if(msg.getBuffer() == null)
                 return;
             Address obj = (Address)msg.getObject();
-            log.info("-- [#" + getName() + " (" + channel.getAddress() + ")]: received " + obj);
-            synchronized(this){
-                l.add(obj);
-                Integer key = new Integer(getMod());
-                mods.put(key, obj);
+            log.info(channel.getAddress() + ": received " + obj);
+            synchronized(list){
+                list.add(obj);
             }
         }
 
-        public void viewAccepted(View new_view) {
-            super.viewAccepted(new_view);
-            synchronized(this){
-                Integer key = new Integer(getMod());
-                mods.put(key, new_view.getVid());
-            }
-        }
 
+        @SuppressWarnings("unchecked")
         public void setState(byte[] state) {
             super.setState(state);
             try{
-                List<Address> tmp = (List) Util.objectFromByteBuffer(state);
-                synchronized(this){
-                    l.clear();
-                    l.addAll(tmp);
-                    log.info("-- [#" + getName()
-                             + " ("
-                             + channel.getAddress()
-                             + ")]: state is "
-                             + l);
-                    Integer key = new Integer(getMod());
-                    mods.put(key, tmp);
+                Set<Address> tmp = (Set<Address>) Util.objectFromByteBuffer(state);
+                synchronized(list){
+                    list.addAll(tmp);
+                    log.info(channel.getAddress() + ": state is " + list);
                 }
             }catch(Exception e){
                 e.printStackTrace();
@@ -229,12 +163,11 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
         public byte[] getState() {
             super.getState();
-            List<Address> tmp = null;
-            synchronized(this){
-                tmp = new LinkedList<Address>(l);
-                try{
+            synchronized(list) {
+                Set<Address> tmp = new HashSet<Address>(list);
+                try {
                     return Util.objectToByteBuffer(tmp);
-                }catch(Exception e){
+                } catch(Exception e){
                     e.printStackTrace();
                     return null;
                 }
@@ -246,11 +179,10 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             ObjectOutputStream oos = null;
             try{
                 oos = new ObjectOutputStream(ostream);
-                List<Address> tmp = null;
-                synchronized(this){
-                    tmp = new LinkedList<Address>(l);
+                synchronized(list){
+                    Set<Address> tmp = new HashSet<Address>(list);
+                    oos.writeObject(tmp);
                 }
-                oos.writeObject(tmp);
                 oos.flush();
             }catch(IOException e){
                 e.printStackTrace();
@@ -259,22 +191,16 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             }
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) {
             super.setState(istream);
             ObjectInputStream ois = null;
             try{
                 ois = new ObjectInputStream(istream);
-                List<Address> tmp = (List) ois.readObject();
-                synchronized(this){
-                    l.clear();
-                    l.addAll(tmp);
-                    log.info("-- [#" + getName()
-                             + " ("
-                             + channel.getAddress()
-                             + ")]: state is "
-                             + l);
-                    Integer key = new Integer(getMod());
-                    mods.put(key, tmp);
+                Set<Address> tmp = (HashSet<Address>) ois.readObject();
+                synchronized(list){
+                    list.addAll(tmp);
+                    log.info(channel.getAddress() + ": state is " + list);
                 }
             }catch(Exception e){
                 e.printStackTrace();
@@ -284,36 +210,6 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         }
     }
 
-    protected class ConcurrentLargeStateTransfer extends ConcurrentStateTransfer {
-    	//depends on retry_timeout parameter in FLUSH
-        private static final long TRANSFER_TIME = 1000;
-        public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(name, semaphore, useDispatcher);
-        }
-        
-        public ConcurrentLargeStateTransfer(JChannel channel,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(channel,name, semaphore, useDispatcher);
-        }
-        
-        public void setState(byte[] state) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(state);
-        }
 
-        public byte[] getState() {
-            Util.sleep(TRANSFER_TIME);
-            return super.getState();
-        }
-
-        public void getState(OutputStream ostream) {
-            Util.sleep(TRANSFER_TIME);
-            super.getState(ostream);
-        }
-
-        public void setState(InputStream istream) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(istream);
-        }
-    }
     
 }
