@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.73 $
+ * @version $Revision: 1.74 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -286,6 +286,13 @@ public class ClientGmsImpl extends GmsImpl {
                     count=votes.get(mbr.getCoordAddress());
                     votes.put(mbr.getCoordAddress(), count + 1);
                 }
+            }
+        }
+        // we have seen members say someone else is coordinator but they disagree
+        for(PingData mbr:mbrs) {
+            // remove members who don't agree with the election (Florida)
+            if (votes.containsKey(mbr.getAddress()) && (!mbr.isCoord())) {
+                votes.remove(mbr.getAddress());
             }
         }
 
