@@ -60,7 +60,7 @@ public class FLUSH extends Protocol {
     @Property(description = "Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
     private long retry_timeout = 2000;
 
-    @Property(description = "Reconcilliation phase toggle. Default is true")
+    @Property(description = "Reconciliation phase toggle. Default is true")
     private boolean enable_reconciliation = true;
 
     /*
