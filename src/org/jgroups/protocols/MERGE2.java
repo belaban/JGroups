@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.66 2009/08/17 06:49:35 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.67 2009/08/24 06:41:32 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -55,7 +55,14 @@ public class MERGE2 extends Protocol {
     @ManagedAttribute(description="Maximum time between runs to discover other clusters", writable=true)
     @Property(description="Upper bound in msec to run merge protocol. Default is 20000 msec")
     private long max_interval=20000;   
-    
+
+
+    /* ---------------------------------------------- JMX -------------------------------------------------------- */
+    @ManagedAttribute
+    boolean isMergeTaskRunning() {
+        return task.isRunning();
+    }
+
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
@@ -122,6 +129,9 @@ public class MERGE2 extends Protocol {
         task.findAndNotify();
     }
 
+    @ManagedOperation public void startMergeTask() {task.start();}
+    
+    @ManagedOperation public void stopMergeTask() {task.stop();}
 
     public void stop() {
         is_coord=false;
@@ -189,6 +199,10 @@ public class MERGE2 extends Protocol {
                 future.cancel(true);
                 future=null;
             }
+        }
+
+        public synchronized boolean isRunning() {
+            return future != null && !future.isDone() && !future.isCancelled();
         }
 
 
