@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.184 2009/08/24 13:57:30 belaban Exp $
+ * @version $Id: GMS.java,v 1.185 2009/08/24 15:10:48 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -224,6 +224,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public int getViewHandlerSize() {return view_handler.size();}
     @ManagedAttribute
     public boolean isViewHandlerSuspended() {return view_handler.suspended();}
+
+    @ManagedAttribute
+    public String getSuspendReason() {return view_handler.getSuspendReason();}
+
     @ManagedOperation
     public String dumpViewHandlerQueue() {
         return view_handler.dumpQueue();
@@ -234,7 +238,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
     @ManagedOperation
     public void suspendViewHandler() {
-        view_handler.suspend();
+        view_handler.suspend(GMS.SuspendReason.ManualSuspension);
     }
     @ManagedOperation
     public void resumeViewHandler() {
@@ -1232,19 +1236,20 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
 
-
+    static enum SuspendReason {ViewInstallation, MergeProcessing, MergeRequestProcessing, ManualSuspension};
 
 
 
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.184 2009/08/24 13:57:30 belaban Exp $
+     * @version $Id: GMS.java,v 1.185 2009/08/24 15:10:48 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
         private final Queue                 queue=new Queue(); // Queue<Request>
         volatile boolean                    suspended=false;
+        SuspendReason                       suspend_reason=null;
         final static long                   INTERVAL=5000;
         /** Maintains a list of the last 20 requests */
         private final BoundedList<String>   history=new BoundedList<String>(20);
@@ -1256,7 +1261,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         synchronized void add(Request req) {
             if(suspended) {
                 if(log.isTraceEnabled())
-                    log.trace("queue is suspended; request " + req + " is discarded");
+                    log.trace("queue is suspended (" + suspend_reason + "); request " + req + " is discarded");
                 return;
             }
             start();
@@ -1310,9 +1315,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
          * Waits until the current request has been processed, then clears the queue and discards new
          * requests from now on
          */
-        public synchronized void suspend() {
+        public synchronized void suspend(SuspendReason reason) {
             if(!suspended) {
                 suspended=true;
+                suspend_reason=reason;
                 queue.clear();
                 startResumer(); // only starts if not yet scheduled with timer
             }
@@ -1326,6 +1332,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(resume_future != null)
                 resume_future.cancel(true);
             suspended=false;
+            suspend_reason=null;
         }
 
         public synchronized void resumeForce() {
@@ -1334,6 +1341,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(resume_future != null)
                 resume_future.cancel(true);
             suspended=false;
+            suspend_reason=null;
         }
 
         private void startResumer() {
@@ -1393,6 +1401,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
         public int size() {return queue.size();}
         public boolean suspended() {return suspended;}
+        public String getSuspendReason() {return suspend_reason != null? suspend_reason.toString() : "n/a";}
         public String dumpQueue() {
             StringBuilder sb=new StringBuilder();
             List v=queue.values();
