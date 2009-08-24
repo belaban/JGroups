@@ -4,7 +4,7 @@ Separation of merges from view handling
 =======================================
 
 Author: Bela Ban
-Version: $Id: MERGE_View_Separation.txt,v 1.4 2009/08/19 06:44:07 belaban Exp $
+Version: $Id: MERGE_View_Separation.txt,v 1.5 2009/08/24 13:38:55 belaban Exp $
 JIRA: https://jira.jboss.org/jira/browse/JGRP-1009
 
 Goal:
@@ -61,6 +61,35 @@ On reception of a MERGE-REQ
   - On Resumer timeout: resume the ViewHandler
     (this could happen for instance when a remote coord starts a merge, then crashes before merge completion)
 
+
+Resuming the view handler:
+--------------------------
+
+The following 4 cases can resume the view handler
+
+#1 JOIN/LEAVE
+-------------
+- When the view has been installed by the coord, the view handler is resumed
+- The view handler needs to be resumed also if the view installation fails, e.g. due to a failed flush
+
+#2 MERGE
+--------
+- On competion of the merge (successful or failed), the view handler is resumed
+
+#3 MERGE-REQ
+------------
+- Resume the view handler when getting a MergeView
+- Special case: if the merge leader crashes before merge completion:
+  - On a MERGE-REQ, record the merge leader's address (when suspending the view handler)
+  - When the merge completes, null the merge leaders address again
+  - When we get a view excluding the merge leader, and the leader's address is non-null, resume the
+    view handler and null the merge leader's address
+
+#4 The Resumer kicks in
+-----------------------
+- The Resumer is started whenever the view handler is suspended
+- It resumes the view handler when run
+- When the view handler is resumed regularly, the Resumer is stopped
 
 
 Issues:

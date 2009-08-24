@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.182 2009/08/11 10:05:38 belaban Exp $
+ * @version $Id: GMS.java,v 1.183 2009/08/24 13:43:05 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -1239,11 +1239,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.182 2009/08/11 10:05:38 belaban Exp $
+     * @version $Id: GMS.java,v 1.183 2009/08/24 13:43:05 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
-        Queue                               q=new Queue(); // Queue<Request>
+        final Queue                         queue=new Queue(); // Queue<Request>
         volatile boolean                    suspended=false;
         final static long                   INTERVAL=5000;
         private static final long           MAX_COMPLETION_TIME=10000;
@@ -1261,7 +1261,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             }
             start();
             try {
-                q.add(req);
+                queue.add(req);
                 history.add(new Date() + ": " + req.toString());
             }
             catch(QueueClosedException e) {
@@ -1291,8 +1291,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
         synchronized void start() {
-            if(q.closed())
-                q.reset();
+            if(queue.closed())
+                queue.reset();
             if(thread == null || !thread.isAlive()) {
                 thread=getThreadFactory().newThread(this, "ViewHandler");
                 thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
@@ -1301,7 +1301,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
         synchronized void stop(boolean flush) {
-            q.close(flush);
+            queue.close(flush);
             synchronized(resume_tasks) {
                 for(Future<?> future: resume_tasks.values()) {
                     future.cancel(true);
@@ -1317,9 +1317,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         public synchronized void suspend(MergeId merge_id) {
             if(!suspended) {
                 suspended=true;
-                q.clear();
+                queue.clear();
                 waitUntilCompleted(MAX_COMPLETION_TIME);
-                q.close(true);
+                queue.close(true);
                 Resumer resumer=new Resumer(merge_id, resume_tasks, this);
                 Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
                 Future<?> old_future=resume_tasks.put(merge_id, future);
@@ -1343,8 +1343,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
         public synchronized void resumeForce() {
-            if(q.closed())
-                q.reset();
+            if(queue.closed())
+                queue.reset();
             suspended=false;
         }
 
@@ -1356,19 +1356,19 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     boolean keepGoing=false;
                     end_time=System.currentTimeMillis() + max_bundling_time;
                     do {
-                        Request firstRequest=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
+                        Request firstRequest=(Request)queue.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
                         requests.add(firstRequest);
                         if(!view_bundling)
                             break;
-                        if(q.size() > 0) {
-                            Request nextReq=(Request)q.peek();
+                        if(queue.size() > 0) {
+                            Request nextReq=(Request)queue.peek();
                             keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
                         }
                         else {
                             wait_time=end_time - System.currentTimeMillis();
                             if(wait_time > 0)
-                                q.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
-                            keepGoing=q.size() > 0 && firstRequest.canBeProcessedTogether((Request)q.peek());
+                                queue.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
+                            keepGoing=queue.size() > 0 && firstRequest.canBeProcessedTogether((Request)queue.peek());
                         }
                     }
                     while(keepGoing && System.currentTimeMillis() < end_time);
@@ -1392,11 +1392,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             }
         }
 
-        public int size() {return q.size();}
+        public int size() {return queue.size();}
         public boolean suspended() {return suspended;}
         public String dumpQueue() {
             StringBuilder sb=new StringBuilder();
-            List v=q.values();
+            List v=queue.values();
             for(Iterator it=v.iterator(); it.hasNext();) {
                 sb.append(it.next() + "\n");
             }
