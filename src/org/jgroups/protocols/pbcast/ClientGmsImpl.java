@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.74 $
+ * @version $Revision: 1.75 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -71,6 +71,10 @@ public class ClientGmsImpl extends GmsImpl {
         while(!leaving) {
             if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
                 List<PingData> responses=findInitialMembers(join_promise);
+                if (responses == null) {
+                    // gray: we've seen this NPE here.  not sure of the cases but wanted to add more debugging info
+                    throw new NullPointerException("responses returned by findInitialMembers for " + join_promise + " is null");
+                }
                 /*// Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
                 if(join_promise.hasResult()) {
                     rsp=join_promise.getResult(gms.join_timeout); // clears the result
@@ -197,7 +201,7 @@ public class ClientGmsImpl extends GmsImpl {
             }
             catch(Throwable e) {
                 if(log.isDebugEnabled())
-                    log.debug("exception=" + e + ", retrying");
+                    log.debug("exception=" + e + ", retrying", e);
                 rsp=null;
             }
         }
