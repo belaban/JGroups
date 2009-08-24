@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.228 2009/08/21 22:32:32 graywatson Exp $
+ * @version $Id: NAKACK.java,v 1.229 2009/08/24 18:21:49 graywatson Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -928,7 +928,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(log.isErrorEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                sb.append(") ").append(original_sender).append(" not found in retransmission table:\n").append(printMessages());
+                sb.append(") ").append(original_sender).append(" not found in retransmission table");
+                // don't print the table unless we are in trace mode because it can be LARGE
+                if (log.isTraceEnabled()) {
+                    sb.append(":\n").append(printMessages());
+                } 
                 if(print_stability_history_on_failed_xmit) {
                     sb.append(" (stability history:\n").append(printStabilityHistory());
                 }
