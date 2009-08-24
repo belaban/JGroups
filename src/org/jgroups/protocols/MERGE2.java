@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.67 2009/08/24 06:41:32 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.68 2009/08/24 13:30:21 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -58,12 +58,12 @@ public class MERGE2 extends Protocol {
 
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
-    @ManagedAttribute
-    boolean isMergeTaskRunning() {
+    @ManagedAttribute(writable=false, description="whether or not a merge task is currently running " +
+            "(should be the case in a coordinator")
+    public boolean isMergeTaskRunning() {
         return task.isRunning();
     }
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     private Address local_addr=null;
