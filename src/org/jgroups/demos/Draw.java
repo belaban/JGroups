@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.64 2009/08/24 13:32:08 belaban Exp $
+// $Id: Draw.java,v 1.65 2009/08/24 13:59:48 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -477,7 +477,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             return retval;
         }
 
-
+        @SuppressWarnings("unchecked")
         public void setState(byte[] buf) {
             synchronized(state) {
                 try {
