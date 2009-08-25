@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.51 2009/08/25 08:54:46 belaban Exp $
+// $Id: ENCRYPT.java,v 1.52 2009/08/25 14:05:16 graywatson Exp $
 
 package org.jgroups.protocols;
 
@@ -443,7 +443,8 @@ public class ENCRYPT extends Protocol {
     private synchronized void handleViewChange(View view, boolean makeServer) {
 
         // if view is a bit broken set me as keyserver
-        if(view.getMembers() == null || view.getMembers().get(0) == null) {
+        Vector<Address> members = view.getMembers();
+        if (members == null || members.isEmpty() || members.get(0) == null) { 
             becomeKeyServer(local_addr);
             return;
         }
