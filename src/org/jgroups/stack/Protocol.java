@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.67 2009/05/13 14:48:39 belaban Exp $
+ * @version $Id: Protocol.java,v 1.68 2009/08/25 11:57:31 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -200,7 +200,7 @@ public abstract class Protocol {
                        || method.getName().startsWith("get"))) {
                         Object value=null;
                         try {
-                            value=method.invoke(this, new Object[0]);
+                            value=method.invoke(this);
                             String attributeName=methodNameToAttributeName(method.getName());
                             if(value != null) {
                                 map.put(attributeName, value.toString());
@@ -219,7 +219,7 @@ public abstract class Protocol {
         return map;
     }
     
-    private String methodNameToAttributeName(String methodName) {
+    private static String methodNameToAttributeName(String methodName) {
         methodName=methodName.startsWith("get") || methodName.startsWith("set")? methodName.substring(3): methodName;
         methodName=methodName.startsWith("is")? methodName.substring(2) : methodName;
         Pattern p=Pattern.compile("[A-Z]");
