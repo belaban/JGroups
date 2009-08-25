@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.52 2009/08/25 14:05:16 graywatson Exp $
+// $Id: ENCRYPT.java,v 1.53 2009/08/25 14:36:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,6 +20,7 @@ import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
