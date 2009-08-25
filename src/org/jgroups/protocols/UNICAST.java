@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.138 2009/05/20 11:44:45 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.139 2009/08/25 19:35:29 graywatson Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -73,6 +73,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
 
     private boolean started=false;
+
+    // didn't make this 'connected' in case we need to send early acks which may race to the socket
+    private volatile boolean disconnected=false;
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
@@ -403,6 +406,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
+
+            case Event.CONNECT:
+                disconnected=false;
+                break;
+
+            case Event.DISCONNECT:
+                disconnected=true;
+                break;
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
@@ -659,6 +670,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private void sendAck(Address dst, long seqno) {
+        // if we are disconnected, then don't send any acks which stops exceptions on shutdown
+        if (disconnected) 
+            return; 
         Message ack=new Message(dst);
         // commented Jan 23 2008 (bela): TP.enable_unicast_bundling should decide whether we bundle or not, and *not*
         // the OOB flag ! Bundling UNICAST ACKs should be really fast
