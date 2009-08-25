@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.10 2009/08/25 12:22:43 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.11 2009/08/25 15:10:18 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -74,17 +74,17 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "C", "C", "D");
             checkViews(channels, "D", "C", "D");
 
-
             Address leader=determineLeader(channels, "A", "C");
-            System.out.println("\n==== injecting merge event into " + leader + " ====");
-            injectMergeEvent(channels, leader, "A", "C");
-
-            for(int i=0; i < 20; i++) {
-                System.out.print(".");
+            long end_time=System.currentTimeMillis() + 30000;
+            do {
+                System.out.println("\n==== injecting merge events into " + leader + " ====");
+                injectMergeEvent(channels, leader, "A", "C");
+                Util.sleep(1000);
                 if(allChannelsHaveViewOf(channels, 4))
                     break;
-                Util.sleep(500);
             }
+            while(end_time > System.currentTimeMillis());
+            
             System.out.println("\n");
             print(channels);
             assertAllChannelsHaveViewOf(channels, 4);
@@ -112,16 +112,17 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "C", "C", "D");
             checkViews(channels, "D", "C", "D");
 
-            System.out.println("\n==== injecting merge event into A and C concurrently ====");
-            injectMergeEvent(channels, "C", "A", "C");
-            injectMergeEvent(channels, "A", "A", "C");
-            
-            for(int i=0; i < 20; i++) {
-                System.out.print(".");
+            long end_time=System.currentTimeMillis() + 30000;
+            do {
+                System.out.println("\n==== injecting merge events into A and C concurrently ====");
+                injectMergeEvent(channels, "C", "A", "C");
+                injectMergeEvent(channels, "A", "A", "C");
+                Util.sleep(1000);
                 if(allChannelsHaveViewOf(channels, 4))
                     break;
-                Util.sleep(500);
             }
+            while(end_time > System.currentTimeMillis());
+
             System.out.println("\n");
             print(channels);
             assertAllChannelsHaveViewOf(channels, 4);
@@ -157,20 +158,19 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "G", "G", "H");
             checkViews(channels, "H", "G", "H");
 
-
-            System.out.println("\n==== injecting merge event into A, C, E and G concurrently ====");
-            injectMergeEvent(channels, "G", "A", "C", "E", "G");
-            injectMergeEvent(channels, "E", "A", "C", "E", "G");
-            injectMergeEvent(channels, "A", "A", "C", "E", "G");
-            injectMergeEvent(channels, "C", "A", "C", "E", "G");
-
-            for(int i=0; i < 20; i++) {
-                System.out.print(".");
+            long end_time=System.currentTimeMillis() + 30000;
+            do {
+                System.out.println("\n==== injecting merge event into A, C, E and G concurrently ====");
+                injectMergeEvent(channels, "G", "A", "C", "E", "G");
+                injectMergeEvent(channels, "E", "A", "C", "E", "G");
+                injectMergeEvent(channels, "A", "A", "C", "E", "G");
+                injectMergeEvent(channels, "C", "A", "C", "E", "G");
+                Util.sleep(1000);
                 if(allChannelsHaveViewOf(channels, 8))
                     break;
-                Util.sleep(1000);
             }
-            System.out.println("\n");
+            while(end_time > System.currentTimeMillis());
+
             print(channels);
             assertAllChannelsHaveViewOf(channels, 8);
         }
