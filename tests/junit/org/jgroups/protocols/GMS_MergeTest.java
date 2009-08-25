@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.9 2009/08/11 07:29:07 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.10 2009/08/25 12:22:43 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -191,7 +191,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
     private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
         for(JChannel ch: channels)
-            assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView();
+            assert ch.getView().size() == count : ch.getName() + " has view " + ch.getView() + " (should have " + count + " mbrs)";
     }
 
 
