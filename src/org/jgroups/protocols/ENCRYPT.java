@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.50 2009/05/13 12:36:47 belaban Exp $
+// $Id: ENCRYPT.java,v 1.51 2009/08/25 08:54:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -351,7 +351,8 @@ public class ENCRYPT extends Protocol {
 
         symVersion=new String(digest.digest(), "UTF-8");
         if(log.isInfoEnabled()) {
-            // log.info(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes) " +symVersion);
+            log.info(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes)");
+	    /*
             StringBuilder sb=new StringBuilder(" Initialized symmetric ciphers with secret key (" + symVersion.length()
                                                + " bytes) ");
             char[] arr=symVersion.toCharArray();
@@ -360,6 +361,7 @@ public class ENCRYPT extends Protocol {
                 sb.append((int)c);
             }
             log.info(sb.toString());
+	    */
         }
     }
 
