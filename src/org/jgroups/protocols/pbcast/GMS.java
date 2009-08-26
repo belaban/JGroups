@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.186 2009/08/26 06:34:31 belaban Exp $
+ * @version $Id: GMS.java,v 1.187 2009/08/26 06:57:33 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -1239,7 +1239,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.186 2009/08/26 06:34:31 belaban Exp $
+     * @version $Id: GMS.java,v 1.187 2009/08/26 06:57:33 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
@@ -1256,7 +1256,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
         synchronized void add(Request req) {
             if(suspended) {
-                log.warn("queue is suspended; request " + req + " is discarded");
+                if(log.isTraceEnabled())
+                    log.trace("queue is suspended; request " + req + " is discarded");
                 return;
             }
             start();
@@ -1325,6 +1326,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 Future<?> old_future=resume_tasks.put(merge_id, future);
                 if(old_future != null)
                     old_future.cancel(true);
+                if(log.isTraceEnabled())
+                    log.trace("view handler has been suspended");
             }
         }
 
@@ -1336,19 +1339,23 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             Future future;
             synchronized(resume_tasks) {
                 future=resume_tasks.remove(merge_id);
-        }
+            }
             if(future != null)
                 future.cancel(true);
             resumeForce();
+            if(log.isTraceEnabled())
+                log.trace("view handler has been resumed");
         }
 
         public synchronized void resumeForce() {
             if(queue.closed())
                 queue.reset();
             suspended=false;
+            if(log.isTraceEnabled())
+                log.trace("view handler has been resumed forcefully");
         }
 
-                    public void run() {
+        public void run() {
             long end_time, wait_time;
             List<Request> requests=new LinkedList<Request>();
             while(Thread.currentThread().equals(thread) && !suspended) {
