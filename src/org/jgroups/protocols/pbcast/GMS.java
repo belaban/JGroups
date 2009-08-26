@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.185 2009/08/24 15:10:48 belaban Exp $
+ * @version $Id: GMS.java,v 1.186 2009/08/26 06:34:31 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -224,10 +224,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public int getViewHandlerSize() {return view_handler.size();}
     @ManagedAttribute
     public boolean isViewHandlerSuspended() {return view_handler.suspended();}
-
-    @ManagedAttribute
-    public String getSuspendReason() {return view_handler.getSuspendReason();}
-
     @ManagedOperation
     public String dumpViewHandlerQueue() {
         return view_handler.dumpQueue();
@@ -238,7 +234,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
     @ManagedOperation
     public void suspendViewHandler() {
-        view_handler.suspend(GMS.SuspendReason.ManualSuspension);
+        view_handler.suspend(null);
     }
     @ManagedOperation
     public void resumeViewHandler() {
@@ -1236,32 +1232,31 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
 
-    static enum SuspendReason {ViewInstallation, MergeProcessing, MergeRequestProcessing, ManualSuspension};
+
 
 
 
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.185 2009/08/24 15:10:48 belaban Exp $
+     * @version $Id: GMS.java,v 1.186 2009/08/26 06:34:31 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
-        private final Queue                 queue=new Queue(); // Queue<Request>
+        final Queue                         queue=new Queue(); // Queue<Request>
         volatile boolean                    suspended=false;
-        SuspendReason                       suspend_reason=null;
         final static long                   INTERVAL=5000;
+        private static final long           MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
         private final BoundedList<String>   history=new BoundedList<String>(20);
 
-        /** The Resumer task */
-        private Future<?>  resume_future=null;
+        /** Map<Object,Future>. Keeps track of Resumer tasks which have not fired yet */
+        private final Map<MergeId, Future>  resume_tasks=new HashMap<MergeId,Future>();
 
 
         synchronized void add(Request req) {
             if(suspended) {
-                if(log.isTraceEnabled())
-                    log.trace("queue is suspended (" + suspend_reason + "); request " + req + " is discarded");
+                log.warn("queue is suspended; request " + req + " is discarded");
                 return;
             }
             start();
@@ -1307,55 +1302,53 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
         synchronized void stop(boolean flush) {
             queue.close(flush);
-            if(resume_future != null)
-                resume_future.cancel(true);
+            synchronized(resume_tasks) {
+                for(Future<?> future: resume_tasks.values()) {
+                    future.cancel(true);
+        }
+                resume_tasks.clear();
+            }
         }
 
         /**
          * Waits until the current request has been processed, then clears the queue and discards new
          * requests from now on
          */
-        public synchronized void suspend(SuspendReason reason) {
+        public synchronized void suspend(MergeId merge_id) {
             if(!suspended) {
                 suspended=true;
-                suspend_reason=reason;
                 queue.clear();
-                startResumer(); // only starts if not yet scheduled with timer
+                waitUntilCompleted(MAX_COMPLETION_TIME);
+                queue.close(true);
+                Resumer resumer=new Resumer(merge_id, resume_tasks, this);
+                Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
+                Future<?> old_future=resume_tasks.put(merge_id, future);
+                if(old_future != null)
+                    old_future.cancel(true);
             }
         }
 
 
-        public synchronized void resume() {
+        public synchronized void resume(MergeId merge_id) {
             if(!suspended)
                 return;
 
-            if(resume_future != null)
-                resume_future.cancel(true);
-            suspended=false;
-            suspend_reason=null;
+            Future future;
+            synchronized(resume_tasks) {
+                future=resume_tasks.remove(merge_id);
+        }
+            if(future != null)
+                future.cancel(true);
+            resumeForce();
         }
 
         public synchronized void resumeForce() {
             if(queue.closed())
                 queue.reset();
-            if(resume_future != null)
-                resume_future.cancel(true);
             suspended=false;
-            suspend_reason=null;
         }
 
-        private void startResumer() {
-            if(resume_future == null || resume_future.isDone() || resume_future.isCancelled()) {
-                Runnable resumer=new Runnable() {
                     public void run() {
-                        resumeForce();
-                    }
-                };
-                resume_future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        public void run() {
             long end_time, wait_time;
             List<Request> requests=new LinkedList<Request>();
             while(Thread.currentThread().equals(thread) && !suspended) {
@@ -1401,7 +1394,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
         public int size() {return queue.size();}
         public boolean suspended() {return suspended;}
-        public String getSuspendReason() {return suspend_reason != null? suspend_reason.toString() : "n/a";}
         public String dumpQueue() {
             StringBuilder sb=new StringBuilder();
             List v=queue.values();
@@ -1443,6 +1435,44 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
 
+    /**
+     * Resumer is a second line of defense: when the ViewHandler is suspended, it will be resumed when the current
+     * merge is cancelled, or when the merge completes. However, in a case where this never happens (this
+     * shouldn't be the case !), the Resumer will nevertheless resume the ViewHandler.
+     * We chose this strategy because ViewHandler is critical: if it is suspended indefinitely, we would
+     * not be able to process new JOIN requests ! So, this is for peace of mind, although it most likely
+     * will never be used...
+     */
+    static class Resumer implements Runnable {
+        final MergeId                     token;
+        final Map<MergeId,Future>         tasks;
+        final ViewHandler                 handler;
+
+
+        public Resumer(final MergeId token, final Map<MergeId,Future> t, final ViewHandler handler) {
+            this.token=token;
+            this.tasks=t;
+            this.handler=handler;
+}
+
+        public void run() {
+            boolean executed=true;
+            synchronized(tasks) {
+                Future future=tasks.get(token);
+                if(future != null) {
+                    future.cancel(false);
+                    executed=true;
+                }
+                else {
+                    executed=false;
+                }
+                tasks.remove(token);
+            }
+            if(executed) {
+                handler.resume(token);
+            }
+        }
+    }
 
 
 }

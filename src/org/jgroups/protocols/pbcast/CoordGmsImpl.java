@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.121 2009/08/24 15:10:48 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.122 2009/08/26 06:34:31 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -53,7 +53,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(setMergeId(id, null)) {
             merge_task.stop();
             merge_rsps.reset();
-            gms.getViewHandler().resume();
+            gms.getViewHandler().resume(id);
         }
     }
 
@@ -213,7 +213,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
-        gms.getViewHandler().suspend(GMS.SuspendReason.MergeRequestProcessing);
+        gms.getViewHandler().suspend(merge_id);
         if(log.isDebugEnabled())
             log.debug(gms.local_addr + ": got merge request from " + sender + ", merge_id=" + merge_id + ", mbrs=" + mbrs);
 
@@ -831,7 +831,7 @@ public class CoordGmsImpl extends GmsImpl {
                 sendMergeCancelledMessage(coordsCopy, new_merge_id);
             }
             finally {
-                gms.getViewHandler().resume();
+                gms.getViewHandler().resume(new_merge_id);
                 stopMergeCanceller(); // this is probably not necessary
 
                 /*5. if flush is in stack stop the flush for entire cluster [JGRP-700] - FLUSH: flushing should span merge */
