@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.229 2009/08/24 18:21:49 graywatson Exp $
+ * @version $Id: NAKACK.java,v 1.230 2009/08/26 13:55:50 graywatson Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -411,23 +411,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public String printStats() {
-        Map.Entry entry;
-        Object key, val;
         StringBuilder sb=new StringBuilder();
         sb.append("sent:\n");
-        for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            key=entry.getKey();
+        for(Iterator<Map.Entry<Address, StatsEntry>> it=sent.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address, StatsEntry> entry=it.next();
+            Object key=entry.getKey();
             if(key == null || key == Global.NULL) key="<mcast dest>";
-            val=entry.getValue();
+            StatsEntry val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
         }
         sb.append("\nreceived:\n");
-        for(Iterator it=received.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            key=entry.getKey();
+        for(Iterator<Map.Entry<Address, StatsEntry>> it=received.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address, StatsEntry> entry=it.next();
+            Object key=entry.getKey();
             if(key == null || key == Global.NULL) key="<mcast dest>";
-            val=entry.getValue();
+            StatsEntry val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
         }
 
