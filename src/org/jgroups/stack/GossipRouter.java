@@ -47,7 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.60 2009/08/10 14:58:24 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.61 2009/08/26 15:51:08 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -807,9 +807,6 @@ public class GossipRouter {
         }
         catch(Exception e) {
             System.err.println(e);
-        }
-        finally {
-            router.stop();
         }
     }
 
