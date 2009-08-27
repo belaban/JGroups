@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -32,9 +33,9 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.24 2009/06/12 09:58:34 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.25 2009/08/27 13:10:25 belaban Exp $
  */
-@Experimental
+@Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE3 extends Protocol {
     Address local_addr=null;
