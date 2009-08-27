@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.122 2009/08/26 06:34:31 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.123 2009/08/27 07:29:45 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -181,7 +181,7 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
 
-        Collection<Address> coords=determineCoords(views);
+        Collection<Address> coords=Util.determineCoords(views);
         Membership tmp=new Membership(coords); // establish a deterministic order, so that coords can elect leader
         tmp.sort();
         Address merge_leader=tmp.elementAt(0);
@@ -628,17 +628,6 @@ public class CoordGmsImpl extends GmsImpl {
         return retval.copy();
     }
 
-    protected static Collection<Address> determineCoords(List<View> views) {
-        Set<Address> retval=new HashSet<Address>();
-        if(views != null) {
-            for(View view: views) {
-                Address coord=view.getCreator();
-                if(coord != null)
-                    retval.add(coord);
-            }
-        }
-        return retval;
-    }
 
     /**
      * Sends the new view and digest to all subgroup coordinors in coords. Each coord will in turn

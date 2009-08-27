@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.207 2009/08/20 11:35:50 belaban Exp $
+ * @version $Id: Util.java,v 1.208 2009/08/27 07:29:46 belaban Exp $
  */
 public class Util {
 
@@ -1945,6 +1945,17 @@ public class Util {
         return ret;
     }
 
+     public static Collection<Address> determineCoords(List<View> views) {
+        Set<Address> retval=new HashSet<Address>();
+        if(views != null) {
+            for(View view: views) {
+                Address coord=view.getCreator();
+                if(coord != null)
+                    retval.add(coord);
+            }
+        }
+        return retval;
+    }
 
     public static Object pickRandomElement(List list) {
         if(list == null) return null;
