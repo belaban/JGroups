@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.68 2009/08/24 13:30:21 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.69 2009/08/27 07:36:04 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -56,6 +56,9 @@ public class MERGE2 extends Protocol {
     @Property(description="Upper bound in msec to run merge protocol. Default is 20000 msec")
     private long max_interval=20000;   
 
+    /** Number of inconsistent  views (with 1 coord) after a MERGE event is sent up */
+    @Property
+    private int inconsistent_view_threshold=1;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @ManagedAttribute(writable=false, description="whether or not a merge task is currently running " +
@@ -75,6 +78,9 @@ public class MERGE2 extends Protocol {
     private volatile boolean is_coord=false;
     
     private TimeScheduler timer;
+
+    @ManagedAttribute(description="Number of inconsistent 1-coord views until a MERGE event is sent up the stack")
+    private int num_inconsistent_views=0;
     
     
     
@@ -210,8 +216,30 @@ public class MERGE2 extends Protocol {
             List<PingData> initial_mbrs=findInitialMembers();
             List<View> different_views=detectDifferentViews(initial_mbrs);
             if(different_views.size() > 1) {
-                if(log.isDebugEnabled())
-                    log.debug(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event");
+                Collection<Address> coords=Util.determineCoords(different_views);
+                if(coords.size() == 1) {
+                    if(num_inconsistent_views < inconsistent_view_threshold) {
+                        if(log.isDebugEnabled())
+                            log.debug("dropping MERGE for inconsistent views " + Util.print(different_views) +
+                                    " as inconsistent view threshold (" + inconsistent_view_threshold +
+                                    ") has not yet been reached (" + num_inconsistent_views + ")");
+                        num_inconsistent_views++;
+                        return;
+                    }
+                    else
+                        num_inconsistent_views=0;
+                }
+                else
+                    num_inconsistent_views=0;
+
+                if(log.isDebugEnabled()) {
+                    StringBuilder sb=new StringBuilder();
+                    sb.append(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event.\n");
+                    sb.append("Discovery results:\n");
+                    for(PingData data: initial_mbrs)
+                        sb.append("[" + data.getAddress() + "]: " + data.getView().getViewId()).append("\n");
+                    log.debug(sb.toString());
+                }
                 Event evt=new Event(Event.MERGE, different_views);
                 try {
                     up_prot.up(evt);
@@ -220,6 +248,8 @@ public class MERGE2 extends Protocol {
                     log.error("failed sending up MERGE event", t);
                 }
             }
+            else
+                num_inconsistent_views=0;
         }
 
         /**
@@ -233,13 +263,12 @@ public class MERGE2 extends Protocol {
         @SuppressWarnings("unchecked")
         List<PingData> findInitialMembers() {
             PingData tmp=new PingData(local_addr, view, true);
-            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
+            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_INITIAL_MBRS));
             if(retval == null) return Collections.emptyList();
             if(is_coord && local_addr != null) {
                 //let's make sure that we add ourself as a coordinator
-                if(retval.contains(tmp))
-                    retval.remove(tmp);
-                retval.add(tmp);
+                if(!retval.contains(tmp))
+                    retval.add(tmp);
             } 
             return retval;
         }
@@ -265,7 +294,7 @@ public class MERGE2 extends Protocol {
 
         List<View> detectDifferentViews(List<PingData> initial_mbrs) {
             List<View> ret=new ArrayList<View>();
-            for(PingData response:initial_mbrs) {
+            for(PingData response: initial_mbrs) {
                 if(!response.isServer())
                     continue;
                 View view=response.getView();
