@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.188 2009/08/26 14:16:27 graywatson Exp $
+ * @version $Id: GMS.java,v 1.189 2009/08/27 07:34:47 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -93,9 +93,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     boolean use_flush_if_present=true;
     
     @ManagedAttribute(writable=true, description="Logs failures for collecting all view acks if true")
-    boolean log_collect_msgs=true;   
-    
-    
+    boolean log_collect_msgs=true;
+
+
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     
     
@@ -1239,7 +1239,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.188 2009/08/26 14:16:27 graywatson Exp $
+     * @version $Id: GMS.java,v 1.189 2009/08/27 07:34:47 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
@@ -1430,8 +1430,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     impl.handleMembershipChange(requests);
                     break;
                 case Request.MERGE:
-                    if(requests.size() > 1)
-                        log.error("more than one MERGE request to process, ignoring the others");
                     impl.merge(firstReq.views);
                     break;                
                 default:
