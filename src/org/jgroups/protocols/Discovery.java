@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -38,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.64 2009/07/02 14:45:14 belaban Exp $
+ * @version $Id: Discovery.java,v 1.65 2009/08/27 07:32:18 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -140,6 +141,9 @@ public abstract class Discovery extends Protocol {
         return num_discovery_requests;
     }
 
+    @ManagedAttribute
+    public String getView() {return view != null? view.getViewId().toString() : "null";}
+
 
     public Vector<Integer> providedUpServices() {
         Vector<Integer> ret=new Vector<Integer>(1);
@@ -166,9 +170,24 @@ public abstract class Discovery extends Protocol {
      * @return List<PingData>
      */
     public List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
+        return findInitialMembers(promise, num_initial_members, break_on_coord_rsp);
+    }
+
+    /**
+     * Finds all initial members, regardless of break_on_coord_rsp
+     * @param promise
+     * @return
+     */
+    public List<PingData> findAllInitialMembers(Promise<JoinRsp> promise) {
+        int size=Math.max(members.size(), num_initial_members);
+        return findInitialMembers(promise, size, false);
+    }
+
+
+    protected List<PingData> findInitialMembers(Promise<JoinRsp> promise, int num_expected_rsps, boolean break_on_coord) {
         num_discovery_requests++;
 
-        final Responses rsps=new Responses(num_initial_members, num_initial_srv_members, break_on_coord_rsp, promise);
+        final Responses rsps=new Responses(num_expected_rsps, num_initial_srv_members, break_on_coord, promise);
         synchronized(ping_responses) {
             ping_responses.add(rsps);
         }
@@ -189,8 +208,10 @@ public abstract class Discovery extends Protocol {
     }
 
 
+
+    @ManagedOperation(description="Runs the discovery protocol to find initial members")
     public String findInitialMembersAsString() {
-    	List<PingData> results=findInitialMembers(null);
+    	List<PingData> results=findAllInitialMembers(null);
         if(results == null || results.isEmpty()) return "<empty>";
         StringBuilder sb=new StringBuilder();
         for(PingData rsp: results) {
@@ -236,9 +257,9 @@ public abstract class Discovery extends Protocol {
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-                        if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
-                            return null;
-                        }
+//                        if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
+//                            return null;
+//                        }
 
                         if(group_addr == null || hdr.cluster_name == null) {
                             if(log.isWarnEnabled())
@@ -306,10 +327,10 @@ public abstract class Discovery extends Protocol {
 
                             if(log.isTraceEnabled())
                                 log.trace("received GET_MBRS_RSP from " + response_sender + ": " + rsp);
+                            boolean overwrite=logical_addr != null && logical_addr.equals(response_sender);
                             synchronized(ping_responses) {
-                                for(Responses rsps: ping_responses) {
-                                    boolean overwrite=logical_addr.equals(response_sender);
-                                    rsps.addResponse(rsp, overwrite);
+                                for(Responses response: ping_responses) {
+                                    response.addResponse(rsp, overwrite);
                                 }
                             }
                         }
@@ -355,14 +376,18 @@ public abstract class Discovery extends Protocol {
      * Event.BECOME_SERVER - called after client has joined and is fully working group member
      * Event.CONNECT, Event.DISCONNECT.
      */
+    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
 
         switch(evt.getType()) {
 
-            case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
+            case Event.FIND_INITIAL_MBRS:   // sent by GMS layer
+            case Event.FIND_ALL_INITIAL_MBRS:
                 // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
                 long start=System.currentTimeMillis();
-                List<PingData> rsps=findInitialMembers((Promise<JoinRsp>)evt.getArg());
+                boolean find_all=evt.getType() == Event.FIND_ALL_INITIAL_MBRS;
+                Promise<JoinRsp> promise=(Promise<JoinRsp>)evt.getArg();
+                List<PingData> rsps=find_all? findAllInitialMembers(promise) : findInitialMembers(promise);
                 long diff=System.currentTimeMillis() - start;
                 if(log.isTraceEnabled())
                     log.trace("discovery took "+ diff + " ms: responses: " + Util.printPingData(rsps));
@@ -470,7 +495,7 @@ public abstract class Discovery extends Protocol {
 
     protected static class Responses {
         final Promise<JoinRsp>  promise;
-        final List<PingData>    ping_rsps=new LinkedList<PingData>();
+        final Set<PingData>     ping_rsps=new HashSet<PingData>();
         final int               num_expected_rsps;
         final int               num_expected_srv_rsps;
         final boolean           break_on_coord_rsp;
@@ -491,8 +516,9 @@ public abstract class Discovery extends Protocol {
                 return;
             promise.getLock().lock();
             try {
-                if(!ping_rsps.contains(rsp) || overwrite) {
-                    ping_rsps.add(rsp);
+                if(overwrite)
+                    ping_rsps.remove(rsp);
+                if(ping_rsps.add(rsp)) { // only signal if the response was added
                     promise.getCond().signalAll();
                 }
             }
@@ -530,7 +556,7 @@ public abstract class Discovery extends Protocol {
             }
         }
 
-        private static int getNumServerResponses(List<PingData> rsps) {
+        private static int getNumServerResponses(Collection<PingData> rsps) {
             int cnt=0;
             for(PingData rsp: rsps) {
                 if(rsp.isServer())
@@ -539,7 +565,7 @@ public abstract class Discovery extends Protocol {
             return cnt;
         }
 
-        private static boolean containsCoordinatorResponse(List<PingData> rsps) {
+        private static boolean containsCoordinatorResponse(Collection<PingData> rsps) {
             if(rsps == null || rsps.isEmpty())
                 return false;
             for(PingData rsp: rsps) {
