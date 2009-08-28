@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.70 2009/08/27 13:17:01 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.71 2009/08/28 07:22:50 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -215,8 +215,17 @@ public class MERGE2 extends Protocol {
 
 
         public void findAndNotify() {
-            List<PingData> initial_mbrs=findInitialMembers();
-            List<View> different_views=detectDifferentViews(initial_mbrs);
+            List<PingData> discovery_rsps=findAllMembers();
+
+            if(log.isTraceEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                sb.append("Discovery results:\n");
+                for(PingData data: discovery_rsps)
+                    sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
+                log.trace(sb);
+            }
+
+            List<View> different_views=detectDifferentViews(discovery_rsps);
             if(different_views.size() > 1) {
                 Collection<Address> coords=Util.determineCoords(different_views);
                 if(coords.size() == 1) {
@@ -238,8 +247,8 @@ public class MERGE2 extends Protocol {
                     StringBuilder sb=new StringBuilder();
                     sb.append(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event.\n");
                     sb.append("Discovery results:\n");
-                    for(PingData data: initial_mbrs)
-                        sb.append("[" + data.getAddress() + "]: " + data.getView().getViewId()).append("\n");
+                    for(PingData data: discovery_rsps)
+                        sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
                     log.debug(sb.toString());
                 }
                 Event evt=new Event(Event.MERGE, different_views);
@@ -261,13 +270,13 @@ public class MERGE2 extends Protocol {
             return min_interval + Util.random(max_interval - min_interval);
         }
 
-        /** Returns a list of PingData pairs */
+        /** Returns a list of PingData with only the view from members around the cluster */
         @SuppressWarnings("unchecked")
-        List<PingData> findInitialMembers() {
-            PingData tmp=new PingData(local_addr, view, true);
-            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_INITIAL_MBRS));
+        List<PingData> findAllMembers() {
+            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_MBRS));
             if(retval == null) return Collections.emptyList();
             if(is_coord && local_addr != null) {
+                PingData tmp=new PingData(local_addr, view, true);
                 //let's make sure that we add ourself as a coordinator
                 if(!retval.contains(tmp))
                     retval.add(tmp);
@@ -320,6 +329,6 @@ public class MERGE2 extends Protocol {
             }
             return false;
         }
-        
+
     }
 }

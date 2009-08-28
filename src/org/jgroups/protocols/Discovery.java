@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.65 2009/08/27 07:32:18 belaban Exp $
+ * @version $Id: Discovery.java,v 1.66 2009/08/28 07:23:35 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -104,7 +104,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public abstract void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception;
+    public abstract void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception;
 
 
     public void handleDisconnect() {
@@ -165,26 +165,38 @@ public abstract class Discovery extends Protocol {
     }
 
     /**
-     * Finds the initial membership: sends a GET_MBRS_REQ to all members, waits 'timeout' ms or
+     * Finds the views: sends a GET_MBRS_REQ to all members, waits 'timeout' ms or
      * until 'num_initial_members' have been retrieved
-     * @return List<PingData>
+     * @return List<Views>
      */
-    public List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
-        return findInitialMembers(promise, num_initial_members, break_on_coord_rsp);
+    public List<View> findAllViews(Promise<JoinRsp> promise) {
+        List<PingData> rsps=findAllMembers(promise);
+        List<View> retval=new ArrayList<View>();
+        if(rsps != null) {
+            for(PingData data: rsps) {
+                if(data.getView() != null)
+                    retval.add(data.getView());
+            }
+        }
+        return retval;
     }
 
     /**
-     * Finds all initial members, regardless of break_on_coord_rsp
+     * Finds initial members
      * @param promise
      * @return
      */
-    public List<PingData> findAllInitialMembers(Promise<JoinRsp> promise) {
-        int size=Math.max(members.size(), num_initial_members);
-        return findInitialMembers(promise, size, false);
+    public List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
+        return findInitialMembers(promise, num_initial_members, break_on_coord_rsp, false);
     }
 
+    public List<PingData> findAllMembers(Promise<JoinRsp> promise) {
+        int num_expected_mbrs=Math.max(num_initial_members, view.size());
+        return findInitialMembers(promise, num_expected_mbrs, false, true);
+    }
 
-    protected List<PingData> findInitialMembers(Promise<JoinRsp> promise, int num_expected_rsps, boolean break_on_coord) {
+    protected List<PingData> findInitialMembers(Promise<JoinRsp> promise, int num_expected_rsps,
+                                                boolean break_on_coord, boolean return_views_only) {
         num_discovery_requests++;
 
         final Responses rsps=new Responses(num_expected_rsps, num_initial_srv_members, break_on_coord, promise);
@@ -192,7 +204,7 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start(group_addr, promise);
+        sender.start(group_addr, promise, return_views_only);
         try {
             return rsps.get(timeout);
         }
@@ -211,11 +223,23 @@ public abstract class Discovery extends Protocol {
 
     @ManagedOperation(description="Runs the discovery protocol to find initial members")
     public String findInitialMembersAsString() {
-    	List<PingData> results=findAllInitialMembers(null);
+    	List<PingData> results=findInitialMembers(null);
         if(results == null || results.isEmpty()) return "<empty>";
         StringBuilder sb=new StringBuilder();
         for(PingData rsp: results) {
             sb.append(rsp).append("\n");
+        }
+        return sb.toString();
+    }
+
+
+    @ManagedOperation(description="Runs the discovery protocol to find all views")
+    public String findAllViewsAsString() {
+    	List<View> results=findAllViews(null);
+        if(results == null || results.isEmpty()) return "<empty>";
+        StringBuilder sb=new StringBuilder();
+        for(View view: results) {
+            sb.append(view).append("\n");
         }
         return sb.toString();
     }
@@ -290,7 +314,7 @@ public abstract class Discovery extends Protocol {
                                 UUID.add((UUID)logical_addr, hdr.arg.getLogicalName());
                         }
 
-                        if(return_entire_cache) {
+                        if(return_entire_cache && !hdr.return_view_only) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
@@ -302,9 +326,9 @@ public abstract class Discovery extends Protocol {
                             }
                         }
                         else {
-                            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                            sendDiscoveryResponse(local_addr, Arrays.asList(physical_addr), is_server,
-                                                  UUID.get(local_addr), msg.getSrc());
+                            List<PhysicalAddress> physical_addrs=hdr.return_view_only? null :
+                                    Arrays.asList((PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)));
+                            sendDiscoveryResponse(local_addr, physical_addrs, is_server, UUID.get(local_addr), msg.getSrc());
                         }
                         return null;
 
@@ -344,7 +368,7 @@ public abstract class Discovery extends Protocol {
 
             case Event.GET_PHYSICAL_ADDRESS:
                 try {
-                    sendGetMembersRequest(group_addr, null);
+                    sendGetMembersRequest(group_addr, null, false);
                 }
                 catch(InterruptedIOException ie) {
                     if(log.isWarnEnabled()){
@@ -381,13 +405,13 @@ public abstract class Discovery extends Protocol {
 
         switch(evt.getType()) {
 
-            case Event.FIND_INITIAL_MBRS:   // sent by GMS layer
-            case Event.FIND_ALL_INITIAL_MBRS:
+            case Event.FIND_INITIAL_MBRS:      // sent by GMS layer
+            case Event.FIND_ALL_MBRS:
                 // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
                 long start=System.currentTimeMillis();
-                boolean find_all=evt.getType() == Event.FIND_ALL_INITIAL_MBRS;
+                boolean find_all_views=evt.getType() == Event.FIND_ALL_MBRS;
                 Promise<JoinRsp> promise=(Promise<JoinRsp>)evt.getArg();
-                List<PingData> rsps=find_all? findAllInitialMembers(promise) : findInitialMembers(promise);
+                List<PingData> rsps=find_all_views? findAllMembers(promise) : findInitialMembers(promise);
                 long diff=System.currentTimeMillis() - start;
                 if(log.isTraceEnabled())
                     log.trace("discovery took "+ diff + " ms: responses: " + Util.printPingData(rsps));
@@ -454,20 +478,20 @@ public abstract class Discovery extends Protocol {
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
         down_prot.down(new Event(Event.MSG, rsp_msg));
     }
-    
+
 
     class PingSenderTask {        
         private Future<?>      senderFuture;
 
         public PingSenderTask() {}
 
-        public synchronized void start(final String cluster_name, final Promise promise) {
+        public synchronized void start(final String cluster_name, final Promise promise, final boolean return_views_only) {
             long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
                         try {
-                            sendGetMembersRequest(cluster_name, promise);
+                            sendGetMembersRequest(cluster_name, promise, return_views_only);
                         }
                         catch(InterruptedIOException ie) {
                             if(log.isWarnEnabled()){
