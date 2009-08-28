@@ -41,7 +41,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.20 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.21 2009/08/28 08:10:01 belaban Exp $
  */
 @Unsupported(comment="Use JBossCache instead")
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
@@ -806,6 +806,64 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         state_promise.setResult(Boolean.TRUE);
     }
 
+
+        public byte[] getState(String state_id) {
+        // not implemented
+        return null;
+    }
+
+    public void getState(OutputStream ostream) {
+        K key;
+        V val;
+        HashMap<K,V> copy=new HashMap<K,V>();
+        ObjectOutputStream oos=null;
+
+        for(Map.Entry<K,V> entry:entrySet()) {
+            key=entry.getKey();
+            val=entry.getValue();
+            copy.put(key, val);
+        }
+        try {
+            oos=new ObjectOutputStream(ostream);
+            oos.writeObject(copy);
+        }
+        catch(Throwable ex) {
+            if(log.isErrorEnabled())
+                log.error("exception marshalling state: " + ex);
+        }
+        finally {
+            Util.close(oos);
+        }
+    }
+
+    public void getState(String state_id, OutputStream ostream) {}
+
+    public void setState(String state_id, byte[] state) {}
+
+    public void setState(InputStream istream) {
+        HashMap<K,V> new_copy=null;
+        ObjectInputStream ois=null;
+        try {
+            ois=new ObjectInputStream(istream);
+            new_copy=(HashMap<K,V>)ois.readObject();
+            ois.close();
+        }
+        catch(Throwable e) {
+            e.printStackTrace();
+            if(log.isErrorEnabled())
+                log.error("exception marshalling state: " + e);
+        }
+        finally {
+            Util.close(ois);
+        }
+        if(new_copy != null)
+            _putAll(new_copy);
+
+        state_promise.setResult(Boolean.TRUE);
+    }
+
+    public void setState(String state_id, InputStream istream) {}
+
     /*------------------- Membership Changes ----------------------*/
 
     public void viewAccepted(View new_view) {
@@ -862,62 +920,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         }
     }
 
-    public byte[] getState(String state_id) {
-        // not implemented
-        return null;
-    }
-
-    public void getState(OutputStream ostream) {
-        K key;
-        V val;
-        HashMap<K,V> copy=new HashMap<K,V>();
-        ObjectOutputStream oos=null;
-
-        for(Map.Entry<K,V> entry:entrySet()) {
-            key=entry.getKey();
-            val=entry.getValue();
-            copy.put(key, val);
-        }
-        try {
-            oos=new ObjectOutputStream(ostream);
-            oos.writeObject(copy);
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled())
-                log.error("exception marshalling state: " + ex);
-        }
-        finally {
-            Util.close(oos);
-        }
-    }
-
-    public void getState(String state_id, OutputStream ostream) {}
-
-    public void setState(String state_id, byte[] state) {}
-
-    public void setState(InputStream istream) {
-        HashMap<K,V> new_copy=null;
-        ObjectInputStream ois=null;
-        try {
-            ois=new ObjectInputStream(istream);
-            new_copy=(HashMap<K,V>)ois.readObject();
-            ois.close();
-        }
-        catch(Throwable e) {
-            e.printStackTrace();
-            if(log.isErrorEnabled())
-                log.error("exception marshalling state: " + e);
-        }
-        finally {
-            Util.close(ois);
-        }
-        if(new_copy != null)
-            _putAll(new_copy);
-
-        state_promise.setResult(Boolean.TRUE);
-    }
-
-    public void setState(String state_id, InputStream istream) {}
 
     public void unblock() {}
 
