@@ -23,7 +23,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.8 2009/07/31 10:52:31 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.9 2009/08/28 07:19:57 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -69,7 +69,7 @@ public class FILE_PING extends Discovery {
 
 
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         List<PingData> existing_mbrs=readAll(cluster_name);
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
@@ -92,6 +92,7 @@ public class FILE_PING extends Discovery {
                     if(dest.equals(physical_addr))
                         continue;
                     PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+                    hdr.return_view_only=return_views_only;
                     final Message msg=new Message(dest);
                     msg.setFlag(Message.OOB);
                     msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !

@@ -37,7 +37,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.49 2009/07/09 07:08:29 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.50 2009/08/28 07:20:28 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -114,10 +114,11 @@ public class TCPPING extends Discovery {
         }
     }
     
-    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+        hdr.return_view_only=return_views_only;
 
         Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
         combined_target_members.addAll(dynamic_hosts);
