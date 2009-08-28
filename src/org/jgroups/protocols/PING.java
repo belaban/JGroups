@@ -19,7 +19,7 @@ import java.util.List;
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
  * response.
  * @author Bela Ban
- * @version $Id: PING.java,v 1.60 2009/07/02 13:43:14 belaban Exp $
+ * @version $Id: PING.java,v 1.61 2009/08/28 07:19:34 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "port_range", "socket_conn_timeout",
         "socket_read_timeout", "discovery_timeout"})
@@ -50,12 +50,13 @@ public class PING extends Discovery {
     }
     
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         //  Mcast GET_MBRS_REQ message
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
-        Header hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
+        hdr.return_view_only=return_views_only;
         Message msg=new Message(null);  // mcast msg
         msg.setFlag(Message.OOB);
         msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
