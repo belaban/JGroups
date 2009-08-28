@@ -32,7 +32,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.42 2009/08/10 14:39:37 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.43 2009/08/28 07:20:11 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -138,7 +138,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             startReconnector();
     }
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         if(group_addr == null) {
             if(log.isErrorEnabled()) log.error("cluster_name is null, cannot get membership");            
             return;
@@ -184,6 +184,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             Message msg=new Message(mbr_addr);
             msg.setFlag(Message.OOB);
             PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
+            hdr.return_view_only=return_views_only;
             msg.putHeader(name, hdr);
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);
             down_prot.down(new Event(Event.MSG, msg));
