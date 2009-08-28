@@ -1,4 +1,3 @@
-// $Id: PingHeader.java,v 1.13 2009/04/09 09:11:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -10,6 +9,10 @@ import org.jgroups.util.Util;
 import java.io.*;
 
 
+/**
+ * @author Bela Ban
+ * @version $Id: PingHeader.java,v 1.14 2009/08/28 07:17:53 belaban Exp $
+ */
 public class PingHeader extends Header implements Streamable {
     public static final byte GET_MBRS_REQ=1;   // arg = null
     public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, coord_addr)
@@ -17,6 +20,8 @@ public class PingHeader extends Header implements Streamable {
     public byte type=0;
     public PingData arg=null;
     public String cluster_name=null;
+    // when set (with a GET_MBRS_REQ), we don't need the address mappings, but only the view
+    public boolean return_view_only=false;
     private static final long serialVersionUID=3054979699998282428L;
 
     public PingHeader() {
@@ -38,7 +43,7 @@ public class PingHeader extends Header implements Streamable {
     }
 
     public int size() {
-        int retval=Global.BYTE_SIZE *3; // type and presence
+        int retval=Global.BYTE_SIZE *4; // type, presence and return_view_only
         if(arg != null) {
             retval+=arg.size();
         }
@@ -73,6 +78,7 @@ public class PingHeader extends Header implements Streamable {
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(type);
+        out.writeBoolean(return_view_only);
         out.writeObject(arg);
         out.writeObject(cluster_name);
     }
@@ -80,18 +86,21 @@ public class PingHeader extends Header implements Streamable {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
+        return_view_only=in.readBoolean();
         arg=(PingData)in.readObject();
         cluster_name=(String)in.readObject();
     }
 
     public void writeTo(DataOutputStream outstream) throws IOException {
         outstream.writeByte(type);
+        outstream.writeBoolean(return_view_only);
         Util.writeStreamable(arg, outstream);
         Util.writeString(cluster_name, outstream);
     }
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
         type=instream.readByte();
+        return_view_only=instream.readBoolean();
         arg=(PingData)Util.readStreamable(PingData.class, instream);
         cluster_name=Util.readString(instream);
     }
