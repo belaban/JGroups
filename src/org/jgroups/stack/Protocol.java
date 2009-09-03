@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.68 2009/08/25 11:57:31 belaban Exp $
+ * @version $Id: Protocol.java,v 1.69 2009/09/03 14:38:16 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -43,6 +43,9 @@ public abstract class Protocol {
     
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
     protected boolean          stats=true;
+
+    protected String           name=null;
+
     protected final Log log=LogFactory.getLog(this.getClass());
 
 
@@ -301,6 +304,11 @@ public abstract class Protocol {
 
     /** All protocol names have to be unique ! */
     public abstract String getName();
+
+    @Property(name="name")
+    public void setName(String name) {
+        this.name=name;
+    }
 
     public Protocol getUpProtocol() {
         return up_prot;
