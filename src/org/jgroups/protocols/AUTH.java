@@ -24,8 +24,6 @@ import java.util.LinkedList;
 @Experimental
 public class AUTH extends Protocol {
 
-    static final String NAME = "AUTH";
-    
 
     /**
      * used on the coordinator to authentication joining member requests against
@@ -34,6 +32,7 @@ public class AUTH extends Protocol {
 
     
     public AUTH() {
+        name="AUTH";
     }
 
    
@@ -46,7 +45,7 @@ public class AUTH extends Protocol {
     }
 
     public final String getName() {
-        return AUTH.NAME;
+        return name;
     }
 
     protected List<Object> getConfigurableObjects() {
@@ -108,8 +107,8 @@ public class AUTH extends Protocol {
             //we found a join message - now try and get the AUTH Header
             Message msg = (Message)evt.getArg();
 
-            if((msg.getHeader(AUTH.NAME) != null) && (msg.getHeader(AUTH.NAME) instanceof AuthHeader)){
-                AuthHeader authHeader = (AuthHeader)msg.getHeader(AUTH.NAME);
+            if((msg.getHeader(getName()) != null) && (msg.getHeader(getName()) instanceof AuthHeader)){
+                AuthHeader authHeader = (AuthHeader)msg.getHeader(getName());
 
                 if(authHeader != null){
                     //Now we have the AUTH Header we need to validate it
@@ -177,7 +176,7 @@ public class AUTH extends Protocol {
             Message msg = (Message)evt.getArg();
             AuthHeader authHeader = new AuthHeader();
             authHeader.setToken(this.auth_plugin);
-            msg.putHeader(AUTH.NAME, authHeader);
+            msg.putHeader(getName(), authHeader);
 
             if(log.isDebugEnabled()){
                 log.debug("AUTH passing down event");
