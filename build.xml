@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.212 2009/08/11 07:20:47 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.213 2009/09/04 17:58:29 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -43,9 +43,16 @@
     <property name="threadcount" value="false"/>
     <property name="test.verbose" value="0"/>
 
-
     <taskdef resource="testngtasks" classpathref="jg.classpath"/>
 
+    <!-- properties to determine IP version used -->
+    <condition property="java.net.preferIPv4Stack" value="true" else="false">
+      <isfalse value="${jgroups.useIPv6}"/>
+    </condition>
+
+    <condition property="java.net.preferIPv6Addresses" value="true" else="false">
+      <istrue value="${jgroups.useIPv6}"/>
+    </condition>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
@@ -433,6 +440,8 @@
                 threadcount="20"
                 parallel="methods"
                 >
+        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
+        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
         </testng>
     </target>
@@ -572,7 +581,8 @@
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
+    		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <jvmarg value="-Xmx300M"/>
             </testng>
         </sequential>
