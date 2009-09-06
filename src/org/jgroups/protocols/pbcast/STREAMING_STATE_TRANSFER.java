@@ -80,8 +80,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @DeprecatedProperty(names = {"use_flush", "flush_timeout", "use_reading_thread"})
 public class STREAMING_STATE_TRANSFER extends Protocol {
 
-    private final static String NAME = "STREAMING_STATE_TRANSFER";
-
     /*
      * ----------------------------------------------Properties ----------------------------------- 
      *    
@@ -146,10 +144,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public STREAMING_STATE_TRANSFER() {
         members = new Vector<Address>();
-    }
-
-    public final String getName() {
-        return NAME;
     }
 
     @ManagedAttribute

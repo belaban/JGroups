@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.11 2009/04/09 09:11:15 belaban Exp $
+// $Id: HTOTAL.java,v 1.12 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.11 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.12 2009/09/06 13:51:07 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -38,9 +38,6 @@ public class HTOTAL extends Protocol {
     public HTOTAL() {
     }
 
-    public final String getName() {
-        return "HTOTAL";
-    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {

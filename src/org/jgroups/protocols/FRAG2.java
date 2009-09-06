@@ -37,13 +37,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.49 2009/06/04 07:37:30 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.50 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
 public class FRAG2 extends Protocol {
     
-    private static final String name="FRAG2";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -72,11 +71,6 @@ public class FRAG2 extends Protocol {
     AtomicLong num_sent_frags=new AtomicLong(0);
     @ManagedAttribute(description="Number of received fragments")
     AtomicLong num_received_frags=new AtomicLong(0);
-
-
-    public final String getName() {
-        return name;
-    }
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}

@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.24 2008/10/28 08:50:17 belaban Exp $
+// $Id: SIZE.java,v 1.25 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,14 +37,6 @@ public class SIZE extends Protocol {
 
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(65535);
     final ExposedDataOutputStream out=new ExposedDataOutputStream(out_stream);
-
-
-    /**
-     * All protocol names have to be unique !
-     */
-    public String getName() {
-        return "SIZE";
-    }
 
 
     public void init() {

@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.11 2009/08/25 15:10:18 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.12 2009/09/06 13:51:14 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -34,7 +34,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
             MergeId new_merge_id=MergeId.create(c1.getAddress());
             hdr.setMergeId(new_merge_id);
-            merge_request.putHeader(GMS.name, hdr);
+            merge_request.putHeader(GMS.class.getSimpleName(), hdr);
             GMS gms=(GMS)c1.getProtocolStack().findProtocol(GMS.class);
             MergeId merge_id=gms.getMergeId();
             assert merge_id == null;

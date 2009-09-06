@@ -32,13 +32,11 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.43 2009/08/28 07:20:11 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.44 2009/09/06 13:51:07 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
     
-    private final static String name="TCPGOSSIP";    
-
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Max time for socket creation. Default is 1000 msec")
@@ -59,10 +57,6 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
     Future<?> connection_checker=null;
     protected volatile boolean running=true;
 
-    public String getName() {
-        return name;
-    }
-    
     public void init() throws Exception {
         super.init();
         if(initial_hosts == null || initial_hosts.isEmpty())

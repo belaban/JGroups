@@ -13,17 +13,13 @@ import java.util.Date;
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.4 2008/10/21 12:10:30 vlada Exp $
+ * @version $Id: DELAY_JOIN_REQ.java,v 1.5 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class DELAY_JOIN_REQ extends Protocol {
     
     @Property
     private long delay=4000;
-
-    public String getName() {
-        return "DELAY_JOIN_REQ";
-    }  
 
     public long getDelay() {
         return delay;

@@ -23,11 +23,6 @@ public class MERGEFAST extends Protocol {
     View          view;
     boolean       is_coord=false;
 
-    public String getName() {
-        return "MERGEFAST";
-    }
-
-
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:

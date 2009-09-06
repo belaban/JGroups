@@ -1,4 +1,4 @@
-// $Id: TRACE.java,v 1.7 2008/10/21 12:10:30 vlada Exp $
+// $Id: TRACE.java,v 1.8 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
@@ -10,10 +10,6 @@ import org.jgroups.stack.Protocol;
 public class TRACE extends Protocol {
 
     public TRACE() {}
-
-    public String        getName()             {return "TRACE";}
-
-    
 
     public Object up(Event evt) {
         System.out.println("---------------- TRACE (received) ----------------------");

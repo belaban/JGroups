@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.25 2009/08/27 13:10:25 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.26 2009/09/06 13:51:07 belaban Exp $
  */
 @Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -50,10 +50,6 @@ public class MERGE3 extends Protocol {
     TimeScheduler timer=null;
     Future<?> announcer_task_future=null;
 
-
-    public String getName() {
-        return "MERGE3";
-    }
 
     public void init() throws Exception {
         timer=getTransport().getTimer();

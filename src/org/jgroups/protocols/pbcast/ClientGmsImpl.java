@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.75 $
+ * @version $Revision: 1.76 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -188,7 +188,7 @@ public class ClientGmsImpl extends GmsImpl {
                     Message view_ack=new Message(coord, null, null);
                     view_ack.setFlag(Message.OOB);
                     GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
-                    view_ack.putHeader(GMS.name, tmphdr);
+                    view_ack.putHeader(gms.getName(), tmphdr);
                     gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
                     return;
                 }

@@ -44,9 +44,7 @@ public class AUTH extends Protocol {
         auth_plugin.setAuth(this);
     }
 
-    public final String getName() {
-        return name;
-    }
+    
 
     protected List<Object> getConfigurableObjects() {
         List<Object> retval=new LinkedList<Object>();
@@ -80,7 +78,7 @@ public class AUTH extends Protocol {
         //need to specify the error message on the JoinRsp object once it's been changed
 
         GMS.GmsHeader gmsHeader = new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, joinRes);
-        msg.putHeader(GMS.name, gmsHeader);
+        msg.putHeader(GMS.class.getSimpleName(), gmsHeader);
 
         if(log.isDebugEnabled()){
             log.debug("GMSHeader created for failure JOIN_RSP");

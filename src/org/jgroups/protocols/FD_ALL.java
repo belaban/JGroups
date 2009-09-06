@@ -25,14 +25,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.27 2009/06/17 14:49:12 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
 public class FD_ALL extends Protocol {
     
-    private final static String name="FD_ALL";
-
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Interval in which a HEARTBEAT is sent to the cluster. Default is 3000 msec")
@@ -90,7 +88,6 @@ public class FD_ALL extends Protocol {
     public FD_ALL() {}
     
     
-    public String getName() {return FD_ALL.name;}
     @ManagedAttribute(description="Member address")    
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="Lists members of a cluster")

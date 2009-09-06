@@ -22,7 +22,7 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.12 2009/06/17 14:49:12 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.13 2009/09/06 13:51:08 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {
@@ -39,11 +39,6 @@ public class FD_ICMP extends FD {
     @Property
     private int ttl=32;
 
-
-
-    public String getName() {
-        return "FD_ICMP";
-    }
 
     public void init() throws Exception {
         super.init();

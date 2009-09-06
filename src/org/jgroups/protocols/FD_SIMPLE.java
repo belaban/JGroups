@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.27 2009/04/09 09:11:15 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -49,12 +49,7 @@ public class FD_SIMPLE extends Protocol {
     final Map<Address,Integer> counters=new HashMap<Address,Integer>();   // keys=Addresses, vals=Integer (count)
     @Property
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
-    static final String name="FD_SIMPLE";
 
-
-    public String getName() {
-        return "FD_SIMPLE";
-    }
 
     public void init() throws Exception {
         timer=getTransport().getTimer();

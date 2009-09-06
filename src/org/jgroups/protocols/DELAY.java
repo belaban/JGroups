@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.13 2008/10/23 16:59:41 rachmatowicz Exp $
+// $Id: DELAY.java,v 1.14 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,12 +23,6 @@ public class DELAY extends Protocol {
     @Property
     int out_delay=0;
 
-    /**
-     * All protocol names have to be unique !
-     */
-    public String getName() {
-        return "DELAY";
-    } 
 
     public int getInDelay() {
     	return in_delay ;

@@ -30,14 +30,11 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.105 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.106 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
 public class FD_SOCK extends Protocol implements Runnable {
-    
-    private static final String name="FD_SOCK";
-
     private static final int NORMAL_TERMINATION=9;
     private static final int ABNORMAL_TERMINATION=-1;
 
@@ -107,10 +104,6 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public FD_SOCK() {      
-    }
-
-    public String getName() {
-        return name;
     }
 
     @ManagedAttribute(description="Member address")

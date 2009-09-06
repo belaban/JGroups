@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * Tests custom protocol.
  * Author: Lenny Phan
- * Version: $Id: CustomProtocolTest.java,v 1.5 2009/06/17 16:28:56 belaban Exp $
+ * Version: $Id: CustomProtocolTest.java,v 1.6 2009/09/06 13:51:11 belaban Exp $
  */
 public class CustomProtocolTest {
 
@@ -35,8 +35,5 @@ public class CustomProtocolTest {
 
     public static class MyProtocol extends Protocol {
 
-        public String getName() {
-            return "MyProtocol";
-        }
     }
 }
