@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.58 2009/04/09 09:11:15 belaban Exp $
+// $Id: TCP.java,v 1.59 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,9 +34,6 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
 
     public TCP() {}
 
-    public String getName() {
-        return "TCP";
-    }
 
     @ManagedAttribute
     public int getOpenConnections() {

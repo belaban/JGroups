@@ -16,7 +16,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.27 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
  */
 @Experimental
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
@@ -86,10 +86,6 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
        ct.stop();
        super.stop();
    }
-
-   public String getName() {
-        return "TCP_NIO";
-    }
 
    @ManagedAttribute
    public int getReaderThreads() { return reader_threads; }

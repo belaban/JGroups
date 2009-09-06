@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.33 2009/04/24 14:04:07 belaban Exp $
+ * @version $Id: SMACK.java,v 1.34 2009/09/06 13:51:08 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -70,17 +70,12 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     long                   vid=1;                     // for the fake view changes
     @Property
     boolean                print_local_addr=true;
-    static final String    name="SMACK";
-    
+
     
 
 
 
     public SMACK() {
-    }
-
-    public String getName() {
-        return name;
     }
 
     public void stop() {

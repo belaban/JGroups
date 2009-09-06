@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.21 2008/10/21 12:10:30 vlada Exp $
+// $Id: PERF_TP.java,v 1.22 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,7 @@ import org.jgroups.stack.Protocol;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.21 2008/10/21 12:10:30 vlada Exp $
+ * @version $Id: PERF_TP.java,v 1.22 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class PERF_TP extends Protocol {
@@ -65,12 +65,6 @@ public class PERF_TP extends Protocol {
 
 
     /*------------------------------ Protocol interface ------------------------------ */
-
-    public String getName() {
-        return "PERF_TP";
-    }
-
-
 
 
     public void init() throws Exception {

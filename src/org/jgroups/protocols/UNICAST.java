@@ -32,15 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.139 2009/08/25 19:35:29 graywatson Exp $
+ * @version $Id: UNICAST.java,v 1.140 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand, AgeOutCache.Handler<Address> {
-
-
-    private static final String name="UNICAST";
-
     private static final long DEFAULT_FIRST_SEQNO=1;
 
 
@@ -93,9 +89,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public int getUndeliveredMessages() {
         return undelivered_msgs.get();
     }
-
-    /** All protocol names have to be unique ! */
-    public String  getName() {return name;}
 
     public long[] getTimeout() {return timeout;}
 

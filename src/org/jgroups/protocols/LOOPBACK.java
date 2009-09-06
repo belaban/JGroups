@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.30 2009/04/09 09:11:15 belaban Exp $
+// $Id: LOOPBACK.java,v 1.31 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,11 +42,6 @@ public class LOOPBACK extends TP {
     }
 
     /*------------------------------ Protocol interface ------------------------------ */
-
-    public String getName() {
-        return "LOOPBACK";
-    }
-
 
     public void destroy() {
         try {

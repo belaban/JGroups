@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.75 2009/08/10 12:49:49 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.76 2009/09/06 13:51:07 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -125,10 +125,6 @@ public class TUNNEL extends TP {
    }
 
    /*------------------------------ Protocol interface ------------------------------ */
-
-   public String getName() {
-      return "TUNNEL";
-   }
 
    public synchronized void setTUNNELPolicy(TUNNELPolicy policy) {
       if (policy == null)

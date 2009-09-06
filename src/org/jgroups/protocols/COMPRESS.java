@@ -21,14 +21,10 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.23 2009/07/01 17:37:20 dereed Exp $
+ * @version $Id: COMPRESS.java,v 1.24 2009/09/06 13:51:08 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
-    
-    
-    private final static String name="COMPRESS";
-    
-    
+
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Compression level 0-9 (0=no compression, 9=best compression). Default is 9")
@@ -51,11 +47,6 @@ public class COMPRESS extends Protocol {
     
 
     public COMPRESS() {      
-    }
-
-
-    public String getName() {
-        return name;
     }
 
 

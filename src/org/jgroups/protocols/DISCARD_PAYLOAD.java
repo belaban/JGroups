@@ -11,7 +11,7 @@ import org.jgroups.stack.Protocol;
  * before passing it down. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.9 2009/06/22 10:33:14 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.10 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class DISCARD_PAYLOAD extends Protocol {
@@ -23,11 +23,6 @@ public class DISCARD_PAYLOAD extends Protocol {
 
     public DISCARD_PAYLOAD() {
     }
-
-    public String getName() {
-        return "DISCARD_PAYLOAD";
-    }   
-
 
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG) {

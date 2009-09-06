@@ -25,12 +25,10 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.24 2008/10/21 12:41:47 vlada Exp $
+ * @version $Id: SFC.java,v 1.25 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
-    private static final String name="SFC";
-
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 2000000 bytes")
@@ -171,11 +169,6 @@ public class SFC extends Protocol {
 
     // ------------------- End of management information ----------------------
 
-
-    public final String getName() {
-        return name;
-    }
-    
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:

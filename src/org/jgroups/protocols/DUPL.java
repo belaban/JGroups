@@ -10,7 +10,7 @@ import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.4 2008/10/21 12:10:30 vlada Exp $
+ * @version $Id: DUPL.java,v 1.5 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class DUPL extends Protocol {
@@ -39,10 +39,6 @@ public class DUPL extends Protocol {
         this.copy_unicast_msgs=copy_unicast_msgs;
         this.incoming_copies=incoming_copies;
         this.outgoing_copies=outgoing_copies;
-    }
-
-    public String getName() {
-        return "DUPL";
     }
 
 

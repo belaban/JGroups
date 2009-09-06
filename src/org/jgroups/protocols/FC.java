@@ -38,15 +38,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.104 2009/03/30 11:20:21 belaban Exp $
+ * @version $Id: FC.java,v 1.105 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
 
     private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
     private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  
-    private final static String name="FC";
-    
+
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -194,11 +193,6 @@ public class FC extends Protocol {
     /** Last time a credit request was sent. Used to prevent credit request storms */
     @GuardedBy("sent_lock")
     private long last_credit_request=0;   
-
-
-    public final String getName() {
-        return name;
-    }
 
     public void resetStats() {
         super.resetStats();

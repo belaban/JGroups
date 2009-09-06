@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.32 2009/04/27 13:11:43 belaban Exp $
+// $Id: DISCARD.java,v 1.33 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -47,15 +47,6 @@ public class DISCARD extends Protocol {
 
     @Property(name="gui", description="use a GUI or not")
     protected boolean use_gui=false;
-
-    
-    /**
-     * All protocol names have to be unique !
-     */
-    public String getName() {
-        return "DISCARD";
-    }
-
 
     public boolean isDiscardAll() {
         return discard_all;

@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.110 2009/08/11 09:44:59 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.111 2009/09/06 13:51:10 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -621,7 +621,7 @@ public class Multiplexer implements UpHandler {
             service_msg.setFlag(Message.OOB);
 
         if(channel.flushSupported())
-            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
+            service_msg.putHeader("FLUSH", new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
 
         if(synchronous) {
             //for synchronous invocation we need to collect acks

@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.10 2008/08/12 08:43:56 belaban Exp $
+ * @version $Id: STATS.java,v 1.11 2009/09/06 13:51:07 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -27,10 +27,6 @@ public class STATS extends Protocol {
     static final short UP=1;
     static final short DOWN=2;
 
-
-    public String getName() {
-        return "STATS";
-    }  
 
     public void resetStats() {
         sent_msgs=sent_bytes=sent_ucasts=sent_mcasts=received_ucasts=received_mcasts=0;

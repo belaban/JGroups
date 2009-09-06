@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.53 2009/08/25 14:36:19 belaban Exp $
+// $Id: ENCRYPT.java,v 1.54 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -196,10 +196,6 @@ public class ENCRYPT extends Protocol {
     private boolean encrypt_entire_message=false;
 
     public ENCRYPT() {}
-
-    public String getName() {
-        return "ENCRYPT";
-    }
 
     public void setObserver(Observer o) {
         observer=o;

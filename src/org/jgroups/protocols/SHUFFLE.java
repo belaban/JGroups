@@ -21,17 +21,11 @@ import java.util.*;
 @Unsupported
 public class SHUFFLE extends Protocol implements Runnable {
 
-    @Property
-    String       name="SHUFFLE";
-    final List         messages;
+    final List   messages;
     Thread       messagesHandler;
 
     public SHUFFLE() {
         messages = Collections.synchronizedList(new ArrayList());
-    }
-
-    public String getName() {
-        return name;
     }
 
     /**

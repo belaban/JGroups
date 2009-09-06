@@ -58,7 +58,7 @@ import java.util.*;
  *</p>
  * <em>Note that this protocol is experimental and has never been tested extensively !</em>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Id: CAUSAL.java,v 1.22 2009/04/09 09:11:15 belaban Exp $
+ *  @version $Id: CAUSAL.java,v 1.23 2009/09/06 13:51:07 belaban Exp $
  *
  **/
 
@@ -1047,12 +1047,5 @@ public class CAUSAL extends Protocol
         }      
     }
 
-    /**
-     * Returns a name of this stack, each stackhas to have unique name
-     * @return stack's name - CAUSAL
-     */
-    public String getName() {
-        return "CAUSAL";
-    }
     
 }

@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.5 2008/10/20 10:21:22 belaban Exp $
+// $Id: FragTest.java,v 1.6 2009/09/06 13:51:11 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -88,11 +88,6 @@ public class FragTest {
         FragReceiver(FragTest t) {
             this.t=t;
         }
-
-        public String getName() {
-            return "FragReceiver";
-        }
-
 
         public Object up(Event evt) {
             Message msg=null;

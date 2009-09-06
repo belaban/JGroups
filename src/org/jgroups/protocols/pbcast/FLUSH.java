@@ -46,8 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @DeprecatedProperty(names = { "auto_flush_conf" })
 public class FLUSH extends Protocol {
 
-    public static final String NAME = "FLUSH";
-
     /*
      * ------------------------------------------ Properties------------------------------------------
      */
@@ -140,9 +138,6 @@ public class FLUSH extends Protocol {
         suspected = new TreeSet<Address>();
     }
 
-    public String getName() {
-        return NAME;
-    }
 
     public long getStartFlushTimeout() {
         return start_flush_timeout;

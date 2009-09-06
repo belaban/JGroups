@@ -37,15 +37,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.95 2009/04/09 09:11:34 belaban Exp $
+ * @version $Id: STABLE.java,v 1.96 2009/09/06 13:51:12 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
 public class STABLE extends Protocol {
-    
-    
-    private static final String name="STABLE";
-    
     private static final long MAX_SUSPEND_TIME=200000;
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
@@ -136,10 +132,6 @@ public class STABLE extends Protocol {
     
     
     public STABLE() {             
-    }
-
-    public String getName() {
-        return name;
     }
 
     public long getDesiredAverageGossip() {
@@ -855,7 +847,7 @@ public class STABLE extends Protocol {
                 msg=new Message();
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
-                msg.putHeader(STABLE.name, hdr);
+                msg.putHeader(name, hdr);
                 if(log.isTraceEnabled()) log.trace("sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
                 " (copy=" + stability_digest.hashCode() + ")");
                 num_stability_msgs_sent++;

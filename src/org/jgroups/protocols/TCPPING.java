@@ -37,11 +37,9 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.50 2009/08/28 07:20:28 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.51 2009/09/06 13:51:07 belaban Exp $
  */
 public class TCPPING extends Discovery {
-    
-    private final static String NAME="TCPPING";
     
     /* -----------------------------------------    Properties     --------------------------------------- */
     
@@ -70,9 +68,6 @@ public class TCPPING extends Discovery {
         return_entire_cache=true;
     }
 
-    public String getName() {
-        return NAME;
-    }
 
     /**
      * Returns the list of initial hosts as configured by the user via XML. Note that the returned list is mutable, so
@@ -128,7 +123,7 @@ public class TCPPING extends Discovery {
                 continue;
             final Message msg=new Message(addr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(NAME, hdr);
+            msg.putHeader(getName(), hdr);
             if(log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
             timer.submit(new Runnable() {

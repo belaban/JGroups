@@ -36,13 +36,11 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.46 2008/07/22 14:07:45 belaban Exp $
+ * @version $Id: FRAG.java,v 1.47 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
     
-    private final static String name="FRAG";
-
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
@@ -77,10 +75,6 @@ public class FRAG extends Protocol {
     @ManagedAttribute(description="Number of received fragments")
     long num_received_frags=0;
 
-
-    public String getName() {
-        return name;
-    }
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}

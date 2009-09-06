@@ -20,12 +20,10 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.39 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.40 2009/09/06 13:51:07 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
-    
-    private static final String name="VERIFY_SUSPECT";
-    
+
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
     @Property(description="Number of millisecs to wait for a response from a suspected member")
@@ -60,10 +58,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
     public VERIFY_SUSPECT() {       
     }
-
-    public String getName() {
-        return name;
-    }   
 
     public Object down(Event evt) {
         if(evt.getType() == Event.SHUTDOWN) {

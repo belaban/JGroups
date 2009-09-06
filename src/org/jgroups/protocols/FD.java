@@ -34,14 +34,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.76 2009/06/17 16:20:03 belaban Exp $
+ * @version $Id: FD.java,v 1.77 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
 public class FD extends Protocol {
     
-    private final static String name="FD";
-
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P. Default is 3000 msec")
@@ -94,8 +92,6 @@ public class FD extends Protocol {
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
     protected final Broadcaster bcast_task=new Broadcaster();
     
-
-    public String getName() {return name;}
     @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="List of cluster members")

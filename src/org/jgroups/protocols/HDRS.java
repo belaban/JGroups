@@ -1,4 +1,4 @@
-// $Id: HDRS.java,v 1.7 2008/10/21 12:10:30 vlada Exp $
+// $Id: HDRS.java,v 1.8 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,8 +16,6 @@ import java.util.Map;
  */
 @Unsupported
 public class HDRS extends Protocol {
-    public String  getName() {return "HDRS";}
-
 
     private static void printMessage(Message msg, String label) {
         StringBuilder sb=new StringBuilder();

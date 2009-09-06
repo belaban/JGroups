@@ -28,13 +28,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.33 2009/04/09 09:11:15 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.34 2009/09/06 13:51:07 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
     
-    private static final String name="VIEW_SYNC";
-
     /* -----------------------------------------    Properties     --------------------------------------- */
 
     @Property(description="View synchronization interval. Default is 60 sec")
@@ -85,11 +83,7 @@ public class VIEW_SYNC extends Protocol {
     private TimeScheduler timer=null;    
 
 
-
-    public String getName() {
-        return name;
-    }
-
+    
     public long getAverageSendInterval() {
         return avg_send_interval;
     }
@@ -220,7 +214,7 @@ public class VIEW_SYNC extends Protocol {
             Message view_change=new Message(local_addr, local_addr, null);
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
-            view_change.putHeader(GMS.name, hdr);
+            view_change.putHeader(GMS.class.getSimpleName(), hdr);
             up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
         } else if (rc == 0) {

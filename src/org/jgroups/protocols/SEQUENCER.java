@@ -18,13 +18,12 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.26 2009/08/21 20:36:43 graywatson Exp $
+ * @version $Id: SEQUENCER.java,v 1.27 2009/09/06 13:51:07 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
-    static final String       name="SEQUENCER";
     private boolean           is_coord=false;
     private long              seqno=0;
 
@@ -43,7 +42,6 @@ public class SEQUENCER extends Protocol {
     public boolean isCoordinator() {return is_coord;}
     public Address getCoordinator() {return coord;}
     public Address getLocalAddress() {return local_addr;}
-    public String getName() {return name;}
     @ManagedAttribute
     public long getForwarded() {return forwarded_msgs;}
     @ManagedAttribute

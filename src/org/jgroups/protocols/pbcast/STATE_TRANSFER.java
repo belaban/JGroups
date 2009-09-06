@@ -24,13 +24,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.85 2009/07/20 16:21:41 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.86 2009/09/06 13:51:12 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
 public class STATE_TRANSFER extends Protocol {
-
-    private final static String name="STATE_TRANSFER";
 
     /* --------------------------------------------- JMX statistics --------------------------------------------- */
 
@@ -40,7 +38,7 @@ public class STATE_TRANSFER extends Protocol {
 
     private final AtomicLong num_bytes_sent=new AtomicLong(0);
     
-    private volatile double avg_state_size=0;
+    private double avg_state_size=0;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
@@ -62,9 +60,6 @@ public class STATE_TRANSFER extends Protocol {
 
     public STATE_TRANSFER() {}
 
-    public String getName() {
-        return name;
-    }
 
     @ManagedAttribute
     public int getNumberOfStateRequests() {
