@@ -12,6 +12,7 @@ import org.jgroups.protocols.TP;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.HashMap;
 
 
 /**
@@ -31,7 +32,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.54.2.1 2008/05/22 13:23:04 belaban Exp $
+ * @version $Id: Protocol.java,v 1.54.2.2 2009/09/07 12:52:16 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -155,7 +156,7 @@ public abstract class Protocol {
     }
 
     public Map<String,Object> dumpStats() {
-        return null;
+        return new HashMap<String,Object>();
     }
 
 
