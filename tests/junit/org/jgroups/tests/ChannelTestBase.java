@@ -13,6 +13,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.AssertJUnit;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
@@ -67,6 +68,10 @@ public class ChannelTestBase {
 		bind_addr = Util.getBindAddress(null).getHostAddress();
 	}
 
+    @BeforeMethod
+    protected void startTestHeader(java.lang.reflect.Method m) {
+    	System.out.println("\n================ Starting test " + m.getName() + " ================\n");
+    }
 
     
     protected String getBindAddress(){
@@ -182,6 +187,11 @@ public class ChannelTestBase {
             if(unique) {
                 makeUnique(c, num);
             }
+            
+            if (log.isDebugEnabled()) {
+            	log.debug("Modifying channel resources:") ;
+            	logChannelResources(c) ;
+            }
             return c;
         }
 
@@ -199,6 +209,11 @@ public class ChannelTestBase {
             }
             if(useFlush())
                 Util.addFlush(retval, new FLUSH());
+
+            if (log.isDebugEnabled()) {
+            	log.debug("Creating cloned channel with resources:") ;
+            	logChannelResources(retval) ;
+            }
             return retval;
         }
 
@@ -215,6 +230,11 @@ public class ChannelTestBase {
             }
             if(useFlush())
                 Util.addFlush(ch, new FLUSH());
+            
+            if (log.isDebugEnabled()) {
+            	log.debug("Creating channel with resources:") ;
+            	logChannelResources(ch) ;
+            }
             return ch;
         }
 
@@ -269,6 +289,25 @@ public class ChannelTestBase {
         }
     }
 
+    /*
+     * Writes the shared channel resources used by this channel to the log (debugging).
+     */
+    protected void logChannelResources(Channel ch) {
+    	
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol transport=stack.getTransport();
+        if(transport instanceof UDP) {
+        	log.debug("(udp.mcast_addr, udp.mcast_port) = (" + 
+        			((UDP)transport).getMulticastAddress() + ", " + ((UDP)transport).getMulticastPort() + ")") ;
+        }
+        else if(transport instanceof BasicTCP) {
+        	log.debug("(tcp.bind_port, tcp.port_range) = (" + 
+        			((TP)transport).getBindPort() + ", " + ((TP)transport).getPortRange() + ")") ;
+        }
+        else {
+            throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
+        }
+    }
 
 
 
