@@ -20,7 +20,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Id: ClientGmsImpl.java,v 1.56.2.4 2008/02/05 13:19:09 belaban Exp $
+ * @version $Id: ClientGmsImpl.java,v 1.56.2.5 2009/09/08 12:24:39 belaban Exp $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -182,8 +182,7 @@ public class ClientGmsImpl extends GmsImpl {
                         view_ack.setFlag(Message.OOB);
                         GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
                         view_ack.putHeader(GMS.name, tmphdr);
-                        if(!gms.members.contains(coord))
-                            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
+                        // if(!gms.members.contains(coord))
                         gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
                         return;
                     }
@@ -290,7 +289,6 @@ public class ClientGmsImpl extends GmsImpl {
         msg.putHeader(gms.getName(), hdr);
         
         // we have to enable unicasts to coord, as coord is not in our membership (the unicast message would get dropped)
-        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 

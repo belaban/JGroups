@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.54.2.3 2009/08/03 12:43:19 belaban Exp $
+// $Id: Event.java,v 1.54.2.4 2009/09/08 12:24:03 belaban Exp $
 
 package org.jgroups;
 
@@ -35,7 +35,6 @@ public class Event {
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null
-    public static final int ENABLE_UNICASTS_TO                 = 67;  // arg = Address (member)
     public static final int SUSPEND					           = 68;  // arg = HashMap (used by FLUSH)
     public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg=java.io.InputStream subclass
@@ -48,7 +47,6 @@ public class Event {
     public static final int REBROADCAST				           = 78;  // arg = Digest
     public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
-    public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
     public static final int START_PARTITION                    = 82;  // arg = null;
     public static final int STOP_PARTITION                     = 83;  // arg = null;
     public static final int INFO                               = 84;  // arg = Map<String,Object>
@@ -122,8 +120,7 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
-            case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
-            case SUSPEND:        		 return "SUSPEND";          
+            case SUSPEND:        		 return "SUSPEND";
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
@@ -135,7 +132,6 @@ public class Event {
             case REBROADCAST:            return "REBROADCAST";
             case SHUTDOWN:               return "SHUTDOWN";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
-            case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
             case START_PARTITION:        return "START_PARTITION";
             case STOP_PARTITION:         return "STOP_PARTITION";
             case INFO:                   return "INFO";
