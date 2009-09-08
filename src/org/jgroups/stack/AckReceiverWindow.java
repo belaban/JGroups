@@ -1,4 +1,3 @@
-
 package org.jgroups.stack;
 
 
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -22,13 +22,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.25.2.4 2008/06/04 15:02:52 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.25.2.5 2009/09/08 12:22:45 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
     final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
     static final Log        log=LogFactory.getLog(AckReceiverWindow.class);
     final ReentrantLock     lock=new ReentrantLock();
+    final AtomicBoolean     processing=new AtomicBoolean(false);
+
 
     public AckReceiverWindow(long initial_seqno) {
         this.next_to_remove=initial_seqno;
@@ -36,6 +38,10 @@ public class AckReceiverWindow {
 
     public ReentrantLock getLock() {
         return lock;
+    }
+
+    public AtomicBoolean getProcessing() {
+        return processing;
     }
 
     /** Adds a new message. Message cannot be null
@@ -69,14 +75,34 @@ public class AckReceiverWindow {
      * removed in order.
      */
     public Message remove() {
-        Message retval;
+        Message retval=null;
 
         synchronized(msgs) {
-            retval=msgs.remove(next_to_remove);
-            if(retval != null) {
-                if(log.isTraceEnabled())
-                    log.trace("removed seqno=" + next_to_remove);
-                next_to_remove++;
+            long seqno=next_to_remove;
+            try {
+                retval=msgs.remove(seqno);
+            }
+            finally {
+                if(retval != null)
+                    next_to_remove=++seqno;
+        }
+        }
+        return retval;
+    }
+
+    public Message remove(AtomicBoolean processing) {
+        Message retval=null;
+
+        synchronized(msgs) {
+            long seqno=next_to_remove;
+            try {
+                retval=msgs.remove(seqno);
+            }
+            finally {
+                if(retval != null)
+                    next_to_remove=++seqno;
+                else
+                    processing.set(false);
             }
         }
         return retval;
@@ -92,8 +118,6 @@ public class AckReceiverWindow {
                     return null;
                 }
                 retval=msgs.remove(next_to_remove);
-                if(log.isTraceEnabled())
-                    log.trace("removed OOB message with seqno=" + next_to_remove);
                 next_to_remove++;
             }
         }
@@ -104,6 +128,12 @@ public class AckReceiverWindow {
     public boolean hasMessagesToRemove() {
         synchronized(msgs) {
             return msgs.containsKey(next_to_remove);
+        }
+    }
+
+    public boolean smallerThanNextToRemove(long seqno) {
+        synchronized(msgs) {
+            return seqno < next_to_remove;
         }
     }
 
