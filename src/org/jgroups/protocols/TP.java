@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.255 2009/08/27 07:30:26 belaban Exp $
+ * @version $Id: TP.java,v 1.256 2009/09/08 10:53:08 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1386,6 +1386,7 @@ public abstract class TP extends Protocol {
             logical_addr_cache.remove(logical_addr);
     }
 
+    @ManagedOperation
     public void clearLogicalAddressCache() {
         logical_addr_cache.clear(true);
     }
