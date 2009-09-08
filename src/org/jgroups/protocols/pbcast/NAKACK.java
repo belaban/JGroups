@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.231 2009/09/06 13:51:13 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.232 2009/09/08 07:17:35 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -817,7 +817,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         // Efficient way of checking whether another thread is already processing messages from 'sender'.
-        // If that's the case, we return immediately and let the exiting thread process our message
+        // If that's the case, we return immediately and let the existing thread process our message
         // (https://jira.jboss.org/jira/browse/JGRP-829). Benefit: fewer threads blocked on the same lock, these threads
         // can be returned to the thread pool
         final AtomicBoolean processing=win.getProcessing();
