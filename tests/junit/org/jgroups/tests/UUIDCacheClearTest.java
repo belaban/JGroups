@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Test whether physical addresses are fetched correctly after the UUID-physical address cache has been cleared
  * @author Bela Ban
- * @version $Id: UUIDCacheClearTest.java,v 1.2 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: UUIDCacheClearTest.java,v 1.3 2009/09/08 10:53:22 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UUIDCacheClearTest extends ChannelTestBase {
@@ -51,7 +51,13 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             assert c1_list.size() == 1 && c2_list.size() == 1;
 
             // now clear the caches and send message "two"
-            clearCache(c1, c2);
+            printCaches(c1, c2);
+
+            System.out.println("clearing the caches");
+            clearCache(c1,c2);
+            printCaches(c1, c2);
+
+
             r1.clear();
             r2.clear();
 
@@ -82,6 +88,14 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             ch.getProtocolStack().getTransport().clearLogicalAddressCache();
             ch.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+        }
+    }
+
+    private static void printCaches(JChannel ... channels) {
+        System.out.println("chaches:\n");
+        for(JChannel ch: channels) {
+            System.out.println(ch.getAddress() + ":\n" + 
+                    ch.getProtocolStack().getTransport().printLogicalAddressCache());
         }
     }
 

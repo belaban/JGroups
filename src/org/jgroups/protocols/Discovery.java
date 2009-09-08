@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.66 2009/08/28 07:23:35 belaban Exp $
+ * @version $Id: Discovery.java,v 1.67 2009/09/08 10:53:33 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -278,13 +278,12 @@ public abstract class Discovery extends Protocol {
                 if(hdr == null)
                     return up_prot.up(evt);
 
+                PingData data=hdr.arg;
+                Address logical_addr=data != null? data.getAddress() : null;
+
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-//                        if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
-//                            return null;
-//                        }
-
                         if(group_addr == null || hdr.cluster_name == null) {
                             if(log.isWarnEnabled())
                                 log.warn("group_addr (" + group_addr + ") or cluster_name of header (" + hdr.cluster_name
@@ -302,26 +301,25 @@ public abstract class Discovery extends Protocol {
                         }
 
                         // add physical address (if available) to transport's cache
-                        if(hdr.arg != null) {
-                            Address logical_addr=hdr.arg.getAddress();
+                        if(data != null) {
                             if(logical_addr == null)
                                 logical_addr=msg.getSrc();
-                            Collection<PhysicalAddress> physical_addrs=hdr.arg.getPhysicalAddrs();
+                            Collection<PhysicalAddress> physical_addrs=data.getPhysicalAddrs();
                             PhysicalAddress physical_addr=physical_addrs != null && !physical_addrs.isEmpty()? physical_addrs.iterator().next() : null;
                             if(logical_addr != null && physical_addr != null)
                                 down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
-                            if(logical_addr != null && hdr.arg.getLogicalName() != null)
-                                UUID.add((UUID)logical_addr, hdr.arg.getLogicalName());
+                            if(logical_addr != null && data.getLogicalName() != null)
+                                UUID.add((UUID)logical_addr, data.getLogicalName());
                         }
 
                         if(return_entire_cache && !hdr.return_view_only) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
-                                    Address logical_addr=entry.getKey();
+                                    Address addr=entry.getKey();
                                     PhysicalAddress physical_addr=entry.getValue();
-                                    sendDiscoveryResponse(logical_addr, Arrays.asList(physical_addr), is_server,
-                                                          UUID.get(logical_addr), msg.getSrc());
+                                    sendDiscoveryResponse(addr, Arrays.asList(physical_addr), is_server,
+                                                          UUID.get(addr), msg.getSrc());
                                 }
                             }
                         }
@@ -333,28 +331,25 @@ public abstract class Discovery extends Protocol {
                         return null;
 
                     case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
-                        PingData rsp=hdr.arg;
-
                         // add physical address (if available) to transport's cache
-                        if(rsp != null) {
+                        if(data != null) {
                             Address response_sender=msg.getSrc();
-                            Address logical_addr=rsp.getAddress();
                             if(logical_addr == null)
                                 logical_addr=msg.getSrc();
-                            Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
+                            Collection<PhysicalAddress> physical_addrs=data.getPhysicalAddrs();
                             PhysicalAddress physical_addr=physical_addrs != null && !physical_addrs.isEmpty()?
                                     physical_addrs.iterator().next() : null;
                             if(logical_addr != null && physical_addr != null)
                                 down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
-                            if(logical_addr != null && rsp.getLogicalName() != null)
-                                UUID.add((UUID)logical_addr, rsp.getLogicalName());
+                            if(logical_addr != null && data.getLogicalName() != null)
+                                UUID.add((UUID)logical_addr, data.getLogicalName());
 
                             if(log.isTraceEnabled())
-                                log.trace("received GET_MBRS_RSP from " + response_sender + ": " + rsp);
+                                log.trace("received GET_MBRS_RSP from " + response_sender + ": " + data);
                             boolean overwrite=logical_addr != null && logical_addr.equals(response_sender);
                             synchronized(ping_responses) {
                                 for(Responses response: ping_responses) {
-                                    response.addResponse(rsp, overwrite);
+                                    response.addResponse(data, overwrite);
                                 }
                             }
                         }
