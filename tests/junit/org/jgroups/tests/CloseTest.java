@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.14 2007/10/31 14:07:34 vlada Exp $
+// $Id: CloseTest.java,v 1.14.2.1 2009/09/08 12:26:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,40 +18,21 @@ import org.jgroups.util.Util;
 public class CloseTest extends ChannelTestBase {
     Channel channel, channel1, channel2, c1, c2, c3;  
 
-    public void setUp() throws Exception {
-        super.setUp();                
-    }
-
-
-    public void tearDown() throws Exception {        
-        closeChannel(channel);
-        closeChannel(channel1);
-        closeChannel(channel2);
-        closeChannel(c1);
-        closeChannel(c2);
-        closeChannel(c3);
-
+    public void tearDown() throws Exception {
+        Util.close(c3, c2, c1, channel2, channel1, channel);
         super.tearDown();
     }
     
-    protected boolean useBlocking()
-    {
+    protected boolean useBlocking() {
        return false;
     }
  
-
-    private void closeChannel(Channel c) {
-        if(c != null && (c.isOpen() || c.isConnected())) {
-            c.close();
-        }
-    }
-
 
     public void testDoubleClose() throws Exception {
         System.out.println("-- creating channel1 --");
         channel1=createChannel();
         System.out.println("-- connecting channel1 --");
-        channel1.connect("bla");
+        channel1.connect("testDoubleClose");
         
         assertTrue("channel open", channel1.isOpen());
         assertTrue("channel connected", channel1.isConnected()); 
@@ -69,7 +50,7 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- creating channel1 --");
         Channel c = null;
         c = createChannel();
-        c.connect("CloseTest1");
+        c.connect("testCreationAndClose");
         assertTrue("channel open", c.isOpen());
         assertTrue("channel connected", c.isConnected());        
         c.close();        
@@ -82,13 +63,13 @@ public class CloseTest extends ChannelTestBase {
         Vector members;
         c1 = createChannel("A");               
         System.out.println("-- connecting c1");
-        c1.connect("X");
+        c1.connect("testViewChangeReceptionOnChannelCloseByParticipant");
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
         a1=c1.getLocalAddress();       
         c2 = createChannel("A");   
         System.out.println("-- connecting c2");
-        c2.connect("X");
+        c2.connect("testViewChangeReceptionOnChannelCloseByParticipant");
         Util.sleep(500); // time to receive its own view
         a2=c2.getLocalAddress();
         dumpMessages("c2", c2);
@@ -120,12 +101,12 @@ public class CloseTest extends ChannelTestBase {
         Object obj;
         View v;
         c1=createChannel("A");
-        c1.connect("X");
+        c1.connect("testViewChangeReceptionOnChannelCloseByCoordinator");
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
         a1=c1.getLocalAddress();
         c2=createChannel("A");       
-        c2.connect("X");
+        c2.connect("testViewChangeReceptionOnChannelCloseByCoordinator");
         Util.sleep(500); // time to receive its own view
         a2=c2.getLocalAddress();
         v=(View)c2.receive(1);
@@ -137,7 +118,7 @@ public class CloseTest extends ChannelTestBase {
         Util.sleep(500);
 
         System.out.println("queue of c2 is " + c2.dumpQueue());
-        assertTrue("found 0 messages in channel", c2.getNumMessages() > 0);
+        assertTrue("found " + c2.getNumMessages() + " messages in channel", c2.getNumMessages() > 0);
         obj=c2.receive(0);
         assertTrue(obj instanceof View);
         v=(View)obj;
@@ -149,7 +130,7 @@ public class CloseTest extends ChannelTestBase {
         assertEquals(0, c2.getNumMessages());
     }
 
-    private void dumpMessages(String msg, Channel ch) throws Exception {
+    private static void dumpMessages(String msg, Channel ch) throws Exception {
         while(ch.getNumMessages() > 0) {
             Object obj=ch.receive(0);
             if(obj instanceof View)
@@ -161,12 +142,12 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- creating channel --");
         channel=createChannel();
         System.out.println("-- connecting channel to CloseTest1--");
-        channel.connect("CloseTest1");
+        channel.connect("testConnectDisconnectConnectCloseSequence");
         System.out.println("view is " + channel.getView());
         System.out.println("-- disconnecting channel --");
         channel.disconnect();
         System.out.println("-- connecting channel to OtherGroup --");
-        channel.connect("OtherGroup");
+        channel.connect("testConnectDisconnectConnectCloseSequence");
         System.out.println("view is " + channel.getView());
         System.out.println("-- closing channel --");
         channel.close();
@@ -179,13 +160,13 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- creating channel --");
         channel=createChannel("A");
         System.out.println("-- connecting channel --");
-        channel.connect("X");
+        channel.connect("testConnectCloseSequenceWith2Members");
         System.out.println("view is " + channel.getView());
 
         System.out.println("-- creating channel1 --");
         channel1=createChannel("A");
         System.out.println("-- connecting channel1 --");
-        channel1.connect("X");
+        channel1.connect("testConnectCloseSequenceWith2Members");
         System.out.println("view is " + channel1.getView());
 
         System.out.println("-- closing channel1 --");
@@ -201,7 +182,7 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- creating channel2 --");
         channel2=createChannel();
         System.out.println("-- connecting channel2 --");
-        channel2.connect("CloseTest2");
+        channel2.connect("testCreationAndClose2");
         System.out.println("-- closing channel --");
         channel2.close();
         Util.sleep(2000);
@@ -213,7 +194,7 @@ public class CloseTest extends ChannelTestBase {
         System.out.println("-- creating channel --");
         channel=createChannel();
         System.out.println("-- connecting channel --");
-        channel.connect("CloseTestLoop");
+        channel.connect("testChannelClosedException");
         System.out.println("-- closing channel --");
         channel.close();
         Util.sleep(2000);
@@ -233,7 +214,7 @@ public class CloseTest extends ChannelTestBase {
 
         for(int i=1; i <= 10; i++) {
             System.out.println("-- connecting channel (attempt #" + i + " ) --");
-            channel.connect("CloseTestLoop2");
+            channel.connect("testCreationAndCloseLoop");
             System.out.println("-- closing channel --");
             channel.close();
 
@@ -248,7 +229,7 @@ public class CloseTest extends ChannelTestBase {
         c1=createChannel("A");
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
-        c1.connect("bla");
+        c1.connect("testMultipleConnectsAndDisconnects");
         System.out.println("view after c1.connect(): " + c1.getView());
         assertTrue(c1.isOpen());
         assertTrue(c1.isConnected());
@@ -258,7 +239,7 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(c2.isOpen());
         assertFalse(c2.isConnected());
 
-        c2.connect("bla");
+        c2.connect("testMultipleConnectsAndDisconnects");
         System.out.println("view after c2.connect(): " + c2.getView());
         assertTrue(c2.isOpen());
         assertTrue(c2.isConnected());
@@ -273,7 +254,7 @@ public class CloseTest extends ChannelTestBase {
         Util.sleep(500);
         assertServiceAndClusterView(c1, 1);
 
-        c2.connect("bla");
+        c2.connect("testMultipleConnectsAndDisconnects");
         System.out.println("view after c2.connect(): " + c2.getView());
         assertTrue(c2.isOpen());
         assertTrue(c2.isConnected());
@@ -296,7 +277,7 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(c3.isOpen());
         assertFalse(c3.isConnected());
 
-        c1.connect("bla");
+        c1.connect("testMultipleConnectsAndDisconnects");
         System.out.println("view after c1.connect(): " + c1.getView());
         assertTrue(c1.isOpen());
         assertTrue(c1.isConnected());
@@ -308,7 +289,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    private void assertServiceAndClusterView(Channel ch, int num) {
+    private static void assertServiceAndClusterView(Channel ch, int num) {
         View view=ch.getView();
         String msg="view=" + view;
         assertNotNull(view);

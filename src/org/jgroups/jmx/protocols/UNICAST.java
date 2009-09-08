@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.8 2007/04/27 11:06:11 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.8.4.1 2009/09/08 12:26:18 belaban Exp $
  */
 public class UNICAST extends Protocol implements UNICASTMBean {
     org.jgroups.protocols.UNICAST p;
@@ -68,7 +68,7 @@ public class UNICAST extends Protocol implements UNICASTMBean {
     }
 
     public String getUnackedMessages() {
-        return p.getUnackedMessages();
+        return p.printUnackedMessages();
 }
 
     public int getNumberOfMessagesInReceiveWindows() {
