@@ -19,7 +19,7 @@ import java.util.ArrayList;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.4 2009/09/04 17:19:47 rachmatowicz Exp $
+ * @version $Id: ResourceManager.java,v 1.5 2009/09/08 20:20:13 rachmatowicz Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;
@@ -196,7 +196,12 @@ public class ResourceManager {
 				throw new RuntimeException ("Multicast address has incorrect length", e) ; 
 			} 
 			increment();
-			return address.toString();
+			
+			// strings are returned as hostname/IP address, so remove the hostname prefix
+			// before returning the string
+			String addressWithHostname = address.toString();
+			
+			return addressWithHostname.substring(addressWithHostname.indexOf('/')+1) ;
 		}
 
 		private void increment() {
