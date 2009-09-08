@@ -72,7 +72,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.27 2009/08/17 09:14:43 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.28 2009/09/08 17:40:25 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -417,63 +417,61 @@ public class JChannel extends Channel {
      * @exception StateTransferException State transfer was not successful
      *
      */
-    public synchronized void connect(String cluster_name,
-                                     Address target,
-                                     String state_id,
-                                     long timeout) throws ChannelException {
+    public synchronized void connect(String cluster_name, Address target, String state_id,
+                    long timeout) throws ChannelException {
 
-        if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+        if (connected) {
+            if (log.isTraceEnabled())
+                log.trace("already connected to " + cluster_name);
             return;
         }
 
         startStack(cluster_name);
 
-        boolean stateTransferOk=false;
-        boolean joinSuccessful=false;
-        boolean canFetchState=false;
+        boolean stateTransferOk = false;
+        boolean joinSuccessful = false;
+        boolean canFetchState = false;
         // only connect if we are not a unicast channel
-        if(cluster_name != null) {
+        if (cluster_name != null) {
 
             try {
-                Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-                Object res=downcall(connect_event); // waits forever until
+                Event connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+                Object res = downcall(connect_event); // waits forever until
                 // connected (or channel is
                 // closed)
-                joinSuccessful=!(res != null && res instanceof Exception);
-                if(!joinSuccessful) {
+                joinSuccessful = !(res != null && res instanceof Exception);
+                if (!joinSuccessful) {
                     stopStack(true, false);
                     init();
-                    throw new ChannelException("connect() failed", (Throwable)res);
+                    throw new ChannelException("connect() failed", (Throwable) res);
                 }
 
-                connected=true;
+                connected = true;
                 notifyChannelConnected(this);
-                canFetchState=getView() != null && getView().size() > 1;
+                canFetchState = getView() != null && getView().size() > 1;
 
                 // if I am not the only member in cluster then
-                if(canFetchState) {
+                if (canFetchState) {
                     try {
                         // fetch state from target
-                        stateTransferOk=getState(target, state_id, timeout, false);
-                        if(!stateTransferOk) {
-                            throw new StateTransferException(getLocalAddress() + " could not fetch state "
-                                    + state_id
-                                    + " from "
-                                    + target);
+                        stateTransferOk = getState(target, state_id, timeout, false);
+                        if (!stateTransferOk) {
+                            throw new StateTransferException(getLocalAddress()
+                                            + " could not fetch state " + state_id + " from "
+                                            + target);
                         }
-                    }
-                    catch(Exception e) {
-                        throw new StateTransferException(getLocalAddress() + " could not fetch state "
-                                + state_id
-                                + " from "
-                                + target, e);
+                    } catch (Exception e) {
+                        throw new StateTransferException(getLocalAddress()
+                                        + " could not fetch state " + state_id + " from " + target,
+                                        e);
                     }
                 }
-            }
-            finally {
-                if(flushSupported())
-                    stopFlush();
+            } finally {
+                if (flushSupported()) {
+                    // stopFlush if we fetched the state or failed to connect...
+                    if (canFetchState || !connected)
+                        stopFlush();
+                }
             }
         }
     }
