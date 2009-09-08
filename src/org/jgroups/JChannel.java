@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.223 2009/08/21 22:27:25 graywatson Exp $
+ * @version $Id: JChannel.java,v 1.224 2009/09/08 17:27:49 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -397,42 +397,44 @@ public class JChannel extends Channel {
      */
     @ManagedOperation(description="Connects the channel to a group")
     public synchronized void connect(String cluster_name, boolean useFlushIfPresent) throws ChannelException {
-        if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+        if (connected) {
+            if (log.isTraceEnabled())
+                log.trace("already connected to " + cluster_name);
             return;
         }
 
         setAddress();
         startStack(cluster_name);
 
-        if(cluster_name != null) {    // only connect if we are not a unicast channel
+        if (cluster_name != null) { // only connect if we are not a unicast channel
             
-        	Event connect_event = null;
-        	if (useFlushIfPresent) {
-				connect_event = new Event(Event.CONNECT_USE_FLUSH, cluster_name);
-			} else {
-				connect_event = new Event(Event.CONNECT, cluster_name);
-			}
-        		
-            Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
-            if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
-                stopStack(true, false);
-                init();
-                throw new ChannelException("connect() failed", (Throwable)res);
+            Event connect_event = null;
+            if (useFlushIfPresent) {
+                connect_event = new Event(Event.CONNECT_USE_FLUSH, cluster_name);
+            } else {
+                connect_event = new Event(Event.CONNECT, cluster_name);
             }
 
-            //if FLUSH is used do not return from connect() until UNBLOCK event is received                       
-            if(flushSupported()) {
-               try {
-                  flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-               }
-               catch (TimeoutException timeout) {
-                  if(log.isWarnEnabled())
-                     log.warn(local_addr + " waiting on UNBLOCK after connect() timed out");
-               }
+            // waits forever until connected (or channel is closed)
+            Object res = downcall(connect_event); 
+            if (res != null && res instanceof Exception) {
+                // the JOIN was rejected by the coordinator
+                stopStack(true, false);
+                init();
+                throw new ChannelException("connect() failed", (Throwable) res);
+            }
+
+            // if FLUSH is used do not return from connect() until UNBLOCK event is received
+            if (flushSupported()) {
+                try {
+                    flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+                } catch (TimeoutException timeout) {
+                    if (log.isWarnEnabled())
+                        log.warn(local_addr + " waiting on UNBLOCK after connect() timed out");
+                }
             }
         }
-        connected=true;
+        connected = true;
         notifyChannelConnected(this);
     }
 
@@ -556,8 +558,11 @@ public class JChannel extends Channel {
 
         }
         finally {
-            if(flushSupported())
-                stopFlush();
+            if (flushSupported() && useFlushIfPresent){
+                //stopFlush if we fetched the state or failed to connect...
+                if(canFetchState || !connected)            
+                    stopFlush();                             
+            }
         }
     }
 
