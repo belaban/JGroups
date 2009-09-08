@@ -40,7 +40,7 @@ import java.util.*;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.26 2007/09/21 15:38:38 belaban Exp $
+ * @version $Id: SMACK.java,v 1.26.2.1 2009/09/08 12:25:11 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -189,7 +189,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         if(!containsMember(sender)) {
                             Message join_rsp=new Message(sender);
                             join_rsp.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                            down_prot.down(new Event(Event.ENABLE_UNICASTS_TO, sender));
                             down_prot.down(new Event(Event.MSG, join_rsp));
                         }
                         addMember(sender);

@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.8.2.2 2008/05/23 09:15:40 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.8.2.3 2009/09/08 12:25:22 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -62,7 +62,6 @@ public class UnicastChannelTest {
                     System.out.println("-- " + msg.getObject());
                     Address sender=msg.getSrc();
                     Message rsp=new Message(sender, null, "ack for " + msg.getObject());
-                    ch.down(new Event(Event.ENABLE_UNICASTS_TO, sender));
                     try {
                         ch.send(rsp);
                     }
@@ -100,7 +99,6 @@ public class UnicastChannelTest {
 
         ch.connect(null); // unicast channel
         addr=new IpAddress(host, port);
-        ch.down(new Event(Event.ENABLE_UNICASTS_TO, addr));
         reader=new BufferedReader(new InputStreamReader(System.in));
 
         while(true) {

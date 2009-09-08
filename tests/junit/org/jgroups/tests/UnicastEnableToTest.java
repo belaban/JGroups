@@ -2,8 +2,10 @@ package org.jgroups.tests;
 
 import junit.framework.TestCase;
 import org.jgroups.*;
+import org.jgroups.protocols.UNICAST;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.util.AgeOutCache;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -11,10 +13,11 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.1 2007/03/09 20:27:05 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.1.4.1 2009/09/08 12:26:07 belaban Exp $
  */
 public class UnicastEnableToTest extends TestCase {
     JChannel channel=null, channel2=null;
+    AgeOutCache cache;
 
 
     public UnicastEnableToTest(String name) {
@@ -25,30 +28,29 @@ public class UnicastEnableToTest extends TestCase {
         super.setUp();
         channel=new JChannel("udp.xml");
         channel.connect("demo-group");
+        UNICAST ucast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
+        cache=ucast != null? ucast.getAgeOutCache() : null;
+        if(cache != null)
+            cache.setTimeout(1000);
     }
 
     protected void tearDown() throws Exception {
         super.tearDown();
-        if(channel2 != null) {
-            channel2.close();
-            channel2=null;
-        }
-        if(channel != null) {
-            channel.close();
-            channel=null;
-        }
+        Util.close(channel2,channel);
     }
 
 
     public void testUnicastMessageToUnknownMember() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 8976);
         System.out.println("sending message to non-existing destination " + addr);
-        try {
-            channel.send(new Message(addr, null, "Hello world"));
-            fail("we should not get here; sending of message to " + addr + " should have failed");
+        channel.send(new Message(addr, null, "Hello world"));
+        if(cache != null) {
+            System.out.println("age out cache:\n" + cache);
+            assert cache.size() == 1;
         }
-        catch(IllegalArgumentException ex) {
-            System.out.println("received exception as expected");
+        Util.sleep(1500);
+        if(cache != null) {
+            assert cache.size() == 0;
         }
     }
 
@@ -76,13 +78,14 @@ public class UnicastEnableToTest extends TestCase {
         Address dest=channel2.getLocalAddress();
         channel2.close();
         Util.sleep(100);
-        try {
-            channel.send(new Message(dest, null, "hello"));
-            fail("we should not come here as message to previous member " + dest + " should throw exception");
+        channel.send(new Message(dest, null, "hello"));
+        if(cache != null) {
+            System.out.println("age out cache:\n" + cache);
+            assert cache.size() == 1;
         }
-        catch(IllegalArgumentException ex) {
-            System.out.println("got an exception, as expected");
-        }
+        Util.sleep(1500);
+        if(cache != null)
+            assert cache.size() == 0 : "cache size is " + cache.size();
     }
 
 
@@ -93,7 +96,6 @@ public class UnicastEnableToTest extends TestCase {
         Address dest=channel2.getLocalAddress();
         channel2.close();
         Util.sleep(100);
-        channel.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
         channel.send(new Message(dest, null, "hello"));
     }
 
