@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.Event ;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
@@ -13,6 +14,8 @@ import java.io.IOException;
 import java.net.*;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Properties ;
 
 
 /**
@@ -40,11 +43,13 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.200 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: UDP.java,v 1.201 2009/09/09 23:49:19 rachmatowicz Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
 
+	private static final String DEFAULT_IPV4_MCAST_ADDR_STR = "228.8.8.8" ;
+	private static final String DEFAULT_IPV6_MCAST_ADDR_STR = "ff0e::8:8:8" ;
 
     /**
      * BoundedList<Integer> of the last 100 ports used. This is to avoid
@@ -75,7 +80,7 @@ public class UDP extends TP {
     private int tos=8; // valid values: 2, 4, 8 (default), 16
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8")
-    private String mcast_addr_name="228.8.8.8";
+    private String mcast_addr_str=null;
 
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600")
     private int mcast_port=7600;
@@ -147,8 +152,8 @@ public class UDP extends TP {
     }
 
 
-    public void setMulticastAddress(String addr) {this.mcast_addr_name=addr;}
-    public String getMulticastAddress() {return mcast_addr_name;}
+    public void setMulticastAddress(String addr) {this.mcast_addr_str=addr;}
+    public String getMulticastAddress() {return mcast_addr_str;}
     public int getMulticastPort() {return mcast_port;}
     public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
     public void setMcastPort(int mcast_port) {this.mcast_port=mcast_port;}
@@ -156,7 +161,7 @@ public class UDP extends TP {
 
     public String getInfo() {
         StringBuilder sb=new StringBuilder();
-        sb.append("group_addr=").append(mcast_addr_name).append(':').append(mcast_port).append("\n");
+        sb.append("group_addr=").append(mcast_addr_str).append(':').append(mcast_port).append("\n");
         return sb.toString();
     }
 
@@ -222,7 +227,7 @@ public class UDP extends TP {
         String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR},
                                     null, "mcast_addr", false, null);
         if(str != null)
-            mcast_addr_name=str;
+            mcast_addr_str=str;
 
         str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT},
                              null, "mcast_port", false, null);
@@ -238,6 +243,26 @@ public class UDP extends TP {
         Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
         Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
         Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
+        
+        // this method needs to be called after all property processing and before start()
+        prepareVersionConsistentIPAddresses() ;        
+        
+        // the bind address determination moved from TP
+        Properties props = new Properties() ;
+        if (bind_addr_str != null) 
+        	props.put("bind_addr", bind_addr_str) ;
+        if (bind_interface_str != null)
+        props.put("bind_interface", bind_interface_str) ;
+        bind_addr = Util.getBindAddress(props) ;
+        
+        // the diagnostics determination moved from TP
+        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;
+        
+        if(bind_addr != null) {
+            Map<String, Object> m=new HashMap<String, Object>(1);
+            m.put("bind_addr", bind_addr);
+            up(new Event(Event.CONFIG, m));
+        }
     }
 
 
@@ -316,7 +341,19 @@ public class UDP extends TP {
     /* ------------------------------ Private Methods -------------------------------- */
 
 
-
+    /**
+     * Function to check that a complete IP-version-consistent set of IP addresses
+     * for bind_addr, mcast_addr and diagnostics_addr can be created, based on 
+     * any user preferences for bind_addr, mcast_addr, diagnostics_addr and bind_interface.
+     * 
+     * We perform the following in order, throwing an exception if necessary:
+     * (i) check that all user specified IP addresses have consistent IP version
+     * (ii) check that a stack exists to support that consistent IP version
+     * (iii) fill in unspecified values with defaults of the appropriate version
+     */
+    private void prepareVersionConsistentIPAddresses() throws Exception {
+    	
+    }
 
 
     /**
@@ -373,7 +410,7 @@ public class UDP extends TP {
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
             // 3a. Create mcast receiver socket
-            InetAddress group_addr=InetAddress.getByName(mcast_addr_name);
+            InetAddress group_addr=InetAddress.getByName(mcast_addr_str);
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)

@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.257 2009/09/08 22:20:32 rachmatowicz Exp $
+ * @version $Id: TP.java,v 1.258 2009/09/09 23:49:19 rachmatowicz Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -64,6 +64,8 @@ public abstract class TP extends Protocol {
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
     }
+	protected static final String DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR = "224.0.75.75" ;
+	protected static final String DEFAULT_IPV6_DIAGNOSTICS_ADDR_STR = "ff0e::0:75:75" ;
 
     protected ExposedByteArrayOutputStream out_stream=null;
     protected ExposedDataOutputStream      dos=null;
@@ -76,10 +78,12 @@ public abstract class TP extends Protocol {
 
 
     @ManagedAttribute
-    @Property(converter=PropertyConverters.BindAddress.class,
-                      description="The interface (NIC) which should be used by this transport ")
-    protected InetAddress bind_addr=null;
+    @Property(name="bind_addr", description="The bind address which should be used by this transport ")
+    protected String bind_addr_str=null;
 
+    @Property(name="bind_interface", description="The interface (NIC) which should be used by this transport ")
+    protected String bind_interface_str=null;
+    
     @Property(description="Ignores all bind address parameters and  let's the OS return the local host address. Default is false")
     protected boolean use_local_host=false;
 
@@ -209,14 +213,13 @@ public abstract class TP extends Protocol {
     protected boolean enable_diagnostics=true;
 
     @Property(description="Address for diagnostic probing. Default is 224.0.75.75")
-    protected String diagnostics_addr="224.0.75.75";
+    protected String diagnostics_addr=null;
 
     @Property(description="Port for diagnostic probing. Default is 7500")
     protected int diagnostics_port=7500;
 
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
-
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -230,7 +233,8 @@ public abstract class TP extends Protocol {
      */
     protected long max_bundle_timeout=20;
 
-
+    
+    InetAddress bind_addr = null ;
 
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -287,6 +291,9 @@ public abstract class TP extends Protocol {
 
     //http://jira.jboss.org/jira/browse/JGRP-849
     protected final ReentrantLock connectLock = new ReentrantLock();
+    
+    /* Set to true if we are using IPv4 IP addresses, false otherwise */
+    protected boolean assumeIPv4 = false ;
 
     /**
      *
@@ -767,11 +774,6 @@ public abstract class TP extends Protocol {
             thread_pool=new DirectExecutor();
         }
 
-        if(bind_addr != null) {
-            Map<String, Object> m=new HashMap<String, Object>(1);
-            m.put("bind_addr", bind_addr);
-            up(new Event(Event.CONFIG, m));
-        }
     }
 
 
