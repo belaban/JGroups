@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.190 2009/09/06 13:51:12 belaban Exp $
+ * @version $Id: GMS.java,v 1.191 2009/09/09 20:10:24 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -52,7 +52,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Print physical address(es) on startup")
     private boolean print_physical_addrs=true;
     
-    @Property(description="If true this member can never become coordinator. Default is false")
+    @Property(description="If true this member can never become coordinator. Default is false",
+              deprecatedMessage="This method will be deprecated in 3.0")
     boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
     
     /**
@@ -1231,7 +1232,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.190 2009/09/06 13:51:12 belaban Exp $
+     * @version $Id: GMS.java,v 1.191 2009/09/09 20:10:24 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
