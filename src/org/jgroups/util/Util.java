@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.208 2009/08/27 07:29:46 belaban Exp $
+ * @version $Id: Util.java,v 1.209 2009/09/09 19:58:25 rachmatowicz Exp $
  */
 public class Util {
 
@@ -2934,26 +2934,6 @@ public class Util {
         return null;
     }
 
-    public static boolean isIPv4Stack() {
-        return getIpStack()== 4;
-    }
-
-    public static boolean isIPv6Stack() {
-        return getIpStack() == 6;
-    }
-
-    public static short getIpStack() {
-        short retval=2;
-        if(Boolean.getBoolean(Global.IPv4)) {
-            retval=4;
-        }
-
-        if(Boolean.getBoolean(Global.IPv6)) {
-            retval=6;
-        }
-        return retval;
-    }
-
     public static InetAddress getFirstNonLoopbackIPv6Address() throws SocketException {
         Enumeration en=NetworkInterface.getNetworkInterfaces();
         while(en.hasMoreElements()) {
@@ -2973,6 +2953,47 @@ public class Util {
         return null;
     }
 
+	public static boolean isIPStackAvailable(boolean useIPv4) {
+		boolean isAvailable = false;
+		try {
+			// get all the network interfaces on this machine
+			Enumeration intfs = NetworkInterface.getNetworkInterfaces();
+			intf_loop: 
+				while (intfs != null && intfs.hasMoreElements()) {
+				// get the next interface
+				NetworkInterface intf = (NetworkInterface) intfs.nextElement();
+				// get all the InetAddresses defined on the interface
+				Enumeration addresses = intf.getInetAddresses();
+				
+				while (addresses != null && addresses.hasMoreElements()) {
+					// get the next InetAddress for the current interface
+					InetAddress address = (InetAddress) addresses.nextElement();
+					
+					if ((useIPv4 && address instanceof Inet4Address) || 
+							(!useIPv4 && address instanceof Inet6Address)) {
+						isAvailable = true;
+						// stop looping
+						break intf_loop;
+					}
+				}
+			}
+		} catch (SocketException e) {
+			// NetworkInterface.getNetworkInterfaces() -> java.net.SocketException
+		} catch (NoSuchElementException e) {
+			// Enumeration.nextElement() -> java.util.NoSuchElementException
+		}
+		return isAvailable;
+	}
+
+	public static boolean isIPv6StackAvailable() {
+		return isIPStackAvailable(false) ;
+	}
+	
+	public static boolean isIPv4StackAvailable() {
+		return isIPStackAvailable(true) ;
+	}
+    
+    
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<NetworkInterface>(10);
         NetworkInterface intf;
@@ -3096,8 +3117,8 @@ public class Util {
 
 
     public static void main(String args[]) throws Exception {
-        System.out.println("IPv4: " + isIPv4Stack());
-        System.out.println("IPv6: " + isIPv6Stack());
+        System.out.println("IPv4: " + isIPv4StackAvailable());
+        System.out.println("IPv6: " + isIPv6StackAvailable());
     }
 
 
