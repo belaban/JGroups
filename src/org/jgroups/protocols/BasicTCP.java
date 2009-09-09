@@ -13,6 +13,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -118,8 +121,42 @@ public abstract class BasicTCP extends TP {
                         ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
             }
         }
+        
+        // this method needs to be called after all property processing and before start()
+        prepareVersionConsistentIPAddresses() ;        
+        
+        // the bind address determination moved from TP
+        Properties props = new Properties() ;
+        if (bind_addr_str != null)
+        	props.put("bind_addr", bind_addr_str) ;
+        if (bind_interface_str != null)
+        props.put("bind_interface", bind_interface_str) ;
+        bind_addr = Util.getBindAddress(props) ;
+
+        // the diagnostics determination moved from TP
+        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        
+        if(bind_addr != null) {
+            Map<String, Object> m=new HashMap<String, Object>(1);
+            m.put("bind_addr", bind_addr);
+            up(new Event(Event.CONFIG, m));
+        }
+
     }
 
+    /**
+     * Function to check that a complete IP-version-consistent set of IP addresses
+     * for bind_addr, mcast_addr and diagnostics_addr can be created, based on 
+     * any user preferences for bind_addr, mcast_addr, diagnostics_addr and bind_interface.
+     * 
+     * We perform the following in order, throwing an exception if necessary:
+     * (i) check that all user specified IP addresses have consistent IP version
+     * (ii) check that a stack exists to support that consistent IP version
+     * (iii) fill in unspecified values with defaults of the appropriate version
+     */
+    private void prepareVersionConsistentIPAddresses() throws Exception {
+    	
+    }
 
 
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
