@@ -12,7 +12,6 @@ import java.io.*;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -24,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.9 2008/09/16 13:09:12 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.10 2009/09/10 10:42:19 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -63,22 +62,6 @@ public class Message implements Externalizable, Streamable {
     private byte flags=0;
 
     static final Set<Class> nonStreamableHeaders=new HashSet<Class>();
-
-    /** Map<Address,Address>. Maintains mappings to canonical addresses */
-    private static final ConcurrentHashMap<Address,Address> canonicalAddresses=new ConcurrentHashMap<Address,Address>();
-    private static final boolean DISABLE_CANONICALIZATION;
-
-    static {
-        boolean b;
-        try {
-            b=Boolean.getBoolean("disable_canonicalization");
-        }
-        catch (java.security.AccessControlException e) {
-            // this will happen in an applet context
-            b=true;
-        }
-        DISABLE_CANONICALIZATION=b;
-    }
 
 
     /** Public constructor
@@ -160,10 +143,7 @@ public class Message implements Externalizable, Streamable {
     }
 
     public void setDest(Address new_dest) {
-        if(DISABLE_CANONICALIZATION)
-            dest_addr=new_dest;
-        else
-            dest_addr=canonicalAddress(new_dest);
+        dest_addr=new_dest;
     }
 
     public Address getSrc() {
@@ -171,10 +151,7 @@ public class Message implements Externalizable, Streamable {
     }
 
     public void setSrc(Address new_src) {
-        if(DISABLE_CANONICALIZATION)
-            src_addr=new_src;
-        else
-            src_addr=canonicalAddress(new_src);
+        src_addr=new_src;
     }
 
     /**
@@ -495,7 +472,6 @@ public class Message implements Externalizable, Streamable {
     public void writeExternal(ObjectOutput out) throws IOException {
         int             len;
         Externalizable  hdr;
-        Map.Entry       entry;
 
         if(dest_addr != null) {
             out.writeBoolean(true);
@@ -541,15 +517,11 @@ public class Message implements Externalizable, Streamable {
 
         if(destAddressExist) {
             dest_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                dest_addr=canonicalAddress(dest_addr);
         }
 
         boolean srcAddressExist=in.readBoolean();
         if(srcAddressExist) {
             src_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                src_addr=canonicalAddress(src_addr);
         }
 
         flags=in.readByte();
@@ -650,8 +622,6 @@ public class Message implements Externalizable, Streamable {
             else {
                 src_addr=Util.readAddress(in);
             }
-            if(!DISABLE_CANONICALIZATION)
-                src_addr=canonicalAddress(src_addr);
         }
 
         // 3. buf
@@ -800,27 +770,6 @@ public class Message implements Externalizable, Streamable {
         return new Headers(m);
     }
 
-    /** canonicalize addresses to some extent.  There are race conditions
-     * allowed in this method, so it may not fully canonicalize an address
-     * @param nonCanonicalAddress
-     * @return canonical representation of the address
-     */
-    private static Address canonicalAddress(Address nonCanonicalAddress) {
-        Address result=null;
-        if(nonCanonicalAddress == null) {
-            return null;
-        }
-        // do not synchronize between get/put on the canonical map to avoid cost of contention
-        // this can allow multiple equivalent addresses to leak out, but it's worth the cost savings
-        try {
-            result=canonicalAddresses.putIfAbsent(nonCanonicalAddress, nonCanonicalAddress);
-            return result != null? result : nonCanonicalAddress;
-        }
-        catch(NullPointerException npe) {
-            // no action needed
-        }
-        return result;
-    }
 
     /* ------------------------------- End of Private methods ---------------------------- */
 
