@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.77 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: FD.java,v 1.78 2009/09/10 10:55:04 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -323,19 +323,17 @@ public class FD extends Protocol {
 
     @GuardedBy("lock")
     private void updateTimestamp(Address sender) {
-        lock.lock();
-        try {
-            if(ping_dest != null && sender != null && ping_dest.equals(sender)) {
-                last_ack=System.currentTimeMillis();
-                if(log.isTraceEnabled())
-                    log.trace("received msg from " + sender + " (counts as ack)");
+        if(ping_dest != null && sender != null && ping_dest.equals(sender)) {
+            long tmp=System.currentTimeMillis();
+            lock.lock();
+            try {
+                last_ack=tmp;
                 num_tries=0;
             }
+            finally {
+                lock.unlock();
+            }
         }
-        finally {
-            lock.unlock();
-        }
-
     }
 
 
