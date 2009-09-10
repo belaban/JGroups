@@ -37,7 +37,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.51 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.52 2009/09/10 19:52:39 rachmatowicz Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -47,7 +47,7 @@ public class TCPPING extends Discovery {
     private int port_range=1; 
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership")
-    private String hosts;
+    private String initial_hosts_str=null;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     @ManagedAttribute(writable=false)
@@ -79,8 +79,8 @@ public class TCPPING extends Discovery {
         return initial_hosts;
     }      
     
-    public void setInitialHosts(String hosts) {
-        this.hosts = hosts;
+    public void setInitialHosts(String initial_hosts_str) {
+        this.initial_hosts_str = initial_hosts_str;
     }
 
     public int getPortRange() {
@@ -96,10 +96,10 @@ public class TCPPING extends Discovery {
         return dynamic_hosts.toString();
     }
        
-    public void start() throws Exception {        
-        super.start();
+    public void init() throws Exception {        
+        super.init();
         try {
-            initial_hosts = Util.parseCommaDelimitedHosts(hosts, port_range);
+            initial_hosts = Util.parseCommaDelimitedHosts(initial_hosts_str, port_range);
         }
         catch(UnknownHostException ex) {
             throw ex;
@@ -108,6 +108,11 @@ public class TCPPING extends Discovery {
             throw new Exception("failed to parse 'initial_hosts'", t);
         }
     }
+
+    public void start() throws Exception {        
+        super.start();
+    }
+    
     
     public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));

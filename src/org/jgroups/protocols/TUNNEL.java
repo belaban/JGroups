@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.77 2009/09/10 18:23:46 rachmatowicz Exp $
+ * @version $Id: TUNNEL.java,v 1.78 2009/09/10 19:52:39 rachmatowicz Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -168,7 +168,7 @@ public class TUNNEL extends TP {
         bind_addr = Util.getBindAddress(props) ;
 
         // the diagnostics determination moved from TP
-        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
         
         if(bind_addr != null) {
             Map<String, Object> m=new HashMap<String, Object>(1);

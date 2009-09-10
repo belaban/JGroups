@@ -70,6 +70,11 @@ public abstract class BasicTCP extends TP {
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     int linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
+    @Property(name="external_addr", description="Use \"external_addr\" if you have hosts on different networks, behind " +
+            "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
+            "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
+            "parameter to the external (public IP) address of the firewall. ")
+    String external_addr_str = null ;
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
@@ -91,14 +96,6 @@ public abstract class BasicTCP extends TP {
     public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
     public long getConnExpireTime() {return conn_expire_time;}
     public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
-
-    @Property(name="external_addr", description="Use \"external_addr\" if you have hosts on different networks, behind " +
-            "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
-            "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
-            "parameter to the external (public IP) address of the firewall. ")
-    public void setExternalAddress(String addr) throws UnknownHostException {
-        external_addr=InetAddress.getByName(addr);
-    }
 
 
     public void init() throws Exception {
@@ -134,7 +131,12 @@ public abstract class BasicTCP extends TP {
         bind_addr = Util.getBindAddress(props) ;
 
         // the diagnostics determination moved from TP
-        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        
+        // the external address determination
+        // WARNING: external_addr_str == null -> external_addr = loopback IP address
+        if (external_addr_str != null)
+        	external_addr = InetAddress.getByName(external_addr_str) ;
         
         if(bind_addr != null) {
             Map<String, Object> m=new HashMap<String, Object>(1);

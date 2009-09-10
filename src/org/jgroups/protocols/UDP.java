@@ -43,7 +43,7 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.201 2009/09/09 23:49:19 rachmatowicz Exp $
+ * @version $Id: UDP.java,v 1.202 2009/09/10 19:52:39 rachmatowicz Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -256,7 +256,7 @@ public class UDP extends TP {
         bind_addr = Util.getBindAddress(props) ;
         
         // the diagnostics determination moved from TP
-        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;
+        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;
         
         if(bind_addr != null) {
             Map<String, Object> m=new HashMap<String, Object>(1);
