@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.140 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.141 2009/09/10 10:43:05 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -336,24 +336,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 long seqno=-2;
+                long send_conn_id=0;
+                UnicastHeader hdr;
                 synchronized(entry) { // threads will only sync if they access the same entry
                     try {
                         seqno=entry.sent_msgs_seqno;
                         if(seqno == DEFAULT_FIRST_SEQNO) // only happens on the first message
-                            entry.send_conn_id=getNewConnectionId();
+                            entry.send_conn_id=send_conn_id=getNewConnectionId();
                         if(entry.sent_msgs == null) // first msg to peer 'dst'
                             entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeout), timer, this.local_addr);
-                        UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno, entry.send_conn_id,
-                                                            seqno == DEFAULT_FIRST_SEQNO);
+                        hdr=new UnicastHeader(UnicastHeader.DATA, seqno, entry.send_conn_id, seqno == DEFAULT_FIRST_SEQNO);
                         msg.putHeader(name, hdr);
-                        if(log.isTraceEnabled()) {
-                            StringBuilder sb=new StringBuilder();
-                            sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
-                                    append(", conn_id=").append(entry.send_conn_id);
-                            if(hdr.first) sb.append(", first");
-                            sb.append(')');
-                            log.trace(sb);
-                        }
                         entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
                     }
@@ -362,6 +355,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
                     }
                 }
+
+                if(log.isTraceEnabled()) {
+                    StringBuilder sb=new StringBuilder();
+                    sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
+                            append(", conn_id=").append(send_conn_id);
+                    if(hdr.first) sb.append(", first");
+                    sb.append(')');
+                    log.trace(sb);
+                }
+
                 // moved passing down of message out of the synchronized block: similar to NAKACK, we do *not* need
                 // to send unicast messages in order of sequence numbers because they will be sorted into the correct
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
