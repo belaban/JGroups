@@ -4,8 +4,11 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -13,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Loopback transport shared by all channels within the same VM. Property for testing is that no messages are lost. Allows
  * us to test various protocols (with ProtocolTester) at maximum speed.
  * @author Bela Ban
- * @version $Id: SHARED_LOOPBACK.java,v 1.9 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: SHARED_LOOPBACK.java,v 1.10 2009/09/10 18:23:46 rachmatowicz Exp $
  */
 public class SHARED_LOOPBACK extends TP {
     private static int next_port=10000;
@@ -99,6 +102,24 @@ public class SHARED_LOOPBACK extends TP {
     public void init() throws Exception {
         local_addr=new IpAddress("127.0.0.1", next_port++);
         super.init();
+                
+        // the bind address determination moved from TP
+        Properties props = new Properties() ;
+        if (bind_addr_str != null)
+        	props.put("bind_addr", bind_addr_str) ;
+        if (bind_interface_str != null)
+        props.put("bind_interface", bind_interface_str) ;
+        bind_addr = Util.getBindAddress(props) ;
+
+        // the diagnostics determination moved from TP
+        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        
+        if(bind_addr != null) {
+            Map<String, Object> m=new HashMap<String, Object>(1);
+            m.put("bind_addr", bind_addr);
+            up(new Event(Event.CONFIG, m));
+        }
+
     }
 
     public void start() throws Exception {
