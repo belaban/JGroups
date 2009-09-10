@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.76 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.77 2009/09/10 18:23:46 rachmatowicz Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -158,6 +158,24 @@ public class TUNNEL extends TP {
         if (log.isDebugEnabled()) {
             log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         }
+                
+        // the bind address determination moved from TP
+        Properties props = new Properties() ;
+        if (bind_addr_str != null)
+        	props.put("bind_addr", bind_addr_str) ;
+        if (bind_interface_str != null)
+        props.put("bind_interface", bind_interface_str) ;
+        bind_addr = Util.getBindAddress(props) ;
+
+        // the diagnostics determination moved from TP
+        diagnostics_addr = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
+        
+        if(bind_addr != null) {
+            Map<String, Object> m=new HashMap<String, Object>(1);
+            m.put("bind_addr", bind_addr);
+            up(new Event(Event.CONFIG, m));
+        }
+        
     }
 
     public void start() throws Exception {
