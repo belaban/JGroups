@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.141 2009/09/10 10:43:05 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.142 2009/09/10 11:14:04 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -53,7 +53,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
-    private long num_acks_sent=0, num_acks_received=0, num_xmit_requests_received=0;
+    private long num_acks_sent=0, num_acks_received=0, num_xmits=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -142,8 +142,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
     @ManagedAttribute
-    public long getNumberOfRetransmitRequestsReceived() {
-        return num_xmit_requests_received;
+    public long getNumberOfRetransmissions() {
+        return num_xmits;
     }
 
     @ManagedAttribute(writable=true)
@@ -216,7 +216,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=num_acks_sent=num_acks_received=0;
-        num_xmit_requests_received=0;
+        num_xmits=0;
     }
 
 
@@ -229,7 +229,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         m.put("num_bytes_received", num_bytes_received);
         m.put("num_acks_sent", num_acks_sent);
         m.put("num_acks_received", num_acks_received);
-        m.put("num_xmit_requests_received", num_xmit_requests_received);
+        m.put("num_xmits", num_xmits);
         m.put("num_unacked_msgs", getNumberOfUnackedMessages());
         m.put("num_msgs_in_recv_windows", getNumberOfMessagesInReceiveWindows());
         return m;
@@ -461,7 +461,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(log.isTraceEnabled())
             log.trace(local_addr + " --> XMIT(" + msg.getDest() + ": #" + seqno + ')');
         down_prot.down(new Event(Event.MSG, msg));
-        num_xmit_requests_received++;
+        num_xmits++;
     }
 
     /**
