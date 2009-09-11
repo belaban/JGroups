@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.26 2009/05/13 13:06:56 belaban Exp $
+// $Id: Retransmitter.java,v 1.27 2009/09/11 11:50:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -29,7 +30,7 @@ import java.util.concurrent.Future;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class Retransmitter {
 
@@ -97,7 +98,7 @@ public class Retransmitter {
             new_task=new Task(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
             Task old_task=msgs.putIfAbsent(seqno, new_task);
             if(old_task == null) // only schedule if we actually *added* the new task !
-                new_task.doSchedule(timer); // Entry adds itself to the timer
+                new_task.doSchedule(); // Entry adds itself to the timer
         }
 
     }
@@ -166,24 +167,20 @@ public class Retransmitter {
 
     /* ---------------------------- End of Private Methods ------------------------------------ */
 
-
-
-    /**
-     * The retransmit task executed by the scheduler in regular intervals
-     */
-    private static class Task implements TimeScheduler.Task {
+     private class Task implements TimeScheduler.Task {
         private final Interval    intervals;
         private long              seqno=-1;
-        private Future            future;
-        private Address           sender=null;
+        private volatile Future   future;
+        private Address           msg_sender=null;
         protected int             num_retransmits=0;
         private RetransmitCommand command;
+        private volatile boolean  cancelled=false;
 
-        protected Task(long seqno, Interval intervals, RetransmitCommand cmd, Address sender) {
+        protected Task(long seqno, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
             this.seqno=seqno;
             this.intervals=intervals;
             this.command=cmd;
-            this.sender=sender;
+            this.msg_sender=msg_sender;
         }
 
         public int getNumRetransmits() {
@@ -194,26 +191,35 @@ public class Retransmitter {
             return intervals.next();
         }
 
-        public void doSchedule(TimeScheduler timer) {
-            future=timer.scheduleWithDynamicInterval(this);
+        public void doSchedule() {
+            if(cancelled) {
+                return;
+            }
+            long delay=intervals.next();
+            future=timer.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
 
         public void cancel() {
+            if(!cancelled) {
+                cancelled=true;
+            }
             if(future != null)
-                future.cancel(false);
+                future.cancel(true);
         }
 
         public void run() {
-            command.retransmit(seqno, seqno, sender);
+            if(cancelled) {
+                return;
+            }
+            command.retransmit(seqno, seqno, msg_sender);
             num_retransmits++;
+            doSchedule();
         }
 
         public String toString() {
             return String.valueOf(seqno);
         }
     }
-
-
 
 
 
