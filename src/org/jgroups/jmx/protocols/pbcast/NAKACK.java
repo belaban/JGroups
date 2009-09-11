@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.14.2.1 2009/03/30 15:54:07 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.14.2.2 2009/09/11 12:09:18 belaban Exp $
  */
 public class NAKACK extends Protocol implements NAKACKMBean {
     org.jgroups.protocols.pbcast.NAKACK p;
@@ -100,6 +100,10 @@ public class NAKACK extends Protocol implements NAKACKMBean {
 
     public int getPendingRetransmissionRequests() {
         return p.getPendingRetransmissionRequests();
+    }
+
+    public long getUndeliveredMessages() {
+        return p.getUndeliveredMessages();
     }
 
     public int getXmitTableSize() {

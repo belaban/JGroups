@@ -1,6 +1,3 @@
-
-
-
 package org.jgroups.stack;
 
 import org.apache.commons.logging.Log;
@@ -10,12 +7,14 @@ import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.TimeScheduler;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -46,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.52.2.2 2008/06/09 09:23:08 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.52.2.3 2009/09/11 12:07:44 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -56,12 +55,7 @@ public class NakReceiverWindow {
         void messageGapDetected(long from, long to, Address src);
     }
 
-    /** dummy for null values: ConcurrentHashMap doesn't allow null values */
-    public static final Message NULL_MSG=new Message(false);
-
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
-
-    private final ReentrantLock up_lock=new ReentrantLock();
 
     Address local_addr=null;
 
@@ -92,6 +86,7 @@ public class NakReceiverWindow {
      */
     private boolean discard_delivered_msgs=false;
 
+    private final AtomicBoolean processing=new AtomicBoolean(false);
 
     /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
      * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
@@ -134,11 +129,10 @@ public class NakReceiverWindow {
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
         low=Math.min(lowest_seqno, highest_delivered);
-
+        if(sched == null)
+            throw new IllegalStateException("timer has to be provided and cannot be null");
         if(cmd != null)
-            retransmitter=sched == null ?
-                    new Retransmitter(sender, cmd) :
-                    new Retransmitter(sender, cmd, sched);
+            retransmitter=new Retransmitter(sender, cmd, sched);
     }
 
 
@@ -168,8 +162,8 @@ public class NakReceiverWindow {
         this(sender, cmd, highest_delivered_seqno, null);
     }
 
-    public ReentrantLock getLock() {
-        return up_lock;
+    public AtomicBoolean getProcessing() {
+        return processing;
     }
 
     public void setRetransmitTimeouts(Interval timeouts) {
@@ -242,7 +236,6 @@ public class NakReceiverWindow {
      */
     public boolean add(long seqno, Message msg) {
         long old_next, next_to_add;
-        boolean retval=true;
 
         lock.writeLock().lock();
         try {
@@ -268,10 +261,8 @@ public class NakReceiverWindow {
             // Case #3: we finally received a missing message. // Case #2 handled seqno <= highest_delivered, so this
             // seqno *must* be between highest_delivered and next_to_add 
             if(seqno < next_to_add) {
-                Object val=xmit_table.get(new Long(seqno));
-                if(val == NULL_MSG) {
-                    // only set message if not yet received (bela July 23 2003)
-                    xmit_table.put(seqno, msg);
+                Message tmp=xmit_table.putIfAbsent(seqno, msg); // only set message if not yet received (bela July 23 2003)
+                if(tmp == null) { // key/value was not present
                     int num_xmits=retransmitter.remove(seqno);
                     if(log.isTraceEnabled())
                         log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
@@ -280,21 +271,18 @@ public class NakReceiverWindow {
                     }
                     return true;
                 }
-                else
+                else { // key/value was present
                     return false;
+                }
             }
 
             // Case #4: we received a seqno higher than expected: add NULL_MSG values for missing messages, add to Retransmitter
             if(seqno > next_to_add) {
+                xmit_table.put(seqno, msg);
+                retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
                 if(listener != null) {
                     try {listener.messageGapDetected(next_to_add, seqno, msg.getSrc());} catch(Throwable t) {}
                 }
-
-                for(long i=next_to_add; i < seqno; i++) { // add all msgs (missing or not) into table
-                    xmit_table.put(i, NULL_MSG);
-                }
-                xmit_table.put(seqno, msg);
-                retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
                 return true;
             }
         }
@@ -303,7 +291,7 @@ public class NakReceiverWindow {
             // setSmoothedLossRate();
             lock.writeLock().unlock();
         }
-        return retval;
+        return true;
     }
 
 
@@ -312,42 +300,28 @@ public class NakReceiverWindow {
         Message retval=null;
 
         lock.writeLock().lock();
-        long next_to_remove=highest_delivered +1;
         try {
-            while(!xmit_table.isEmpty()) {
-                retval=xmit_table.get(next_to_remove);
-                if(retval == null)
-                    return null;
-                if(retval != NULL_MSG) { // message exists and is ready for delivery
-                    if(discard_delivered_msgs) {
-                        Address sender=retval.getSrc();
-                        if(!local_addr.equals(sender)) { // don't remove if we sent the message !
-                            xmit_table.remove(next_to_remove);
-                            // low=next_to_remove;
-                        }
-                    }
-                    highest_delivered=next_to_remove;
-                    return retval;
-                }
-                else { // message has not yet been received (gap in the message sequence stream)
-                       // drop all messages that have not been received
-                    if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
-                        if(discard_delivered_msgs) {
-                            Address sender=retval.getSrc();
-                            if(!local_addr.equals(sender)) { // don't remove if we sent the message !
-                                xmit_table.remove(next_to_remove);
-                                // low=next_to_remove;
-                            }
-                        }
-                        highest_delivered=next_to_remove;
-                        retransmitter.remove(next_to_remove);
-                    }
-                    else {
-                        return null;
+            long next_to_remove=highest_delivered +1;
+            retval=xmit_table.get(next_to_remove);
+
+            if(retval != null) { // message exists and is ready for delivery
+                if(discard_delivered_msgs) {
+                    Address sender=retval.getSrc();
+                    if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                        xmit_table.remove(next_to_remove);
                     }
                 }
+                highest_delivered=next_to_remove;
+                return retval;
             }
-            return retval;
+
+            // message has not yet been received (gap in the message sequence stream)
+            // drop all messages that have not been received
+            if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
+                highest_delivered=next_to_remove;
+                retransmitter.remove(next_to_remove);
+            }
+            return null;
         }
         finally {
             // setSmoothedLossRate();
@@ -356,11 +330,100 @@ public class NakReceiverWindow {
     }
 
 
-    public Message removeOOBMessage() {
+    /**
+     * Removes a message from the NakReceiverWindow. The message is in order. If the next message cannot be removed
+     * (e.g. because there is no message available, or because the next message is not in order), null will
+     * be returned. When null is returned, processing is set to false. This is needed to atomically remove a message
+     * and set the atomic boolean variable to false.
+     * @param processing
+     * @return
+     */
+    public Message remove(final AtomicBoolean processing) {
+        Message retval=null;
+        boolean found=false;
+
         lock.writeLock().lock();
         try {
             long next_to_remove=highest_delivered +1;
-            Message retval=xmit_table.get(next_to_remove);
+            retval=xmit_table.get(next_to_remove);
+            found=retval != null;
+
+            if(retval != null) { // message exists and is ready for delivery
+                if(discard_delivered_msgs) {
+                    Address sender=retval.getSrc();
+                    if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                        xmit_table.remove(next_to_remove);
+                    }
+                }
+                highest_delivered=next_to_remove;
+                return retval;
+            }
+
+            // message has not yet been received (gap in the message sequence stream)
+            // drop all messages that have not been received
+            if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
+                highest_delivered=next_to_remove;
+                retransmitter.remove(next_to_remove);
+            }
+            return null;
+        }
+        finally {
+            if(!found)
+                processing.set(false);
+            // setSmoothedLossRate();
+            lock.writeLock().unlock();
+        }
+    }
+
+
+    /**
+     * Removes as many messages as possible
+     * @return List<Message> A list of messages, or null if no available messages were found
+     */
+    public List<Message> removeMany() {
+        List<Message> retval=null;
+
+        lock.writeLock().lock();
+        try {
+            while(true) {
+                long next_to_remove=highest_delivered +1;
+                Message msg=xmit_table.get(next_to_remove);
+
+                if(msg != null) { // message exists and is ready for delivery
+                    if(discard_delivered_msgs) {
+                        Address sender=msg.getSrc();
+                        if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                            xmit_table.remove(next_to_remove);
+                        }
+                    }
+                    highest_delivered=next_to_remove;
+                    if(retval == null)
+                        retval=new LinkedList<Message>();
+                    retval.add(msg);
+                    continue;
+                }
+
+                // message has not yet been received (gap in the message sequence stream)
+                // drop all messages that have not been received
+                if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
+                    highest_delivered=next_to_remove;
+                    retransmitter.remove(next_to_remove);
+                    continue;
+                }
+
+                return retval;
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+
+    public Message removeOOBMessage() {
+        lock.writeLock().lock();
+        try {
+            Message retval=xmit_table.get(highest_delivered +1);
             if(retval != null && retval.isFlagSet(Message.OOB)) {
                 return remove();
             }
@@ -374,14 +437,23 @@ public class NakReceiverWindow {
     public boolean hasMessagesToRemove() {
         lock.readLock().lock();
         try {
-            Message retval=xmit_table.get(highest_delivered + 1);
-            return retval != null && !retval.equals(NULL_MSG);
+            return xmit_table.get(highest_delivered + 1) != null;
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
+    public boolean hasRegularMessageToRemove() {
+        lock.readLock().lock();
+        try {
+            Message msg=xmit_table.get(highest_delivered + 1);
+            return msg != null && !msg.isFlagSet(Message.OOB);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
     /**
      * Delete all messages <= seqno (they are stable, that is, have been received at all members).
@@ -429,22 +501,6 @@ public class NakReceiverWindow {
             lock.writeLock().unlock();
         }
     }
-
-
-    /**
-     * Stop the retransmitter and reset the nak window<br>
-     */
-    public void destroy() {
-        lock.writeLock().lock();
-        try {
-            retransmitter.stop();
-            _reset();
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
 
 
 
@@ -553,7 +609,7 @@ public class NakReceiverWindow {
             int non_received=0;
 
             for(Map.Entry<Long,Message> entry: xmit_table.entrySet()) {
-                if(entry.getValue() == NULL_MSG)
+                if(entry.getValue() == null)
                     non_received++;
             }
             sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
