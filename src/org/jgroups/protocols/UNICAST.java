@@ -15,6 +15,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -34,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.91.2.17 2009/09/10 11:52:58 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.91.2.18 2009/09/11 14:13:38 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand, AgeOutCache.Handler<Address> {
     private static final long DEFAULT_FIRST_SEQNO=1;
@@ -63,6 +65,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private final Vector<Address> members=new Vector<Address>(11);
 
     private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
+
+    // private final ConcurrentMap<Address,SenderEntry> send_table=new ConcurrentHashMap<Address,SenderEntry>();
+
 
     private Address local_addr=null;
 
@@ -867,6 +872,45 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(received_msgs != null)
                 sb.append("received_msgs=").append(received_msgs).append('\n');
             sb.append("send_conn_id=" + send_conn_id + ", recv_conn_id=" + recv_conn_id + "\n");
+            return sb.toString();
+        }
+    }
+
+     private static final class SenderEntry {
+        AckSenderWindow    sent_msgs=null;      // stores (and retransmits) msgs sent by us to a certain peer
+        long               sent_msgs_seqno=DEFAULT_FIRST_SEQNO;   // seqno for msgs sent by us
+        long               send_conn_id=0;
+
+        void reset() {
+            if(sent_msgs != null)
+                sent_msgs.reset();
+            sent_msgs_seqno=DEFAULT_FIRST_SEQNO;
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            if(sent_msgs != null)
+                sb.append("sent_msgs=").append(sent_msgs).append('\n');
+            sb.append("send_conn_id=" + send_conn_id + "\n");
+            return sb.toString();
+        }
+    }
+
+     private static final class ReceiverEntry {
+        AckReceiverWindow  received_msgs=null;  // stores all msgs rcvd by a certain peer in seqno-order
+        long               recv_conn_id=0;
+
+        void reset() {
+            if(received_msgs != null)
+                received_msgs.reset();
+        }
+
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            if(received_msgs != null)
+                sb.append("received_msgs=").append(received_msgs).append('\n');
+            sb.append("recv_conn_id=" + recv_conn_id + "\n");
             return sb.toString();
         }
     }
