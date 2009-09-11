@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.23.2.1 2008/05/21 12:31:37 belaban Exp $
+// $Id: Retransmitter.java,v 1.23.2.2 2009/09/11 12:11:45 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,6 +10,7 @@ import org.jgroups.util.TimeScheduler;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -28,7 +29,7 @@ import java.util.concurrent.Future;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.23.2.1 $
+ * @version $Revision: 1.23.2.2 $
  */
 public class Retransmitter {
 
@@ -38,7 +39,6 @@ public class Retransmitter {
     private Address                        sender=null;
     private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
     private RetransmitCommand              cmd=null;
-    private boolean                        retransmitter_owned;
     private TimeScheduler                  timer=null;
     protected static final Log             log=LogFactory.getLog(Retransmitter.class);
 
@@ -66,18 +66,9 @@ public class Retransmitter {
      * @param sched retransmissions scheduler
      */
     public Retransmitter(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
-        init(sender, cmd, sched, false);
+        init(sender, cmd, sched);
     }
 
-
-    /**
-     * Create a new Retransmitter associated with the given sender address
-     * @param sender the address from which retransmissions are expected or to which retransmissions are sent
-     * @param cmd the retransmission callback reference
-     */
-    public Retransmitter(Address sender, RetransmitCommand cmd) {
-        init(sender, cmd, new TimeScheduler(), true);
-    }
 
 
     public void setRetransmitTimeouts(Interval interval) {
@@ -100,12 +91,13 @@ public class Retransmitter {
             last_seqno=tmp;
         }
 
-        Task task;
+        Task new_task;
         for(long seqno=first_seqno; seqno <= last_seqno; seqno++) {
             // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
-            task=new Task(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
-            msgs.putIfAbsent(seqno, task);
-            task.doSchedule(timer); // Entry adds itself to the timer
+            new_task=new Task(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
+            Task old_task=msgs.putIfAbsent(seqno, new_task);
+            if(old_task == null) // only schedule if we actually *added* the new task !
+                new_task.doSchedule(); // Entry adds itself to the timer
         }
 
     }
@@ -135,32 +127,9 @@ public class Retransmitter {
         msgs.clear();
     }
 
-    /**
-     * Stop the rentransmition and clear all pending msgs.
-     * <p>
-     * If this retransmitter has been provided  an externally managed
-     * scheduler, then just clear all msgs and the associated tasks, else
-     * stop the scheduler. In this case the method blocks until the
-     * scheduler's thread is dead. Only the owner of the scheduler should
-     * stop it.
-     */
+
     public void stop() {
-        // i. If retransmitter is owned, stop it else cancel all tasks
-        // ii. Clear all pending msgs
-        if(retransmitter_owned) {
-            try {
-                timer.stop();
-            }
-            catch(InterruptedException ex) {
-                if(log.isErrorEnabled()) log.error("failed stopping retransmitter", ex);
-                Thread.currentThread().interrupt(); // set interrupt flag again
-            }
-        }
-        else {
-            for(Task task: msgs.values())
-                task.cancel();
-        }
-        msgs.clear();
+        reset();
     }
 
 
@@ -187,13 +156,10 @@ public class Retransmitter {
      * @param sender the address from which retransmissions are expected
      * @param cmd the retransmission callback reference
      * @param sched retransmissions scheduler
-     * @param sched_owned whether the scheduler parameter is owned by this
-     * object or is externally provided
      */
-    private void init(Address sender, RetransmitCommand cmd, TimeScheduler sched, boolean sched_owned) {
+    private void init(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
         this.sender=sender;
         this.cmd=cmd;
-        retransmitter_owned=sched_owned;
         timer=sched;
     }
 
@@ -205,19 +171,20 @@ public class Retransmitter {
     /**
      * The retransmit task executed by the scheduler in regular intervals
      */
-    private static class Task implements TimeScheduler.Task {
+    private class Task implements TimeScheduler.Task {
         private final Interval    intervals;
         private long              seqno=-1;
-        private Future            future;
-        private Address           sender=null;
-        protected int             num_retransmits=0;
+        private volatile Future   future;
+        private Address           msg_sender=null;
+        protected volatile int             num_retransmits=0;
         private RetransmitCommand command;
+        private volatile boolean  cancelled=false;
 
-        protected Task(long seqno, Interval intervals, RetransmitCommand cmd, Address sender) {
+        protected Task(long seqno, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
             this.seqno=seqno;
             this.intervals=intervals;
             this.command=cmd;
-            this.sender=sender;
+            this.msg_sender=msg_sender;
         }
 
         public int getNumRetransmits() {
@@ -228,18 +195,29 @@ public class Retransmitter {
             return intervals.next();
         }
 
-        public void doSchedule(TimeScheduler timer) {
-            future=timer.scheduleWithDynamicInterval(this);
+        public void doSchedule() {
+            if(cancelled) {
+                return;
+            }
+            long delay=intervals.next();
+            future=timer.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
 
         public void cancel() {
+            if(!cancelled) {
+                cancelled=true;
+            }
             if(future != null)
-                future.cancel(false);
+                future.cancel(true);
         }
 
         public void run() {
-            command.retransmit(seqno, seqno, sender);
+            if(cancelled) {
+                return;
+            }
+            command.retransmit(seqno, seqno, msg_sender);
             num_retransmits++;
+            doSchedule();
         }
 
         public String toString() {
