@@ -1,10 +1,11 @@
-// $Id: RetransmitterTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.2.2.1 2009/09/11 11:31:48 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
 import org.jgroups.Address;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.stack.StaticInterval;
 
@@ -12,10 +13,11 @@ import org.jgroups.stack.StaticInterval;
 public class RetransmitterTest extends TestCase {
     private final Address sender=new org.jgroups.stack.IpAddress(5555);
     Retransmitter xmitter;
+    TimeScheduler timer=new TimeScheduler();
 
     protected void setUp() throws Exception {
         super.setUp();
-        xmitter=new Retransmitter(sender, new MyXmitter());
+        xmitter=new Retransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
     }
 
