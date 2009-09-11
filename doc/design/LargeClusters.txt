@@ -1,0 +1,24 @@
+
+
+Considerations for large clusters
+=================================
+
+Author: Bela Ban
+Version: $Id: LargeClusters.txt,v 1.1 2009/09/11 13:27:46 belaban Exp $
+
+ConcurrentHashMap
+-----------------
+
+CCHMs have a default initial capacity (16), load factor (0.75) and concurrency level (16). These are OK for most
+scenarios, but we have to investigate whether these values are sufficient for 1000 node clusters.
+
+When for example 1000 threads from different senders access the same CCHM, we need to make sure we don't have high
+contention, ie. by spreading a 1000 senders over 16 buckets.
+
+Investigate whether we should add CCHM initial sizes, load factors and concurrency levels as properties.
+
+With ergonomics [1], we could for example set bucket sizes for CCHMs dynamically, e.g. based on cluster size.
+
+
+
+[1] https://jira.jboss.org/jira/browse/JGRP-1037
