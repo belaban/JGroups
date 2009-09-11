@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 import java.util.concurrent.CountDownLatch;
 import java.util.Vector;
 import java.util.Map;
+import java.text.NumberFormat;
 
 /**
  * Tests contention of locks in UNICAST, by concurrently sending and receiving unicast messages. The contention is
@@ -14,7 +15,7 @@ import java.util.Map;
  * java org.jgroups.tests.UnicastContentionTest -props udp.xml -num_msgs 100 -num_threads 200
  * and the UNICAST.num_xmits value will be high
  * @author Bela Ban
- * @version $Id: UnicastContentionTest.java,v 1.1.2.1 2009/09/11 10:59:15 belaban Exp $
+ * @version $Id: UnicastContentionTest.java,v 1.1.2.2 2009/09/11 11:29:10 belaban Exp $
  */
 public class UnicastContentionTest {
     static final String GROUP="UnicastContentionTest-Cluster";
@@ -25,8 +26,18 @@ public class UnicastContentionTest {
     int num_threads=1;
     int MOD=1000;
 
+    private static NumberFormat f;
 
-    private void start(String props, int num_msgs, int size, int num_mbrs, int num_threads) throws Exception {
+
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
+
+
+
+    private void start(String props, int num_msgs, int size, int num_mbrs, int num_threads, boolean dump_stats) throws Exception {
         this.num_msgs=num_msgs;
         this.size=size;
         this.num_mbrs=num_mbrs;
@@ -34,7 +45,6 @@ public class UnicastContentionTest {
         this.MOD=num_threads * num_msgs / 10;
 
         MySender[] senders=new MySender[num_threads];
-
         JChannel ch=new JChannel(props);
         JmxConfigurator.registerChannel(ch, Util.getMBeanServer(), "jgroups", GROUP, true);
         final CountDownLatch latch=new CountDownLatch(1);
@@ -57,8 +67,12 @@ public class UnicastContentionTest {
         for(MySender sender: senders)
             sender.join();
 
-        Util.keyPress("enter to dump stats and close channel");
-        System.out.println("stats:\n" + printStats(ch.dumpStats()));
+        if(dump_stats) {
+            Util.keyPress("enter to dump stats and close channel");
+            System.out.println("stats:\n" + printStats(ch.dumpStats()));
+        }
+        else
+            Util.keyPress("enter to close channel");
         Util.close(ch);
     }
 
@@ -111,17 +125,30 @@ public class UnicastContentionTest {
 
     private class MyReceiver extends ReceiverAdapter {
         private final CountDownLatch latch;
-        private int msgs=0;
+        private int msgs=0, bytes=0;
+        private long start=0;
+        private int expected_msgs=num_msgs * num_threads;
 
         public MyReceiver(CountDownLatch latch) {
             this.latch=latch;
         }
 
+        /** We receive a message. Doesn't need to be reentrant because only 1 sender sends us unicast messages */
         public void receive(Message msg) {
+            if(start == 0)
+                start=System.currentTimeMillis();
             msgs++;
-            // bytes+=msg.getLength();
+            bytes+=msg.getLength();
             if(msgs % MOD == 0)
                 System.out.println("-- " + msgs + " received");
+            if(msgs >= expected_msgs) {
+                long time=System.currentTimeMillis() - start;
+                double msgs_sec=msgs / (time / 1000.0);
+                double throughput=msgs_sec * size;
+                System.out.println(new StringBuilder("-- received ").append(msgs).append(" messages")
+                        .append(" (" + time + " ms, " + f.format(msgs_sec) + " msgs/sec, " +
+                        Util.printBytes(throughput) + "/sec)"));
+            }
         }
 
         public void viewAccepted(View new_view) {
@@ -137,6 +164,7 @@ public class UnicastContentionTest {
         int num_mbrs=2;
         int num_threads=1;
         String props=null;
+        boolean dump_stats=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num_msgs")) {
@@ -159,11 +187,15 @@ public class UnicastContentionTest {
                 props=args[++i];
                 continue;
             }
+            if(args[i].equals("-dump_stats")) {
+                dump_stats=true;
+                continue;
+            }
             help();
             return;
         }
 
-        new UnicastContentionTest().start(props, num_msgs, size, num_mbrs, num_threads);
+        new UnicastContentionTest().start(props, num_msgs, size, num_mbrs, num_threads, dump_stats);
     }
 
 
