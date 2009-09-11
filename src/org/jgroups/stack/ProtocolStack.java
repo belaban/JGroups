@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59.2.9 2008/10/22 11:49:20 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.59.2.10 2009/09/11 12:12:08 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -30,11 +30,6 @@ public class ProtocolStack extends Protocol implements Transport {
     private String setup_string;
     private JChannel channel = null;
     private volatile boolean stopped = true;
-
-
-    /** Locks acquired by protocol below, need to get released on down().
-     * See http://jira.jboss.com/jira/browse/JGRP-535 for details */
-    private final Map<Thread, ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
 
 
     /** Holds the shared transports, keyed by 'TP.singleton_name'.
@@ -85,9 +80,6 @@ public class ProtocolStack extends Protocol implements Transport {
     public static void setTimerThreadFactory(ThreadFactory f) {
     }
 
-    public Map<Thread,ReentrantLock> getLocks() {
-        return locks;
-    }
 
     public Channel getChannel() {
         return channel;
@@ -465,12 +457,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public Object down(Event evt) {
-        ReentrantLock lock=locks.remove(Thread.currentThread());
-        if(lock != null && lock.isHeldByCurrentThread()) {
-            lock.unlock();
-            if(log.isTraceEnabled())
-                log.trace("released lock held by " + Thread.currentThread());
-        }
         if(top_prot != null)
             return top_prot.down(evt);
         return null;
