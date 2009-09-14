@@ -15,7 +15,7 @@ import java.text.NumberFormat;
  * java org.jgroups.tests.UnicastContentionTest -props udp.xml -num_msgs 100 -num_threads 200
  * and the UNICAST.num_xmits value will be high
  * @author Bela Ban
- * @version $Id: UnicastContentionTest.java,v 1.1.2.4 2009/09/11 13:00:51 belaban Exp $
+ * @version $Id: UnicastContentionTest.java,v 1.1.2.5 2009/09/14 15:14:02 belaban Exp $
  */
 public class UnicastContentionTest {
     static final String GROUP="UnicastContentionTest-Cluster";
@@ -69,7 +69,8 @@ public class UnicastContentionTest {
 
         if(dump_stats) {
             Util.keyPress("enter to dump stats and close channel");
-            System.out.println("stats:\n" + printStats(ch.dumpStats()));
+            System.out.println("stats:\n" + printStats(ch.dumpStats("NAKACK")) + "\n" + printStats(ch.dumpStats("FC")) +
+                    "\n" + printStats(ch.dumpStats("UNICAST")));
         }
         else
             Util.sleep(2000);
