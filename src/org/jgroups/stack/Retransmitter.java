@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.23.2.2 2009/09/11 12:11:45 belaban Exp $
+// $Id: Retransmitter.java,v 1.23.2.3 2009/09/14 09:28:54 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.23.2.2 $
+ * @version $Revision: 1.23.2.3 $
  */
 public class Retransmitter {
 
@@ -176,7 +176,7 @@ public class Retransmitter {
         private long              seqno=-1;
         private volatile Future   future;
         private Address           msg_sender=null;
-        protected volatile int             num_retransmits=0;
+        protected volatile int    num_retransmits=0;
         private RetransmitCommand command;
         private volatile boolean  cancelled=false;
 
