@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.27.2.3 2009/09/14 15:02:04 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.27.2.4 2009/09/14 15:44:37 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -60,6 +60,10 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
 
+    /** Only to be used for testing purposes */
+    public synchronized long getLowest() {
+        return lowest;
+    }
 
     public void reset() {
         msgs.clear();
@@ -87,6 +91,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      * Removes all messages <em>less than or equal</em> to seqno from <code>msgs</code>, and cancels their retransmission.
      */
     public synchronized void ack(long seqno) {
+        // not really needed because max() would take care of it, but we can avoid the max() call altogether...
+        if(seqno < lowest) return;
         for(long i=lowest; i <= seqno; i++) {
             msgs.remove(i);
             retransmitter.remove(i);
@@ -144,17 +150,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
     /* ----------------------------- End of Retransmitter.RetransmitCommand interface ---------------- */
 
-
-
-    public Long getLowestSeqno() {
-        Set<Long> keys=msgs.keySet();
-        return keys != null? Collections.min(keys) : null;
-    }
-
-
-    /* ---------------------------------- Private methods --------------------------------------- */
-
-    /* ------------------------------ End of Private methods ------------------------------------ */
 
 
 
