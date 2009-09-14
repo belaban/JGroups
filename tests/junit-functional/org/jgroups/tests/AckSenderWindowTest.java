@@ -16,7 +16,7 @@ import java.util.HashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version $Id: AckSenderWindowTest.java,v 1.2.2.4 2009/09/14 15:33:50 belaban Exp $
+ * @version $Id: AckSenderWindowTest.java,v 1.2.2.5 2009/09/14 15:43:06 belaban Exp $
  */
 public class AckSenderWindowTest extends TestCase {
     AckSenderWindow win=null;
@@ -36,9 +36,22 @@ public class AckSenderWindowTest extends TestCase {
 
 
     public void testLowest() {
+        win=new AckSenderWindow(null, new StaticInterval(xmit_timeouts), timer);
         for(long i=1; i < 5; i++)
             win.add(i, new Message());
-        System.out.println("win = " + win); 
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assertEquals(0, win.getLowest());
+
+        win.ack(3);
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assertEquals(4, win.getLowest());
+
+        win.ack(4);
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assertEquals(5, win.getLowest());
+
+        win.ack(2);
+        assertEquals(5, win.getLowest());
     }
 
 
