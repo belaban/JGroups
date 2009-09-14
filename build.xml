@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.213 2009/09/04 17:58:29 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.214 2009/09/14 20:33:05 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -442,6 +442,7 @@
                 >
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+        	<jvmarg value="-Djgroups.disableIPVersionChecking=${jgroups.disableIPVersionChecking}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
         </testng>
     </target>
@@ -461,7 +462,7 @@
         <runtest testname.ext="udp"
                  threadcount="10"
                  parallel="tests"
-                 initial.mcast.addr="235.10.10.10"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25100"
                  initial.tcp.port="25100"
                  testng.xmlfile="testng-udp.xml"
@@ -473,7 +474,7 @@
         <runtest testname.ext="udp-flush"
                  threadcount="10"
                  parallel="tests"
-                 initial.mcast.addr="235.20.20.20"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25200"
                  initial.tcp.port="25200"
                  testng.xmlfile="testng-udp-flush.xml"
@@ -489,7 +490,7 @@
         <runtest testname.ext="tcp"
                  threadcount="5"
                  parallel="tests"
-                 initial.mcast.addr="235.30.30.30"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25300"
                  initial.tcp.port="25300"
                  testng.xmlfile="testng-tcp.xml"
@@ -507,7 +508,7 @@
         <runtest testname.ext="tcp"
                  threadcount="1"
                  parallel="tests"
-                 initial.mcast.addr="235.30.30.30"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25300"
                  initial.tcp.port="25300"
                  testng.xmlfile="testng-tcp-stress.xml"
@@ -524,7 +525,7 @@
         <runtest testname.ext="tcp-flush"
                  threadcount="10"
                  parallel="tests"
-                 initial.mcast.addr="235.40.40.40"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25400"
                  initial.tcp.port="25400"
                  testng.xmlfile="testng-tcp-flush.xml"
@@ -557,7 +558,7 @@
         <attribute name="testname.ext" default="udp"/>
         <attribute name="threadcount" default="1"/>
         <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
-        <attribute name="initial.mcast.addr" default="235.1.2.3"/>
+        <attribute name="initial.mcast.addr" default="${jgroups.udp.mcast_addr}"/>
         <attribute name="initial.mcast.port" default="23000"/>
         <attribute name="initial.tcp.port" default="23000"/>
         <attribute name="tcp.recv.buf.size" default="200000"/>
@@ -583,6 +584,7 @@
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
     		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            	<jvmarg value="-Djgroups.disableIPVersionChecking=${jgroups.disableIPVersionChecking}"/>
                 <jvmarg value="-Xmx300M"/>
             </testng>
         </sequential>

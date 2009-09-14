@@ -10,3 +10,7 @@ jgroups.udp.mcast_port=45588
 jgroups.udp.ip_ttl=5
 # use true for IPv6 and false for IPv4 
 jgroups.useIPv6=false
+# disable checking of consistent IP address versions
+jgroups.disableIPVersionChecking=true
+
+

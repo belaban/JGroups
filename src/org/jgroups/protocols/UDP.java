@@ -43,7 +43,7 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.202 2009/09/10 19:52:39 rachmatowicz Exp $
+ * @version $Id: UDP.java,v 1.203 2009/09/14 20:33:07 rachmatowicz Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -244,8 +244,16 @@ public class UDP extends TP {
         Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
         Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
         
-        // this method needs to be called after all property processing and before start()
-        prepareVersionConsistentIPAddresses() ;        
+        // determine the IP address constants required by this transport
+        assumeIPv4 = Util.getIPVersionPreference() ;
+        mcast_addr_str = 
+        	Util.getVersionConsistentIPAddressString("mcast_addr", mcast_addr_str, 
+        			                         DEFAULT_IPV4_MCAST_ADDR_STR, DEFAULT_IPV6_MCAST_ADDR_STR, 
+        			                         assumeIPv4) ;
+        diagnostics_addr_str = 
+        	Util.getVersionConsistentIPAddressString("diagnostics_addr", diagnostics_addr_str, 
+        		                                   DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR, DEFAULT_IPV6_DIAGNOSTICS_ADDR_STR, 
+        		                                   assumeIPv4) ;
         
         // the bind address determination moved from TP
         Properties props = new Properties() ;
@@ -253,10 +261,15 @@ public class UDP extends TP {
         	props.put("bind_addr", bind_addr_str) ;
         if (bind_interface_str != null)
         props.put("bind_interface", bind_interface_str) ;
-        bind_addr = Util.getBindAddress(props) ;
-        
-        // the diagnostics determination moved from TP
-        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;
+        bind_addr = Util.getBindAddress(props, assumeIPv4) ;
+                
+        if (log.isDebugEnabled()) {
+        	log.debug("Results of choosing IP version-consistent addresses:") ;
+        	log.debug("assumeIPv4 = " + assumeIPv4) ;
+        	log.debug("bind_addr = " + bind_addr.getHostAddress()) ;
+        	log.debug("mcast_addr_str = " + mcast_addr_str) ;
+        	log.debug("diagnostics_addr_str = " + diagnostics_addr_str) ;
+        }
         
         if(bind_addr != null) {
             Map<String, Object> m=new HashMap<String, Object>(1);
@@ -340,22 +353,6 @@ public class UDP extends TP {
 
     /* ------------------------------ Private Methods -------------------------------- */
 
-
-    /**
-     * Function to check that a complete IP-version-consistent set of IP addresses
-     * for bind_addr, mcast_addr and diagnostics_addr can be created, based on 
-     * any user preferences for bind_addr, mcast_addr, diagnostics_addr and bind_interface.
-     * 
-     * We perform the following in order, throwing an exception if necessary:
-     * (i) check that all user specified IP addresses have consistent IP version
-     * (ii) check that a stack exists to support that consistent IP version
-     * (iii) fill in unspecified values with defaults of the appropriate version
-     */
-    private void prepareVersionConsistentIPAddresses() throws Exception {
-    	
-    }
-
-
     /**
      * Create UDP sender and receiver sockets. Currently there are 2 sockets
      * (sending and receiving). This is due to Linux's non-BSD compatibility
@@ -374,13 +371,20 @@ public class UDP extends TP {
 //            if(interfaces != null && interfaces.length > 0)
 //                bind_addr=interfaces[0];
 //        }
+    	// RA 14 Sep 09: These lines were never called as bind_addr always returned a non-null value             	
+//        if(bind_addr == null && !use_local_host) {
+//            bind_addr=Util.getFirstNonLoopbackAddress();
+//        }
+//        if(bind_addr == null)
+//            bind_addr=InetAddress.getLocalHost();
+    	
+    	if(bind_addr == null)
+    		throw new IllegalArgumentException("bind_addr cannot be null") ;
 
-        if(bind_addr == null && !use_local_host) {
-            bind_addr=Util.getFirstNonLoopbackAddress();
-        }
-        if(bind_addr == null)
-            bind_addr=InetAddress.getLocalHost();
-
+    	if(bind_addr != null && bind_addr.isLoopbackAddress() && !use_local_host) {
+    		throw new IllegalArgumentException("can't use localhost as a bind address") ;
+    	}
+    	
         if(bind_addr != null)
             if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
 
