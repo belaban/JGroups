@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.23.2.3 2008/06/02 14:56:23 belaban Exp $
+ * @version $Id: Global.java,v 1.23.2.4 2009/09/14 16:17:00 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -53,6 +53,7 @@ public class Global {
     public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
     public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
 
+    public static final long DEFAULT_FIRST_UNICAST_SEQNO=1;
 
     public static final String SINGLETON_NAME="singleton_name";
 
