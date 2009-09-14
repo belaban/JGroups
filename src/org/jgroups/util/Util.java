@@ -20,6 +20,7 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.IllegalArgumentException ;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -31,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.209 2009/09/09 19:58:25 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.210 2009/09/14 20:33:06 rachmatowicz Exp $
  */
 public class Util {
 
@@ -2736,7 +2737,6 @@ public class Util {
     }
 
 
-
     /**
      * Returns the address of the interface to use defined by bind_addr and bind_interface
      * @param props
@@ -2745,67 +2745,144 @@ public class Util {
      * @throws SocketException
      */
     public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        String bind_addr=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                                    ignore_systemprops, null);
-        String bind_interface=Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
-                                               ignore_systemprops, null);
-        InetAddress retval=null, bind_addr_host=null;
+    	return (InetAddress) getBindAddress(props, true) ;
+    }
+    
+    public static InetAddress getBindAddress(Properties props, boolean assumeIPv4) throws UnknownHostException, SocketException {
 
-        if(bind_addr != null) {
-            bind_addr_host=InetAddress.getByName(bind_addr);
-        }
+    	// determine the desired values for bind_addr_str and bind_interface_str
+    	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+    			ignore_systemprops, null);
+    	String bind_interface_str =Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
+    			ignore_systemprops, null);
+    	
+    	// allow disabling of version checking
+    	boolean disableVersionCheck = (new Boolean(System.getProperty("jgroups.disableIPVersionChecking", "false"))).booleanValue() ;
+    	
+    	InetAddress retval=null, bind_addr=null;
+    	NetworkInterface bind_intf=null ;
 
-        if(bind_interface != null) {
-            NetworkInterface intf=NetworkInterface.getByName(bind_interface);
-            if(intf != null) {
-                for(Enumeration<InetAddress> addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
-                    InetAddress addr=addresses.nextElement();
-                    if(bind_addr == null) {
-                        retval=addr;
-                        break;
-                    }
-                    else {
-                        if(bind_addr_host != null) {
-                            if(bind_addr_host.equals(addr)) {
-                                retval=addr;
-                                break;
-                            }
-                        }
-                        else if(addr.getHostAddress().trim().equalsIgnoreCase(bind_addr)) {
-                            retval=addr;
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                throw new UnknownHostException("network interface " + bind_interface + " not found");
-            }
-        }
+    	// 1. if bind_addr_str specified, get bind_addr and check version
+    	if(bind_addr_str != null) {
+    		bind_addr=InetAddress.getByName(bind_addr_str);
 
-        boolean localhost = false;
-		if (bind_addr != null) {
-			retval = InetAddress.getByName(bind_addr);
-		}
-		else {
-			retval = InetAddress.getLocalHost();
-			localhost = true;
-		}
+    		if (!disableVersionCheck) {
+    			// check that bind_addr_host has correct IP version
+    			boolean hasCorrectVersion = ((bind_addr instanceof Inet4Address && assumeIPv4) ||
+    					(bind_addr instanceof Inet6Address && !assumeIPv4)) ;
+    			if (!hasCorrectVersion)
+    				throw new IllegalArgumentException("bind_addr " + bind_addr_str + " has incorrect IP version") ;
+    		}
+    	}
 
-        //http://jira.jboss.org/jira/browse/JGRP-739
-        //check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
-		//in some Linux setups NetworkInterface.getByInetAddress(InetAddress.getLocalHost()) returns null, so skip
-		//the check in that case
-        if(NetworkInterface.getByInetAddress(retval) == null && !localhost) {
-            throw new UnknownHostException("Invalid bind address " + retval);
-        }
+    	// 2. if bind_interface_str specified, get interface and check that it has correct version
+    	if(bind_interface_str != null) {
 
-        if(props != null) {
-            props.remove("bind_addr");
-            props.remove("bind_interface");
-        }
-        return retval;
+    		bind_intf=NetworkInterface.getByName(bind_interface_str);
+    		if(bind_intf != null) {
+
+    			if (!disableVersionCheck) {
+    				// check that the interface supports the IP version
+    				boolean supportsVersion = interfaceHasIPAddresses(bind_interface_str, assumeIPv4) ;
+    				if (!supportsVersion) 
+    					throw new IllegalArgumentException("bind_interface " + bind_interface_str + " has incorrect IP version") ;
+    			}
+    		}
+    		else {
+    			// (bind_intf == null)
+    			throw new UnknownHostException("network interface " + bind_interface_str + " not found");
+    		}
+    	}
+
+    	// 3. intf and bind_addr are both are specified, bind_addr needs to be on intf
+    	if (bind_intf != null && bind_addr != null) {
+
+    		boolean hasAddress = false ;
+
+    		// get all the InetAddresses defined on the interface
+    		Enumeration addresses = bind_intf.getInetAddresses() ;
+
+    		while (addresses != null && addresses.hasMoreElements()) {
+    			// get the next InetAddress for the current interface
+    			InetAddress address = (InetAddress) addresses.nextElement() ;
+
+    			// check if address is on interface
+    			if (bind_addr.equals(address)) { 
+    				hasAddress = true ;
+    				break ;
+    			}
+    		}
+
+    		if (!hasAddress) {
+    			throw new IllegalArgumentException("network interface " + bind_interface_str + " does not contain address " + bind_addr_str);
+    		}
+
+    	}
+    	// 4. if only interface is specified, get first non-loopback address, 
+    	else if (bind_intf != null && bind_addr == null) {
+
+    		bind_addr = getFirstNonLoopbackAddress(bind_intf, assumeIPv4) ;
+    	}
+
+    	// if we reach here, if bind_addr == null, we have tried to obtain a bind_addr but were not successful
+    	// in such a case, using a loopback address of the correct version is our only option
+
+    	boolean localhost = false;
+    	if (bind_addr == null) {
+    		bind_addr = getLocalhost(assumeIPv4);
+    		localhost = true;
+    	}
+
+    	//http://jira.jboss.org/jira/browse/JGRP-739
+    	//check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
+    	//in some Linux setups NetworkInterface.getByInetAddress(InetAddress.getLocalHost()) returns null, so skip
+    	//the check in that case
+    	if(!localhost && NetworkInterface.getByInetAddress(bind_addr) == null) {
+    		throw new UnknownHostException("Invalid bind address " + bind_addr);
+    	}
+
+    	if(props != null) {
+    		props.remove("bind_addr");
+    		props.remove("bind_interface");
+    	}
+    	return bind_addr;
+    }
+
+    /**
+     * Returns an IP version consistent String representation of an IP address
+     * @param addr_str_name name of the parameter this IP address represents
+     * @param addr_str_name String representation of the IP address
+     * @param addr_str_name IPv4 default value
+     * @param addr_str_name IPv6 default value
+     * @param assumeIPv4 the desired IP version
+     * @return
+     * @throws UnknownHostException
+     */
+    public static String getVersionConsistentIPAddressString(String addr_str_name, String addr_str, 
+    		                                                 String ipv4Default, String ipv6Default, 
+    		                                                 boolean assumeIPv4) throws UnknownHostException {
+    	
+    	// allow disabling of version checking
+    	boolean disableVersionCheck = (new Boolean(System.getProperty("jgroups.disableIPVersionChecking", "false"))).booleanValue() ;
+
+    	// if addr_str == null, we need to supply a default value
+    	if (addr_str == null) {
+    		if (assumeIPv4)
+    			addr_str = ipv4Default ;
+    		else 
+    			addr_str = ipv6Default ;
+    	}
+    	InetAddress tmp_addr = InetAddress.getByName(addr_str) ;
+    	
+    	if (!disableVersionCheck) {
+    		// check if the IP address has the correct version
+    		boolean correctIPVersion = (tmp_addr instanceof Inet4Address && assumeIPv4) || (tmp_addr instanceof Inet6Address && !assumeIPv4) ;
+    		if (!correctIPVersion)
+    			throw new IllegalArgumentException("parameter " + addr_str_name + " (" + addr_str + ") has incorrect IP version") ;
+    	}
+    	
+    	return addr_str ;
     }
 
 
@@ -2894,65 +2971,149 @@ public class Util {
         return sb.toString();
     }
 
+    /** IP related utilities */
 
-//    public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
-//        Enumeration en=NetworkInterface.getNetworkInterfaces();
-//        while(en.hasMoreElements()) {
-//            NetworkInterface i=(NetworkInterface)en.nextElement();
-//            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-//                InetAddress addr=(InetAddress)en2.nextElement();
-//                if(!addr.isLoopbackAddress())
-//                    return addr;
-//            }
-//        }
-//        return null;
-//    }
+    public static InetAddress getIPv4Localhost() throws UnknownHostException {
+    	return getLocalhost(true) ;
+    }
 
+    public static InetAddress getIPv6Localhost() throws UnknownHostException {
+    	return getLocalhost(false) ;
+    }
 
-    public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
-        Enumeration en=NetworkInterface.getNetworkInterfaces();
-        boolean preferIpv4=Boolean.getBoolean(Global.IPv4);
-        boolean preferIPv6=Boolean.getBoolean(Global.IPv6);
-        while(en.hasMoreElements()) {
-            NetworkInterface i=(NetworkInterface)en.nextElement();
-            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-                InetAddress addr=(InetAddress)en2.nextElement();
-                if(!addr.isLoopbackAddress()) {
-                    if(addr instanceof Inet4Address) {
-                        if(preferIPv6)
-                            continue;
-                        return addr;
-                    }
-                    if(addr instanceof Inet6Address) {
-                        if(preferIpv4)
-                            continue;
-                        return addr;
-                    }
-                }
-            }
-        }
-        return null;
+    public static InetAddress getLocalhost(boolean assumeIPv4) throws UnknownHostException {
+    	if (assumeIPv4)
+    		return InetAddress.getByName("127.0.0.1") ;
+    	else
+    		return InetAddress.getByName("::1") ;
+    }
+
+    public static InetAddress getFirstNonLoopbackIPv4Address() throws SocketException {
+    	return getFirstNonLoopbackAddress(true) ;
     }
 
     public static InetAddress getFirstNonLoopbackIPv6Address() throws SocketException {
-        Enumeration en=NetworkInterface.getNetworkInterfaces();
-        while(en.hasMoreElements()) {
-            NetworkInterface i=(NetworkInterface)en.nextElement();
-            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-                InetAddress addr=(InetAddress)en2.nextElement();
-                if(!addr.isLoopbackAddress()) {
-                    if(addr instanceof Inet4Address) {
-                        continue;
-                    }
-                    if(addr instanceof Inet6Address) {
-                        return addr;
-                    }
-                }
-            }
-        }
-        return null;
+    	return getFirstNonLoopbackAddress(false) ;
     }
 
+    /**
+     * Returns the first non-loopback address on any interface on the current host.
+     *
+     * @param assumeIPv4 constraint on IP version of address to be returned
+     */
+    public static InetAddress getFirstNonLoopbackAddress(boolean assumeIPv4) throws SocketException {
+    	InetAddress address = null ;
+
+    	Enumeration intfs = NetworkInterface.getNetworkInterfaces();
+    	while(intfs.hasMoreElements()) {
+    		NetworkInterface intf=(NetworkInterface)intfs.nextElement();
+    		address = getFirstNonLoopbackAddress(intf, assumeIPv4) ;
+    		if (address != null) {
+    			return address ;
+    		}
+    	}
+    	return null ;
+    }
+
+    /**
+     * Returns the first non-loopback address on the given interface on the current host.
+     *
+     * @param interface the interface to be checked
+     * @param assumeIPv4 constraint on IP version of address to be returned
+     */    
+    public static InetAddress getFirstNonLoopbackAddress(NetworkInterface intf, boolean assumeIPv4) throws SocketException {
+    	if (intf == null) 
+    		throw new IllegalArgumentException("Network interface pointer is null") ; 
+
+    	for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
+    		// get the next address (IPv4 or IPv6!)
+    		InetAddress address=(InetAddress)addresses.nextElement();
+    		if(!address.isLoopbackAddress()) {
+    			if ((address instanceof Inet4Address && assumeIPv4) || (address instanceof Inet6Address && !assumeIPv4))
+    				return address;
+    		}
+    	}
+    	return null ;
+    }
+
+    /**
+     * A function to check if an interface supports an IP version (i.e has addresses 
+     * defined for that IP version).
+     * 
+     * @param intf_name
+     * @return
+     */
+    public static boolean interfaceHasIPAddresses(String intf_name, boolean assumeIPv4) throws SocketException,UnknownHostException {
+
+    	boolean supportsVersion = false ;
+    	try {
+    		// get the NetworkInterface 
+    		NetworkInterface intf = NetworkInterface.getByName(intf_name) ;
+    		if (intf != null) {
+    			// get all the InetAddresses defined on the interface
+    			Enumeration addresses = intf.getInetAddresses() ;
+    			while (addresses != null && addresses.hasMoreElements()) {
+    				// get the next InetAddress for the current interface
+    				InetAddress address = (InetAddress) addresses.nextElement() ;
+
+    				// check if we find an address of correct version
+    				if ((address instanceof Inet4Address && assumeIPv4) || 
+    						(address instanceof Inet6Address && !assumeIPv4)) { 
+    					supportsVersion = true ;
+    					break ;
+    				}
+    			}
+    		}
+    		else {
+    			throw new UnknownHostException("network interface " + intf_name + " not found") ;
+    		}
+    	}
+    	catch(SocketException e) {
+    		// NetworkInterface.getByName() -> java.net.SocketException
+    		throw e ;
+    	}
+    	catch(NoSuchElementException e) {
+    		// Enumeration.nextElement() -> java.util.NoSuchElementException
+    		throw e ;
+    	}
+    	catch(NullPointerException e) {
+    		// intf_name == null -> java.util.NullPointerException
+    		throw new IllegalArgumentException("interface name is null") ;
+    	}
+    	return supportsVersion ;
+    }         
+        
+    public static boolean getIPVersionPreference() {
+    	
+    	boolean isIPv4StackAvailable = isIPv4StackAvailable() ;
+    	boolean isIPv6StackAvailable = isIPv6StackAvailable() ;
+    	
+		// if only IPv4 stack available
+		if (isIPv4StackAvailable && !isIPv6StackAvailable) {
+			return true ;
+		}
+		// if only IPv6 stack available
+		else if (isIPv6StackAvailable && !isIPv4StackAvailable) {
+			return false ;
+		}
+		// if dual stack
+		else if (isIPv4StackAvailable && isIPv6StackAvailable) {
+			// get the System property which records user preference for a stack
+			// on a dual stack machine
+			return Boolean.getBoolean("java.net.preferIPv4Stack") ;
+		}
+		// we will never reach here
+		return true ;
+    }
+    
+	public static boolean isIPv6StackAvailable() {
+		return isIPStackAvailable(false) ;
+	}
+	
+	public static boolean isIPv4StackAvailable() {
+		return isIPStackAvailable(true) ;
+	}
+    
 	public static boolean isIPStackAvailable(boolean useIPv4) {
 		boolean isAvailable = false;
 		try {
@@ -2984,16 +3145,8 @@ public class Util {
 		}
 		return isAvailable;
 	}
-
-	public static boolean isIPv6StackAvailable() {
-		return isIPStackAvailable(false) ;
-	}
+    
 	
-	public static boolean isIPv4StackAvailable() {
-		return isIPStackAvailable(true) ;
-	}
-    
-    
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<NetworkInterface>(10);
         NetworkInterface intf;
