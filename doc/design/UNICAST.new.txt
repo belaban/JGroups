@@ -1,0 +1,182 @@
+
+New UNICAST design
+==================
+(see UNICAST.txt for the old design)
+
+Author: Bela Ban
+Version: $Id: UNICAST.new.txt,v 1.6.2.2 2009/09/15 20:57:26 belaban Exp $
+
+Motivation
+----------
+
+UNICAST has issues when one end of the connnection unilaterally closes the connection and discards the state in
+the connection table.
+
+Example: we have a conn between A and B. There's a partition such that A sees {A,B} but B sees only {B}.
+B will clear its connection table for A on reception of the view, whereas A will keep it.
+
+Now the partition heals and A and B can communicate again.
+
+Assuming A's next seqno to B is #25 (and #7 for receiving messages from B),
+B will store the message because it expects #1 from A (new connection). As a matter of fact, B will store *and not
+deliver* all subsequent messages from A !
+
+The reverse direction is also bad: B will send #1 to A, but A expects #7, so A will discard the message. The first 6
+messages from B are discarded at A !
+
+
+Goals
+-----
+
+#1 Handle the above scenarios
+
+#2 Handle the scenario where a member communicates with a non-member (get rid of enabled_mbrs and prev_mbrs)
+
+#3 Handle the scenario where a member talks to a non existing (or previous) member. Get rid of
+   ENABLE_UNICASTS_TO and age out connections to non existing members after some time (JGRP-942)
+
+#4 Should be usable without group communication ('Unicast JGroups')
+
+
+Design
+------
+
+As example we have a unicast connection between A and B. A is the sender and B the receiver:
+
+             A <-------------------------------------------------> B
+
+             B:entry.seqno=#25                                     A:entry.seqno=#7
+                     recv_win=#7                                           recv_win=#25
+                     send-conn-id=322649                                   send-conn-id=101200
+                     recv-conn-id=101200                                   recv-conn-id=322649
+
+A has an entry in the connection table for B, and B has an entry for A. Each connection has a connection ID (conn-id).
+Each entry also has a seqno which is the highest seqno sent to the peer so far, and a recv_win which has the highest
+seqno received from the peer so far. For example, A's next message to B will be #25, and the next seqno expected
+from B is #7.
+
+
+
+A sends a message to B:
+-----------------------
+- If the entry for B is null, or the seqno=0:
+    - Create an entry, set the seqno to 1 and set send-conn-id to the current time (needs to be unique, could also use UUIDs)
+    - Send the message with the next seqno and the current conn-id and first=true
+- Else
+    - Send the message with the next seqno and the current conn-id
+
+B receives a message from A:
+----------------------------
+- If first == true
+    - If entry or entry.recv_win for B == null
+        - Create a new entry.recv_win with msg.seqno
+        - Set entry.recv-conn-id to conn-id
+    - Else:
+        - If conn-id != entry.recv-conn-id:
+            - Create a new entry.recv_win with msg.seqno
+            - Set entry.recv-conn-id to conn-id
+        - Else
+            - NOP (prevents duplicate connection establishments)
+- Else
+    - If entry.recv_win == null || conn-id != recv-conn-id: no-op
+        - Drop message
+        - Send SEND_FIRST_SEQNO to A
+
+
+A receives GET_FIRST_SEQNO from B:
+----------------------------------
+- If conn-id != send-conn-id: drop message
+- A grabs the first message in its sent_win
+- A adds the entry.send-conn-id to the UnicastHeader (if not yet present), sets first=true and sends the message to B
+
+
+
+Scenarios
+---------
+
+The scenarios are tested in UNICAST_ConnectionTests
+
+#1 A creates new connection to B:
+- The entry for B is null, a new entry is created and added to the connection table
+- Entry.send-conn-id is set and sent with the message
+- Entry.seqno now is 1
+
+
+#2 B receives new connection:
+- B creates a new entry and entry.recv_win (with msg.seqno) for A
+- B sets entry.recv-conn-id to msg.conn-id
+- B adds the message to entry.recv_win
+
+
+#3 A and B close connection (e.g. based on a view change (partition)):
+- Both A and B reset (cancelling pending retransmissions) and remove the entry for their peer from the connection table
+
+
+#4 A closes the connection unilaterally (B keeps it open), then reopens it and sends a message:
+- A removes the entry for B from its connection table, cancelling all pending retransmissions
+- (Assuming that B's entry.recv_win for A is at #25)
+- A creates a new entry for B in its connection table
+- Entry.send-conn-id is set and sent with the message
+- Entry.seqno now is 1
+- B receives the message with a new conn-id
+- B does have an entry for A, but entry.recv-conn-id doesn't match msg.conn-id
+- B creates a new entry.recv_win, sets it to msg.seqno
+- B sets entry.recv-conn-id to msg.conn-id
+
+
+#5 B closes its connection unilaterally, then A sends a message to B:
+- B doesn't find an entry for A in its connection table
+- B discards the message and sends a SEND-FIRST-SEQNO to A
+- A receives the SEND-FIRST-SEQNO message. It grabs the message with the lowest seqno
+  in its entry.send_win, adds a UnicastHeader with entry.send-conn-id and sends the
+  message to B
+- B receive the message and creates a new entry and entry.recv_win (with msg.seqno)
+- B sets entry.recv-conn-id to msg.conn-id
+
+#6 Same as #4, but after re-establishing the connection to B, A loses the first message
+(first part of #4)
+- A creates a new sender window for B
+- A sends #1(conn-id=322649) #2(conn-id=0) #3(conn-id=0), but loses #1
+- B receives #2 first. It thinks this is part of a regular connection, so it doesn't trash its receiver window
+- B expects a seqno higher than #2 (from the prev conversation with A), and discards #2, but *acks* it nevertheless
+- A removes #2 from its sender window
+- B now finally receives #1, and creates a new receiver window for A at #1
+- A retransmits #3
+- B stores #3 but doesn't deliver it because it hasn't received #2 yet
+- However, B will *never* receive #2 from A because that seqno has been removed from A's sender window !
+
+
+#7 Merge where A and B are in different partitions:
+- Both A and B removes the entries for each other in their respective connection tables
+- When the partition heals, both A and B will create new entries (see scenario #2)
+
+
+#8 Merge where A and B are in overlapping partitions A: {A}, B: {A,B}:
+- (This case is currently handled by shunning, not merging)
+- A sends a message to B
+- A removed its entry for B, but B kept its entry for A
+- A new creates a new connection to B (scenario #1) and sends the message
+- B receives the message, but entry.recv-conn-id doesn't match msg.conn-id, so B
+  removes entry.recv_win, sets entry.recv-conn-id to msg.conn-id and creates a new
+  entry.recv_win with msg.seqno (same as second half of scenario #4)
+
+
+#9 Merge where A and B are in overlapping partitions A: {A,B}, B: {B}:
+- A sends a message to B (msg.seqno=25)
+- B doesn't have an entry for A
+- B discards the message and sends a SEND-FIRST-SEQNO to A
+- A receives the SEND-FIRST-SEQNO message. It grabs the message with the lowest seqno
+  in its entry.send_win, adds a UnicastHeader with entry.send-conn-id and sends the
+  message to B
+- B receive the message and creates a new entry and entry.recv_win (with msg.seqno)
+- B sets entry.recv-conn-id to msg.conn-id
+
+
+Issues
+------
+- How do we handle retransmissions of the first message (first=true) ? We *cannot* create a new entry.recv_win, or
+  else we trash already received msgs ! Use a UUID (as connection-ID) instead of first=true ? Maybe the system time
+  is sufficient ? After all, the ID only has to be unique between A and B !
+  ==> Solved by using connection IDs (see above)
+
+
