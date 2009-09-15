@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.25.2.5 2009/09/08 12:22:45 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.25.2.6 2009/09/15 08:24:30 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
@@ -51,20 +51,14 @@ public class AckReceiverWindow {
         if(msg == null)
             throw new IllegalArgumentException("msg must be non-null");
         synchronized(msgs) {
-            if(seqno < next_to_remove) {
-                if(log.isTraceEnabled())
-                    log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
+            if(seqno < next_to_remove)
                 return false;
-            }
             if(!msgs.containsKey(seqno)) {
                 msgs.put(seqno, msg);
                 return true;
             }
-            else {
-                if(log.isTraceEnabled())
-                    log.trace("seqno " + seqno + " already received - dropping it");
+            else
                 return false;
-            }
         }
     }
 
@@ -90,6 +84,12 @@ public class AckReceiverWindow {
         return retval;
     }
 
+    /**
+     * We need to have the lock on 'msgs' while we're setting processing to false (if no message is available), because
+     * this prevents some other thread from adding a message
+     * @param processing
+     * @return
+     */
     public Message remove(AtomicBoolean processing) {
         Message retval=null;
 
