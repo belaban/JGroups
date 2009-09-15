@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.27.2.6 2009/09/15 07:40:35 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.27.2.7 2009/09/15 08:00:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -66,20 +66,14 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public void reset() {
         msgs.clear();
-
-        // moved out of sync scope: Retransmitter.reset()/add()/remove() are sync'ed anyway
-        // Bela Jan 15 2003
         retransmitter.reset();
         lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO;
     }
 
 
     /**
-     * Adds a new message to the retransmission table. If the message won't have received an ack within
-     * a certain time frame, the retransmission thread will retransmit the message to the receiver. If
-     * a sliding window protocol is used, we only add up to <code>window_size</code> messages. If the table is
-     * full, we add all new messages to a queue. Those will only be added once the table drains below a certain
-     * threshold (<code>min_threshold</code>)
+     * Adds a new message to the retransmission table. The message will be retransmitted (based on timeouts passed into
+     * AckSenderWindow until (1) an ACK is received or (2) the AckSenderWindow is stopped (@link{#reset})
      */
     public void add(long seqno, Message msg) {
         msgs.putIfAbsent(seqno, msg);
@@ -88,7 +82,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     /**
-     * Removes all messages <em>less than or equal</em> to seqno from <code>msgs</code>, and cancels their retransmission.
+     * Removes all messages <em>less than or equal</em> to seqno from <code>msgs</code>, and cancels their retransmission
      */
     public void ack(long seqno) {
         long prev_lowest;
@@ -151,33 +145,4 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     /* ----------------------------- End of Retransmitter.RetransmitCommand interface ---------------- */
 
 
-
-
-
-    /** Struct used to store message alongside with its seqno in the message queue */
-    static class Entry {
-        final long seqno;
-        final Message msg;
-
-        Entry(long seqno, Message msg) {
-            this.seqno = seqno;
-            this.msg = msg;
-        }
-    }
-
-
-    static class Dummy implements RetransmitCommand {
-        static final long last_xmit_req = 0;
-        long curr_time;
-
-
-        public void retransmit(long seqno, Message msg) {
-            if(log.isDebugEnabled()) log.debug("seqno=" + seqno);
-            curr_time = System.currentTimeMillis();
-        }
-    }
-
-
-
-
-        }
+}
