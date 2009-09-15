@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.27.2.4 2009/09/14 15:44:37 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.27.2.5 2009/09/15 07:09:41 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,11 +6,10 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,7 +30,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     Interval                interval=new StaticInterval(400,800,1200,1600);
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
-    long                    lowest=0; // lowest seqno, used by ack()
+    long                    lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
 
 
     public interface RetransmitCommand {
@@ -71,6 +70,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         // moved out of sync scope: Retransmitter.reset()/add()/remove() are sync'ed anyway
         // Bela Jan 15 2003
         retransmitter.reset();
+        lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO;
     }
 
 
@@ -90,23 +90,23 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     /**
      * Removes all messages <em>less than or equal</em> to seqno from <code>msgs</code>, and cancels their retransmission.
      */
-    public synchronized void ack(long seqno) {
-        // not really needed because max() would take care of it, but we can avoid the max() call altogether...
-        if(seqno < lowest) return;
-        for(long i=lowest; i <= seqno; i++) {
+    public void ack(long seqno) {
+        long prev_lowest=0;
+        synchronized(this) {
+            if(seqno < lowest) return; // not really needed, but we can avoid the max() call altogether...
+            prev_lowest=lowest;
+            lowest=Math.max(lowest, seqno +1);
+        }
+
+        for(long i=prev_lowest; i <= seqno; i++) {
             msgs.remove(i);
             retransmitter.remove(i);
         }
-        lowest=Math.max(lowest, seqno +1);
     }
 
     /** Returns the message with the lowest seqno */
-    public Message getLowestMessage() {
-        Set<Long> keys=msgs.keySet();
-        if(keys.isEmpty())
-            return null;
-        Long seqno=Collections.min(keys);
-        return seqno != null? msgs.get(seqno) : null;
+    public synchronized Message getLowestMessage() {
+        return msgs.get(lowest);
     }
 
 
