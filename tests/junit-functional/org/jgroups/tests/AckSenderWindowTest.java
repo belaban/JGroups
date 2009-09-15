@@ -14,7 +14,7 @@ import org.jgroups.util.TimeScheduler;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version $Id: AckSenderWindowTest.java,v 1.2.2.8 2009/09/15 07:15:47 belaban Exp $
+ * @version $Id: AckSenderWindowTest.java,v 1.2.2.9 2009/09/15 07:40:45 belaban Exp $
  */
 public class AckSenderWindowTest extends TestCase {
     private AckSenderWindow win;
@@ -85,6 +85,18 @@ public class AckSenderWindowTest extends TestCase {
         assertEquals(3, win.size());
     }
 
+
+    public void testAck() {
+        for(int i=1; i <= 3; i++)
+            win.add(i, new Message());
+        assertEquals(3, win.size());
+        win.ack(1);
+        assertEquals(2, win.size());
+        win.ack(2);
+        assertEquals(1, win.size());
+        win.ack(3);
+        assertEquals(0, win.size());
+    }
 
 
     public static Test suite() {
