@@ -4,20 +4,17 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.StaticInterval;
-import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
-
-import java.util.HashMap;
 
 
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version $Id: AckSenderWindowTest.java,v 1.2.2.7 2009/09/15 07:15:25 belaban Exp $
+ * @version $Id: AckSenderWindowTest.java,v 1.2.2.8 2009/09/15 07:15:47 belaban Exp $
  */
 public class AckSenderWindowTest extends TestCase {
     private AckSenderWindow win;
