@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.91.2.21 2009/09/15 10:59:05 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.91.2.22 2009/09/15 11:05:51 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand, AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
@@ -592,10 +592,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
             if(!(win.hasMessagesToRemove() && undelivered_msgs.get() > 0))
                 return;
-        }
-
-        if(!added && !win.hasMessagesToRemove()) { // no ack if we didn't add the msg (e.g. duplicate)
-            return;
         }
 
         final AtomicBoolean processing=win.getProcessing();
