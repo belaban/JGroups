@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.211 2009/09/15 19:08:51 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.212 2009/09/16 21:19:05 rachmatowicz Exp $
  */
 public class Util {
 
@@ -2820,10 +2820,15 @@ public class Util {
     		}
 
     	}
-    	// 4. if only interface is specified, get first non-loopback address, 
+    	// 4. if only interface is specified, get first non-loopback address on that interface, 
     	else if (bind_intf != null && bind_addr == null) {
 
     		bind_addr = getFirstNonLoopbackAddress(bind_intf, assumeIPv4) ;
+    	}
+    	// 5. if neither bind address nor bind interface is specified, get the first non-loopback
+    	// address on any interface
+    	else if (bind_intf == null && bind_addr == null) {
+    		bind_addr = getFirstNonLoopbackAddress(assumeIPv4) ;    		
     	}
 
     	// if we reach here, if bind_addr == null, we have tried to obtain a bind_addr but were not successful
