@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -13,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Loopback transport shared by all channels within the same VM. Property for testing is that no messages are lost. Allows
  * us to test various protocols (with ProtocolTester) at maximum speed.
  * @author Bela Ban
- * @version $Id: SHARED_LOOPBACK.java,v 1.4.2.1 2008/05/22 13:23:06 belaban Exp $
+ * @version $Id: SHARED_LOOPBACK.java,v 1.4.2.2 2009/09/16 10:38:38 belaban Exp $
  */
 public class SHARED_LOOPBACK extends TP {
     private static int next_port=10000;
@@ -25,7 +26,13 @@ public class SHARED_LOOPBACK extends TP {
     public SHARED_LOOPBACK() {
     }
 
-    
+
+    public boolean setProperties(Properties props) {
+        super.setProperties(props);
+        if(props.size() != 0)
+            return false;
+        return true;
+    }
 
     public String toString() {
         return "SHARED_LOOPBACK(local address: " + local_addr + ')';
