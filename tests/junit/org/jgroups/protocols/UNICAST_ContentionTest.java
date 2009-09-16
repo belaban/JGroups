@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests for contention on UNICAST, measured by the number of retransmissions in UNICAST 
  * @author Bela Ban
- * @version $Id: UNICAST_ContentionTest.java,v 1.1.2.4 2009/09/14 16:17:43 belaban Exp $
+ * @version $Id: UNICAST_ContentionTest.java,v 1.1.2.5 2009/09/16 08:27:19 belaban Exp $
  */
 public class UNICAST_ContentionTest extends TestCase {
     JChannel c1, c2;
     static final String props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
             "thread_pool.rejection_policy=discard;" +
-            "oob_thread_pool.rejection_policy=discard)"+
+            "oob_thread_pool.rejection_policy=discard;enable_bundling=true)"+
             ":UNICAST(timeout=300,600,1200)";
     static final int NUM_THREADS=200;
     static final int NUM_MSGS=100;
@@ -137,7 +137,8 @@ public class UNICAST_ContentionTest extends TestCase {
             }
             for(int i=0; i < NUM_MSGS; i++) {
                 try {
-                    ch.send(dest, null, buf);
+                    Message msg=new Message(dest, null, buf);
+                    ch.send(msg);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
