@@ -1,4 +1,4 @@
-// $Id: XmlConfigurator.java,v 1.21 2009/05/13 13:07:04 belaban Exp $
+// $Id: XmlConfigurator.java,v 1.22 2009/09/16 18:44:24 vlada Exp $
 
 package org.jgroups.conf;
 
@@ -8,11 +8,13 @@ package org.jgroups.conf;
  * @version 1.0
  */
 
+import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.w3c.dom.*;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;
+import org.jgroups.util.Util;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,6 +27,11 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class XmlConfigurator implements ProtocolStackConfigurator {
+   
+    private static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+
+    private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
+
     public static final String ATTR_NAME="name";
     public static final String ATTR_VALUE="value";
     public static final String ATTR_INHERIT="inherit";
@@ -119,28 +126,40 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
     protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
         /**
-         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the
-         * code below is pretty amateurish... But it seems to work, and it is
-         * executed only on startup, so no perf loss on the critical path. If
-         * somebody wants to improve this, please be my guest.
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty
+         * amateurish... But it seems to work, and it is executed only on startup, so no perf loss
+         * on the critical path. If somebody wants to improve this, please be my guest.
          */
         try {
-            DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
-            factory.setValidating(false); //for now
-            DocumentBuilder builder=factory.newDocumentBuilder();
-            Document document=builder.parse(stream);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            boolean validation = false;
+            try {
+                String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, false, "false");
+                validation = Boolean.valueOf(tmp).booleanValue();
+            } catch (Exception e) {
+                validation = false;
+            }
+            if (validation) {
+                factory.setValidating(true); 
+                factory.setNamespaceAware(validation);
+                factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
+            } else {
+                factory.setValidating(false);
+            }
+            
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(stream);
 
             // The root element of the document should be the "config" element,
             // but the parser(Element) method checks this so a check is not
             // needed here.
-            Element configElement=document.getDocumentElement();
+            Element configElement = document.getDocumentElement();
             return parse(configElement);
-        }
-        catch(Exception x) {
-            if(x instanceof java.io.IOException)
-                throw (java.io.IOException)x;
+        } catch (Exception x) {
+            if (x instanceof java.io.IOException)
+                throw (java.io.IOException) x;
             else {
-                IOException tmp=new IOException();
+                IOException tmp = new IOException();
                 tmp.initCause(x);
                 throw tmp;
             }
