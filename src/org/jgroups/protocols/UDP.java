@@ -43,7 +43,7 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.203 2009/09/14 20:33:07 rachmatowicz Exp $
+ * @version $Id: UDP.java,v 1.204 2009/09/16 21:19:06 rachmatowicz Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -381,9 +381,10 @@ public class UDP extends TP {
     	if(bind_addr == null)
     		throw new IllegalArgumentException("bind_addr cannot be null") ;
 
-    	if(bind_addr != null && bind_addr.isLoopbackAddress() && !use_local_host) {
-    		throw new IllegalArgumentException("can't use localhost as a bind address") ;
-    	}
+//    	RA: 16 Sep 09: need to resolve the use of use_local_host 
+//    	if(bind_addr != null && !bind_addr.isLoopbackAddress() && use_local_host) {
+//    		throw new IllegalArgumentException("must use use localhost as a bind address") ;
+//    	}
     	
         if(bind_addr != null)
             if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
