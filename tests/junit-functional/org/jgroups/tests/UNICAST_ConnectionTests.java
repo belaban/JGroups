@@ -15,7 +15,7 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.7 2009/04/29 05:58:37 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.8 2009/09/16 06:33:15 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_ConnectionTests {
@@ -106,7 +106,7 @@ public class UNICAST_ConnectionTests {
 
     /**
      * Scenario #6 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages,
-     * but loses the firts message
+     * but loses the first message
      */
     public void testAClosingUnilaterallyButLosingFirstMessage() throws Exception {
         sendToEachOtherAndCheck(10);
