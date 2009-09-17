@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.51 2007/09/07 04:56:34 belaban Exp $
+// $Id: Draw.java,v 1.51.2.1 2009/09/17 13:06:53 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -35,7 +35,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     private final Color            draw_color=selectColor();
     private static final Color     background_color=Color.white;
     boolean                        no_channel=false;
-    boolean                        jmx;
+    boolean                        jmx=true;
     private boolean                use_state=false;
     private long                   state_timeout=5000;
 
@@ -89,7 +89,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
        Draw             draw=null;
        String           props=null;
        boolean          no_channel=false;
-       boolean          jmx=false;
+       boolean          jmx=true;
        boolean          use_state=false;
        boolean          use_blocking=false;
        String           group_name=null;
