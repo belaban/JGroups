@@ -14,7 +14,7 @@ import junit.framework.TestCase;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.7.4.2 2009/09/15 20:51:37 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.7.4.3 2009/09/17 15:17:39 belaban Exp $
  */
 public class UNICAST_ConnectionTests extends TestCase {
     private JChannel a, b;
@@ -106,7 +106,7 @@ public class UNICAST_ConnectionTests extends TestCase {
 
     /**
      * Scenario #6 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages,
-     * but loses the firts message
+     * but loses the first message
      */
     public void testAClosingUnilaterallyButLosingFirstMessage() throws Exception {
         sendToEachOtherAndCheck(10);
@@ -195,9 +195,6 @@ public class UNICAST_ConnectionTests extends TestCase {
 
     private static class Drop extends Protocol {
         private volatile boolean drop_next=false;
-
-        private Drop() {
-        }
 
         private Drop(boolean drop_next) {
             this.drop_next=drop_next;
