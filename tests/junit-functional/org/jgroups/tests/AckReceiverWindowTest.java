@@ -12,9 +12,9 @@ import org.testng.annotations.AfterMethod;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.7 2009/09/18 12:12:59 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.8 2009/09/18 12:43:43 belaban Exp $
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
     AckReceiverWindow win;
 
