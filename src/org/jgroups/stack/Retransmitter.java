@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.27 2009/09/11 11:50:44 belaban Exp $
+// $Id: Retransmitter.java,v 1.28 2009/09/18 12:48:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class Retransmitter {
 
@@ -216,25 +215,11 @@ public class Retransmitter {
             doSchedule();
         }
 
-        public String toString() {
-            return String.valueOf(seqno);
-        }
-    }
+         public String toString() {
+             return String.valueOf(seqno);
+         }
+     }
 
-
-
-
-    static class MyXmitter implements Retransmitter.RetransmitCommand {
-
-        public void retransmit(long first_seqno, long last_seqno, Address sender) {
-            System.out.println("-- " + new java.util.Date() + ": retransmit(" + first_seqno + ", " +
-                               last_seqno + ", " + sender + ')');
-        }
-    }
-
-    static void sleep(long timeout) {
-        Util.sleep(timeout);
-    }
 
 }
 
