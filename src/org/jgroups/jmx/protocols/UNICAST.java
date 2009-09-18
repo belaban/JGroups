@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.8.4.2 2009/09/10 11:52:57 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.8.4.3 2009/09/18 08:03:30 belaban Exp $
  */
 public class UNICAST extends Protocol implements UNICASTMBean {
     org.jgroups.protocols.UNICAST p;
@@ -73,6 +73,14 @@ public class UNICAST extends Protocol implements UNICASTMBean {
 
     public int getNumberOfMessagesInReceiveWindows() {
         return p.getNumberOfMessagesInReceiveWindows();
+    }
+
+    public int getAgeOutCacheSize() {
+        return p.getAgeOutCacheSize();
+    }
+
+    public String printAgeOutCache() {
+        return p.printAgeOutCache();
     }
 
 }
