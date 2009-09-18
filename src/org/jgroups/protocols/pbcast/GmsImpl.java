@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.28.2.2 2009/09/08 12:25:03 belaban Exp $
+// $Id: GmsImpl.java,v 1.28.2.3 2009/09/18 10:53:28 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,7 +8,6 @@ import org.jgroups.util.Digest;
 
 import java.util.Collection;
 import java.util.Vector;
-import java.util.List;
 
 
 public abstract class GmsImpl {
@@ -103,9 +102,6 @@ public abstract class GmsImpl {
         Address          mbr;
         boolean          suspected;
         Vector<Address>  coordinators;
-        View             view;
-        Digest           digest;
-        List<Address>    target_members;
 
         Request(int type) {
             this.type=type;
