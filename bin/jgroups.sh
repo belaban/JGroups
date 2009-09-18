@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.11 2009/06/02 13:53:12 belaban Exp $
+# version: $Id: jgroups.sh,v 1.12 2009/09/18 10:16:26 belaban Exp $
 
 #!/bin/bash
 
@@ -33,4 +33,5 @@ FLAGS="$FLAGS -Xshare:off -XX:+UseBiasedLocking"
 JMX="-Dcom.sun.management.jmxremote"
 EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB -XX:+DoEscapeAnalysis"
 
+#java -Xrunhprof:cpu=samples,monitor=y,interval=5,lineno=y,thread=y -classpath $CP $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*
 java -classpath $CP $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*

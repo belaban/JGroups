@@ -1,11 +1,10 @@
-// $Id: XmlConfigurator.java,v 1.22 2009/09/16 18:44:24 vlada Exp $
 
 package org.jgroups.conf;
 
 /**
  * Uses XML to configure a protocol stack
- * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version 1.0
+ * @author Vladimir Blagojevic
+ * @version $Id: XmlConfigurator.java,v 1.23 2009/09/18 10:19:49 belaban Exp $
  */
 
 import org.jgroups.Global;
