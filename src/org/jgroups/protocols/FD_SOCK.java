@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83.2.7 2009/02/05 16:22:00 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.83.2.8 2009/09/18 07:31:32 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -45,8 +45,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     ServerSocket                srv_sock=null;                     // server socket to which another member connects to monitor me
 
     InetAddress                 bind_addr=null;                    // the NIC on which the ServerSocket should listen
-
-    String                      group_name=null;                   // the name of the group (set on CONNECT, nulled on DISCONNECT)
 
     private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress                   srv_sock_addr=null;                // pair of server_socket:port
@@ -976,10 +974,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         final List<ClientConnectionHandler> clients=new LinkedList<ClientConnectionHandler>();
 
 
-        String getName() {
-            return acceptor != null? acceptor.getName() : null;
-        }
- 
         ServerSocketHandler() {
             start();
         }
@@ -1129,12 +1123,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
         
-        public boolean isSuspectedMember(Address member){
-            synchronized(suspected_mbrs) {
-                return suspected_mbrs.contains(member);
-            }
-        }
-
 
         public void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
