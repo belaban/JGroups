@@ -8,14 +8,13 @@ import org.jgroups.stack.ProtocolStack;
 
 import javax.management.*;
 
-import java.lang.management.ManagementFactory;
 import java.util.Vector;
 import java.util.Set;
 import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.14 2009/05/13 13:07:09 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.15 2009/09/18 19:54:57 vlada Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -50,7 +49,7 @@ public class JmxConfigurator {
             Vector<Protocol> protocols=stack.getProtocols();
             for(Protocol p:protocols) {
                 register(p,
-                         ManagementFactory.getPlatformMBeanServer(),
+                         server,
                          getProtocolRegistrationName(cluster_name, domain, p));
             }
         }
@@ -92,7 +91,7 @@ public class JmxConfigurator {
             if(p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
                     unregister(p,
-                               ManagementFactory.getPlatformMBeanServer(),
+                               server,
                                getProtocolRegistrationName(clusterName, "jgroups", p));
                 }
                 catch(MBeanRegistrationException e) {
@@ -211,12 +210,10 @@ public class JmxConfigurator {
      * @param object_name
      */
     public static void unregister(MBeanServer server, String object_name) throws Exception {
-        Set mbeans=server.queryNames(new ObjectName(object_name), null);
+        Set<ObjectName> mbeans=server.queryNames(new ObjectName(object_name), null);
         if(mbeans != null) {
-            ObjectName name;
-            for(Iterator it=mbeans.iterator();it.hasNext();) {
-                name=(ObjectName)it.next();
-                server.unregisterMBean(name);
+            for(Iterator<ObjectName> it=mbeans.iterator();it.hasNext();) {
+                server.unregisterMBean(it.next());
             }
         }
     }
