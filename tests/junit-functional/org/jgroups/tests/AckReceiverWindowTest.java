@@ -10,7 +10,7 @@ import org.jgroups.stack.AckReceiverWindow;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.1.4.5 2009/09/15 08:24:29 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.1.4.6 2009/09/18 07:58:29 belaban Exp $
  */
 public class AckReceiverWindowTest extends TestCase {
     AckReceiverWindow win;
@@ -158,18 +158,6 @@ public class AckReceiverWindowTest extends TestCase {
         win.remove();
         System.out.println("win = " + win);
         assertFalse(win.hasMessagesToRemove());
-    }
-
-
-    public void testSmallerThanNextToRemove() {
-        win.add(1, msg());
-        assertFalse(win.smallerThanNextToRemove(1));
-        win.add(2, msg());
-        assertFalse(win.smallerThanNextToRemove(1));
-        win.remove();
-        assertTrue(win.smallerThanNextToRemove(1));
-        win.remove();
-        assertTrue(win.smallerThanNextToRemove(1));
     }
 
 
