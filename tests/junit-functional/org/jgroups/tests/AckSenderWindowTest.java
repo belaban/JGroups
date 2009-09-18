@@ -8,6 +8,8 @@ import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version  $Id: AckSenderWindowTest.java,v 1.8 2009/04/29 14:07:21 belaban Exp $
+ * @version  $Id: AckSenderWindowTest.java,v 1.9 2009/09/18 10:51:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckSenderWindowTest {
@@ -25,29 +27,34 @@ public class AckSenderWindowTest {
     final static long[]       xmit_timeouts={1000, 2000, 4000, 8000};
     static final double       PERCENTAGE_OFF=1.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
     final Map<Long,Entry>     msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
+    protected TimeScheduler   timer=null;
 
-
-    public void testAdd() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @BeforeMethod
+    protected void setUp() throws Exception {
+        timer=new TimeScheduler(10);
         win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts), timer);
-        try {
-            for(int i=1; i <=5; i++)
-                win.add(i, new Message());
-            System.out.println("win = " + win);
-            assert win.size() == 5;
-            win.ack(1);
-            System.out.println("win = " + win);
-            assert win.size() == 4;
-            win.ack(4);
-            System.out.println("win = " + win);
-            assert win.size() == 1;
-            win.ack(44);
-            assert win.size() == 0;
-        }
-        finally {
-            win.reset();
-            timer.stop();
-        }
+    }
+
+    @AfterMethod
+    protected void tearDown() throws Exception {
+        timer.stop();
+        win.reset();
+    }
+
+
+    public void testSimpleAdd() throws InterruptedException {
+        for(int i=1; i <=5; i++)
+            win.add(i, new Message());
+        System.out.println("win = " + win);
+        assert win.size() == 5;
+        win.ack(1);
+        System.out.println("win = " + win);
+        assert win.size() == 4;
+        win.ack(4);
+        System.out.println("win = " + win);
+        assert win.size() == 1;
+        win.ack(44);
+        assert win.size() == 0;
     }
 
 
@@ -56,43 +63,100 @@ public class AckSenderWindowTest {
     public void testRetransmits() throws InterruptedException {
         int   num_non_correct_entries=0;
 
-        TimeScheduler timer=new TimeScheduler();
-        win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts), timer);
-        try {
-
-            // 1. Send NUM_MSGS messages:
-            System.out.println("-- sending " + NUM_MSGS + " messages:");
-            for(long i=0; i < NUM_MSGS; i++) {
-                msgs.put(new Long(i), new Entry());
-                win.add(i, new Message());
-            }
-            System.out.println("-- done");
-
-            // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
-            System.out.println("-- waiting for all retransmits");
-            long end_time=System.currentTimeMillis() + 20000L, curr, start=System.currentTimeMillis();
-
-            Util.sleep(1000);
-            while((curr=System.currentTimeMillis()) < end_time) {
-                // 3. Check whether all Entries have correct retransmission times
-                num_non_correct_entries=checkEntries(false);
-                if(num_non_correct_entries == 0)
-                    break;
-                Util.sleep(2000L);
-            }
-
-            System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
-
-            num_non_correct_entries=checkEntries(true);
-            if(num_non_correct_entries > 0)
-                System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
-            assert num_non_correct_entries == 0;
+        // 1. Send NUM_MSGS messages:
+        System.out.println("-- sending " + NUM_MSGS + " messages:");
+        for(long i=0; i < NUM_MSGS; i++) {
+            msgs.put(new Long(i), new Entry());
+            win.add(i, new Message());
         }
-        finally {
-            win.reset();
-            timer.stop();
+        System.out.println("-- done");
+
+        // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
+        System.out.println("-- waiting for all retransmits");
+        long end_time=System.currentTimeMillis() + 20000L, curr, start=System.currentTimeMillis();
+
+        Util.sleep(1000);
+        while((curr=System.currentTimeMillis()) < end_time) {
+            // 3. Check whether all Entries have correct retransmission times
+            num_non_correct_entries=checkEntries(false);
+            if(num_non_correct_entries == 0)
+                break;
+            Util.sleep(2000L);
         }
+
+        System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
+
+        num_non_correct_entries=checkEntries(true);
+        if(num_non_correct_entries > 0)
+            System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+        assert num_non_correct_entries == 0;
+
     }
+
+
+
+    public void testLowest() {
+        for(long i=1; i < 5; i++)
+            win.add(i, new Message());
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assert win.getLowest() == Global.DEFAULT_FIRST_UNICAST_SEQNO;
+
+        win.ack(3);
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assert win.getLowest() == 4;
+
+        win.ack(4);
+        System.out.println("win = " + win + ", lowest=" + win.getLowest());
+        assert win.getLowest() == 5;
+
+        win.ack(2);
+        assert win.getLowest() == 5;
+    }
+
+    public void testGetLowestMessage() {
+        long[] seqnos={1,2,3,4,5};
+        final Message[] messages=new Message[]{new Message(),new Message(),new Message(),new Message(),new Message()};
+
+        for(int i=0; i < seqnos.length; i++) {
+            win.add(seqnos[i], messages[i]);
+        }
+        System.out.println("win = " + win);
+
+        Message msg=win.getLowestMessage();
+        assert messages[0] == msg;
+
+        win.ack(2);
+        msg=win.getLowestMessage();
+        assert messages[2] == msg;
+
+        win.ack(7);
+        msg=win.getLowestMessage();
+        assert msg == null;
+    }
+
+
+    public void testAdd() {
+        for(int i=1; i <= 10; i++)
+            win.add(i, new Message());
+        System.out.println("win = " + win);
+        assert win.size() == 10;
+        win.ack(7);
+        assert win.size() == 3;
+    }
+
+
+    public void testAck() {
+        for(int i=1; i <= 3; i++)
+            win.add(i, new Message());
+        assert win.size() == 3;
+        win.ack(1);
+        assert win.size() == 2;
+        win.ack(2);
+        assert win.size() == 1;
+        win.ack(3);
+        assert win.size() == 0;
+    }
+    
 
 
     int checkEntries(boolean print) {
