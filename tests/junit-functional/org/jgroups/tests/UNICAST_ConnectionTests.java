@@ -15,7 +15,7 @@ import java.util.ArrayList;
 /**
  * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST_ConnectionTests.java,v 1.8 2009/09/16 06:33:15 belaban Exp $
+ * @version $Id: UNICAST_ConnectionTests.java,v 1.9 2009/09/18 10:03:48 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_ConnectionTests {
@@ -195,9 +195,6 @@ public class UNICAST_ConnectionTests {
 
     private static class Drop extends Protocol {
         private volatile boolean drop_next=false;
-
-        private Drop() {
-        }
 
         private Drop(boolean drop_next) {
             this.drop_next=drop_next;
