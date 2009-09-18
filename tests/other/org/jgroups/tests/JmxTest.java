@@ -11,12 +11,12 @@ import javax.management.ObjectName;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.9 2006/07/31 09:21:59 belaban Exp $
+ * @version $Id: JmxTest.java,v 1.10 2009/09/18 19:54:55 vlada Exp $
  */
 public class JmxTest {
     MBeanServer server;
     JChannel channel;
-    final String channel_name="JGroups:channel=";
+    final String domain="JGroups";
 
 
 
@@ -30,7 +30,7 @@ public class JmxTest {
         }
         channel=new JChannel(props);
         channel.connect("DemoChannel");
-        JmxConfigurator.registerChannel(channel, server, channel_name, channel.getClusterName() , true);
+        JmxConfigurator.registerChannel(channel, server, domain, channel.getClusterName() , true);
         return true;
     }
 
