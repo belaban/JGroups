@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.191 2009/09/09 20:10:24 belaban Exp $
+ * @version $Id: GMS.java,v 1.192 2009/09/20 14:55:27 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -157,9 +157,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @ManagedAttribute
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute
-    public String getMembers() {return members != null? members.toString() : "[]";}
+    public String getMembers() {return members.toString();}
     @ManagedAttribute
-    public int getNumMembers() {return members != null? members.size() : 0;}
+    public int getNumMembers() {return members.size();}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
 
@@ -617,7 +617,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     protected Address determineCoordinator() {
         synchronized(members) {
-            return members != null && members.size() > 0? members.elementAt(0) : null;
+            return members.size() > 0? members.elementAt(0) : null;
         }
     }
 
@@ -1232,7 +1232,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.191 2009/09/09 20:10:24 belaban Exp $
+     * @version $Id: GMS.java,v 1.192 2009/09/20 14:55:27 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
