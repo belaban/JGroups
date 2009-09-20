@@ -1,4 +1,4 @@
-// $Id: MergeData.java,v 1.8 2009/04/27 13:19:09 belaban Exp $
+// $Id: MergeData.java,v 1.9 2009/09/20 15:02:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -63,6 +63,9 @@ public class MergeData implements Externalizable {
                 ((MergeData)other).sender != null && ((MergeData)other).sender.equals(sender);
     }
 
+    public int hashCode() {
+        return sender != null? sender.hashCode() : 0;
+    }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sender);
