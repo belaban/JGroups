@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.96 2009/09/06 13:51:12 belaban Exp $
+ * @version $Id: STABLE.java,v 1.97 2009/09/20 15:52:51 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -261,8 +261,8 @@ public class STABLE extends Protocol {
             return;
         Address dest=msg.getDest();
         if(dest == null || dest.isMulticastAddress()) {
+            boolean send_stable_msg=false;
             received.lock();
-            boolean locked=true;
             try {
                 num_bytes_received+=msg.getLength();
                 if(num_bytes_received >= max_bytes) {
@@ -271,17 +271,18 @@ public class STABLE extends Protocol {
                                 append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                     }
                     num_bytes_received=0;
-                    received.unlock();
-                    locked=false;
-                    Digest my_digest=getDigest();  // asks the NAKACK protocol for the current digest,
-                    if(log.isTraceEnabled())
-                        log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
-                    sendStableMessage(my_digest);
+                    send_stable_msg=true;
                 }
             }
             finally {
-                if(locked)
-                    received.unlock();
+                received.unlock();
+            }
+
+            if(send_stable_msg) {
+                Digest my_digest=getDigest();  // asks the NAKACK protocol for the current digest,
+                if(log.isTraceEnabled())
+                    log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
+                sendStableMessage(my_digest);
             }
         }
     }
