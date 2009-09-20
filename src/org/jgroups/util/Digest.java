@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.12 2009/05/13 13:07:05 belaban Exp $
+ * @version $Id: Digest.java,v 1.13 2009/09/20 16:11:57 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -435,6 +435,10 @@ public class Digest implements Externalizable, Streamable {
                 return false;
             Entry other=(Entry)obj;
             return low_seqno == other.low_seqno && highest_delivered_seqno == other.highest_delivered_seqno && highest_received_seqno == other.highest_received_seqno;
+        }
+
+        public int hashCode() {
+            return (int)(low_seqno + highest_delivered_seqno + highest_received_seqno);
         }
 
         public String toString() {
