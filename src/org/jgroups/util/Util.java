@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.212 2009/09/16 21:19:05 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.213 2009/09/20 15:40:39 belaban Exp $
  */
 public class Util {
 
@@ -2746,7 +2746,7 @@ public class Util {
      * @throws SocketException
      */
     public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
-    	return (InetAddress) getBindAddress(props, true) ;
+    	return getBindAddress(props, true);
     }
     
     public static InetAddress getBindAddress(Properties props, boolean assumeIPv4) throws UnknownHostException, SocketException {
@@ -2759,9 +2759,9 @@ public class Util {
     			ignore_systemprops, null);
     	
     	// allow disabling of version checking
-    	boolean disableVersionCheck = (new Boolean(System.getProperty("jgroups.disableIPVersionChecking", "false"))).booleanValue() ;
+    	boolean disableVersionCheck = Boolean.valueOf(System.getProperty("jgroups.disableIPVersionChecking", "false")) ;
     	
-    	InetAddress retval=null, bind_addr=null;
+    	InetAddress bind_addr=null;
     	NetworkInterface bind_intf=null ;
 
     	// 1. if bind_addr_str specified, get bind_addr and check version
@@ -2870,7 +2870,7 @@ public class Util {
     		                                                 boolean assumeIPv4) throws UnknownHostException {
     	
     	// allow disabling of version checking
-    	boolean disableVersionCheck = (new Boolean(System.getProperty("jgroups.disableIPVersionChecking", "false"))).booleanValue() ;
+    	boolean disableVersionCheck = Boolean.valueOf(System.getProperty("jgroups.disableIPVersionChecking", "false"));
 
     	// if addr_str == null, we need to supply a default value
     	if (addr_str == null) {
@@ -3024,7 +3024,7 @@ public class Util {
     /**
      * Returns the first non-loopback address on the given interface on the current host.
      *
-     * @param interface the interface to be checked
+     * @param intf the interface to be checked
      * @param assumeIPv4 constraint on IP version of address to be returned
      */    
     public static InetAddress getFirstNonLoopbackAddress(NetworkInterface intf, boolean assumeIPv4) throws SocketException {

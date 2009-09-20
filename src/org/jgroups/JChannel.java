@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.224 2009/09/08 17:27:49 vlada Exp $
+ * @version $Id: JChannel.java,v 1.225 2009/09/20 15:42:59 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -136,7 +136,7 @@ public class JChannel extends Channel {
     
     protected final ConcurrentMap<String,Object> config=new ConcurrentHashMap<String,Object>();
 
-    protected final Log log=LogFactory.getLog(getClass());
+    protected final Log log=LogFactory.getLog(JChannel.class);
 
     /** Collect statistics */
     @ManagedAttribute(description="Collect channel statistics",writable=true)
@@ -697,10 +697,10 @@ public class JChannel extends Channel {
 
     protected Map<String,Long> dumpChannelStats() {
         Map<String,Long> retval=new HashMap<String,Long>();
-        retval.put("sent_msgs", new Long(sent_msgs));
-        retval.put("sent_bytes", new Long(sent_bytes));
-        retval.put("received_msgs", new Long(received_msgs));
-        retval.put("received_bytes", new Long(received_bytes));
+        retval.put("sent_msgs",      sent_msgs);
+        retval.put("sent_bytes",     sent_bytes);
+        retval.put("received_msgs",  received_msgs);
+        retval.put("received_bytes", received_bytes);
         return retval;
     }
 
@@ -1699,7 +1699,7 @@ public class JChannel extends Channel {
         String tmp=configurator.getProtocolStackString();
         tmp=Util.substituteVariable(tmp); // replace vars with system props
 
-        synchronized(getClass()) {
+        synchronized(Channel.class) {
             prot_stack=new ProtocolStack(this, tmp);
             try {
                 prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
@@ -1717,7 +1717,7 @@ public class JChannel extends Channel {
         if(log.isInfoEnabled())
             log.info("JGroups version: " + Version.description);
 
-        synchronized(getClass()) {
+        synchronized(JChannel.class) {
             prot_stack=new ProtocolStack(this, null);
             try {
                 prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)

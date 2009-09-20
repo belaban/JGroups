@@ -3,21 +3,20 @@
 
 package org.jgroups.stack;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
@@ -49,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.65 2009/05/13 13:06:56 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.66 2009/09/20 15:43:44 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -248,7 +247,7 @@ public class NakReceiverWindow {
 
             // Case #1: we received the expected seqno: most common path
             if(seqno == next_to_add) {
-                xmit_table.put(new Long(seqno), msg);
+                xmit_table.put(seqno, msg);
                 return true;
             }
 
