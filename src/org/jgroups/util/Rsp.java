@@ -1,4 +1,4 @@
-// $Id: Rsp.java,v 1.7 2008/01/22 10:44:33 belaban Exp $
+// $Id: Rsp.java,v 1.8 2009/09/20 16:11:57 belaban Exp $
 
 package org.jgroups.util;
 
@@ -44,6 +44,10 @@ public class Rsp {
         if(sender != null)
             return sender.equals(other.sender);
         return other.sender == null;
+    }
+
+    public int hashCode() {
+        return sender != null? sender.hashCode() : 0;
     }
 
     public Object getValue() {
