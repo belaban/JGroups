@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.54 2009/09/06 13:51:07 belaban Exp $
+// $Id: ENCRYPT.java,v 1.55 2009/09/20 15:02:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1241,14 +1241,6 @@ public class ENCRYPT extends Protocol {
             return retval;
         }
 
-        /*
-         * (non-Javadoc)
-         *
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
-        public boolean equals(Object obj) {
-            return obj instanceof EncryptHeader && ((((EncryptHeader)obj).getType() == type) && ((((EncryptHeader)obj).getVersion().equals(version))));
-        }
 
         /**
          * @return Returns the type.
