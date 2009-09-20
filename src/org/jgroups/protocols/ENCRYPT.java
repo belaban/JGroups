@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.55 2009/09/20 15:02:58 belaban Exp $
+// $Id: ENCRYPT.java,v 1.56 2009/09/20 15:05:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1219,9 +1219,7 @@ public class ENCRYPT extends Protocol {
             out.writeBoolean(encrypt_entire_msg);
         }
 
-        public void readFrom(DataInputStream in) throws IOException,
-                                                IllegalAccessException,
-                                                InstantiationException {
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readShort();
             version=Util.readString(in);
             encrypt_entire_msg=in.readBoolean();
