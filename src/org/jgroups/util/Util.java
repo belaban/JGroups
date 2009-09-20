@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.213 2009/09/20 15:40:39 belaban Exp $
+ * @version $Id: Util.java,v 1.214 2009/09/20 15:49:58 belaban Exp $
  */
 public class Util {
 
@@ -321,31 +321,31 @@ public class Util {
                     break;
                 case TYPE_BYTE:
                     in=new DataInputStream(in_stream);
-                    retval=new Byte(((DataInputStream)in).readByte());
+                    retval=Byte.valueOf(((DataInputStream)in).readByte());
                     break;
                 case TYPE_CHAR:
                     in=new DataInputStream(in_stream);
-                    retval=new Character(((DataInputStream)in).readChar());
+                    retval=Character.valueOf(((DataInputStream)in).readChar());
                     break;
                 case TYPE_DOUBLE:
                     in=new DataInputStream(in_stream);
-                    retval=new Double(((DataInputStream)in).readDouble());
+                    retval=Double.valueOf(((DataInputStream)in).readDouble());
                     break;
                 case TYPE_FLOAT:
                     in=new DataInputStream(in_stream);
-                    retval=new Float(((DataInputStream)in).readFloat());
+                    retval=Float.valueOf(((DataInputStream)in).readFloat());
                     break;
                 case TYPE_INT:
                     in=new DataInputStream(in_stream);
-                    retval=new Integer(((DataInputStream)in).readInt());
+                    retval=Integer.valueOf(((DataInputStream)in).readInt());
                     break;
                 case TYPE_LONG:
                     in=new DataInputStream(in_stream);
-                    retval=new Long(((DataInputStream)in).readLong());
+                    retval=Long.valueOf(((DataInputStream)in).readLong());
                     break;
                 case TYPE_SHORT:
                     in=new DataInputStream(in_stream);
-                    retval=new Short(((DataInputStream)in).readShort());
+                    retval=Short.valueOf(((DataInputStream)in).readShort());
                     break;
                 case TYPE_STRING:
                     in=new DataInputStream(in_stream);
@@ -575,25 +575,25 @@ public class Util {
                 retval=Boolean.valueOf(in.readBoolean());
                 break;
             case TYPE_BYTE:
-                retval=new Byte(in.readByte());
+                retval=Byte.valueOf(in.readByte());
                 break;
             case TYPE_CHAR:
-                retval=new Character(in.readChar());
+                retval=Character.valueOf(in.readChar());
                 break;
             case TYPE_DOUBLE:
-                retval=new Double(in.readDouble());
+                retval=Double.valueOf(in.readDouble());
                 break;
             case TYPE_FLOAT:
-                retval=new Float(in.readFloat());
+                retval=Float.valueOf(in.readFloat());
                 break;
             case TYPE_INT:
-                retval=new Integer(in.readInt());
+                retval=Integer.valueOf(in.readInt());
                 break;
             case TYPE_LONG:
-                retval=new Long(in.readLong());
+                retval=Long.valueOf(in.readLong());
                 break;
             case TYPE_SHORT:
-                retval=new Short(in.readShort());
+                retval=Short.valueOf(in.readShort());
                 break;
             case TYPE_STRING:
                 if(in.readBoolean()) { // large string

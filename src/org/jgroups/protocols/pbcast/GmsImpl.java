@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.37 2009/06/17 16:20:05 belaban Exp $
+// $Id: GmsImpl.java,v 1.38 2009/09/20 15:49:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -103,9 +103,6 @@ public abstract class GmsImpl {
         Address          mbr;
         boolean          suspected;
         List<View>       views; // different view on MERGE
-        View             view;
-        Digest           digest;
-        List<Address>    target_members;
         boolean          useFlushIfPresent;
 
 
