@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.38 2009/09/20 15:49:59 belaban Exp $
+// $Id: GmsImpl.java,v 1.39 2009/09/21 09:57:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -143,7 +143,7 @@ public abstract class GmsImpl {
         public boolean canBeProcessedTogether(Request other) {
             if(other == null)
                 return false;
-            int other_type=other.getType();
+            int other_type=other.type;
             return (type == JOIN || type == LEAVE || type == SUSPECT) &&
                     (other_type == JOIN || other_type == LEAVE || other_type == SUSPECT);
         }

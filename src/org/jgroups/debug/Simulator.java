@@ -16,7 +16,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.17 2009/05/19 13:08:10 belaban Exp $
+ * @version $Id: Simulator.java,v 1.18 2009/09/21 09:57:34 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -287,7 +287,7 @@ public class Simulator {
 			
 		Iterator<DropMessage> it = droppedMessages.iterator();
 		while (it.hasNext()) {
-			DropMessage d = (DropMessage) it.next() ;
+			DropMessage d =it.next();
 			if (d.drop(msg, dest))
 				return true ;
 		}
@@ -444,7 +444,7 @@ public class Simulator {
 							}
 						}
 						else {
-							s=(Simulator)addrTable.get(dst);
+							s=addrTable.get(dst);
 							if(s != null) {
 								// inject drop faults here
 								if (!senderDropFault(msg,dst)) {

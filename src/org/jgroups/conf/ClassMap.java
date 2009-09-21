@@ -9,7 +9,7 @@ import org.jgroups.util.Util;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ClassMap.java,v 1.6 2008/01/23 15:32:42 belaban Exp $
+ * @version $Id: ClassMap.java,v 1.7 2009/09/21 09:57:33 belaban Exp $
  */
 public class ClassMap {
     private final String  mClassname;
@@ -21,7 +21,7 @@ public class ClassMap {
     }
 
     public int hashCode() {
-        return getMagicNumber();
+        return mMagicNumber;
     }
 
     public String getClassName() {
@@ -37,14 +37,14 @@ public class ClassMap {
      * Returns the Class object for this class<BR>
      */
     public Class getClassForMap() throws ClassNotFoundException {
-        return Util.loadClass(getClassName(), this.getClass());
+        return Util.loadClass(mClassname, this.getClass());
     }
 
 
     public boolean equals(Object another) {
         if(another instanceof ClassMap) {
             ClassMap obj=(ClassMap)another;
-            return getClassName().equals(obj.getClassName());
+            return mClassname.equals(obj.mClassname);
         }
         else
             return false;

@@ -19,7 +19,7 @@ import java.util.ArrayList;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.5 2009/09/08 20:20:13 rachmatowicz Exp $
+ * @version $Id: ResourceManager.java,v 1.6 2009/09/21 09:57:23 belaban Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;
@@ -210,7 +210,7 @@ public class ResourceManager {
 			for (int i = bv.length - 1; i >= 0; i--) {
 
 				// increment the ith byte
-				bv[i] = (byte) incrementHexValue(bv[i]);
+				bv[i] =incrementHexValue(bv[i]);
 
 				// if carry, increment (i-1)th byte
 				if (carry) {

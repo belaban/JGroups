@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.11 2006/05/03 08:45:19 belaban Exp $
+// $Id: QuoteClient.java,v 1.12 2009/09/21 09:57:32 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -190,7 +190,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
                         rsp_list=disp.callRemoteMethods(null, "getAllStocks",
-                                                        (Object[])null, (Class[])null,
+                                                        null, (Class[])null,
                                                         GroupRequest.GET_ALL, 5000);
 
                         System.out.println("rsp_list is " + rsp_list);

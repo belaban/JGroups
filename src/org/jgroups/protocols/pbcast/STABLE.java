@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.97 2009/09/20 15:52:51 belaban Exp $
+ * @version $Id: STABLE.java,v 1.98 2009/09/21 09:57:27 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -396,7 +396,6 @@ public class STABLE extends Protocol {
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
         }
         if(log.isTraceEnabled()) {
-            assert sb != null;
             sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");
             log.trace(sb);
         }
@@ -543,7 +542,6 @@ public class STABLE extends Protocol {
         }
 
         Digest copy=null;
-        boolean all_votes_received=false;
         lock.lock();
         try {
             if(votes.contains(sender))  // already received gossip from sender; discard it
@@ -553,7 +551,7 @@ public class STABLE extends Protocol {
             if(!success) // we can only add the sender to votes if *all* elements of my digest were updated
                 return;
 
-            all_votes_received=addVote(sender);
+            boolean all_votes_received=addVote(sender);
             if(all_votes_received)
                 copy=digest.copy();
         }

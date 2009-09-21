@@ -5,7 +5,7 @@ package org.jgroups.conf;
  * Reads and maintains mapping between magic numbers and classes
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: MagicNumberReader.java,v 1.17 2009/05/13 13:07:04 belaban Exp $
+ * @version $Id: MagicNumberReader.java,v 1.18 2009/09/21 09:57:33 belaban Exp $
  */
 
 import org.jgroups.logging.Log;
@@ -41,7 +41,7 @@ public class MagicNumberReader {
      * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
     public ClassMap[] readMagicNumberMapping() throws Exception {
-        InputStream stream=null;
+        InputStream stream;
         try {
             stream=Util.getResourceAsStream(mMagicNumberFile, this.getClass());
             // try to load the map from file even if it is not a Resource in the class path
@@ -78,8 +78,8 @@ public class MagicNumberReader {
         try {
             protocol.normalize();
             NamedNodeMap attrs=protocol.getAttributes();
-            String clazzname=null;
-            String magicnumber=null;
+            String clazzname;
+            String magicnumber;
 
             magicnumber=attrs.getNamedItem("id").getNodeValue();
             clazzname=attrs.getNamedItem("name").getNodeValue();

@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.123 2009/08/27 07:29:45 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.124 2009/09/21 09:57:27 belaban Exp $
  */
 public class CoordGmsImpl extends GmsImpl {
     private final MergeTask         merge_task=new MergeTask();
@@ -383,7 +383,7 @@ public class CoordGmsImpl extends GmsImpl {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
             // (client will retry when it doesn't get a response)
             if(log.isDebugEnabled())
-                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + leaving +
+                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + String.valueOf(leaving) +
                         "); the new coordinator will handle the leave request");
             return;
         }
@@ -528,7 +528,7 @@ public class CoordGmsImpl extends GmsImpl {
      * @param timeout Max number of msecs to wait for the merge responses from the subgroup coords
      */
     private boolean getMergeDataFromSubgroupCoordinators(Map<Address,Collection<Address>> coords, MergeId new_merge_id, long timeout) {
-    	boolean gotAllResponses = false;
+    	boolean gotAllResponses;
         long start=System.currentTimeMillis();        
         merge_rsps.reset(coords.keySet());
         if(log.isDebugEnabled())

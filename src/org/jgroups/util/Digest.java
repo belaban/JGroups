@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.13 2009/09/20 16:11:57 belaban Exp $
+ * @version $Id: Digest.java,v 1.14 2009/09/21 09:57:23 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -335,14 +335,9 @@ public class Digest implements Externalizable, Streamable {
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeShort(senders.size());
-        Map.Entry<Address,Entry> entry;
-        Address key;
-        Entry val;
-        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            key=entry.getKey();
-            val=entry.getValue();
-            Util.writeAddress(key, out);
+        for(Map.Entry<Address,Entry> entry: senders.entrySet()) {
+            Entry val=entry.getValue();
+            Util.writeAddress(entry.getKey(), out);
             out.writeLong(val.low_seqno);
             out.writeLong(val.highest_delivered_seqno);
             out.writeLong(val.highest_received_seqno);

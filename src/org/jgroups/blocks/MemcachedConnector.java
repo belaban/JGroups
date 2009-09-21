@@ -11,10 +11,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedSelectorException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 /** Class which listens on a server socket for memcached clients, reads the requests, forwards them to an instance of
@@ -22,7 +19,7 @@ import java.util.concurrent.*;
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.<br/>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.14 2008/09/01 11:54:02 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.15 2009/09/21 09:57:26 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     @ManagedAttribute(writable=false)
@@ -340,8 +337,7 @@ public class MemcachedConnector implements Runnable {
                 case GET:
                 case GETS:
                     req.keys=new ArrayList<String>(5);
-                    for(int i=1; i < args.length; i++)
-                        req.keys.add(args[i]);
+                    req.keys.addAll(Arrays.asList(args).subList(1, args.length));
                     break;
 
                 case DELETE:

@@ -1,18 +1,16 @@
-// $Id: SIZE.java,v 1.25 2009/09/06 13:51:07 belaban Exp $
+// $Id: SIZE.java,v 1.26 2009/09/21 09:57:25 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.util.Util;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.ExposedDataOutputStream;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ExposedDataOutputStream;
+import org.jgroups.util.Util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.util.Vector;
 
 
@@ -44,21 +42,19 @@ public class SIZE extends Protocol {
 
 
     public Object up(Event evt) {
-        Message msg;
-        int payload_size=0, serialized_size;
-
+        
         switch(evt.getType()) {
 
         case Event.MSG:
-            msg=(Message)evt.getArg();
-            payload_size=msg.getLength();
+            Message msg=(Message)evt.getArg();
+            int payload_size=msg.getLength();
 
             if(raw_buffer) {
                 if(log.isTraceEnabled())
                     log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
             }
             else {
-                serialized_size=sizeOf(msg);
+                int serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
                     if(log.isTraceEnabled())
                         log.trace("size of serialized message is " + serialized_size +

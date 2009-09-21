@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.66 2009/09/20 15:43:44 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.67 2009/09/21 09:57:24 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -300,7 +300,7 @@ public class NakReceiverWindow {
 
 
     public Message remove() {
-        Message retval=null;
+        Message retval;
 
         lock.writeLock().lock();
         try {
@@ -342,7 +342,7 @@ public class NakReceiverWindow {
      * @return
      */
     public Message remove(final AtomicBoolean processing) {
-        Message retval=null;
+        Message retval;
         boolean found=false;
 
         lock.writeLock().lock();

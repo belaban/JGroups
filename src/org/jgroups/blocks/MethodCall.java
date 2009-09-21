@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class MethodCall implements Externalizable {
 
@@ -292,7 +292,7 @@ public class MethodCall implements Externalizable {
     public Object invoke(Object target) throws Throwable {
         Class  cl;
         Method meth=null;
-        Object retval=null;
+        Object retval;
 
 
         if(method_name == null || target == null) {

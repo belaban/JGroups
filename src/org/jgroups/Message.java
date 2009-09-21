@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.96 2009/05/13 13:07:10 belaban Exp $
+ * @version $Id: Message.java,v 1.97 2009/09/21 09:57:37 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -633,7 +633,6 @@ public class Message implements Streamable {
         short             magic_number;
         String            classname;
         Class             clazz;
-        ObjectInputStream ois=null;
 
         try {
             magic_number=in.readShort();
@@ -654,7 +653,7 @@ public class Message implements Streamable {
                ((Streamable)hdr).readFrom(in);
             }
             else {
-                ois=new ObjectInputStream(in);
+                ObjectInputStream ois=new ObjectInputStream(in);
                 hdr.readExternal(ois);
             }
         }

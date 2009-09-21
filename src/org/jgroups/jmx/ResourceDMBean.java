@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.29 2009/05/14 07:34:00 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.30 2009/09/21 09:57:31 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -540,9 +540,9 @@ public class ResourceDMBean implements DynamicMBean {
 
         public Object invoke(Attribute a) throws Exception {
             if(a == null && isOrGetmethod != null)
-                return isOrGetmethod.invoke(getObject(), new Object[] {});
+                return isOrGetmethod.invoke(getObject());
             else if(a != null && setMethod != null)
-                return setMethod.invoke(getObject(), new Object[] { a.getValue() });
+                return setMethod.invoke(getObject(), a.getValue());
             else
                 return null;
         }

@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.41 2009/06/17 16:20:07 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.42 2009/09/21 09:57:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -343,9 +343,9 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
-        Object   buf=null;
-        Message  msg=null;
-        Object   retval=null;
+        Object   buf;
+        Message  msg;
+        Object   retval;
 
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
@@ -393,7 +393,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
      * Use MethodCall.invoke() to do this. Return result.
      */
     public Object handle(Message req) {
-        Object      body=null;
+        Object      body;
         MethodCall  method_call;
 
         if(server_obj == null) {

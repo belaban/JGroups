@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.225 2009/09/20 15:42:59 belaban Exp $
+ * @version $Id: JChannel.java,v 1.226 2009/09/21 09:57:37 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -264,7 +264,7 @@ public class JChannel extends Channel {
         if (properties == null)
             properties = DEFAULT_PROTOCOL_STACK;
 
-        ProtocolStackConfigurator c=null;
+        ProtocolStackConfigurator c;
 
         try {
             c=ConfiguratorFactory.getStackConfigurator(properties);
@@ -408,7 +408,7 @@ public class JChannel extends Channel {
 
         if (cluster_name != null) { // only connect if we are not a unicast channel
             
-            Event connect_event = null;
+            Event connect_event;
             if (useFlushIfPresent) {
                 connect_event = new Event(Event.CONNECT_USE_FLUSH, cluster_name);
             } else {
@@ -512,15 +512,15 @@ public class JChannel extends Channel {
         setAddress();
         startStack(cluster_name);
 
-        boolean stateTransferOk=false;
-        boolean joinSuccessful=false;
+        boolean stateTransferOk;
+        boolean joinSuccessful;
         boolean canFetchState=false;
         // only connect if we are not a unicast channel
         if(cluster_name == null)
             return;
 
         try {
-            Event connect_event=null;
+            Event connect_event;
             if(useFlushIfPresent)
                 connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name);
             else
@@ -1972,7 +1972,7 @@ public class JChannel extends Channel {
      * @return true if FLUSH completed within the timeout
      */
     public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume) {
-        boolean successfulFlush = false;
+        boolean successfulFlush;
         if(!flushSupported()){
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }

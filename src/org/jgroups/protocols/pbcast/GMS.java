@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.192 2009/09/20 14:55:27 belaban Exp $
+ * @version $Id: GMS.java,v 1.193 2009/09/21 09:57:27 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -408,8 +408,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
             // Update joining list (see DESIGN for explanation)
             if(new_mbrs != null) {
-                for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
-                    Address tmp_mbr=it.next();
+                for(Address tmp_mbr: new_mbrs) {
                     if(!joining.contains(tmp_mbr))
                         joining.addElement(tmp_mbr);
                 }
@@ -417,15 +416,13 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
             // Update leaving list (see DESIGN for explanations)
             if(old_mbrs != null) {
-                for(Iterator<Address> it=old_mbrs.iterator(); it.hasNext();) {
-                    Address addr=it.next();
+                for(Address addr: old_mbrs) {
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
             }
             if(suspected_mbrs != null) {
-                for(Iterator<Address> it=suspected_mbrs.iterator(); it.hasNext();) {
-                    Address addr=it.next();
+                for(Address addr:suspected_mbrs) {
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
@@ -584,8 +581,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
-                for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) {
-                    Address addr=it.next();
+                for(Address addr: mbrs) {
                     if(!prev_members.contains(addr))
                         prev_members.add(addr);
                 }
@@ -732,9 +728,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 			}
         }
         else{
-        	Callable<Boolean> invoker = null;
         	try {
-				invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
+				Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
 				return invoker.call();
 			} catch (Exception e) {
 				return false;
@@ -1232,7 +1227,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.192 2009/09/20 14:55:27 belaban Exp $
+     * @version $Id: GMS.java,v 1.193 2009/09/21 09:57:27 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

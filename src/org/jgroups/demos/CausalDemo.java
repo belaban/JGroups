@@ -1,4 +1,4 @@
-// $Id: CausalDemo.java,v 1.9 2009/05/13 13:07:01 belaban Exp $
+// $Id: CausalDemo.java,v 1.10 2009/09/21 09:57:32 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
@@ -61,7 +61,7 @@ public class CausalDemo implements Runnable
          channel.connect("CausalGroup");
          System.out.println("View:" + channel.getView());
          if (starter)
-            channel.send(new Message(null, null, new CausalMessage("A", (Address) channel.getView().getMembers().get(0))));
+            channel.send(new Message(null, null, new CausalMessage("A", channel.getView().getMembers().get(0))));
 
       }
       catch (Exception e)

@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.35 2009/09/18 10:51:32 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.36 2009/09/21 09:57:24 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,12 +25,11 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    RetransmitCommand       retransmit_command = null;                            // called to request XMIT of msg
-    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>(); 
-    Interval                interval=new StaticInterval(400,800,1200,1600);
-    final Retransmitter     retransmitter;
-    static final Log        log=LogFactory.getLog(AckSenderWindow.class);
-    long                    lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
+    private RetransmitCommand       retransmit_command = null;                            // called to request XMIT of msg
+    private final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>();
+    private Interval                interval=new StaticInterval(400,800,1200,1600);
+    private final Retransmitter     retransmitter;
+    private long                    lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
 
 
     public interface RetransmitCommand {
@@ -132,9 +131,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         Message msg;
 
         if(retransmit_command != null) {
-            if(log.isTraceEnabled())
-                log.trace(new StringBuilder("retransmitting messages ").append(first_seqno).
-                          append(" - ").append(last_seqno).append(" from ").append(sender));
             for(long i = first_seqno; i <= last_seqno; i++) {
                 if((msg=msgs.get(i)) != null) { // find the message to retransmit
                     retransmit_command.retransmit(i, msg);
