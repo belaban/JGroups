@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -176,8 +176,13 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         case ID:
             System.out.println("-- invoking " + num + " methods using mode=ID");
             measure_method_call=new MethodCall((short)0, null);
+            measure_method_call.setRequestMode(request_type);
+            measure_method_call.setTimeout(TIMEOUT);
+            measure_method_call.setUseAnycasting(false);
+            measure_method_call.setFlags(Message.DONT_BUNDLE);
+            measure_method_call.setFilter(null);
             for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, measure_method_call, request_type, TIMEOUT);
+                disp.callRemoteMethods(null, measure_method_call);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -191,7 +196,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
 
 
-    void printStats(long total_time, int num) {
+    static void printStats(long total_time, int num) {
         double throughput=((double)num)/((double)total_time/1000.0);
         System.out.println("time for " + num + " remote calls was " +
                            total_time + ", avg=" + (total_time / (double)num) +
