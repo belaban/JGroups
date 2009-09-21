@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.29 2009/09/21 06:54:34 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -78,8 +78,6 @@ public class FD_ALL extends Protocol {
 
     private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
     
-    private final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7); // keys=Address, val=Integer (number of pings from suspected mbrs)
-
     private final Lock lock=new ReentrantLock();
 
 
@@ -275,8 +273,6 @@ public class FD_ALL extends Protocol {
         keys.retainAll(mbrs); // remove all nodes which have left the cluster
         for(Address member:mbrs)
             update(member);
-
-        invalid_pingers.clear();
 
         if(has_at_least_two) {
             startHeartbeatSender();
