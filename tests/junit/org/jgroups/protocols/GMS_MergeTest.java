@@ -3,9 +3,12 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Util;
+import org.jgroups.util.Digest;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -13,7 +16,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.13 2009/09/21 13:50:35 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.14 2009/09/21 14:35:12 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -187,6 +190,83 @@ public class GMS_MergeTest extends ChannelTestBase {
         }
     }
 
+
+    /**
+     * Tests the merge of the following partitions:
+     * <ul>
+     * <li>A: {B, A, C}
+     * <li>B: {B, C}
+     * <li>C: {B, C}
+     * </ol>
+     * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
+     * @throws Exception
+     */
+    public static void testMergeAsymmetricPartitions() throws Exception {
+        JChannel[] channels=null;
+        final int NUM=100;
+         try {
+             channels=create("GMS_MergeTest.testMergeAsymmetricPartitions", "B", "A", "C");
+             JChannel a=findChannel("A", channels), b=findChannel("B", channels), c=findChannel("C", channels);
+             print(channels);
+             View view=channels[channels.length -1].getView();
+             assert view.size() == channels.length : "view is " + view;
+
+             System.out.println("sending " + NUM + " msgs:");
+             for(int i=0; i < NUM; i++)
+                 for(JChannel ch: channels)
+                     ch.send(null, null, "Number #" + i + " from " + ch.getAddress());
+             
+             System.out.println("\ncreating partitions: ");
+             applyView(channels, "A", "B", "A", "C");
+             applyView(channels, "B", "B", "C");
+             applyView(channels, "C", "B", "C");
+
+             print(channels);
+             checkViews(channels, "A", "B", "A", "C");
+             checkViews(channels, "B", "B", "C");
+             checkViews(channels, "C", "B", "C");
+
+             System.out.println("B and C exchange " + NUM + " messages");
+             for(int i=0; i < NUM; i++)
+                 b.send(null, null, "message #" + i +" from B");
+             for(int i=0; i < NUM; i++)
+                 c.send(null, null, "message #" + i +" from C");
+
+             Digest da=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
+                     db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
+                     dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+
+             System.out.println("Digest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
+             System.out.println("Running stability protocol on A, B and C now");
+
+             for(int i=0; i < 3; i++) {
+                 ((STABLE)a.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
+                 ((STABLE)b.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
+                 ((STABLE)c.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
+                 Util.sleep(500);
+             }
+
+             db=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+
+             System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
+         }
+         finally {
+             close(channels);
+         }
+     }
+
+    /**
+     * First name is the channel name, the rest is the view to be applied
+     * @param members
+     */
+    private static void applyView(JChannel[] channels, String member, String ... members) throws Exception {
+        JChannel ch=findChannel(member, channels);
+        View view=createView(members, channels);
+        GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+        gms.installView(view);
+    }
 
 
     private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
