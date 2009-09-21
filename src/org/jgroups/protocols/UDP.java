@@ -43,7 +43,7 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.204 2009/09/16 21:19:06 rachmatowicz Exp $
+ * @version $Id: UDP.java,v 1.205 2009/09/21 09:57:25 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -385,9 +385,8 @@ public class UDP extends TP {
 //    	if(bind_addr != null && !bind_addr.isLoopbackAddress() && use_local_host) {
 //    		throw new IllegalArgumentException("must use use localhost as a bind address") ;
 //    	}
-    	
-        if(bind_addr != null)
-            if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
+
+        if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
 
 
         // 2. Create socket for receiving unicast UDP packets. The address and port

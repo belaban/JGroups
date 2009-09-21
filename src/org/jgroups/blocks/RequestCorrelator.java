@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.48 2009/05/13 13:06:54 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.49 2009/09/21 09:57:26 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -455,7 +455,7 @@ public class RequestCorrelator {
                 RspCollector coll=requests.get(Long.valueOf(hdr.id));
                 if(coll != null) {
                     Address sender=msg.getSrc();
-                    Object retval=null;
+                    Object retval;
                     byte[] buf=msg.getBuffer();
                     int offset=msg.getOffset(), length=msg.getLength();
                     try {

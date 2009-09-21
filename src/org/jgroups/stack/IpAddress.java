@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.51 2009/05/13 13:06:56 belaban Exp $
+// $Id: IpAddress.java,v 1.52 2009/09/21 09:57:24 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -201,7 +201,7 @@ public class IpAddress implements PhysicalAddress {
         if(!(obj instanceof IpAddress))
             return false;
         IpAddress other=(IpAddress)obj;
-        boolean sameIP=false;
+        boolean sameIP;
         if(this.ip_addr != null)
             sameIP=this.ip_addr.equals(other.ip_addr);
         else
@@ -228,10 +228,9 @@ public class IpAddress implements PhysicalAddress {
             if(ip_addr.isMulticastAddress())
                 sb.append(ip_addr.getHostAddress());
             else {
-                String host_name=null;
+                String host_name;
                 if(resolve_dns) {
                     host_name=ip_addr.getHostName();
-                    // appendShortName(host_name, sb);
                 }
                 else {
                     host_name=ip_addr.getHostAddress();

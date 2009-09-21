@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.50 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.51 2009/09/21 09:57:25 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -384,8 +384,8 @@ public class FRAG2 extends Protocol {
                 return false;
             }
             /*then double check just in case*/
-            for(int i=0; i < fragments.length; i++) {
-                if(fragments[i] == null)
+            for(Message msg: fragments) {
+                if(msg == null)
                     return false;
             }
             /*all fragmentations have been received*/

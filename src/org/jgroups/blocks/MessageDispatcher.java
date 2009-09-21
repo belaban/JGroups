@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.86 2009/06/16 08:29:15 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.87 2009/09/21 09:57:26 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -411,7 +411,7 @@ public class MessageDispatcher implements RequestHandler {
 
     public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
                                RspFilter filter) {
-        GroupRequest _req=null;
+        GroupRequest _req;
         Vector real_dests;
         Channel tmp;
 
@@ -472,7 +472,7 @@ public class MessageDispatcher implements RequestHandler {
 
     public Future<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
                                                  RspFilter filter) {
-        GroupRequest _req=null;
+        GroupRequest _req;
         Vector real_dests;
         Channel tmp;
 
@@ -617,10 +617,10 @@ public class MessageDispatcher implements RequestHandler {
      */
     public Object sendMessage(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
         Vector mbrs=new Vector();
-        RspList rsp_list=null;
+        RspList rsp_list;
         Object dest=msg.getDest();
         Rsp rsp;
-        GroupRequest _req=null;
+        GroupRequest _req;
 
         if(dest == null) {
             if(log.isErrorEnabled())
@@ -667,7 +667,7 @@ public class MessageDispatcher implements RequestHandler {
     public <T> Future<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
         Vector mbrs=new Vector();
         Object dest=msg.getDest();
-        GroupRequest _req=null;
+        GroupRequest _req;
 
         if(dest == null) {
             if(log.isErrorEnabled())

@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.27 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.28 2009/09/21 09:57:25 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -157,7 +157,7 @@ public class SEQUENCER extends Protocol {
         if(members.isEmpty()) return;
 
         Address prev_coord=coord;
-        coord=(Address)members.firstElement();
+        coord=members.firstElement();
         is_coord=local_addr != null && local_addr.equals(coord);
 
         boolean coord_changed=prev_coord != null && !prev_coord.equals(coord);

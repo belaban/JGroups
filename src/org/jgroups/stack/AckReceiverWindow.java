@@ -2,8 +2,6 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Message;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,13 +17,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.32 2009/09/18 12:13:01 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.33 2009/09/21 09:57:24 belaban Exp $
  */
 public class AckReceiverWindow {
-    long                    next_to_remove=0;
-    final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
-    static final Log        log=LogFactory.getLog(AckReceiverWindow.class);
-    final AtomicBoolean     processing=new AtomicBoolean(false);
+    private long                    next_to_remove=0;
+    private final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
+    private final AtomicBoolean     processing=new AtomicBoolean(false);
 
 
     public AckReceiverWindow(long initial_seqno) {

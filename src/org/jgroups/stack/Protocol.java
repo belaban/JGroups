@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.70 2009/09/06 13:51:09 belaban Exp $
+ * @version $Id: Protocol.java,v 1.71 2009/09/21 09:57:24 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -204,7 +204,7 @@ public abstract class Protocol {
                     ManagedAttribute annotation=method.getAnnotation(ManagedAttribute.class);
                     if(!annotation.writable() && (method.getName().startsWith("is")
                        || method.getName().startsWith("get"))) {
-                        Object value=null;
+                        Object value;
                         try {
                             value=method.invoke(this);
                             String attributeName=methodNameToAttributeName(method.getName());

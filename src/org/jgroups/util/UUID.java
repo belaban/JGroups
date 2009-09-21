@@ -13,7 +13,7 @@ import java.util.Collection;
  * Copied from java.util.UUID, but unneeded fields from the latter have been removed. UUIDs needs to
  * have a small memory footprint.
  * @author Bela Ban
- * @version $Id: UUID.java,v 1.2 2009/04/09 09:11:18 belaban Exp $
+ * @version $Id: UUID.java,v 1.3 2009/09/21 09:57:23 belaban Exp $
  */
 public class UUID implements Address, Streamable, Comparable<Address> {
     private long   mostSigBits;
@@ -88,7 +88,8 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     private UUID(byte[] data) {
         long msb = 0;
         long lsb = 0;
-        assert data.length == 16;
+        if(data.length != 16)
+            throw new RuntimeException("UUID needs a 16-byte array");
         for (int i=0; i<8; i++)
             msb = (msb << 8) | (data[i] & 0xff);
         for (int i=8; i<16; i++)

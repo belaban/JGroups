@@ -20,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.50 2009/09/06 13:51:08 belaban Exp $
+ * @version $Id: MPING.java,v 1.51 2009/09/21 09:57:25 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     
@@ -327,7 +327,7 @@ public class MPING extends PING implements Runnable {
     public void run() {
         DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
         byte[]               data;
-        ByteArrayInputStream inp_stream=null;
+        ByteArrayInputStream inp_stream;
         DataInputStream      inp=null;
         Message              msg;
 
