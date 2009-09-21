@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.14 2009/09/21 14:35:12 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.15 2009/09/21 14:44:29 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -251,6 +251,23 @@ public class GMS_MergeTest extends ChannelTestBase {
              dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
 
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
+
+             Address leader=b.getAddress();
+             long end_time=System.currentTimeMillis() + 30000;
+             do {
+                 System.out.println("\n==== injecting merge events into " + leader + " ====");
+                 injectMergeEvent(channels, leader, "B");
+                 Util.sleep(1000);
+                 if(allChannelsHaveViewOf(channels, 3))
+                     break;
+             }
+             while(end_time > System.currentTimeMillis());
+
+             System.out.println("\n");
+             print(channels);
+             assertAllChannelsHaveViewOf(channels, 3);
+
+
          }
          finally {
              close(channels);
