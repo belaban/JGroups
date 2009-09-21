@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.42 2009/09/21 09:57:26 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.43 2009/09/21 11:29:02 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -251,6 +251,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout,
                                      boolean use_anycasting, boolean oob, RspFilter filter) {
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting, oob, false, filter);
+    }
+
+
+    public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout,
+                                     boolean use_anycasting, boolean oob, boolean dont_bundle, RspFilter filter) {
         if(dests != null && dests.isEmpty()) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
@@ -282,10 +288,55 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((byte[])buf);
         if(oob)
             msg.setFlag(Message.OOB);
+        if(dont_bundle)
+            msg.setFlag(Message.DONT_BUNDLE);
         RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting, filter);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
+
+
+    public RspList callRemoteMethods(Vector dests, MethodCall method_call) {
+        if(dests != null && dests.isEmpty()) {
+            // don't send if dest list is empty
+            if(log.isTraceEnabled())
+                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
+                        append("() is empty: no need to send message"));
+            return new RspList();
+        }
+
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
+                    append(", mode=").append(method_call.getRequestMode()).append(", timeout=").append(method_call.getTimeout()));
+
+        Object buf;
+        try {
+            buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
+        }
+        catch(Exception e) {
+            // if(log.isErrorEnabled()) log.error("exception", e);
+            // we will change this in 2.4 to add the exception to the signature
+            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
+            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
+            throw new RuntimeException("failure to marshal argument(s)", e);
+        }
+
+        Message msg=new Message();
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+
+        byte flags=method_call.getFlags();
+        msg.setFlag(flags);
+
+        RspList retval=super.castMessage(dests, msg, method_call.getRequestMode(), method_call.getTimeout(),
+                                         method_call.isUseAnycasting(), method_call.getFilter());
+        if(log.isTraceEnabled()) log.trace("responses: " + retval);
+        return retval;
+    }
+
+
 
     public Future<RspList> callRemoteMethodsWithFuture(Vector dests, MethodCall method_call, int mode, long timeout,
                                                        boolean use_anycasting, boolean oob, RspFilter filter) {
@@ -324,6 +375,44 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
+
+    public Future<RspList> callRemoteMethodsWithFuture(Vector dests, MethodCall method_call) {
+        if(dests != null && dests.isEmpty()) {
+            // don't send if dest list is empty
+            if(log.isTraceEnabled())
+                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
+                        append("() is empty: no need to send message"));
+            return new NullFuture();
+        }
+
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
+                    append(", mode=").append(method_call.getMode()).append(", timeout=").append(method_call.getTimeout()));
+
+        Object buf;
+        try {
+            buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
+        }
+        catch(Exception e) {
+            // if(log.isErrorEnabled()) log.error("exception", e);
+            // we will change this in 2.4 to add the exception to the signature
+            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
+            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
+            throw new RuntimeException("failure to marshal argument(s)", e);
+        }
+
+        Message msg=new Message();
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+        msg.setFlag(method_call.getFlags());
+        Future<RspList> retval=super.castMessageWithFuture(dests, msg, method_call.getRequestMode(), method_call.getTimeout(),
+                                                           method_call.isUseAnycasting(), method_call.getFilter());
+        if(log.isTraceEnabled()) log.trace("responses: " + retval);
+        return retval;
+    }
+
 
 
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
@@ -365,6 +454,28 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return retval;
     }
 
+    public Object callRemoteMethod(Address dest, MethodCall call) throws Throwable {
+        Object   buf;
+        Message  msg;
+        Object   retval;
+
+        if(log.isTraceEnabled())
+            log.trace("dest=" + dest + ", method_call=" + call + ", mode=" + call.getRequestMode() + ", timeout=" + call.getTimeout());
+
+        buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
+        msg=new Message(dest, null, null);
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+        msg.setFlag(call.getFlags());
+        retval=super.sendMessage(msg, call.getRequestMode(), call.getTimeout());
+        if(log.isTraceEnabled()) log.trace("retval: " + retval);
+        if(retval instanceof Throwable)
+            throw (Throwable)retval;
+        return retval;
+    }
+
     public <T> Future<T> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + method_call + ", mode=" + mode + ", timeout=" + timeout);
@@ -377,8 +488,22 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((byte[])buf);
         if(oob)
             msg.setFlag(Message.OOB);
-        Future<T> retval=super.sendMessageWithFuture(msg, mode, timeout);
-        return retval;
+        return super.sendMessageWithFuture(msg, mode, timeout);
+    }
+
+
+    public <T> Future<T> callRemoteMethodWithFuture(Address dest, MethodCall call) throws Throwable {
+        if(log.isTraceEnabled())
+            log.trace("dest=" + dest + ", method_call=" + call + ", mode=" + call.getRequestMode() + ", timeout=" + call.getTimeout());
+
+        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
+        Message msg=new Message(dest, null, null);
+        if(buf instanceof Buffer)
+            msg.setBuffer((Buffer)buf);
+        else
+            msg.setBuffer((byte[])buf);
+        msg.setFlag(call.getFlags());
+        return super.sendMessageWithFuture(msg, call.getRequestMode(), call.getTimeout());
     }
 
 
