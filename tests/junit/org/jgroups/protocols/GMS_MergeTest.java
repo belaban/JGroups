@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.12 2009/09/06 13:51:14 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.13 2009/09/21 13:50:35 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -36,6 +36,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             hdr.setMergeId(new_merge_id);
             merge_request.putHeader(GMS.class.getSimpleName(), hdr);
             GMS gms=(GMS)c1.getProtocolStack().findProtocol(GMS.class);
+            gms.setMergeTimeout(2000);
             MergeId merge_id=gms.getMergeId();
             assert merge_id == null;
             System.out.println("starting merge");
@@ -46,7 +47,14 @@ public class GMS_MergeTest extends ChannelTestBase {
 
             long timeout=(long)(gms.getMergeTimeout() * 1.5);
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");
-            Util.sleep(timeout);
+            long target_time=System.currentTimeMillis() + timeout;
+            while(System.currentTimeMillis() < target_time) {
+                merge_id=gms.getMergeId();
+                if(merge_id == null)
+                    break;
+                Util.sleep(500);
+            }
+
             merge_id=gms.getMergeId();
             System.out.println("merge_id = " + merge_id);
             assert merge_id == null : "MergeCanceller didn't kick in";
