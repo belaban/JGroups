@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.97 2009/09/21 09:57:37 belaban Exp $
+ * @version $Id: Message.java,v 1.98 2009/09/21 11:26:42 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -57,10 +57,11 @@ public class Message implements Streamable {
 
 
     // =========================== Flags ==============================
-    public static final byte OOB               = 1;
-    public static final byte LOW_PRIO          = 2; // not yet sure if we want this flag...
-    public static final byte HIGH_PRIO         = 4; // not yet sure if we want this flag...
-    public static final byte LOOPBACK          = 8; // if message was sent to self
+    public static final byte OOB               =  1 << 0;
+    public static final byte LOW_PRIO          =  1 << 1; // not yet sure if we want this flag...
+    public static final byte HIGH_PRIO         =  1 << 2; // not yet sure if we want this flag...
+    public static final byte LOOPBACK          =  1 << 3; // if message was sent to self
+    public static final byte DONT_BUNDLE       =  1 << 4; // don't bundle message at the transport
 
 
 
@@ -584,6 +585,13 @@ public class Message implements Streamable {
             else
                 first=false;
             sb.append("LOOPBACK");
+        }
+        if(isFlagSet(DONT_BUNDLE)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("DONT_BUNDLE");
         }
         return sb.toString();
     }
