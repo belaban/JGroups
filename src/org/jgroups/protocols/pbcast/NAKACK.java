@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.232 2009/09/08 07:17:35 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.233 2009/09/22 14:04:19 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -244,6 +244,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @ManagedAttribute(description="If true, log messages are discarded because received from other members", writable=true)
     @Property(description="discards warnings about promiscuous traffic")
     private boolean log_discard_msgs=true;
+
+    @ManagedAttribute(description="If true, trashes warnings about retransmission messages not found in the xmit_table")
+    @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
+    private boolean log_not_found_msgs=true;
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
@@ -935,7 +939,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(long i=first_seqno; i <= last_seqno; i++) {
             msg=win.get(i);
             if(msg == null) {
-                if(log.isWarnEnabled() && !local_addr.equals(xmit_requester)) {
+                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester)) {
                     StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
