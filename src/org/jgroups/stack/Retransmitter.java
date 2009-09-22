@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.28 2009/09/18 12:48:27 belaban Exp $
+// $Id: Retransmitter.java,v 1.29 2009/09/22 14:44:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 
 /**
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class Retransmitter {
 
@@ -134,9 +135,12 @@ public class Retransmitter {
 
 
     public String toString() {
-        int size=size();
+        Set<Long> keys=msgs.keySet();
+        int size=keys.size();
         StringBuilder sb=new StringBuilder();
-        sb.append(size).append(" messages to retransmit: ").append(msgs.keySet());
+        sb.append(size).append(" messages to retransmit");
+        if(size < 50)
+            sb.append(": ").append(keys);
         return sb.toString();
     }
 
