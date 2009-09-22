@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -12,15 +13,17 @@ import org.jgroups.util.Digest;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.15 2009/09/21 14:44:29 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.16 2009/09/22 09:18:47 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
-    static final String props="SHARED_LOOPBACK:PING(timeout=1000):pbcast.NAKACK(log_discard_msgs=false)" +
+    static final String props="SHARED_LOOPBACK:PING(timeout=1000):" +
+            "pbcast.NAKACK(gc_lag=0;log_discard_msgs=false;log_not_found_msgs=false)" +
             ":UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
 
 
@@ -203,9 +206,16 @@ public class GMS_MergeTest extends ChannelTestBase {
      */
     public static void testMergeAsymmetricPartitions() throws Exception {
         JChannel[] channels=null;
-        final int NUM=100;
+        MyReceiver[] receivers;
+        final int NUM=10;
          try {
              channels=create("GMS_MergeTest.testMergeAsymmetricPartitions", "B", "A", "C");
+             receivers=new MyReceiver[channels.length];
+             for(int i=0; i < channels.length; i++) {
+                 receivers[i]=new MyReceiver(channels[i].getName());
+                 channels[i].setReceiver(receivers[i]);
+             }
+
              JChannel a=findChannel("A", channels), b=findChannel("B", channels), c=findChannel("C", channels);
              print(channels);
              View view=channels[channels.length -1].getView();
@@ -215,7 +225,10 @@ public class GMS_MergeTest extends ChannelTestBase {
              for(int i=0; i < NUM; i++)
                  for(JChannel ch: channels)
                      ch.send(null, null, "Number #" + i + " from " + ch.getAddress());
-             
+
+             waitForNumMessages(NUM * channels.length, 10000, 1000, receivers);
+             checkMessages(NUM * channels.length, receivers);
+
              System.out.println("\ncreating partitions: ");
              applyView(channels, "A", "B", "A", "C");
              applyView(channels, "B", "B", "C");
@@ -226,11 +239,24 @@ public class GMS_MergeTest extends ChannelTestBase {
              checkViews(channels, "B", "B", "C");
              checkViews(channels, "C", "B", "C");
 
-             System.out.println("B and C exchange " + NUM + " messages");
+             for(MyReceiver receiver: receivers)
+                 receiver.clear();
+
+             DISCARD discard=new DISCARD();
+             discard.addIgnoreMember(b.getAddress());
+             discard.addIgnoreMember(c.getAddress());
+
+             // A should drop all traffic from B or C
+             a.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, SHARED_LOOPBACK.class);
+
+             System.out.println("B and C exchange " + NUM + " messages, A discards them");
              for(int i=0; i < NUM; i++)
                  b.send(null, null, "message #" + i +" from B");
              for(int i=0; i < NUM; i++)
                  c.send(null, null, "message #" + i +" from C");
+             waitForNumMessages(NUM * 2, 10000, 500, receivers[0], receivers[2]); // A *does* receiver B's and C's messages !
+             checkMessages(NUM * 2, receivers[0], receivers[2]);
+             checkMessages(0, receivers[1]);
 
              Digest da=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
                      db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
@@ -252,11 +278,15 @@ public class GMS_MergeTest extends ChannelTestBase {
 
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
 
+             // now enable traffic reception of B and C on A:
+             discard.removeIgnoredMember(b.getAddress());
+             discard.removeIgnoredMember(c.getAddress());
+
              Address leader=b.getAddress();
              long end_time=System.currentTimeMillis() + 30000;
              do {
                  System.out.println("\n==== injecting merge events into " + leader + " ====");
-                 injectMergeEvent(channels, leader, "B");
+                 injectMergeEvent(channels, leader, "B", "A", "C");
                  Util.sleep(1000);
                  if(allChannelsHaveViewOf(channels, 3))
                      break;
@@ -265,9 +295,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
              System.out.println("\n");
              print(channels);
-             assertAllChannelsHaveViewOf(channels, 3);
-
-
+             assertAllChannelsHaveView(channels, a.getView());
          }
          finally {
              close(channels);
@@ -292,6 +320,13 @@ public class GMS_MergeTest extends ChannelTestBase {
                 return false;
         }
         return true;
+    }
+
+    private static void assertAllChannelsHaveView(JChannel[] channels, View view) {
+        for(JChannel ch: channels) {
+            View v=ch.getView();
+            assert v.equals(view) : "expected view " + view + " but got " + v + " for channel " + ch.getName();
+        }
     }
 
     private static void assertAllChannelsHaveViewOf(JChannel[] channels, int count) {
@@ -445,5 +480,50 @@ public class GMS_MergeTest extends ChannelTestBase {
         }
     }
 
+    static void waitForNumMessages(int num_msgs, long timeout, long interval, MyReceiver ... receivers) {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < target_time) {
+            boolean all_received=true;
+            for(MyReceiver receiver: receivers) {
+                if(receiver.getNumMsgs() < num_msgs) {
+                    all_received=false;
+                    break;
+                }
+            }
+            if(all_received)
+                break;
+            Util.sleep(interval);
+        }
+    }
+
+    static void checkMessages(int expected, MyReceiver ... receivers) {
+        for(MyReceiver receiver: receivers)
+            System.out.println(receiver.name + ": " + receiver.getNumMsgs());
+        for(MyReceiver receiver: receivers)
+            assert receiver.getNumMsgs() == expected : "[" + receiver.name + "] expected " + expected +
+                    " msgs, but received " + receiver.getNumMsgs();
+    }
+
+
+    private static class MyReceiver extends ReceiverAdapter {
+        private final String name;
+        private AtomicInteger num_msgs=new AtomicInteger(0);
+
+        public MyReceiver(String name) {
+            this.name=name;
+        }
+
+        public int getNumMsgs() {return num_msgs.get();}
+
+        public void clear() {num_msgs.set(0);}
+
+        public void receive(Message msg) {
+            num_msgs.incrementAndGet();
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[" + name + "] view=" + new_view);
+        }
+    }
 
 }
