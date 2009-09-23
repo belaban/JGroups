@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
@@ -47,7 +48,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.61 2009/08/26 15:51:08 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.62 2009/09/23 19:22:28 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -271,7 +272,6 @@ public class GossipRouter {
     public void stop() {
         up=false;
         if(srvSock != null) {
-            shutdown();
             Util.close(srvSock);
             // exiting the mainLoop will clean the tables
             srvSock=null;
@@ -383,37 +383,15 @@ public class GossipRouter {
                 getDefaultThreadPoolThreadFactory().newThread(ch).start();
             }
             catch(IOException e) {
-                log.error("failure handling connection from " + sock, e);
-                Util.close(sock);
+                //only consider this exception if GR is not shutdown
+                if(up) {
+                    log.error("failure handling connection from " + sock, e);
+                    Util.close(sock);
+                }
             }
         }
     }
-
-
     
-    /**
-     * Connects to the ServerSocket and sends the shutdown header.
-     */
-    private void shutdown() {
-        Socket s=null;
-        DataOutputStream dos=null;
-        try {
-            s=new Socket(srvSock.getInetAddress(), srvSock.getLocalPort());
-            dos=new DataOutputStream(s.getOutputStream());
-            dos.writeInt(SHUTDOWN);
-            dos.writeUTF("");
-        }
-        catch(Exception e) {
-            if(log.isErrorEnabled())
-                log.error("shutdown failed: " + e);
-        }
-        finally {
-            Util.close(s);
-            Util.close(dos);
-        }
-    }
-
-
     private void route(Address dest, String group, byte[] msg) {
         if(dest == null) { // send to all members in group
             if(group == null) {
@@ -586,7 +564,7 @@ public class GossipRouter {
      * Handles the requests from a client (RouterStub)
      */
     class ConnectionHandler implements Runnable {
-        private volatile boolean active=true;
+        private final AtomicBoolean active = new AtomicBoolean(false);
         private final Socket sock;
         private final DataOutputStream output;
         private final DataInputStream input;
@@ -599,7 +577,7 @@ public class GossipRouter {
         }
 
         void close() {
-            active=false;
+            active.set(false);
             Util.close(input);
             Util.close(output);
             Util.close(sock);
@@ -609,6 +587,7 @@ public class GossipRouter {
         }
 
         public void run() {
+            active.set(true);
             try {
                 readLoop();
             }
@@ -618,11 +597,11 @@ public class GossipRouter {
         }
 
         private void readLoop() {
-            while(active) {
+            while(active.get()) {
                 GossipData request;
                 Address addr;
                 String group;
-                try {
+                try {                   
                     request=new GossipData();
                     request.readFrom(input);
                     byte command=request.getType();
@@ -698,28 +677,23 @@ public class GossipRouter {
                         case GossipRouter.DISCONNECT:
                             removeEntry(request.getGroup(), request.getAddress());
                             break;
-
-                        case GossipRouter.SHUTDOWN:
-                            if(log.isInfoEnabled())
-                                log.info("router shutting down");
-                            Util.close(sock);
-                            up=false;
-                            break;
-
+                            
                         case -1: // EOF
                             notifyAbnormalConnectionTear(this, null);
                             break;
                     }
                 }
                 catch(SocketTimeoutException ste) {
-                }
+                }                
                 catch(IOException ioex) {
                     notifyAbnormalConnectionTear(this, ioex);
                     break;
-                }
+                }                
                 catch(Exception ex) {
-                    if(log.isWarnEnabled())
-                        log.warn("Exception in TUNNEL receiver thread", ex);
+                    if (active.get()) {
+                        if (log.isWarnEnabled())
+                            log.warn("Exception in ConnectionHandler thread", ex);
+                    }
                     break;
                 }
             }

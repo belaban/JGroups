@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.78 2009/09/10 19:52:39 rachmatowicz Exp $
+ * @version $Id: TUNNEL.java,v 1.79 2009/09/23 19:22:30 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -243,6 +243,9 @@ public class TUNNEL extends TP {
                           PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
                           List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
                           stub.connect(channel_name, local_addr, UUID.get(local_addr), physical_addrs);
+                          if (log.isDebugEnabled()) {
+                              log.debug("Reconnected to router at " + stub.getGossipRouterAddress());
+                          }
                       }
                       else {
                           for(Protocol p: up_prots.values()) {
@@ -252,6 +255,9 @@ public class TUNNEL extends TP {
                                   PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
                                   List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
                                   stub.connect(cluster_name, local, UUID.get(local), physical_addrs);
+                                  if (log.isDebugEnabled()) {
+                                      log.debug("Reconnected to router at " + stub.getGossipRouterAddress());
+                                  }
                               }
                           }
                       }
@@ -296,12 +302,15 @@ public class TUNNEL extends TP {
 
       public void connectionStatusChange(RouterStub.ConnectionStatus newState) {
          if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
+             stub.getReceiver().getThread().interrupt();
              startReconnecting(stub);
          }
          else if (currentState != RouterStub.ConnectionStatus.CONNECTED
                  && newState == RouterStub.ConnectionStatus.CONNECTED) {
              stopReconnecting(stub);
-             Thread t = global_thread_factory.newThread(new StubReceiver(stub), "TUNNEL receiver");
+             StubReceiver stubReceiver = new StubReceiver(stub);
+             Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver");
+             stubReceiver.setThread(t);
              t.setDaemon(true);
              t.start();
          }
@@ -309,74 +318,89 @@ public class TUNNEL extends TP {
       }
    }
 
-   private class StubReceiver implements Runnable {
+    public class StubReceiver implements Runnable {
 
-      private final RouterStub stub;
+        private final RouterStub stub;
+        private Thread runner;
 
-      public StubReceiver(RouterStub stub) {
-         super();
-         this.stub = stub;
-      }
+        public StubReceiver(RouterStub stub) {
+            stub.setReceiver(this);
+            this.stub = stub;            
+        }
 
-      public void run() {
-         while (stub.isConnected()) {
-            try {
-                DataInputStream input = stub.getInputStream();
-                GossipData msg=new GossipData();
-                msg.readFrom(input);
-               switch (msg.getType()) {
-                  case GossipRouter.MESSAGE:
-                      byte[] data=msg.getBuffer();
-                      receive(null/* src will be read from data */, data, 0, data.length);
-                     break;
-                  case GossipRouter.SUSPECT:
-                     final Address suspect = Util.readAddress(input);
-                     //https://jira.jboss.org/jira/browse/JGRP-902
-                     Thread thread = getThreadFactory().newThread(new Runnable() {
-                        public void run() {
-                           fireSuspectEvent(suspect);
-                        }
-                     },"StubReceiver-suspect"); 
-                     thread.start();
-                     break;
-               }
-            } catch (SocketTimeoutException ste) {
-               // do nothing - blocking read timeout caused it
-               continue;
-            } catch (SocketException se) {
-               // do nothing
-               continue;
-            } catch (IOException ioe) {
-               /*
-                * This is normal course of operation Thread should not die
-                */
-               continue;
-            } catch (Exception e) {
-               if (log.isWarnEnabled())
-                  log.warn("failure in TUNNEL receiver thread", e);
-               break;
+        public void setThread(Thread t) {
+            runner = t;
+        }
+
+        public Thread getThread() {
+            return runner;
+        }
+
+        public void run() {
+            while (stub.isConnected()) {
+                try {
+                    if (Thread.interrupted()) {
+                        throw new InterruptedException();
+                    }
+                    DataInputStream input = stub.getInputStream();
+                    GossipData msg = new GossipData();
+                    msg.readFrom(input);
+                    switch (msg.getType()) {
+                        case GossipRouter.MESSAGE:
+                            byte[] data = msg.getBuffer();
+                            receive(null/* src will be read from data */, data, 0, data.length);
+                            break;
+                        case GossipRouter.SUSPECT:
+                            final Address suspect = Util.readAddress(input);
+                            // https://jira.jboss.org/jira/browse/JGRP-902
+                            Thread thread = getThreadFactory().newThread(new Runnable() {
+                                public void run() {
+                                    fireSuspectEvent(suspect);
+                                }
+                            }, "StubReceiver-suspect");
+                            thread.start();
+                            break;
+                    }
+                } catch (SocketTimeoutException ste) {
+                    // do nothing - blocking read timeout caused it
+                    continue;
+                } catch (SocketException se) {
+                    // do nothing
+                    continue;
+                } catch (IOException ioe) {
+                    /*
+                     * This is normal course of operation Thread should not die
+                     */
+                    continue;
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    if (log.isWarnEnabled())
+                        log.warn("failure in TUNNEL receiver thread", e);
+                    break;
+                }
             }
-         }
-      }
+        }
 
-      private void fireSuspectEvent(Address suspect) {
-         Map<Address, PhysicalAddress> contents = logical_addr_cache.contents();
-         if (log.isDebugEnabled()) {
-            log.debug("At address " + getPhysicalAddress()
-                     + " finding logical address for suspect " + suspect + ", addresses are: \n"
-                     + logical_addr_cache);
-         }
-         for (Iterator<Entry<Address,PhysicalAddress>>i = contents.entrySet().iterator(); i.hasNext();) {
-            Entry<Address, PhysicalAddress> entry = i.next();
-            if(suspect.equals(entry.getValue())){
-               if (log.isDebugEnabled()) {
-                  log.debug("Raising suspect for " + entry.getKey());
-               }
-               up(new Event(Event.SUSPECT, entry.getKey()));                  
+        private void fireSuspectEvent(Address suspect) {
+            Map<Address, PhysicalAddress> contents = logical_addr_cache.contents();
+            if (log.isDebugEnabled()) {
+                log.debug("At address " + getPhysicalAddress()
+                                + " finding logical address for suspect " + suspect
+                                + ", addresses are: \n" + logical_addr_cache);
             }
-         }       
-      }
-   }
+            for (Iterator<Entry<Address, PhysicalAddress>> i = contents.entrySet().iterator(); i.hasNext();) {
+                Entry<Address, PhysicalAddress> entry = i.next();
+                if (suspect.equals(entry.getValue())) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Raising suspect for " + entry.getKey());
+                    }
+                    up(new Event(Event.SUSPECT, entry.getKey()));
+                }
+            }
+        }
+    }
 
 
     protected void send(Message msg, Address dest, boolean multicast) throws Exception {

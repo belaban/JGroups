@@ -6,6 +6,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.TUNNEL;
+import org.jgroups.protocols.TUNNEL.StubReceiver;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -21,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.47 2009/08/10 14:22:12 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.48 2009/09/23 19:22:28 vlada Exp $
  */
 public class RouterStub {
 
@@ -50,6 +51,8 @@ public class RouterStub {
 
     private int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
     // forever, or until the sock is closed)
+    
+    private StubReceiver receiver;
 
     public interface ConnectionListener {
         void connectionStatusChange(ConnectionStatus state);
@@ -66,6 +69,17 @@ public class RouterStub {
         router_port=routerPort;
         bind_addr=bindAddress;
     }
+    
+
+    public StubReceiver getReceiver() {
+        return receiver;
+    }
+
+
+    public void setReceiver(StubReceiver receiver) {
+        this.receiver = receiver;
+    }
+
 
     public int getSocketConnectionTimeout() {
         return sock_conn_timeout;
@@ -215,7 +229,7 @@ public class RouterStub {
         catch(SocketException se) {
             if(log.isWarnEnabled())
                 log.warn("Router stub " + this + " did not send message to "
-                        + (dest == null? "mcast" : dest + " since underlying socket is closed"), se);
+                        + (dest == null? "mcast" : dest + " since underlying socket is closed"));
             connectionStateChanged(ConnectionStatus.DISCONNECTED);
             throw new Exception("dest=" + dest + " (" + length + " bytes)", se);
         }
