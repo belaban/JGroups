@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.226 2009/09/21 09:57:37 belaban Exp $
+ * @version $Id: JChannel.java,v 1.227 2009/09/23 07:43:45 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -85,9 +85,9 @@ public class JChannel extends Channel {
     protected String properties=null;
 
     /*the address of this JChannel instance*/
-    private UUID local_addr=null;
+    protected UUID local_addr=null;
 
-    private String name=null;
+    protected String name=null;
 
     /*the channel (also know as group) name*/
     private String cluster_name=null;  // group name
@@ -1779,7 +1779,7 @@ public class JChannel extends Channel {
      * Generates new UUID and sets local address. Sends down a REMOVE_ADDRESS (if existing address was present) and
      * a SET_LOCAL_ADDRESS
      */
-    private void setAddress() {
+    protected void setAddress() {
         UUID old_addr=local_addr;
         local_addr=UUID.randomUUID();
 
