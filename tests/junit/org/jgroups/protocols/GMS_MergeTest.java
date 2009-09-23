@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.17 2009/09/23 07:43:19 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.18 2009/09/23 07:56:36 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -291,8 +291,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
              Address leader=b.getAddress();
 
-
-             long end_time=System.currentTimeMillis() + 30000;
+             long end_time=System.currentTimeMillis() + 10000;
              do {
                  System.out.println("\n==== injecting merge event into " + leader + " ====");
                  injectMergeEvent(channels, leader, "B", "A", "C");
