@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.73 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.74 2009/09/23 08:37:28 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -221,41 +221,41 @@ public class MERGE2 extends Protocol {
             }
 
             List<View> different_views=detectDifferentViews(discovery_rsps);
-            if(different_views.size() > 1) {
-                Collection<Address> coords=Util.determineCoords(different_views);
-                if(coords.size() == 1) {
-                    if(num_inconsistent_views < inconsistent_view_threshold) {
-                        if(log.isDebugEnabled())
-                            log.debug("dropping MERGE for inconsistent views " + Util.print(different_views) +
-                                    " as inconsistent view threshold (" + inconsistent_view_threshold +
-                                    ") has not yet been reached (" + num_inconsistent_views + ")");
-                        num_inconsistent_views++;
-                        return;
-                    }
-                    else
-                        num_inconsistent_views=0;
+            if(different_views.size() <= 1) {
+                num_inconsistent_views=0;
+                return;
+            }
+            Collection<Address> coords=Util.determineCoords(different_views);
+            if(coords.size() == 1) {
+                if(num_inconsistent_views < inconsistent_view_threshold) {
+                    if(log.isDebugEnabled())
+                        log.debug("dropping MERGE for inconsistent views " + Util.print(different_views) +
+                                " as inconsistent view threshold (" + inconsistent_view_threshold +
+                                ") has not yet been reached (" + num_inconsistent_views + ")");
+                    num_inconsistent_views++;
+                    return;
                 }
                 else
                     num_inconsistent_views=0;
-
-                if(log.isDebugEnabled()) {
-                    StringBuilder sb=new StringBuilder();
-                    sb.append(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event.\n");
-                    sb.append("Discovery results:\n");
-                    for(PingData data: discovery_rsps)
-                        sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
-                    log.debug(sb.toString());
-                }
-                Event evt=new Event(Event.MERGE, different_views);
-                try {
-                    up_prot.up(evt);
-                }
-                catch(Throwable t) {
-                    log.error("failed sending up MERGE event", t);
-                }
             }
             else
                 num_inconsistent_views=0;
+
+            if(log.isDebugEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                sb.append(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event.\n");
+                sb.append("Discovery results:\n");
+                for(PingData data: discovery_rsps)
+                    sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
+                log.debug(sb.toString());
+            }
+            Event evt=new Event(Event.MERGE, different_views);
+            try {
+                up_prot.up(evt);
+            }
+            catch(Throwable t) {
+                log.error("failed sending up MERGE event", t);
+            }
         }
 
         /**
