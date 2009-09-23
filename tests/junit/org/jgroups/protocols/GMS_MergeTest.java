@@ -2,29 +2,33 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Util;
-import org.jgroups.util.Digest;
 import org.testng.annotations.Test;
+import org.w3c.dom.Element;
 
+import java.io.File;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.16 2009/09/22 09:18:47 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.17 2009/09/23 07:43:19 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String props="SHARED_LOOPBACK:PING(timeout=1000):" +
             "pbcast.NAKACK(gc_lag=0;log_discard_msgs=false;log_not_found_msgs=false)" +
-            ":UNICAST:pbcast.STABLE:pbcast.GMS:FC:FRAG2";
+            ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
 
 
 
@@ -209,7 +213,8 @@ public class GMS_MergeTest extends ChannelTestBase {
         MyReceiver[] receivers;
         final int NUM=10;
          try {
-             channels=create("GMS_MergeTest.testMergeAsymmetricPartitions", "B", "A", "C");
+             // use simple IDs for UUIDs, so sorting on merge will NOT change the view order
+             channels=create(true, "GMS_MergeTest.testMergeAsymmetricPartitions", "B", "A", "C");
              receivers=new MyReceiver[channels.length];
              for(int i=0; i < channels.length; i++) {
                  receivers[i]=new MyReceiver(channels[i].getName());
@@ -263,19 +268,21 @@ public class GMS_MergeTest extends ChannelTestBase {
                      dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
 
              System.out.println("Digest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
-             System.out.println("Running stability protocol on A, B and C now");
+             System.out.println("Running stability protocol on B and C now");
+
+//             a.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
+//             b.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
+//             c.getProtocolStack().findProtocol(STABLE.class).setLevel("trace");
 
              for(int i=0; i < 3; i++) {
-                 ((STABLE)a.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
                  ((STABLE)b.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
                  ((STABLE)c.getProtocolStack().findProtocol(STABLE.class)).runMessageGarbageCollection();
-                 Util.sleep(500);
+                 Util.sleep(300);
              }
 
              db=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
              db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
              dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
-
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
 
              // now enable traffic reception of B and C on A:
@@ -283,19 +290,21 @@ public class GMS_MergeTest extends ChannelTestBase {
              discard.removeIgnoredMember(c.getAddress());
 
              Address leader=b.getAddress();
+
+
              long end_time=System.currentTimeMillis() + 30000;
              do {
-                 System.out.println("\n==== injecting merge events into " + leader + " ====");
+                 System.out.println("\n==== injecting merge event into " + leader + " ====");
                  injectMergeEvent(channels, leader, "B", "A", "C");
-                 Util.sleep(1000);
-                 if(allChannelsHaveViewOf(channels, 3))
+                 Util.sleep(2000);
+                 if(allChannelsHaveView(channels, b.getView()))
                      break;
              }
              while(end_time > System.currentTimeMillis());
 
              System.out.println("\n");
              print(channels);
-             assertAllChannelsHaveView(channels, a.getView());
+             assertAllChannelsHaveView(channels, b.getView());
          }
          finally {
              close(channels);
@@ -317,6 +326,14 @@ public class GMS_MergeTest extends ChannelTestBase {
     private static boolean allChannelsHaveViewOf(JChannel[] channels, int count) {
         for(JChannel ch: channels) {
             if(ch.getView().size() != count)
+                return false;
+        }
+        return true;
+    }
+
+    private static boolean allChannelsHaveView(JChannel[] channels, View view) {
+        for(JChannel ch: channels) {
+            if(!ch.getView().equals(view))
                 return false;
         }
         return true;
@@ -345,9 +362,19 @@ public class GMS_MergeTest extends ChannelTestBase {
 
 
     private static JChannel[] create(String cluster_name, String ... names) throws Exception {
+        return create(false, cluster_name, names);
+    }
+
+    private static JChannel[] create(boolean simple_ids, String cluster_name, String ... names) throws Exception {
         JChannel[] retval=new JChannel[names.length];
         for(int i=0; i < retval.length; i++) {
-            JChannel ch=new JChannel(props);
+            JChannel ch;
+            if(simple_ids) {
+                ch=new MyChannel(props);
+                ((MyChannel)ch).setId(i+1);
+            }
+            else
+                ch=new JChannel(props);
             ch.setName(names[i]);
             retval[i]=ch;
             ch.connect(cluster_name);
@@ -504,6 +531,60 @@ public class GMS_MergeTest extends ChannelTestBase {
                     " msgs, but received " + receiver.getNumMsgs();
     }
 
+
+    private static class MyChannel extends JChannel {
+        protected int id=0;
+
+        public MyChannel() throws ChannelException {
+            super();
+        }
+
+        public MyChannel(File properties) throws ChannelException {
+            super(properties);
+        }
+
+        public MyChannel(Element properties) throws ChannelException {
+            super(properties);
+        }
+
+        public MyChannel(URL properties) throws ChannelException {
+            super(properties);
+        }
+
+        public MyChannel(String properties) throws ChannelException {
+            super(properties);
+        }
+
+        public MyChannel(ProtocolStackConfigurator configurator) throws ChannelException {
+            super(configurator);
+        }
+
+        public MyChannel(JChannel ch) throws ChannelException {
+            super(ch);
+        }
+
+
+        public void setId(int id) {
+            this.id=id;
+        }
+
+        protected void setAddress() {
+            org.jgroups.util.UUID old_addr=local_addr;
+            local_addr=new org.jgroups.util.UUID(id, id);
+
+            if(old_addr != null)
+                down(new Event(Event.REMOVE_ADDRESS, old_addr));
+            if(name == null || name.length() == 0) // generate a logical name if not set
+                name=Util.generateLocalName();
+            if(name != null && name.length() > 0)
+                org.jgroups.util.UUID.add(local_addr, name);
+
+            Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
+            down(evt);
+            if(up_handler != null)
+                up_handler.up(evt);
+        }
+    }
 
     private static class MyReceiver extends ReceiverAdapter {
         private final String name;
