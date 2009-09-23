@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.98 2009/09/21 09:57:27 belaban Exp $
+ * @version $Id: STABLE.java,v 1.99 2009/09/23 07:43:59 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -368,7 +368,7 @@ public class STABLE extends Protocol {
 
         StringBuilder sb=null;
         if(log.isTraceEnabled()) {
-            sb=new StringBuilder("[").append(local_addr).append("] handling digest from ").append(sender).append(" (").
+            sb=new StringBuilder().append(local_addr).append(": handling digest from ").append(sender).append(" (").
                     append(votes.size()).append(" votes):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
                     .append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
@@ -408,7 +408,7 @@ public class STABLE extends Protocol {
         Digest tmp=getDigest();
         digest.replace(tmp);
         if(log.isTraceEnabled())
-            log.trace("resetting digest from NAKACK: " + digest.printHighestDeliveredSeqnos());
+            log.trace(local_addr + ": resetting digest from NAKACK: " + digest.printHighestDeliveredSeqnos());
         votes.clear();
     }
 
@@ -587,7 +587,7 @@ public class STABLE extends Protocol {
          }
 
          if(log.isTraceEnabled())
-             log.trace(new StringBuilder("received stability msg from ").append(sender).append(": ").append(stable_digest.printHighestDeliveredSeqnos()));
+             log.trace(new StringBuilder(local_addr + ": received stability msg from ").append(sender).append(": ").append(stable_digest.printHighestDeliveredSeqnos()));
          stopStabilityTask();
 
         lock.lock();
@@ -596,7 +596,7 @@ public class STABLE extends Protocol {
             // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
             if(!this.digest.sameSenders(stable_digest)) {
                 if(log.isDebugEnabled()) {
-                    log.debug("received digest (digest=" + stable_digest + ") which does not match my own digest ("+
+                    log.debug(local_addr + ": received digest from " + sender + " (digest=" + stable_digest + ") which does not match my own digest ("+
                             this.digest + "): ignoring digest and re-initializing own digest");
                 }
                 resetDigest();
@@ -630,7 +630,7 @@ public class STABLE extends Protocol {
 
         if(d != null && d.size() > 0) {
             if(log.isTraceEnabled())
-                log.trace("sending stable msg " + d.printHighestDeliveredSeqnos());
+                log.trace(local_addr + ": sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
             final Message msg=new Message(); // mcast message
             msg.setFlag(Message.OOB);
@@ -674,7 +674,7 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
-        if(log.isTraceEnabled()) log.trace("sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos() +
+        if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos() +
         " (copy=" + tmp.hashCode() + ")");
         startStabilityTask(tmp, delay);
     }
@@ -804,7 +804,7 @@ public class STABLE extends Protocol {
                 return;
             }
             if(log.isTraceEnabled())
-                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
+                log.trace(local_addr + ": setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
             sendStableMessage(my_digest);
         }
 
@@ -847,7 +847,7 @@ public class STABLE extends Protocol {
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(name, hdr);
-                if(log.isTraceEnabled()) log.trace("sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
+                if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
                 " (copy=" + stability_digest.hashCode() + ")");
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
