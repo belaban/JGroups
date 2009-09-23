@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.16 2009/07/20 16:20:41 belaban Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.17 2009/09/23 18:06:34 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT,"known-failures", Global.GOSSIP_ROUTER}, sequential = true)
@@ -28,10 +28,10 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
     @BeforeMethod
     void startRouter() throws Exception {
-        gossipRouter1 = new GossipRouter(12002);
+        gossipRouter1 = new GossipRouter(12001);
         gossipRouter1.start();
 
-        gossipRouter2 = new GossipRouter(12003);
+        gossipRouter2 = new GossipRouter(12002);
         gossipRouter2.start();
     }
 
