@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
  * @author Bela Ban
- * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.1.2.1 2009/09/25 08:09:19 belaban Exp $
+ * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.1.2.2 2009/09/25 08:40:55 belaban Exp $
  */
 public class NAKACK_SET_DIGEST_Test extends TestCase {
     private org.jgroups.protocols.pbcast.NAKACK nak;
@@ -51,7 +51,6 @@ public class NAKACK_SET_DIGEST_Test extends TestCase {
     public void testSetDigest() throws TimeoutException {
         MyProtocol prot=new MyProtocol();
         nak.setUpProtocol(prot);
-
 
         System.out.println("d1: " + d1);
         System.out.println("d2: " + d2);
