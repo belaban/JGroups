@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.17 2009/09/11 12:09:10 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.18 2009/09/25 11:33:25 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1240,51 +1240,22 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * reset it.
      */
     private void setDigest(Digest digest) {
-        if(digest == null) {
-            if(log.isErrorEnabled()) {
-                log.error("digest or digest.senders is null");
-            }
+        if(digest == null)
             return;
-        }
-
-        if(local_addr != null && digest.contains(local_addr)) {
-            clear();
-        }
-        else {
-            // remove all but local_addr (if not null)
-            for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
-                Address key=it.next();
-                if(local_addr != null && local_addr.equals(key)) {
-                    ;
-                }
-                else {
-                    it.remove();
-                }
-            }
-        }
-
-        Address sender;
-        Digest.Entry val;
-        long initial_seqno;
-        NakReceiverWindow win;
 
         for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            sender=entry.getKey();
-            val=entry.getValue();
-            if(sender == null || val == null) {
-                if(log.isWarnEnabled()) {
-                    log.warn("sender or value is null");
-                }
+            Address sender=entry.getKey();
+            Digest.Entry val=entry.getValue();
+            if(sender == null || val == null)
                 continue;
+            long initial_seqno=val.getHighestDeliveredSeqno();
+            NakReceiverWindow win=xmit_table.get(sender);
+            if(win != null) {
+                win.reset(); // stops retransmission
+                xmit_table.remove(sender);
             }
-            initial_seqno=val.getHighestDeliveredSeqno();
             win=createNakReceiverWindow(sender, initial_seqno, val.getLow());
             xmit_table.put(sender, win);
-        }
-        if(!xmit_table.containsKey(local_addr)) {
-            if(log.isWarnEnabled()) {
-                log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
-            }
         }
     }
 
