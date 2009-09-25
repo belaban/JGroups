@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.81.2.2 2008/02/25 10:04:59 belaban Exp $
+// $Id: NAKACK.java,v 1.81.2.3 2009/09/25 10:22:55 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -953,39 +953,34 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Creates a NakReceiverWindow for each sender in the digest according to the sender's seqno. If NRW already exists,
      * reset it.
      */
-    private void setDigest(Digest d) {
-        if(d == null || d.senders == null) {
-            if(log.isErrorEnabled()) {
-                log.error("digest or digest.senders is null");
-            }
+    private void setDigest(Digest digest) {
+        if(digest == null)
             return;
-        }
 
-        clear();
+        StringBuilder sb=new StringBuilder("\n[setDigest()]\n");
+        sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
-        Map.Entry entry;
-        Address sender;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
-        long initial_seqno;
-        NakReceiverWindow win;
-
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sender=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-
-            if(sender == null || val == null) {
-                if(log.isWarnEnabled()) {
-                    log.warn("sender or value is null");
-                }
+        for(Iterator it=digest.senders.entrySet().iterator(); it.hasNext();) {
+            Map.Entry entry=(Map.Entry)it.next();
+            Address sender=(Address)entry.getKey();
+            Digest.Entry val=(Digest.Entry)entry.getValue();
+            if(sender == null || val == null)
                 continue;
+
+            long initial_seqno=val.high_seqno; // val.getHighestDeliveredSeqno();
+            NakReceiverWindow win=(NakReceiverWindow)received_msgs.get(sender);
+            if(win != null) {
+                win.reset(); // stops retransmission
+                received_msgs.remove(sender);
             }
-            initial_seqno=val.high_seqno;
             win=createNakReceiverWindow(sender, initial_seqno);
             synchronized(received_msgs) {
                 received_msgs.put(sender, win);
             }
         }
+        sb.append("\n").append("resulting digest: " + getDigest());
+        if(log.isDebugEnabled())
+            log.debug(sb.toString());
     }
 
 
