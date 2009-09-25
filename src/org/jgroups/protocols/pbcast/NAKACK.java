@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.81.2.3 2009/09/25 10:22:55 belaban Exp $
+// $Id: NAKACK.java,v 1.81.2.4 2009/09/25 10:30:19 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -957,7 +957,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(digest == null)
             return;
 
-        StringBuilder sb=new StringBuilder("\n[setDigest()]\n");
+        StringBuffer sb=new StringBuffer("\n[setDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
         for(Iterator it=digest.senders.entrySet().iterator(); it.hasNext();) {
@@ -1244,24 +1244,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
     /* ------------------- End of Interface NakReceiverWindow.Listener ------------------- */
 
-    private void clear() {
-        NakReceiverWindow win;
-
-        // changed April 21 2004 (bela): SourceForge bug# 938584. We cannot delete our own messages sent between
-        // a join() and a getState(). Otherwise retransmission requests from members who missed those msgs might
-        // fail. Not to worry though: those msgs will be cleared by STABLE (message garbage collection)
-
-        // sent_msgs.clear();
-
-        synchronized(received_msgs) {
-            for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
-                win=(NakReceiverWindow)it.next();
-                win.reset();
-            }
-            received_msgs.clear();
-        }
-    }
-
+   
 
     private void reset() {
         NakReceiverWindow win;
