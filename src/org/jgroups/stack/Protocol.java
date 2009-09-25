@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.71 2009/09/21 09:57:24 belaban Exp $
+ * @version $Id: Protocol.java,v 1.72 2009/09/25 12:37:42 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -49,7 +49,7 @@ public abstract class Protocol {
     @Property(name="name")
     protected String           name=getClass().getSimpleName();
 
-    protected final Log log=LogFactory.getLog(this.getClass());
+    protected final Log        log=LogFactory.getLog(this.getClass());
 
 
 
