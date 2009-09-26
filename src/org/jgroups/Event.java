@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.71 2009/08/28 07:17:40 belaban Exp $
+ * @version $Id: Event.java,v 1.72 2009/09/26 05:33:57 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -17,7 +17,7 @@ public class Event {
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise (or null (merge2))
     public static final int FIND_ALL_MBRS                      = 13;  // arg = JoinPromise (or null (merge2))
-    public static final int MERGE                              = 14;  // arg = List<View>
+    public static final int MERGE                              = 14;  // arg = Map<Address,View>
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
     public static final int GET_APPLSTATE                      = 17;  // get state from appl (arg=StateTransferInfo)

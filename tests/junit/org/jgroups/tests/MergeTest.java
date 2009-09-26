@@ -12,7 +12,7 @@ import java.util.*;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.39 2009/06/12 09:58:45 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.40 2009/09/26 05:37:17 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -121,9 +121,11 @@ public class MergeTest extends ChannelTestBase {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        List<View> views=new ArrayList<View>();
-        for(String tmp: coordinators)
-            views.add(findView(tmp, channels));
+        Map<Address,View> views=new HashMap<Address,View>();
+        for(String tmp: coordinators) {
+            Address coord=findAddress(tmp, channels);
+            views.put(coord, findView(tmp, channels));
+        }
 
         JChannel coord=findChannel(leader_addr, channels);
         GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
