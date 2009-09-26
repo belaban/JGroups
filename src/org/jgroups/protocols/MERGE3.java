@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.26 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.27 2009/09/26 05:41:14 belaban Exp $
  */
 @Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -75,11 +75,11 @@ public class MERGE3 extends Protocol {
                     if(is_coord) {
                         ViewId other=hdr.view.getViewId();
                         if(!Util.sameViewId(other, view.getViewId())) {
-                            List<View> views=new ArrayList<View>();
-                            views.add(view);
-                            views.add(hdr.view);
+                            Map<Address,View> views=new HashMap<Address,View>();
+                            views.put(local_addr, view);
+                            views.put(msg.getSrc(), hdr.view);
                             if(log.isDebugEnabled())
-                                log.debug("detected different views (" + Util.print(views) + "), sending up MERGE event");
+                                log.debug("detected different views (" + Util.print(views.values()) + "), sending up MERGE event");
                             up_prot.up(new Event(Event.MERGE, views));
                         }
                     }

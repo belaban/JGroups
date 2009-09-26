@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.74 2009/09/23 08:37:28 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.75 2009/09/26 05:41:14 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -220,13 +220,17 @@ public class MERGE2 extends Protocol {
                 log.trace(sb);
             }
 
-            List<View> different_views=detectDifferentViews(discovery_rsps);
+            // Create a map of senders and the views they sent
+            Map<Address,View> views=getViews(discovery_rsps);
+
+            // A list of different views
+            List<View> different_views=detectDifferentViews(views);
             if(different_views.size() <= 1) {
                 num_inconsistent_views=0;
                 return;
             }
-            Collection<Address> coords=Util.determineCoords(different_views);
-            if(coords.size() == 1) {
+            Collection<Address> merge_participants=Util.determineMergeParticipants(views);
+            if(merge_participants.size() == 1) {
                 if(num_inconsistent_views < inconsistent_view_threshold) {
                     if(log.isDebugEnabled())
                         log.debug("dropping MERGE for inconsistent views " + Util.print(different_views) +
@@ -243,13 +247,14 @@ public class MERGE2 extends Protocol {
 
             if(log.isDebugEnabled()) {
                 StringBuilder sb=new StringBuilder();
-                sb.append(local_addr + " found different views : " + Util.print(different_views) + "; sending up MERGE event.\n");
+                sb.append(local_addr + " found different views : " + Util.print(different_views) +
+                        "; sending up MERGE event with merge participants " + merge_participants + ".\n");
                 sb.append("Discovery results:\n");
                 for(PingData data: discovery_rsps)
                     sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
                 log.debug(sb.toString());
             }
-            Event evt=new Event(Event.MERGE, different_views);
+            Event evt=new Event(Event.MERGE, views);
             try {
                 up_prot.up(evt);
             }
@@ -267,7 +272,7 @@ public class MERGE2 extends Protocol {
 
         /** Returns a list of PingData with only the view from members around the cluster */
         @SuppressWarnings("unchecked")
-        List<PingData> findAllMembers() {
+        private List<PingData> findAllMembers() {
             List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_MBRS));
             if(retval == null) return Collections.emptyList();
             if(is_coord && local_addr != null) {
@@ -279,51 +284,35 @@ public class MERGE2 extends Protocol {
             return retval;
         }
 
-        /**
-         * Finds out if there is more than 1 coordinator in the initial_mbrs vector (contains PingData elements).
-         * @param initial_mbrs A list of PingData pairs
-         * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
-         *         membership, and more than 1 for multiple coordinators
-         */
-        List<Address> detectMultipleCoordinators(List<PingData> initial_mbrs) {
-            Vector<Address> ret=new Vector<Address>();
-             for(PingData response:initial_mbrs) {
-                 if(response.isServer()) {
-                     Address coord=response.getCoordAddress();
-                     if(!ret.contains(coord))
-                         ret.add(coord);
-                 }
-             }            
-            return ret;
-        }
 
 
-        List<View> detectDifferentViews(List<PingData> initial_mbrs) {
-            List<View> ret=new ArrayList<View>();
+        public Map<Address,View> getViews(List<PingData> initial_mbrs) {
+            Map<Address,View> retval=new HashMap<Address,View>();
             for(PingData response: initial_mbrs) {
                 if(!response.isServer())
                     continue;
+                Address sender=response.getAddress();
                 View view=response.getView();
+                if(sender == null || view == null)
+                    continue;
+                retval.put(sender,view);
+            }
+            return retval;
+        }
+
+
+        public List<View> detectDifferentViews(Map<Address,View> map) {
+            final List<View> ret=new ArrayList<View>();
+            for(View view: map.values()) {
                 if(view == null)
                     continue;
                 ViewId vid=view.getVid();
-                if(!containsViewId(ret, vid))
+                if(!Util.containsViewId(ret, vid))
                     ret.add(view);
             }
             return ret;
         }
 
-        
-
-
-        boolean containsViewId(Collection<View> views, ViewId vid) {
-            for(View view: views) {
-                ViewId tmp=view.getVid();
-                if(Util.sameViewId(vid, tmp))
-                    return true;
-            }
-            return false;
-        }
 
     }
 }
