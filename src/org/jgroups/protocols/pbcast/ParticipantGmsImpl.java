@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.35 2009/06/17 11:32:14 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.36 2009/09/26 05:43:51 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -145,7 +145,6 @@ public class ParticipantGmsImpl extends GmsImpl {
      */
     public void handleViewChange(View new_view, Digest digest) {
         Vector<Address> mbrs=new_view.getMembers();
-         if(log.isDebugEnabled()) log.debug("view=" + new_view);
         suspected_mbrs.removeAllElements();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
             return;
@@ -154,10 +153,15 @@ public class ParticipantGmsImpl extends GmsImpl {
     }
 
     public void handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) {
-        // only coords handle this method; reject it if we're not coord
-        if(log.isWarnEnabled())
-            log.warn("rejected merge request, as only coordinators handle them");
-        sendMergeRejectedResponse(sender, merge_id);
+        merger.handleMergeRequest(sender, merge_id, mbrs);
+    }
+
+    public void handleMergeView(MergeData data, MergeId merge_id) {
+        merger.handleMergeView(data, merge_id);
+    }
+
+    public void handleDigestResponse(Address sender, Digest digest) {
+        merger.handleDigestResponse(sender, digest);
     }
 
     /* ---------------------------------- Private Methods --------------------------------------- */
