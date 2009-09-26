@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.39 2009/09/21 09:57:27 belaban Exp $
+// $Id: GmsImpl.java,v 1.40 2009/09/26 05:39:51 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -6,30 +6,23 @@ import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
-import org.jgroups.util.Util;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Vector;
-import java.util.List;
 
 
 public abstract class GmsImpl {
-    protected GMS         gms=null;
-    protected final       Log log;
-    final boolean         trace;
-    final boolean         warn;
-    volatile boolean      leaving=false;
+    protected final GMS    gms;
+    protected final Merger merger;
+    protected final Log    log;
+    volatile boolean       leaving=false;
 
-    protected GmsImpl() {
-        log=null;
-        trace=warn=false;
-    }
 
     protected GmsImpl(GMS gms) {
         this.gms=gms;
+        merger=gms.merger;
         log=gms.getLog();
-        trace=log.isTraceEnabled();
-        warn=log.isWarnEnabled();
     }
 
     public abstract void      join(Address mbr, boolean useFlushIfPresent);
@@ -43,7 +36,7 @@ public abstract class GmsImpl {
     public void               suspect(Address mbr)   {}
     public void               unsuspect(Address mbr) {}
 
-    public void               merge(List<View> views)                               {} // only processed by coord
+    public void               merge(Map<Address,View> views)                               {} // only processed by coord
     public void               handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {} // only processed by coords
     public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
@@ -99,11 +92,11 @@ public abstract class GmsImpl {
         static final int JOIN_WITH_STATE_TRANSFER    = 6;
 
 
-        int              type=-1;
-        Address          mbr;
-        boolean          suspected;
-        List<View>       views; // different view on MERGE
-        boolean          useFlushIfPresent;
+        int               type=-1;
+        Address           mbr;
+        boolean           suspected;
+        Map<Address,View> views; // different view on MERGE
+        boolean           useFlushIfPresent;
 
 
         Request(int type, Address mbr, boolean suspected) {
@@ -112,13 +105,13 @@ public abstract class GmsImpl {
             this.suspected=suspected;
         }
 
-        Request(int type, Address mbr, boolean suspected, List<View> views, boolean useFlushPresent) {
+        Request(int type, Address mbr, boolean suspected, Map<Address,View> views, boolean useFlushPresent) {
             this(type, mbr, suspected);
             this.views=views;
             this.useFlushIfPresent=useFlushPresent;
         }
         
-        Request(int type, Address mbr, boolean suspected, List<View> views) {
+        Request(int type, Address mbr, boolean suspected, Map<Address,View> views) {
         	this(type, mbr, suspected, views, true);
         }
 
@@ -132,7 +125,7 @@ public abstract class GmsImpl {
                 case JOIN_WITH_STATE_TRANSFER:    return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
                 case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
                 case SUSPECT: return "SUSPECT(" + mbr + ")";
-                case MERGE:   return "MERGE(" + Util.print(views) + ")";               
+                case MERGE:   return "MERGE(" + views.size() + " views)";               
             }
             return "<invalid (type=" + type + ")";
         }
