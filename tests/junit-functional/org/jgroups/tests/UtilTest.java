@@ -1,19 +1,16 @@
-// $Id: UtilTest.java,v 1.13 2009/05/06 06:34:30 belaban Exp $
+// $Id: UtilTest.java,v 1.14 2009/09/26 05:35:41 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
+import org.jgroups.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Vector;
-
+import java.util.*;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -228,7 +225,7 @@ public class UtilTest {
         Assert.assertEquals("1.2GB", s);
     }
 
-
+    @SuppressWarnings("unchecked")
     public static void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
@@ -658,7 +655,97 @@ public class UtilTest {
     }
 
 
+    public static void testDetermineMergeParticipantsAndMergeCoords() {
+        Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress();
+        org.jgroups.util.UUID.add((UUID)a, "A");
+        org.jgroups.util.UUID.add((UUID)b, "B");
+        org.jgroups.util.UUID.add((UUID)c, "C");
 
+        View v1=Util.createView(b, 1, b, a, c);
+        View v2=Util.createView(b, 2, b, c);
+        View v3=Util.createView(b, 2, b, c);
+
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, v1); map.put(b, v2); map.put(c, v3);
+        StringBuilder sb=new StringBuilder("map:\n");
+        for(Map.Entry<Address,View> entry: map.entrySet())
+            sb.append(entry.getKey() + ": " + entry.getValue() + "\n");
+        System.out.println(sb);
+
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 2;
+        assert merge_participants.contains(a) && merge_participants.contains(b);
+
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 1;
+        assert merge_coords.contains(b);
+    }
+
+
+    public static void testDetermineMergeParticipantsAndMergeCoords2() {
+        Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
+        org.jgroups.util.UUID.add((UUID)a, "A");
+        org.jgroups.util.UUID.add((UUID)b, "B");
+        org.jgroups.util.UUID.add((UUID)c, "C");
+        org.jgroups.util.UUID.add((UUID)d, "D");
+
+        View v1=Util.createView(a, 1, a, b);
+        View v2=Util.createView(a, 1, a, b);
+        View v3=Util.createView(c, 2, c, d);
+        View v4=Util.createView(c, 2, c, d);
+
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
+
+        StringBuilder sb=new StringBuilder("map:\n");
+        for(Map.Entry<Address,View> entry: map.entrySet())
+            sb.append(entry.getKey() + ": " + entry.getValue() + "\n");
+        System.out.println(sb);
+
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 2;
+        assert merge_participants.contains(a) && merge_participants.contains(c);
+
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 2;
+        assert merge_coords.contains(a) && merge_coords.contains(c);
+    }
+
+
+    public static void testDetermineMergeParticipantsAndMergeCoords3() {
+        Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
+        org.jgroups.util.UUID.add((UUID)a, "A");
+        org.jgroups.util.UUID.add((UUID)b, "B");
+        org.jgroups.util.UUID.add((UUID)c, "C");
+        org.jgroups.util.UUID.add((UUID)d, "D");
+
+        View v1=Util.createView(a, 1, a, b, c, d);
+        View v2=Util.createView(a, 1, a, b, c, d);
+        View v3=Util.createView(a, 2, a, b, c, d);
+        View v4=Util.createView(a, 3, a, b, c, d);
+
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
+
+        StringBuilder sb=new StringBuilder("map:\n");
+        for(Map.Entry<Address,View> entry: map.entrySet())
+            sb.append(entry.getKey() + ": " + entry.getValue() + "\n");
+        System.out.println(sb);
+
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 1;
+        assert merge_participants.contains(a);
+
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 1;
+        assert merge_coords.contains(a);
+    }
 
 }
 

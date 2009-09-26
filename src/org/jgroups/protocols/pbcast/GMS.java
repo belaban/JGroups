@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.194 2009/09/21 13:51:07 belaban Exp $
+ * @version $Id: GMS.java,v 1.195 2009/09/26 05:40:27 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -111,6 +111,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     private GmsImpl impl=null;
     private final Object impl_mutex=new Object(); // synchronizes event entry into impl
     private final Hashtable<String,GmsImpl> impls=new Hashtable<String,GmsImpl>(3);
+
+    // Handles merge related tasks
+    final Merger merger=new Merger(this, log);
     
     protected Address local_addr=null;
     protected final Membership members=new Membership(); // real membership
@@ -143,7 +146,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     //[JGRP-700] - FLUSH: flushing should span merge
     protected final AckCollector merge_ack_collector=new AckCollector();
 
-    boolean flushProtocolInStack=false;   
+    boolean flushProtocolInStack=false;
 
 
     public GMS() {
@@ -883,7 +886,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 return null;                              // discard
 
             case Event.MERGE:
-                view_handler.add(new Request(Request.MERGE, null, false, (List<View>)evt.getArg()));
+                view_handler.add(new Request(Request.MERGE, null, false, (Map<Address,View>)evt.getArg()));
                 return null;                              // don't pass up
         }
         return up_prot.up(evt);
@@ -1229,7 +1232,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.194 2009/09/21 13:51:07 belaban Exp $
+     * @version $Id: GMS.java,v 1.195 2009/09/26 05:40:27 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
@@ -1317,7 +1320,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 if(old_future != null)
                     old_future.cancel(true);
                 if(log.isTraceEnabled())
-                    log.trace("view handler for merge_id " + merge_id + " has been suspended");
+                    log.trace(local_addr + ": view handler for merge_id " + merge_id + " was suspended");
             }
         }
 
@@ -1334,7 +1337,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 future.cancel(true);
             resumeForce();
             if(log.isTraceEnabled())
-                log.trace("view handler has been resumed");
+                log.trace("view handler was resumed");
         }
 
         public synchronized void resumeForce() {
@@ -1342,7 +1345,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                 queue.reset();
             suspended=false;
             if(log.isTraceEnabled())
-                log.trace("view handler has been resumed forcefully");
+                log.trace("view handler was resumed forcefully");
         }
 
         public void run() {

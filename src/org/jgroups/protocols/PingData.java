@@ -14,12 +14,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collection;
+import java.util.Vector;
 
 /**
  * Encapsulates information about a cluster node, e.g. local address, coordinator's addresss, logical name and
  * physical address(es)
  * @author Bela Ban
- * @version $Id: PingData.java,v 1.5 2009/06/17 16:20:03 belaban Exp $
+ * @version $Id: PingData.java,v 1.6 2009/09/26 05:37:04 belaban Exp $
  */
 public class PingData implements Streamable {
     private Address own_addr=null;
@@ -65,6 +66,10 @@ public class PingData implements Streamable {
 
     public Address getCoordAddress() {
         return view != null? view.getVid().getCoordAddress() : null;
+    }
+
+    public Collection<Address> getMembers() {
+        return view != null? view.getMembers() : null;
     }
 
     public View getView() {

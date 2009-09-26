@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.214 2009/09/20 15:49:58 belaban Exp $
+ * @version $Id: Util.java,v 1.215 2009/09/26 05:35:39 belaban Exp $
  */
 public class Util {
 
@@ -1946,7 +1946,20 @@ public class Util {
         return ret;
     }
 
-     public static Collection<Address> determineCoords(List<View> views) {
+
+
+    public static boolean containsViewId(Collection<View> views, ViewId vid) {
+        for(View view: views) {
+            ViewId tmp=view.getVid();
+            if(Util.sameViewId(vid, tmp))
+                return true;
+        }
+        return false;
+    }
+
+
+
+    public static Collection<Address> determineMergeCoords(List<View> views) {
         Set<Address> retval=new HashSet<Address>();
         if(views != null) {
             for(View view: views) {
@@ -1957,6 +1970,61 @@ public class Util {
         }
         return retval;
     }
+
+
+    /**
+     * Determines the members which take part in a merge. The resulting list consists of all merge coordinators
+     * and members outside a merge partition, e.g. for views A={B,A,C}, B={B,C} and C={B,C}, the merge coordinator
+     * is B, but the merge participants are B and A.
+     * @param map
+     * @return
+     */
+    public static Collection<Address> determineMergeParticipants(Map<Address,View> map) {
+        Set<Address> coords=new HashSet<Address>();
+        Set<Address> all_addrs=new HashSet<Address>();
+
+        if(map == null)
+            return Collections.emptyList();
+
+        for(View view: map.values())
+            all_addrs.addAll(view.getMembers());
+
+        for(View view: map.values()) {
+            Address coord=view.getCreator();
+            if(coord != null)
+                coords.add(coord);
+        }
+
+        for(Address coord: coords) {
+            View view=map.get(coord);
+            Collection<Address> mbrs=view.getMembers();
+            if(mbrs != null)
+                all_addrs.removeAll(mbrs);
+        }
+        coords.addAll(all_addrs);
+        return coords;
+    }
+
+
+    /**
+     * This is the same or a subset of {@link #determineMergeParticipants(java.util.Map)} and contains only members
+     * which are currently sub-partition coordinators.
+     * @param map
+     * @return
+     */
+    public static Collection<Address> determineMergeCoords(Map<Address,View> map) {
+        Set<Address> retval=new HashSet<Address>();
+        if(map != null) {
+            for(View view: map.values()) {
+                Address coord=view.getCreator();
+                if(coord != null)
+                    retval.add(coord);
+            }
+        }
+        return retval;
+    }
+
+
 
     public static Object pickRandomElement(List list) {
         if(list == null) return null;

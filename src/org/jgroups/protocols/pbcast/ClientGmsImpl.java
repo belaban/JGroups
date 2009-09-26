@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.76 $
+ * @version $Revision: 1.77 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -207,6 +207,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
         List<PingData> responses=(List<PingData>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
         if(responses != null) {
