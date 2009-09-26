@@ -7,9 +7,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 
 import java.io.*;
-import java.util.Vector;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * The coordinator attaches a small header with its view to each (or every nth) message. If another coordinator <em>in
@@ -52,15 +50,15 @@ public class MERGEFAST extends Protocol {
                 if(is_coord == false) // only handle message if we are coordinator
                     break;
                 Message msg=(Message)evt.getArg();
-                MergefastHeader hdr=(MergefastHeader)msg.getHeader("MERGEFAST");
+                MergefastHeader hdr=(MergefastHeader)msg.getHeader(getName());
                 up_prot.up(evt);
                 if(hdr != null && view != null) {
                     if(!Util.sameViewId(view.getViewId(), hdr.view.getViewId())) {
-                        List<View> views=new ArrayList<View>();
-                        views.add(view);
-                        views.add(hdr.view);
+                        Map<Address,View> views=new HashMap<Address,View>();
+                        views.put(local_addr, view);
+                        views.put(msg.getSrc(), hdr.view);
                         if(log.isDebugEnabled())
-                            log.debug("detected different views (" + Util.print(views) + "), sending up MERGE event");
+                            log.debug("detected different views (" + Util.print(views.values()) + "), sending up MERGE event");
                         up_prot.up(new Event(Event.MERGE, views));
                     }
                 }
