@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.18 2009/09/23 07:56:36 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.19 2009/09/26 05:36:44 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -78,7 +78,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     public static void testSimpleMerge() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create("GMS_MergeTest.testSimpleMerge()", "A", "B", "C", "D");
+            channels=create(true, "GMS_MergeTest.testSimpleMerge()", "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -116,7 +116,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     public static void testConcurrentMergeTwoPartitions() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create("GMS_MergeTest.testConcurrentMergeTwoPartitions", "A", "B", "C", "D");
+            channels=create(true, "GMS_MergeTest.testConcurrentMergeTwoPartitions", "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -154,7 +154,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     public static void testConcurrentMergeMultiplePartitions() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create("GMS_MergeTest.testConcurrentMergeMultiplePartitions", "A", "B", "C", "D", "E", "F", "G", "H");
+            channels=create(true, "GMS_MergeTest.testConcurrentMergeMultiplePartitions", "A", "B", "C", "D", "E", "F", "G", "H");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -291,11 +291,11 @@ public class GMS_MergeTest extends ChannelTestBase {
 
              Address leader=b.getAddress();
 
-             long end_time=System.currentTimeMillis() + 10000;
+             long end_time=System.currentTimeMillis() + 12000;
              do {
                  System.out.println("\n==== injecting merge event into " + leader + " ====");
                  injectMergeEvent(channels, leader, "B", "A", "C");
-                 Util.sleep(2000);
+                 Util.sleep(3000);
                  if(allChannelsHaveView(channels, b.getView()))
                      break;
              }
@@ -399,9 +399,11 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        List<View> views=new ArrayList<View>();
-        for(String tmp: coordinators)
-            views.add(findView(tmp, channels));
+        Map<Address,View> views=new HashMap<Address,View>();
+        for(String tmp: coordinators) {
+            Address coord=findAddress(tmp, channels);
+            views.put(coord, findView(tmp, channels));
+        }
 
         JChannel coord=findChannel(leader_addr, channels);
         GMS gms=(GMS)coord.getProtocolStack().findProtocol(GMS.class);
