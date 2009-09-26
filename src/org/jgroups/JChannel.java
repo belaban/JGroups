@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.227 2009/09/23 07:43:45 belaban Exp $
+ * @version $Id: JChannel.java,v 1.228 2009/09/26 05:37:47 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -2098,6 +2098,9 @@ public class JChannel extends Channel {
             if(my_view != null && !map.containsKey("view"))
                 map.put("view", my_view.toString());
             map.put("local_addr", getAddressAsString() + " [" + getAddressAsUUID() + "]");
+            PhysicalAddress physical_addr=(PhysicalAddress)downcall(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            if(physical_addr != null)
+                map.put("physical_addr", physical_addr.toString());
             map.put("cluster", getClusterName());
             return map;
         }
