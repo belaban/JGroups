@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.1 2009/09/25 12:38:15 belaban Exp $
+ * @version $Id: Merger.java,v 1.2 2009/09/26 05:38:47 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -60,13 +60,15 @@ public class Merger {
 
         // we need the merge *coordinators* not merge participants because not everyone can lead a merge !
         Collection<Address> coords=Util.determineMergeCoords(views);
+        Collection<Address> merge_participants=Util.determineMergeParticipants(views);
         Membership tmp=new Membership(coords); // establish a deterministic order, so that coords can elect leader
         tmp.sort();
         Address merge_leader=tmp.elementAt(0);
-        if(log.isDebugEnabled()) log.debug("determining merge leader from coordinators " + tmp);
+        if(log.isDebugEnabled())
+            log.debug("determining merge leader from " + merge_participants);
         if(merge_leader.equals(gms.local_addr)) {
             if(log.isDebugEnabled())
-                log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + coords);
+                log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + merge_participants);
             merge_task.start(views);
         }
         else {
@@ -296,10 +298,16 @@ public class Merger {
         get_digest_req.setFlag(Message.OOB);
         get_digest_req.putHeader(gms.getName(), hdr);
 
-        long max_wait_time=gms.merge_timeout > 0? (long)(gms.merge_timeout * 0.8) : 2000L;
+        long max_wait_time=gms.merge_timeout > 0? gms.merge_timeout / 2 : 2000L;
         digest_collector.reset(current_mbrs);
         gms.getDownProtocol().down(new Event(Event.MSG, get_digest_req));
         digest_collector.waitForAllResponses(max_wait_time);
+        if(log.isTraceEnabled()) {
+            if(digest_collector.hasAllResponses())
+                log.trace(gms.local_addr + ": fetched all digests for " + current_mbrs);
+            else
+                log.trace(gms.local_addr + ": fetched incomplete digests (after timeout of " + max_wait_time + ") ms for " + current_mbrs);
+        }
         Map<Address,Digest> responses=new HashMap<Address,Digest>(digest_collector.getResults());
         MutableDigest retval=new MutableDigest(responses.size());
         for(Digest digest: responses.values()) {
@@ -313,7 +321,7 @@ public class Merger {
      * Fetches the digests from all members and installs them again. Used only for diagnosis and support; don't
      * use this otherwise !
      */
-    private void fixDigests() {
+    void fixDigests() {
         Digest digest=fetchDigestsFromAllMembersInSubPartition(gms.view.getMembers());
         Message msg=new Message();
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST);
@@ -323,9 +331,12 @@ public class Merger {
     }
 
 
+    void stop() {
+        merge_task.stop();
+    }
 
 
-    private void cancelMerge(MergeId id) {
+    void cancelMerge(MergeId id) {
         if(setMergeId(id, null)) {
             merge_task.stop();
             merge_rsps.reset();
