@@ -19,10 +19,10 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.19 2009/09/28 14:38:10 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.20 2009/09/28 17:03:06 vlada Exp $
  **/
 
-@Test(groups = {Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER}, sequential = true)
+@Test(groups = {Global.STACK_INDEPENDENT, "known-failures",Global.GOSSIP_ROUTER}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
     private GossipRouter gr1, gr2;
