@@ -13,9 +13,9 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.36 2009/09/26 05:43:51 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.37 2009/09/28 07:16:55 belaban Exp $
  */
-public class ParticipantGmsImpl extends GmsImpl {
+public class ParticipantGmsImpl extends ServerGmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
     private final Promise<Boolean>  leave_promise=new Promise<Boolean>();
 
@@ -152,17 +152,7 @@ public class ParticipantGmsImpl extends GmsImpl {
         gms.installView(new_view, digest);
     }
 
-    public void handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) {
-        merger.handleMergeRequest(sender, merge_id, mbrs);
-    }
 
-    public void handleMergeView(MergeData data, MergeId merge_id) {
-        merger.handleMergeView(data, merge_id);
-    }
-
-    public void handleDigestResponse(Address sender, Digest digest) {
-        merger.handleDigestResponse(sender, digest);
-    }
 
     /* ---------------------------------- Private Methods --------------------------------------- */
 
