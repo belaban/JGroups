@@ -38,7 +38,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.31 2009/09/11 11:35:26 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.32 2009/09/28 15:58:10 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
 
@@ -117,7 +117,7 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
      * Note that relative is always true; we always schedule the next execution relative to the last *actual*
      * (not scheduled) execution
      */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task, boolean relative) {
+    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task) {
         if(task == null)
             throw new NullPointerException();
 
@@ -130,14 +130,8 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
     }
 
 
-
-
-    /**
-     * Add a task for execution at adjustable intervals
-     * @param t the task to execute
-     */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task t) {
-        return scheduleWithDynamicInterval(t, true);
+    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+        return super.scheduleWithFixedDelay(new RobustRunnable(command), initialDelay, delay, unit);
     }
 
     /**
@@ -148,13 +142,6 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
         return getQueue().size();
     }
 
-
-    /**
-     * Start the scheduler, if it's suspended or stopped
-     */
-    public void start() {
-        ;
-    }
 
 
     /**
@@ -188,6 +175,29 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
         finally {
            if(threadDecorator != null)
               threadDecorator.threadReleased(Thread.currentThread());
+        }
+    }
+
+    /**
+     * Class which catches exceptions in run() - https://jira.jboss.org/jira/browse/JGRP-1062
+     */
+    static class RobustRunnable implements Runnable {
+        final Runnable command;
+
+        public RobustRunnable(Runnable command) {
+            this.command=command;
+        }
+
+        public void run() {
+            if(command != null) {
+                try {
+                    command.run();
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("exception executing task " + command, t);
+                }
+            }
         }
     }
 
