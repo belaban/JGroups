@@ -37,7 +37,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.52 2009/09/10 19:52:39 rachmatowicz Exp $
+ * @version $Id: TCPPING.java,v 1.53 2009/09/28 15:53:34 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -131,7 +131,7 @@ public class TCPPING extends Discovery {
             msg.putHeader(getName(), hdr);
             if(log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
-            timer.submit(new Runnable() {
+            timer.execute(new Runnable() {
                 public void run() {
                     try {
                         down_prot.down(new Event(Event.MSG, msg));
