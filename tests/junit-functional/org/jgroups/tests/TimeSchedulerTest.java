@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.10 2008/10/07 12:42:19 vlada Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.11 2009/09/28 15:57:09 belaban Exp $
  */
 @Test(groups="broken")
 public class TimeSchedulerTest {
@@ -102,7 +102,7 @@ public class TimeSchedulerTest {
         RepeatingTask task=new RepeatingTask(300);
         TimeScheduler timer=new TimeScheduler();
         try {
-            future=timer.scheduleWithDynamicInterval(task, false);
+            future=timer.scheduleWithDynamicInterval(task);
             Util.sleep(3000);
 
             System.out.println("<<< cancelling task");
