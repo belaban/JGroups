@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.80 2009/09/28 14:38:12 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.81 2009/09/28 15:56:59 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -261,7 +261,7 @@ public class TUNNEL extends TP {
                               }
                           }
                       }
-                  } catch (Exception ex) {
+                  } catch(Throwable ex) {
                      if (log.isWarnEnabled())
                          log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress(), ex);
                   }

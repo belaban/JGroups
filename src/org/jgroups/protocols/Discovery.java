@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.67 2009/09/08 10:53:33 belaban Exp $
+ * @version $Id: Discovery.java,v 1.68 2009/09/28 15:57:22 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -494,7 +494,7 @@ public abstract class Discovery extends Protocol {
                             }
                             Thread.currentThread().interrupt();
                         }
-                        catch(Exception ex) {
+                        catch(Throwable ex) {
                             if(log.isErrorEnabled())
                                 log.error("failed sending discovery request", ex);
                         }

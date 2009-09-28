@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.215 2009/09/26 05:35:39 belaban Exp $
+ * @version $Id: Util.java,v 1.216 2009/09/28 15:55:57 belaban Exp $
  */
 public class Util {
 
@@ -1997,7 +1997,7 @@ public class Util {
 
         for(Address coord: coords) {
             View view=map.get(coord);
-            Collection<Address> mbrs=view.getMembers();
+            Collection<Address> mbrs=view != null? view.getMembers() : null;
             if(mbrs != null)
                 all_addrs.removeAll(mbrs);
         }
