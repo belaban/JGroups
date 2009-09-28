@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.62 2009/09/23 19:22:28 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.63 2009/09/28 15:22:43 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -88,8 +88,7 @@ public class GossipRouter {
     @Property(description="The max queue size of backlogged connections")
     private int backlog=1000;
 
-    @ManagedAttribute(description="operational status", name="running")
-    private volatile boolean up=false;
+    private final AtomicBoolean running= new AtomicBoolean(false);
 
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
@@ -232,37 +231,37 @@ public class GossipRouter {
     @ManagedOperation(description="Lifecycle operation. Called after create(). When this method is called, "
             + "the managed attributes have already been set. Brings the Router into a fully functional state.")
     public void start() throws Exception {
-        if(srvSock != null)
-            throw new Exception("Router already started.");
-
-        if(jmx && !registered) {
-            MBeanServer server=Util.getMBeanServer();
-            JmxConfigurator.register(this, server, "jgroups:name=GossipRouter");
-            registered=true;
-        }
-
-        if(bindAddressString != null) {
-            bindAddress=InetAddress.getByName(bindAddressString);
-            srvSock=new ServerSocket(port, backlog, bindAddress);
-        }
-        else {
-            srvSock=new ServerSocket(port, backlog);
-        }
-
-        up=true;
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                GossipRouter.this.stop();
+        if(running.compareAndSet(false, true)) {
+            if(srvSock != null)
+                throw new Exception("Router already started.");
+    
+            if(jmx && !registered) {
+                MBeanServer server=Util.getMBeanServer();
+                JmxConfigurator.register(this, server, "jgroups:name=GossipRouter");
+                registered=true;
             }
-        });
-
-        // start the main server thread
-        new Thread(new Runnable() {
-            public void run() {
-                mainLoop();
+    
+            if(bindAddressString != null) {
+                bindAddress=InetAddress.getByName(bindAddressString);
+                srvSock=new ServerSocket(port, backlog, bindAddress);
             }
-        }, "GossipRouter").start();
+            else {
+                srvSock=new ServerSocket(port, backlog);
+            }       
+    
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    GossipRouter.this.stop();
+                }
+            });
+    
+            // start the main server thread
+            new Thread(new Runnable() {
+                public void run() {
+                    mainLoop();
+                }
+            }, "GossipRouter").start();
+        }        
     }
 
     /**
@@ -270,24 +269,30 @@ public class GossipRouter {
      */
     @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
-        up=false;
-        if(srvSock != null) {
-            Util.close(srvSock);
-            // exiting the mainLoop will clean the tables
-            srvSock=null;
+        if(running.compareAndSet(true, false)){
+            if(srvSock != null) {
+                Util.close(srvSock);
+                // exiting the mainLoop will clean the tables
+                srvSock=null;
+            }
+    
+            for(ConcurrentMap<Address,ConnectionHandler> map: routingTable.values()) {
+                for(ConnectionHandler ce: map.values())
+                    ce.close();
+            }
+            routingTable.clear();
+    
+            if(log.isInfoEnabled())
+                log.info("router stopped");            
         }
-
-        for(ConcurrentMap<Address,ConnectionHandler> map: routingTable.values()) {
-            for(ConnectionHandler ce: map.values())
-                ce.close();
-        }
-        routingTable.clear();
-
-        if(log.isInfoEnabled())
-            log.info("router stopped");
-    }
+    }    
 
     public void destroy() {
+    }
+    
+    @ManagedAttribute(description="operational status", name="running")
+    public boolean isRunning() {
+        return running.get();
     }
 
     @ManagedOperation(description="dumps the contents of the routing table")
@@ -368,7 +373,7 @@ public class GossipRouter {
 
         printStartupInfo();
 
-        while(up && srvSock != null) {
+        while(isRunning() && srvSock != null) {
             Socket sock=null;
             try {
                 sock=srvSock.accept();
@@ -384,7 +389,7 @@ public class GossipRouter {
             }
             catch(IOException e) {
                 //only consider this exception if GR is not shutdown
-                if(up) {
+                if(isRunning()) {
                     log.error("failure handling connection from " + sock, e);
                     Util.close(sock);
                 }
