@@ -5,7 +5,9 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.protocols.TUNNEL;
 import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -17,33 +19,46 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.18 2009/09/23 19:22:29 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.19 2009/09/28 14:38:10 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
-    private GossipRouter gossipRouter1, gossipRouter2;
+    private GossipRouter gr1, gr2;
     private static final String props ="tunnel.xml";
+    private static final String bindAddress = "127.0.0.1";
 
     @BeforeMethod
     void startRouter() throws Exception {
-        gossipRouter1 = new GossipRouter(12001);
-        gossipRouter1.start();
+        gr1 = new GossipRouter(12003);
+        gr1.start();
 
-        gossipRouter2 = new GossipRouter(12002);
-        gossipRouter2.start();
+        gr2 = new GossipRouter(12004);
+        gr2.start();
     }
 
     @AfterMethod
     void tearDown() throws Exception {
         Util.close(channel, coordinator);
-        gossipRouter1.stop();
-        gossipRouter2.stop();
+        gr1.stop();
+        gr2.stop();
+    }
+    
+    private void modifyChannel(JChannel... channels) throws Exception {
+        for (JChannel c : channels) {
+            ProtocolStack stack = c.getProtocolStack();
+            TUNNEL t = (TUNNEL) stack.getBottomProtocol();
+            String s = bindAddress + ":" + gr1.getPort() + ",";
+            s+=bindAddress+":" + gr2.getPort();
+            t.setGossipRouterHosts(s);
+            t.init();
+        }        
     }
 
     public void testSimpleConnect() throws Exception {
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testSimpleConnect");
         assert channel.getLocalAddress() != null;
         assert channel.getView().size() == 1;
@@ -59,6 +74,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     public void testConnectTwoChannels() throws Exception {
         coordinator = new JChannel(props);
         channel = new JChannel(props);
+        modifyChannel(channel,coordinator);
         coordinator.connect("testConnectTwoChannels");
         channel.connect("testConnectTwoChannels");
         View view = channel.getView();
@@ -80,16 +96,17 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     public void testConnectTwoChannelsBothGRDownReconnect() throws Exception {
         coordinator = new JChannel(props);
         channel = new JChannel(props);
+        modifyChannel(channel,coordinator);
         coordinator.connect("testConnectTwoChannelsBothGRDownReconnect");
         channel.connect("testConnectTwoChannelsBothGRDownReconnect");
 
-        gossipRouter1.stop();
-        gossipRouter2.stop();
+        gr1.stop();
+        gr2.stop();
         // give time to reconnect
         Util.sleep(3000);
 
-        gossipRouter1.start();
-        gossipRouter2.start();
+        gr1.start();
+        gr2.start();
 
         // give time to reconnect
         Util.sleep(3000);
@@ -108,10 +125,12 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         JChannel third = null;
         coordinator = new JChannel(props);
         channel = new JChannel(props);
+        modifyChannel(channel,coordinator);
         coordinator.connect("testConnectThreeChannelsWithGRDown");
         channel.connect("testConnectThreeChannelsWithGRDown");
 
         third = new JChannel(props);
+        modifyChannel(third);
         third.connect("testConnectThreeChannelsWithGRDown");
 
         View view = channel.getView();
@@ -121,7 +140,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         assert view.containsMember(coordinator.getLocalAddress());
 
         // kill router and recheck views
-        gossipRouter2.stop();
+        gr2.stop();
         Util.sleep(1000);
 
         view = channel.getView();
@@ -138,10 +157,12 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     public void testConnectSendMessage() throws Exception {
         final Promise<Message> msgPromise = new Promise<Message>();
         coordinator = new JChannel(props);
+        modifyChannel(coordinator);
         coordinator.connect("testConnectSendMessage");
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testConnectSendMessage");
 
         channel.send(new Message(null, null, "payload"));
@@ -157,13 +178,15 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     public void testConnectSendMessageSecondGRDown() throws Exception {
         final Promise<Message> msgPromise = new Promise<Message>();
         coordinator = new JChannel(props);
+        modifyChannel(coordinator);
         coordinator.connect("testConnectSendMessageSecondGRDown");
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testConnectSendMessageSecondGRDown");
 
-        gossipRouter2.stop();
+        gr2.stop();
 
         channel.send(new Message(null, null, "payload"));
 
@@ -189,20 +212,22 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     public void testConnectSendMessageBothGRDown() throws Exception {
         final Promise<Message> msgPromise = new Promise<Message>();
         coordinator = new JChannel(props);
+        modifyChannel(coordinator);
         coordinator.connect("testConnectSendMessageBothGRDown");
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testConnectSendMessageBothGRDown");
 
-        gossipRouter1.stop();
-        gossipRouter2.stop();
+        gr1.stop();
+        gr2.stop();
         
         // give time to reconnect
         Util.sleep(3000);
 
-        gossipRouter1.start();
-        gossipRouter2.start();
+        gr1.start();
+        gr2.start();
         
         // give time to reconnect
         Util.sleep(3000);
@@ -233,16 +258,19 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         final Promise<Message> msgPromise = new Promise<Message>();
         coordinator = new JChannel(props);
+        modifyChannel(coordinator);
         coordinator.connect("testConnectSendMessageBothGRDownOnlyOneUp");
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testConnectSendMessageBothGRDownOnlyOneUp");
+        
 
-        gossipRouter1.stop();
-        gossipRouter2.stop();
+        gr1.stop();
+        gr2.stop();
 
-        gossipRouter1.start();
+        gr1.start();
 
         // give time to reconnect
         Util.sleep(6000);
@@ -268,13 +296,15 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         final Promise<Message> msgPromise = new Promise<Message>();
         coordinator = new JChannel(props);
+        modifyChannel(coordinator);
         coordinator.connect("testConnectSendMessageFirstGRDown");
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel = new JChannel(props);
+        modifyChannel(channel);
         channel.connect("testConnectSendMessageFirstGRDown");
 
-        gossipRouter1.stop();
+        gr1.stop();
 
         channel.send(new Message(null, null, "payload"));
         View view = coordinator.getView();

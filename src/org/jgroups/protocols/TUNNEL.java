@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.79 2009/09/23 19:22:30 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.80 2009/09/28 14:38:12 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -307,9 +307,10 @@ public class TUNNEL extends TP {
          }
          else if (currentState != RouterStub.ConnectionStatus.CONNECTED
                  && newState == RouterStub.ConnectionStatus.CONNECTED) {
-             stopReconnecting(stub);
-             StubReceiver stubReceiver = new StubReceiver(stub);
-             Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver");
+             stopReconnecting(stub);             
+             StubReceiver stubReceiver = new StubReceiver(stub.getInputStream());
+             stub.setReceiver(stubReceiver);
+             Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
              stubReceiver.setThread(t);
              t.setDaemon(true);
              t.start();
@@ -320,12 +321,11 @@ public class TUNNEL extends TP {
 
     public class StubReceiver implements Runnable {
 
-        private final RouterStub stub;
         private Thread runner;
-
-        public StubReceiver(RouterStub stub) {
-            stub.setReceiver(this);
-            this.stub = stub;            
+        private DataInputStream input;
+        
+        public StubReceiver(DataInputStream input) {
+            this.input = input;
         }
 
         public void setThread(Thread t) {
@@ -337,12 +337,8 @@ public class TUNNEL extends TP {
         }
 
         public void run() {
-            while (stub.isConnected()) {
-                try {
-                    if (Thread.interrupted()) {
-                        throw new InterruptedException();
-                    }
-                    DataInputStream input = stub.getInputStream();
+            while (!Thread.currentThread().isInterrupted()) {
+                try {                                        
                     GossipData msg = new GossipData();
                     msg.readFrom(input);
                     switch (msg.getType()) {
@@ -365,16 +361,12 @@ public class TUNNEL extends TP {
                     // do nothing - blocking read timeout caused it
                     continue;
                 } catch (SocketException se) {
-                    // do nothing
-                    continue;
+                    break;
                 } catch (IOException ioe) {
                     /*
                      * This is normal course of operation Thread should not die
                      */
                     continue;
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
                 } catch (Exception e) {
                     if (log.isWarnEnabled())
                         log.warn("failure in TUNNEL receiver thread", e);

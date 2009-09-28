@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.48 2009/09/23 19:22:28 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.49 2009/09/28 14:38:11 vlada Exp $
  */
 public class RouterStub {
 
@@ -210,9 +210,11 @@ public class RouterStub {
     public InetSocketAddress getGossipRouterAddress() {
         return new InetSocketAddress(router_host, router_port);
     }
-
+    
     public String toString() {
-        return "RouterStub[router_host=" + router_host + "::" + router_port + ",connected=" + isConnected() + "]";
+        return "RouterStub[localsocket=" + sock != null ? sock.getLocalSocketAddress().toString()
+                        : "null" + ",router_host=" + router_host + "::" + router_port
+                                        + ",connected=" + isConnected() + "]";
     }
 
     public void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception {
