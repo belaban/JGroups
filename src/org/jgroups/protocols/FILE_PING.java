@@ -23,7 +23,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.10 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.11 2009/09/28 15:51:17 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -94,7 +94,7 @@ public class FILE_PING extends Discovery {
                     // down_prot.down(new Event(Event.MSG,  msg));
                     if(log.isTraceEnabled())
                         log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                    timer.submit(new Runnable() {
+                    timer.execute(new Runnable() {
                         public void run() {
                             try {
                                 down_prot.down(new Event(Event.MSG, msg));

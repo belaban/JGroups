@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.34 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.35 2009/09/28 15:54:46 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -261,7 +261,7 @@ public class VIEW_SYNC extends Protocol {
         	view_task_lock.lock();
         	if(view_send_task_future == null || view_send_task_future.isDone()) {
 	            ViewSendTask view_send_task=new ViewSendTask();
-	            view_send_task_future=timer.scheduleWithDynamicInterval(view_send_task, true); // fixed-rate scheduling
+	            view_send_task_future=timer.scheduleWithDynamicInterval(view_send_task);
 	            if(log.isTraceEnabled())
 	                log.trace("view send task started");
         	}
