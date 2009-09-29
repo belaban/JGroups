@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.29 2009/09/22 14:44:35 belaban Exp $
+// $Id: Retransmitter.java,v 1.30 2009/09/29 04:33:49 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -30,7 +30,7 @@ import java.util.Set;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 public class Retransmitter {
 
@@ -214,8 +214,14 @@ public class Retransmitter {
             if(cancelled) {
                 return;
             }
-            command.retransmit(seqno, seqno, msg_sender);
-            num_retransmits++;
+            try {
+                command.retransmit(seqno, seqno, msg_sender);
+                num_retransmits++;
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled())
+                    log.error("failed retransmission task", t);
+            }
             doSchedule();
         }
 
