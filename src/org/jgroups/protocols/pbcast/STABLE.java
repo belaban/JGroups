@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.85.2.3 2009/02/05 09:21:50 belaban Exp $
+ * @version $Id: STABLE.java,v 1.85.2.4 2009/09/29 04:29:40 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -436,7 +436,7 @@ public class STABLE extends Protocol {
         try {
             if(stable_task_future == null || stable_task_future.isDone()) {
                 StableTask stable_task=new StableTask();
-                stable_task_future=timer.scheduleWithDynamicInterval(stable_task, true);
+                stable_task_future=timer.scheduleWithDynamicInterval(stable_task);
                 if(log.isTraceEnabled())
                     log.trace("stable task started");
             }
