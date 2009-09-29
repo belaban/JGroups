@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.21 2009/09/29 01:17:59 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.22 2009/09/29 21:22:28 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT, "known-failures",Global.GOSSIP_ROUTER}, sequential = true)
@@ -41,6 +41,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
     @AfterMethod
     void tearDown() throws Exception {
         Util.close(channel, coordinator);
+        Util.sleep(1000);
         gr1.stop();
         gr2.stop();
     }
