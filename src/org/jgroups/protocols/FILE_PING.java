@@ -18,7 +18,7 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.6 2009/07/31 10:51:53 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.7 2009/09/29 04:36:30 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     protected static final String name="FILE_PING";
@@ -98,7 +98,7 @@ public class FILE_PING extends Discovery {
                 msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
                 if(log.isTraceEnabled())
                     log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                timer.submit(new Runnable() {
+                timer.execute(new Runnable() {
                     public void run() {
                         try {
                             down_prot.down(new Event(Event.MSG, msg));

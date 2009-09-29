@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83.2.8 2009/09/18 07:31:32 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.83.2.9 2009/09/29 04:36:30 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -353,7 +353,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                         }
                     }
                 };
-                timer.submit(reshuffleSockets);
+                timer.execute(reshuffleSockets);
                 break;
 
             default:
