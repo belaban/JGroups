@@ -24,6 +24,7 @@ public class SimpleToken extends AuthToken {
 
     @Property
     private String auth_value=null;
+    private static final long serialVersionUID=5020668015439045326L;
 
     public SimpleToken() { // need an empty constructor
     }

@@ -16,7 +16,7 @@ public abstract class AuthToken implements Serializable, Streamable{
     protected final Log log = LogFactory.getLog(this.getClass());
 
     /** A reference to AUTH */
-    protected AUTH auth=null;
+    protected transient AUTH auth=null;
 
     public void setAuth(AUTH auth) {this.auth=auth;}
     
