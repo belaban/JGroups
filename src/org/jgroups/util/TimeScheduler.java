@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.23.4.7 2009/09/18 10:53:56 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.23.4.8 2009/09/29 04:29:41 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
 
@@ -118,7 +118,7 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
      * Note that relative is always true; we always schedule the next execution relative to the last *actual*
      * (not scheduled) execution
      */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task, boolean relative) {
+    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task) {
         if(task == null)
             throw new NullPointerException();
 
@@ -134,14 +134,6 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
 
 
     /**
-     * Add a task for execution at adjustable intervals
-     * @param t the task to execute
-     */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task t) {
-        return scheduleWithDynamicInterval(t, true);
-    }
-
-    /**
      * Answers the number of tasks currently in the queue.
      * @return The number of tasks currently in the queue.
      */
@@ -149,13 +141,6 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor implements Thread
         return getQueue().size();
     }
 
-
-    /**
-     * Start the scheduler, if it's suspended or stopped
-     */
-    public void start() {
-        ;
-    }
 
 
     /**
