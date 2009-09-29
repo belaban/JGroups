@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.63 2009/09/28 15:22:43 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.64 2009/09/29 01:36:48 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -88,7 +88,7 @@ public class GossipRouter {
     @Property(description="The max queue size of backlogged connections")
     private int backlog=1000;
 
-    private final AtomicBoolean running= new AtomicBoolean(false);
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
@@ -176,7 +176,7 @@ public class GossipRouter {
 
     @ManagedAttribute(description="status")
     public boolean isStarted() {
-        return srvSock != null;
+        return isRunning();
     }
 
     public boolean isDiscardLoopbacks() {
@@ -231,10 +231,7 @@ public class GossipRouter {
     @ManagedOperation(description="Lifecycle operation. Called after create(). When this method is called, "
             + "the managed attributes have already been set. Brings the Router into a fully functional state.")
     public void start() throws Exception {
-        if(running.compareAndSet(false, true)) {
-            if(srvSock != null)
-                throw new Exception("Router already started.");
-    
+        if(running.compareAndSet(false, true)) {           
             if(jmx && !registered) {
                 MBeanServer server=Util.getMBeanServer();
                 JmxConfigurator.register(this, server, "jgroups:name=GossipRouter");
@@ -261,7 +258,9 @@ public class GossipRouter {
                     mainLoop();
                 }
             }, "GossipRouter").start();
-        }        
+        } else {
+            throw new Exception("Router already started.");
+        }
     }
 
     /**
@@ -270,12 +269,7 @@ public class GossipRouter {
     @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
         if(running.compareAndSet(true, false)){
-            if(srvSock != null) {
-                Util.close(srvSock);
-                // exiting the mainLoop will clean the tables
-                srvSock=null;
-            }
-    
+            Util.close(srvSock);                
             for(ConcurrentMap<Address,ConnectionHandler> map: routingTable.values()) {
                 for(ConnectionHandler ce: map.values())
                     ce.close();
@@ -373,7 +367,7 @@ public class GossipRouter {
 
         printStartupInfo();
 
-        while(isRunning() && srvSock != null) {
+        while(isRunning()) {
             Socket sock=null;
             try {
                 sock=srvSock.accept();
@@ -524,29 +518,24 @@ public class GossipRouter {
     class FailureDetectionListener implements ConnectionTearListener {
 
         public void connectionTorn(ConnectionHandler ch, Exception e) {
-           /* final Map<Address, RoutingEntry> map=routingTable.get(ch.group_name);
-            if(map != null && !map.isEmpty()) {
-                for(final Iterator<Entry<Address, RoutingEntry>> i=map.entrySet().iterator(); i.hasNext();) {
-                    final RoutingEntry entry=i.next().getValue();
-                    Address logical_addr=entry.logical_addr;
-                    Address broken=ch.logical_addr;
-                    if((logical_addr != null && broken != null && !logical_addr.equals(broken))) {
-                        DataOutputStream stream=entry.getOutputStream();
-                        if(stream != null) {
-                            try {
+            Set<String> groups = ch.known_groups;
+            for (String group : groups) {
+                Map<Address, ConnectionHandler> map = routingTable.get(group);
+                if (map != null && !map.isEmpty()) {
+                    for (Iterator<Entry<Address, ConnectionHandler>> i = map.entrySet().iterator(); i.hasNext();) {
+                        ConnectionHandler entry = i.next().getValue();
+                        DataOutputStream stream = entry.output;
+                        try {
+                            for (Address a : ch.logical_addrs) {
                                 stream.writeByte(SUSPECT);
-                                Util.writeAddress(ch.logical_addr, stream);
+                                Util.writeAddress(a, stream);
                                 stream.flush();
-                                if(log.isDebugEnabled()) {
-                                    log.debug("Notified entry " + logical_addr + " about suspect " + ch.logical_addr);
-                                }
                             }
-                            catch(IOException ioe) {
-                            }
+                        } catch (Exception ioe) {
                         }
                     }
                 }
-            }*/
+            }
         }
     }
 
@@ -574,6 +563,7 @@ public class GossipRouter {
         private final DataOutputStream output;
         private final DataInputStream input;
         private final List<Address> logical_addrs=new ArrayList<Address>();
+        Set<String> known_groups = new HashSet<String>();
 
         public ConnectionHandler(Socket sock) throws IOException {
             this.sock=sock;
@@ -582,27 +572,33 @@ public class GossipRouter {
         }
 
         void close() {
-            active.set(false);
-            Util.close(input);
-            Util.close(output);
-            Util.close(sock);
-            for(Address addr: logical_addrs) {
-                removeEntry(null, addr);
+            if(active.compareAndSet(true, false)) {
+                Util.close(input);
+                Util.close(output);
+                Util.close(sock);
+                for(Address addr: logical_addrs) {
+                    removeEntry(null, addr);
+                }
             }
         }
 
         public void run() {
-            active.set(true);
-            try {
-                readLoop();
+            if(active.compareAndSet(false, true)) {
+                try {
+                    readLoop();
+                }
+                finally {
+                    close();
+                }
             }
-            finally {
-                close();
-            }
+        }
+        
+        public boolean isRunning() {
+            return active.get();
         }
 
         private void readLoop() {
-            while(active.get()) {
+            while(isRunning()) {
                 GossipData request;
                 Address addr;
                 String group;
@@ -612,6 +608,7 @@ public class GossipRouter {
                     byte command=request.getType();
                     addr=request.getAddress();
                     group=request.getGroup();
+                    known_groups.add(group);
                     ConcurrentMap<Address,ConnectionHandler> map;
 
                     switch(command) {
