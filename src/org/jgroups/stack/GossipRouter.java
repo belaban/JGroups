@@ -37,7 +37,7 @@ import java.util.concurrent.*;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.26.2.12 2009/07/31 12:53:01 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.26.2.13 2009/09/29 04:36:31 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -643,7 +643,7 @@ public class GossipRouter {
 						}
 					}};
 					if(!thread_pool.isShutdown())
-						thread_pool.submit(task);
+						thread_pool.execute(task);
 					else
 						task.run();
 			} catch (Exception exc) {

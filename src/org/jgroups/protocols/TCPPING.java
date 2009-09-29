@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.32.4.3 2009/04/27 08:35:47 belaban Exp $
+// $Id: TCPPING.java,v 1.32.4.4 2009/09/29 04:36:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -111,7 +111,7 @@ public class TCPPING extends Discovery {
             
             down_prot.down(new Event(Event.MSG, msg));
 
-            timer.submit(new Runnable() {
+            timer.execute(new Runnable() {
                 public void run() {
                     try{
                         down_prot.down(new Event(Event.MSG, msg));
