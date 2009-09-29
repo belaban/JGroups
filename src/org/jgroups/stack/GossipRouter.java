@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.64 2009/09/29 01:36:48 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.65 2009/09/29 21:22:16 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -59,6 +59,7 @@ public class GossipRouter {
     public static final byte MESSAGE=10;
     public static final byte SUSPECT=11;
     public static final byte PING=12;
+    public static final byte CLOSE=13;
 
     public static final int PORT=12001;
 
@@ -678,6 +679,10 @@ public class GossipRouter {
 
                         case GossipRouter.DISCONNECT:
                             removeEntry(request.getGroup(), request.getAddress());
+                            break;
+                            
+                        case GossipRouter.CLOSE:
+                            close();
                             break;
                             
                         case -1: // EOF

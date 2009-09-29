@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.261 2009/09/21 11:27:51 belaban Exp $
+ * @version $Id: TP.java,v 1.262 2009/09/29 21:22:14 vlada Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1826,7 +1826,8 @@ public abstract class TP extends Protocol {
         final Set<Address> members=new CopyOnWriteArraySet<Address>();
         final ThreadFactory factory;
         Address local_addr;
-        public static final ThreadLocal<Address> thread_local=new ThreadLocal<Address>();
+        
+        static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, String transport_name, Protocol up, Protocol down, String pattern) {
             this.cluster_name=cluster_name;
@@ -1840,8 +1841,7 @@ public abstract class TP extends Protocol {
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());
             if(cluster_name != null)
-                factory.setClusterName(cluster_name);
-            thread_local.set(local_addr);
+                factory.setClusterName(cluster_name);           
         }
 
         @ManagedAttribute(description="Name of the cluster to which this adapter proxies")
@@ -1904,10 +1904,14 @@ public abstract class TP extends Protocol {
                     members.clear();
                     members.addAll(tmp);
                     break;
+                case Event.DISCONNECT:
+                    thread_local.set(this);
+                    break;
                 case Event.CONNECT:
                 case Event.CONNECT_WITH_STATE_TRANSFER:
                 case Event.CONNECT_USE_FLUSH:
-                case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:    
+                    thread_local.set(this);
                     cluster_name=(String)evt.getArg();
                     factory.setClusterName(cluster_name);
                     this.header=new TpHeader(cluster_name);
@@ -1916,8 +1920,7 @@ public abstract class TP extends Protocol {
                     Address addr=(Address)evt.getArg();
                     if(addr != null) {
                         local_addr=addr;
-                        factory.setAddress(addr.toString()); // used for thread naming
-                        thread_local.set(addr);
+                        factory.setAddress(addr.toString()); // used for thread naming                        
                     }
                     break;
             }

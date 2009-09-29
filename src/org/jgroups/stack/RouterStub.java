@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.49 2009/09/28 14:38:11 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.50 2009/09/29 21:22:16 vlada Exp $
  */
 public class RouterStub {
 
@@ -172,9 +172,16 @@ public class RouterStub {
     }
 
     public synchronized void destroy() {
-        Util.close(output);
-        Util.close(input);
-        Util.close(sock);
+        try {
+            GossipData request = new GossipData(GossipRouter.CLOSE);
+            request.writeTo(output);
+            output.flush();
+        } catch (Exception e) {
+        } finally {
+            Util.close(output);
+            Util.close(input);
+            Util.close(sock);
+        }
     }
 
 
@@ -212,8 +219,8 @@ public class RouterStub {
     }
     
     public String toString() {
-        return "RouterStub[localsocket=" + sock != null ? sock.getLocalSocketAddress().toString()
-                        : "null" + ",router_host=" + router_host + "::" + router_port
+        return "RouterStub[localsocket=" + ((sock != null) ? sock.getLocalSocketAddress().toString()
+                        : "null")+ ",router_host=" + router_host + "::" + router_port
                                         + ",connected=" + isConnected() + "]";
     }
 

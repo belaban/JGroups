@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.81 2009/09/28 15:56:59 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.82 2009/09/29 21:22:14 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -193,15 +193,17 @@ public class TUNNEL extends TP {
       }
    }
 
-   public void stop() {
-      teardownTunnel();
-      super.stop();
-   }
+    public void destroy() {        
+        for (RouterStub stub : stubs) {
+            stopReconnecting(stub);
+            stub.destroy();
+        }
+        super.destroy();
+    }
 
-   void teardownTunnel() {
-      for (RouterStub stub : stubs) {
-         stopReconnecting(stub);
-         // stub.disconnect();
+   void disconnectStub(String group, Address addr) {
+      for (RouterStub stub : stubs) {         
+         stub.disconnect(group,addr);
       }
    }
 
@@ -213,7 +215,13 @@ public class TUNNEL extends TP {
          case Event.CONNECT_USE_FLUSH:
          case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
              String group=(String)evt.getArg();
-             Address local=!isSingleton()? local_addr : ProtocolAdapter.thread_local.get();
+             Address local= null;
+             if(!isSingleton()) {
+                 local = local_addr;                 
+             } else {
+                 ProtocolAdapter adapter = ProtocolAdapter.thread_local.get();
+                 local = adapter.local_addr;
+             }
              PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
              List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
              String logical_name=org.jgroups.util.UUID.get(local);
@@ -221,7 +229,15 @@ public class TUNNEL extends TP {
             break;
 
          case Event.DISCONNECT:
-            teardownTunnel();
+             if(!isSingleton()) {
+                 local = local_addr;        
+                 group = channel_name;
+             } else {
+                 ProtocolAdapter adapter = ProtocolAdapter.thread_local.get();
+                 local = adapter.local_addr;
+                 group = adapter.cluster_name;
+             }
+             disconnectStub(group,local);
             break;
       }
       return retEvent;
@@ -348,13 +364,15 @@ public class TUNNEL extends TP {
                             break;
                         case GossipRouter.SUSPECT:
                             final Address suspect = Util.readAddress(input);
-                            // https://jira.jboss.org/jira/browse/JGRP-902
-                            Thread thread = getThreadFactory().newThread(new Runnable() {
-                                public void run() {
-                                    fireSuspectEvent(suspect);
-                                }
-                            }, "StubReceiver-suspect");
-                            thread.start();
+                            if(suspect != null) {
+                                // https://jira.jboss.org/jira/browse/JGRP-902
+                                Thread thread = getThreadFactory().newThread(new Runnable() {
+                                    public void run() {
+                                        fireSuspectEvent(suspect);
+                                    }
+                                }, "StubReceiver-suspect");
+                                thread.start();
+                            }
                             break;
                     }
                 } catch (SocketTimeoutException ste) {
