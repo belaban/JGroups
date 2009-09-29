@@ -29,6 +29,7 @@ public class MD5Token extends AuthToken {
 
     private String token = null;
     private String hash_type = "MD5";
+    private static final long serialVersionUID=-3799497105109613969L;
 
     public MD5Token(){
         //need an empty constructor
