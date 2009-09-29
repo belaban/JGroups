@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.20 2009/09/28 17:03:06 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.21 2009/09/29 01:17:59 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT, "known-failures",Global.GOSSIP_ROUTER}, sequential = true)
@@ -83,7 +83,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         assert view.containsMember(coordinator.getLocalAddress());
 
         channel.disconnect();
-
+        Util.sleep(1000);
         view = coordinator.getView();
         assert view.size() == 1;
         assert view.containsMember(coordinator.getLocalAddress());
