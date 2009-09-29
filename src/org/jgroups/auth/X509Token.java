@@ -71,6 +71,7 @@ public class X509Token extends AuthToken {
     private Cipher cipher=null;
     private PrivateKey certPrivateKey=null;
     private X509Certificate certificate=null;
+    private static final long serialVersionUID=-514501306160844271L;
 
     public X509Token() {
         //need an empty constructor

@@ -12,7 +12,8 @@ import java.io.*;
  */
 public class AuthHeader extends Header implements Streamable{
     private AuthToken token=null;
-    
+    private static final long serialVersionUID=9084313338045023807L;
+
     public AuthHeader(){
     }
     /**
