@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.100 2009/09/28 15:52:52 belaban Exp $
+ * @version $Id: STABLE.java,v 1.101 2009/09/29 15:36:21 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -161,6 +161,16 @@ public class STABLE extends Protocol {
     @ManagedAttribute
     public int getStabilityReceived() {return num_stability_msgs_received;}
 
+    @ManagedAttribute
+    public boolean getStableTaskRunning() {
+        stable_task_lock.lock();
+        try {
+            return stable_task_future != null && !stable_task_future.isDone() && !stable_task_future.isCancelled();
+        }
+        finally {
+            stable_task_lock.unlock();
+        }
+    }
 
     public void resetStats() {
         super.resetStats();
