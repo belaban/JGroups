@@ -53,6 +53,7 @@ public class FixedMembershipToken extends AuthToken {
 
     private List<String> memberList = null;
     private String token = "emptyToken";
+    private static final long serialVersionUID=-8222380233642107792L;
 
     public FixedMembershipToken(){
     }

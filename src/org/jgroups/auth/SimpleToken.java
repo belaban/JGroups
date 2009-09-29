@@ -22,6 +22,7 @@ public class SimpleToken extends AuthToken {
 
     public static final String TOKEN_ATTR = "auth_value";
     private String token = null;
+    private static final long serialVersionUID=-6889408182212567295L;
 
     public SimpleToken(){
         //need an empty constructor
