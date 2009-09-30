@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.14 2009/09/26 05:35:41 belaban Exp $
+// $Id: UtilTest.java,v 1.15 2009/09/30 07:13:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -745,6 +745,35 @@ public class UtilTest {
         System.out.println("merge_coords = " + merge_coords);
         assert merge_coords.size() == 1;
         assert merge_coords.contains(a);
+    }
+
+    public static void testDetermineMergeParticipantsAndMergeCoords4() {
+        Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
+        org.jgroups.util.UUID.add((UUID)a, "A");
+        org.jgroups.util.UUID.add((UUID)b, "B");
+        org.jgroups.util.UUID.add((UUID)c, "C");
+        org.jgroups.util.UUID.add((UUID)d, "D");
+
+        View v1=Util.createView(a, 1, a, b);
+        View v2=Util.createView(c, 1, c, d);
+
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, v1); map.put(b, v1); map.put(d, v2);
+
+        StringBuilder sb=new StringBuilder("map:\n");
+        for(Map.Entry<Address,View> entry: map.entrySet())
+            sb.append(entry.getKey() + ": " + entry.getValue() + "\n");
+        System.out.println(sb);
+
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 2;
+        assert merge_participants.contains(a) && merge_participants.contains(c);
+
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 2;
+        assert merge_coords.contains(a) && merge_coords.contains(c);
     }
 
 }
