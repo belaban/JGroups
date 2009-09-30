@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.68 2009/09/28 15:57:22 belaban Exp $
+ * @version $Id: Discovery.java,v 1.69 2009/09/30 06:54:32 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -80,11 +80,13 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute(description="Total number of discovery requests sent ")
     int num_discovery_requests=0;
 
+    /** The largest cluster size foudn so far (gets reset on stop()) */
+    @ManagedAttribute
+    private volatile int max_found_members=0;
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
-    
+
     private volatile boolean is_server=false;
     protected TimeScheduler timer=null;
 
@@ -161,7 +163,8 @@ public abstract class Discovery extends Protocol {
     }
 
     public void stop() {
-        is_server=false;        
+        is_server=false;
+        max_found_members=0;
     }
 
     /**
@@ -191,7 +194,8 @@ public abstract class Discovery extends Protocol {
     }
 
     public List<PingData> findAllMembers(Promise<JoinRsp> promise) {
-        int num_expected_mbrs=Math.max(num_initial_members, view.size());
+        int num_expected_mbrs=Math.max(max_found_members, Math.max(num_initial_members, view.size()));
+        max_found_members=Math.max(max_found_members, num_expected_mbrs);
         return findInitialMembers(promise, num_expected_mbrs, false, true);
     }
 
