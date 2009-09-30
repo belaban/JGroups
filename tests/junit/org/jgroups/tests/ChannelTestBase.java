@@ -258,7 +258,6 @@ public class ChannelTestBase {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
             
-            System.out.println("makeUnqiue called!!!");
             if(transport instanceof UDP) {
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
                 ((UDP)transport).setMulticastPort(mcast_port);
