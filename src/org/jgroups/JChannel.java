@@ -10,6 +10,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
+
 
 /**
  * JChannel is a pure Java implementation of Channel.
@@ -74,7 +76,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.228 2009/09/26 05:37:47 belaban Exp $
+ * @version $Id: JChannel.java,v 1.229 2009/09/30 08:31:17 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -2073,7 +2075,7 @@ public class JChannel extends Channel {
     class MyProbeHandler implements TP.ProbeHandler {
 
         public Map<String, String> handleProbe(String... keys) {
-            HashMap<String, String> map=new HashMap<String, String>(2);
+            Map<String, String> map=new HashMap<String, String>(2);
             for(String key: keys) {
                 if(key.startsWith("jmx")) {
                     Map<String, Object> tmp_stats;
@@ -2092,6 +2094,11 @@ public class JChannel extends Channel {
                     Map<String, Object> tmp_info=getInfo();
                     map.put("info", tmp_info != null? Util.mapToString(tmp_info) : "null");
                 }
+                if(key.startsWith("invoke") || key.startsWith("op")) {
+                    int index=key.indexOf("=");
+                    if(index != -1)
+                        handleOperation(map, key.substring(index+1));
+                }
             }
 
             map.put("version", Version.description + ", cvs=\"" +  Version.cvs + "\"");
@@ -2106,7 +2113,30 @@ public class JChannel extends Channel {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"jmx", "info"};
+            return new String[]{"jmx", "info", "invoke", "op"};
+        }
+
+        /**
+         * Invokes an operation and puts the return value into map
+         * @param map
+         * @param operation Protocol.OperationName[args], e.g. STABLE.foo[arg1 arg2 arg3]
+         */
+        private void handleOperation(Map<String, String> map, String operation) {
+            int index=operation.indexOf(".");
+            if(index == -1)
+                throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
+            String prot_name=operation.substring(0, index);
+            Protocol prot=prot_stack.findProtocol(prot_name);
+            if(prot == null)
+                throw new IllegalArgumentException("protocol " + prot_name + " not found");
+
+            int args_index=operation.indexOf("[");
+            String method_name;
+            if(args_index != -1)
+                method_name=operation.substring(index +1, args_index);
+            else
+                method_name=operation.substring(index+1);
+            System.out.println("method name=" + method_name);
         }
     }
 
