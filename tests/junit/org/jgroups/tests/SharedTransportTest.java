@@ -9,6 +9,7 @@ import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UDP;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.26 2009/04/09 09:11:17 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.27 2009/09/30 17:28:42 rachmatowicz Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -508,7 +509,8 @@ public class SharedTransportTest extends ChannelTestBase {
                 initial_hosts.add(bind_addr + "[" + port + "]");
             }
             String tmp=Util.printListWithDelimiter(initial_hosts, ",");
-            ((TCPPING)ping).setInitialHosts(tmp);
+            List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1) ;
+            ((TCPPING)ping).setInitialHosts(init_hosts) ;
         }
         else {
             throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");

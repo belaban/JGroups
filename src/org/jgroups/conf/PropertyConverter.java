@@ -2,6 +2,7 @@ package org.jgroups.conf;
 
 import java.util.Properties;
 
+import org.jgroups.stack.Protocol ;
 import org.jgroups.annotations.Property;
 
 /**
@@ -13,10 +14,10 @@ import org.jgroups.annotations.Property;
  * @see Property
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverter.java,v 1.3 2008/06/02 08:01:49 belaban Exp $
+ * @version $Id: PropertyConverter.java,v 1.4 2009/09/30 17:28:43 rachmatowicz Exp $
  */
 public interface PropertyConverter {
-    Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception;
+    Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception;
 
     /**
      * Converts the value to a string. The default is to simply invoke Object.toString(), however, some objects need
