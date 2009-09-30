@@ -1,0 +1,52 @@
+
+
+Release Notes JGroups 2.6.13
+============================
+
+
+Author: Bela Ban
+Version: $Id: ReleaseNotes-2.6.13.txt,v 1.1.2.1 2009/09/30 14:34:15 belaban Exp $
+
+
+
+JGroups 2.6.13 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with all previous patch versions 2.6.X.
+
+The major work done in 2.6.13 was performance related: JGRP-1033 and JGRP-1034 back ported UNICAST and NAKACK from
+CVS head to 2.6.x. JGRP-1043 fixed a performance bottleneck in 2.6.x.
+
+A more detailed discussion is at http://belaban.blogspot.com/2009/09/jgroups-2613cr2-released.html.
+
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.12 and 2.6.13.
+
+Release Notes - JGroups - Version 2.6.13
+
+** Bug
+    * [JGRP-1060] - NAKACK has inconsistent internal state after concurrent node startup
+    * [JGRP-1062] - TimeScheduler: if a periodic task throws an exception, task is not run again
+    * [JGRP-1064] - Serialization untidiness in AuthToken
+
+
+** Task
+    * [JGRP-1033] - UNICAST: backport from head
+    * [JGRP-1034] - NAKACK: backport from head
+    * [JGRP-1043] - UNICAST: high contention
+
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Sept 2009
+
+
