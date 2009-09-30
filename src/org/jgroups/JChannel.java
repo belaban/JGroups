@@ -12,6 +12,9 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
+import org.jgroups.util.Queue;
+import org.jgroups.util.UUID;
+import org.jgroups.blocks.MethodCall;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -19,14 +22,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
+import java.lang.reflect.Method;
 
 
 /**
@@ -76,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.229 2009/09/30 08:31:17 belaban Exp $
+ * @version $Id: JChannel.java,v 1.230 2009/09/30 13:26:03 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -2096,8 +2097,14 @@ public class JChannel extends Channel {
                 }
                 if(key.startsWith("invoke") || key.startsWith("op")) {
                     int index=key.indexOf("=");
-                    if(index != -1)
-                        handleOperation(map, key.substring(index+1));
+                    if(index != -1) {
+                        try {
+                            handleOperation(map, key.substring(index+1));
+                        }
+                        catch(Throwable throwable) {
+                            log.error("failed invoking operation " + key.substring(index+1), throwable);
+                        }
+                    }
                 }
             }
 
@@ -2121,7 +2128,7 @@ public class JChannel extends Channel {
          * @param map
          * @param operation Protocol.OperationName[args], e.g. STABLE.foo[arg1 arg2 arg3]
          */
-        private void handleOperation(Map<String, String> map, String operation) {
+        private void handleOperation(Map<String, String> map, String operation) throws Throwable {
             int index=operation.indexOf(".");
             if(index == -1)
                 throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
@@ -2133,10 +2140,34 @@ public class JChannel extends Channel {
             int args_index=operation.indexOf("[");
             String method_name;
             if(args_index != -1)
-                method_name=operation.substring(index +1, args_index);
+                method_name=operation.substring(index +1, args_index).trim();
             else
-                method_name=operation.substring(index+1);
-            System.out.println("method name=" + method_name);
+                method_name=operation.substring(index+1).trim();
+
+            String[] args=null;
+            if(args_index != -1) {
+                int end_index=operation.indexOf("]");
+                if(end_index == -1)
+                    throw new IllegalArgumentException("] not found");
+                List<String> str_args=Util.parseCommaDelimitedStrings(operation.substring(args_index + 1, end_index));
+                Object[] strings=str_args.toArray();
+                args=new String[strings.length];
+                for(int i=0; i < strings.length; i++)
+                    args[i]=(String)strings[i];
+            }
+
+            Method method=MethodCall.findMethod(prot.getClass(), method_name, args);
+            MethodCall call=new MethodCall(method);
+            Object[] converted_args=null;
+            if(args != null) {
+                converted_args=new Object[args.length];
+                Class<?>[] types=method.getParameterTypes();
+                for(int i=0; i < args.length; i++)
+                    converted_args[i]=MethodCall.convert(args[i], types[i]);
+            }
+            Object retval=call.invoke(prot, converted_args);
+            if(retval != null)
+                map.put(prot_name + "." + method_name, retval.toString());
         }
     }
 
