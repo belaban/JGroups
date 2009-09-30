@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.31 $
+ * @version $Revision: 1.32 $
  */
 public class MethodCall implements Externalizable {
 
@@ -249,6 +249,22 @@ public class MethodCall implements Externalizable {
         Method[] methods=getAllMethods(target_class);
         for(int i=0; i < methods.length; i++) {
             m=methods[i];
+            if(m.getName().equals(method_name)) {
+                if(m.getParameterTypes().length == len)
+                    return m;
+            }
+        }
+
+        return null;
+    }
+
+
+    public static Method findMethod(Class target_class, String method_name, Object[] args) throws Exception {
+        int len=args != null? args.length : 0;
+
+        Method[] methods=getAllMethods(target_class);
+        for(int i=0; i < methods.length; i++) {
+            Method m=methods[i];
             if(m.getName().equals(method_name)) {
                 if(m.getParameterTypes().length == len)
                     return m;
@@ -564,6 +580,25 @@ public class MethodCall implements Externalizable {
     }
 
 
+    public static Object convert(String arg, Class<?> type) {
+        if(type == String.class)
+            return arg;
+        if(type == boolean.class || type == Boolean.class)
+            return Boolean.valueOf(arg);
+        if(type == byte.class || type == Byte.class)
+            return Byte.valueOf(arg);
+        if(type == short.class || type == Short.class)
+            return Short.valueOf(arg);
+        if(type == int.class || type == Integer.class)
+            return Integer.valueOf(arg);
+        if(type == long.class || type == Long.class)
+            return Long.valueOf(arg);
+        if(type == float.class || type == Float.class)
+            return Float.valueOf(arg);
+        if(type == double.class || type == Double.class)
+            return Double.valueOf(arg);
+        return arg;
+    }
 }
 
 
