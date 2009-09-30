@@ -4,7 +4,7 @@ Considerations for large clusters
 =================================
 
 Author: Bela Ban
-Version: $Id: LargeClusters.txt,v 1.1 2009/09/11 13:27:46 belaban Exp $
+Version: $Id: LargeClusters.txt,v 1.2 2009/09/30 06:54:03 belaban Exp $
 
 ConcurrentHashMap
 -----------------
@@ -22,3 +22,11 @@ With ergonomics [1], we could for example set bucket sizes for CCHMs dynamically
 
 
 [1] https://jira.jboss.org/jira/browse/JGRP-1037
+
+
+Misc
+----
+
+- MERGE2: num_initial_members in Discovery should be large, so that we detect partitions sooner
+- GMS: view bundling should be enabled, and max_bundling_time should be a bit larger than the default, as this
+  will allow for more concurrent joins and leaves before starting the view installation process
