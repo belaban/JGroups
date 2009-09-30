@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class MethodCall implements Externalizable {
 
@@ -97,7 +97,6 @@ public class MethodCall implements Externalizable {
      *
      * @param method_name
      * @param args
-     * @deprecated Use one of the constructors that take class types as arguments
      */
     public MethodCall(String method_name, Object[] args) {
         this.method_name=method_name;
