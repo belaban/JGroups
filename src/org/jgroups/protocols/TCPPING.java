@@ -9,6 +9,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.Util;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Promise;
@@ -37,7 +38,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.53 2009/09/28 15:53:34 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.54 2009/09/30 17:28:47 rachmatowicz Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -46,8 +47,9 @@ public class TCPPING extends Discovery {
     @Property(description="Number of ports to be probed for initial membership. Default is 1")
     private int port_range=1; 
     
-    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership")
-    private String initial_hosts_str=null;
+    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
+    		converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range")
+    private List<IpAddress> initial_hosts=null;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     @ManagedAttribute(writable=false)
@@ -57,7 +59,6 @@ public class TCPPING extends Discovery {
     /**
      * List of PhysicalAddresses
      */
-    private List<IpAddress> initial_hosts;
 
     /** https://jira.jboss.org/jira/browse/JGRP-989 */
     protected final BoundedList<PhysicalAddress> dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
@@ -79,10 +80,11 @@ public class TCPPING extends Discovery {
         return initial_hosts;
     }      
     
-    public void setInitialHosts(String initial_hosts_str) {
-        this.initial_hosts_str = initial_hosts_str;
-    }
+    public void setInitialHosts(List<IpAddress> initial_hosts) {
+        this.initial_hosts=initial_hosts;
+    }      
 
+    
     public int getPortRange() {
         return port_range;
     }
@@ -98,15 +100,6 @@ public class TCPPING extends Discovery {
        
     public void init() throws Exception {        
         super.init();
-        try {
-            initial_hosts = Util.parseCommaDelimitedHosts(initial_hosts_str, port_range);
-        }
-        catch(UnknownHostException ex) {
-            throw ex;
-        }
-        catch(Exception t) {
-            throw new Exception("failed to parse 'initial_hosts'", t);
-        }
     }
 
     public void start() throws Exception {        

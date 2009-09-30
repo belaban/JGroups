@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.AccessibleObject ;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
@@ -36,7 +37,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.64 2009/09/06 13:51:09 belaban Exp $
+ * @version $Id: Configurator.java,v 1.65 2009/09/30 17:28:41 rachmatowicz Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -394,41 +395,223 @@ public class Configurator implements ProtocolStackFactory {
         return false;
     }
 
+    /**
+     * This method creates a list of all properties (Field or Method) in dependency order, 
+     * where dependencies are specified using the dependsUpon specifier of the Property annotation. 
+     * In particular, it does the following:
+     * (i) creates a master list of properties 
+     * (ii) checks that all dependency references are present
+     * (iii) creates a copy of the master list in dependency order
+     */
+    static AccessibleObject[] computePropertyDependencies(Object obj) {
+    	
+    	// List of Fields and Methods of the protocol annotated with @Property
+    	List<AccessibleObject> unorderedFieldsAndMethods = new LinkedList<AccessibleObject>() ;
+    	List<AccessibleObject> orderedFieldsAndMethods = new LinkedList<AccessibleObject>() ;
+    	// Maps property name to property object
+    	Map<String, AccessibleObject> propertiesInventory = new HashMap<String, AccessibleObject>() ;
+    	
+    	// get the methods for this class and add them to the list if annotated with @Property
+    	Method[] methods=obj.getClass().getMethods();
+    	for(int i = 0; i < methods.length; i++) {
+ 
+    		if (methods[i].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[i])) {
+    			// determine a name for this property
+    			// use the annotation name if it exists; otherwise the field name 
+    			Property property = methods[i].getAnnotation(Property.class) ;
+    			String propertyName = property.name() ;
+    			if (propertyName.equals("")) {
+    				propertyName = methods[i].getName();
+    			}	
+    			unorderedFieldsAndMethods.add(methods[i]) ;
+    			propertiesInventory.put(propertyName, methods[i]) ;
+    		}
+    	}
+    	//traverse class hierarchy and find all annotated fields and add them to the list if annotated
+    	for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+    		Field[] fields=clazz.getDeclaredFields();
+    		for(int i = 0; i < fields.length; i++ ) {
+    			if (fields[i].isAnnotationPresent(Property.class)) {
+    				
+        			// determine a name for this property
+        			// use the annotation name if it exists; otherwise the field name 
+        			Property property = fields[i].getAnnotation(Property.class) ;
+        			String propertyName = property.name() ;
+        			if (propertyName.equals("")) {
+        				propertyName = fields[i].getName();
+        			}	
+    				unorderedFieldsAndMethods.add(fields[i]) ;
+    				// may need to change this based on name parameter of Property
+    				propertiesInventory.put(propertyName, fields[i]) ;
+    			}
+    		}
+    	}
+    	    	
+    	if (log.isDebugEnabled()) {
+    		log.debug("Properties inventory keyset for protocol: " + obj.getClass().getName());
+    		Set<String> keyset = propertiesInventory.keySet();
+    		
+    		for (Iterator<String> i = keyset.iterator(); i.hasNext();) {
+    			String property = i.next() ;
+    			log.debug("property = " + property);
+    		}
+    	}    	
+    	
+    	// at this stage, we have all Fields and Methods annotated with @Property
+    	checkDependencyReferencesPresent(unorderedFieldsAndMethods, propertiesInventory) ;
+    	
+    	// order the fields and methods by dependency
+    	orderedFieldsAndMethods = orderFieldsAndMethodsByDependency(unorderedFieldsAndMethods, propertiesInventory) ;
+    	
+    	if (log.isDebugEnabled()) {
+    		log.debug("Ordered Fields and Methods for protocol: " + obj.getClass().getName());
+    		for (int i = 0; i < orderedFieldsAndMethods.size(); i++) {
+    			AccessibleObject ao = orderedFieldsAndMethods.get(i) ;
+    			log.debug("name = " + ao.toString());
+    		}
+    	}
+    	
+    	// convert to array of Objects
+    	AccessibleObject[] result = new AccessibleObject[orderedFieldsAndMethods.size()] ;
+    	for(int i = 0; i < orderedFieldsAndMethods.size(); i++) {
+    		result[i] = orderedFieldsAndMethods.get(i) ;
+    	}
+    	
+    	return result ;
+    }
+    
+    static List<AccessibleObject> orderFieldsAndMethodsByDependency(List<AccessibleObject> unorderedList, 
+    									Map<String, AccessibleObject> propertiesMap) {
+    	// Stack to detect cycle in depends relation
+    	Stack<AccessibleObject> stack = new Stack<AccessibleObject>() ;
+    	// the result list
+    	List<AccessibleObject> orderedList = new LinkedList<AccessibleObject>() ;
 
+    	// add the elements from the unordered list to the ordered list
+    	// any dependencies will be checked and added first, in recursive manner
+    	for(int i = 0; i < unorderedList.size(); i++) {
+    		AccessibleObject obj = unorderedList.get(i) ;
+    		addPropertyToDependencyList(orderedList, propertiesMap, stack, obj) ;
+    	}
+    	
+    	return orderedList ;
+    }
+    
+    /**
+     *  DFS of dependency graph formed by Property annotations and dependsUpon parameter
+     *  This is used to create a list of Properties in dependency order
+     */
+    static void addPropertyToDependencyList(List<AccessibleObject> orderedList, Map<String, AccessibleObject> props, Stack<AccessibleObject> stack, AccessibleObject obj) {
+    
+    	if (orderedList.contains(obj))
+    		return ;
+    	
+    	if (stack.search(obj) > 0) {
+    		throw new RuntimeException("Deadlock in @Property dependency processing") ;
+    	}
+    	// record the fact that we are processing obj
+    	stack.push(obj) ;
+    	// process dependencies for this object before adding it to the list
+    	Property annotation = obj.getAnnotation(Property.class) ;
+    	String dependsClause = annotation.dependsUpon() ;
+    	if (log.isDebugEnabled()) { 
+    		log.trace("processing: " + obj.toString() + " with dependsUpon: " + dependsClause);
+    	}
+    	StringTokenizer st = new StringTokenizer(dependsClause, ",") ;
+    	while (st.hasMoreTokens()) {
+    		String token = st.nextToken().trim();
+    		AccessibleObject dep = props.get(token) ;
+    		// if null, throw exception 
+    		addPropertyToDependencyList(orderedList, props, stack, dep) ;
+    	}
+    	// indicate we're done with processing dependencies
+    	stack.pop() ;
+    	// we can now add in dependency order
+    	orderedList.add(obj) ;
+    }
+    
+    /*
+     * Checks that for every dependency referred, there is a matching property
+     */
+    static void checkDependencyReferencesPresent(List<AccessibleObject> objects, Map<String, AccessibleObject> props) {
+    	
+    	// iterate overall properties marked by @Property
+    	for(int i = 0; i < objects.size(); i++) {
+    		
+    		// get the Property annotation
+    		AccessibleObject ao = objects.get(i) ;
+    		Property annotation = ao.getAnnotation(Property.class) ;
+            if (annotation == null) {
+            	throw new IllegalArgumentException("@Property annotation is required for checking dependencies;" + 
+            			" annotation is missing for Field/Method " + ao.toString()) ;
+            }
+    		
+    		String dependsClause = annotation.dependsUpon() ;
+    		if (dependsClause.trim().equals(""))
+    			continue ;
+    		
+    		// split dependsUpon specifier into tokens; trim each token; search for token in list
+    		StringTokenizer st = new StringTokenizer(dependsClause, ",") ;
+    		while (st.hasMoreTokens()) {
+    			String token = st.nextToken().trim() ;
+    			
+    			// check that the string representing a property name is in the list
+    			boolean found = false ;
+    			Set<String> keyset = props.keySet();
+    			for (Iterator<String> iter = keyset.iterator(); iter.hasNext();) {
+    				if (iter.next().equals(token)) {
+    					found = true ;
+    					break ;
+    				}
+    			}
+    			if (!found) {
+    				throw new IllegalArgumentException("@Property annotation " + annotation.name() + 
+    						" has an unresolved dependsUpon property: " + token) ;
+    			}
+    		}
+    	}
+    	
+    }
+    
     public static void resolveAndInvokePropertyMethods(Object obj, Properties props) throws Exception {
         Method[] methods=obj.getClass().getMethods();
         for(Method method: methods) {
-            String methodName=method.getName();
-            if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
-                Property annotation=method.getAnnotation(Property.class);
-                String propertyName=annotation.name().length() > 0? annotation.name() : methodName.substring(3);
-                propertyName=renameFromJavaCodingConvention(propertyName);
-                String prop=props.getProperty(propertyName);
-                if(prop != null) {
-                    PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
-                    if(propertyConverter == null) {
-                        String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-                        throw new Exception("Could not find property converter for field " + propertyName
-                                + " in " + name);
-                    }
-                    Object converted=null;
-                    try {
-                        converted=propertyConverter.convert(method.getParameterTypes()[0], props, prop);
-                        method.invoke(obj, converted);
-                    }
-                    catch(Exception e) {
-                        String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-                        throw new Exception("Could not assign property " + propertyName + " in "
-                                + name + ", method is " + methodName + ", converted value is " + converted, e);
-                    }
-                    finally {
-                        props.remove(propertyName);
-                    }
-                }
-            }
+        	resolveAndInvokePropertyMethod(obj, method, props) ;
         }
     }
 
+    public static void resolveAndInvokePropertyMethod(Object obj, Method method, Properties props) throws Exception {
+    	String methodName=method.getName();
+    	if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
+    		Property annotation=method.getAnnotation(Property.class);
+    		String propertyName=annotation.name().length() > 0? annotation.name() : methodName.substring(3);
+    		propertyName=renameFromJavaCodingConvention(propertyName);
+    		String prop=props.getProperty(propertyName);
+    		if(prop != null) {
+    			PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+    			if(propertyConverter == null) {
+    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				throw new Exception("Could not find property converter for field " + propertyName
+    						+ " in " + name);
+    			}
+    			Object converted=null;
+    			try {
+    				converted=propertyConverter.convert((Protocol)obj, method.getParameterTypes()[0], props, prop);
+    				method.invoke(obj, converted);
+    			}
+    			catch(Exception e) {
+    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				throw new Exception("Could not assign property " + propertyName + " in "
+    						+ name + ", method is " + methodName + ", converted value is " + converted, e);
+    			}
+    			finally {
+    				props.remove(propertyName);
+    			}
+    		}
+    	}
+    }
+    
+    
     public static boolean isSetPropertyMethod(Method method) {
         return (method.getName().startsWith("set") &&
                 method.getReturnType() == java.lang.Void.TYPE &&
@@ -440,45 +623,51 @@ public class Configurator implements ProtocolStackFactory {
         for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
-                if(field.isAnnotationPresent(Property.class)) {
-                    Property annotation=field.getAnnotation(Property.class);
-                    String propertyName=field.getName();
-                    if(props.containsKey(annotation.name())) {
-                        propertyName=annotation.name();
-                        boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
-                        if(isDeprecated && log.isWarnEnabled()) {
-                            log.warn(annotation.deprecatedMessage());
-                        }
-                    }
-                    String propertyValue=props.getProperty(propertyName);
-                    if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
-                        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
-                        if(propertyConverter == null) {
-                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-                            throw new Exception("Could not find property converter for field " + propertyName
-                                    + " in " + name);
-                        }
-                        Object converted=null;
-                        try {
-                            converted=propertyConverter.convert(field.getType(), props, propertyValue);
-                            if(converted != null)
-                                setField(field, obj, converted);
-                        }
-                        catch(Exception e) {
-                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-                            throw new Exception("Property assignment of " + propertyName + " in "
-                                    + name + " with original property value " + propertyValue + " and converted to " + converted 
-                                    + " could not be assigned. Exception is " +e, e);
-                        }
-                        finally {
-                            props.remove(propertyName);
-                        }
-                    }
-                }
+            	resolveAndAssignField(obj, field, props) ;
             }
         }
     }
 
+    public static void resolveAndAssignField(Object obj, Field field, Properties props) throws Exception {
+
+    	if(field.isAnnotationPresent(Property.class)) {
+    		Property annotation=field.getAnnotation(Property.class);
+    		String propertyName=field.getName();
+    		if(props.containsKey(annotation.name())) {
+    			propertyName=annotation.name();
+    			boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
+    			if(isDeprecated && log.isWarnEnabled()) {
+    				log.warn(annotation.deprecatedMessage());
+    			}
+    		}
+    		String propertyValue=props.getProperty(propertyName);
+    		if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
+    			PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+    			if(propertyConverter == null) {
+    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				throw new Exception("Could not find property converter for field " + propertyName
+    						+ " in " + name);
+    			}
+    			Object converted=null;
+    			try {
+    				converted=propertyConverter.convert((Protocol)obj, field.getType(), props, propertyValue);
+    				if(converted != null)
+    					setField(field, obj, converted);
+    			}
+    			catch(Exception e) {
+    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				throw new Exception("Property assignment of " + propertyName + " in "
+    						+ name + " with original property value " + propertyValue + " and converted to " + converted 
+    						+ " could not be assigned. Exception is " +e, e);
+    			}
+    			finally {
+    				props.remove(propertyName);
+    			}
+    		}
+    	}
+    }
+    
+    
     public static void removeDeprecatedProperties(Object obj, Properties props) throws Exception {
         //traverse class hierarchy and find all deprecated properties
         for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
@@ -734,10 +923,20 @@ public class Configurator implements ProtocolStackFactory {
                 if(retval == null)
                     throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
                 retval.setProtocolStack(prot_stack);
-                removeDeprecatedProperties(retval, properties);               
-                resolveAndAssignFields(retval, properties);
-                resolveAndInvokePropertyMethods(retval, properties);
-
+                
+                removeDeprecatedProperties(retval, properties);   
+                // before processing Field and Method based properties, take dependencies specified
+                // with @Property.dependsUpon into account
+                AccessibleObject[] dependencyOrderedFieldsAndMethods = computePropertyDependencies(retval) ;
+                for(AccessibleObject ordered: dependencyOrderedFieldsAndMethods) {
+                	if (ordered instanceof Field) {
+                		resolveAndAssignField(retval, (Field)ordered, properties) ;
+                	}
+                	else if (ordered instanceof Method) {
+                		resolveAndInvokePropertyMethod(retval, (Method)ordered, properties) ;                		
+                	}
+                }
+                
                 List<Object> additional_objects=retval.getConfigurableObjects();
                 if(additional_objects != null && !additional_objects.isEmpty()) {
                     for(Object obj: additional_objects) {

@@ -4,11 +4,16 @@ import java.util.Properties;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 
 import org.jgroups.View;
 import org.jgroups.util.Util;
+import org.jgroups.stack.Protocol ;
+import org.jgroups.stack.IpAddress ;
+import org.jgroups.stack.Configurator ;
 
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
@@ -20,13 +25,13 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.8 2009/05/19 12:59:59 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.9 2009/09/30 17:28:43 rachmatowicz Exp $
  */
 public class PropertyConverters {
 
     public static class NetworkInterfaceList implements PropertyConverter {
 
-        public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+        public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             return Util.parseInterfaceList(propertyValue);
         }
 
@@ -47,7 +52,7 @@ public class PropertyConverters {
     
     public static class FlushInvoker implements PropertyConverter{
 
-		public Object convert(Class<?> propertyFieldType, Properties props,
+		public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
 				String propertyValue) throws Exception {
 			if (propertyValue == null) {
 				return null;
@@ -63,10 +68,57 @@ public class PropertyConverters {
 		}
     	
     }
+
+    public static class InitialHosts implements PropertyConverter{
+    	
+		public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+			int port_range = getPortRange(protocol) ;
+			List<IpAddress> addresses = Util.parseCommaDelimitedHosts(propertyValue, port_range) ;	
+			
+			// debugging
+			System.out.println("PropertyConverter.InitialHosts:");
+			System.out.println("port_range="+port_range) ;
+	    	for(IpAddress addr: addresses) {
+	    		System.out.println("host: " + addr.toString()) ;
+	    	}
+	    	
+			return addresses ;
+		}
+
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}
+		
+		private int getPortRange(Protocol protocol) {
+			int port_range = 0 ;	
+			// get the field value
+			try {
+				Field f = protocol.getClass().getDeclaredField("port_range") ;
+				port_range = ((Integer) Configurator.getField(f,protocol)).intValue() ;
+			}
+			catch(NoSuchFieldException e) {	
+				System.out.println("InitialHosts: no such field: port_range");
+			}
+			return port_range ;
+		}
+    }
+    
+    public static class InitialHosts2 implements PropertyConverter {
+    	
+		public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+			// port range is 1
+			List<InetSocketAddress> addresses = Util.parseCommaDelimetedHosts2(propertyValue, 1) ;			
+			return addresses ;
+		}
+
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}		
+    }
     
     public static class BindAddress implements PropertyConverter {
 
-        public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+        public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             return Util.getBindAddress(props);
         }
 
@@ -78,7 +130,7 @@ public class PropertyConverters {
     
     public static class LongArray implements PropertyConverter {
 
-        public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+        public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             long tmp [] = Util.parseCommaDelimitedLongs(propertyValue);
             if(tmp != null && tmp.length > 0){
                 return tmp;
@@ -107,7 +159,7 @@ public class PropertyConverters {
 
 
     public static class Default implements PropertyConverter {
-        public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+        public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             if(propertyValue == null)
                 throw new NullPointerException("Property value cannot be null");
             if(Boolean.TYPE.equals(propertyFieldType)) {

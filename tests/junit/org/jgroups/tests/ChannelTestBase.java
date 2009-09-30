@@ -10,6 +10,7 @@ import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.AssertJUnit;
@@ -256,6 +257,8 @@ public class ChannelTestBase {
         protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
+            
+            System.out.println("makeUnqiue called!!!");
             if(transport instanceof UDP) {
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
                 ((UDP)transport).setMulticastPort(mcast_port);
@@ -281,7 +284,8 @@ public class ChannelTestBase {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
                 String tmp=Util.printListWithDelimiter(initial_hosts, ",");
-                ((TCPPING)ping).setInitialHosts(tmp);
+                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1) ;
+                ((TCPPING)ping).setInitialHosts(init_hosts) ;
             }
             else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
