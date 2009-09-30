@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.15 2009/09/30 07:13:58 belaban Exp $
+// $Id: UtilTest.java,v 1.16 2009/09/30 07:24:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -767,8 +767,8 @@ public class UtilTest {
 
         Collection<Address> merge_participants=Util.determineMergeParticipants(map);
         System.out.println("merge_participants = " + merge_participants);
-        assert merge_participants.size() == 2;
-        assert merge_participants.contains(a) && merge_participants.contains(c);
+        assert merge_participants.size() == 3;
+        assert merge_participants.contains(a) && merge_participants.contains(c) && merge_participants.contains(d);
 
         Collection<Address> merge_coords=Util.determineMergeCoords(map);
         System.out.println("merge_coords = " + merge_coords);
