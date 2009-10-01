@@ -65,7 +65,8 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     public void addConnection(Address address, V conn) {
         lock.lock();
         try {
-            conns.put(address, conn);
+            V previous = conns.put(address, conn);
+            Util.close(previous);           
         }
         finally {
             lock.unlock();

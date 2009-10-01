@@ -342,6 +342,8 @@ public class TCPConnectionMap{
         private final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
         private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
         private Sender sender;
+        private ConnectionPeerReceiver connectionPeerReceiver;
+        private AtomicBoolean active = new AtomicBoolean(false);
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)
@@ -376,13 +378,15 @@ public class TCPConnectionMap{
         }
 
         private void start(ThreadFactory f) {
-
-            Thread t=f.newThread(new ConnectionPeerReceiver(),"Connection.Receiver [" + getSockAddress() + "]");
-            t.start();
-
-            if(isSenderUsed()) {
-                sender = new Sender(f,getSenderQueueSize());   
-                sender.start();                            
+            //only start once....
+            if(active.compareAndSet(false, true)) {
+                connectionPeerReceiver = new ConnectionPeerReceiver(f);            
+                connectionPeerReceiver.start();
+                
+                if(isSenderUsed()) {
+                    sender = new Sender(f,getSenderQueueSize());   
+                    sender.start();                            
+                }
             }
         }
         
@@ -527,12 +531,28 @@ public class TCPConnectionMap{
         }
         
         private class ConnectionPeerReceiver implements Runnable {
-            
+            private Thread recv;
+            private final AtomicBoolean receiving = new AtomicBoolean(false);
+            public ConnectionPeerReceiver(ThreadFactory f) {
+                recv = f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");                
+            }
+            public void start() {
+                if(receiving.compareAndSet(false, true)) {
+                    recv.start();
+                }
+            }
+
+            public void stop() {
+                if(receiving.compareAndSet(true, false)) {
+                    recv.interrupt();
+                }
+            }
+
             public void run() {
                 byte[] buf=new byte[256]; // start with 256, increase as we go
                 int len=0;
 
-                while(isOpen()) {
+                while(!Thread.currentThread().isInterrupted() && isOpen()) {
                     try {                    
                         len=in.readInt();
                         if(len > buf.length)
@@ -558,6 +578,7 @@ public class TCPConnectionMap{
 
             final BlockingQueue<byte[]> send_queue;
             final Thread runner;
+            private final AtomicBoolean sending = new AtomicBoolean(false);
 
             public Sender(ThreadFactory tf,int send_queue_size) {
                 this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
@@ -569,11 +590,15 @@ public class TCPConnectionMap{
             }
 
             public void start() {
-                runner.start();
+                if(sending.compareAndSet(false, true)) {
+                    runner.start();
+                }
             }
 
             public void stop() {
-                runner.interrupt();
+                if(sending.compareAndSet(true, false)) {
+                    runner.interrupt();
+                }
             }
 
             public void run() {
@@ -644,19 +669,20 @@ public class TCPConnectionMap{
             return !sock.isClosed() && sock.isConnected();
         }
 
-        public void close() throws IOException {          
+        public void close() throws IOException {
+            //can close even if start was never called...
             send_lock.lock();
             try {
+                connectionPeerReceiver.stop();
+                if (isSenderUsed()) {
+                    sender.stop();
+                }
                 Util.close(sock);
                 Util.close(out);
                 Util.close(in);
-                if(isSenderUsed()){
-                    sender.stop();
-                }
-            }            
-            finally {
-                send_lock.unlock();                
-            }            
+            } finally {
+                send_lock.unlock();
+            }
             mapper.notifyConnectionClosed(peer_addr);
         }
     }
