@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.11 2009/07/20 16:20:41 belaban Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.12 2009/10/01 15:51:07 vlada Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -145,6 +145,22 @@ public class TUNNEL_Test extends ChannelTestBase{
         assert view.size() == 1;
         assert view.containsMember(channel.getAddress());
     }
+     
+     public void testFailureDetection() throws Exception {
+         coordinator=new JChannel(props);
+         setProps(coordinator);
+         coordinator.connect(GROUP);
+         
+         channel=new JChannel(props);
+         setProps(channel);       
+         channel.connect(GROUP);
+         
+         channel.shutdown();
+         long now = System.currentTimeMillis();
+         //amount of sleep is more than VERIFY_SUSPECT but less than timeout in FD
+         Util.sleep(3000);
+         assert coordinator.getView().size() ==1;
+     }
      
      public void testConnectThree() throws Exception {
          coordinator=new JChannel(props);

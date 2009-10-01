@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.82 2009/09/29 21:22:14 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.83 2009/10/01 15:51:06 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -201,7 +201,7 @@ public class TUNNEL extends TP {
         super.destroy();
     }
 
-   void disconnectStub(String group, Address addr) {
+   private void disconnectStub(String group, Address addr) {
       for (RouterStub stub : stubs) {         
          stub.disconnect(group,addr);
       }
@@ -239,6 +239,10 @@ public class TUNNEL extends TP {
              }
              disconnectStub(group,local);
             break;
+         case Event.SHUTDOWN:
+             for (RouterStub stub : stubs) {
+                 Util.close(stub.getSocket());
+             }
       }
       return retEvent;
    }
@@ -364,8 +368,9 @@ public class TUNNEL extends TP {
                             break;
                         case GossipRouter.SUSPECT:
                             final Address suspect = Util.readAddress(input);
+                            log.debug("Firing suspect event " + suspect + " at " + local_addr);
                             if(suspect != null) {
-                                // https://jira.jboss.org/jira/browse/JGRP-902
+                                // https://jira.jboss.org/jira/browse/JGRP-902                               
                                 Thread thread = getThreadFactory().newThread(new Runnable() {
                                     public void run() {
                                         fireSuspectEvent(suspect);
@@ -394,21 +399,7 @@ public class TUNNEL extends TP {
         }
 
         private void fireSuspectEvent(Address suspect) {
-            Map<Address, PhysicalAddress> contents = logical_addr_cache.contents();
-            if (log.isDebugEnabled()) {
-                log.debug("At address " + getPhysicalAddress()
-                                + " finding logical address for suspect " + suspect
-                                + ", addresses are: \n" + logical_addr_cache);
-            }
-            for (Iterator<Entry<Address, PhysicalAddress>> i = contents.entrySet().iterator(); i.hasNext();) {
-                Entry<Address, PhysicalAddress> entry = i.next();
-                if (suspect.equals(entry.getValue())) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Raising suspect for " + entry.getKey());
-                    }
-                    up(new Event(Event.SUSPECT, entry.getKey()));
-                }
-            }
+            up(new Event(Event.SUSPECT, suspect));            
         }
     }
 

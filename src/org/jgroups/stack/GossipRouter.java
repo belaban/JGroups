@@ -15,6 +15,7 @@ import org.jgroups.util.UUID;
 import javax.management.MBeanServer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -48,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.65 2009/09/29 21:22:16 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.66 2009/10/01 15:51:05 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -499,14 +500,9 @@ public class GossipRouter {
     }
 
     private void notifyAbnormalConnectionTear(final ConnectionHandler ch, final Exception e) {
-        Thread thread=getDefaultThreadPoolThreadFactory().newThread(new Runnable() {
-            public void run() {
-                for(ConnectionTearListener l : connectionTearListeners) {
-                    l.connectionTorn(ch, e);
-                }
-            }
-        }, "notifyAbnormalConnectionTear");
-        thread.start();
+        for (ConnectionTearListener l : connectionTearListeners) {
+            l.connectionTorn(ch, e);
+        }
     }
 
     public interface ConnectionTearListener {
@@ -528,11 +524,13 @@ public class GossipRouter {
                         DataOutputStream stream = entry.output;
                         try {
                             for (Address a : ch.logical_addrs) {
-                                stream.writeByte(SUSPECT);
+                                GossipData suspect = new GossipData(GossipRouter.SUSPECT);
+                                suspect.writeTo(stream);
                                 Util.writeAddress(a, stream);
                                 stream.flush();
                             }
                         } catch (Exception ioe) {
+                            // intentionally ignored
                         }
                     }
                 }
@@ -686,7 +684,7 @@ public class GossipRouter {
                             break;
                             
                         case -1: // EOF
-                            notifyAbnormalConnectionTear(this, null);
+                            notifyAbnormalConnectionTear(this, new EOFException("Connection broken"));
                             break;
                     }
                 }
