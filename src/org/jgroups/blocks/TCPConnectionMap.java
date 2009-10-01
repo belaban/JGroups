@@ -672,23 +672,23 @@ public class TCPConnectionMap{
         }
 
         public TCPConnection getConnection(Address dest) throws Exception {
-            TCPConnection conn=null;
+            TCPConnection conn = null;
             getLock().lock();
             try {
-                conn=conns.get(dest);
-                if(conn == null) {
-                    conn=new TCPConnection(dest);
+                if (hasOpenConnection(dest)) {
+                    conn = conns.get(dest);
+                } else {
+                    conn = new TCPConnection(dest);
                     conn.start(getThreadFactory());
                     addConnection(dest, conn);
-                    if(log.isTraceEnabled())
+                    if (log.isTraceEnabled())
                         log.trace("created socket to " + dest);
                 }
-            }
-            finally {
+            } finally {
                 getLock().unlock();
             }
             return conn;
-        }        
+        }       
     }   
 }
 
