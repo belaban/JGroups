@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.34 2009/08/21 06:43:56 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.35 2009/10/01 21:09:55 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
@@ -61,10 +61,8 @@ public class StateTransferTest extends ChannelTestBase {
                 StateTransferApplication app=apps[i];
                 app.start();
                 semaphore.release();
-                if(i == 0)
-                    Util.sleep(3000);
-                else
-                    Util.sleep(1000); // delay startup, so state transfer is done while sending
+                //avoid merge
+                Util.sleep(3000);
             }
 
             // Make sure everyone is in sync
