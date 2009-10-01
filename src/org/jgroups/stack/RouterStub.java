@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.50 2009/09/29 21:22:16 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.51 2009/10/01 15:51:05 vlada Exp $
  */
 public class RouterStub {
 
@@ -182,6 +182,15 @@ public class RouterStub {
             Util.close(input);
             Util.close(sock);
         }
+    }
+    
+    
+    /*
+     * Used only in testing, never access socket directly
+     * 
+     */
+    public Socket getSocket() {
+        return sock;
     }
 
 
