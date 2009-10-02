@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.20 2009/10/02 07:37:19 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.21 2009/10/02 08:09:12 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -35,43 +35,43 @@ public class GMS_MergeTest extends ChannelTestBase {
 
 
     public static void testMergeRequestTimeout() throws Exception {
-        _testMergeRequestTimeout(simple_props);
+        _testMergeRequestTimeout(simple_props, "testMergeRequestTimeout");
     }
 
     public static void testMergeRequestTimeoutWithFlush() throws Exception {
-        _testMergeRequestTimeout(flush_props);
+        _testMergeRequestTimeout(flush_props, "testMergeRequestTimeoutWithFlush");
     }
 
     public static void testSimpleMerge() throws Exception {
-        _testSimpleMerge(simple_props);
+        _testSimpleMerge(simple_props, "testSimpleMerge");
     }
 
     public static void testSimpleMergeWithFlush() throws Exception {
-        _testSimpleMerge(flush_props);
+        _testSimpleMerge(flush_props, "testSimpleMergeWithFlush");
     }
 
     public static void testConcurrentMergeTwoPartitions() throws Exception {
-        _testConcurrentMergeTwoPartitions(simple_props);
+        _testConcurrentMergeTwoPartitions(simple_props, "testConcurrentMergeTwoPartitions");
     }
 
     public static void testConcurrentMergeTwoPartitionsWithFlush() throws Exception {
-        _testConcurrentMergeTwoPartitions(flush_props);
+        _testConcurrentMergeTwoPartitions(flush_props, "testConcurrentMergeTwoPartitionsWithFlush");
     }
 
     public static void testConcurrentMergeMultiplePartitions() throws Exception {
-        _testConcurrentMergeMultiplePartitions(simple_props);
+        _testConcurrentMergeMultiplePartitions(simple_props, "testConcurrentMergeMultiplePartitions");
     }
 
     public static void testConcurrentMergeMultiplePartitionsWithFlush() throws Exception {
-        _testConcurrentMergeMultiplePartitions(flush_props);
+        _testConcurrentMergeMultiplePartitions(flush_props, "testConcurrentMergeMultiplePartitionsWithFlush");
     }
 
     public static void testMergeAsymmetricPartitions() throws Exception {
-        _testMergeAsymmetricPartitions(simple_props);
+        _testMergeAsymmetricPartitions(simple_props, "testMergeAsymmetricPartitions");
     }
 
     public static void testMergeAsymmetricPartitionsWithFlush() throws Exception {
-        _testMergeAsymmetricPartitions(flush_props);
+        _testMergeAsymmetricPartitions(flush_props, "testMergeAsymmetricPartitionsWithFlush");
     }
     
     
@@ -79,10 +79,10 @@ public class GMS_MergeTest extends ChannelTestBase {
      * Simulates the death of a merge leader after having sent a MERG_REQ. Because there is no MergeView or CANCEL_MERGE
      * message, the MergeCanceller has to null merge_id after a timeout
      */
-    static void _testMergeRequestTimeout(String props) throws Exception {
+    static void _testMergeRequestTimeout(String props, String cluster_name) throws Exception {
         JChannel c1=new JChannel(props);
         try {
-            c1.connect("GMS_MergeTest.testMergeRequestTimeout()");
+            c1.connect(cluster_name);
             Message merge_request=new Message();
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
             MergeId new_merge_id=MergeId.create(c1.getAddress());
@@ -118,10 +118,10 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    static void _testSimpleMerge(String props) throws Exception {
+    static void _testSimpleMerge(String props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, "GMS_MergeTest.testSimpleMerge()", "A", "B", "C", "D");
+            channels=create(props, true, cluster_name, "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -151,15 +151,17 @@ public class GMS_MergeTest extends ChannelTestBase {
             assertAllChannelsHaveViewOf(channels, 4);
         }
         finally {
+            System.out.println("closing channels");
             close(channels);
+            System.out.println("done");
         }
     }
 
 
-    static void _testConcurrentMergeTwoPartitions(String props) throws Exception {
+    static void _testConcurrentMergeTwoPartitions(String props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, "GMS_MergeTest.testConcurrentMergeTwoPartitions", "A", "B", "C", "D");
+            channels=create(props, true, cluster_name, "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -194,10 +196,10 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    static void _testConcurrentMergeMultiplePartitions(String props) throws Exception {
+    static void _testConcurrentMergeMultiplePartitions(String props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, "GMS_MergeTest.testConcurrentMergeMultiplePartitions", "A", "B", "C", "D", "E", "F", "G", "H");
+            channels=create(props, true, cluster_name, "A", "B", "C", "D", "E", "F", "G", "H");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -251,13 +253,13 @@ public class GMS_MergeTest extends ChannelTestBase {
      * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
      * @throws Exception
      */
-    static void _testMergeAsymmetricPartitions(String props) throws Exception {
+    static void _testMergeAsymmetricPartitions(String props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         MyReceiver[] receivers;
         final int NUM=10;
          try {
              // use simple IDs for UUIDs, so sorting on merge will NOT change the view order
-             channels=create(props, true, "GMS_MergeTest.testMergeAsymmetricPartitions", "B", "A", "C");
+             channels=create(props, true, cluster_name, "B", "A", "C");
              receivers=new MyReceiver[channels.length];
              for(int i=0; i < channels.length; i++) {
                  receivers[i]=new MyReceiver(channels[i].getName());
@@ -396,7 +398,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
     private static void close(JChannel[] channels) {
         if(channels == null) return;
-        for(int i=channels.length -1; i <= 0; i--) {
+        for(int i=channels.length -1; i >= 0; i--) {
             JChannel ch=channels[i];
             Util.close(ch);
         }
