@@ -10,9 +10,9 @@ import java.net.NetworkInterface;
 
 import org.jgroups.View;
 import org.jgroups.util.Util;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Configurator;
+import org.jgroups.stack.Protocol ;
+import org.jgroups.stack.IpAddress ;
+import org.jgroups.stack.Configurator ;
 
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
@@ -23,7 +23,7 @@ import org.jgroups.stack.Configurator;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.10 2009/09/30 19:54:17 vlada Exp $
+ * @version $Id: PropertyConverters.java,v 1.11 2009/10/02 18:54:29 rachmatowicz Exp $
  */
 public class PropertyConverters {
 
@@ -35,12 +35,12 @@ public class PropertyConverters {
         }
 
         public String toString(Object value) {
-            List<NetworkInterface> list = (List<NetworkInterface>) value;
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
-            for (NetworkInterface intf : list) {
-                if (first)
-                    first = false;
+            List<NetworkInterface> list=(List<NetworkInterface>)value;
+            StringBuilder sb=new StringBuilder();
+            boolean first=true;
+            for(NetworkInterface intf: list) {
+                if(first)
+                    first=false;
                 else
                     sb.append(",");
                 sb.append(intf.getName());
@@ -48,65 +48,65 @@ public class PropertyConverters {
             return sb.toString();
         }
     }
+    
+    public static class FlushInvoker implements PropertyConverter{
 
-    public static class FlushInvoker implements PropertyConverter {
+		public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
+				String propertyValue) throws Exception {
+			if (propertyValue == null) {
+				return null;
+			} else {
+				Class<Callable<Boolean>> invoker = (Class<Callable<Boolean>>) Class.forName(propertyValue);
+				invoker.getDeclaredConstructor(View.class);
+				return invoker;
+			}
+		}
 
-        public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
-                        String propertyValue) throws Exception {
-            if (propertyValue == null) {
-                return null;
-            } else {
-                Class<Callable<Boolean>> invoker = (Class<Callable<Boolean>>) Class.forName(propertyValue);
-                invoker.getDeclaredConstructor(View.class);
-                return invoker;
-            }
-        }
-
-        public String toString(Object value) {
-            return value.getClass().getName();
-        }
-
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}
+    	
     }
 
-    public static class InitialHosts implements PropertyConverter {
+    public static class InitialHosts implements PropertyConverter{
 
         public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
                         String propertyValue) throws Exception {
-            
-            int port_range = getPortRange(protocol);
-            List<IpAddress> addresses = Util.parseCommaDelimitedHosts(propertyValue, port_range);
+    	
+			int port_range = getPortRange(protocol) ;
+			List<IpAddress> addresses = Util.parseCommaDelimitedHosts(propertyValue, port_range) ;	
+				    	
+			return addresses ;
+		}
 
-            return addresses;
-        }
-
-        public String toString(Object value) {
-            return value.getClass().getName();
-        }
-
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}
+		
         private int getPortRange(Protocol protocol) throws Exception {
-            int port_range = 0;
+			int port_range = 0 ;	
 
-            Field f = protocol.getClass().getDeclaredField("port_range");
-            port_range = ((Integer) Configurator.getField(f, protocol)).intValue();
+				Field f = protocol.getClass().getDeclaredField("port_range") ;
+				port_range = ((Integer) Configurator.getField(f,protocol)).intValue() ;
 
-            return port_range;
-        }
+			return port_range ;
+		}
     }
-
+    
     public static class InitialHosts2 implements PropertyConverter {
-
+    	
         public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
                         String propertyValue) throws Exception {
-            // port range is 1
-            List<InetSocketAddress> addresses = Util.parseCommaDelimetedHosts2(propertyValue, 1);
-            return addresses;
-        }
+			// port range is 1
+			List<InetSocketAddress> addresses = Util.parseCommaDelimetedHosts2(propertyValue, 1) ;			
+			return addresses ;
+		}
 
-        public String toString(Object value) {
-            return value.getClass().getName();
-        }
+		public String toString(Object value) {
+			return value.getClass().getName();
+		}		
     }
-
+    
     public static class BindAddress implements PropertyConverter {
 
         public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
@@ -115,33 +115,33 @@ public class PropertyConverters {
         }
 
         public String toString(Object value) {
-            InetAddress val = (InetAddress) value;
+            InetAddress val=(InetAddress)value;
             return val.getHostAddress();
         }
     }
-
+    
     public static class LongArray implements PropertyConverter {
 
         public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
                         String propertyValue) throws Exception {
-            long tmp[] = Util.parseCommaDelimitedLongs(propertyValue);
-            if (tmp != null && tmp.length > 0) {
+            long tmp [] = Util.parseCommaDelimitedLongs(propertyValue);
+            if(tmp != null && tmp.length > 0){
                 return tmp;
-            } else {
+            }else{
                 // throw new Exception ("Invalid long array specified in " + propertyValue);
                 return null;
             }
         }
 
         public String toString(Object value) {
-            if (value == null)
+            if(value == null)
                 return null;
-            long[] val = (long[]) value;
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
-            for (long l : val) {
-                if (first)
-                    first = false;
+            long[] val=(long[])value;
+            StringBuilder sb=new StringBuilder();
+            boolean first=true;
+            for(long l: val) {
+                if(first)
+                    first=false;
                 else
                     sb.append(",");
                 sb.append(l);
@@ -150,12 +150,13 @@ public class PropertyConverters {
         }
     }
 
+
     public static class Default implements PropertyConverter {
         public Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props,
                         String propertyValue) throws Exception {
-            if (propertyValue == null)
+            if(propertyValue == null)
                 throw new NullPointerException("Property value cannot be null");
-            if (Boolean.TYPE.equals(propertyFieldType)) {
+            if(Boolean.TYPE.equals(propertyFieldType)) {
                 return Boolean.parseBoolean(propertyValue);
             } else if (Integer.TYPE.equals(propertyFieldType)) {
                 return Integer.parseInt(propertyValue);
@@ -169,12 +170,14 @@ public class PropertyConverters {
                 return Short.parseShort(propertyValue);
             } else if (Float.TYPE.equals(propertyFieldType)) {
                 return Float.parseFloat(propertyValue);
+            } else if(InetAddress.class.equals(propertyFieldType)) {
+            	return InetAddress.getByName(propertyValue) ;
             }
             return propertyValue;
         }
 
         public String toString(Object value) {
-            return value != null ? value.toString() : null;
+            return value != null? value.toString() : null;
         }
     }
 }

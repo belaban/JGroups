@@ -7,8 +7,8 @@ import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.RouterStub;
-import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
 
@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 
 
 /**
@@ -32,7 +31,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.44 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.45 2009/10/02 18:54:32 rachmatowicz Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -48,6 +47,15 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
     @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter")
     long reconnect_interval=10000L;
     
+    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
+    		converter=PropertyConverters.InitialHosts2.class)
+    public void setInitialHosts(List<InetSocketAddress> initial_hosts) {
+        if(initial_hosts == null || initial_hosts.isEmpty())
+            throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
+
+    	this.initial_hosts = initial_hosts ;
+    }
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
@@ -59,17 +67,10 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 
     public void init() throws Exception {
         super.init();
-        if(initial_hosts == null || initial_hosts.isEmpty())
-            throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
         
         if(timeout <= sock_conn_timeout)
             throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout ("
                     + sock_conn_timeout + ")");
-    }
-
-    @Property
-    public void setInitialHosts(String hosts) throws UnknownHostException {
-        initial_hosts=Util.parseCommaDelimetedHosts2(hosts,1);       
     }
 
     public void start() throws Exception {
