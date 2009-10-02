@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.216 2009/09/28 15:55:57 belaban Exp $
+ * @version $Id: Util.java,v 1.217 2009/10/02 07:40:47 belaban Exp $
  */
 public class Util {
 
@@ -1957,19 +1957,6 @@ public class Util {
         return false;
     }
 
-
-
-    public static Collection<Address> determineMergeCoords(List<View> views) {
-        Set<Address> retval=new HashSet<Address>();
-        if(views != null) {
-            for(View view: views) {
-                Address coord=view.getCreator();
-                if(coord != null)
-                    retval.add(coord);
-            }
-        }
-        return retval;
-    }
 
 
     /**
