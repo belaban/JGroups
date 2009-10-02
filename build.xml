@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.216 2009/10/01 15:00:59 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.217 2009/10/02 16:10:28 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -437,7 +437,7 @@
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results/xml"
                 listeners="org.jgroups.util.JUnitXMLReporter"
-                threadcount="20"
+                threadcount="10"
                 parallel="methods"
                 >
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
@@ -460,7 +460,7 @@
     <target name="udp" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
-                 threadcount="10"
+                 threadcount="5"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25100"
@@ -472,7 +472,7 @@
     <target name="udp-flush" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest testname.ext="udp-flush"
-                 threadcount="10"
+                 threadcount="5"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25200"
