@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.65 2009/09/30 17:28:41 rachmatowicz Exp $
+ * @version $Id: Configurator.java,v 1.66 2009/10/02 18:54:27 rachmatowicz Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -90,6 +90,10 @@ public class Configurator implements ProtocolStackFactory {
         Vector<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
+        
+        sanityCheck(protocols);
+        processDefaultValues(protocol_configs, protocols) ;
+        
         return connectProtocols(protocols);        
     }
 
@@ -323,7 +327,6 @@ public class Configurator implements ProtocolStackFactory {
                 return null;
             retval.addElement(layer);
         }
-        sanityCheck(retval);
         return retval;
     }
 
@@ -375,6 +378,121 @@ public class Configurator implements ProtocolStackFactory {
         }            
     }
 
+    public static void processDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols) throws Exception {
+    	
+    	for (int i = 0; i < protocol_configs.size(); i++) {    		
+        	// maps property names to field or Methods which have no user specified default
+        	Map<String, AccessibleObject> nullValuesMap = new HashMap<String,AccessibleObject>() ;
+        	Properties properties = null ;
+        	
+    		ProtocolConfiguration protocol_config = protocol_configs.get(i) ;
+    		Protocol protocol = protocols.get(i) ;
+    		String protocolName = protocol.getName();
+        	
+    		// regenerate the Properties which were destroyed during basic property processing
+    		properties = protocol_config.getOriginalProperties(); 
+    		
+    		// check which properties are null
+        	Method[] methods=protocol.getClass().getMethods();
+        	for(int j = 0; j < methods.length; j++) {
+        		if (methods[j].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[j])) {
+        			// determine a name for this property (use the annotation name if it exists; otherwise the field name) 
+        			Property annotation = methods[j].getAnnotation(Property.class) ;
+        			String propertyName = annotation.name().length() > 0 ? annotation.name() : methods[j].getName().substring(3) ;
+        			// check if the property has null value
+        			String propertyValue = properties.getProperty(propertyName) ;
+        			if (propertyValue == null) {
+        				// add to collection of @Properties with no user specified value
+        				nullValuesMap.put(propertyName, methods[j]) ; 
+        			}
+        		}
+        	}
+
+        	//traverse class hierarchy and find all annotated fields and add them to the list if annotated
+        	for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+        		Field[] fields=clazz.getDeclaredFields();
+        		for(int j = 0; j < fields.length; j++ ) {
+        			if (fields[j].isAnnotationPresent(Property.class)) {
+            			Property annotation = fields[j].getAnnotation(Property.class) ;
+            			String propertyName = annotation.name().length() > 0 ? annotation.name() : fields[j].getName() ;
+            			// check if the property has null value
+               			String propertyValue = properties.getProperty(propertyName) ;
+            			if (propertyValue == null) {
+            				// add to collection of @Properties with no user specified value
+            				nullValuesMap.put(propertyName, fields[j]) ; 
+            			}
+        			}
+        		}
+        	}
+
+    		// for each nullValuesMap entry, add a default value
+        	for (Map.Entry<String,AccessibleObject> entry : nullValuesMap.entrySet()) {
+        		String propertyName = (String) entry.getKey() ;
+        		AccessibleObject fieldOrMethod = entry.getValue() ;
+        		
+        	    String defaultValue = null ;
+        	    Property annotation = fieldOrMethod.getAnnotation(Property.class) ;
+        	    defaultValue = annotation.defaultValue() ;
+
+        	    // set the default if one is specified
+        	    if (defaultValue != null && defaultValue.length() > 0) {
+        	    	
+        	    	if (log.isDebugEnabled()) 
+        	    		log.debug("Setting default value for property " + propertyName) ;
+        	    	
+        	    	// set default value for fields
+        	    	if (fieldOrMethod instanceof Field) {
+        	    		
+        	    		Field field = (Field) fieldOrMethod ;
+        	    		if(defaultValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
+        	    			PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+        	    			if(propertyConverter == null) {
+        	    				String name=protocol instanceof Protocol? ((Protocol)protocol).getName() : protocol.getClass().getName();
+        	    				throw new Exception("Could not find property converter for field " + propertyName
+        	    						+ " in " + name);
+        	    			}
+        	    			Object converted=null;
+        	    			try {
+        	    				converted=propertyConverter.convert((Protocol)protocol, field.getType(), properties, defaultValue);
+        	    				if(converted != null)
+        	    					setField(field, protocol, converted);
+        	    			}
+        	    			catch(Exception e) {
+        	    				String name=protocol instanceof Protocol? ((Protocol)protocol).getName() : protocol.getClass().getName();
+        	    				throw new Exception("Property assignment of " + propertyName + " in "
+        	    						+ name + " with original property value " + defaultValue + " and converted to " + converted 
+        	    						+ " could not be assigned. Exception is " +e, e);
+        	    			}
+        	    		}
+        	    	}
+        	    	// set default for methods
+        	    	if (fieldOrMethod instanceof Method) {
+        	    		Method method = (Method)fieldOrMethod ;
+
+        	    		if(defaultValue != null && defaultValue.length() > 0) {
+        	    			PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+        	    			if(propertyConverter == null) {
+        	    				String name=protocol instanceof Protocol? ((Protocol)protocol).getName() : protocol.getClass().getName();
+        	    				throw new Exception("Could not find property converter for field " + propertyName
+        	    						+ " in " + name);
+        	    			}
+        	    			Object converted=null;
+        	    			try {
+        	    				converted=propertyConverter.convert((Protocol)protocol, method.getParameterTypes()[0], properties, defaultValue);
+        	    				method.invoke(protocol, converted);
+        	    			}
+        	    			catch(Exception e) {
+        	    				String name=protocol instanceof Protocol? ((Protocol)protocol).getName() : protocol.getClass().getName();
+        	    				throw new Exception("Could not assign property " + propertyName + " in "
+        	    						+ name + ", method is " + method.getName() + ", converted value is " + converted, e);
+        	    			}
+        	    		}
+        	    	} 
+        	    } // end for Map entry
+        	}
+    	}
+    }
+    
 
     /** Check whether any of the protocols 'below' provide evt_type */
     static boolean providesUpServices(Vector<ProtocolReq> req_list, int evt_type) {        
@@ -419,10 +537,7 @@ public class Configurator implements ProtocolStackFactory {
     			// determine a name for this property
     			// use the annotation name if it exists; otherwise the field name 
     			Property property = methods[i].getAnnotation(Property.class) ;
-    			String propertyName = property.name() ;
-    			if (propertyName.equals("")) {
-    				propertyName = methods[i].getName();
-    			}	
+    			String propertyName = property.name().length() > 0 ? property.name() : methods[i].getName().substring(3) ;
     			unorderedFieldsAndMethods.add(methods[i]) ;
     			propertiesInventory.put(propertyName, methods[i]) ;
     		}
@@ -436,10 +551,7 @@ public class Configurator implements ProtocolStackFactory {
         			// determine a name for this property
         			// use the annotation name if it exists; otherwise the field name 
         			Property property = fields[i].getAnnotation(Property.class) ;
-        			String propertyName = property.name() ;
-        			if (propertyName.equals("")) {
-        				propertyName = fields[i].getName();
-        			}	
+        			String propertyName = property.name().length() > 0 ? property.name() : fields[i].getName() ;
     				unorderedFieldsAndMethods.add(fields[i]) ;
     				// may need to change this based on name parameter of Property
     				propertiesInventory.put(propertyName, fields[i]) ;
@@ -847,6 +959,7 @@ public class Configurator implements ProtocolStackFactory {
          *                   <pre>VERIFY_SUSPECT(timeout=1500)</pre>
          */
         public ProtocolConfiguration(String config_str) throws Exception {
+        	
             int index=config_str.indexOf('(');  // e.g. "UDP(in_port=3333)"
             int end_index=config_str.lastIndexOf(')');
 
@@ -864,8 +977,28 @@ public class Configurator implements ProtocolStackFactory {
                     protocol_name=config_str.substring(0, index);
                 }
             }
+            parsePropertiesString(properties_str, properties) ;            
+        }
 
-            /* "in_port=5555;out_port=6666" */
+        public String getProtocolName() {
+            return protocol_name;
+        }
+
+        public Properties getProperties() {
+            return properties;
+        }
+
+        public Properties getOriginalProperties() throws Exception {
+        	Properties props = new Properties() ; 
+        	
+        	parsePropertiesString(properties_str, props) ;
+        	return props ;
+        }
+        
+        private void parsePropertiesString(String properties_str, Properties properties) throws Exception {
+        	int index = 0 ;
+            
+        	/* "in_port=5555;out_port=6666" */
             if(properties_str.length() > 0) {
                 String[] components=properties_str.split(";");
                 for(String property : components) {
@@ -882,15 +1015,7 @@ public class Configurator implements ProtocolStackFactory {
                 }
             }
         }
-
-        public String getProtocolName() {
-            return protocol_name;
-        }
-
-        public Properties getProperties() {
-            return properties;
-        }
-
+        
         private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
             Protocol retval=null;
             if(protocol_name == null)
