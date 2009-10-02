@@ -10,12 +10,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.Future;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentMap;
 import java.util.*;
 
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.2 2009/09/26 05:38:47 belaban Exp $
+ * @version $Id: Merger.java,v 1.3 2009/10/02 08:25:39 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -100,7 +101,7 @@ public class Merger {
             log.debug(gms.local_addr + ": got merge request from " + sender + ", merge_id=" + merge_id + ", mbrs=" + mbrs);
 
         // merge the membership of the current view with mbrs
-        List<Address> members=new LinkedList<Address>(gms.members.getMembers());
+        List<Address> members=new LinkedList<Address>();
         if(mbrs != null) { // didn't use a set because we didn't want to change the membership order at this time (although not incorrect)
             for(Address mbr: mbrs) {
                 if(!members.contains(mbr))
@@ -435,21 +436,30 @@ public class Merger {
         private Thread thread=null;
 
         /** List of all subpartition coordinators and their members */
-        private final Map<Address,Collection<Address>> coords=new ConcurrentHashMap<Address,Collection<Address>>();
+        private final ConcurrentMap<Address,Collection<Address>> coords=new ConcurrentHashMap<Address,Collection<Address>>();
 
         /**
          * @param views Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
          */
         public synchronized void start(Map<Address, View> views) {
             if(thread == null || thread.isAlive()) {
-                coords.clear();
+                this.coords.clear();
 
-                // Adds all different coordinators of the views into the hashmap and sets their members
-                Collection<Address> merge_participants=Util.determineMergeParticipants(views);
-                for(Address merge_participant: merge_participants) {
-                    View view=views.get(merge_participant);
-                    coords.put(merge_participant, new ArrayList<Address>(view.getMembers()));
+                // Add all different coordinators of the views into the hashmap and sets their members:
+                Collection<Address> coordinators=Util.determineMergeCoords(views);
+                for(Address coord: coordinators) {
+                    View view=views.get(coord);
+                    if(view != null)
+                        this.coords.put(coord, new ArrayList<Address>(view.getMembers()));
                 }
+
+                // For the merge participants which are not coordinator, we simply add them, and the associated
+                // membership list consists only of themselves
+                Collection<Address> merge_participants=Util.determineMergeParticipants(views);
+                merge_participants.removeAll(coordinators);
+                for(Address merge_participant: merge_participants)
+                    coords.putIfAbsent(merge_participant, Arrays.asList(merge_participant));
+
                 thread=gms.getThreadFactory().newThread(this, "MergeTask");
                 thread.setDaemon(true);
                 thread.start();
