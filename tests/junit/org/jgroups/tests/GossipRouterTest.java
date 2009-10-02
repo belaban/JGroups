@@ -19,9 +19,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.12 2009/07/20 16:20:41 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.13 2009/10/02 15:06:04 vlada Exp $
  */
-@Test(groups={Global.STACK_INDEPENDENT, "known-failures", Global.GOSSIP_ROUTER},sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
     final static String PROPS="tunnel.xml";
     GossipRouter router;
