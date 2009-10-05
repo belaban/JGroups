@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.25 2009/07/20 12:36:35 belaban Exp $
+// $Id: CloseTest.java,v 1.26 2009/10/05 15:45:54 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -103,6 +103,7 @@ public class CloseTest extends ChannelTestBase {
 
         System.out.println("-- closing c2");
         c2.get().close();
+        Util.sleep(500);
         View v=r1.getViews().get(0);
         members=v.getMembers();
         System.out.println("-- first view of c1: " + v);
