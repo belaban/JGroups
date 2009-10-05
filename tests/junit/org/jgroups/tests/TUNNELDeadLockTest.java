@@ -1,30 +1,27 @@
-
 package org.jgroups.tests;
 
-
-
-import org.testng.annotations.*;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.Global;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * Test designed to make sure the TUNNEL doesn't lock the client and the GossipRouter
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.18 2009/07/20 16:20:41 belaban Exp $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.19 2009/10/05 19:33:16 vlada Exp $
  * @see TUNNELDeadLockTest#testStress
  */
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNELDeadLockTest extends ChannelTestBase {
     private JChannel channel;
-    private Promise promise;
+    private Promise<Boolean> promise;
     private int receivedCnt;
 
     // the total number of the messages pumped down the channel
@@ -39,12 +36,12 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
 
     @BeforeMethod
     void setUp() throws Exception {
-        promise=new Promise();
+        promise=new Promise<Boolean>();
         gossipRouter=new GossipRouter();
         gossipRouter.start();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun=true)
     void tearDown() throws Exception {
         // I prefer to close down the channel inside the test itself, for the
         // reason that the channel might be brought in an uncloseable state by
@@ -52,11 +49,12 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
 
         // TO_DO: no elegant way to stop the Router threads and clean-up
         //        resources. Use the Router administrative interface, when available.
-
-        channel=null;
+        
+        channel.close();
         promise.reset();
         promise=null;
         gossipRouter.stop();
+        System.out.println("Router stopped");
     }
 
 
@@ -78,38 +76,20 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     public void testStress() throws Exception {
         channel=new JChannel("tunnel.xml");
         channel.connect("agroup");
+        channel.setReceiver(new ReceiverAdapter() {
 
-        // receiver thread
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    while(true) {
-                        if(channel == null)
-                            return;
-                        Object o=channel.receive(10000);
-                        if(o instanceof Message) {
-                            receivedCnt++;
-                            if(receivedCnt % 2000 == 0)
-                                System.out.println("-- received " + receivedCnt);
-                            if(receivedCnt == msgCount) {
-                                // let the main thread know I got all msgs
-                                promise.setResult(new Object());
-                                return;
-                            }
-                        }
-                    }
+            @Override
+            public void receive(Message msg) {
+                receivedCnt++;
+                if(receivedCnt % 2000 == 0)
+                    System.out.println("-- received " + receivedCnt);
+                if(receivedCnt == msgCount) {
+                    // let the main thread know I got all msgs
+                    promise.setResult(Boolean.TRUE);
                 }
-                catch(TimeoutException e) {
-                    System.err.println("Timeout receiving from the channel. " + receivedCnt +
-                            " msgs received so far.");
-                }
-                catch(Exception e) {
-                    System.err.println("Error receiving data");
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
+            }            
+        });
+      
         // stress send messages - the sender thread
         new Thread(new Runnable() {
             public void run() {
@@ -131,7 +111,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
         // wait for all the messages to come; if I don't see all of them in
         // mainTimeout ms, I fail the test
 
-        Object result=promise.getResult(mainTimeout);
+        Boolean result=promise.getResult(mainTimeout);
         if(result == null) {
             String msg=
                     "The channel has failed to send/receive " + msgCount + " messages " +
@@ -139,12 +119,6 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
                     "timeout (currently " + mainTimeout + " ms). " + receivedCnt +
                     " messages received so far.";
             assert false : msg;
-        }
-
-        // don't close it in tearDown() because it hangs forever for a failed test.
-        channel.close();
+        }       
     }
-
-
-
 }
