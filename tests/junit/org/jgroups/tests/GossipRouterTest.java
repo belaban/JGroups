@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.13 2009/10/02 15:06:04 vlada Exp $
+ * @version $Id: GossipRouterTest.java,v 1.14 2009/10/05 19:35:44 vlada Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
@@ -28,7 +28,7 @@ public class GossipRouterTest {
     JChannel c1, c2;
 
 
-    @AfterMethod
+    @AfterMethod (alwaysRun=true)
     protected void tearDown() throws Exception {
         if(router != null) {
             router.stop();

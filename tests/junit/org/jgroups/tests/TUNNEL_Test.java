@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.12 2009/10/01 15:51:07 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.13 2009/10/05 19:35:44 vlada Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -38,12 +38,12 @@ public class TUNNEL_Test extends ChannelTestBase{
         gossipRouter.start();
     }
     
-    @AfterClass
+    @AfterClass(alwaysRun=true)
     void stopRouter() throws Exception {
         gossipRouter.stop();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun=true)
     void tearDown() throws Exception {
         Util.close(channel, coordinator);
     }
