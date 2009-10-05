@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.51 2009/10/01 15:51:05 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.52 2009/10/05 19:34:07 vlada Exp $
  */
 public class RouterStub {
 
@@ -70,14 +70,16 @@ public class RouterStub {
         bind_addr=bindAddress;
     }
     
-
-    public StubReceiver getReceiver() {
-        return receiver;
-    }
-
-
-    public void setReceiver(StubReceiver receiver) {
+    public synchronized void setReceiver(StubReceiver receiver) {
         this.receiver = receiver;
+    }
+    
+    public synchronized void interrupt() {
+        if(receiver != null) {
+            Thread thread = receiver.getThread();
+            if(thread != null)
+                thread.interrupt();
+        }
     }
 
 
