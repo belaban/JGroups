@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.217 2009/10/02 07:40:47 belaban Exp $
+ * @version $Id: Util.java,v 1.218 2009/10/06 20:20:10 rachmatowicz Exp $
  */
 public class Util {
 
@@ -3177,33 +3177,44 @@ public class Util {
     
 	public static boolean isIPStackAvailable(boolean useIPv4) {
 		boolean isAvailable = false;
+
+		// remove influence of java.net.preferIPv4Stack on the result
+		String oldStackPref = System.getProperty("java.net.preferIPv4Stack") ;
+		if (oldStackPref != null && oldStackPref.equals("true")) {
+			System.setProperty("java.net.preferIPv4Stack", "false") ;
+		}
+
 		try {
 			// get all the network interfaces on this machine
-			Enumeration intfs = NetworkInterface.getNetworkInterfaces();
+			Enumeration<NetworkInterface> intfs = NetworkInterface.getNetworkInterfaces();
 			intf_loop: 
 				while (intfs != null && intfs.hasMoreElements()) {
-				// get the next interface
-				NetworkInterface intf = (NetworkInterface) intfs.nextElement();
-				// get all the InetAddresses defined on the interface
-				Enumeration addresses = intf.getInetAddresses();
-				
-				while (addresses != null && addresses.hasMoreElements()) {
-					// get the next InetAddress for the current interface
-					InetAddress address = (InetAddress) addresses.nextElement();
-					
-					if ((useIPv4 && address instanceof Inet4Address) || 
-							(!useIPv4 && address instanceof Inet6Address)) {
-						isAvailable = true;
-						// stop looping
-						break intf_loop;
+					// get the next interface
+					NetworkInterface intf = (NetworkInterface) intfs.nextElement();
+					// get all the InetAddresses defined on the interface
+					Enumeration<InetAddress> addresses = intf.getInetAddresses();
+					while (addresses != null && addresses.hasMoreElements()) {
+						// get the next InetAddress for the current interface
+						InetAddress address = (InetAddress) addresses.nextElement();
+						if ((useIPv4 && address instanceof Inet4Address) || 
+								(!useIPv4 && address instanceof Inet6Address)) {
+							isAvailable = true;
+							// stop looping
+							break intf_loop;
+						}
 					}
 				}
-			}
 		} catch (SocketException e) {
 			// NetworkInterface.getNetworkInterfaces() -> java.net.SocketException
 		} catch (NoSuchElementException e) {
 			// Enumeration.nextElement() -> java.util.NoSuchElementException
 		}
+
+		// reset the initial stack preference
+		if (oldStackPref != null && oldStackPref.equals("true")) {
+			System.setProperty("java.net.preferIPv4Stack", "true") ;
+		}
+
 		return isAvailable;
 	}
     
