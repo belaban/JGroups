@@ -29,7 +29,7 @@ import org.jgroups.conf.PropertyConverters;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: Property.java,v 1.7 2009/10/02 18:54:31 rachmatowicz Exp $
+ * @version $Id: Property.java,v 1.8 2009/10/06 20:20:09 rachmatowicz Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -47,6 +47,10 @@ public @interface Property {
     String dependsUpon() default "";
 
     String defaultValue() default "" ;
+    
+    String defaultValueIPv4() default "" ;
+    
+    String defaultValueIPv6() default "" ;
 }
 
 

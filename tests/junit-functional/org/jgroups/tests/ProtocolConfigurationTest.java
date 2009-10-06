@@ -5,8 +5,11 @@ import org.jgroups.Global ;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Configurator ;
+import org.jgroups.stack.Configurator.InetAddressInfo;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.annotations.Property; 
+import org.jgroups.conf.PropertyConverters; 
+import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -14,12 +17,14 @@ import org.testng.annotations.Test;
 import java.lang.IllegalArgumentException;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Vector;
+import java.net.InetAddress ;
 
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.1 2009/10/02 18:54:30 rachmatowicz Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.2 2009/10/06 20:20:08 rachmatowicz Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
@@ -29,6 +34,11 @@ public class ProtocolConfigurationTest {
 	static final String orderProps="org.jgroups.tests.ProtocolConfigurationTest$ORDERING(a=1;b=2;c=3)";
 	static final String refsProps="org.jgroups.tests.ProtocolConfigurationTest$REFS(a=1;b=2;c=3)";
 	static final String defaultProps="org.jgroups.tests.ProtocolConfigurationTest$DEFAULTS(b=333)";
+	static final String addressProps="org.jgroups.tests.ProtocolConfigurationTest$INETADDRESSES(" + 
+									"inetAddressField=127.0.0.1;inet_address_method=192.168.0.100;" + 
+									"ipAddressListField=127.0.0.1[8080],127.0.0.1[8081];" + 
+									"ip_address_list_method=192.168.0.100[5678],192.168.0.101[2345];port_range=1)" ;
+	          
 	List<String> order = new LinkedList<String>() ;
 
 	@BeforeMethod
@@ -85,7 +95,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.processDefaultValues(protocol_configs, protocols) ;
+		Configurator.processDefaultValues(protocol_configs, protocols, true) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;
@@ -103,6 +113,41 @@ public class ProtocolConfigurationTest {
 		if (b != 333) {
 			throw new RuntimeException("default property value set when it should not have been") ;
 		}
+		
+		// get the value which should not have been assigned a default
+		InetAddress c = ((DEFAULTS)protocol).getC() ;
+		System.out.println("value of c = " + c) ;
+
+	}
+	/*
+	 * Checks InetAddress and IpAddress processing 
+	 */
+	public void testAssignmentInetAddresses() throws Exception {
+
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
+		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		
+		// create the layer described by INETADDRESSES
+		protocol = Configurator.createProtocol(addressProps, stack) ;
+		// process the defaults
+		protocol_configs.add(new ProtocolConfiguration(addressProps)) ;
+		protocols.add(protocol) ;
+				
+		// get the value which should have been assigned a default
+		InetAddress a = ((INETADDRESSES)protocol).getInetAddressField() ;
+		System.out.println("value of inetAddressField = " + a) ;
+		
+		// get the value which should not have been assigned a default
+		InetAddress b = ((INETADDRESSES)protocol).getInetAddressMethod() ;
+		System.out.println("value of inetAddressMethod = " + b) ;
+		
+		// get the value which should have been assigned a default
+		List<IpAddress> c = ((INETADDRESSES)protocol).getIpAddressListField() ;
+		System.out.println("value of ipAddressListField = " + c) ;
+		
+		// get the value which should not have been assigned a default
+		List<IpAddress> d = ((INETADDRESSES)protocol).getIpAddressListMethod() ;
+		System.out.println("value of ipAddressListMethod = " + d) ;
 
 	}
 
@@ -169,6 +214,7 @@ public class ProtocolConfigurationTest {
 		String name = "DEFAULTS" ;
 		int a ;
 		int b ;
+		InetAddress c ;
 		
 		@Property(name="a", defaultValue="111") 
 		public void setA(int a) {
@@ -178,11 +224,18 @@ public class ProtocolConfigurationTest {
 		public void setB(int b) {
 			this.b = b ;
 		}
+		@Property(name="c", defaultValueIPv4="192.168.0.100") 
+		public void setC(InetAddress ia) {
+			this.c = ia ;
+		}
 		public int getA() {
 			return a ;
 		}
 		public int getB() {
 			return b ;
+		}
+		public InetAddress getC() {
+			return c ;
 		}
 		public String getName() {
 			return name ;
@@ -196,5 +249,54 @@ public class ProtocolConfigurationTest {
 			return up_prot.up(evt);
 		}
 	}
-	
+	public static class INETADDRESSES extends Protocol {
+		String name = "INETADDRESSES" ;
+		InetAddress inetAddressMethod ;
+		
+		@Property(name="inetAddressField")
+		InetAddress inetAddressField ;
+		
+		public InetAddress getInetAddressField() {
+			return inetAddressField ;
+		}
+		@Property(name="inetAddressMethod") 
+		public void setInetAddressMethod(InetAddress ia) {
+			this.inetAddressMethod = ia ;
+		}
+		public InetAddress getInetAddressMethod() {
+			return inetAddressMethod ;
+		}
+
+		@Property(description="fred")
+		int port_range = 0 ;
+		
+		// List<IpAddress> - uses InitialHosts converter
+		List<IpAddress> ipAddressListMethod ;
+		
+		@Property(name="ipAddressListField", converter=PropertyConverters.InitialHosts.class)
+		List<IpAddress> ipAddressListField ;
+		
+		public List<IpAddress> getIpAddressListField() {
+			return ipAddressListField ;
+		}
+		@Property(name="ipAddressListMethod", converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range") 
+		public void setIpAddressListMethod(List<IpAddress> ia) {
+			this.ipAddressListMethod = ia ;
+		}
+		public List<IpAddress> getIpAddressListMethod() {
+			return ipAddressListMethod ;
+		}
+		
+		public String getName() {
+			return name ;
+		}
+		// do nothing
+		public Object down(Event evt) {
+			return down_prot.down(evt);
+		}
+		// do nothing
+		public Object up(Event evt) {
+			return up_prot.up(evt);
+		}
+	}
 }        
