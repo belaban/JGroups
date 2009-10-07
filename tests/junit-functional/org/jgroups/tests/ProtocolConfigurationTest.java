@@ -8,6 +8,7 @@ import org.jgroups.stack.Configurator ;
 import org.jgroups.stack.Configurator.InetAddressInfo;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.annotations.Property; 
+import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.PropertyConverters; 
 import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
@@ -24,7 +25,7 @@ import java.net.InetAddress ;
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.2 2009/10/06 20:20:08 rachmatowicz Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.3 2009/10/07 21:33:23 rachmatowicz Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
@@ -38,6 +39,9 @@ public class ProtocolConfigurationTest {
 									"inetAddressField=127.0.0.1;inet_address_method=192.168.0.100;" + 
 									"ipAddressListField=127.0.0.1[8080],127.0.0.1[8081];" + 
 									"ip_address_list_method=192.168.0.100[5678],192.168.0.101[2345];port_range=1)" ;
+	static final String configurableObjectsProps="org.jgroups.tests.ProtocolConfigurationTest$CONFIGOBJPROTOCOL(" +
+	                                "config_object_class=org.jgroups.tests.ProtocolConfigurationTest$ConfigurableObject;" +
+	                                "string_property=test)" ;
 	          
 	List<String> order = new LinkedList<String>() ;
 
@@ -129,9 +133,6 @@ public class ProtocolConfigurationTest {
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(addressProps, stack) ;
-		// process the defaults
-		protocol_configs.add(new ProtocolConfiguration(addressProps)) ;
-		protocols.add(protocol) ;
 				
 		// get the value which should have been assigned a default
 		InetAddress a = ((INETADDRESSES)protocol).getInetAddressField() ;
@@ -149,6 +150,30 @@ public class ProtocolConfigurationTest {
 		List<IpAddress> d = ((INETADDRESSES)protocol).getIpAddressListMethod() ;
 		System.out.println("value of ipAddressListMethod = " + d) ;
 
+	}
+	
+	/*
+	 * Checks InetAddress and IpAddress processing 
+	 */
+	public void testConfigurableObject() throws Exception {
+
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
+		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		
+		// create the layer described by INETADDRESSES
+		protocol = Configurator.createProtocol(configurableObjectsProps, stack) ;
+		
+		// process the defaults (want this eventually)
+		protocol_configs.add(new ProtocolConfiguration(configurableObjectsProps)) ;
+		protocols.add(protocol) ;
+				
+		// get the value which should have been assigned a default
+		List<Object> configObjs = ((CONFIGOBJPROTOCOL)protocol).getConfigurableObjects() ;
+		assert configObjs.size() == 1 ;
+		Object configObj = configObjs.get(0) ;
+		assert configObj instanceof ConfigurableObject ;  
+		assert ((ConfigurableObject)configObj).getStringProp().equals("test") ;
+		
 	}
 
 	
@@ -297,6 +322,47 @@ public class ProtocolConfigurationTest {
 		// do nothing
 		public Object up(Event evt) {
 			return up_prot.up(evt);
+		}
+	}
+	public static class CONFIGOBJPROTOCOL extends Protocol {
+		String name = "CONFIGOBJPROTOCOL" ;
+		
+	    private Object configObjInstance=null;
+		
+	    @Property(name="config_object_class")
+	    public void setConfigurableObjectClass(String class_name) throws Exception {
+	        Object obj=Class.forName(class_name).newInstance();
+	        configObjInstance=obj;
+	    }
+	    
+	    protected List<Object> getConfigurableObjects() {
+	        List<Object> retval=new LinkedList<Object>();
+	        if(configObjInstance != null)
+	            retval.add(configObjInstance);
+	        return retval;
+	    }
+		
+		public String getName() {
+			return name ;
+		}
+		// do nothing
+		public Object down(Event evt) {
+			return down_prot.down(evt);
+		}
+		// do nothing
+		public Object up(Event evt) {
+			return up_prot.up(evt);
+		}
+	}
+
+	public static class ConfigurableObject {
+		@Property(name="string_property")
+		String stringProp = null ;
+		public String getStringProp() {
+			return stringProp ;
+		}
+		public void setStringProp(String s) {
+			this.stringProp = s ;
 		}
 	}
 }        
