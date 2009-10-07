@@ -26,13 +26,11 @@ import org.jgroups.stack.Configurator;
     		if (props == null) {
     			throw new IllegalArgumentException("Cannot get property name: properties map is null") ;
     		}    		
-
     		Property annotation=field.getAnnotation(Property.class);
     		if (annotation == null) {
     			throw new IllegalArgumentException("Cannot get property name for field " + 
     					field.getName() + " which is not annotated with @Property") ;
     		}
-    		
     		String propertyName=field.getName();
     		if(props.containsKey(annotation.name())) {
     			propertyName=annotation.name();
@@ -41,12 +39,10 @@ import org.jgroups.stack.Configurator;
     				log.warn(annotation.deprecatedMessage());
     			}
     		}
-    		
     		if (log.isDebugEnabled()) {
     			log.debug("Property name=" + propertyName + " (annotation name=" + 
     					annotation.name() + ", field name=" + field.getName() + ")") ;
     		}
-    		
     		return propertyName ;
     	}
     	
@@ -54,28 +50,24 @@ import org.jgroups.stack.Configurator;
     		if (method == null) {
     			throw new IllegalArgumentException("Cannot get property name: field is null") ;
     		}
-
     		Property annotation=method.getAnnotation(Property.class);
     		if (annotation == null) {
     			throw new IllegalArgumentException("Cannot get property name for method " + 
     					method.getName() + " which is not annotated with @Property") ;
     		}    		
-    		
     		String propertyName=annotation.name().length() > 0? annotation.name() : method.getName().substring(3);
     		propertyName=Configurator.renameFromJavaCodingConvention(propertyName);
-    		
     		if (log.isDebugEnabled()) {
     			log.debug("Property name=" + propertyName + " (annotation name=" + 
     					annotation.name() + ", method name=" + method.getName() + ")") ;
     		}
-    		
     		return propertyName ;
     	}
     	
-    	public static Object getConvertedValue(Protocol protocol, Field field, Properties props, String prop) 
+    	public static Object getConvertedValue(Object obj, Field field, Properties props, String prop) 
     			throws IllegalArgumentException, Exception {
-    		if (protocol == null) {
-    			throw new IllegalArgumentException("Cannot get converted value: Protocol is null") ;
+    		if (obj == null) {
+    			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
     		if (field == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Field is null") ;
@@ -92,42 +84,40 @@ import org.jgroups.stack.Configurator;
     					field.getName() + " which is not annotated with @Property") ;
     		}
 			String propertyName = getPropertyName(field, props) ;
-			String protocolName = protocol.getName();
+			String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
 
     		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
     		if(propertyConverter == null) {    				
     			throw new Exception("Could not find property converter for field " + propertyName
-    					+ " in " + protocolName);
+    					+ " in " + name);
     		}
     		Object converted = null ;
 			try {
-				converted=propertyConverter.convert(protocol, field.getType(), props, prop);
+				converted=propertyConverter.convert(obj, field.getType(), props, prop);
 			}
 			catch(Exception e) {
-				throw new Exception("Conversion of " + propertyName + " in " + protocolName + 
+				throw new Exception("Conversion of " + propertyName + " in " + name + 
 						" with original property value " + prop  + " failed. Exception is " +e, e);
 			}
-			
     		if (log.isDebugEnabled()) {
     			if (converted != null)
     				log.debug("Converted value=" + converted.toString() + " (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
     			else
     				log.debug("Converted value=null (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
     		}
-			
 			return converted ;
     	}
 
-    	public static Object getConvertedValue(Protocol protocol, Method method, Properties props, String prop) 
+    	public static Object getConvertedValue(Object obj, Method method, Properties props, String prop) 
     	throws IllegalArgumentException, Exception {
-    		if (protocol == null) {
-    			throw new IllegalArgumentException("Cannot get converted value: Protocol is null") ;
+    		if (obj == null) {
+    			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
     		if (method == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Method is null") ;
     		}
     		if (!Configurator.isSetPropertyMethod(method)) {
-    			throw new IllegalArgumentException("Cannot get converted value: Method is not set proeprty method") ;
+    			throw new IllegalArgumentException("Cannot get converted value: Method is not set property method") ;
     		}
     		if (props == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Properties is null") ;
@@ -141,33 +131,29 @@ import org.jgroups.stack.Configurator;
     					method.getName() + " which is not annotated with @Property") ;
     		}
     		String propertyName = getPropertyName(method) ;
-    		String protocolName = protocol.getName();
+    		String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
     		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
     		if(propertyConverter == null) {    				
     			throw new Exception("Could not find property converter for method " + propertyName
-    					+ " in " + protocolName);
+    					+ " in " + name);
     		}
     		Object converted = null ;
     		try {
-    			converted=propertyConverter.convert(protocol, method.getParameterTypes()[0], props, prop);
+    			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], props, prop);
     		}
     		catch(Exception e) {
-				throw new Exception("Conversion of " + propertyName + " in " + protocolName + 
+				throw new Exception("Conversion of " + propertyName + " in " + name + 
 						" with original property value " + prop  + " failed. Exception is " +e, e);
-    		}
-    		
+    		}	
     		if (log.isDebugEnabled()) {
     			if (converted != null)
     				log.debug("Converted value=" + converted.toString() + " (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
     			else
     				log.debug("Converted value=null (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
     		}
-
     		return converted ;
     	}
     	
-    	
-        
         public static boolean usesDefaultConverter(Field field) throws IllegalArgumentException {
     		if (field == null) {
     			throw new IllegalArgumentException("Cannot check converter: Field is null") ;

@@ -14,10 +14,10 @@ import org.jgroups.annotations.Property;
  * @see Property
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverter.java,v 1.4 2009/09/30 17:28:43 rachmatowicz Exp $
+ * @version $Id: PropertyConverter.java,v 1.5 2009/10/07 20:38:24 rachmatowicz Exp $
  */
 public interface PropertyConverter {
-    Object convert(Protocol protocol, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception;
+    Object convert(Object obj, Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception;
 
     /**
      * Converts the value to a string. The default is to simply invoke Object.toString(), however, some objects need
