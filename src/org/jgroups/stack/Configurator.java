@@ -45,7 +45,7 @@ import java.net.InetSocketAddress ;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.67 2009/10/06 20:20:07 rachmatowicz Exp $
+ * @version $Id: Configurator.java,v 1.68 2009/10/07 20:38:23 rachmatowicz Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -963,7 +963,7 @@ public class Configurator implements ProtocolStackFactory {
     		if(propertyValue != null) {
     			Object converted=null;
     			try {
-    				converted=PropertyHelper.getConvertedValue((Protocol)obj, method, props, propertyValue);
+    				converted=PropertyHelper.getConvertedValue(obj, method, props, propertyValue);
     				method.invoke(obj, converted);
     			}
     			catch(Exception e) {
@@ -997,7 +997,7 @@ public class Configurator implements ProtocolStackFactory {
     		if(propertyValue != null || !PropertyHelper.usesDefaultConverter(field)){
     			Object converted=null;
     			try {
-    				converted=PropertyHelper.getConvertedValue((Protocol)obj, field, props, propertyValue);
+    				converted=PropertyHelper.getConvertedValue(obj, field, props, propertyValue);
     				if(converted != null)
     					setField(field, obj, converted);
     			}
