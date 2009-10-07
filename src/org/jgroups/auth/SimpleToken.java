@@ -1,38 +1,40 @@
 package org.jgroups.auth;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 /**
  * <p>
- * This is an example of using a preshared token for authentication purposes.  All members of the group have to have the same string value in the JGroups config.
+ * This is an example of using a preshared token for authentication purposes. All members of the
+ * group have to have the same string value in the JGroups config.
  * </p>
- * <p>JGroups config parameters:</p>
+ * <p>
+ * JGroups config parameters:
+ * </p>
  * <ul>
  * <li>auth_value (required) = the string to encrypt</li>
  * </ul>
+ * 
  * @author Chris Mills
  * @see org.jgroups.auth.AuthToken
  */
 public class SimpleToken extends AuthToken {
 
     @Property
-    private String auth_value=null;
-    private static final long serialVersionUID=5020668015439045326L;
+    private String auth_value = null;
+    private static final long serialVersionUID = 5020668015439045326L;
 
     public SimpleToken() { // need an empty constructor
     }
 
     public SimpleToken(String authvalue) {
-        this.auth_value=authvalue;
+        this.auth_value = authvalue;
     }
-
 
     public String getName() {
         return "org.jgroups.auth.SimpleToken";
@@ -43,30 +45,30 @@ public class SimpleToken extends AuthToken {
     }
 
     public void setAuthValue(String auth_value) {
-        this.auth_value=auth_value;
+        this.auth_value = auth_value;
     }
 
     public boolean authenticate(AuthToken token, Message msg) {
-        if((token != null) && (token instanceof SimpleToken)) {
-            //Found a valid Token to authenticate against
-            SimpleToken serverToken=(SimpleToken)token;
+        if ((token != null) && (token instanceof SimpleToken)) {
+            // Found a valid Token to authenticate against
+            SimpleToken serverToken = (SimpleToken) token;
 
-            if((this.auth_value != null) && (serverToken.auth_value != null) && (this.auth_value.equalsIgnoreCase(serverToken.auth_value))) {
-                //validated
-                if(log.isDebugEnabled()) {
+            if ((this.auth_value != null) && (serverToken.auth_value != null)
+                            && (this.auth_value.equalsIgnoreCase(serverToken.auth_value))) {
+                // validated
+                if (log.isDebugEnabled()) {
                     log.debug("SimpleToken match");
                 }
                 return true;
-            }
-            else {
-                //if(log.isWarnEnabled()){
-                //  log.warn("Authentication failed on SimpleToken");
-                //}
+            } else {
+                // if(log.isWarnEnabled()){
+                // log.warn("Authentication failed on SimpleToken");
+                // }
                 return false;
             }
         }
 
-        if(log.isWarnEnabled()) {
+        if (log.isWarnEnabled()) {
             log.warn("Invalid AuthToken instance - wrong type or null");
         }
         return false;
@@ -74,11 +76,12 @@ public class SimpleToken extends AuthToken {
 
     /**
      * Required to serialize the object to pass across the wire
+     * 
      * @param out
      * @throws IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {
-        if(log.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
         Util.writeString(this.auth_value, out);
@@ -86,15 +89,17 @@ public class SimpleToken extends AuthToken {
 
     /**
      * Required to deserialize the object when read in from the wire
+     * 
      * @param in
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        if(log.isDebugEnabled()) {
+    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+                    InstantiationException {
+        if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.auth_value=Util.readString(in);
+        this.auth_value = Util.readString(in);
     }
 }
