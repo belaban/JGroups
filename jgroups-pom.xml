@@ -104,7 +104,26 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Export-Package>schema</Export-Package>
+                        <Export-Package>
+                            schema;version=${pom.version},
+                            org.jgroups;version=${pom.version},
+                            org.jgroups.annotations;version=${pom.version},
+                            org.jgroups.auth;version=${pom.version},
+                            org.jgroups.blocks;version=${pom.version},
+                            org.jgroups.conf;version=${pom.version},
+                            org.jgroups.debug;version=${pom.version},
+                            org.jgroups.demos;version=${pom.version},
+                            org.jgroups.demos.applets;version=${pom.version},
+                            org.jgroups.demos.wb;version=${pom.version},
+                            org.jgroups.jmx;version=${pom.version},
+                            org.jgroups.logging;version=${pom.version},
+                            org.jgroups.mux;version=${pom.version},
+                            org.jgroups.persistence;version=${pom.version},
+                            org.jgroups.protocols;version=${pom.version},
+                            org.jgroups.protocols.pbcast;version=${pom.version},
+                            org.jgroups.stack;version=${pom.version},
+                            org.jgroups.util;version=${pom.version},
+                        </Export-Package>
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
