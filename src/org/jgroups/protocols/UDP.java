@@ -43,7 +43,7 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.205 2009/09/21 09:57:25 belaban Exp $
+ * @version $Id: UDP.java,v 1.206 2009/10/13 08:22:25 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -61,7 +61,7 @@ public class UDP extends TP {
 
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForMax() || Util.checkForHp();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
     }
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
