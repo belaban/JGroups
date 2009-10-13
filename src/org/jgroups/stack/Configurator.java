@@ -45,7 +45,7 @@ import java.net.InetSocketAddress ;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.68 2009/10/07 20:38:23 rachmatowicz Exp $
+ * @version $Id: Configurator.java,v 1.69 2009/10/13 15:34:59 rachmatowicz Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -1477,7 +1477,7 @@ public class Configurator implements ProtocolStackFactory {
     		}
     	}
     	static boolean isInetAddressOrCompatibleType(Class<?> c) {
-     		return c.equals(InetAddress.class) || c.equals(InetSocketAddress.class) || c.equals(InetSocketAddress.class) ;
+     		return c.equals(InetAddress.class) || c.equals(InetSocketAddress.class) || c.equals(IpAddress.class) ;
     	}
     	/*
     	 * Check if the parameterized type represents one of:
