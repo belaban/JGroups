@@ -8,13 +8,11 @@ import org.jgroups.stack.Configurator ;
 import org.jgroups.stack.Configurator.InetAddressInfo;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.annotations.Property; 
-import org.jgroups.conf.PropertyConverters; 
-import org.jgroups.stack.IpAddress;
-import org.testng.Assert;
+import org.jgroups.util.Util ;
+
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.IllegalArgumentException;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
@@ -22,9 +20,9 @@ import java.util.Vector;
 import java.net.InetAddress ;
 
 /**
- * Tests checks made on InetAddress and ralated addresses in Configurator.
+ * Tests checks made on InetAddress and related addresses in Configurator.
  * @author Richard Achmatowicz
- * @version $Id: InetAddressChecksTest.java,v 1.1 2009/10/06 20:20:08 rachmatowicz Exp $
+ * @version $Id: InetAddressChecksTest.java,v 1.2 2009/10/13 21:52:12 rachmatowicz Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class InetAddressChecksTest {
@@ -112,6 +110,18 @@ public class InetAddressChecksTest {
 		System.out.println("value of inetAddress3 = " + c) ;
 		
 	}
+	/*
+	 * Checks which IP stacks are available on the platform
+	 */
+	public void testWhichIPStacksAvailable() throws Exception {
+
+		boolean isIPv4 = Util.isIPv4StackAvailable() ;
+		boolean isIPv6 = Util.isIPv6StackAvailable() ;
+		
+		System.out.println("isIPv4 = " + isIPv4);
+		System.out.println("isIPv6 = " + isIPv6);
+	}
+
 	
 	public static class IPCHECK extends Protocol {
 		String name = "IPCHECK" ;
