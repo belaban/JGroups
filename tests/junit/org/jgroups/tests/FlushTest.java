@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.FD;
+import org.jgroups.protocols.FD_ALL;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -19,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.88 2009/10/14 12:49:49 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.89 2009/10/14 13:01:09 belaban Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -113,13 +115,13 @@ public class FlushTest extends ChannelTestBase {
         JChannel c3 = null;
 
         try {
-            c1 = createChannel(true, 3, "C1");
+            c1 = createChannel(true, 3, "C1"); changeProps(c1);
             c1.connect("testFlushWithCrashedFlushCoordinator");
 
-            c2 = createChannel(c1, "C2");
+            c2 = createChannel(c1, "C2"); changeProps(c2);
             c2.connect("testFlushWithCrashedFlushCoordinator");
 
-            c3 = createChannel(c1, "C3");
+            c3 = createChannel(c1, "C3"); changeProps(c3);
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
             System.out.println("shutting down flush coordinator C2");
@@ -143,13 +145,13 @@ public class FlushTest extends ChannelTestBase {
         JChannel c3 = null;
 
         try {
-            c1 = createChannel(true, 3, "C1");
+            c1 = createChannel(true, 3, "C1"); changeProps(c1);
             c1.connect("testFlushWithCrashedParticipant");
 
-            c2 = createChannel(c1, "C2");
+            c2 = createChannel(c1, "C2"); changeProps(c2);
             c2.connect("testFlushWithCrashedParticipant");
 
-            c3 = createChannel(c1, "C3");
+            c3 = createChannel(c1, "C3"); changeProps(c3);
             c3.connect("testFlushWithCrashedParticipant");
 
             System.out.println("shutting down C3");
@@ -182,13 +184,13 @@ public class FlushTest extends ChannelTestBase {
         JChannel c3 = null;
 
         try {
-            c1 = createChannel(true, 3, "C1");
+            c1 = createChannel(true, 3, "C1"); changeProps(c1);
             c1.connect("testFlushWithCrashedFlushCoordinator");
 
-            c2 = createChannel(c1, "C2");
+            c2 = createChannel(c1, "C2"); changeProps(c2);
             c2.connect("testFlushWithCrashedFlushCoordinator");
 
-            c3 = createChannel(c1, "C3");
+            c3 = createChannel(c1, "C3"); changeProps(c3);
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
             // and then kill members other than flush coordinator
@@ -316,6 +318,21 @@ public class FlushTest extends ChannelTestBase {
                 checkEventStateTransferSequence(receiver);
                 System.out.println("event sequence for " + receiver.getChannel().getAddress()
                                 + " is OK");
+            }
+        }
+    }
+
+    private static void changeProps(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            FD fd=(FD)ch.getProtocolStack().findProtocol(FD.class);
+            if(fd != null) {
+                fd.setTimeout(1000);
+                fd.setMaxTries(2);
+            }
+            FD_ALL fd_all=(FD_ALL)ch.getProtocolStack().findProtocol(FD_ALL.class);
+            if(fd_all != null) {
+                fd_all.setTimeout(2000);
+                fd_all.setInterval(800);
             }
         }
     }
