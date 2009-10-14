@@ -10,6 +10,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingData;
+import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
@@ -32,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.218 2009/10/06 20:20:10 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.219 2009/10/14 07:40:15 belaban Exp $
  */
 public class Util {
 
@@ -267,6 +268,13 @@ public class Util {
         if(conn != null) {
             try {conn.close();} catch(Throwable t) {}
         }
+    }
+
+    /** Drops messages to/from other members and then closes the channel */
+    public static void shutdown(JChannel ch) {
+        DISCARD discard=new DISCARD();
+        discard.setDiscardAll(true);
+        Util.close(ch);
     }
 
 
