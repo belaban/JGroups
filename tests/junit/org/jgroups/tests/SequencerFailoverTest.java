@@ -19,7 +19,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.13 2009/10/12 08:27:09 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.14 2009/10/14 07:40:14 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
@@ -62,7 +62,7 @@ public class SequencerFailoverTest {
             public void run() {
                 Util.sleep(3000);
                 System.out.println("** killing A");
-                shutdown(a);
+                Util.shutdown(a);
                 System.out.println("** A killed");
                 injectSuspectEvent(a.getAddress(), b, c);
                 a=null;
@@ -110,12 +110,7 @@ public class SequencerFailoverTest {
         System.out.println("[" + receiver.name + "] message order is OK");
     }
 
-    /** Drops messages to/from other members and then closes the channel */
-    private static void shutdown(JChannel ch) {
-        DISCARD discard=new DISCARD();
-        discard.setDiscardAll(true);
-        Util.close(ch);
-    }
+
 
     /** Injects SUSPECT event(suspected_mbr) into channels */
     private static void injectSuspectEvent(Address suspected_mbr, JChannel ... channels) {
