@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.84 2009/10/05 19:34:08 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.85 2009/10/14 09:40:55 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -239,10 +239,6 @@ public class TUNNEL extends TP {
              }
              disconnectStub(group,local);
             break;
-         case Event.SHUTDOWN:
-             for (RouterStub stub : stubs) {
-                 Util.close(stub.getSocket());
-             }
       }
       return retEvent;
    }

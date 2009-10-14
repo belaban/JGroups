@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.40 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.41 2009/10/14 09:40:20 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
@@ -45,8 +45,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface intf=null;
     
-    protected boolean shutting_down=false;
-    
     private Address local_addr=null;
     
     /**keys=Addresses, vals=time in mcses since added **/
@@ -60,12 +58,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.SHUTDOWN) {
-            shutting_down=true;
-        }
-        else if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
+        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
             local_addr=(Address)evt.getArg();
-            shutting_down=false;
         }
         return down_prot.down(evt);
     }
@@ -74,8 +68,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.SUSPECT:  // it all starts here ...
-                if(shutting_down)
-                    return null;
                 Address suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
                     if(log.isErrorEnabled()) log.error("suspected member is null");
@@ -100,8 +92,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 VerifyHeader hdr=(VerifyHeader)msg.getHeader(name);
                 if(hdr == null)
                     break;
-                if(shutting_down)
-                    return null;
                 switch(hdr.type) {
                     case VerifyHeader.ARE_YOU_DEAD:
                         if(hdr.from == null) {
@@ -269,10 +259,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             intf=NetworkInterface.getByInetAddress(bind_addr);
     }
 
-    public void start() throws Exception {
-        super.start();
-        shutting_down=false;
-    }
+
 
     public synchronized void stop() {
         Thread tmp;
