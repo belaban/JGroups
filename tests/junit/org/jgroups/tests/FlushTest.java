@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.89 2009/10/14 13:01:09 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.90 2009/10/14 15:44:00 vlada Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -125,8 +125,10 @@ public class FlushTest extends ChannelTestBase {
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
             System.out.println("shutting down flush coordinator C2");
-            Util.shutdown(c2); // kill the flush coord: failure detection will kick in in a few seconds and remove C2            
-            Util.startFlush(c2);
+            // send out START_FLUSH but call Util.shutdown(Channel) right after
+            //failure detection will kick in in a few seconds and remove C2
+            //C3 should call STOP_FLUSH
+            c2.downcall(new Event(Event.SUSPEND_BUT_FAIL));  
 
             Util.blockUntilViewsReceived(10000, 500, c1, c3);
 

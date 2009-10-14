@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.73 2009/10/14 09:39:15 belaban Exp $
+ * @version $Id: Event.java,v 1.74 2009/10/14 15:44:03 vlada Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -33,7 +33,7 @@ public class Event {
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null
-    public static final int SUSPEND					           = 68;  // arg = HashMap (used by FLUSH)
+    public static final int SUSPEND					           = 68;  // arg = List<Address> (used by FLUSH)
     public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg=java.io.InputStream subclass
     public static final int STATE_TRANSFER_OUTPUTSTREAM        = 72;  // arg=java.io.OutputStream subclass
@@ -52,6 +52,7 @@ public class Event {
     public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
     public static final int CONNECT_USE_FLUSH			       = 92;
     public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH = 93;
+    public static final int SUSPEND_BUT_FAIL                        = 94; // used in FLUSH testing, no args
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
 
@@ -120,6 +121,7 @@ public class Event {
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case SUSPEND:        		 return "SUSPEND";
+            case SUSPEND_BUT_FAIL:        return "SUSPEND_BUT_FAIL";
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
