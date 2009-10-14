@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.20 2009/04/09 09:11:17 belaban Exp $
+// $Id: MergeStressTest.java,v 1.21 2009/10/14 09:42:06 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
  * GMS.handle_concurrent_startup has to be set to false.
  * 
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.20 2009/04/09 09:11:17 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.21 2009/10/14 09:42:06 belaban Exp $
  */
 
 
@@ -206,7 +206,7 @@ public class MergeStressTest extends ChannelTestBase {
                 log("reached " + num_members + " members");
                 try {
                     received_all_views.await();
-                    ch.shutdown();
+                    Util.shutdown(ch);
                     disconnected.await();
                 }
                 catch(Exception e) {

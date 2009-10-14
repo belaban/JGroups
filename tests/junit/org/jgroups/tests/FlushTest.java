@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.84 2009/09/08 19:52:01 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.85 2009/10/14 09:42:23 belaban Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -123,7 +123,7 @@ public class FlushTest extends ChannelTestBase {
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
             Util.startFlush(c2);
-            c2.shutdown(); // kill the flush coordinator
+            Util.shutdown(c2); // kill the flush coordinator
 
             Util.blockUntilViewsReceived(10000, 500, c1, c3);
 
@@ -142,23 +142,29 @@ public class FlushTest extends ChannelTestBase {
         JChannel c3 = null;
 
         try {
-            c1 = createChannel(true, 3);
+            c1 = createChannel(true, 3, "C1");
             c1.connect("testFlushWithCrashedFlushCoordinator");
 
-            c2 = createChannel(c1);
+            c2 = createChannel(c1, "C2");
             c2.connect("testFlushWithCrashedFlushCoordinator");
 
-            c3 = createChannel(c1);
+            c3 = createChannel(c1, "C3");
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
+            System.out.println("starting flush");
             Util.startFlush(c2);
-            c3.shutdown(); // kill the flush coordinator
 
+            System.out.println("shutting down C3");
+            Util.shutdown(c3); // kill a flush participant
+
+            System.out.println("stopping flush");
             c2.stopFlush();
+
+            System.out.println("waiting for view to contain C1 and C2");
             Util.blockUntilViewsReceived(10000, 500, c1, c2);
 
-            // cluster should not hang and two remaining members should have a
-            // correct view
+            // cluster should not hang and two remaining members should have a correct view
+            System.out.println("C1: view=" + c1.getView() + "\nC2: view=" + c2.getView());
             assertTrue("correct view size", c1.getView().size() == 2);
             assertTrue("correct view size", c2.getView().size() == 2);
         } finally {
@@ -186,8 +192,8 @@ public class FlushTest extends ChannelTestBase {
             Util.startFlush(c2);
 
             // and then kill members other than flush coordinator
-            c3.shutdown();
-            c1.shutdown();
+            Util.shutdown(c3);
+            Util.shutdown(c1);
 
             c2.stopFlush();
             Util.blockUntilViewsReceived(10000, 500, c2);
