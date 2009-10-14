@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.85 2009/10/14 09:42:23 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.86 2009/10/14 10:43:31 belaban Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -122,8 +122,8 @@ public class FlushTest extends ChannelTestBase {
             c3 = createChannel(c1);
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
+            Util.shutdown(c2); // kill the flush coord: failure detection will kick in in a few seconds and remove C2            
             Util.startFlush(c2);
-            Util.shutdown(c2); // kill the flush coordinator
 
             Util.blockUntilViewsReceived(10000, 500, c1, c3);
 
@@ -151,11 +151,11 @@ public class FlushTest extends ChannelTestBase {
             c3 = createChannel(c1, "C3");
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
-            System.out.println("starting flush");
-            Util.startFlush(c2);
-
             System.out.println("shutting down C3");
             Util.shutdown(c3); // kill a flush participant
+
+            System.out.println("C2: starting flush");
+            Util.startFlush(c2);
 
             System.out.println("stopping flush");
             c2.stopFlush();
@@ -188,18 +188,17 @@ public class FlushTest extends ChannelTestBase {
             c3 = createChannel(c1);
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
-            // start flush
-            Util.startFlush(c2);
-
             // and then kill members other than flush coordinator
             Util.shutdown(c3);
             Util.shutdown(c1);
 
+            // start flush
+            Util.startFlush(c2);
+
             c2.stopFlush();
             Util.blockUntilViewsReceived(10000, 500, c2);
 
-            // cluster should not hang and one remaining member should have a
-            // correct view
+            // cluster should not hang and one remaining member should have a correct view
             assertTrue("correct view size", c2.getView().size() == 1);
         } finally {
             Util.close(c3, c2, c1);
