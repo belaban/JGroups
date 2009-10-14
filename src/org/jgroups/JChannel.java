@@ -77,7 +77,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.230 2009/09/30 13:26:03 belaban Exp $
+ * @version $Id: JChannel.java,v 1.231 2009/10/14 09:38:38 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -582,7 +582,7 @@ public class JChannel extends Channel {
      * <li> Notifies the listener, if the listener is available<BR>
      * </ol>
      */
-    @ManagedOperation(description="Disconnects the channel if it is connected")
+    @ManagedOperation(description="Disconnects the channel if connected")
     public synchronized void disconnect() {
         if(closed) return;
 
@@ -613,11 +613,17 @@ public class JChannel extends Channel {
 
     /**
      * Shuts down a channel without disconnecting. To be used by tests only, don't use for application purposes
+     * @deprecated Use {@link Util#shutdown(Channel)} instead. This method will be removed in 3.0
      */
     @ManagedOperation(description="Shuts down the channel without disconnecting")
+    @Deprecated
     public synchronized void shutdown() {
-        down(new Event(Event.SHUTDOWN));
-        _close(false, true); // by default disconnect before closing channel and close mq
+        try {
+            Util.shutdown(this);
+        }
+        catch(Exception e) {
+            log.error("failed shutting down channel " + getAddress(), e);
+        }
     }
 
     /**
