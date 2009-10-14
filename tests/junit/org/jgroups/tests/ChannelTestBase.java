@@ -163,6 +163,12 @@ public class ChannelTestBase {
         return (JChannel) new DefaultChannelTestFactory().createChannel(unique, num);
     }
 
+    protected JChannel createChannel(boolean unique, int num, String name) throws Exception {
+        JChannel ch=(JChannel)new DefaultChannelTestFactory().createChannel(unique, num);
+        ch.setName(name);
+        return ch;
+    }
+
     protected JChannel createChannel() throws Exception {
         return new DefaultChannelTestFactory().createChannel();
     }
@@ -173,6 +179,12 @@ public class ChannelTestBase {
 
     protected JChannel createChannel(JChannel ch) throws Exception {
         return (JChannel) new DefaultChannelTestFactory().createChannel(ch);
+    }
+
+    protected JChannel createChannel(JChannel ch, String name) throws Exception {
+        JChannel retval=(JChannel) new DefaultChannelTestFactory().createChannel(ch);
+        retval.setName(name);
+        return retval;
     }
 
     protected static String getUniqueClusterName() {
