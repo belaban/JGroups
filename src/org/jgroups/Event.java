@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.72 2009/09/26 05:33:57 belaban Exp $
+ * @version $Id: Event.java,v 1.73 2009/10/14 09:39:15 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -43,7 +43,6 @@ public class Event {
     public static final int CLOSE_BARRIER                      = 76;  // arg = null
     public static final int OPEN_BARRIER                       = 77;  // arg = null
     public static final int REBROADCAST				           = 78;  // arg = Digest
-    public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int PREPARE_VIEW                       = 86;  // arg = View
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
@@ -130,7 +129,6 @@ public class Event {
             case CLOSE_BARRIER:          return "CLOSE_BARRIER";
             case OPEN_BARRIER:           return "OPEN_BARRIER";
             case REBROADCAST:            return "REBROADCAST";
-            case SHUTDOWN:               return "SHUTDOWN";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case PREPARE_VIEW:           return "PREPARE_VIEW";
             case USER_DEFINED:           return "USER_DEFINED";
