@@ -7,6 +7,9 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.FD;
+import org.jgroups.protocols.FD_ALL;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -23,7 +26,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.14 2009/10/14 09:41:31 belaban Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.15 2009/10/14 11:55:49 belaban Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -148,18 +151,34 @@ public class TUNNEL_Test extends ChannelTestBase{
      
      public void testFailureDetection() throws Exception {
          coordinator=new JChannel(props);
+         coordinator.setName("coord");
          setProps(coordinator);
          coordinator.connect(GROUP);
          
          channel=new JChannel(props);
+         channel.setName("participant");
          setProps(channel);       
          channel.connect(GROUP);
-         
+
+         System.out.println("shutting down the participant channel");
          Util.shutdown(channel);
-         long now = System.currentTimeMillis();
-         //amount of sleep is more than VERIFY_SUSPECT but less than timeout in FD
-         Util.sleep(3000);
-         assert coordinator.getView().size() ==1;
+
+         GMS coord_gms=(GMS)coordinator.getProtocolStack().findProtocol(GMS.class);
+         if(coord_gms != null)
+             coord_gms.setLevel("trace");
+
+         View view;
+         long end_time=System.currentTimeMillis() + 10000;
+         while(System.currentTimeMillis() < end_time) {
+             view=coordinator.getView();
+             if(view.size() == 1)
+                 break;
+             Util.sleep(500);
+         }
+         view=coordinator.getView();
+         assert view.size() == 1 : "coordinator's view is " + view + ", but we expected a view of 1 member";
+         if(coord_gms != null)
+             coord_gms.setLevel("warn");
      }
      
      public void testConnectThree() throws Exception {
@@ -241,6 +260,16 @@ public class TUNNEL_Test extends ChannelTestBase{
         if(merge != null) {
             merge.setMinInterval(1000);
             merge.setMaxInterval(3000);
+        }
+        FD fd=(FD)stack.findProtocol(FD.class);
+        if(fd != null) {
+            fd.setTimeout(1000);
+            fd.setMaxTries(2);
+        }
+        FD_ALL fd_all=(FD_ALL)stack.findProtocol(FD_ALL.class);
+        if(fd_all != null) {
+            fd_all.setTimeout(2000);
+            fd_all.setInterval(600);
         }
     }
 
