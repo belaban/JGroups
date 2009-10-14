@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.46 2009/09/18 10:51:23 belaban Exp $
+ * @version $Id: Global.java,v 1.47 2009/10/14 06:46:54 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -46,6 +46,8 @@ public class Global {
     public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
     public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
     public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
+
+    public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
 
     public static final long DEFAULT_FIRST_UNICAST_SEQNO=1;
     
