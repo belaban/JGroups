@@ -278,6 +278,24 @@ public class FLUSH extends Protocol {
 
             case Event.SUSPEND:
                 return startFlush(evt);
+                
+             
+            //only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
+            case Event.SUSPEND_BUT_FAIL: 
+                if (!flushInProgress.get()) {
+                    flush_promise.reset();
+                    ArrayList<Address> flushParticipants = null;
+                    synchronized (sharedLock) {
+                        flushParticipants = new ArrayList<Address>(currentView.getMembers());
+                    }
+                    onSuspend(flushParticipants);
+                    try {
+                        Util.shutdown(this.getProtocolStack().getChannel());
+                    } catch (Exception e) {
+                        log.warn("Could not shutdown channel properly", e);
+                    }
+                }
+                break;
 
             case Event.RESUME:
                 onResume(evt);
