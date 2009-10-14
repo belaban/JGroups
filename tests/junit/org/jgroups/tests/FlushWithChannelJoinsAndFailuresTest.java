@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 /**
@@ -37,12 +38,12 @@ public class FlushWithChannelJoinsAndFailuresTest extends ChannelTestBase {
       for (int i = 1; i <= 4; i++) {
          
          //kill coordinator
-         channels[0].shutdown();
-         
+         Util.shutdown(channels[0]);
+
          //kill another three members
-         channels[4].shutdown();
-         channels[5].shutdown();                           
-         channels[8].shutdown(); 
+         Util.shutdown(channels[4]);
+         Util.shutdown(channels[5]);
+         Util.shutdown(channels[8]); 
          
          //now create members again 
          channels[0]= createChannel((JChannel)channels[1]);

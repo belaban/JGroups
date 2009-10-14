@@ -4,7 +4,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -19,7 +18,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.14 2009/10/14 07:40:14 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.15 2009/10/14 09:41:48 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
@@ -62,7 +61,12 @@ public class SequencerFailoverTest {
             public void run() {
                 Util.sleep(3000);
                 System.out.println("** killing A");
-                Util.shutdown(a);
+                try {
+                    Util.shutdown(a);
+                }
+                catch(Exception e) {
+                    System.err.println("failed shutting down channel " + a.getAddress() + ", exception=" + e);
+                }
                 System.out.println("** A killed");
                 injectSuspectEvent(a.getAddress(), b, c);
                 a=null;

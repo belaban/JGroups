@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.111 2009/09/06 13:51:10 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.112 2009/10/14 09:41:23 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -518,7 +518,12 @@ public class Multiplexer implements UpHandler {
             if(log.isTraceEnabled()) {
                 log.trace("shutting down underlying JChannel as all MuxChannels are closed");
             }
-            channel.shutdown();
+            try {
+                Util.shutdown(channel);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
             services.clear();
             shutdownThreadPool();
         }

@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.23 2009/05/13 13:07:12 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.24 2009/10/14 09:41:57 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -116,7 +116,12 @@ public class ReconciliationTest extends ChannelTestBase {
         FlushTrigger t=new FlushTrigger() {
             public void triggerFlush() {
                 JChannel channel=channels.remove(channels.size() - 1);
-                channel.shutdown();
+                try {
+                    Util.shutdown(channel);
+                }
+                catch(Exception e) {
+                    log.error("failed shutting down the channel", e);
+                }
             };
         };
         String apps[]={"A", "B", "C"};

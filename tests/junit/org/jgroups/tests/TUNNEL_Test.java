@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.13 2009/10/05 19:35:44 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.14 2009/10/14 09:41:31 belaban Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -155,7 +155,7 @@ public class TUNNEL_Test extends ChannelTestBase{
          setProps(channel);       
          channel.connect(GROUP);
          
-         channel.shutdown();
+         Util.shutdown(channel);
          long now = System.currentTimeMillis();
          //amount of sleep is more than VERIFY_SUSPECT but less than timeout in FD
          Util.sleep(3000);
