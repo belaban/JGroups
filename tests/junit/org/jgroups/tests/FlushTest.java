@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.86 2009/10/14 10:43:31 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.87 2009/10/14 11:33:07 belaban Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -136,26 +136,28 @@ public class FlushTest extends ChannelTestBase {
     }
 
     @Test
-    public void testFlushWithCrashedNonCoordinator() throws Exception {
+    public void testFlushWithCrashedParticipant() throws Exception {
         JChannel c1 = null;
         JChannel c2 = null;
         JChannel c3 = null;
 
         try {
             c1 = createChannel(true, 3, "C1");
-            c1.connect("testFlushWithCrashedFlushCoordinator");
+            c1.connect("testFlushWithCrashedParticipant");
 
             c2 = createChannel(c1, "C2");
-            c2.connect("testFlushWithCrashedFlushCoordinator");
+            c2.connect("testFlushWithCrashedParticipant");
 
             c3 = createChannel(c1, "C3");
-            c3.connect("testFlushWithCrashedFlushCoordinator");
+            c3.connect("testFlushWithCrashedParticipant");
 
             System.out.println("shutting down C3");
             Util.shutdown(c3); // kill a flush participant
 
             System.out.println("C2: starting flush");
-            Util.startFlush(c2);
+            boolean rc=Util.startFlush(c2);
+            System.out.println("flush " + (rc? " was successful" : "failed"));
+            assert rc;
 
             System.out.println("stopping flush");
             c2.stopFlush();

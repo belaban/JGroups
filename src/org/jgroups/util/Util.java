@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.221 2009/10/14 10:43:30 belaban Exp $
+ * @version $Id: Util.java,v 1.222 2009/10/14 11:33:17 belaban Exp $
  */
 public class Util {
 
@@ -272,6 +272,7 @@ public class Util {
      * the view until failure detection has kicked in and the new coord installed the new view */
     public static void shutdown(Channel ch) throws Exception {
         DISCARD discard=new DISCARD();
+        discard.setLocalAddress(ch.getAddress());
         discard.setDiscardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
