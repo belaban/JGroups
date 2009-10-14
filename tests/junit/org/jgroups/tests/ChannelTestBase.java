@@ -494,7 +494,6 @@ public class ChannelTestBase {
 
                 useChannel();
             } catch (Exception e) {
-                log.error(channel.getName() + ": " + e.getLocalizedMessage(), e);
                 exception = e; // Save it for the test to check
             } finally {
                 if (acquired) {
