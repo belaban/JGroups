@@ -7,11 +7,9 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.blocks.Connection;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.PingHeader;
-import org.jgroups.protocols.PingData;
-import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
 
@@ -33,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.219 2009/10/14 07:40:15 belaban Exp $
+ * @version $Id: Util.java,v 1.220 2009/10/14 09:37:46 belaban Exp $
  */
 public class Util {
 
@@ -271,9 +269,24 @@ public class Util {
     }
 
     /** Drops messages to/from other members and then closes the channel */
-    public static void shutdown(JChannel ch) {
+    public static void shutdown(Channel ch) throws Exception {
         DISCARD discard=new DISCARD();
         discard.setDiscardAll(true);
+        ProtocolStack stack=ch.getProtocolStack();
+        TP transport=stack.getTransport();
+        stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
+
+        View view=ch.getView();
+        ViewId vid=view.getViewId();
+        List<Address> members=Arrays.asList(ch.getAddress());
+
+        ViewId new_vid=new ViewId(ch.getAddress(), vid.getId() +1);
+        View new_view=new View(new_vid, members);
+
+        // inject view in which the shut down member is the only element
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        gms.installView(new_view);
+
         Util.close(ch);
     }
 
