@@ -212,6 +212,10 @@ public class FLUSH extends Protocol {
         boolean successfulFlush = false;
         if (!flushInProgress.get()) {
             flush_promise.reset();
+            synchronized(sharedLock) {
+                if(flushParticipants == null)
+                    flushParticipants=new ArrayList<Address>(currentView.getMembers());
+            }
             onSuspend(flushParticipants);
             try {
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
@@ -629,17 +633,18 @@ public class FLUSH extends Protocol {
         flushInProgress.set(false);
     }
 
-    private void onSuspend(List<Address> members) {
+    /**
+     * Starts the flush protocol
+     * @param members List of participants in the flush protocol. Guaranteed to be non-null
+     */
+    private void onSuspend(final List<Address> members) {
         Message msg = null;
         Collection<Address> participantsInFlush = null;
         synchronized (sharedLock) {
             // start FLUSH only on group members that we need to flush
-            if (members != null) {
-                participantsInFlush = members;
-                participantsInFlush.retainAll(currentView.getMembers());
-            } else {
-                participantsInFlush = new ArrayList<Address>(currentView.getMembers());
-            }
+            participantsInFlush = members;
+            participantsInFlush.retainAll(currentView.getMembers());
+
             msg = new Message(null, localAddress, null);
             msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
                             participantsInFlush));
