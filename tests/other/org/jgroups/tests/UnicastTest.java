@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.13 2009/04/29 12:48:45 belaban Exp $
+// $Id: UnicastTest.java,v 1.14 2009/10/15 08:44:22 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -254,8 +254,8 @@ public class UnicastTest implements Runnable {
 
 
     void sendMessages() throws Exception {
-        long num_msgs=getNumberOfMessages();
-        int msg_size=getMessageSize();
+        long num_msgs=Util.readLongFromStdin("Number of messages: ");
+        int msg_size=Util.readIntFromStdin("Message size: ");
         Address receiver=getReceiver();
         Message msg;
 
@@ -290,40 +290,6 @@ public class UnicastTest implements Runnable {
     }
 
 
-    static long getNumberOfMessages() {
-        BufferedReader reader=null;
-        String tmp=null;
-
-        try {
-            System.out.print("Number of messages to send: ");
-            System.out.flush();
-            System.in.skip(System.in.available());
-            reader=new BufferedReader(new InputStreamReader(System.in));
-            tmp=reader.readLine().trim();
-            return Long.parseLong(tmp);
-        }
-        catch(Exception e) {
-            System.err.println("UnicastTest.getNumberOfMessages(): " + e);
-            return 0;
-        }
-    }
-
-    static int getMessageSize() {
-        BufferedReader reader=null;
-        String tmp=null;
-
-        try {
-            System.out.print("Message size (bytes): ");
-            System.out.flush();
-            System.in.skip(System.in.available());
-            reader=new BufferedReader(new InputStreamReader(System.in));
-            tmp=reader.readLine().trim();
-            return Integer.parseInt(tmp);
-        }
-        catch(Exception e) {
-            return 0;
-        }
-    }
 
     Address getReceiver() {
         Vector mbrs=null;
