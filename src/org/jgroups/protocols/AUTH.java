@@ -97,7 +97,7 @@ public class AUTH extends Protocol{
      */
     public Object up(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
-        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)){
+        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ || hdr.getType() == GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER)){
             if(log.isDebugEnabled()){
                 log.debug("AUTH got up event");
             }
@@ -161,7 +161,7 @@ public class AUTH extends Protocol{
      */
     public Object down(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
-        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)){
+        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ || hdr.getType() == GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER)){
             if(log.isDebugEnabled()){
                 log.debug("AUTH got down event");
             }
