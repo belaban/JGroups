@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.223 2009/10/15 08:44:23 belaban Exp $
+ * @version $Id: Util.java,v 1.224 2009/10/15 10:09:24 belaban Exp $
  */
 public class Util {
 
@@ -1340,7 +1340,9 @@ public class Util {
         System.out.println(msg);
 
         try {
-            return System.in.read();
+            int ret=System.in.read();
+            System.in.skip(System.in.available());
+            return ret;
         }
         catch(IOException e) {
             return 0;
