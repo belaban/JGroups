@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.222 2009/10/14 11:33:17 belaban Exp $
+ * @version $Id: Util.java,v 1.223 2009/10/15 08:44:23 belaban Exp $
  */
 public class Util {
 
@@ -1141,7 +1141,23 @@ public class Util {
         return sb.toString();
     }
 
+    public static String readStringFromStdin(String message) throws Exception {
+        System.out.print(message);
+        System.out.flush();
+        System.in.skip(System.in.available());
+        BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
+        return reader.readLine().trim();
+    }
 
+    public static long readLongFromStdin(String message) throws Exception {
+        String tmp=readStringFromStdin(message);
+        return Long.parseLong(tmp);
+    }
+
+    public static int readIntFromStdin(String message) throws Exception {
+        String tmp=readStringFromStdin(message);
+        return Integer.parseInt(tmp);
+    }
 
 
     public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
@@ -1330,6 +1346,10 @@ public class Util {
             return 0;
         }
     }
+
+
+
+
 
 
     /** Returns a random value in the range [1 - range] */
