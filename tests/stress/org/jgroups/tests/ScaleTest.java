@@ -8,16 +8,27 @@ import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 
 import java.lang.reflect.Method;
+import java.text.NumberFormat;
 
 /**
  * @author Bela Ban
- * @version $Id: ScaleTest.java,v 1.1 2009/10/15 10:06:01 belaban Exp $
+ * @version $Id: ScaleTest.java,v 1.2 2009/10/15 10:41:45 belaban Exp $
  */
 public class ScaleTest {
     JChannel ch;
     String props="udp.xml";
     boolean server=true;
     RpcDispatcher disp;
+
+    static NumberFormat f;
+
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
+
+
 
     public ScaleTest(String props, boolean server) {
         this.props=props;
@@ -66,12 +77,19 @@ public class ScaleTest {
         MethodCall call=new MethodCall(method);
         call.setRequestMode(GroupRequest.GET_ALL);
         call.setTimeout(5000);
-        call.setFlags(Message.DONT_BUNDLE);
+        // call.setFlags(Message.DONT_BUNDLE);
         int num_msgs=Util.readIntFromStdin("Number of RPCs: ");
+        int print=num_msgs / 10;
+        System.out.println("Invoking " + num_msgs + " RPCs:");
+        long start=System.currentTimeMillis();
         for(int i=0; i < num_msgs; i++) {
-            RspList rsps=disp.callRemoteMethods(null, call);
-            System.out.println("rsps:\n" + rsps);
+            disp.callRemoteMethods(null, call);
+            if(print > 0 && i % print == 0)
+                System.out.println("invoking RPC #" + i);
         }
+        long diff=System.currentTimeMillis() - start;
+        double rpcs_per_sec=num_msgs / (diff / 1000.0);
+        System.out.println("Invoked " + num_msgs + " in " + diff + " ms: " + f.format(rpcs_per_sec) + " RPCs / sec");
     }
 
     private static String prompt() {
