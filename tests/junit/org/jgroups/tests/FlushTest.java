@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.FD_ALL;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.90 2009/10/14 15:44:00 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.91 2009/10/15 07:33:17 belaban Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -124,17 +125,30 @@ public class FlushTest extends ChannelTestBase {
             c3 = createChannel(c1, "C3"); changeProps(c3);
             c3.connect("testFlushWithCrashedFlushCoordinator");
 
+
+
+
             System.out.println("shutting down flush coordinator C2");
-            // send out START_FLUSH but call Util.shutdown(Channel) right after
-            //failure detection will kick in in a few seconds and remove C2
-            //C3 should call STOP_FLUSH
-            c2.downcall(new Event(Event.SUSPEND_BUT_FAIL));  
+            // send out START_FLUSH and then return
+            c2.down(new Event(Event.SUSPEND_BUT_FAIL));
+
+            // now shut down C2. This means, after failure detection kicks in and the new coordinator takes over
+            // (either C1 or C3), that the current flush started by C2 will be cancelled and a new flush (by C1 or C3)
+            // will be started
+            Util.shutdown(c2);
+
+            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("trace");
+            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("trace");
 
             Util.blockUntilViewsReceived(10000, 500, c1, c3);
 
             // cluster should not hang and two remaining members should have a correct view
             assertTrue("correct view size", c1.getView().size() == 2);
             assertTrue("correct view size", c3.getView().size() == 2);
+
+            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
+            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
+
         } finally {
             Util.close(c3, c2, c1);
         }
