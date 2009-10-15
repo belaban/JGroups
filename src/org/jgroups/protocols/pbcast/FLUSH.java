@@ -200,6 +200,7 @@ public class FLUSH extends Protocol {
         return startFlush(new Event(Event.SUSPEND));
     }
 
+    @SuppressWarnings("unchecked")
     private boolean startFlush(Event evt) {
         if (log.isDebugEnabled())
             log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
@@ -280,7 +281,7 @@ public class FLUSH extends Protocol {
                 return startFlush(evt);
                 
              
-            //only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
+            // only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
             case Event.SUSPEND_BUT_FAIL: 
                 if (!flushInProgress.get()) {
                     flush_promise.reset();
@@ -289,11 +290,6 @@ public class FLUSH extends Protocol {
                         flushParticipants = new ArrayList<Address>(currentView.getMembers());
                     }
                     onSuspend(flushParticipants);
-                    try {
-                        Util.shutdown(this.getProtocolStack().getChannel());
-                    } catch (Exception e) {
-                        log.warn("Could not shutdown channel properly", e);
-                    }
                 }
                 break;
 
@@ -677,6 +673,7 @@ public class FLUSH extends Protocol {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void onResume(Event evt) {
         List<Address> members = (List<Address>) evt.getArg();
         long viewID = currentViewId();
@@ -980,6 +977,7 @@ public class FLUSH extends Protocol {
             out.writeObject(digest);
         }
 
+        @SuppressWarnings("unchecked")
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type = in.readByte();
             viewID = in.readLong();
