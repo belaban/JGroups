@@ -1,18 +1,19 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.util.Util;
-import org.jgroups.util.RspList;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MembershipListenerAdapter;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
 import java.text.NumberFormat;
+import java.util.Date;
 
 /**
  * @author Bela Ban
- * @version $Id: ScaleTest.java,v 1.2 2009/10/15 10:41:45 belaban Exp $
+ * @version $Id: ScaleTest.java,v 1.3 2009/10/16 07:14:47 belaban Exp $
  */
 public class ScaleTest {
     JChannel ch;
@@ -41,13 +42,19 @@ public class ScaleTest {
 
     public void start() throws ChannelException {
         ch=new JChannel(props);
-        disp=new RpcDispatcher(ch, null, null, this);
+        disp=new RpcDispatcher(ch, null, new MembershipListenerAdapter() {
+            public void viewAccepted(View new_view) {
+                System.out.println("view=" + new_view);
+            }
+        }, this);
         ch.connect("ScaleTest-Cluster");
 
         if(!server) {
             loop();
             Util.close(ch);
         }
+        else
+            System.out.println("ScaleTest started at " + new Date() + ", ready to server requests");
     }
 
     private void loop() {
@@ -56,7 +63,10 @@ public class ScaleTest {
             switch(input) {
                 case '1':
                     View view=ch.getView();
-                    System.out.println(view.getViewId() + ": " + view.size() + " members");
+                    if(view.size() > 10)
+                        System.out.println(view.getViewId() + ": " + view.size() + " members");
+                    else
+                        System.out.println(view + " (" + view.size() + " members)");
                     break;
                 case '2':
                     try {
@@ -77,7 +87,7 @@ public class ScaleTest {
         MethodCall call=new MethodCall(method);
         call.setRequestMode(GroupRequest.GET_ALL);
         call.setTimeout(5000);
-        // call.setFlags(Message.DONT_BUNDLE);
+        call.setFlags(Message.DONT_BUNDLE);
         int num_msgs=Util.readIntFromStdin("Number of RPCs: ");
         int print=num_msgs / 10;
         System.out.println("Invoking " + num_msgs + " RPCs:");
