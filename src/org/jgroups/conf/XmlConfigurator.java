@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.23 2009/09/18 10:19:49 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.24 2009/10/20 13:06:45 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -320,30 +320,25 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
      *                Vector of Configurator.ProtocolConfiguration
      * @return String (XML format)
      */
-    private static String dump(Vector<ProtocolConfiguration> tmp) {
+    private static String dump(Collection<ProtocolConfiguration> configs) {
         StringBuilder sb=new StringBuilder();
         String indent="  ";
         sb.append("<config>\n");
 
-        for(Iterator<ProtocolConfiguration> it=tmp.iterator();it.hasNext();) {
-            Configurator.ProtocolConfiguration cfg=it.next();
+        for(ProtocolConfiguration cfg: configs) {
             sb.append(indent).append("<").append(cfg.getProtocolName());
-            Properties props=cfg.getProperties();
+            Map<String,String> props=cfg.getProperties();
             if(props.isEmpty()) {
                 sb.append(" />\n");
             }
             else {
                 sb.append("\n").append(indent).append(indent);
-                for(Iterator<Entry<Object,Object>> it2=props.entrySet().iterator();it2.hasNext();) {
-                    Entry<Object,Object> entry=it2.next();
-                    String key=(String)entry.getKey();
-                    String val=(String)entry.getValue();
+                for(Map.Entry<String,String> entry: props.entrySet()) {
+                    String key=entry.getKey();
+                    String val=entry.getValue();
                     key=trim(key);
                     val=trim(val);
                     sb.append(key).append("=\"").append(val).append("\"");
-                    if(it2.hasNext()) {
-                        sb.append("\n").append(indent).append(indent);
-                    }
                 }
                 sb.append(" />\n");
             }
