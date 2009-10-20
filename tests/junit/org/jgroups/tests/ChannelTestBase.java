@@ -65,11 +65,15 @@ public class ChannelTestBase {
         this.use_blocking = testRequiresFlush || Boolean.parseBoolean(use_blocking);
         this.use_flush = testRequiresFlush;
         this.channel_conf = chconf;
-        bind_addr = Util.getBindAddress(null).getHostAddress();
+        
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, null, "bind_addr",
+    			ignore_systemprops, bind_addr);
+        // bind_addr = Util.getBindAddress(null).getHostAddress();
     }
 
     @BeforeMethod
-    protected void startTestHeader(java.lang.reflect.Method m) {
+    protected static void startTestHeader(java.lang.reflect.Method m) {
         System.out.println("\n================ Starting test " + m.getName()
                         + " ================\n");
     }
@@ -278,10 +282,10 @@ public class ChannelTestBase {
                 short mcast_port = ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
                 ((UDP) transport).setMulticastPort(mcast_port);
                 if (mcast_address != null) {
-                    ((UDP) transport).setMulticastAddress(mcast_address);
+                    ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_address));
                 } else {
                     String mcast_addr = ResourceManager.getNextMulticastAddress();
-                    ((UDP) transport).setMulticastAddress(mcast_addr);
+                    ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
                 }
             } else if (transport instanceof BasicTCP) {
                 List<Short> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);

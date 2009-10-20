@@ -58,7 +58,7 @@ public class MERGEFAST extends Protocol {
                         views.put(local_addr, view);
                         views.put(msg.getSrc(), hdr.view);
                         if(log.isDebugEnabled())
-                            log.debug("detected different views (" + Util.print(views.values()) + "), sending up MERGE event");
+                            log.debug("detected different views (" + Util.printViews(views.values()) + "), sending up MERGE event");
                         up_prot.up(new Event(Event.MERGE, views));
                     }
                 }

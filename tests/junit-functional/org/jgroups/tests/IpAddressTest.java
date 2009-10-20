@@ -179,7 +179,7 @@ public class IpAddressTest {
 
 
     public static void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
-        InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
+        InetAddress tmp=Util.getFirstNonLoopbackAddress(6);
         IpAddress ip=new IpAddress(tmp, 5555);
 
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
@@ -202,7 +202,7 @@ public class IpAddressTest {
 
 
     public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
-        InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
+        InetAddress tmp=Util.getFirstNonLoopbackAddress(6);
         IpAddress ip=new IpAddress(tmp, 5555);
 
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
