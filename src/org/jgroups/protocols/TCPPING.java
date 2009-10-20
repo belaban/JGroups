@@ -2,10 +2,7 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
@@ -38,7 +35,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.54 2009/09/30 17:28:47 rachmatowicz Exp $
+ * @version $Id: TCPPING.java,v 1.55 2009/10/20 14:54:07 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -48,7 +45,8 @@ public class TCPPING extends Discovery {
     private int port_range=1; 
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
-    		converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range")
+    		converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
+            systemProperty=Global.TCPPING_INITIAL_HOSTS)
     private List<IpAddress> initial_hosts=null;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")

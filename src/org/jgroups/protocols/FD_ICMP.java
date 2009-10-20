@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.Global;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
@@ -22,7 +23,7 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.13 2009/09/06 13:51:08 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.14 2009/10/20 14:51:51 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {
@@ -30,9 +31,15 @@ public class FD_ICMP extends FD {
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface intf=null;
 
-    @Property(converter=PropertyConverters.BindAddress.class)
-    private InetAddress bind_addr;
-
+    @Property(name="bind_addr", description="The NIC on which the ServerSocket should listen on", 
+              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
+    private InetAddress bind_addr=null ;
+    
+    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
+    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
+    protected String bind_interface_str=null;
+     
     private Method is_reacheable;
 
     /** Time-to-live for InetAddress.isReachable() */
