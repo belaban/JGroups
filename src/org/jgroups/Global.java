@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.47 2009/10/14 06:46:54 belaban Exp $
+ * @version $Id: Global.java,v 1.48 2009/10/20 12:59:55 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -16,6 +16,8 @@ public class Global {
 
     public static final String IPv4="java.net.preferIPv4Stack";
     public static final String IPv6="java.net.preferIPv6Addresses";
+
+    public static final String NON_LOOPBACK_ADDRESS="NON_LOOPBACK_ADDRESS";
 
     public static final String BIND_ADDR="jgroups.bind_addr";
     public static final String BIND_ADDR_OLD="bind.address";
@@ -49,12 +51,12 @@ public class Global {
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
 
-    public static final long DEFAULT_FIRST_UNICAST_SEQNO=1;
+    public static final long   DEFAULT_FIRST_UNICAST_SEQNO = 1;
     
     public static final String SINGLETON_NAME="singleton_name";
     
-    public static final long THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
-    public static final long THREAD_SHUTDOWN_WAIT_TIME=300;
+    public static final long   THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
+    public static final long   THREAD_SHUTDOWN_WAIT_TIME=300;
     public static final String DUMMY="dummy-";
 
     public static final String PREFIX="org.jgroups.protocols.";
