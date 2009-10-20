@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.27 2009/09/30 17:28:42 rachmatowicz Exp $
+ * @version $Id: SharedTransportTest.java,v 1.28 2009/10/20 15:11:42 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -492,7 +492,7 @@ public class SharedTransportTest extends ChannelTestBase {
         if(transport instanceof UDP) {
             String mcast_addr=ResourceManager.getNextMulticastAddress();
             short mcast_port=ResourceManager.getNextMulticastPort(bind_addr);
-            ((UDP)transport).setMulticastAddress(mcast_addr);
+            ((UDP)transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
             ((UDP)transport).setMulticastPort(mcast_port);
         }
         else if(transport instanceof BasicTCP) {

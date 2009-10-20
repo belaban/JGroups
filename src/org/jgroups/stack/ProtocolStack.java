@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.95 2009/08/20 11:36:06 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.96 2009/10/20 15:12:10 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -71,7 +71,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
-
         this.setup_string=setup_string;
         this.channel=channel;
 

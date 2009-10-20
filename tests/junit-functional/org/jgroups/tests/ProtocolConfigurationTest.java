@@ -1,31 +1,26 @@
 package org.jgroups.tests;
 
 import org.jgroups.Event;
-import org.jgroups.Global ;
+import org.jgroups.Global;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
+import org.jgroups.stack.Configurator;
+import org.jgroups.stack.Configurator.ProtocolConfiguration;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.Configurator ;
-import org.jgroups.stack.Configurator.InetAddressInfo;
-import org.jgroups.stack.Configurator.ProtocolConfiguration;
-import org.jgroups.annotations.Property; 
-import org.jgroups.auth.AuthToken;
-import org.jgroups.conf.PropertyConverters; 
-import org.jgroups.stack.IpAddress;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.IllegalArgumentException;
-import java.util.List;
+import java.net.InetAddress;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 import java.util.Vector;
-import java.net.InetAddress ;
 
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.3 2009/10/07 21:33:23 rachmatowicz Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.4 2009/10/20 15:11:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
@@ -99,7 +94,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.processDefaultValues(protocol_configs, protocols, true) ;
+		Configurator.processDefaultValues(protocol_configs, protocols, 4) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;
@@ -109,10 +104,6 @@ public class ProtocolConfigurationTest {
 		int b = ((DEFAULTS)protocol).getB() ;
 		System.out.println("value of b = " + b) ;
 		
-		// assert a == 111 ;
-		if (a != 111) {
-			throw new RuntimeException("default property value not set") ;
-		}
 		// assert b == 333 ;
 		if (b != 333) {
 			throw new RuntimeException("default property value set when it should not have been") ;
@@ -121,7 +112,7 @@ public class ProtocolConfigurationTest {
 		// get the value which should not have been assigned a default
 		InetAddress c = ((DEFAULTS)protocol).getC() ;
 		System.out.println("value of c = " + c) ;
-
+        assert c != null;
 	}
 	/*
 	 * Checks InetAddress and IpAddress processing 
@@ -178,22 +169,18 @@ public class ProtocolConfigurationTest {
 
 	
 	public static class ORDERING extends Protocol {
-		String name = "ORDERING" ;
 		List<String> list = new LinkedList<String>() ;
 		
 		@Property(name="a", dependsUpon="b") 
 		public void setA(int a) {
-			// add letter to a list
 			list.add("a") ;
 		}
 		@Property(name="b", dependsUpon="c") 
 		public void setB(int b) {
-			// add B to a list
-			list.add("b") ;			
+			list.add("b") ;
 		}
 		@Property(name="c") 
 		public void setC(int c) {
-			// add C to a list
 			list.add("c") ;
 		}
 		List<String> getList() {
@@ -212,8 +199,7 @@ public class ProtocolConfigurationTest {
 		}
 	}
 	public static class REFS extends Protocol {
-		String name = "REFS" ;
-		
+
 		@Property(name="a", dependsUpon="b") 
 		public void setA(int a) {
 		}
@@ -236,20 +222,19 @@ public class ProtocolConfigurationTest {
 		}
 	}
 	public static class DEFAULTS extends Protocol {
-		String name = "DEFAULTS" ;
 		int a ;
 		int b ;
 		InetAddress c ;
 		
-		@Property(name="a", defaultValue="111") 
+		@Property(name="a")
 		public void setA(int a) {
 			this.a = a ;
 		}
-		@Property(name="b", defaultValue="222") 
+		@Property(name="b") 
 		public void setB(int b) {
 			this.b = b ;
 		}
-		@Property(name="c", defaultValueIPv4="192.168.0.100") 
+		@Property(name="c", defaultValueIPv4="192.168.1.10") 
 		public void setC(InetAddress ia) {
 			this.c = ia ;
 		}
@@ -275,7 +260,6 @@ public class ProtocolConfigurationTest {
 		}
 	}
 	public static class INETADDRESSES extends Protocol {
-		String name = "INETADDRESSES" ;
 		InetAddress inetAddressMethod ;
 		
 		@Property(name="inetAddressField")
@@ -325,14 +309,12 @@ public class ProtocolConfigurationTest {
 		}
 	}
 	public static class CONFIGOBJPROTOCOL extends Protocol {
-		String name = "CONFIGOBJPROTOCOL" ;
-		
+
 	    private Object configObjInstance=null;
 		
 	    @Property(name="config_object_class")
 	    public void setConfigurableObjectClass(String class_name) throws Exception {
-	        Object obj=Class.forName(class_name).newInstance();
-	        configObjInstance=obj;
+            configObjInstance=Class.forName(class_name).newInstance();
 	    }
 	    
 	    protected List<Object> getConfigurableObjects() {
