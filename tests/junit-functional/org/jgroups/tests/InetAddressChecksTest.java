@@ -13,16 +13,13 @@ import org.jgroups.util.Util ;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.net.InetAddress ;
 
 /**
  * Tests checks made on InetAddress and related addresses in Configurator.
  * @author Richard Achmatowicz
- * @version $Id: InetAddressChecksTest.java,v 1.2 2009/10/13 21:52:12 rachmatowicz Exp $
+ * @version $Id: InetAddressChecksTest.java,v 1.3 2009/10/20 14:46:30 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class InetAddressChecksTest {
@@ -57,10 +54,10 @@ public class InetAddressChecksTest {
 		protocols.add(protocol) ;
 		
         Map<String, Map<String,InetAddressInfo>> inetAddressMap = null ;
-        boolean assumeIPv4 ;
 		try {
 	        inetAddressMap = Configurator.createInetAddressMap(protocol_configs, protocols) ;
-	        assumeIPv4 = Configurator.getIPVersion(inetAddressMap) ;
+            Collection<InetAddress> addrs=Configurator.getAddresses(inetAddressMap);
+	        Configurator.determineIpVersionFromAddresses(addrs) ;
 		}
 		catch(RuntimeException e) {
 			System.out.println("Expected exception received: " + e.getMessage()) ;
@@ -94,10 +91,10 @@ public class InetAddressChecksTest {
 		protocols.add(protocol) ;
 		
 		Map<String, Map<String,InetAddressInfo>> inetAddressMap = null ;
-		boolean assumeIPv4 ;
 
 		inetAddressMap = Configurator.createInetAddressMap(protocol_configs, protocols) ;
-		assumeIPv4 = Configurator.getIPVersion(inetAddressMap) ;
+        Collection<InetAddress> addrs=Configurator.getAddresses(inetAddressMap);
+		Configurator.determineIpVersionFromAddresses(addrs) ;
 
 		// get the value which should have been assigned a default
 		InetAddress a = ((IPCHECK)protocol).getInetAddress1() ;
@@ -113,10 +110,10 @@ public class InetAddressChecksTest {
 	/*
 	 * Checks which IP stacks are available on the platform
 	 */
-	public void testWhichIPStacksAvailable() throws Exception {
+	public static void testWhichIPStacksAvailable() throws Exception {
 
-		boolean isIPv4 = Util.isIPv4StackAvailable() ;
-		boolean isIPv6 = Util.isIPv6StackAvailable() ;
+		boolean isIPv4 = Util.isStackAvailable(true);
+		boolean isIPv6 = Util.isStackAvailable(false);
 		
 		System.out.println("isIPv4 = " + isIPv4);
 		System.out.println("isIPv6 = " + isIPv6);
@@ -124,11 +121,11 @@ public class InetAddressChecksTest {
 
 	
 	public static class IPCHECK extends Protocol {
-		String name = "IPCHECK" ;
-		
+
 		@Property(name="inetAddress1")
-		InetAddress inetAddress1 ;	
-		public InetAddress getInetAddress1() {
+		InetAddress inetAddress1 ;
+
+        public InetAddress getInetAddress1() {
 			return inetAddress1 ;
 		}
 		@Property(name="inetAddress2")
@@ -145,9 +142,6 @@ public class InetAddressChecksTest {
 		@Property(description="wilma") 
 		int i = 0 ;
 		
-		public String getName() {
-			return name ;
-		}
 		// do nothing
 		public Object down(Event evt) {
 			return down_prot.down(evt);

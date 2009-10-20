@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.Util;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Protocol;
@@ -9,12 +8,10 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
-import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.8 2009/10/20 14:43:27 belaban Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.9 2009/10/20 14:45:04 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {

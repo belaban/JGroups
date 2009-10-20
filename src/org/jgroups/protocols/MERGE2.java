@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.76 2009/09/28 15:59:11 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.77 2009/10/20 14:52:11 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -233,7 +233,7 @@ public class MERGE2 extends Protocol {
             if(merge_participants.size() == 1) {
                 if(num_inconsistent_views < inconsistent_view_threshold) {
                     if(log.isDebugEnabled())
-                        log.debug("dropping MERGE for inconsistent views " + Util.print(different_views) +
+                        log.debug("dropping MERGE for inconsistent views " + Util.printViews(different_views) +
                                 " as inconsistent view threshold (" + inconsistent_view_threshold +
                                 ") has not yet been reached (" + num_inconsistent_views + ")");
                     num_inconsistent_views++;
@@ -247,7 +247,7 @@ public class MERGE2 extends Protocol {
 
             if(log.isDebugEnabled()) {
                 StringBuilder sb=new StringBuilder();
-                sb.append(local_addr + " found different views : " + Util.print(different_views) +
+                sb.append(local_addr + " found different views : " + Util.printViews(different_views) +
                         "; sending up MERGE event with merge participants " + merge_participants + ".\n");
                 sb.append("Discovery results:\n");
                 for(PingData data: discovery_rsps)
