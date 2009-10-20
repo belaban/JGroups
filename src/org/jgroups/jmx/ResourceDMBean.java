@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.30 2009/09/21 09:57:31 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.31 2009/10/20 13:05:52 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -60,7 +60,6 @@ public class ResourceDMBean implements DynamicMBean {
     private final List<MBeanOperationInfo> ops=new ArrayList<MBeanOperationInfo>();
 
     public ResourceDMBean(Object instance) {
-
         if(instance == null)
             throw new NullPointerException("Cannot make an MBean wrapper for null instance");
         
@@ -71,33 +70,14 @@ public class ResourceDMBean implements DynamicMBean {
 
         attrInfo=new MBeanAttributeInfo[atts.size()];
         int i=0;
-        log.info("Processing class " + instance.getClass());
-        log.info("Attributes are:");
         MBeanAttributeInfo info=null;
         for(AttributeEntry entry:atts.values()) {
             info=entry.getInfo();
             attrInfo[i++]=info;
-            log.info("Attribute " + info.getName()
-                     + "[r="
-                     + info.isReadable()
-                     + ",w="
-                     + info.isWritable()
-                     + ",is="
-                     + info.isIs()
-                     + ",type="
-                     + info.getType()
-                     + "]");
         }
 
         opInfo=new MBeanOperationInfo[ops.size()];
         ops.toArray(opInfo);
-
-        if(ops.size() > 0)
-            log.info("Operations are:");
-        for(MBeanOperationInfo op:opInfo) {
-            log.info("Operation " + op.getReturnType() + " " + op.getName());
-        }
-
     }
 
     Object getObject() {
@@ -108,9 +88,6 @@ public class ResourceDMBean implements DynamicMBean {
         MBean mbean=getObject().getClass().getAnnotation(MBean.class);
         if(mbean != null && mbean.description() != null && mbean.description().trim().length() > 0) {
             description=mbean.description();
-            if(log.isDebugEnabled()) {
-                log.debug("@MBean description set - " + mbean.description());
-            }
             MBeanAttributeInfo info=new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
                                                            "java.lang.String",
                                                            "@MBean description",
@@ -141,14 +118,7 @@ public class ResourceDMBean implements DynamicMBean {
     public synchronized Object getAttribute(String name) {
         if(name == null || name.length() == 0)
             throw new NullPointerException("Invalid attribute requested " + name);
-        
-        if(log.isDebugEnabled()) {
-            log.debug("getAttribute called for " + name);
-        }
         Attribute attr=getNamedAttribute(name);
-        if(log.isDebugEnabled()) {
-            log.debug("getAttribute value found " + attr.getValue());
-        }
         return attr.getValue();
     }
 
@@ -178,18 +148,12 @@ public class ResourceDMBean implements DynamicMBean {
         for(int i=0;i < list.size();i++) {
             Attribute attr=(Attribute)list.get(i);
 
-            if(log.isDebugEnabled()) {
-                log.debug("Attribute name " + attr.getName() + " new value is " + attr.getValue());
-            }
-
             if(setNamedAttribute(attr)) {
                 results.add(attr);
             }
             else {
                 if(log.isWarnEnabled()) {
-                    log.debug("Failed to update attribute name " + attr.getName()
-                              + " with value "
-                              + attr.getValue());
+                    log.warn("Failed to update attribute name " + attr.getName() + " with value " + attr.getValue());
                 }
             }
         }
@@ -199,9 +163,6 @@ public class ResourceDMBean implements DynamicMBean {
     public Object invoke(String name, Object[] args, String[] sig) throws MBeanException,
                                                                   ReflectionException {
         try {
-            if(log.isDebugEnabled()) {
-                log.debug("Invoke method called on " + name);
-            }
             Class<?>[] classes=new Class[sig.length];
             for(int i=0;i < classes.length;i++) {
                 classes[i]=getClassForName(sig[i]);
@@ -216,8 +177,7 @@ public class ResourceDMBean implements DynamicMBean {
 
     public static Class<?> getClassForName(String name) throws ClassNotFoundException {
         try {
-            Class<?> c=Class.forName(name);
-            return c;
+            return Class.forName(name);
         }
         catch(ClassNotFoundException cnfe) {
             //Could be a primitive - let's check
@@ -261,9 +221,6 @@ public class ResourceDMBean implements DynamicMBean {
         boolean isAlreadyExposed=atts.containsKey(attName);
         if(!isAlreadyExposed) {
             ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
-            if(log.isDebugEnabled()) {
-                log.debug("@Operation found for method " + method.getName());
-            }
         }
     }
     
@@ -318,27 +275,19 @@ public class ResourceDMBean implements DynamicMBean {
                 }
                 else {
                     if(log.isWarnEnabled()) {
-                        log.warn("Method " + method.getName()
-                                 + " must have a valid return type and zero parameters");
+                        log.warn("Method " + method.getName() + " must have a valid return type and zero parameters");
                     }
                     //silently skip this method
                     return;
                 }
             }                                      
             
-            if(log.isDebugEnabled()) {
-                log.debug("@Attr found for method " + method.getName()
-                          + " and registered as "
-                          + attributeName);
-            }
-
             AttributeEntry ae=atts.get(attributeName);
             //is it a read method?
             if(!writeAttribute) {
                 //we already have annotated field as read
                 if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
-                    log.warn("not adding annotated method " + method
-                             + " since we already have read attribute");
+                    log.warn("not adding annotated method " + method + " since we already have read attribute");
                 }
                 //we already have annotated set method
                 else if(ae instanceof MethodAttributeEntry) {
@@ -356,8 +305,7 @@ public class ResourceDMBean implements DynamicMBean {
                 if(ae instanceof FieldAttributeEntry) {
                     //we already have annotated field as write
                     if(ae.getInfo().isWritable()) {
-                        log.warn("Not adding annotated method " + methodName
-                                 + " since we already have writable attribute");
+                        log.warn("Not adding annotated method " + methodName + " since we already have writable attribute");
                     }
                     else {
                         //we already have annotated field as read
@@ -367,7 +315,7 @@ public class ResourceDMBean implements DynamicMBean {
                                                                     f.getType().getCanonicalName(),
                                                                     attr.description(),
                                                                     true,
-                                                                    Modifier.isFinal(f.getModifiers())? false: true,
+                                                                    !Modifier.isFinal(f.getModifiers()),
                                                                     false);                               
                         atts.put(attributeName,new FieldAttributeEntry(i,f));
                     }
@@ -389,19 +337,19 @@ public class ResourceDMBean implements DynamicMBean {
         }
     }
     
-    private boolean isSetMethod(Method method) {
+    private static boolean isSetMethod(Method method) {
         return(method.getName().startsWith("set") && 
                method.getParameterTypes().length == 1 && 
                method.getReturnType() == java.lang.Void.TYPE);
     }
 
-    private boolean isGetMethod(Method method) {
+    private static boolean isGetMethod(Method method) {
         return(method.getParameterTypes().length == 0 && 
                method.getReturnType() != java.lang.Void.TYPE && 
                method.getName().startsWith("get"));
     }
 
-    private boolean isIsMethod(Method method) {
+    private static boolean isIsMethod(Method method) {
         return(method.getParameterTypes().length == 0 && 
               (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) && 
                method.getName().startsWith("is"));
@@ -420,13 +368,10 @@ public class ResourceDMBean implements DynamicMBean {
                                                                    field.getType().getCanonicalName(),
                                                                    attr.description(),
                                                                    true,
-                                                                   Modifier.isFinal(field.getModifiers())? false: attr.writable(),
+                                                                   !Modifier.isFinal(field.getModifiers()) && attr.writable(),
                                                                    false);
 
                     atts.put(fieldName, new FieldAttributeEntry(info, field));
-                    if(log.isDebugEnabled()) {
-                        log.debug("@Attr found for field " + field.getName());
-                    }
                 }
             }
         }
@@ -440,19 +385,8 @@ public class ResourceDMBean implements DynamicMBean {
         else {
             AttributeEntry entry=atts.get(name);
             if(entry != null) {
-                MBeanAttributeInfo i=entry.getInfo();
                 try {
                     result=new Attribute(name, entry.invoke(null));
-                    if(log.isDebugEnabled())
-                        log.debug("Attribute " + name
-                                  + " has r="
-                                  + i.isReadable()
-                                  + ",w="
-                                  + i.isWritable()
-                                  + ",is="
-                                  + i.isIs()
-                                  + " and value "
-                                  + result.getValue());
                 }
                 catch(Exception e) {
                     log.warn("Exception while reading value of attribute " + name, e);
@@ -467,11 +401,6 @@ public class ResourceDMBean implements DynamicMBean {
 
     private boolean setNamedAttribute(Attribute attribute) {
         boolean result=false;
-        if(log.isDebugEnabled())
-            log.debug("Invoking set on attribute " + attribute.getName()
-                      + " with value "
-                      + attribute.getValue());
-
         AttributeEntry entry=atts.get(attribute.getName());
         if(entry != null) {
             try {
@@ -491,7 +420,7 @@ public class ResourceDMBean implements DynamicMBean {
     }
     
     
-    private String renameToJavaCodingConvention(String fieldName) {
+    private static String renameToJavaCodingConvention(String fieldName) {
         if(fieldName.contains("_")) {
             Pattern p=Pattern.compile("_.");
             Matcher m=p.matcher(fieldName);
