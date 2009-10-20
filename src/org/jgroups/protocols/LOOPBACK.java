@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.32 2009/09/10 21:28:46 rachmatowicz Exp $
+// $Id: LOOPBACK.java,v 1.33 2009/10/20 13:02:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,6 @@ import org.jgroups.util.Util;
 public class LOOPBACK extends TP {
     private String group_addr=null;
     private final PhysicalAddress physical_addr=new IpAddress(12345);
-    private Address local_addr=null;
 
     public LOOPBACK() {
     }
@@ -47,37 +46,6 @@ public class LOOPBACK extends TP {
     }
 
     /*------------------------------ Protocol interface ------------------------------ */
-
-    public void init() throws Exception {
-        super.init();
-        
-        // the bind address determination moved from TP
-        Properties props = new Properties() ;
-        if (bind_addr_str != null)
-        	props.put("bind_addr", bind_addr_str) ;
-        if (bind_interface_str != null)
-        props.put("bind_interface", bind_interface_str) ;
-        bind_addr = Util.getBindAddress(props) ;
-
-        // the diagnostics determination moved from TP
-        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
-                
-        if(bind_addr != null) {
-            Map<String, Object> m=new HashMap<String, Object>(1);
-            m.put("bind_addr", bind_addr);
-            up(new Event(Event.CONFIG, m));
-        }
-
-    }    
-    
-    public void destroy() {
-        try {
-            timer.stop();
-        }
-        catch(InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
 
 
@@ -104,10 +72,6 @@ public class LOOPBACK extends TP {
             //rsp.setDest(local_addr);
             //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
             up(new Event(Event.MSG, rsp));
-            break;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
             break;
 
         case Event.CONNECT:

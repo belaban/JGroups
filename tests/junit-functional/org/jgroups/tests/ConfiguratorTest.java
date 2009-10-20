@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.12 2009/06/18 08:26:55 vlada Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.13 2009/10/20 13:07:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -29,8 +29,7 @@ public class ConfiguratorTest {
 
     @BeforeMethod
     void setUp() throws Exception {
-        JChannel mock_channel=new JChannel() {
-        };
+        JChannel mock_channel=new JChannel() {};
         stack=new ProtocolStack(mock_channel, props);
     }
 
@@ -153,17 +152,17 @@ public class ConfiguratorTest {
                 "FRAG2(frag_size=60000):" +
                 "pbcast.STREAMING_STATE_TRANSFER(use_reading_thread=true)";
         
-        Vector<Configurator.ProtocolConfiguration> ret=new Configurator().parseConfigurations(config);
+        Vector<Configurator.ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(14, ret.size());
 
         config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_SIMPLE(s=22;d=33):MERGE2(a=22)";
-        ret=new Configurator().parseConfigurations(config);
+        ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(5, ret.size());
 
         config="com.mycomp.Class:B:pbcast.C:H(a=b;c=d;e=f)";
-        ret=new Configurator().parseConfigurations(config);
+        ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(4, ret.size());
     }

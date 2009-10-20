@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.66 2009/08/28 09:44:12 belaban Exp $
+// $Id: Draw.java,v 1.67 2009/10/20 12:59:14 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -157,7 +157,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             draw.go();
         }
         catch(Throwable e) {
-            e.printStackTrace();
+            System.err.println("fatal error: " + e.getLocalizedMessage() + ", cause: ");
+            Throwable t=e.getCause();
+            if(t != null)
+                t.printStackTrace(System.err);
             System.exit(0);
         }
     }
