@@ -11,6 +11,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.Configurator;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
 import org.jgroups.util.UUID;
@@ -77,7 +78,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.231 2009/10/14 09:38:38 belaban Exp $
+ * @version $Id: JChannel.java,v 1.232 2009/10/20 13:00:47 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1706,7 +1707,18 @@ public class JChannel extends Channel {
         
         // ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
         String tmp=configurator.getProtocolStackString();
-        tmp=Util.substituteVariable(tmp); // replace vars with system props
+
+        // replace vars with system props
+        try {
+            Collection<Configurator.ProtocolConfiguration> configs=Configurator.parseConfigurations(tmp);
+            for(Configurator.ProtocolConfiguration config: configs)
+                config.substituteVariables();
+            tmp=Configurator.printConfigurations(configs);
+        }
+        catch(Exception e) {
+            throw new ChannelException("unable to parse the protocol configuration", e);
+        }
+
 
         synchronized(Channel.class) {
             prot_stack=new ProtocolStack(this, tmp);
@@ -1715,7 +1727,7 @@ public class JChannel extends Channel {
                 properties=tmp;
             }
             catch(Throwable e) {
-                throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+                throw new ChannelException("unable to setup the protocol stack", e);
             }
         }
     }
