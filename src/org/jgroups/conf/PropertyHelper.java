@@ -1,16 +1,14 @@
 package org.jgroups.conf ;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import org.jgroups.annotations.Property;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Configurator;
+import org.jgroups.stack.Protocol;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Map;
 
     /*
      * A class of static methods for performing commonly used functions with @Property annotations.
@@ -19,7 +17,7 @@ import org.jgroups.stack.Configurator;
     	
         protected static final Log log=LogFactory.getLog(PropertyHelper.class);
     	
-    	public static String getPropertyName(Field field, Properties props) throws IllegalArgumentException {
+    	public static String getPropertyName(Field field, Map<String,String> props) throws IllegalArgumentException {
     		if (field == null) {
     			throw new IllegalArgumentException("Cannot get property name: field is null") ;
     		}
@@ -39,10 +37,6 @@ import org.jgroups.stack.Configurator;
     				log.warn(annotation.deprecatedMessage());
     			}
     		}
-    		if (log.isDebugEnabled()) {
-    			log.debug("Property name=" + propertyName + " (annotation name=" + 
-    					annotation.name() + ", field name=" + field.getName() + ")") ;
-    		}
     		return propertyName ;
     	}
     	
@@ -57,15 +51,10 @@ import org.jgroups.stack.Configurator;
     		}    		
     		String propertyName=annotation.name().length() > 0? annotation.name() : method.getName().substring(3);
     		propertyName=Configurator.renameFromJavaCodingConvention(propertyName);
-    		if (log.isDebugEnabled()) {
-    			log.debug("Property name=" + propertyName + " (annotation name=" + 
-    					annotation.name() + ", method name=" + method.getName() + ")") ;
-    		}
     		return propertyName ;
     	}
     	
-    	public static Object getConvertedValue(Object obj, Field field, Properties props, String prop) 
-    			throws IllegalArgumentException, Exception {
+    	public static Object getConvertedValue(Object obj, Field field, Map<String,String> props, String prop) throws Exception {
     		if (obj == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
@@ -75,9 +64,7 @@ import org.jgroups.stack.Configurator;
     		if (props == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Properties is null") ;
     		}
-//    		if (prop == null) {
-//    			throw new IllegalArgumentException("Cannot get converted value: property string value is null") ;
-//    		}
+
     		Property annotation=field.getAnnotation(Property.class);
     		if (annotation == null) {
     			throw new IllegalArgumentException("Cannot get property name for field " + 
@@ -93,23 +80,16 @@ import org.jgroups.stack.Configurator;
     		}
     		Object converted = null ;
 			try {
-				converted=propertyConverter.convert(obj, field.getType(), props, prop);
+				converted=propertyConverter.convert(obj, field.getType(), prop);
 			}
 			catch(Exception e) {
 				throw new Exception("Conversion of " + propertyName + " in " + name + 
 						" with original property value " + prop  + " failed. Exception is " +e, e);
 			}
-    		if (log.isDebugEnabled()) {
-    			if (converted != null)
-    				log.debug("Converted value=" + converted.toString() + " (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
-    			else
-    				log.debug("Converted value=null (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
-    		}
 			return converted ;
     	}
 
-    	public static Object getConvertedValue(Object obj, Method method, Properties props, String prop) 
-    	throws IllegalArgumentException, Exception {
+    	public static Object getConvertedValue(Object obj, Method method, Map<String,String> props, String prop) throws Exception {
     		if (obj == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
@@ -122,9 +102,6 @@ import org.jgroups.stack.Configurator;
     		if (props == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Properties is null") ;
     		}
-//    		if (prop == null) {
-//    			throw new IllegalArgumentException("Cannot get converted value: property string value is null") ;
-//    		}
     		Property annotation=method.getAnnotation(Property.class);
     		if (annotation == null) {
     			throw new IllegalArgumentException("Cannot get property name for method " + 
@@ -139,28 +116,22 @@ import org.jgroups.stack.Configurator;
     		}
     		Object converted = null ;
     		try {
-    			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], props, prop);
+    			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], prop);
     		}
     		catch(Exception e) {
 				throw new Exception("Conversion of " + propertyName + " in " + name + 
 						" with original property value " + prop  + " failed. Exception is " +e, e);
     		}	
-    		if (log.isDebugEnabled()) {
-    			if (converted != null)
-    				log.debug("Converted value=" + converted.toString() + " (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
-    			else
-    				log.debug("Converted value=null (propertyName="+ propertyName + ", propertyValue=" + prop + ")") ;
-    		}
     		return converted ;
     	}
     	
         public static boolean usesDefaultConverter(Field field) throws IllegalArgumentException {
     		if (field == null) {
-    			throw new IllegalArgumentException("Cannot check converter: Field is null") ;
+    			throw new IllegalArgumentException("Cannot check converter: field is null") ;
     		}
     		Property annotation=field.getAnnotation(Property.class);
     		if (annotation == null) {
-    			throw new IllegalArgumentException("Cannot check converter for Field " + 
+    			throw new IllegalArgumentException("Cannot check converter for field " +
     					field.getName() + " which is not annotated with @Property") ;
     		}
         	return annotation.converter().equals(PropertyConverters.Default.class) ;
