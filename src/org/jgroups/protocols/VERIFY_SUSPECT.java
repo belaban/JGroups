@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.41 2009/10/14 09:40:20 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.42 2009/10/20 15:10:06 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
@@ -35,10 +35,15 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
     private boolean use_icmp=false; 
     
-    @Property(converter=PropertyConverters.BindAddress.class,description="Interface for ICMP pings. Used if use_icmp is true")
+    @Property(description="Interface for ICMP pings. Used if use_icmp is true",
+              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr; // interface for ICMP pings
     
-    
+    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
+    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
+    protected String bind_interface_str=null;
+     
     /* --------------------------------------------- Fields ------------------------------------------------ */   
     
     
