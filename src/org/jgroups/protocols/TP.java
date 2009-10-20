@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.266 2009/10/19 10:25:26 belaban Exp $
+ * @version $Id: TP.java,v 1.267 2009/10/20 15:04:53 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -64,9 +64,6 @@ public abstract class TP extends Protocol {
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
     }
-	protected static final String DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR = "224.0.75.75" ;
-	protected static final String DEFAULT_IPV6_DIAGNOSTICS_ADDR_STR = "ff0e::0:75:75" ;
-
     protected ExposedByteArrayOutputStream out_stream=null;
     protected ExposedDataOutputStream      dos=null;
     protected final Lock                   out_stream_lock=new ReentrantLock();
@@ -78,10 +75,13 @@ public abstract class TP extends Protocol {
 
 
     @ManagedAttribute
-    @Property(name="bind_addr", description="The bind address which should be used by this transport ")
-    protected String bind_addr_str=null;
+    @Property(name="bind_addr", description="The bind address which should be used by this transport", 
+    		defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
+            systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD})
+    protected InetAddress bind_addr=null;
 
-    @Property(name="bind_interface", description="The interface (NIC) which should be used by this transport ")
+    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
+    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
     protected String bind_interface_str=null;
     
     @Property(description="Ignores all bind address parameters and  let's the OS return the local host address. Default is false")
@@ -212,8 +212,9 @@ public abstract class TP extends Protocol {
     @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
 
-    @Property(description="Address for diagnostic probing. Default is 224.0.75.75")
-    protected String diagnostics_addr_str=null;
+    @Property(description="Address for diagnostic probing. Default is 224.0.75.75", 
+    		defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
+    protected InetAddress diagnostics_addr=null;
 
     @Property(description="Port for diagnostic probing. Default is 7500")
     protected int diagnostics_port=7500;
@@ -233,13 +234,8 @@ public abstract class TP extends Protocol {
      */
     protected long max_bundle_timeout=20;
 
-    
-    InetAddress bind_addr = null ;
-
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
-
-
 
 
     @ManagedAttribute
@@ -772,6 +768,11 @@ public abstract class TP extends Protocol {
             thread_pool=new DirectExecutor();
         }
 
+        if(bind_addr != null) {
+            Map<String, Object> m=new HashMap<String, Object>(1);
+            m.put("bind_addr", bind_addr);
+            up(new Event(Event.CONFIG, m));
+        }
     }
 
 
@@ -1800,7 +1801,7 @@ public abstract class TP extends Protocol {
         }
 
         private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s) {
-            SocketAddress group_addr=new InetSocketAddress(diagnostics_addr_str, diagnostics_port);
+            SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
             for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
                 NetworkInterface i=it.next();
                 try {
