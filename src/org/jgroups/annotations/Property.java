@@ -29,7 +29,7 @@ import org.jgroups.conf.PropertyConverters;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: Property.java,v 1.8 2009/10/06 20:20:09 rachmatowicz Exp $
+ * @version $Id: Property.java,v 1.9 2009/10/20 13:56:52 belaban Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -46,10 +46,16 @@ public @interface Property {
     
     String dependsUpon() default "";
 
-    String defaultValue() default "" ;
-    
+    String[] systemProperty() default {};
+
+    /**
+     * Global.NON_LOOPBACK_ADDRESS means pick any valid non-loopback IPv4 address
+     */
     String defaultValueIPv4() default "" ;
-    
+
+    /**
+     * Global.NON_LOOPBACK_ADDRESS means pick any valid non-loopback IPv6 address
+     */
     String defaultValueIPv6() default "" ;
 }
 
