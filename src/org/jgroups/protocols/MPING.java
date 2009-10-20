@@ -20,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.51 2009/09/21 09:57:25 belaban Exp $
+ * @version $Id: MPING.java,v 1.52 2009/10/20 14:52:52 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     
@@ -28,25 +28,34 @@ public class MPING extends PING implements Runnable {
 
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForMax() || Util.checkForHp();
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
     }
 
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @ManagedAttribute(description="Bind address for multicast socket", writable=true)
-    @Property(converter=PropertyConverters.BindAddress.class, description="Bind address for multicast socket")
+    @Property(description="Bind address for multicast socket", systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null;
     
-    @Property(description="Time to live for discovery packets. Default is 8")
+    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
+    		description="The interface (NIC) which should be used by this transport",dependsUpon="bind_addr")
+    protected String bind_interface_str=null;
+ 
+
     @ManagedAttribute(description="Time to live for discovery packets", writable=true)
+    @Property(description="Time to live for discovery packets. Default is 8", systemProperty=Global.MPING_IP_TTL)
     int ip_ttl=8;
 
     @ManagedAttribute(description="Multicast address for discovery packets", writable=true)
+    @Property(name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
+              defaultValueIPv4="230.5.6.7", defaultValueIPv6="ff0e::5:6:7")
     InetAddress mcast_addr=null;
 
-    @Property(description="Multicast port for discovery packets. Default is 7555")
+
     @ManagedAttribute(description="Multicast port for discovery packets", writable=true)
+    @Property(description="Multicast port for discovery packets. Default is 7555", systemProperty=Global.MPING_MCAST_PORT)
     int mcast_port=7555;
 
     @Property(name="bind_to_all_interfaces", deprecatedMessage="bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead", description="If true, the transport should use all available interfaces to receive multicast messages. Default is false")
@@ -152,7 +161,6 @@ public class MPING extends PING implements Runnable {
         this.mcast_addr=mcast_addr;
     }
 
-    @Property(name="mcast_addr")
     public void setMulticastAddress(String addr) throws UnknownHostException {
         mcast_addr=InetAddress.getByName(addr);
     }
@@ -182,22 +190,8 @@ public class MPING extends PING implements Runnable {
 
     public void init() throws Exception {
         super.init();
-
-        String str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, null, "mcast_addr", false, null);
-        if(str != null)
-            mcast_addr=InetAddress.getByName(str);
-
-        str=Util.getProperty(new String[]{Global.MPING_MCAST_PORT}, null, "mcast_port", false, null);
-        if(str != null)
-            mcast_port=Integer.parseInt(str);
-
-        str=Util.getProperty(new String[]{Global.MPING_IP_TTL}, null, "ip_ttl", false, null);
-        if(str != null)
-            ip_ttl=Integer.parseInt(str);
-
-        if(mcast_addr == null) {
-            mcast_addr=InetAddress.getByName("230.5.6.7");
-        }
+        if(log.isDebugEnabled())
+            log.debug("bind_addr=" + bind_addr + " mcast_addr=" + mcast_addr + ", mcast_port=" + mcast_port);
     }
 
     public void start() throws Exception {

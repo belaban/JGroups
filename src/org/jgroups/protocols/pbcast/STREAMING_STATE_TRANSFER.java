@@ -85,9 +85,15 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      *    
      */
 
-    @Property(converter = PropertyConverters.BindAddress.class, description = "The interface (NIC) used to accept state requests")
+    @Property(description = "The interface (NIC) used to accept state requests",
+              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr;
-
+    
+    @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
+    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
+    protected String bind_interface_str=null;
+ 
     @Property(description = "The port listening for state requests. Default value of 0 binds to any (ephemeral) port")
     private int bind_port = 0;
 
