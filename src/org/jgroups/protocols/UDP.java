@@ -3,19 +3,15 @@ package org.jgroups.protocols;
 
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.Event ;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Properties ;
 
 
 /**
@@ -43,26 +39,10 @@ import java.util.Properties ;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.206 2009/10/13 08:22:25 belaban Exp $
+ * @version $Id: UDP.java,v 1.207 2009/10/20 15:09:57 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
-
-	private static final String DEFAULT_IPV4_MCAST_ADDR_STR = "228.8.8.8" ;
-	private static final String DEFAULT_IPV6_MCAST_ADDR_STR = "ff0e::8:8:8" ;
-
-    /**
-     * BoundedList<Integer> of the last 100 ports used. This is to avoid
-     * reusing a port for DatagramSocket
-     */
-    private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
-
-    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
-
-
-    static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
-    }
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
@@ -79,16 +59,19 @@ public class UDP extends TP {
     @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
     private int tos=8; // valid values: 2, 4, 8 (default), 16
 
-    @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8")
-    private String mcast_addr_str=null;
+    @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8",
+    		defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
+            systemProperty=Global.UDP_MCAST_ADDR)
+    private InetAddress mcast_group_addr=null;
 
-    @Property(description="The multicast port used for sending and receiving packets. Default is 7600")
+    @Property(description="The multicast port used for sending and receiving packets. Default is 7600",
+              systemProperty=Global.UDP_MCAST_PORT)
     private int mcast_port=7600;
 
     @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. Default is true")
     private boolean ip_mcast=true;
 
-    @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8")
+    @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8",systemProperty=Global.UDP_IP_TTL)
     private int ip_ttl=8;
 
     @Property(description="Send buffer size of the multicast datagram socket. Default is 100'000 bytes")
@@ -102,8 +85,6 @@ public class UDP extends TP {
 
     @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
     private int ucast_recv_buf_size=64000;
-
-
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -152,8 +133,8 @@ public class UDP extends TP {
     }
 
 
-    public void setMulticastAddress(String addr) {this.mcast_addr_str=addr;}
-    public String getMulticastAddress() {return mcast_addr_str;}
+    public void setMulticastAddress(InetAddress addr) {this.mcast_group_addr=addr;}
+    public InetAddress getMulticastAddress() {return mcast_group_addr;}
     public int getMulticastPort() {return mcast_port;}
     public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
     public void setMcastPort(int mcast_port) {this.mcast_port=mcast_port;}
@@ -161,7 +142,7 @@ public class UDP extends TP {
 
     public String getInfo() {
         StringBuilder sb=new StringBuilder();
-        sb.append("group_addr=").append(mcast_addr_str).append(':').append(mcast_port).append("\n");
+        sb.append("group_addr=").append(mcast_group_addr.getHostName()).append(':').append(mcast_port).append("\n");
         return sb.toString();
     }
 
@@ -223,59 +204,10 @@ public class UDP extends TP {
 
     public void init() throws Exception {
         super.init();
-
-        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR},
-                                    null, "mcast_addr", false, null);
-        if(str != null)
-            mcast_addr_str=str;
-
-        str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT},
-                             null, "mcast_port", false, null);
-
-        if(str != null)
-            mcast_port=Integer.parseInt(str);
-
-        str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, null, "ip_ttl", false, null);
-        if(str != null)
-            ip_ttl=Integer.parseInt(str);
-
         Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
         Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
         Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
         Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
-        
-        // determine the IP address constants required by this transport
-        assumeIPv4 = Util.getIPVersionPreference() ;
-        mcast_addr_str = 
-        	Util.getVersionConsistentIPAddressString("mcast_addr", mcast_addr_str, 
-        			                         DEFAULT_IPV4_MCAST_ADDR_STR, DEFAULT_IPV6_MCAST_ADDR_STR, 
-        			                         assumeIPv4) ;
-        diagnostics_addr_str = 
-        	Util.getVersionConsistentIPAddressString("diagnostics_addr", diagnostics_addr_str, 
-        		                                   DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR, DEFAULT_IPV6_DIAGNOSTICS_ADDR_STR, 
-        		                                   assumeIPv4) ;
-        
-        // the bind address determination moved from TP
-        Properties props = new Properties() ;
-        if (bind_addr_str != null) 
-        	props.put("bind_addr", bind_addr_str) ;
-        if (bind_interface_str != null)
-        props.put("bind_interface", bind_interface_str) ;
-        bind_addr = Util.getBindAddress(props, assumeIPv4) ;
-                
-        if (log.isDebugEnabled()) {
-        	log.debug("Results of choosing IP version-consistent addresses:") ;
-        	log.debug("assumeIPv4 = " + assumeIPv4) ;
-        	log.debug("bind_addr = " + bind_addr.getHostAddress()) ;
-        	log.debug("mcast_addr_str = " + mcast_addr_str) ;
-        	log.debug("diagnostics_addr_str = " + diagnostics_addr_str) ;
-        }
-        
-        if(bind_addr != null) {
-            Map<String, Object> m=new HashMap<String, Object>(1);
-            m.put("bind_addr", bind_addr);
-            up(new Event(Event.CONFIG, m));
-        }
     }
 
 
@@ -413,19 +345,25 @@ public class UDP extends TP {
 
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
-            // 3a. Create mcast receiver socket
-            InetAddress group_addr=InetAddress.getByName(mcast_addr_str);
-
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
             if(can_bind_to_mcast_addr)
-                mcast_sock=Util.createMulticastSocket(group_addr, mcast_port, log);
+                mcast_sock=Util.createMulticastSocket(mcast_group_addr, mcast_port, log);
             else
                 mcast_sock=new MulticastSocket(mcast_port);
 
             mcast_sock.setTimeToLive(ip_ttl);
 
-            mcast_addr=new IpAddress(group_addr, mcast_port);
+            mcast_addr=new IpAddress(mcast_group_addr, mcast_port);
+
+            // check that we're not using the same mcast address and port as the diagnostics socket
+            if(enable_diagnostics) {
+                if(diagnostics_addr != null && diagnostics_addr.equals(mcast_group_addr) ||
+                        diagnostics_port == mcast_port)
+                    throw new IllegalArgumentException("diagnostics_addr / diagnostics_port and mcast_addr / mcast_port " +
+                            "have to be different");
+            }
+
             if(tos > 0) {
                 try {
                     mcast_sock.setTrafficClass(tos);
@@ -446,7 +384,7 @@ public class UDP extends TP {
             else {
                 if(bind_addr != null)
                     mcast_sock.setInterface(bind_addr);
-                 mcast_sock.joinGroup(group_addr);
+                 mcast_sock.joinGroup(mcast_group_addr);
             }
         }
 
@@ -513,16 +451,7 @@ public class UDP extends TP {
                 continue;
             }
             localPort=tmp.getLocalPort();
-            if(last_ports_used.contains(localPort)) {
-                if(log.isDebugEnabled())
-                    log.debug("local port " + localPort + " already seen in this session; will try to get other port");
-                try {tmp.close();} catch(Throwable e) {}
-                localPort++;
-            }
-            else {
-                last_ports_used.add(localPort);
-                break;
-            }
+            break;
         }
         return tmp;
     }

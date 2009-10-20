@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.267 2009/10/20 15:04:53 belaban Exp $
+ * @version $Id: TP.java,v 1.268 2009/10/20 15:08:45 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -56,10 +56,13 @@ public abstract class TP extends Protocol {
     private static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
     private static final byte OOB=4; // message has OOB flag set (Message.OOB)
 
+    protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
+
     private static NumberFormat f;
     private static final int INITIAL_BUFSIZE=4095;
 
     static {
+        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
@@ -1711,8 +1714,13 @@ public abstract class TP extends Protocol {
                 }
             });
 
-            diag_sock=new MulticastSocket(diagnostics_port);
-            // diag_sock=Util.createMulticastSocket(null, diagnostics_port, log);
+            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
+            if(can_bind_to_mcast_addr)
+                diag_sock=Util.createMulticastSocket(diagnostics_addr, diagnostics_port, log);
+            else
+                diag_sock=new MulticastSocket(diagnostics_port);
+            
             List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
 

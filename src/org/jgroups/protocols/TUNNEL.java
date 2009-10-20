@@ -1,23 +1,22 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.*;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -38,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.85 2009/10/14 09:40:55 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.86 2009/10/20 15:10:40 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -158,24 +157,7 @@ public class TUNNEL extends TP {
         if (log.isDebugEnabled()) {
             log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         }
-                
-        // the bind address determination moved from TP
-        Properties props = new Properties() ;
-        if (bind_addr_str != null)
-        	props.put("bind_addr", bind_addr_str) ;
-        if (bind_interface_str != null)
-        props.put("bind_interface", bind_interface_str) ;
-        bind_addr = Util.getBindAddress(props) ;
-
-        // the diagnostics determination moved from TP
-        diagnostics_addr_str = DEFAULT_IPV4_DIAGNOSTICS_ADDR_STR ;        
-        
-        if(bind_addr != null) {
-            Map<String, Object> m=new HashMap<String, Object>(1);
-            m.put("bind_addr", bind_addr);
-            up(new Event(Event.CONFIG, m));
-        }
-        
+                        
     }
 
     public void start() throws Exception {
