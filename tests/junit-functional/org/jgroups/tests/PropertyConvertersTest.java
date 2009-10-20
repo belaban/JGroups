@@ -1,20 +1,20 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.util.Util;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.util.Util;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
 import java.util.Arrays;
-import java.util.Properties;
 import java.util.List;
+import java.util.Properties;
+import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.7 2009/10/06 20:20:08 rachmatowicz Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.8 2009/10/20 14:43:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {
@@ -34,11 +34,7 @@ public class PropertyConvertersTest {
     }
 
 
-    public static void testBindAddress() throws Exception {
-        PropertyConverter conv=new PropertyConverters.BindAddress();
-        InetAddress addr=Util.getBindAddress(new Properties());
-        check(null, InetAddress.class, addr.getHostAddress(),addr, conv);
-    }
+
 
     /** Cannot really test list of eth0,eth1,lo, because the list differs from host to host
      *
@@ -46,7 +42,7 @@ public class PropertyConvertersTest {
      */
     public static void testNetworkList() throws Exception {
         PropertyConverter conv=new PropertyConverters.NetworkInterfaceList();
-        Object tmp=conv.convert(null, List.class, new Properties(), "lo");
+        Object tmp=conv.convert(null, List.class, "lo");
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
         assert str.equals("lo");
@@ -54,7 +50,7 @@ public class PropertyConvertersTest {
 
 
     private static void check(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
-        Object tmp=converter.convert(protocol, type, new Properties(), prop);
+        Object tmp=converter.convert(protocol, type, prop);
         assert tmp.equals(result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
 
@@ -63,7 +59,7 @@ public class PropertyConvertersTest {
     }
 
     private static void checkArray(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
-        Object tmp=converter.convert(protocol, type, null, prop);
+        Object tmp=converter.convert(protocol, type, prop);
         assert Arrays.equals((long[])tmp, (long[])result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
 
