@@ -16,7 +16,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: JmxConfigurator.java,v 1.16 2009/09/23 15:37:42 vlada Exp $
+ * @version $Id: JmxConfigurator.java,v 1.17 2009/10/20 13:05:20 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
@@ -137,10 +137,6 @@ public class JmxConfigurator {
             ObjectName objName = getObjectName(obj, name);
             ResourceDMBean res = new ResourceDMBean(obj);
             server.registerMBean(res, objName);
-
-            if (log.isDebugEnabled()) {
-                log.debug("register MBean " + objName + " completed");
-            }
         } catch (InstanceAlreadyExistsException e) {
             if (log.isErrorEnabled()) {
                 log.error("register MBean failed " + e.getMessage());
@@ -165,9 +161,6 @@ public class JmxConfigurator {
             } else {
                 throw new MBeanRegistrationException(null,
                                 "Cannot find MBean name from @MBean or passed in value");
-            }
-            if (log.isDebugEnabled()) {
-                log.debug("unregister MBean" + name + " completed");
             }
         } catch (InstanceNotFoundException infe) {
             if (log.isErrorEnabled()) {
