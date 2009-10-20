@@ -1,18 +1,15 @@
 package org.jgroups.stack;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.PropertyConverter;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.conf.PropertyHelper;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack.ProtocolStackFactory;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -20,20 +17,12 @@ import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.AccessibleObject ;
-import java.lang.reflect.Type ;
-import java.lang.reflect.ParameterizedType ;
+import java.lang.reflect.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.InetAddress ;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetSocketAddress ;
 
 
 /**
@@ -45,7 +34,7 @@ import java.net.InetSocketAddress ;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.69 2009/10/13 15:34:59 rachmatowicz Exp $
+ * @version $Id: Configurator.java,v 1.70 2009/10/20 14:50:58 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -93,7 +82,7 @@ public class Configurator implements ProtocolStackFactory {
      *   -----------------------
      * </pre>
      */
-    private Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {       
+    private static Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {
         Vector<ProtocolConfiguration> protocol_configs=parseConfigurations(configuration);
         Vector<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
@@ -102,15 +91,43 @@ public class Configurator implements ProtocolStackFactory {
         sanityCheck(protocols);
         
         // check InetAddress related features of stack
-        Map<String, Map<String,InetAddressInfo>> inetAddressMap = null ;
-        boolean assumeIPv4 ;
-        inetAddressMap = createInetAddressMap(protocol_configs, protocols) ;
-        assumeIPv4 = getIPVersion(inetAddressMap) ;
-        if (!assumeIPv4) {
-        	checkIPv6Scopes(inetAddressMap) ;
+        Map<String, Map<String,InetAddressInfo>> inetAddressMap = createInetAddressMap(protocol_configs, protocols) ;
+        Collection<InetAddress> addrs=getAddresses(inetAddressMap);
+
+        int ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6, 10=both IPv4 and IPv6
+
+        if(!addrs.isEmpty()) {
+            // check that all user-supplied InetAddresses have a consistent version
+            int addr_versions=determineIpVersionFromAddresses(addrs);
+
+            if(ip_version == 10)
+                ip_version=addr_versions;
+            else {
+                if(addr_versions != ip_version) { // mismatch between user supplied addresses and type of stack
+
+
+                    throw new RuntimeException("the type of the stack (IPv" + ip_version + ") and the user supplied " +
+                            "addresses (IPv" + addr_versions + ") don't match: " + addrs +
+                            ".\nUse " + Global.IPv4 + " or " + Global.IPv6 + " to pick the correct stack");
+                }
+            }
         }
+
+        if(ip_version == 10) {
+            if(Util.checkForWindows())
+                ip_version=4;
+            else
+                ip_version=6;
+            log.info("found both an IPv4 and an IPv6 stack, and no addresses were found to pick a stack, " +
+                    "defaulting to IPv" + ip_version);
+        }
+
+        // check that all IPv6 link-local addresses have a scope
+        if(ip_version == 6)
+            checkIPv6Scopes(inetAddressMap) ;
+
         // process default values
-        processDefaultValues(protocol_configs, protocols, assumeIPv4) ;
+        processDefaultValues(protocol_configs, protocols, ip_version) ;
         
         return connectProtocols(protocols);        
     }
@@ -154,7 +171,7 @@ public class Configurator implements ProtocolStackFactory {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    private Protocol connectProtocols(Vector<Protocol> protocol_list) {
+    private static Protocol connectProtocols(Vector<Protocol> protocol_list) {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
@@ -194,7 +211,7 @@ public class Configurator implements ProtocolStackFactory {
      * @param config_str Configuration string
      * @return Vector of strings
      */
-    private Vector<String> parseProtocols(String config_str) throws IOException {
+    private static Vector<String> parseProtocols(String config_str) throws IOException {
         Vector<String> retval=new Vector<String>();
         PushbackReader reader=new PushbackReader(new StringReader(config_str));
         int ch;
@@ -258,7 +275,7 @@ public class Configurator implements ProtocolStackFactory {
      * @param configuration protocol-stack configuration string
      * @return Vector of ProtocolConfigurations
      */
-    public Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
+    public static Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
         Vector<ProtocolConfiguration> retval=new Vector<ProtocolConfiguration>();
         Vector<String> protocol_string=parseProtocols(configuration);              
 
@@ -272,6 +289,22 @@ public class Configurator implements ProtocolStackFactory {
     }
 
 
+    public static String printConfigurations(Collection<ProtocolConfiguration> configs) {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        for(ProtocolConfiguration config: configs) {
+            if(first)
+                first=false;
+            else
+                sb.append(":");
+            sb.append(config.getProtocolName());
+            if(!config.getProperties().isEmpty()) {
+                sb.append('(').append(config.propertiesToString()).append(')');
+            }
+        }
+
+        return sb.toString();
+    }
 
     private static String readUntil(Reader reader, char c) throws IOException {
         StringBuilder sb=new StringBuilder();
@@ -309,7 +342,7 @@ public class Configurator implements ProtocolStackFactory {
      * @param stack The protocol stack
      * @return Vector of Protocols
      */
-    private Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
+    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
         Vector<Protocol> retval=new Vector<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
@@ -317,7 +350,7 @@ public class Configurator implements ProtocolStackFactory {
 
         for(int i=0; i < protocol_configs.size(); i++) {
             protocol_config=protocol_configs.elementAt(i);
-            singleton_name=protocol_config.getProperties().getProperty(Global.SINGLETON_NAME);
+            singleton_name=protocol_config.getProperties().get(Global.SINGLETON_NAME);
             if(singleton_name != null && singleton_name.trim().length() > 0) {
                Map<String,Tuple<TP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
                 synchronized(singleton_transports) {
@@ -398,147 +431,94 @@ public class Configurator implements ProtocolStackFactory {
     
     
     /**
-     * This method takes a set of InetAddresses, represented by an inetAddressmap, and:
-     * - if the resulting set is non-empty, goes through to see if all InetAddress-related 
-     * user settings have a consistent IP version: v4 or v6, and throws an exception if not
-     * - if the resulting set is empty, sets the default IP version based on available stacks 
-     * and if a dual stack, stack preferences 
-     * - sets the IP version to be used in the JGroups session
+     * Returns all inet addresses found
      */
-    public static boolean getIPVersion(Map<String, Map<String,InetAddressInfo>> inetAddressMap) throws Exception {
-    	
-    	// for each InetAddressInfo with non-null value, add to sets
-    	// sets which hold user those IP addresses specified by user (non-null)
-    	Set<InetAddress> userSpecified = new HashSet<InetAddress>() ;
-    	Set<InetAddress> userSpecifiedIPv4 = new HashSet<InetAddress>() ;
-    	Set<InetAddress> userSpecifiedIPv6 = new HashSet<InetAddress>() ;
+    public static Collection<InetAddress> getAddresses(Map<String, Map<String, InetAddressInfo>> inetAddressMap) throws Exception {
+        Set<InetAddress> addrs=new HashSet<InetAddress>();
 
-		for (Map.Entry<String,Map<String, InetAddressInfo>> inetAddressMapEntry : inetAddressMap.entrySet()) {
-			String protocol = inetAddressMapEntry.getKey() ;
-			Map<String, InetAddressInfo> protocolInetAddressMap = inetAddressMapEntry.getValue() ; 
-			for (Map.Entry<String, InetAddressInfo> protocolInetAddressMapEntry : protocolInetAddressMap.entrySet()) {
-				String propertyName = protocolInetAddressMapEntry.getKey() ;
-				InetAddressInfo inetAddressInfo = protocolInetAddressMapEntry.getValue() ; 
-				// add InetAddressInfo to sets based on IP version
-				List<InetAddress> addresses = inetAddressInfo.getInetAddresses();
-				for (InetAddress address: addresses) {
-					if (address == null) 
-						throw new RuntimeException("This address should not be null! - something is wrong") ;
-					userSpecified.add(address) ;
-					if (address instanceof Inet4Address)
-						userSpecifiedIPv4.add(address) ;
-					else 
-						userSpecifiedIPv6.add(address) ;
-				}
-			}
-		}    	
-		
-		if (log.isDebugEnabled()) {
-			log.debug("userSpecified set contents:") ;
-			for (Iterator<InetAddress> iter = userSpecified.iterator(); iter.hasNext();) {
-				InetAddress address = iter.next() ;
-				log.debug(address.toString()) ;
-			}
-			log.debug("userSpecifiedIPv4 set contents:") ;
-			for (Iterator<InetAddress> iter = userSpecifiedIPv4.iterator(); iter.hasNext();) {
-				InetAddress address = iter.next() ;
-				log.debug(address.toString()) ;
-			}
-			log.debug("userSpecifiedIPv6 set contents:") ;
-			for (Iterator<InetAddress> iter = userSpecifiedIPv6.iterator(); iter.hasNext();) {
-				InetAddress address = iter.next() ;
-				log.debug(address.toString()) ;
-			}
-		}
-		
-    	// now use sets to compute IP version
-		boolean isIPv4StackAvailable = Util.isIPv4StackAvailable() ;
-		boolean isIPv6StackAvailable = Util.isIPv6StackAvailable() ;
-		boolean assumeIPv4 = true ;
-		
-    	if (log.isDebugEnabled()) {
-    		log.debug("isIPv4StackAvailable = " + isIPv4StackAvailable) ;
-    		log.debug("isIPv6StackAvailable = " + isIPv6StackAvailable) ;
-    	}
-		
-		
+        for(Map.Entry<String, Map<String, InetAddressInfo>> inetAddressMapEntry : inetAddressMap.entrySet()) {
+            Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMapEntry.getValue();
+            for(Map.Entry<String, InetAddressInfo> protocolInetAddressMapEntry : protocolInetAddressMap.entrySet()) {
+                InetAddressInfo inetAddressInfo=protocolInetAddressMapEntry.getValue();
+                // add InetAddressInfo to sets based on IP version
+                List<InetAddress> addresses=inetAddressInfo.getInetAddresses();
+                for(InetAddress address : addresses) {
+                    if(address == null)
+                        throw new RuntimeException("This address should not be null! - something is wrong");
+                    addrs.add(address);
+                }
+            }
+        }
+        return addrs;
+    }
+
+
+    /**
+     * This method takes a set of InetAddresses, represented by an inetAddressmap, and:
+     * - if the resulting set is non-empty, goes through to see if all InetAddress-related
+     * user settings have a consistent IP version: v4 or v6, and throws an exception if not
+     * - if the resulting set is empty, sets the default IP version based on available stacks
+     * and if a dual stack, stack preferences
+     * - sets the IP version to be used in the JGroups session
+     * @return int 4 for IPv4, 6 for IPv6, 0 if the versuion cannot be determined
+     */
+    public static int determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
+    	Set<InetAddress> ipv4_addrs= new HashSet<InetAddress>() ;
+    	Set<InetAddress> ipv6_addrs= new HashSet<InetAddress>() ;
+
+        for(InetAddress address: addrs) {
+            if (address instanceof Inet4Address)
+                ipv4_addrs.add(address) ;
+            else
+                ipv6_addrs.add(address) ;
+        }
+
+        if(log.isTraceEnabled())
+            log.trace("all addrs=" + addrs + ", IPv4 addrs=" + ipv4_addrs + ", IPv6 addrs=" + ipv6_addrs);
+
 		// the user supplied 1 or more IP address inputs. Check if we have a consistent set
-    	// which matches a stack on this host
-    	if (userSpecified.size() > 0) {
-    		// check for a consistent IP version for IP addresses specified
-    		if (!((userSpecifiedIPv4.size() > 0 && userSpecifiedIPv6.size() == 0) || 
-    				(userSpecifiedIPv4.size() == 0 && userSpecifiedIPv6.size() > 0))) {
-    			throw new RuntimeException("No consistent IP version available (IPv4 or IPv6) for user-specified IP addresses") ;
-    		}
-    		// set the consistent version - we don't reach here unless we have one
-    		assumeIPv4 = (userSpecifiedIPv4.size() > 0 && userSpecifiedIPv6.size() == 0) ;
-    		
-    		if (assumeIPv4 && !isIPv4StackAvailable) {
-    			throw new RuntimeException("A consistent IP version (IPv4) is available for " + 
-    					"user-specified addresses but there is no stack to support it") ;
-    		}
-    		if (!assumeIPv4 && !isIPv6StackAvailable) {
-    			throw new RuntimeException("A consistent IP version (IPv6) is available for " + 
-				" user-specified addresses but there is no stack to support it") ;
-    		}	
-    	}
-    	else {
-    		// the user supplied no default IP addresses, so just get the stack preference.
-    		
-    		// if only IPv4 stack available, set assumeIPv4 = true
-    		if (isIPv4StackAvailable && !isIPv6StackAvailable) {
-    			assumeIPv4 = true ;
-    		}
-    		else if (isIPv6StackAvailable && !isIPv4StackAvailable) {
-    			assumeIPv4 = false ;
-    		}
-    		else if (isIPv4StackAvailable && isIPv6StackAvailable) {
-    			// get the System property which records user preference for a stack on a dual stack machine
-    			// Bela wanted to check for null and set to IPv4
-    			boolean preferIPv4Stack = Boolean.getBoolean("java.net.preferIPv4Stack") ;
-    			assumeIPv4 = preferIPv4Stack ;
-    		}
-    	}
-    	
-    	if (log.isDebugEnabled()) {
-    		log.debug("assumeIPv4 = " + assumeIPv4) ;
-    	}
-    	
-    	return assumeIPv4 ;
-    }    
-    
-    public static void checkIPv6Scopes(Map<String, Map<String,InetAddressInfo>> inetAddressMap) throws Exception {
-    	
-    	// for each IPv6 address specified, check that if a link-local address is used, it has a scope
-		for (Map.Entry<String,Map<String, InetAddressInfo>> inetAddressMapEntry : inetAddressMap.entrySet()) {
-			String protocol = inetAddressMapEntry.getKey() ;
-			Map<String, InetAddressInfo> protocolInetAddressMap = inetAddressMapEntry.getValue() ; 
-			for (Map.Entry<String, InetAddressInfo> protocolInetAddressMapEntry : protocolInetAddressMap.entrySet()) {
-				String propertyName = protocolInetAddressMapEntry.getKey() ;
-				InetAddressInfo inetAddressInfo = protocolInetAddressMapEntry.getValue() ; 
-				List<InetAddress> addresses = inetAddressInfo.getInetAddresses();
-				for (InetAddress address: addresses) {
-					if (address == null) 
-						throw new RuntimeException("This address should not be null! - something is wrong") ;
-					
-					// check if each link-local address has a scope
-					if (address instanceof Inet6Address && address.isLinkLocalAddress()) {
-						// check scope is present
-						String propertyValue = inetAddressInfo.getStringValue() ;
-						if (propertyValue == null)
-							throw new RuntimeException("The string value for this address should not be null! - something is wrong") ;
+        if (!addrs.isEmpty()) {
+            if (!ipv4_addrs.isEmpty() && !ipv6_addrs.isEmpty()) {
+                throw new RuntimeException("all addresses have to be either IPv4 or IPv6: IPv4 addresses=" +
+                        ipv4_addrs + ", IPv6 addresses=" + ipv6_addrs);
+            }
+            return !ipv6_addrs.isEmpty()? 6 : 4;
+        }
+        return 0;
+    }
 
-						//check for scope and scope value here!
-						if (log.isDebugEnabled()) 
-							log.debug("Checking scope for Inet6 address " + address.getHostName() + 
-									" with user specified value " + propertyValue) ;
-						// TODO - implement the check
-					}
-				}
-			}
-		}    	
-    }	
-    
+
+    public static void checkIPv6Scopes(Map<String, Map<String, InetAddressInfo>> map) throws Exception {
+        // for each IPv6 address specified, check that if a link-local address is used, it has a scope
+        for(Map.Entry<String, Map<String, InetAddressInfo>> entry : map.entrySet()) {
+            Map<String, InetAddressInfo> addr_map=entry.getValue();
+            for(Map.Entry<String, InetAddressInfo> entry2 : addr_map.entrySet()) {
+                InetAddressInfo info=entry2.getValue();
+                List<InetAddress> addresses=info.getInetAddresses();
+                for(InetAddress address : addresses) {
+                    if(address == null)
+                        throw new RuntimeException("This address should not be null! - something is wrong");
+
+                    // check if each link-local address has a scope
+                    if(address instanceof Inet6Address && address.isLinkLocalAddress()) {
+                        // check scope is present
+                        String propertyValue=info.getStringValue();
+                        if(propertyValue == null)
+                            throw new RuntimeException("The string value for this address should not be null! - something is wrong");
+
+                        // throw an exception if no scope is present
+                        int scope=((Inet6Address)address).getScopeId();
+                        if(scope == 0) {
+                            throw new RuntimeException("Link-local IPv6 address " + address.getHostName() +
+                                    " has no scope (e.g. %eth0)");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     /*
      * A method which does the following:
      * - discovers all Fields or Methods within the protocol stack which set
@@ -560,26 +540,23 @@ public class Configurator implements ProtocolStackFactory {
     		Protocol protocol = protocols.get(i) ;
     		String protocolName = protocol.getName();
 
-    		// maps property names to InetAddressInfo objects
-    		Map<String, InetAddressInfo> protocolInetAddressMap = new HashMap<String,InetAddressInfo>() ;
-    		inetAddressMap.put(protocolName, protocolInetAddressMap) ;
-
-    		Properties properties = null ;
     		// regenerate the Properties which were destroyed during basic property processing
-    		properties = protocol_config.getOriginalProperties();
+    		Map<String,String> properties = protocol_config.getOriginalProperties();
 
-			if (log.isDebugEnabled())
-				log.debug("Processing InetAddressInfo for protocol: " + protocolName);
-
-    		// check which InetAddress-related properties are ***non-null ***, and 
+    		// check which InetAddress-related properties are ***non-null ***, and
     		// create an InetAddressInfo structure for them
-    		Method[] methods=protocol.getClass().getMethods();
+    		// Method[] methods=protocol.getClass().getMethods();
+            Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
     		for(int j = 0; j < methods.length; j++) {
     			if (methods[j].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[j])) {
     				String propertyName = PropertyHelper.getPropertyName(methods[j]) ;
-    				String propertyValue = properties.getProperty(propertyName) ;
-    				if (log.isDebugEnabled())
-    					log.debug("Processing InetAddressInfo for property "+ propertyName+" with value " +propertyValue );
+    				String propertyValue = properties.get(propertyName);
+
+                    // if there is a systemProperty attribute defined in the annotation, set the property value from the system property
+                    String tmp=grabSystemProp(methods[j].getAnnotation(Property.class));
+                    if(tmp != null)
+                        propertyValue=tmp;
+
     				if (propertyValue != null && InetAddressInfo.isInetAddressRelated(methods[j])) {
     					Object converted = null ;
 						try {
@@ -589,11 +566,15 @@ public class Configurator implements ProtocolStackFactory {
 							throw new Exception("String value could not be converted for method " + propertyName + " in "
 									+ protocolName + " with default value " + propertyValue + ".Exception is " +e, e);
 						}
-	    				if (log.isDebugEnabled())
-	    					log.debug("Adding InetAddressInfo for property "+propertyName+" with value " +propertyValue );
     					InetAddressInfo inetinfo = new InetAddressInfo(protocol, methods[j], properties, propertyValue, converted) ;
+
+                        Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
+                        if(protocolInetAddressMap == null) {
+                            protocolInetAddressMap = new HashMap<String,InetAddressInfo>() ;
+                            inetAddressMap.put(protocolName, protocolInetAddressMap) ;
+                        }
     					protocolInetAddressMap.put(propertyName, inetinfo) ; 
-    				} // recompute
+    				}
     			}
     		}
 
@@ -603,11 +584,15 @@ public class Configurator implements ProtocolStackFactory {
     			for(int j = 0; j < fields.length; j++ ) {
     				if (fields[j].isAnnotationPresent(Property.class)) {
      					String propertyName = PropertyHelper.getPropertyName(fields[j], properties) ;
-    					String propertyValue = properties.getProperty(propertyName) ;
-        				if (log.isDebugEnabled())
-        					log.debug("Processing InetAddressInfo for property "+propertyName+" with value " +propertyValue );
-    					if ((propertyValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) 
-    							&& InetAddressInfo.isInetAddressRelated(fields[j])) {
+    					String propertyValue = properties.get(propertyName) ;
+
+                        // if there is a systemProperty attribute defined in the annotation, set the property value from the system property
+                        String tmp=grabSystemProp(fields[j].getAnnotation(Property.class));
+                        if(tmp != null)
+                            propertyValue=tmp;
+                        
+    					if ((propertyValue != null || !PropertyHelper.usesDefaultConverter(fields[j]))
+    							&& InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
     						Object converted = null ;
 							try {
 								converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, propertyValue);
@@ -616,29 +601,18 @@ public class Configurator implements ProtocolStackFactory {
 								throw new Exception("String value could not be converted for method " + propertyName + " in "
 										+ protocolName + " with default value " + propertyValue + ".Exception is " +e, e);
 							}
-		    				if (log.isDebugEnabled())
-		    					log.debug("Adding InetAddressInfo for property "+propertyName+" with value " +propertyValue );
     						InetAddressInfo inetinfo = new InetAddressInfo(protocol, fields[j], properties, propertyValue, converted) ;
-    						protocolInetAddressMap.put(propertyName, inetinfo) ; 
+
+                            Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
+                            if(protocolInetAddressMap == null) {
+                                protocolInetAddressMap = new HashMap<String,InetAddressInfo>() ;
+                                inetAddressMap.put(protocolName, protocolInetAddressMap) ;
+                            }
+    						protocolInetAddressMap.put(propertyName, inetinfo) ;
     					}// recompute
     				}
     			}
     		}	
-    	}
-
-    	// print out maps for debugging
-    	if (log.isDebugEnabled()) {
-    		for (Map.Entry<String,Map<String, InetAddressInfo>> inetAddressMapEntry : inetAddressMap.entrySet()) {
-    			String protocol = inetAddressMapEntry.getKey() ;
-    			Map<String, InetAddressInfo> protocolInetAddressMap = inetAddressMapEntry.getValue() ; 
-
-    			log.debug("***InetAddressInfo for protocol: " + protocol + "***") ;
-    			for (Map.Entry<String, InetAddressInfo> protocolInetAddressMapEntry : protocolInetAddressMap.entrySet()) {
-    				String propertyName = protocolInetAddressMapEntry.getKey() ;
-    				InetAddressInfo inetAddressInfo = protocolInetAddressMapEntry.getValue() ; 
-    				log.debug("propertyName=" + propertyName + ", addrinfo=" + inetAddressInfo.toString()) ;
-    			}
-    		}
     	}
     	return inetAddressMap ;
     }
@@ -651,119 +625,109 @@ public class Configurator implements ProtocolStackFactory {
      * - if the defaultValue attribute is not "", generate a value for the field using the 
      * property converter for that property and assign it to the field
      */
-    public static void processDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols, boolean assumeIPv4) throws Exception {
+    public static void processDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols, int ip_version) throws Exception {
+        InetAddress default_ip_address=Util.getFirstNonLoopbackAddress(ip_version);
+        if(default_ip_address == null) {
+            log.warn("unable to find an address other than loopback for IP version " + ip_version);
+            default_ip_address=Util.getLocalhost(ip_version);
+        }
 
-    	for (int i = 0; i < protocol_configs.size(); i++) {    		
-    		ProtocolConfiguration protocol_config = protocol_configs.get(i) ;
-    		Protocol protocol = protocols.get(i) ;
-    		String protocolName = protocol.getName();
+        for(int i=0; i < protocol_configs.size(); i++) {
+            ProtocolConfiguration protocol_config=protocol_configs.get(i);
+            Protocol protocol=protocols.get(i);
+            String protocolName=protocol.getName();
 
-    		// regenerate the Properties which were destroyed during basic property processing
-    		Properties properties = null ;
-    		properties = protocol_config.getOriginalProperties(); 
+            // regenerate the Properties which were destroyed during basic property processing
+            Map<String,String> properties=protocol_config.getOriginalProperties();
 
-    		// check which properties are null
-    		Method[] methods=protocol.getClass().getMethods();
-    		for(int j = 0; j < methods.length; j++) {
-    			if (methods[j].isAnnotationPresent(Property.class) && isSetPropertyMethod(methods[j])) {
-    				String propertyName = PropertyHelper.getPropertyName(methods[j]) ;
-    				String propertyValue = properties.getProperty(propertyName) ;
-    				// if propertyValue is null, check if there is a default value we can assign
-    				if (propertyValue == null) {
-    					Property annotation = methods[j].getAnnotation(Property.class) ;
-    					
-    					// get the default value for the method- check for InetAddress types
-    					String defaultValue = null ;
-    					if (InetAddressInfo.isInetAddressRelated(methods[j])) {
-    						if (assumeIPv4)
-    							defaultValue = annotation.defaultValueIPv4() ;
-    						else
-    							defaultValue = annotation.defaultValueIPv6() ;
-    					}
-    					else {
-    						defaultValue = annotation.defaultValue() ;
-    					} 
-    					// got the default value
-    					if (defaultValue != null && defaultValue.length() > 0) {
-    						if (log.isDebugEnabled()) 
-    							log.debug("Setting default value for property " + propertyName) ;
-    						Object converted=null;
-    						try {
-    							converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, defaultValue);
-    							methods[j].invoke(protocol, converted);
-    						}
-    						catch(Exception e) {
-    							throw new Exception("Deafult could not be assined for method " + propertyName + " in "
-    									+ protocolName + " with default value " + defaultValue + ".Exception is " +e, e);
-    						}
-    						if (log.isDebugEnabled()) {
-    							if (converted != null)
-    								log.debug("Set property " + propertyName + " to default value " + converted.toString()) ;
-    							else 
-    								log.debug("Set property " + propertyName + " to default value null") ;
-    						}
-    					}
-    				}
-    			}
-    		} // for methods
+            Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
+            for(int j=0; j < methods.length; j++) {
+                if(isSetPropertyMethod(methods[j])) {
+                    String propertyName=PropertyHelper.getPropertyName(methods[j]);
 
-    		//traverse class hierarchy and find all annotated fields and add them to the list if annotated
-    		for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-    			Field[] fields=clazz.getDeclaredFields();
-    			for(int j = 0; j < fields.length; j++ ) {
-    				if (fields[j].isAnnotationPresent(Property.class)) {
-    					String propertyName = PropertyHelper.getPropertyName(fields[j], properties) ;
-    					String propertyValue = properties.getProperty(propertyName) ;
-    					if (propertyValue == null) {
-    						// add to collection of @Properties with no user specified value
-    						Property annotation = fields[j].getAnnotation(Property.class) ;
-    						
-        					// get the default value for the field - check for InetAddress types
-        					String defaultValue = null ;
-        					if (InetAddressInfo.isInetAddressRelated(fields[j])) {
-        						if (assumeIPv4)
-        							defaultValue = annotation.defaultValueIPv4() ;
-        						else
-        							defaultValue = annotation.defaultValueIPv6() ;
-        					}
-        					else {
-        						defaultValue = annotation.defaultValue() ;
-        					} 
-        					// got the default value    
-    						
-        					// set a default value for the field
-    						if(defaultValue != null && defaultValue.length() > 0) {
-    							// condition for invoking converter
-    							if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
-    	    						if (log.isDebugEnabled()) 
-    	    							log.debug("Setting default value for property " + propertyName) ;
+                    Object propertyValue=getValueFromProtocol(protocol, propertyName);
+                    if(propertyValue == null) { // if propertyValue is null, check if there is a we can use
+                        Property annotation=methods[j].getAnnotation(Property.class);
 
-    								Object converted=null;
-    								try {
-    									converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue);
-    									if(converted != null)
-    										setField(fields[j], protocol, converted);
-    								}
-    								catch(Exception e) {
-    									throw new Exception("Deafult could not be assined for field " + propertyName + " in "
-    											+ protocolName + " with default value " + defaultValue + ".Exception is " +e, e);
-    								}
-    								
-            						if (log.isDebugEnabled()) {
-            							if (converted != null)
-            								log.debug("Set property " + propertyName + " to default value " + converted.toString()) ;
-            							else 
-            								log.debug("Set property " + propertyName + " to default value null") ;
-            						}
-    							}
-    						}
-    					}
-    				}
-    			}
-    		} // for fields
-    	}
+                        // get the default value for the method- check for InetAddress types
+                        String defaultValue=null;
+                        if(InetAddressInfo.isInetAddressRelated(methods[j])) {
+                            defaultValue=ip_version == 4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                            if(defaultValue != null && defaultValue.length() > 0) {
+                                Object converted=null;
+                                try {
+                                    if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                        converted=default_ip_address;
+                                    else
+                                        converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, defaultValue);
+                                    methods[j].invoke(protocol, converted);
+                                }
+                                catch(Exception e) {
+                                    throw new Exception("default could not be assigned for method " + propertyName + " in "
+                                            + protocolName + " with default " + defaultValue, e);
+                                }
+                                if(log.isDebugEnabled())
+                                    log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                            }
+                        }
+                    }
+                }
+            } 
+
+            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
+            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), Property.class);
+            for(int j=0; j < fields.length; j++) {
+                String propertyName=PropertyHelper.getPropertyName(fields[j], properties);
+                Object propertyValue=getValueFromProtocol(protocol, fields[j]);
+                if(propertyValue == null) {
+                    // add to collection of @Properties with no user specified value
+                    Property annotation=fields[j].getAnnotation(Property.class);
+
+                    // get the default value for the field - check for InetAddress types
+                    String defaultValue=null;
+                    if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                        defaultValue=ip_version == 4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                        if(defaultValue != null && defaultValue.length() > 0) {
+                            // condition for invoking converter
+                            if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
+                                Object converted=null;
+                                try {
+                                    if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                        converted=default_ip_address;
+                                    else
+                                        converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue);
+                                    if(converted != null)
+                                        setField(fields[j], protocol, converted);
+                                }
+                                catch(Exception e) {
+                                    throw new Exception("default could not be assigned for field " + propertyName + " in "
+                                            + protocolName + " with default value " + defaultValue, e);
+                                }
+
+                                if(log.isDebugEnabled())
+                                    log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    
+
+    public static Object getValueFromProtocol(Protocol protocol, Field field) throws IllegalAccessException {
+        if(protocol == null || field == null) return null;
+        if(!Modifier.isPublic(field.getModifiers()))
+            field.setAccessible(true);
+        return field.get(protocol);
+    }
+
+
+    public static Object getValueFromProtocol(Protocol protocol, String field_name) throws IllegalAccessException {
+        if(protocol == null || field_name == null) return null;
+        Field field=Util.getField(protocol.getClass(), field_name);
+        return field != null? getValueFromProtocol(protocol, field) : null;
+    }
+
 
     /** Check whether any of the protocols 'below' provide evt_type */
     static boolean providesUpServices(Vector<ProtocolReq> req_list, int evt_type) {        
@@ -792,7 +756,7 @@ public class Configurator implements ProtocolStackFactory {
      * (ii) checks that all dependency references are present
      * (iii) creates a copy of the master list in dependency order
      */
-    static AccessibleObject[] computePropertyDependencies(Object obj, Properties properties) {
+    static AccessibleObject[] computePropertyDependencies(Object obj, Map<String,String> properties) {
     	
     	// List of Fields and Methods of the protocol annotated with @Property
     	List<AccessibleObject> unorderedFieldsAndMethods = new LinkedList<AccessibleObject>() ;
@@ -822,29 +786,12 @@ public class Configurator implements ProtocolStackFactory {
     			}
     		}
     	}
-    	    	
-//    	if (log.isDebugEnabled()) {
-//    		log.debug("Properties inventory keyset for protocol: " + obj.getClass().getName());
-//    		Set<String> keyset = propertiesInventory.keySet();
-//    		for (Iterator<String> i = keyset.iterator(); i.hasNext();) {
-//    			String property = i.next() ;
-//    			log.debug("property = " + property);
-//    		}
-//    	}    	
-    	
+
     	// at this stage, we have all Fields and Methods annotated with @Property
     	checkDependencyReferencesPresent(unorderedFieldsAndMethods, propertiesInventory) ;
     	
     	// order the fields and methods by dependency
     	orderedFieldsAndMethods = orderFieldsAndMethodsByDependency(unorderedFieldsAndMethods, propertiesInventory) ;
-    	
-//    	if (log.isDebugEnabled()) {
-//    		log.debug("Ordered Fields and Methods for protocol: " + obj.getClass().getName());
-//    		for (int i = 0; i < orderedFieldsAndMethods.size(); i++) {
-//    			AccessibleObject ao = orderedFieldsAndMethods.get(i) ;
-//    			log.debug("name = " + ao.toString());
-//    		}
-//    	}
     	
     	// convert to array of Objects
     	AccessibleObject[] result = new AccessibleObject[orderedFieldsAndMethods.size()] ;
@@ -889,9 +836,6 @@ public class Configurator implements ProtocolStackFactory {
     	// process dependencies for this object before adding it to the list
     	Property annotation = obj.getAnnotation(Property.class) ;
     	String dependsClause = annotation.dependsUpon() ;
-    	if (log.isDebugEnabled()) { 
-    		log.trace("processing: " + obj.toString() + " with dependsUpon: " + dependsClause);
-    	}
     	StringTokenizer st = new StringTokenizer(dependsClause, ",") ;
     	while (st.hasMoreTokens()) {
     		String token = st.nextToken().trim();
@@ -922,7 +866,7 @@ public class Configurator implements ProtocolStackFactory {
             }
     		
     		String dependsClause = annotation.dependsUpon() ;
-    		if (dependsClause.trim().equals(""))
+    		if (dependsClause.trim().length() == 0)
     			continue ;
     		
     		// split dependsUpon specifier into tokens; trim each token; search for token in list
@@ -948,18 +892,24 @@ public class Configurator implements ProtocolStackFactory {
     	
     }
     
-    public static void resolveAndInvokePropertyMethods(Object obj, Properties props) throws Exception {
+    public static void resolveAndInvokePropertyMethods(Object obj, Map<String,String> props) throws Exception {
         Method[] methods=obj.getClass().getMethods();
         for(Method method: methods) {
         	resolveAndInvokePropertyMethod(obj, method, props) ;
         }
     }
 
-    public static void resolveAndInvokePropertyMethod(Object obj, Method method, Properties props) throws Exception {
+    public static void resolveAndInvokePropertyMethod(Object obj, Method method, Map<String,String> props) throws Exception {
     	String methodName=method.getName();
     	if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
     		String propertyName=PropertyHelper.getPropertyName(method) ;
-    		String propertyValue=props.getProperty(propertyName);
+    		String propertyValue=props.get(propertyName);
+
+            // if there is a systemProperty attribute defined in the annotation, set the property value from the system property
+            String tmp=grabSystemProp(method.getAnnotation(Property.class));
+            if(tmp != null)
+                propertyValue=tmp;
+
     		if(propertyValue != null) {
     			Object converted=null;
     			try {
@@ -971,14 +921,13 @@ public class Configurator implements ProtocolStackFactory {
     				throw new Exception("Could not assign property " + propertyName + " in "
     						+ name + ", method is " + methodName + ", converted value is " + converted, e);
     			}
-    			finally {
-    				props.remove(propertyName);
-    			}
     		}
+
+            props.remove(propertyName);
     	}
     }
     
-    public static void resolveAndAssignFields(Object obj, Properties props) throws Exception {
+    public static void resolveAndAssignFields(Object obj, Map<String,String> props) throws Exception {
         //traverse class hierarchy and find all annotated fields
         for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
@@ -988,12 +937,16 @@ public class Configurator implements ProtocolStackFactory {
         }
     }
 
-    public static void resolveAndAssignField(Object obj, Field field, Properties props) throws Exception {
-
+    public static void resolveAndAssignField(Object obj, Field field, Map<String,String> props) throws Exception {
     	if(field.isAnnotationPresent(Property.class)) {
     		String propertyName = PropertyHelper.getPropertyName(field, props) ;
-    		String propertyValue=props.getProperty(propertyName);
-    		
+    		String propertyValue=props.get(propertyName);
+
+            // if there is a systemProperty attribute defined in the annotation, set the property value from the system property
+            String tmp=grabSystemProp(field.getAnnotation(Property.class));
+            if(tmp != null)
+                propertyValue=tmp;
+            
     		if(propertyValue != null || !PropertyHelper.usesDefaultConverter(field)){
     			Object converted=null;
     			try {
@@ -1007,22 +960,21 @@ public class Configurator implements ProtocolStackFactory {
     						+ name + " with original property value " + propertyValue + " and converted to " + converted 
     						+ " could not be assigned. Exception is " +e, e);
     			}
-    			finally {
-    				props.remove(propertyName);
-    			}
     		}
+
+            props.remove(propertyName);
     	}
     }
     
     
-    public static void removeDeprecatedProperties(Object obj, Properties props) throws Exception {
+    public static void removeDeprecatedProperties(Object obj, Map<String,String> props) throws Exception {
         //traverse class hierarchy and find all deprecated properties
         for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
             if(clazz.isAnnotationPresent(DeprecatedProperty.class)) {
                 DeprecatedProperty declaredAnnotation=clazz.getAnnotation(DeprecatedProperty.class);
                 String[] deprecatedProperties=declaredAnnotation.names();
                 for(String propertyName : deprecatedProperties) {
-                    String propertyValue=props.getProperty(propertyName);
+                    String propertyValue=props.get(propertyName);
                     if(propertyValue != null) {
                         if(log.isWarnEnabled()) {
                             String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
@@ -1077,6 +1029,25 @@ public class Configurator implements ProtocolStackFactory {
         }
     }
 
+
+    private static String grabSystemProp(Property annotation) {
+        String[] system_property_names=annotation.systemProperty();
+        String retval=null;
+
+        for(String system_property_name: system_property_names) {
+            if(system_property_name != null && system_property_name.length() > 0) {
+                try {
+                    retval=System.getProperty(system_property_name);
+                    if(retval != null)
+                        return retval;
+                }
+                catch(SecurityException ex) {
+                    log.error("failed getting system property for " + system_property_name, ex);
+                }
+            }
+        }
+        return retval;
+    }
 
     /* --------------------------- End of Private Methods ---------------------------------- */
 
@@ -1182,10 +1153,10 @@ public class Configurator implements ProtocolStackFactory {
      * <code>UNICAST(timeout=5000)</code>
      */
     public static class ProtocolConfiguration {
-        private final String protocol_name;
-        private final String properties_str;
-        private final Properties properties=new Properties();
-        private static final String protocol_prefix="org.jgroups.protocols";
+        private final String             protocol_name;
+        private String                   properties_str;
+        private final Map<String,String> properties=new HashMap<String,String>();
+        private static final String      protocol_prefix="org.jgroups.protocols";
 
 
         /**
@@ -1194,7 +1165,6 @@ public class Configurator implements ProtocolStackFactory {
          *                   <pre>VERIFY_SUSPECT(timeout=1500)</pre>
          */
         public ProtocolConfiguration(String config_str) throws Exception {
-        	
             int index=config_str.indexOf('(');  // e.g. "UDP(in_port=3333)"
             int end_index=config_str.lastIndexOf(')');
 
@@ -1219,18 +1189,17 @@ public class Configurator implements ProtocolStackFactory {
             return protocol_name;
         }
 
-        public Properties getProperties() {
+        public Map<String, String> getProperties() {
             return properties;
         }
 
-        public Properties getOriginalProperties() throws Exception {
-        	Properties props = new Properties() ; 
-        	
+        public Map<String, String> getOriginalProperties() throws Exception {
+        	Map<String,String> props = new HashMap<String,String>();
         	parsePropertiesString(properties_str, props) ;
         	return props ;
         }
         
-        private void parsePropertiesString(String properties_str, Properties properties) throws Exception {
+        private void parsePropertiesString(String properties_str, Map<String, String> properties) throws Exception {
         	int index = 0 ;
             
         	/* "in_port=5555;out_port=6666" */
@@ -1241,14 +1210,34 @@ public class Configurator implements ProtocolStackFactory {
                     index=property.indexOf('=');
                     if(index == -1) {
                         throw new Exception("Configurator.ProtocolConfiguration(): '=' not found in " + property
-                                + " of "
-                                + protocol_name);
+                                + " of " + protocol_name);
                     }
                     name=property.substring(0, index);
                     value=property.substring(index + 1, property.length());
                     properties.put(name, value);
                 }
             }
+        }
+
+        public void substituteVariables() {
+            for(Iterator<Map.Entry<String,String>> it=properties.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String,String> entry=it.next();
+                String key=entry.getKey();
+                String val=entry.getValue();
+                String tmp=Util.substituteVariable(val);
+                if(!val.equals(tmp)) {
+                    properties.put(key,tmp);
+                }
+                else {
+                    if(tmp.contains("${")) {
+                        if(log.isWarnEnabled())
+                            log.warn("variable \"" + val + "\" in " + protocol_name + " could not be substituted; " +
+                                    key + " is removed from properties");
+                        it.remove();
+                    }
+                }
+            }
+            properties_str=propertiesToString();
         }
         
         private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
@@ -1321,21 +1310,26 @@ public class Configurator implements ProtocolStackFactory {
 
         public String toString() {
             StringBuilder retval=new StringBuilder();
-            retval.append("Protocol: ");
             if(protocol_name == null)
                 retval.append("<unknown>");
             else
                 retval.append(protocol_name);
             if(properties != null)
-                retval.append("(" + properties + ')');
+                retval.append("(" + Util.print(properties) + ')');
             return retval.toString();
         }
+
+        public String propertiesToString() {
+            return Util.printMapWithDelimiter(properties, ";");
+        }
+
+
     }
     
     public static class InetAddressInfo {
     	Protocol protocol ;
     	AccessibleObject fieldOrMethod ;
-    	Properties properties ;
+    	Map<String,String> properties ;
     	String propertyName ;
     	String stringValue ;
     	Object convertedValue ;
@@ -1343,7 +1337,7 @@ public class Configurator implements ProtocolStackFactory {
     	boolean isParameterized ; // is the associated type parametrized? (e.g. Collection<String>)
     	Object baseType ;         // what is the base type (e.g. Collection)
 
-    	InetAddressInfo(Protocol protocol, AccessibleObject fieldOrMethod, Properties properties, String stringValue, 
+    	InetAddressInfo(Protocol protocol, AccessibleObject fieldOrMethod, Map<String,String> properties, String stringValue,
     			Object convertedValue) {
     		// check input values
     		if (protocol == null) {
@@ -1401,7 +1395,7 @@ public class Configurator implements ProtocolStackFactory {
     	boolean isField() { return isField ; }
     	String getStringValue() {return stringValue ;}
     	String getPropertyName() {return propertyName ;}
-    	Properties getProperties() {return properties ;}
+    	Map<String,String> getProperties() {return properties ;}
     	Object getConvertedValue() {return convertedValue ;}
     	boolean isParameterized() {return isParameterized ;}
     	Object getBaseType() { return baseType ;}
@@ -1420,7 +1414,8 @@ public class Configurator implements ProtocolStackFactory {
     		Type[] types = m.getGenericParameterTypes() ;
     		return (types[0] instanceof ParameterizedType) ;
     	}
-    	static boolean isInetAddressRelated(Field f) {
+
+    	static boolean isInetAddressRelated(Protocol prot, Field f) {
     		if (hasParameterizedType(f)) {
     			// check for List<InetAddress>, List<InetSocketAddress>, List<IpAddress>
     			ParameterizedType fieldtype = (ParameterizedType) f.getGenericType() ;
@@ -1429,11 +1424,7 @@ public class Configurator implements ProtocolStackFactory {
     				parameterizedTypeSanityCheck(fieldtype) ;	
     			}
     			catch(IllegalArgumentException e) {
-    				if(log.isDebugEnabled()) {
-    					log.debug("Field " + f.getName() + " failed paramaterizedTypeSanityCheck()") ;
-    				}
-    				// because this Method's parameter fails the sanity check, its probably not 
-    				// an InetAddress related structure
+    				// because this Method's parameter fails the sanity check, its probably not an InetAddress related structure
     				return false ;
     			}
     			
@@ -1460,8 +1451,8 @@ public class Configurator implements ProtocolStackFactory {
     				parameterizedTypeSanityCheck(methodParamType) ;
     			}
     			catch(IllegalArgumentException e) {
-    				if(log.isDebugEnabled()) {
-    					log.debug("Method " + m.getName() + " failed paramaterizedTypeSanityCheck()") ;
+    				if(log.isErrorEnabled()) {
+    					log.error("Method " + m.getName() + " failed paramaterizedTypeSanityCheck()") ;
     				}
     				// because this Method's parameter fails the sanity check, its probably not 
     				// an InetAddress related structure
@@ -1487,11 +1478,6 @@ public class Configurator implements ProtocolStackFactory {
 
     		Type rawType = pt.getRawType() ;
     		Type[] actualTypes = pt.getActualTypeArguments() ;
-
-    		if (log.isDebugEnabled()) {
-    			log.debug("sanity check: rawtype = " + rawType.toString()) ;
-    			log.debug("sanity check: actualtypes = " + actualTypes.length) ;
-    		}
     			
     		// constraints on use of parameterized types with @Property
     		if (!(rawType instanceof Class<?> && rawType.equals(List.class))) {
@@ -1520,7 +1506,7 @@ public class Configurator implements ProtocolStackFactory {
     		// if we take a List<InetAddress> or similar
     		else {
     			List<?> values = (List<?>) getConvertedValue() ;
-    			if (values.size() == 0)
+    			if (values.isEmpty())
     				return addresses ;
     			for (int i = 0; i < values.size(); i++) {
     				addresses.add(getInetAddress(values.get(i))) ;
@@ -1529,7 +1515,7 @@ public class Configurator implements ProtocolStackFactory {
     		}
     	}
 
-    	private InetAddress getInetAddress(Object obj) throws IllegalArgumentException {
+    	private static InetAddress getInetAddress(Object obj) throws IllegalArgumentException {
     		if (obj == null)
     			throw new IllegalArgumentException("Input argument must represent a non-null IP address") ;
     		if (obj instanceof InetAddress) 
@@ -1539,8 +1525,8 @@ public class Configurator implements ProtocolStackFactory {
     		else if (obj instanceof InetSocketAddress)
     			return ((InetSocketAddress) obj).getAddress() ;
     		else {
-    			if (log.isDebugEnabled()) 
-    				log.debug("Input argument does not represent one of InetAddress...: class=" + obj.getClass().getName()) ;
+    			if (log.isWarnEnabled())
+    				log.warn("Input argument does not represent one of InetAddress...: class=" + obj.getClass().getName()) ;
        			throw new IllegalArgumentException("Input argument does not represent one of InetAddress. IpAddress not InetSocketAddress") ;    			
     		}
      	}
