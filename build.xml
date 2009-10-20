@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.217 2009/10/02 16:10:28 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.218 2009/10/20 12:44:26 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -442,7 +442,6 @@
                 >
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-        	<jvmarg value="-Djgroups.disableIPVersionChecking=${jgroups.disableIPVersionChecking}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
         </testng>
     </target>
