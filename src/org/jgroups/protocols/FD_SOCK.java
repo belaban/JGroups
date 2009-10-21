@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.51.2.1 2007/04/27 08:03:51 belaban Exp $
+// $Id: FD_SOCK.java,v 1.51.2.2 2009/10/21 06:25:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 import java.util.List;
 
@@ -83,6 +80,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     private boolean      keep_alive=true;
 
     private boolean      running=false;
+    private int          sock_conn_timeout=1000;
 
 
     public String getName() {
@@ -132,7 +130,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         str=props.getProperty("keep_alive");
         if(str != null) {
-            keep_alive=new Boolean(str).booleanValue();
+            keep_alive=Boolean.valueOf(str).booleanValue();
             props.remove("keep_alive");
         }
 
@@ -140,6 +138,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(str != null) {
             log.error("srv_sock_bind_addr is deprecated and will be ignored - use bind_addr instead");
             props.remove("srv_sock_bind_addr");
+        }
+
+        str=props.getProperty("sock_conn_timeout");
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
         }
 
         boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
@@ -621,9 +625,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return false;
             }
             try {
-                ping_sock=new Socket(dest.getIpAddress(), dest.getPort());
+                SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
+                ping_sock=new Socket();
                 ping_sock.setSoLinger(true, 1);
                 ping_sock.setKeepAlive(keep_alive);
+                ping_sock.connect(destAddr, sock_conn_timeout);
                 ping_input=ping_sock.getInputStream();
                 return true;
             }
