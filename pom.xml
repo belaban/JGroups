@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>jgroups</groupId>
     <artifactId>jgroups</artifactId>
@@ -42,6 +43,7 @@
             <artifactId>testng</artifactId>
             <version>5.10</version>
             <classifier>jdk15</classifier>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>bouncycastle</groupId>
@@ -72,6 +74,10 @@
                 <configuration>
                     <source>1.5</source>
                     <target>1.5</target>
+                    <excludes>
+                        <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
+                        <exclude>org/jgroups/demos/**</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -121,9 +127,6 @@
                             org.jgroups.blocks;version=${pom.version},
                             org.jgroups.conf;version=${pom.version},
                             org.jgroups.debug;version=${pom.version},
-                            org.jgroups.demos;version=${pom.version},
-                            org.jgroups.demos.applets;version=${pom.version},
-                            org.jgroups.demos.wb;version=${pom.version},
                             org.jgroups.jmx;version=${pom.version},
                             org.jgroups.logging;version=${pom.version},
                             org.jgroups.mux;version=${pom.version},
@@ -135,31 +138,6 @@
                         </Export-Package>
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                     </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>integration-test</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <includes>
-                        <include>tests/junit-functional</include>
-                    </includes>
-                    <parallel>methods</parallel>
-                    <threadCount>20</threadCount>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>conf/testng/functional.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>org.jgroups.util.JUnitXMLReporter</value>
-                        </property>
-                    </properties>
                 </configuration>
             </plugin>
         </plugins>
