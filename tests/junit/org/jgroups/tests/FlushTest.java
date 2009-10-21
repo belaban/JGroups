@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.91 2009/10/15 07:33:17 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.92 2009/10/21 16:37:02 vlada Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -106,6 +106,37 @@ public class FlushTest extends ChannelTestBase {
             c2.send(unicast_msg);
         } finally {
             Util.close(c2, c1);
+        }
+    }
+    
+    @Test
+    public void testSequentialFlushInvocation() throws Exception {
+        Channel channel = null, channel2 = null, channel3 = null;
+        try {
+            channel = createChannel(true, 3);
+            channel.setName("A");
+
+            channel2 = createChannel((JChannel) channel);
+            channel2.setName("B");
+
+            channel3 = createChannel((JChannel) channel);
+            channel3.setName("C");
+
+            channel.connect("x");
+            channel2.connect("x");
+            channel3.connect("x");
+
+            for (int i = 0; i < 100; i++) {
+                System.out.print("flush #" + i + ": ");
+                long start = System.currentTimeMillis();
+                boolean status = Util.startFlush(channel);
+                channel.stopFlush();
+                long diff = System.currentTimeMillis() - start;
+                System.out.println(status ? " OK (in " + diff + " ms)" : " FAIL");
+                assert status;
+            }
+        } finally {
+            Util.close(channel, channel2, channel3);
         }
     }
 
