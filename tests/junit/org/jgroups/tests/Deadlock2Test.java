@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.21 2009/04/09 09:11:16 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.22 2009/10/21 07:53:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -24,11 +24,10 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
-    private static boolean DEADLOCK_DETECTION = true;
     private String name = "Deadlock2Test";
 
     private JChannel c1, c2;
@@ -50,7 +49,7 @@ public class Deadlock2Test extends ChannelTestBase {
     public void testOneChannel() throws Exception {
         c1 = createChannel(true);
         ServerObject serverObject = new ServerObject("obj1");
-        RpcDispatcher disp=new RpcDispatcher(c1, null, null, serverObject, DEADLOCK_DETECTION);
+        RpcDispatcher disp=new RpcDispatcher(c1, null, null, serverObject);
         serverObject.setRpcDispatcher(disp);
         c1.connect(name);
         Address localAddress = c1.getAddress();
@@ -91,13 +90,13 @@ public class Deadlock2Test extends ChannelTestBase {
 
         c1 = createChannel(true);
         obj1 = new ServerObject("obj1");
-        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
+        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
         c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
-        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
+        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
         Address localAddress2 = c2.getAddress();
@@ -115,13 +114,13 @@ public class Deadlock2Test extends ChannelTestBase {
 
         c1 = createChannel(true);
         obj1 = new ServerObject("obj1");
-        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
+        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
         c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
-        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
+        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
 
