@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.87 2009/09/21 09:57:26 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.88 2009/10/21 08:09:24 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -54,14 +54,6 @@ public class MessageDispatcher implements RequestHandler {
     protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
 
-
-    /**
-     * Process items on the queue concurrently (RequestCorrelator). The default is to wait until the processing of an
-     * item has completed before fetching the next item from the queue. Note that setting this to true may destroy the
-     * properties of a protocol stack, e.g total or causal order may not be guaranteed. Set this to true only if you
-     * know what you're doing !
-     */
-    protected boolean concurrent_processing=false;
 
 
     public MessageDispatcher() {
@@ -99,7 +91,6 @@ public class MessageDispatcher implements RequestHandler {
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2,
                              boolean deadlock_detection, boolean concurrent_processing) {
         this.channel=channel;
-        this.concurrent_processing=concurrent_processing;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getAddress();
@@ -209,7 +200,6 @@ public class MessageDispatcher implements RequestHandler {
     public MessageDispatcher(PullPushAdapter adapter, Serializable id,
                              MessageListener l, MembershipListener l2,
                              RequestHandler req_handler, boolean concurrent_processing) {
-        this.concurrent_processing=concurrent_processing;
         this.adapter=adapter;
         this.id=id;
         setMembers(((Channel) adapter.getTransport()).getView().getMembers());
@@ -263,10 +253,11 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    public boolean getConcurrentProcessing() {return concurrent_processing;}
-    
+    @Deprecated
+    public boolean getConcurrentProcessing() {return false;}
+
+    @Deprecated
     public void setConcurrentProcessing(boolean flag) {
-        this.concurrent_processing=flag;
     }
 
 
@@ -274,11 +265,11 @@ public class MessageDispatcher implements RequestHandler {
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MsgDisp", transport_adapter,
-                                           this, local_addr, concurrent_processing);
+                                           this, local_addr);
             }
             else {
                 corr=new RequestCorrelator("MsgDisp", prot_adapter,
-                                           this, local_addr, concurrent_processing);
+                                           this, local_addr);
             }
         }
         correlatorStarted();
