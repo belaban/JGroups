@@ -122,12 +122,7 @@ public class TCPConnectionMap{
 
         // 1. Try to obtain correct Connection (or create one if not yet existent)
         TCPConnection conn;
-        try {
-            conn=mapper.getConnection(dest);           
-        }
-        catch(Throwable ex) {
-            throw new Exception("connection to " + dest + " could not be established", ex);
-        }
+        conn=mapper.getConnection(dest);           
 
         // 2. Send the message using that connection
         try {

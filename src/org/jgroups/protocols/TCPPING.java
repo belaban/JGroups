@@ -35,7 +35,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.55 2009/10/20 14:54:07 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.56 2009/10/22 07:27:50 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -94,6 +94,11 @@ public class TCPPING extends Discovery {
     @ManagedAttribute
     public String getDynamicHostList() {
         return dynamic_hosts.toString();
+    }
+
+    @ManagedAttribute
+    public String getInitialHostsList() {
+        return initial_hosts.toString();
     }
        
     public void init() throws Exception {        
