@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.70 2009/10/20 14:50:58 belaban Exp $
+ * @version $Id: Configurator.java,v 1.71 2009/10/22 13:51:00 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -104,8 +104,6 @@ public class Configurator implements ProtocolStackFactory {
                 ip_version=addr_versions;
             else {
                 if(addr_versions != ip_version) { // mismatch between user supplied addresses and type of stack
-
-
                     throw new RuntimeException("the type of the stack (IPv" + ip_version + ") and the user supplied " +
                             "addresses (IPv" + addr_versions + ") don't match: " + addrs +
                             ".\nUse " + Global.IPv4 + " or " + Global.IPv6 + " to pick the correct stack");
@@ -122,12 +120,8 @@ public class Configurator implements ProtocolStackFactory {
                     "defaulting to IPv" + ip_version);
         }
 
-        // check that all IPv6 link-local addresses have a scope
-        if(ip_version == 6)
-            checkIPv6Scopes(inetAddressMap) ;
-
         // process default values
-        processDefaultValues(protocol_configs, protocols, ip_version) ;
+        setDefaultValues(protocol_configs, protocols, ip_version) ;
         
         return connectProtocols(protocols);        
     }
@@ -488,7 +482,7 @@ public class Configurator implements ProtocolStackFactory {
     }
 
 
-    public static void checkIPv6Scopes(Map<String, Map<String, InetAddressInfo>> map) throws Exception {
+    /*private static void checkIPv6Scopes(Map<String, Map<String, InetAddressInfo>> map) throws Exception {
         // for each IPv6 address specified, check that if a link-local address is used, it has a scope
         for(Map.Entry<String, Map<String, InetAddressInfo>> entry : map.entrySet()) {
             Map<String, InetAddressInfo> addr_map=entry.getValue();
@@ -509,14 +503,13 @@ public class Configurator implements ProtocolStackFactory {
                         // throw an exception if no scope is present
                         int scope=((Inet6Address)address).getScopeId();
                         if(scope == 0) {
-                            throw new RuntimeException("Link-local IPv6 address " + address.getHostName() +
-                                    " has no scope (e.g. %eth0)");
+                            log.warn("Link-local IPv6 address " + address.getHostName() + " has no scope (e.g. %eth0)");
                         }
                     }
                 }
             }
         }
-    }
+    }*/
 
 
     /*
@@ -560,7 +553,7 @@ public class Configurator implements ProtocolStackFactory {
     				if (propertyValue != null && InetAddressInfo.isInetAddressRelated(methods[j])) {
     					Object converted = null ;
 						try {
-							converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, propertyValue);
+							converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, propertyValue, false);
 						}
 						catch(Exception e) {
 							throw new Exception("String value could not be converted for method " + propertyName + " in "
@@ -595,7 +588,7 @@ public class Configurator implements ProtocolStackFactory {
     							&& InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
     						Object converted = null ;
 							try {
-								converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, propertyValue);
+								converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, propertyValue, false);
 							}
 							catch(Exception e) {
 								throw new Exception("String value could not be converted for method " + propertyName + " in "
@@ -625,7 +618,7 @@ public class Configurator implements ProtocolStackFactory {
      * - if the defaultValue attribute is not "", generate a value for the field using the 
      * property converter for that property and assign it to the field
      */
-    public static void processDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols, int ip_version) throws Exception {
+    public static void setDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols, int ip_version) throws Exception {
         InetAddress default_ip_address=Util.getFirstNonLoopbackAddress(ip_version);
         if(default_ip_address == null) {
             log.warn("unable to find an address other than loopback for IP version " + ip_version);
@@ -659,7 +652,7 @@ public class Configurator implements ProtocolStackFactory {
                                     if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
                                         converted=default_ip_address;
                                     else
-                                        converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, defaultValue);
+                                        converted=PropertyHelper.getConvertedValue(protocol, methods[j], properties, defaultValue, true);
                                     methods[j].invoke(protocol, converted);
                                 }
                                 catch(Exception e) {
@@ -695,7 +688,7 @@ public class Configurator implements ProtocolStackFactory {
                                     if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
                                         converted=default_ip_address;
                                     else
-                                        converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue);
+                                        converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue, true);
                                     if(converted != null)
                                         setField(fields[j], protocol, converted);
                                 }
@@ -913,7 +906,7 @@ public class Configurator implements ProtocolStackFactory {
     		if(propertyValue != null) {
     			Object converted=null;
     			try {
-    				converted=PropertyHelper.getConvertedValue(obj, method, props, propertyValue);
+    				converted=PropertyHelper.getConvertedValue(obj, method, props, propertyValue, true);
     				method.invoke(obj, converted);
     			}
     			catch(Exception e) {
@@ -950,7 +943,7 @@ public class Configurator implements ProtocolStackFactory {
     		if(propertyValue != null || !PropertyHelper.usesDefaultConverter(field)){
     			Object converted=null;
     			try {
-    				converted=PropertyHelper.getConvertedValue(obj, field, props, propertyValue);
+    				converted=PropertyHelper.getConvertedValue(obj, field, props, propertyValue, true);
     				if(converted != null)
     					setField(field, obj, converted);
     			}

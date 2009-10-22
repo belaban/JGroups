@@ -1,8 +1,8 @@
 package org.jgroups.conf;
 
 import org.jgroups.View;
-import org.jgroups.protocols.BasicTCP;
-import org.jgroups.protocols.TP;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -10,7 +10,11 @@ import org.jgroups.util.Util;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.Inet6Address;
+import java.net.SocketException;
 import java.util.List;
+import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 /**
@@ -22,13 +26,13 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.13 2009/10/20 14:42:01 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.14 2009/10/22 13:50:59 belaban Exp $
  */
 public class PropertyConverters {
 
     public static class NetworkInterfaceList implements PropertyConverter {
 
-        public Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception {
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
             return Util.parseInterfaceList(propertyValue);
         }
 
@@ -38,9 +42,9 @@ public class PropertyConverters {
         }
     }
     
-    public static class FlushInvoker implements PropertyConverter{
+    public static class FlushInvoker implements PropertyConverter {
 
-		public Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception {
+		public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
 			if (propertyValue == null) {
 				return null;
 			} else {
@@ -56,9 +60,9 @@ public class PropertyConverters {
     	
     }
 
-    public static class InitialHosts implements PropertyConverter{
+    public static class InitialHosts implements PropertyConverter {
 
-        public Object convert(Object obj, Class<?> propertyFieldType, String prop_val) throws Exception {
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
             int port_range = getPortRange((Protocol)obj) ;
             return Util.parseCommaDelimitedHosts(prop_val, port_range);
         }
@@ -75,7 +79,7 @@ public class PropertyConverters {
     
     public static class InitialHosts2 implements PropertyConverter {
     	
-        public Object convert(Object obj, Class<?> propertyFieldType, String prop_val) throws Exception {
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
 			// port range is 1
             return Util.parseCommaDelimetedHosts2(prop_val, 1);
 		}
@@ -87,7 +91,7 @@ public class PropertyConverters {
     
     public static class BindInterface implements PropertyConverter {
 
-        public Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception {
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
        	
         	// get the existing bind address - possibly null
         	InetAddress	old_bind_addr = (InetAddress)Configurator.getValueFromProtocol((Protocol)obj, "bind_addr");
@@ -121,7 +125,7 @@ public class PropertyConverters {
     
     public static class LongArray implements PropertyConverter {
 
-        public Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception {
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
             long tmp [] = Util.parseCommaDelimitedLongs(propertyValue);
             if(tmp != null && tmp.length > 0){
                 return tmp;
@@ -150,7 +154,10 @@ public class PropertyConverters {
 
 
     public static class Default implements PropertyConverter {
-        public Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception {
+        private static final Log log=LogFactory.getLog(Default.class);
+
+
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
             if(propertyValue == null)
                 throw new NullPointerException("Property value cannot be null");
             if(Boolean.TYPE.equals(propertyFieldType)) {
@@ -168,9 +175,61 @@ public class PropertyConverters {
             } else if (Float.TYPE.equals(propertyFieldType)) {
                 return Float.parseFloat(propertyValue);
             } else if(InetAddress.class.equals(propertyFieldType)) {
-            	return InetAddress.getByName(propertyValue) ;
+                InetAddress retval=InetAddress.getByName(propertyValue);
+                if(check_scope && retval instanceof Inet6Address && retval.isLinkLocalAddress()) {
+                    // check scope
+                    Inet6Address addr=(Inet6Address)retval;
+                    int scope=addr.getScopeId();
+                    if(scope == 0) {
+                        // fix scope
+                        Inet6Address ret=getScopedInetAddress(addr);
+                        if(ret != null) {
+                            if(log.isWarnEnabled())
+                                log.warn("added scope-id to link-local IPv6 address " + ret + ", but you should change " +
+                                        propertyName + " to include a scope-id");
+                            retval=ret;
+                        }
+                        else {
+                            if(log.isWarnEnabled())
+                                log.warn("detected link-local IPv6 address " + addr +
+                                        " without a scope-id (e.g. %3 or %eth1), this might cause problems");
+                        }
+                    }
+                }
+                return retval;
             }
             return propertyValue;
+        }
+
+
+        protected static Inet6Address getScopedInetAddress(Inet6Address addr) {
+            if(addr == null)
+                return null;
+            Enumeration<NetworkInterface> en;
+            List<InetAddress> retval=new ArrayList<InetAddress>();
+
+            try {
+                en=NetworkInterface.getNetworkInterfaces();
+                while(en.hasMoreElements()) {
+                    NetworkInterface intf=en.nextElement();
+                    Enumeration<InetAddress> addrs=intf.getInetAddresses();
+                    while(addrs.hasMoreElements()) {
+                        InetAddress address=addrs.nextElement();
+                        if(address.isLinkLocalAddress() && address instanceof Inet6Address &&
+                                address.equals(addr) && ((Inet6Address)address).getScopeId() != 0) {
+                            retval.add(address);
+                        }
+                    }
+                }
+                if(retval.size() == 1) {
+                    return (Inet6Address)retval.get(0);
+                }
+                else
+                    return null;
+            }
+            catch(SocketException e) {
+                return null;
+            }
         }
 
         public String toString(Object value) {

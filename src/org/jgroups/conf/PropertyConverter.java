@@ -11,10 +11,10 @@ import org.jgroups.annotations.Property;
  * @see Property
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverter.java,v 1.6 2009/10/20 14:43:48 belaban Exp $
+ * @version $Id: PropertyConverter.java,v 1.7 2009/10/22 13:50:59 belaban Exp $
  */
 public interface PropertyConverter {
-    Object convert(Object obj, Class<?> propertyFieldType, String propertyValue) throws Exception;
+    Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception;
 
     /**
      * Converts the value to a string. The default is to simply invoke Object.toString(), however, some objects need
