@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.9 2009/10/20 14:45:04 belaban Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.10 2009/10/22 13:50:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {
@@ -39,7 +39,7 @@ public class PropertyConvertersTest {
      */
     public static void testNetworkList() throws Exception {
         PropertyConverter conv=new PropertyConverters.NetworkInterfaceList();
-        Object tmp=conv.convert(null, List.class, "lo");
+        Object tmp=conv.convert(null, List.class, "bela", "lo", false);
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
         assert str.equals("lo");
@@ -47,7 +47,7 @@ public class PropertyConvertersTest {
 
 
     private static void check(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
-        Object tmp=converter.convert(protocol, type, prop);
+        Object tmp=converter.convert(protocol, type, "bela", prop, false);
         assert tmp.equals(result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
 
@@ -56,7 +56,7 @@ public class PropertyConvertersTest {
     }
 
     private static void checkArray(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
-        Object tmp=converter.convert(protocol, type, prop);
+        Object tmp=converter.convert(protocol, type, "bela", prop, false);
         assert Arrays.equals((long[])tmp, (long[])result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
 

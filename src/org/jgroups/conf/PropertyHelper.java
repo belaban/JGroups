@@ -54,7 +54,7 @@ import java.util.Map;
     		return propertyName ;
     	}
     	
-    	public static Object getConvertedValue(Object obj, Field field, Map<String,String> props, String prop) throws Exception {
+    	public static Object getConvertedValue(Object obj, Field field, Map<String, String> props, String prop, boolean check_scope) throws Exception {
     		if (obj == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
@@ -80,7 +80,8 @@ import java.util.Map;
     		}
     		Object converted = null ;
 			try {
-				converted=propertyConverter.convert(obj, field.getType(), prop);
+                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+				converted=propertyConverter.convert(obj, field.getType(), tmp, prop, check_scope);
 			}
 			catch(Exception e) {
 				throw new Exception("Conversion of " + propertyName + " in " + name + 
@@ -89,7 +90,7 @@ import java.util.Map;
 			return converted ;
     	}
 
-    	public static Object getConvertedValue(Object obj, Method method, Map<String,String> props, String prop) throws Exception {
+    	public static Object getConvertedValue(Object obj, Method method, Map<String, String> props, String prop, boolean check_scope) throws Exception {
     		if (obj == null) {
     			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
     		}
@@ -116,7 +117,8 @@ import java.util.Map;
     		}
     		Object converted = null ;
     		try {
-    			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], prop);
+                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+    			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], tmp, prop, check_scope);
     		}
     		catch(Exception e) {
 				throw new Exception("Conversion of " + propertyName + " in " + name + 

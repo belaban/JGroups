@@ -20,7 +20,7 @@ import java.util.Vector;
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.4 2009/10/20 15:11:55 belaban Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.5 2009/10/22 13:50:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
@@ -94,7 +94,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.processDefaultValues(protocol_configs, protocols, 4) ;
+		Configurator.setDefaultValues(protocol_configs, protocols, 4) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;
