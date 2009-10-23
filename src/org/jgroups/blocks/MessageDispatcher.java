@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.88 2009/10/21 08:09:24 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.89 2009/10/23 14:04:57 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -861,6 +861,8 @@ public class MessageDispatcher implements RequestHandler {
 
         public Object down(Event evt) {
             if(channel != null) {
+                if(!channel.isOpen() || !channel.isConnected())
+                    throw new RuntimeException("channel is closed or not connected");
                 return channel.downcall(evt);
             }
             else
