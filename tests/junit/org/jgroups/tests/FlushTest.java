@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.92 2009/10/21 16:37:02 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.93 2009/10/23 19:58:15 vlada Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {
@@ -125,11 +125,15 @@ public class FlushTest extends ChannelTestBase {
             channel.connect("x");
             channel2.connect("x");
             channel3.connect("x");
+            
+            //we need to sleep here since coordinator (channel)
+            //might be unblocked before channel3.connect() returns
+            Util.sleep(500);
 
             for (int i = 0; i < 100; i++) {
                 System.out.print("flush #" + i + ": ");
                 long start = System.currentTimeMillis();
-                boolean status = Util.startFlush(channel);
+                boolean status = channel.startFlush(false);
                 channel.stopFlush();
                 long diff = System.currentTimeMillis() - start;
                 System.out.println(status ? " OK (in " + diff + " ms)" : " FAIL");
