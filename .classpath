@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="conf"/>
 	<classpathentry kind="lib" path="lib/testng.jar"/>
 	<classpathentry kind="lib" path="lib/bouncycastle.jar"/>
+	<classpathentry kind="lib" path="classes"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
