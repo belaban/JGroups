@@ -35,7 +35,7 @@ import org.w3c.dom.Element;
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.8 2009/06/22 10:03:02 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.9 2009/10/23 08:50:43 belaban Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -128,10 +128,8 @@ public class XMLSchemaGenerator {
             String preAppendToSimpleClassName) throws Exception {
 
       boolean isConcreteClass = (clazz.getModifiers() & Modifier.ABSTRACT) == 0;
-      boolean isExperimental = clazz.isAnnotationPresent(Experimental.class);
-      boolean isUnsupported = clazz.isAnnotationPresent(Unsupported.class);
 
-      if (isConcreteClass && !isExperimental && !isUnsupported) {
+      if (isConcreteClass) {
          parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
       }
    }
