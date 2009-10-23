@@ -5,10 +5,12 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.3 2009/06/17 16:35:43 belaban Exp $
+  Version: $Id: fast-local.xml,v 1.4 2009/10/23 08:49:23 belaban Exp $
 -->
 
-<config>
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <UDP
          mcast_addr="${jgroups.udp.mcast_addr:232.10.10.10}"
          mcast_port="${jgroups.udp.mcast_port:45588}"
