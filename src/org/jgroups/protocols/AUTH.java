@@ -5,15 +5,14 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.auth.X509Token;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -21,7 +20,6 @@ import java.util.LinkedList;
  * @author Chris Mills
  * @autho Bela Ban
  */
-@Experimental
 public class AUTH extends Protocol {
 
 
