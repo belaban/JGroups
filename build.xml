@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.218 2009/10/20 12:44:26 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.219 2009/10/23 09:34:46 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -326,7 +326,7 @@
 		<delete dir="${root.dir}/schema" failonerror="false"/>
 		<mkdir dir="${root.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
-			<arg line="-o schema"/>
+			<arg line="-o ${root.dir}/schema"/>
 		</java>
 	</target>
 
