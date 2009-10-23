@@ -9,9 +9,8 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.*;
-import org.jgroups.util.Buffer;
+import org.jgroups.util.*;
 import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -37,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.86 2009/10/20 15:10:40 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.87 2009/10/23 08:05:24 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -390,7 +389,12 @@ public class TUNNEL extends TP {
             throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
         String group=hdr.channel_name;
 
-        out_stream_lock.lock();
+        Triple<Lock,ExposedByteArrayOutputStream,ExposedDataOutputStream> marshaller=marshaller_pool.getOutputStream();
+        Lock lock=marshaller.getVal1();
+        ExposedByteArrayOutputStream out_stream=marshaller.getVal2();
+        ExposedDataOutputStream dos=marshaller.getVal3();
+
+        lock.lock();
         try {
             out_stream.reset();
             dos.reset();
@@ -409,7 +413,7 @@ public class TUNNEL extends TP {
             }
         }
         finally {
-            out_stream_lock.unlock();
+            lock.unlock();
         }
     }
 
