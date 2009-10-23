@@ -15,8 +15,11 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending messages while blocking
@@ -52,8 +55,11 @@ public class FLUSH extends Protocol {
     @Property(description = "Max time to keep channel blocked in flush. Default is 8000 msec")
     private long timeout = 8000;
 
-    @Property(description = "Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2500 msec")
+    @Property(description = "Timeout (per atttempt) to quiet the cluster during the first flush phase. Default is 2000 msec")
     private long start_flush_timeout = 2000;
+    
+    @Property(description = "Timeout to wait for UNBLOCK after STOP_FLUSH is issued. Default is 2000 msec")
+    private long end_flush_timeout = 2000;
 
     @Property(description = "Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
     private long retry_timeout = 2000;
@@ -108,7 +114,9 @@ public class FLUSH extends Protocol {
 
     private final Object sharedLock = new Object();
 
-    private final Object blockMutex = new Object();
+    private final ReentrantLock blockMutex = new ReentrantLock();
+    
+    private final Condition notBlockedDown = blockMutex.newCondition();
 
     /**
      * Indicates if FLUSH.down() is currently blocking threads Condition predicate associated with
@@ -121,6 +129,8 @@ public class FLUSH extends Protocol {
     private boolean flushCompleted = false;
 
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();
+
+    private final Promise<Boolean> flush_unblock_promise = new Promise<Boolean>();
 
     private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
 
@@ -162,8 +172,11 @@ public class FLUSH extends Protocol {
         down_prot.down(new Event(Event.CONFIG, map));
 
         viewCounter.set(0);
-        synchronized (blockMutex) {
+        blockMutex.lock();
+        try {
             isBlockingFlushDown = true;
+        } finally {
+            blockMutex.unlock();
         }
     }
 
@@ -275,6 +288,7 @@ public class FLUSH extends Protocol {
                     sentBlock.set(false); // set the var back to its original state if we cannot
                                           // connect successfully
                 }
+                waitForUnblock();
                 return result;
 
             case Event.SUSPEND:
@@ -306,34 +320,25 @@ public class FLUSH extends Protocol {
 
     private void blockMessageDuringFlush() {
         boolean shouldSuspendByItself = false;
-        long start = 0, stop = 0;
-        synchronized (blockMutex) {
+        blockMutex.lock();
+        try {
             while (isBlockingFlushDown) {
                 if (log.isDebugEnabled())
                     log.debug("FLUSH block at " + localAddress + " for "
-                                    + (timeout <= 0 ? "ever" : timeout + "ms"));
-                try {
-                    start = System.currentTimeMillis();
-                    if (timeout <= 0)
-                        blockMutex.wait();
-                    else
-                        blockMutex.wait(timeout);
-                    stop = System.currentTimeMillis();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                }
-                if (isBlockingFlushDown) {
-                    isBlockingFlushDown = false;
-                    shouldSuspendByItself = true;
-                    blockMutex.notifyAll();
-                }
+                                    + (timeout <= 0 ? "ever" : timeout + "ms"));                                    
+                    shouldSuspendByItself = notBlockedDown.await(timeout, TimeUnit.MILLISECONDS);
             }
-        }
-        if (shouldSuspendByItself) {
-            log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of "
-                            + (stop - start) + "ms");
-            flush_promise.setResult(Boolean.TRUE);
-        }
+            if (shouldSuspendByItself) {
+                isBlockingFlushDown = false;      
+                log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of " + timeout + "ms");
+                flush_promise.setResult(Boolean.TRUE);
+                notBlockedDown.signalAll();
+            }            
+        } catch (InterruptedException e) {
+           Thread.currentThread().interrupt();
+        } finally {
+            blockMutex.unlock();
+        }        
     }
 
     public Object up(Event evt) {
@@ -463,19 +468,7 @@ public class FLUSH extends Protocol {
                 }
                 return null;
 
-            case Event.TMP_VIEW:
-                /*
-                 * April 25, 2007
-                 * 
-                 * Accommodating current NAKACK (1.127)
-                 * 
-                 * Updates field currentView of a leaving coordinator. Leaving coordinator, after it
-                 * sends out the view, does not need to participate in second flush phase.
-                 * 
-                 * see onStopFlush();
-                 * 
-                 * TODO: revisit if still needed post NAKACK 1.127
-                 */
+            case Event.TMP_VIEW:             
                 View tmpView = (View) evt.getArg();
                 if (!tmpView.containsMember(localAddress)) {
                     onViewChange(tmpView);
@@ -492,10 +485,23 @@ public class FLUSH extends Protocol {
             case Event.RESUME:
                 onResume(evt);
                 return null;
-
+            case Event.UNBLOCK:                
+                flush_unblock_promise.setResult(Boolean.TRUE);
+                break;
         }
 
         return up_prot.up(evt);
+    }
+
+    private void waitForUnblock() {       
+        try {
+            flush_unblock_promise.getResultWithTimeout(end_flush_timeout);
+        } catch (TimeoutException timeout) {
+            if (log.isWarnEnabled())
+                log.warn(localAddress + " waiting on UNBLOCK timed out");
+        } finally {
+            flush_unblock_promise.reset();
+        }
     }
 
     private void onFlushReconcileOK(Message msg) {
@@ -571,13 +577,13 @@ public class FLUSH extends Protocol {
     }
 
     private void sendBlockUpToChannel() {
-        up_prot.up(new Event(Event.BLOCK));
+        this.up(new Event(Event.BLOCK));
         sentUnblock.set(false);
     }
 
     private void sendUnBlockUpToChannel() {
         sentBlock.set(false);
-        up_prot.up(new Event(Event.UNBLOCK));
+        this.up(new Event(Event.UNBLOCK));
     }
 
     private boolean isCurrentFlushMessage(FlushHeader fh) {
@@ -635,16 +641,19 @@ public class FLUSH extends Protocol {
                                 + localAddress
                                 + " received STOP_FLUSH, unblocking FLUSH.down() and sending UNBLOCK up");
 
-        synchronized (blockMutex) {
+        blockMutex.lock();
+        try {
             isBlockingFlushDown = false;
-            blockMutex.notifyAll();
-        }
+            notBlockedDown.signalAll();
+        } finally {
+            blockMutex.unlock();
+        }        
 
+        flushInProgress.set(false);
         if (sentUnblock.compareAndSet(false, true)) {
             // ensures that we do not repeat unblock event
             sendUnBlockUpToChannel();
-        }
-        flushInProgress.set(false);
+        }       
     }
 
     /**
@@ -677,6 +686,10 @@ public class FLUSH extends Protocol {
     private void onResume(Event evt) {
         List<Address> members = (List<Address>) evt.getArg();
         long viewID = currentViewId();
+        boolean isParticipant = false;
+        synchronized(sharedLock) {
+            isParticipant = flushMembers.contains(localAddress) || (members != null && members.contains(localAddress));
+        }
         if (members == null || members.isEmpty()) {
             Message msg = new Message(null, localAddress, null);
             // Cannot be OOB since START_FLUSH is not OOB
@@ -697,6 +710,8 @@ public class FLUSH extends Protocol {
                                     + address);
             }
         }
+        if(isParticipant)
+            waitForUnblock();        
     }
 
     private void onStartFlush(Address flushStarter, FlushHeader fh) {
@@ -720,9 +735,12 @@ public class FLUSH extends Protocol {
                 // ensures that we do not repeat block event
                 // and that we do not send block event to non participants
                 sendBlockUpToChannel();
-                synchronized (blockMutex) {
+                blockMutex.lock();
+                try {
                     isBlockingFlushDown = true;
-                }
+                } finally {
+                    blockMutex.unlock();
+                }                
             } else {
                 if (log.isDebugEnabled())
                     log.debug("Received START_FLUSH at " + localAddress

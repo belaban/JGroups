@@ -78,7 +78,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.232 2009/10/20 13:00:47 belaban Exp $
+ * @version $Id: JChannel.java,v 1.233 2009/10/23 19:58:12 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -105,11 +105,6 @@ public class JChannel extends Channel {
     private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
-
-    private final Promise<Boolean> flush_unblock_promise=new Promise<Boolean>();
-
-    /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 5 secs*/
-    private static final long FLUSH_UNBLOCK_TIMEOUT=5000;
     
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
     @ManagedAttribute(description="Flag indicating whether to receive blocks",writable=true)
@@ -426,17 +421,7 @@ public class JChannel extends Channel {
                 stopStack(true, false);
                 init();
                 throw new ChannelException("connect() failed", (Throwable) res);
-            }
-
-            // if FLUSH is used do not return from connect() until UNBLOCK event is received
-            if (flushSupported()) {
-                try {
-                    flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-                } catch (TimeoutException timeout) {
-                    if (log.isWarnEnabled())
-                        log.warn(local_addr + " waiting on UNBLOCK after connect() timed out");
-                }
-            }
+            }            
         }
         connected = true;
         notifyChannelConnected(this);
@@ -1469,11 +1454,7 @@ public class JChannel extends Channel {
 
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
         if(up_handler != null) {
-            Object ret=up_handler.up(evt);
-
-            if(type == Event.UNBLOCK){
-                flush_unblock_promise.setResult(Boolean.TRUE);
-            }
+            Object ret=up_handler.up(evt);      
             return ret;
         }
 
@@ -1586,9 +1567,7 @@ public class JChannel extends Channel {
                         if(log.isErrorEnabled())
                             log.error("failed calling unblock() in receiver", t);
                     }                                                            
-                }
-                //flip promise
-                flush_unblock_promise.setResult(Boolean.TRUE);              
+                }                       
                 return null;                
             default:
                 break;
@@ -2031,33 +2010,15 @@ public class JChannel extends Channel {
     public void stopFlush() {
         if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }
-        flush_unblock_promise.reset();
-        down(new Event(Event.RESUME));
-
-        //do not return until UNBLOCK event is received            
-        try {
-            flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }
-        catch(TimeoutException te) {
-            log.warn("Timeout waiting for UNBLOCK event at " + getAddress());
-        }
+        }      
+        down(new Event(Event.RESUME));      
     }
 
     public void stopFlush(List<Address> flushParticipants) {
         if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }
-        flush_unblock_promise.reset();
+        }       
         down(new Event(Event.RESUME, flushParticipants));
-
-        // do not return until UNBLOCK event is received
-        try {
-            flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }
-        catch(TimeoutException te) {
-            log.warn("Timeout waiting for UNBLOCK event at " + getAddress());
-        }
     }
     
     @Override
