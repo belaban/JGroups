@@ -4,13 +4,18 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.24 2009/10/20 13:06:45 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.25 2009/10/23 08:31:03 belaban Exp $
  */
 
 import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.w3c.dom.*;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.util.Util;
@@ -23,7 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
-import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class XmlConfigurator implements ProtocolStackConfigurator {
    
@@ -55,15 +60,32 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
     public static XmlConfigurator getInstance(URL url) throws java.io.IOException {
-        return getInstance(url.openStream());
+        return getInstance(url, null);
     }
 
     public static XmlConfigurator getInstance(InputStream stream) throws java.io.IOException {
-        return parse(stream);
+        return getInstance(stream, null);
     }
 
     public static XmlConfigurator getInstance(Element el) throws java.io.IOException {
         return parse(el);
+    }
+
+    public static XmlConfigurator getInstance(URL url, Boolean validate) throws java.io.IOException {
+        InputStream is = url.openStream();
+        try {
+            return getInstance(is, validate);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                log.warn("Failed to close InputStream", e);
+            }
+        }
+    }
+
+    public static XmlConfigurator getInstance(InputStream stream, Boolean validate) throws java.io.IOException {
+        return parse(stream, validate);
     }
 
     /**
@@ -123,7 +145,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
 
-    protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
+    protected static XmlConfigurator parse(InputStream stream, Boolean validate) throws java.io.IOException {
         /**
          * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty
          * amateurish... But it seems to work, and it is executed only on startup, so no perf loss
@@ -132,21 +154,58 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             boolean validation = false;
-            try {
-                String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, false, "false");
+            String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, false, null);
+            if (tmp != null) {
                 validation = Boolean.valueOf(tmp).booleanValue();
-            } catch (Exception e) {
-                validation = false;
+            } else if (validate != null) {
+                validation = validate.booleanValue();
             }
+            factory.setValidating(validation);
+            factory.setNamespaceAware(validation);
             if (validation) {
-                factory.setValidating(true); 
-                factory.setNamespaceAware(validation);
                 factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
-            } else {
-                factory.setValidating(false);
             }
             
             DocumentBuilder builder = factory.newDocumentBuilder();
+            builder.setEntityResolver(new EntityResolver() {
+
+                public InputSource resolveEntity(String publicId, String systemId) throws IOException {
+                    if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {
+                        String schemaName = systemId.substring("http://www.jgroups.org/schema/".length());
+                        InputStream schemaIs = getClass().getClassLoader().getResourceAsStream(schemaName);
+                        if (schemaIs == null) {
+                            throw new IOException("Schema not found from classloader: " + schemaName);
+                        }
+                        InputSource source = new InputSource(schemaIs);
+                        source.setPublicId(publicId);
+                        source.setSystemId(systemId);
+                        return source;
+                    }
+                    return null;
+                }
+            });
+            // Use AtomicReference to allow make variable final, not for atomicity
+            // We store only last exception
+            final AtomicReference<SAXParseException> exceptionRef = new AtomicReference<SAXParseException>();
+            builder.setErrorHandler(new ErrorHandler() {
+
+                public void warning(SAXParseException exception) throws SAXException {
+                    log.warn("Warning during parse", exception);
+                }
+
+                public void fatalError(SAXParseException exception) throws SAXException {
+                    log.fatal("Error during parse", exception);
+                    exceptionRef.set(exception);
+                }
+
+                public void error(SAXParseException exception) throws SAXException {
+                    log.error("Error during parse", exception);
+                    exceptionRef.set(exception);
+                }
+            });
+            if (exceptionRef.get() != null) {
+                throw exceptionRef.get();
+            }
             Document document = builder.parse(stream);
 
             // The root element of the document should be the "config" element,
@@ -293,9 +352,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 input=Thread.currentThread().getContextClassLoader().getResourceAsStream(input_file);
 
             if(old_format) {
-                Configurator config=new Configurator();
                 String cfg=inputAsString(input);
-                Vector<ProtocolConfiguration> tmp=config.parseConfigurations(cfg);
+                Vector<ProtocolConfiguration> tmp=Configurator.parseConfigurations(cfg);
                 System.out.println(dump(tmp));
 
                 //                conf=XmlConfigurator.getInstanceOldFormat(input);
