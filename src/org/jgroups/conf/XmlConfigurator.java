@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.26 2009/10/23 12:35:26 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.27 2009/10/23 17:01:40 vlada Exp $
  */
 
 import org.jgroups.Global;
@@ -171,8 +171,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
                 public InputSource resolveEntity(String publicId, String systemId) throws IOException {
                     if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {
-                        String schemaName = systemId.substring("http://www.jgroups.org/".length());
-                        InputStream schemaIs = getClass().getClassLoader().getResourceAsStream(schemaName);
+                        String schemaName = systemId.substring("http://www.jgroups.org/".length());                        
+                        InputStream schemaIs = getAsInputStreamFromClassLoader(schemaName);
                         if (schemaIs == null) {
                             throw new IOException("Schema not found from classloader: " + schemaName);
                         }
@@ -224,6 +224,16 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
     }
 
+    private static InputStream getAsInputStreamFromClassLoader(String filename) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        InputStream is = cl == null ? null : cl.getResourceAsStream(filename);
+        if (is == null) {
+            // check system class loader
+            is = XmlConfigurator.class.getClassLoader().getResourceAsStream(filename);
+        }
+        return is;
+    }
+    
     protected static XmlConfigurator parse(Element root_element) throws java.io.IOException {
         XmlConfigurator configurator=null;
 

@@ -19,9 +19,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.jgroups.Version;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.w3c.dom.DOMImplementation;
@@ -35,7 +33,7 @@ import org.w3c.dom.Element;
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.9 2009/10/23 08:50:43 belaban Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.10 2009/10/23 17:01:41 vlada Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -128,8 +126,7 @@ public class XMLSchemaGenerator {
             String preAppendToSimpleClassName) throws Exception {
 
       boolean isConcreteClass = (clazz.getModifiers() & Modifier.ABSTRACT) == 0;
-
-      if (isConcreteClass) {
+      if (isConcreteClass && !clazz.isAnonymousClass()) {
          parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
       }
    }
@@ -138,7 +135,11 @@ public class XMLSchemaGenerator {
             String preAppendToSimpleClassName) throws Exception {
 
       Element classElement = xmldoc.createElement("xs:element");
-      classElement.setAttribute("name", preAppendToSimpleClassName + clazz.getSimpleName());
+      String elementName = preAppendToSimpleClassName + clazz.getSimpleName();
+      if(elementName == null || elementName.length()==0) {
+          throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
+      }
+      classElement.setAttribute("name",elementName);
 
       Element complexType = xmldoc.createElement("xs:complexType");
       classElement.appendChild(complexType);
@@ -154,6 +155,9 @@ public class XMLSchemaGenerator {
                         && r.deprecatedMessage().length() == 0;
                if (annotationRedefinesName) {
                   property = r.name();
+               }
+               if(property == null || property.length()==0) {
+                   throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
                }
                Element attributeElement = xmldoc.createElement("xs:attribute");
                attributeElement.setAttribute("name", property);
