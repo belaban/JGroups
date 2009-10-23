@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.219 2009/10/23 09:34:46 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.220 2009/10/23 17:01:38 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -126,39 +126,27 @@
     <target name="jgroups-all.jar"
             description="Creates the jgroups-all.jar (includes everything)" depends="compile,create-schema">
     	<mkdir dir="${dist.dir}"/>
-    	<copy todir="${compile.dir}/schema">
- 			<fileset dir="${root.dir}/schema">
-    			<include name="**/*.xsd"/>
- 			</fileset>
-    	</copy>
-        <jar destfile="${dist.dir}/jgroups-all.jar"
-             basedir="${compile.dir}"
-             manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**,schema/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-        </jar>
-    	<delete dir="${compile.dir}/schema"/>
+    <jar destfile="${dist.dir}/jgroups-all.jar"
+         basedir="${compile.dir}"
+         manifest="${conf.dir}/manifest.mf"
+         includes="org/jgroups/**,schema/**">
+        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+    </jar>    	
     </target>
 
     <target name="jgroups-core.jar"
             description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile,create-schema">
-        <mkdir dir="${dist.dir}"/>
-    	<copy todir="${compile.dir}/schema">
- 			<fileset dir="${root.dir}/schema">
-    			<include name="**/*.xsd"/>
- 			</fileset>
-    	</copy>
-        <jar jarfile="${dist.dir}/jgroups-core.jar"
-             basedir="${compile.dir}"
-             manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**,schema/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-        </jar>
-    	<delete dir="${compile.dir}/schema"/>
+	    <mkdir dir="${dist.dir}"/>	
+	    <jar jarfile="${dist.dir}/jgroups-core.jar"
+	         basedir="${compile.dir}"
+	         manifest="${conf.dir}/manifest.mf"
+	         includes="org/jgroups/**,schema/**"
+	         excludes="org/jgroups/demos/**,
+	                  org/jgroups/tests/**,
+	                  org/jgroups/**/*Test.class,
+	                  org/jgroups/**/*Test\$*.class">
+	        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+	    </jar>	   
     </target>
 
     <target name="jgroups-sources.jar"
@@ -323,10 +311,10 @@
 
 
 	<target name="create-schema" description="creates XML schema for this version of JGroups" depends="compile">
-		<delete dir="${root.dir}/schema" failonerror="false"/>
-		<mkdir dir="${root.dir}/schema"/>
+		<delete dir="${compile.dir}/schema" failonerror="false"/>
+		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
-			<arg line="-o ${root.dir}/schema"/>
+			<arg line="-o ${compile.dir}/schema"/>
 		</java>
 	</target>
 
