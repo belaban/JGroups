@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.25 2009/10/23 08:31:03 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.26 2009/10/23 12:35:26 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -171,7 +171,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
                 public InputSource resolveEntity(String publicId, String systemId) throws IOException {
                     if (systemId != null && systemId.startsWith("http://www.jgroups.org/schema/JGroups-")) {
-                        String schemaName = systemId.substring("http://www.jgroups.org/schema/".length());
+                        String schemaName = systemId.substring("http://www.jgroups.org/".length());
                         InputStream schemaIs = getClass().getClassLoader().getResourceAsStream(schemaName);
                         if (schemaIs == null) {
                             throw new IOException("Schema not found from classloader: " + schemaName);
@@ -203,10 +203,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     exceptionRef.set(exception);
                 }
             });
+            Document document = builder.parse(stream);
             if (exceptionRef.get() != null) {
                 throw exceptionRef.get();
             }
-            Document document = builder.parse(stream);
 
             // The root element of the document should be the "config" element,
             // but the parser(Element) method checks this so a check is not
