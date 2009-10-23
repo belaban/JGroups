@@ -6,7 +6,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups file:schema/JGroups-2.8.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <TCP bind_port="7800" bind_addr="localhost" loopback="true"/>
     <TCPGOSSIP timeout="3000" initial_hosts="localhost[12000]" num_initial_members="3"/>
     <MERGE2 max_interval="30000"

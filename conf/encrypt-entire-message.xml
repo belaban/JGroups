@@ -2,7 +2,9 @@
 <!-- This encrypts the entire message, even UNICAST and NAKACK headers (to reveal sequence numbers).
      Note that ENCRYPT could be placed even lower, e.g. just above UDP -->
 
-<config>
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <UDP mcast_recv_buf_size="64000" mcast_send_buf_size="32000" mcast_port="45566" ucast_recv_buf_size="64000"
         mcast_addr="228.8.8.8"
         loopback="true" ucast_send_buf_size="32000" ip_ttl="32"/>

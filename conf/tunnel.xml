@@ -6,7 +6,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups file:schema/JGroups-2.8.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <!--TUNNEL gossip_router_hosts="127.0.0.1[12001],127.0.0.1[12002]"/-->
     <TUNNEL gossip_router_hosts="127.0.0.1[12001]" enable_bundling="false"/>
     <PING timeout="2000"/>

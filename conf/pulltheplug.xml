@@ -1,7 +1,9 @@
 <!-- Config to experiment with pulling the ethernet cables, pulling the power plug on the switch etc...
  -->
 
-<config>
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <UDP bind_addr="yourhost"
          mcast_port="45566" 
          mcast_addr="228.10.10.10"

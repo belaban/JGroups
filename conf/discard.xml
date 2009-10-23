@@ -1,9 +1,11 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.14 2009/06/17 16:20:00 belaban Exp $
+Version: $Id: discard.xml,v 1.15 2009/10/23 08:49:23 belaban Exp $
  -->
-<config>
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <UDP 
          mcast_port="45566" 
          mcast_addr="228.8.8.8"
