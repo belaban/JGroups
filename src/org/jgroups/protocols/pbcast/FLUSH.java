@@ -276,21 +276,13 @@ public class FLUSH extends Protocol {
                 break;
 
             case Event.CONNECT:
-            case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_USE_FLUSH:                                
+                return handleConnect(evt,true);
+                
+            case Event.CONNECT_WITH_STATE_TRANSFER:            
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                if (sentBlock.compareAndSet(false, true)) {
-                    sendBlockUpToChannel();
-                }
-
-                Object result = down_prot.down(evt);
-                if (result instanceof Throwable) {
-                    sentBlock.set(false); // set the var back to its original state if we cannot
-                                          // connect successfully
-                }
-                waitForUnblock();
-                return result;
-
+                return handleConnect(evt, false);
+                
             case Event.SUSPEND:
                 return startFlush(evt);
                 
@@ -316,6 +308,23 @@ public class FLUSH extends Protocol {
                 break;
         }
         return down_prot.down(evt);
+    }
+
+
+    private Object handleConnect(Event evt, boolean waitForUnblock) {
+        if (sentBlock.compareAndSet(false, true)) {
+            sendBlockUpToChannel();
+        }
+
+        Object result = down_prot.down(evt);
+        if (result instanceof Throwable) {
+            // set the var back to its original state if we cannot
+            // connect successfully
+            sentBlock.set(false);
+        }
+        if(waitForUnblock)
+            waitForUnblock();
+        return result;
     }
 
     private void blockMessageDuringFlush() {
