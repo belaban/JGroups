@@ -12,6 +12,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack.ProtocolStackFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
+import org.jgroups.util.StackType;
 
 import java.io.IOException;
 import java.io.PushbackReader;
@@ -34,7 +35,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.72 2009/10/26 08:24:26 belaban Exp $
+ * @version $Id: Configurator.java,v 1.73 2009/10/26 14:33:52 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -94,29 +95,26 @@ public class Configurator implements ProtocolStackFactory {
         Map<String, Map<String,InetAddressInfo>> inetAddressMap = createInetAddressMap(protocol_configs, protocols) ;
         Collection<InetAddress> addrs=getAddresses(inetAddressMap);
 
-        int ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6, 10=both IPv4 and IPv6
+        StackType ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6
 
         if(!addrs.isEmpty()) {
             // check that all user-supplied InetAddresses have a consistent version
-            int addr_versions=determineIpVersionFromAddresses(addrs);
+            StackType addr_versions=determineIpVersionFromAddresses(addrs);
 
-            if(ip_version == 10 || ip_version == 0)
+            if(ip_version == StackType.Unknown)
                 ip_version=addr_versions;
             else {
                 if(addr_versions != ip_version) { // mismatch between user supplied addresses and type of stack
-                    throw new RuntimeException("the type of the stack (IPv" + ip_version + ") and the user supplied " +
-                            "addresses (IPv" + addr_versions + ") don't match: " + addrs +
-                            ".\nUse " + Global.IPv4 + " or " + Global.IPv6 + " to pick the correct stack");
+                    throw new RuntimeException("the type of the stack (" + ip_version + ") and the user supplied " +
+                            "addresses (" + addr_versions + ") don't match: " + Util.print(addrs) +
+                            ".\nUse system props " + Global.IPv4 + " or " + Global.IPv6 + " to pick the correct stack");
                 }
             }
         }
 
-        if(ip_version == 10 || ip_version == 0) {
-            if(Util.checkForWindows())
-                ip_version=4;
-            else
-                ip_version=6;
-            log.info("found both an IPv4 and an IPv6 stack, and no addresses were found to pick a stack, " +
+        if(ip_version == StackType.Unknown) {
+            ip_version=StackType.IPv6;
+            log.info("found neither an IPv4 nor an IPv6 stack, and no addresses were found to pick a stack, " +
                     "defaulting to IPv" + ip_version);
         }
 
@@ -454,9 +452,9 @@ public class Configurator implements ProtocolStackFactory {
      * - if the resulting set is empty, sets the default IP version based on available stacks
      * and if a dual stack, stack preferences
      * - sets the IP version to be used in the JGroups session
-     * @return int 4 for IPv4, 6 for IPv6, 0 if the versuion cannot be determined
+     * @return StackType.IPv4 for IPv4, StackType.IPv6 for IPv6, StackType.Unknown if the version cannot be determined
      */
-    public static int determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
+    public static StackType determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
     	Set<InetAddress> ipv4_addrs= new HashSet<InetAddress>() ;
     	Set<InetAddress> ipv6_addrs= new HashSet<InetAddress>() ;
 
@@ -476,40 +474,12 @@ public class Configurator implements ProtocolStackFactory {
                 throw new RuntimeException("all addresses have to be either IPv4 or IPv6: IPv4 addresses=" +
                         ipv4_addrs + ", IPv6 addresses=" + ipv6_addrs);
             }
-            return !ipv6_addrs.isEmpty()? 6 : 4;
+            return !ipv6_addrs.isEmpty()? StackType.IPv6 : StackType.IPv4;
         }
-        return 0;
+        return StackType.Unknown;
     }
 
 
-    /*private static void checkIPv6Scopes(Map<String, Map<String, InetAddressInfo>> map) throws Exception {
-        // for each IPv6 address specified, check that if a link-local address is used, it has a scope
-        for(Map.Entry<String, Map<String, InetAddressInfo>> entry : map.entrySet()) {
-            Map<String, InetAddressInfo> addr_map=entry.getValue();
-            for(Map.Entry<String, InetAddressInfo> entry2 : addr_map.entrySet()) {
-                InetAddressInfo info=entry2.getValue();
-                List<InetAddress> addresses=info.getInetAddresses();
-                for(InetAddress address : addresses) {
-                    if(address == null)
-                        throw new RuntimeException("This address should not be null! - something is wrong");
-
-                    // check if each link-local address has a scope
-                    if(address instanceof Inet6Address && address.isLinkLocalAddress()) {
-                        // check scope is present
-                        String propertyValue=info.getStringValue();
-                        if(propertyValue == null)
-                            throw new RuntimeException("The string value for this address should not be null! - something is wrong");
-
-                        // throw an exception if no scope is present
-                        int scope=((Inet6Address)address).getScopeId();
-                        if(scope == 0) {
-                            log.warn("Link-local IPv6 address " + address.getHostName() + " has no scope (e.g. %eth0)");
-                        }
-                    }
-                }
-            }
-        }
-    }*/
 
 
     /*
@@ -618,7 +588,8 @@ public class Configurator implements ProtocolStackFactory {
      * - if the defaultValue attribute is not "", generate a value for the field using the 
      * property converter for that property and assign it to the field
      */
-    public static void setDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols, int ip_version) throws Exception {
+    public static void setDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols,
+                                        StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getFirstNonLoopbackAddress(ip_version);
         if(default_ip_address == null) {
             log.warn("unable to find an address other than loopback for IP version " + ip_version);
@@ -645,7 +616,7 @@ public class Configurator implements ProtocolStackFactory {
                         // get the default value for the method- check for InetAddress types
                         String defaultValue=null;
                         if(InetAddressInfo.isInetAddressRelated(methods[j])) {
-                            defaultValue=ip_version == 4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                            defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                             if(defaultValue != null && defaultValue.length() > 0) {
                                 Object converted=null;
                                 try {
@@ -679,7 +650,7 @@ public class Configurator implements ProtocolStackFactory {
                     // get the default value for the field - check for InetAddress types
                     String defaultValue=null;
                     if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
-                        defaultValue=ip_version == 4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                        defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                         if(defaultValue != null && defaultValue.length() > 0) {
                             // condition for invoking converter
                             if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {

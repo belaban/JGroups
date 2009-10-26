@@ -1,27 +1,25 @@
 package org.jgroups.util;
 
 import org.jgroups.*;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.logging.Log;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.blocks.Connection;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.Configurator;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.*;
+import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.IllegalArgumentException ;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.*;
@@ -35,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.226 2009/10/26 08:43:55 belaban Exp $
+ * @version $Id: Util.java,v 1.227 2009/10/26 14:35:05 belaban Exp $
  */
 public class Util {
 
@@ -2881,10 +2879,10 @@ public class Util {
      * @throws SocketException
      */
     public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
-    	return getBindAddress(props, 4);
+    	return getBindAddress(props, StackType.IPv4);
     }
     
-    public static InetAddress getBindAddress(Properties props, int ip_version) throws UnknownHostException, SocketException {
+    public static InetAddress getBindAddress(Properties props, StackType ip_version) throws UnknownHostException, SocketException {
 
     	// determine the desired values for bind_addr_str and bind_interface_str
     	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
@@ -2901,8 +2899,8 @@ public class Util {
     		bind_addr=InetAddress.getByName(bind_addr_str);
 
             // check that bind_addr_host has correct IP version
-            boolean hasCorrectVersion = ((bind_addr instanceof Inet4Address && ip_version == 4) ||
-                    (bind_addr instanceof Inet6Address && ip_version == 6)) ;
+            boolean hasCorrectVersion = ((bind_addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
+                    (bind_addr instanceof Inet6Address && ip_version == StackType.IPv6)) ;
             if (!hasCorrectVersion)
                 throw new IllegalArgumentException("bind_addr " + bind_addr_str + " has incorrect IP version") ;
         }
@@ -3003,7 +3001,7 @@ public class Util {
     		return bind_addr;
     	
     	// 2. get the preferred IP version for the JVM - it will be IPv4 or IPv6 
-    	int ip_version = getIpStackType();
+    	StackType ip_version = getIpStackType();
     	
     	// 3. if bind_interface_str specified, get interface and check that it has correct version
     	bind_intf=NetworkInterface.getByName(bind_interface_str);
@@ -3152,15 +3150,15 @@ public class Util {
     /** IP related utilities */
 
     public static InetAddress getIPv4Localhost() throws UnknownHostException {
-    	return getLocalhost(4) ;
+    	return getLocalhost(StackType.IPv4) ;
     }
 
     public static InetAddress getIPv6Localhost() throws UnknownHostException {
-    	return getLocalhost(6) ;
+    	return getLocalhost(StackType.IPv6) ;
     }
 
-    public static InetAddress getLocalhost(int ip_version) throws UnknownHostException {
-    	if (ip_version == 4)
+    public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
+    	if (ip_version == StackType.IPv4)
     		return InetAddress.getByName("127.0.0.1") ;
     	else
     		return InetAddress.getByName("::1") ;
@@ -3173,7 +3171,7 @@ public class Util {
      *
      * @param ip_version Constraint on IP version of address to be returned, 4 or 6
      */
-    public static InetAddress getFirstNonLoopbackAddress(int ip_version) throws SocketException {
+    public static InetAddress getFirstNonLoopbackAddress(StackType ip_version) throws SocketException {
     	InetAddress address = null ;
 
     	Enumeration intfs = NetworkInterface.getNetworkInterfaces();
@@ -3193,14 +3191,15 @@ public class Util {
      * @param intf the interface to be checked
      * @param ip_version Constraint on IP version of address to be returned, 4 or 6
      */    
-    public static InetAddress getFirstNonLoopbackAddress(NetworkInterface intf, int ip_version) throws SocketException {
+    public static InetAddress getFirstNonLoopbackAddress(NetworkInterface intf, StackType ip_version) throws SocketException {
     	if (intf == null) 
     		throw new IllegalArgumentException("Network interface pointer is null") ; 
 
     	for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
     		InetAddress address=(InetAddress)addresses.nextElement();
     		if(!address.isLoopbackAddress()) {
-    			if ((address instanceof Inet4Address && ip_version == 4) || (address instanceof Inet6Address && ip_version == 6))
+    			if ((address instanceof Inet4Address && ip_version == StackType.IPv4) ||
+                        (address instanceof Inet6Address && ip_version == StackType.IPv6))
     				return address;
     		}
     	}
@@ -3214,7 +3213,7 @@ public class Util {
      * @param intf_name
      * @return
      */
-    public static boolean interfaceHasIPAddresses(String intf_name, int ip_version) throws SocketException,UnknownHostException {
+    public static boolean interfaceHasIPAddresses(String intf_name, StackType ip_version) throws SocketException,UnknownHostException {
 
     	boolean supportsVersion = false ;
     	try {
@@ -3228,8 +3227,8 @@ public class Util {
     				InetAddress address = (InetAddress) addresses.nextElement() ;
 
     				// check if we find an address of correct version
-                    if ((address instanceof Inet4Address && (ip_version == 4 || ip_version == 10)) ||
-                            (address instanceof Inet6Address && (ip_version == 6 || ip_version == 10))) {
+                    if ((address instanceof Inet4Address && (ip_version == StackType.IPv4)) ||
+                            (address instanceof Inet6Address && (ip_version == StackType.IPv6))) {
                         supportsVersion = true ;
     					break ;
     				}
@@ -3249,31 +3248,31 @@ public class Util {
     /**
      * Tries to determine the type of IP stack from the available interfaces and their addresses and from the
      * system properties (java.net.preferIPv4Stack and java.net.preferIPv6Addresses)
-     * @return 4 for an IPv4 only stack, 6 for an IPv6 only stack, 10 if both stacks are available,
-     * and 0 if the type cannot be detected
+     * @return StackType.IPv4 for an IPv4 only stack, StackYTypeIPv6 for an IPv6 only stack, and StackType.Unknown
+     * if the type cannot be detected
      */
-    public static int getIpStackType() throws SocketException {
+    public static StackType getIpStackType() throws SocketException {
     	boolean isIPv4StackAvailable = isStackAvailable(true) ;
     	boolean isIPv6StackAvailable = isStackAvailable(false) ;
     	
 		// if only IPv4 stack available
 		if (isIPv4StackAvailable && !isIPv6StackAvailable) {
-			return 4;
+			return StackType.IPv4;
 		}
 		// if only IPv6 stack available
 		else if (isIPv6StackAvailable && !isIPv4StackAvailable) {
-			return 6;
+			return StackType.IPv6;
 		}
 		// if dual stack
 		else if (isIPv4StackAvailable && isIPv6StackAvailable) {
 			// get the System property which records user preference for a stack on a dual stack machine
             if(Boolean.getBoolean(Global.IPv4)) // has preference over java.net.preferIPv6Addresses
-                return 4;
+                return StackType.IPv4;
             if(Boolean.getBoolean(Global.IPv6))
-                return 6;
-            return 10;
+                return StackType.IPv6;
+            return StackType.IPv6;
 		}
-		return 0;
+		return StackType.Unknown;
     }
     
 

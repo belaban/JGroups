@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.util.StackType;
 import org.jgroups.Global;
 import org.jgroups.Address;
 import org.testng.Assert;
@@ -179,7 +180,7 @@ public class IpAddressTest {
 
 
     public static void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
-        InetAddress tmp=Util.getFirstNonLoopbackAddress(6);
+        InetAddress tmp=Util.getFirstNonLoopbackAddress(StackType.IPv6);
         IpAddress ip=new IpAddress(tmp, 5555);
 
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
@@ -202,7 +203,7 @@ public class IpAddressTest {
 
 
     public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
-        InetAddress tmp=Util.getFirstNonLoopbackAddress(6);
+        InetAddress tmp=Util.getFirstNonLoopbackAddress(StackType.IPv6);
         IpAddress ip=new IpAddress(tmp, 5555);
 
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
