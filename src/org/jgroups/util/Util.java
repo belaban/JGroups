@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.225 2009/10/20 15:11:31 belaban Exp $
+ * @version $Id: Util.java,v 1.226 2009/10/26 08:43:55 belaban Exp $
  */
 public class Util {
 
@@ -2079,10 +2079,10 @@ public class Util {
         return sb.toString();
     }
 
-   public static String print(Collection<Object> objs) {
+   public static <T> String print(Collection<T> objs) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        for(Object obj: objs) {
+        for(T obj: objs) {
             if(first)
                 first=false;
             else
