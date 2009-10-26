@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.util.StackType;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Configurator;
@@ -20,7 +21,7 @@ import java.util.Vector;
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.5 2009/10/22 13:50:58 belaban Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.6 2009/10/26 14:34:21 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
@@ -94,7 +95,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.setDefaultValues(protocol_configs, protocols, 4) ;
+		Configurator.setDefaultValues(protocol_configs, protocols, StackType.IPv4) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;
