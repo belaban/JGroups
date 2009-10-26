@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.71 2009/10/22 13:51:00 belaban Exp $
+ * @version $Id: Configurator.java,v 1.72 2009/10/26 08:24:26 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -100,7 +100,7 @@ public class Configurator implements ProtocolStackFactory {
             // check that all user-supplied InetAddresses have a consistent version
             int addr_versions=determineIpVersionFromAddresses(addrs);
 
-            if(ip_version == 10)
+            if(ip_version == 10 || ip_version == 0)
                 ip_version=addr_versions;
             else {
                 if(addr_versions != ip_version) { // mismatch between user supplied addresses and type of stack
@@ -111,7 +111,7 @@ public class Configurator implements ProtocolStackFactory {
             }
         }
 
-        if(ip_version == 10) {
+        if(ip_version == 10 || ip_version == 0) {
             if(Util.checkForWindows())
                 ip_version=4;
             else
