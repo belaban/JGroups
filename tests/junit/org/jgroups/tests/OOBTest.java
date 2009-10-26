@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.16 2009/04/09 09:11:16 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.17 2009/10/26 09:44:11 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -186,6 +186,46 @@ public class OOBTest extends ChannelTestBase {
         log.info("one size " + one.size() + ", two size " + two.size());        
         check(NUM_MSGS, one, two);
     }
+
+    /**
+     * Tests https://jira.jboss.org/jira/browse/JGRP-1079
+     * @throws ChannelNotConnectedException
+     * @throws ChannelClosedException
+     */
+    public void testOOBMessageLoss() throws ChannelNotConnectedException, ChannelClosedException {
+        Util.close(c2); // we only need 1 channel
+        MyReceiver receiver=new MySleepingReceiver(1000);
+        c1.setReceiver(receiver);
+
+        TP transport=c1.getProtocolStack().getTransport();
+        transport.setOOBRejectionPolicy("discard");
+
+        final int NUM=10;
+
+        for(int i=1; i <= NUM; i++) {
+            Message msg=new Message(null, null, i);
+            msg.setFlag(Message.OOB);
+            c1.send(msg);
+        }
+        STABLE stable=(STABLE)c1.getProtocolStack().findProtocol(STABLE.class);
+        if(stable != null)
+            stable.runMessageGarbageCollection();
+        List<Integer> msgs=receiver.getMsgs();
+
+        for(int i=0; i < 10; i++) {
+            if(msgs.size() == NUM)
+                break;
+            Util.sleep(500);
+        }
+
+        System.out.println("msgs = " + Util.print(msgs));
+
+        assert msgs.size() == NUM : "expected " + NUM + " messages but got " + msgs.size() + ", msgs=" + Util.print(msgs);
+        for(int i=1; i <= NUM; i++) {
+            assert msgs.contains(i);
+        }
+    }
+
 
 
     private void send(final Address dest, final int num_msgs, final int num_threads,
@@ -352,6 +392,20 @@ public class OOBTest extends ChannelTestBase {
         public void receive(Message msg) {
             Integer val=(Integer)msg.getObject();
             msgs.add(val);            
+        }
+    }
+
+    private static class MySleepingReceiver extends MyReceiver {
+        final long sleep_time;
+
+        public MySleepingReceiver(long sleep_time) {
+            this.sleep_time=sleep_time;
+        }
+
+        public void receive(Message msg) {
+            super.receive(msg);
+            System.out.println("-- received " + msg.getObject());
+            Util.sleep(sleep_time);
         }
     }
 }
