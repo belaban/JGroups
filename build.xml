@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.220 2009/10/23 17:01:38 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.221 2009/10/26 08:12:17 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -571,7 +571,6 @@
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
     		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-            	<jvmarg value="-Djgroups.disableIPVersionChecking=${jgroups.disableIPVersionChecking}"/>
                 <jvmarg value="-Xmx300M"/>
             </testng>
         </sequential>
