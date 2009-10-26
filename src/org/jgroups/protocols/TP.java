@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.269 2009/10/23 08:05:24 belaban Exp $
+ * @version $Id: TP.java,v 1.270 2009/10/26 09:43:55 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -579,8 +579,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setOOBMinPoolSize(int size) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
+        if(oob_thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
+            oob_thread_pool_min_threads=size;
+        }
     }
 
     @ManagedAttribute
@@ -590,8 +592,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setOOBMaxPoolSize(int size) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
+        if(oob_thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
+            oob_thread_pool_max_threads=size;
+        }
     }
 
     @ManagedAttribute
@@ -606,8 +610,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setOOBKeepAliveTime(long time) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
+        if(oob_thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+            oob_thread_pool_keep_alive_time=time;
+        }
     }
 
     public long getOOBMessages() {
@@ -628,6 +634,12 @@ public abstract class TP extends Protocol {
         return oob_thread_pool instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)oob_thread_pool).getActiveCount() : 0;
     }
 
+    public void setOOBRejectionPolicy(String rejection_policy) {
+        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)oob_thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
+    }
+
     @ManagedAttribute
     public int getIncomingMinPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getCorePoolSize() : 0;
@@ -635,8 +647,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setIncomingMinPoolSize(int size) {
-        if(thread_pool instanceof ThreadPoolExecutor)
+        if(thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
+            thread_pool_min_threads=size;
+        }
     }
 
     @ManagedAttribute
@@ -646,8 +660,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setIncomingMaxPoolSize(int size) {
-        if(thread_pool instanceof ThreadPoolExecutor)
+        if(thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
+            thread_pool_max_threads=size;
+        }
     }
 
     @ManagedAttribute
@@ -662,8 +678,10 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     public void setIncomingKeepAliveTime(long time) {
-        if(thread_pool instanceof ThreadPoolExecutor)
+        if(thread_pool instanceof ThreadPoolExecutor) {
             ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+            thread_pool_keep_alive_time=time;
+        }
     }
 
     public long getIncomingMessages() {
@@ -682,6 +700,12 @@ public abstract class TP extends Protocol {
     @ManagedAttribute
     public int getIncomingActiveThreads() {
         return thread_pool instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)thread_pool).getActiveCount() : 0;
+    }
+
+    public void setIncomingRejectionPolicy(String rejection_policy) {
+        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
     }
 
     public void setLogDiscardMessages(boolean flag) {
@@ -1344,19 +1368,8 @@ public abstract class TP extends Protocol {
 
         ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(factory);
-
-        //default
-        RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
-        if(rejection_policy != null) {
-            if(rejection_policy.equals("abort"))
-                handler = new ThreadPoolExecutor.AbortPolicy();
-            else if(rejection_policy.equals("discard"))
-                handler = new ThreadPoolExecutor.DiscardPolicy();
-            else if(rejection_policy.equals("discardoldest"))
-                handler = new ThreadPoolExecutor.DiscardOldestPolicy();
-        }
+        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
         pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
-
         return pool;
     }
 
@@ -1378,6 +1391,20 @@ public abstract class TP extends Protocol {
             log.error("rejection policy of " + str + " is unknown");
             throw new Exception("Unknown rejection policy " + str);
         }
+    }
+
+    protected static RejectedExecutionHandler parseRejectionPolicy(String rejection_policy) {
+        if(rejection_policy == null)
+            throw new IllegalArgumentException("rejection policy is null");
+        if(rejection_policy.equalsIgnoreCase("abort"))
+            return new ThreadPoolExecutor.AbortPolicy();
+        if(rejection_policy.equalsIgnoreCase("discard"))
+            return new ThreadPoolExecutor.DiscardPolicy();
+        if(rejection_policy.equalsIgnoreCase("discardoldest"))
+            return new ThreadPoolExecutor.DiscardOldestPolicy();
+        if(rejection_policy.equalsIgnoreCase("run"))
+            return new ThreadPoolExecutor.CallerRunsPolicy();
+        throw new IllegalArgumentException("rejection policy \"" + rejection_policy + "\" not known");
     }
 
 
