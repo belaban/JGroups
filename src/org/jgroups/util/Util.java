@@ -11,6 +11,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
@@ -33,7 +34,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.227 2009/10/26 14:35:05 belaban Exp $
+ * @version $Id: Util.java,v 1.228 2009/10/27 18:54:41 vlada Exp $
  */
 public class Util {
 
@@ -279,18 +280,24 @@ public class Util {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
-
+        
+        //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
+        FD_SOCK fd = (FD_SOCK) ch.getProtocolStack().findProtocol("FD_SOCK");
+        if(fd != null)
+            fd.stopServerSocket(false);
+        
         View view=ch.getView();
-        ViewId vid=view.getViewId();
-        List<Address> members=Arrays.asList(ch.getAddress());
+        if (view != null) {
+            ViewId vid = view.getViewId();
+            List<Address> members = Arrays.asList(ch.getAddress());
 
-        ViewId new_vid=new ViewId(ch.getAddress(), vid.getId() +1);
-        View new_view=new View(new_vid, members);
+            ViewId new_vid = new ViewId(ch.getAddress(), vid.getId() + 1);
+            View new_view = new View(new_vid, members);
 
-        // inject view in which the shut down member is the only element
-        GMS gms=(GMS)stack.findProtocol(GMS.class);
-        gms.installView(new_view);
-
+            // inject view in which the shut down member is the only element
+            GMS gms = (GMS) stack.findProtocol(GMS.class);
+            gms.installView(new_view);
+        }
         Util.close(ch);
     }
 
