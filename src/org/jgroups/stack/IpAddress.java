@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.52 2009/09/21 09:57:24 belaban Exp $
+// $Id: IpAddress.java,v 1.53 2009/10/28 14:12:56 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.net.Inet6Address;
 
 
 /**
@@ -295,6 +296,8 @@ public class IpAddress implements PhysicalAddress {
             byte[] address=ip_addr.getAddress();  // 4 bytes (IPv4) or 16 bytes (IPv6)
             out.writeByte(address.length); // 1 byte
             out.write(address, 0, address.length);
+            if(ip_addr instanceof Inet6Address)
+                out.writeInt(((Inet6Address)ip_addr).getScopeId());
         }
         else {
             out.writeByte(0);
@@ -316,8 +319,14 @@ public class IpAddress implements PhysicalAddress {
             throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes (was " +
                     len + " bytes)");
         byte[] a = new byte[len]; // 4 bytes (IPv4) or 16 bytes (IPv6)
-            in.readFully(a);
+        in.readFully(a);
+        if(len == Global.IPV6_SIZE) {
+            int scope_id=in.readInt();
+            this.ip_addr=Inet6Address.getByAddress(null, a, scope_id);
+        }
+        else {
             this.ip_addr=InetAddress.getByAddress(a);
+        }
 
         // changed from readShort(): we need the full 65535, with a short we'd only get up to 32K !
         port=in.readUnsignedShort();
@@ -336,8 +345,11 @@ public class IpAddress implements PhysicalAddress {
             return size;
         // length (1 bytes) + 4 bytes for port + 1 for additional_data available
         int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE + Global.BYTE_SIZE;
-        if(ip_addr != null)
+        if(ip_addr != null) {
             tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
+            if(ip_addr instanceof Inet6Address)
+                tmp_size+=Global.INT_SIZE;
+        }
         if(additional_data != null)
             tmp_size+=additional_data.length+Global.SHORT_SIZE;
         size=tmp_size;
