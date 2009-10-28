@@ -6,7 +6,6 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
     <UDP bind_addr="yourhost"
          mcast_port="45566" 
-         mcast_addr="228.10.10.10"
          tos="16"
          ucast_recv_buf_size="20000000"
          ucast_send_buf_size="640000"

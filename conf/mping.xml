@@ -2,7 +2,7 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.16 2009/10/23 08:49:23 belaban Exp $
+Version: $Id: mping.xml,v 1.17 2009/10/28 08:29:37 belaban Exp $
 Author: Bela Ban
  -->
 
@@ -15,7 +15,6 @@ Author: Bela Ban
          loopback="true"/>
     <MPING timeout="4000"
            receive_on_all_interfaces="true"
-           mcast_addr="228.8.8.8"
            mcast_port="7500"
            ip_ttl="8"
            num_initial_members="2"
