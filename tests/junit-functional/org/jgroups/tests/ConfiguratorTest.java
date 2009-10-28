@@ -15,12 +15,12 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.13 2009/10/20 13:07:09 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.14 2009/10/28 15:57:21 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
     ProtocolStack stack;
-    static final String props="UDP(mcast_addr=225.1.2.3):PING:FD:pbcast.NAKACK(retransmit_timeouts=300,600):UNICAST:FC";
+    static final String props="UDP:PING:FD:pbcast.NAKACK(retransmit_timeouts=300,600):UNICAST:FC";
     final String[] names={"FC", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
     final String[] below={"FC", "UNICAST", "TRACE", "NAKACK", "FD", "PING", "UDP"};
     final String[] above={"FC", "TRACE", "UNICAST", "NAKACK", "FD", "PING", "UDP"};

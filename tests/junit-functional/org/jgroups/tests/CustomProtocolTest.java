@@ -9,11 +9,11 @@ import org.testng.annotations.Test;
 /**
  * Tests custom protocol.
  * Author: Lenny Phan
- * Version: $Id: CustomProtocolTest.java,v 1.6 2009/09/06 13:51:11 belaban Exp $
+ * Version: $Id: CustomProtocolTest.java,v 1.7 2009/10/28 15:58:38 belaban Exp $
  */
 public class CustomProtocolTest {
 
-    static final String PROTOCOL_STACK = "UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32):" +
+    static final String PROTOCOL_STACK = "UDP(mcast_port=45566;ip_ttl=32):" +
             "org.jgroups.tests.CustomProtocolTest$MyProtocol:" +
             "PING(timeout=3000;num_initial_members=6):" +
             "FD(timeout=3000):" +
@@ -29,6 +29,7 @@ public class CustomProtocolTest {
     public static void testMyProtocol() throws Exception {
         System.out.println("PROTOCOL_STACK: " + PROTOCOL_STACK);
         JChannel channel = new JChannel(PROTOCOL_STACK);
+        System.out.println("channel = " + channel);
         assert true;
     }
 
