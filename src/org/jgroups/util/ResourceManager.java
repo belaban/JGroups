@@ -2,16 +2,11 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 
-import java.net.InetAddress;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.UnknownHostException;
-import java.net.DatagramSocket;
-import java.net.ServerSocket;
+import java.net.*;
 import java.rmi.server.UID;
-import java.util.StringTokenizer;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Manages resources such as multicast addresses and multicast ports, and TCP
@@ -19,7 +14,7 @@ import java.util.ArrayList;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.6 2009/09/21 09:57:23 belaban Exp $
+ * @version $Id: ResourceManager.java,v 1.7 2009/10/28 16:10:01 belaban Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;
@@ -27,18 +22,17 @@ public class ResourceManager {
 	private static short tcp_port;
 
 	static {
-		String tmp_addr = System.getProperty(Global.INITIAL_MCAST_ADDR,
-				"230.1.1.1");
-		mcast_port = Short.valueOf(System.getProperty(
-				Global.INITIAL_MCAST_PORT, "7000"));
-		tcp_port = Short.valueOf(System.getProperty(Global.INITIAL_TCP_PORT,
-				"10000"));
+
+        StackType type=Util.getIpStackType();
+
+        String tmp_addr = System.getProperty(Global.INITIAL_MCAST_ADDR,
+                                             type == StackType.IPv6? "ff0e::9:9:9" : "230.1.1.1");
+        mcast_port = Short.valueOf(System.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
+		tcp_port = Short.valueOf(System.getProperty(Global.INITIAL_TCP_PORT, "10000"));
 		try {
 			InetAddress tmp = InetAddress.getByName(tmp_addr);
 			if (!tmp.isMulticastAddress())
-				throw new IllegalArgumentException("initial multicast address "
-						+ tmp_addr
-						+ " is not a valid multicast (class D) address");
+				throw new IllegalArgumentException("initial multicast address "	+ tmp_addr + " is not a valid multicast address");
 			
 			if (tmp instanceof Inet4Address)
 				rep = new IPv4AddressRep(tmp_addr);
@@ -46,8 +40,7 @@ public class ResourceManager {
 				rep = new IPv6AddressRep(tmp_addr);
 		
 		} catch (UnknownHostException e) {
-			throw new RuntimeException("initial multicast address " + tmp_addr
-					+ " is incorrect", e);
+			throw new RuntimeException("initial multicast address " + tmp_addr + " is incorrect", e);
 		}
 	}
 
