@@ -6,7 +6,7 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.8 2009/06/17 16:20:00 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.9 2009/10/28 08:29:37 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
@@ -22,7 +22,7 @@
                 <!-- UDP: On Windows machines, because of the media sense feature
                 being broken with multicast (even after disabling media sense)
                 set the loopback attribute to true -->
-                <UDP mcast_addr="230.8.8.8" mcast_port="56677"
+                <UDP mcast_port="56677"
                     ip_ttl="32" ip_mcast="true"
                     mcast_send_buf_size="80000" mcast_recv_buf_size="150000"
                     ucast_send_buf_size="80000" ucast_recv_buf_size="150000"

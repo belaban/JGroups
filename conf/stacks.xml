@@ -2,14 +2,13 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.45 2009/07/02 12:22:16 belaban Exp $
+  Version: $Id: stacks.xml,v 1.46 2009/10/28 08:29:37 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
            description="Default: IP multicast based stack, with flow control and message bundling">
         <config>
             <UDP
-                 mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
                  mcast_port="${jgroups.udp.mcast_port:45588}"
                  tos="8"
                  ucast_recv_buf_size="20000000"
@@ -73,7 +72,6 @@
             run out of memory">
         <config>
             <UDP
-                 mcast_addr="${jgroups.udp.mcast_addr:229.10.10.10}"
                  mcast_port="${jgroups.udp.mcast_port:45599}"
                  tos="8"
                  ucast_recv_buf_size="20000000"

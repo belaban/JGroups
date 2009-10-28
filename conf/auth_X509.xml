@@ -2,7 +2,6 @@
     <UDP mcast_send_buf_size="32000"
         mcast_port="45566"
         ucast_recv_buf_size="64000"
-        mcast_addr="228.8.8.8"
         loopback="true"
         mcast_recv_buf_size="64000"
         max_bundle_size="60000"
