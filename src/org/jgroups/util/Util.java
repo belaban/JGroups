@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.228 2009/10/27 18:54:41 vlada Exp $
+ * @version $Id: Util.java,v 1.229 2009/10/28 12:01:49 belaban Exp $
  */
 public class Util {
 
@@ -3184,6 +3184,8 @@ public class Util {
     	Enumeration intfs = NetworkInterface.getNetworkInterfaces();
     	while(intfs.hasMoreElements()) {
     		NetworkInterface intf=(NetworkInterface)intfs.nextElement();
+            if(!intf.isUp() || intf.isLoopback())
+                continue;
     		address = getFirstNonLoopbackAddress(intf, ip_version) ;
     		if (address != null) {
     			return address ;
