@@ -23,6 +23,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -34,7 +35,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.229 2009/10/28 12:01:49 belaban Exp $
+ * @version $Id: Util.java,v 1.230 2009/10/28 12:40:57 belaban Exp $
  */
 public class Util {
 
@@ -77,6 +78,9 @@ public class Util {
         return GLOBAL_GROUP;
     }
 
+    private static Method NETWORK_INTERFACE_IS_UP=null;
+    private static Method NETWORK_INTERFACE_IS_LOOPBACK=null;
+
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -108,6 +112,18 @@ public class Util {
         PRIMITIVE_TYPES.put(Short.class, new Byte(TYPE_SHORT));
         PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
         PRIMITIVE_TYPES.put(byte[].class, new Byte(TYPE_BYTEARRAY));
+
+        try {
+            NETWORK_INTERFACE_IS_UP=NetworkInterface.class.getMethod("isUp");
+        }
+        catch(Throwable e) {
+        }
+
+        try {
+            NETWORK_INTERFACE_IS_LOOPBACK=NetworkInterface.class.getMethod("isLoopback");
+        }
+        catch(Throwable e) {
+        }
     }
 
 
@@ -3184,7 +3200,8 @@ public class Util {
     	Enumeration intfs = NetworkInterface.getNetworkInterfaces();
     	while(intfs.hasMoreElements()) {
     		NetworkInterface intf=(NetworkInterface)intfs.nextElement();
-            if(!intf.isUp() || intf.isLoopback())
+            // if(!intf.isUp() || intf.isLoopback())
+            if(Util.isDownOrLoopback(intf))
                 continue;
     		address = getFirstNonLoopbackAddress(intf, ip_version) ;
     		if (address != null) {
@@ -3193,6 +3210,35 @@ public class Util {
     	}
     	return null ;
     }
+
+
+    public static boolean isDownOrLoopback(NetworkInterface intf) {
+        boolean is_up=true, is_loopback=false;
+
+        if(NETWORK_INTERFACE_IS_UP != null) {
+            try {
+                Boolean retval=(Boolean)NETWORK_INTERFACE_IS_UP.invoke(intf);
+                if(retval != null)
+                    is_up=retval.booleanValue();
+            }
+            catch(Throwable t) {
+            }
+        }
+
+
+        if(NETWORK_INTERFACE_IS_LOOPBACK != null) {
+            try {
+                Boolean retval=(Boolean)NETWORK_INTERFACE_IS_LOOPBACK.invoke(intf);
+                if(retval != null)
+                    is_loopback=retval.booleanValue();
+            }
+            catch(Throwable t) {
+            }
+        }
+
+        return !is_up || is_loopback; 
+    }
+
 
     /**
      * Returns the first non-loopback address on the given interface on the current host.
