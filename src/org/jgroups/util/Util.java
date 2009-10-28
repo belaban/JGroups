@@ -11,7 +11,6 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
@@ -23,7 +22,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -35,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.230 2009/10/28 12:40:57 belaban Exp $
+ * @version $Id: Util.java,v 1.231 2009/10/28 16:09:33 belaban Exp $
  */
 public class Util {
 
@@ -3306,7 +3304,7 @@ public class Util {
      * @return StackType.IPv4 for an IPv4 only stack, StackYTypeIPv6 for an IPv6 only stack, and StackType.Unknown
      * if the type cannot be detected
      */
-    public static StackType getIpStackType() throws SocketException {
+    public static StackType getIpStackType() {
     	boolean isIPv4StackAvailable = isStackAvailable(true) ;
     	boolean isIPv6StackAvailable = isStackAvailable(false) ;
     	
