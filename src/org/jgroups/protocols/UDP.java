@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.207 2009/10/20 15:09:57 belaban Exp $
+ * @version $Id: UDP.java,v 1.208 2009/10/28 14:13:14 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -334,9 +334,7 @@ public class UDP extends TP {
                 sock.setTrafficClass(tos);
             }
             catch(SocketException e) {
-                log.warn("traffic class of " + tos + " could not be set, will be ignored");
-                if(log.isDebugEnabled())
-                    log.debug("Cause of failure to set traffic class:", e);
+                log.warn("traffic class of " + tos + " could not be set, will be ignored: " + e);
             }
         }
 
@@ -369,7 +367,7 @@ public class UDP extends TP {
                     mcast_sock.setTrafficClass(tos);
                 }
                 catch(SocketException e) {
-                    log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
+                    log.warn("traffic class of " + tos + " could not be set, will be ignored: " + e);
                 }
             }
 
