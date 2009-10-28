@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.21 2008/09/17 15:16:51 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.22 2009/10/28 08:10:33 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -13,7 +13,7 @@ Pre-release:
 
 Release:
 - Update the ReleaseNotes-xxx.txt for the given release
-- Set version in: Version.java, manifest.mf, build.xml and jgroups-pom.xml
+- Set version in: Version.java, manifest.mf, build.xml and pom.xml
   * Note that the version needs to conform to the version standards, e.g. 2.6.2.GA or 2.6.4.CR2, 2.5.4.Beta1
 - Create a CVS tag: JGroups_x_y_z
 - Add tag information to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
@@ -34,7 +34,7 @@ Release:
   a. Check out the jgroups directory of the maven repository into a working directory $JG_REPO
      > svn co https://svn.jboss.org/repos/repository.jboss.org/maven2/jgroups/jgroups $JG_REPO
   b. Update the working copy with the new release binary jar file
-     > mvn deploy:deploy-file -Dfile=$JG_RELEASE/dist/jgroups-all.jar -Durl=file://$JG_REPO -DpomFile=$JG_RELEASE/jgroups-pom.xml
+     > mvn deploy:deploy-file -Dfile=$JG_RELEASE/dist/jgroups-all.jar -Durl=file://$JG_REPO -DpomFile=$JG_RELEASE/pom.xml
      This command will do the following:
      - use the pom you passed to determine groupId/artifactId/version 
      - create a directory in the svn working copy you checked out with the groupId/artifactID/version number
@@ -44,7 +44,7 @@ Release:
      - update the maven meta-data files in the parent directory 
   c. Update the working copy with the new release sources jar file
      > mvn deploy:deploy-file -Dfile=$JG_RELEASE/dist/jgroups-sources.jar -Durl=file://$JG_REPO \
-                              -DpomFile=$JG_RELEASE/jgroups-pom.xml -Dclassifier=sources
+                              -DpomFile=$JG_RELEASE/pom.xml -Dclassifier=sources
      Performs the same actions as in step b., except that the classifier parameter causes the file to retain 
      the sources suffix in the repository. 
   d. Add the new directories and files to version control and commit the changes to the maven2 repo.
