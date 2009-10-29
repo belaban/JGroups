@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.87 2009/10/23 08:05:24 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.88 2009/10/29 16:40:16 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -389,38 +389,28 @@ public class TUNNEL extends TP {
             throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
         String group=hdr.channel_name;
 
-        Triple<Lock,ExposedByteArrayOutputStream,ExposedDataOutputStream> marshaller=marshaller_pool.getOutputStream();
-        Lock lock=marshaller.getVal1();
-        ExposedByteArrayOutputStream out_stream=marshaller.getVal2();
-        ExposedDataOutputStream dos=marshaller.getVal3();
+        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
+        ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
 
-        lock.lock();
-        try {
-            out_stream.reset();
-            dos.reset();
-            writeMessage(msg, dos, multicast);
-            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        writeMessage(msg, dos, multicast);
+        Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
 
-            if(stats) {
-                num_msgs_sent++;
-                num_bytes_sent+=buf.getLength();
-            }
-            if(multicast) {
-                tunnel_policy.sendToAllMembers(stubs, group, buf.getBuf(), buf.getOffset(), buf.getLength());
-            }
-            else {
-                tunnel_policy.sendToSingleMember(stubs, group, dest, buf.getBuf(), buf.getOffset(), buf.getLength());
-            }
+        if(stats) {
+            num_msgs_sent++;
+            num_bytes_sent+=buf.getLength();
         }
-        finally {
-            lock.unlock();
+        if(multicast) {
+            tunnel_policy.sendToAllMembers(stubs, group, buf.getBuf(), buf.getOffset(), buf.getLength());
+        }
+        else {
+            tunnel_policy.sendToSingleMember(stubs, group, dest, buf.getBuf(), buf.getOffset(), buf.getLength());
         }
     }
 
 
-   public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-       throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
-   }
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+        throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
+    }
 
    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
        throw new UnsupportedOperationException("sendUnicast() should not get called on TUNNEL");
