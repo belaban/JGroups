@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: sequencer.xml,v 1.15 2009/10/28 08:29:37 belaban Exp $
+  version: $Id: sequencer.xml,v 1.16 2009/10/29 12:10:15 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -52,7 +52,7 @@
     <pbcast.NAKACK use_stats_for_retransmission="false"
                    exponential_backoff="150"
                    use_mcast_xmit="true" gc_lag="0"
-                   retransmit_timeout="50,300,600,1200"
+                   retransmit_timeout="300,600,1200"
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"

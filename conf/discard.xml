@@ -1,7 +1,7 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.16 2009/10/28 08:29:37 belaban Exp $
+Version: $Id: discard.xml,v 1.17 2009/10/29 12:10:15 belaban Exp $
  -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,7 +26,7 @@ Version: $Id: discard.xml,v 1.16 2009/10/28 08:29:37 belaban Exp $
         min_interval="5000"/>
     <FD_SOCK/>
     <pbcast.NAKACK use_mcast_xmit="false" gc_lag="50" 
-                   retransmit_timeout="20,300,600,1200,2400,4800"
+                   retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
