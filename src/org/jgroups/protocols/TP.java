@@ -2,8 +2,8 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.annotations.*;
+import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -17,7 +17,6 @@ import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -45,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.270 2009/10/26 09:43:55 belaban Exp $
+ * @version $Id: TP.java,v 1.271 2009/10/29 16:40:07 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -66,11 +65,6 @@ public abstract class TP extends Protocol {
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
     }
-
-    // Pool of marshaller, size defined by marshaller_pool_size
-    protected MarshallerPool marshaller_pool=null;
-
-
 
     /* ------------------------------------------ JMX and Properties  ------------------------------------------ */
 
@@ -223,14 +217,6 @@ public abstract class TP extends Protocol {
 
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
-
-    @ManagedAttribute
-    @Property(description="Size of the marshaller pool")
-    protected int marshaller_pool_size=2;
-
-    @ManagedAttribute
-    @Property(description="Initial buffer size of an individual marshaller (in bytes)")
-    protected int marshaller_pool_initial_size=4096;
 
 
     /**
@@ -566,12 +552,6 @@ public abstract class TP extends Protocol {
         return up_prots;
     }
 
-    @ManagedOperation
-    public String printMarshallerPoolCapacity() {
-        int[] capacities=marshaller_pool.getCapacities();
-        return Util.array2String(capacities);
-    }
-
     @ManagedAttribute
     public int getOOBMinPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getCorePoolSize() : 0;
@@ -777,8 +757,6 @@ public abstract class TP extends Protocol {
 
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
-
-        marshaller_pool=new MarshallerPool(marshaller_pool_size, marshaller_pool_initial_size);
 
         // ========================================== OOB thread pool ==============================
 
@@ -1093,22 +1071,14 @@ public abstract class TP extends Protocol {
             }
         }
 
-        Triple<Lock,ExposedByteArrayOutputStream,ExposedDataOutputStream> marshaller=marshaller_pool.getOutputStream();
-        Lock lock=marshaller.getVal1();
-        ExposedByteArrayOutputStream out_stream=marshaller.getVal2();
-        ExposedDataOutputStream dos=marshaller.getVal3();
-
-        lock.lock();
-        try {
-            out_stream.reset();
-            dos.reset();
-            writeMessage(msg, dos, multicast);
-            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-            doSend(buf, dest, multicast);
-        }
-        finally {
-            lock.unlock();
-        }
+        // we can create between 300'000 - 400'000 output streams and do the marshalling per second,
+        // so this is not a bottleneck !
+        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
+        ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
+        writeMessage(msg, dos, multicast);
+        Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        doSend(buf, dest, multicast);
+        // we don't need to close() or flush() any of the 2 streams above, as these ops are no-ops
     }
 
 
@@ -1555,8 +1525,6 @@ public abstract class TP extends Protocol {
         int                                num_bundling_tasks=0;
         long                               last_bundle_time;
         final ReentrantLock                lock=new ReentrantLock();
-        //final ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-        //final ExposedDataOutputStream      bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
 
 
         private void send(Message msg, Address dest) throws Exception {
@@ -1566,9 +1534,7 @@ public abstract class TP extends Protocol {
             lock.lock();
             try {
                 if(count + length >= max_bundle_size) {
-                    if(!msgs.isEmpty()) {
-                        sendBundledMessages(msgs);
-                    }
+                    sendBundledMessages(msgs);
                 }
                 addMessage(msg, dest);
                 count+=length;
@@ -1601,9 +1567,8 @@ public abstract class TP extends Protocol {
          * This method may be called by timer and bundler concurrently
          * @param msgs
          */
-        private void sendBundledMessages(final Map<Address,List<Message>> msgs) {
+        private void sendBundledMessages(final Map<Address,List<Message>> msgs) throws Exception {
             boolean   multicast;
-            Buffer    buffer;
             Address   dst;
 
             if(log.isTraceEnabled()) {
@@ -1620,31 +1585,24 @@ public abstract class TP extends Protocol {
                 log.trace(sb);
             }
 
+            ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream((int)(count + 50));
+            ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
+
             for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
                 List<Message> list=entry.getValue();
                 if(list.isEmpty())
                     continue;
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
-
-                Triple<Lock,ExposedByteArrayOutputStream,ExposedDataOutputStream> marshaller=marshaller_pool.getOutputStream();
-                Lock marshaller_lock=marshaller.getVal1();
-                ExposedByteArrayOutputStream bundler_out_stream=marshaller.getVal2();
-                ExposedDataOutputStream bundler_dos=marshaller.getVal3();
-
-                marshaller_lock.lock();
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
                     writeMessageList(list, bundler_dos, multicast); // flushes output stream when done
-                    buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                    Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
                     doSend(buffer, dst, multicast);
                 }
                 catch(Throwable e) {
                     if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e);
-                }
-                finally {
-                    marshaller_lock.unlock();
                 }
             }
             msgs.clear();
@@ -1666,7 +1624,12 @@ public abstract class TP extends Protocol {
                 lock.lock();
                 try {
                     if(!msgs.isEmpty()) {
-                        sendBundledMessages(msgs);
+                        try {
+                            sendBundledMessages(msgs);
+                        }
+                        catch(Exception e) {
+                            log.error("failed sending bundled messages", e);
+                        }
                     }
                 }
                 finally {
