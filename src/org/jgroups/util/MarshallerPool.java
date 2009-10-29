@@ -7,8 +7,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Provides a pool of output streams so we can do lock striping and have faster marshalling this way.
  * @author Bela Ban
- * @version $Id: MarshallerPool.java,v 1.1 2009/10/23 08:05:23 belaban Exp $
+ * @version $Id: MarshallerPool.java,v 1.2 2009/10/29 16:10:09 belaban Exp $
  */
+@Deprecated
 public class MarshallerPool {
     final int pool_size;     // number of pools
     final int INITIAL_SIZE;  // initial size of each pool
