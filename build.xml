@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.221 2009/10/26 08:12:17 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.222 2009/10/29 11:45:58 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-    <property name="version" value="2.8.0.CR3"/>
+    <property name="version" value="2.8.0.CR4"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
