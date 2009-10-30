@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.2 2009/10/30 11:38:19 belaban Exp $
+ * @version $Id: BundlerTest.java,v 1.3 2009/10/30 12:02:43 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT)
 public class BundlerTest {
@@ -89,7 +89,7 @@ public class BundlerTest {
         long start=System.currentTimeMillis();
         latch.countDown(); // starts all threads
 
-        long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS *2;
+        long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS * 2;
 
         for(int i=0; i < 1000; i++) {
             if(r1.getNum() >= NUM_EXPECTED_MSGS && r2.getNum() >= NUM_EXPECTED_MSGS)
@@ -155,8 +155,9 @@ public class BundlerTest {
         }
 
         public void receive(Message msg) {
-            if(num.incrementAndGet() % MOD == 0) {
-                System.out.println("[" + name + "] received " + getNum() + " msgs");
+            int count=num.getAndIncrement();
+            if(count > 0 && count % MOD == 0) {
+                System.out.println("[" + name + "] received " + count + " msgs");
             }
         }
 
