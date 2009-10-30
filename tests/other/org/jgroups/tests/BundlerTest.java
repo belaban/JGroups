@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.1 2009/10/30 09:12:18 belaban Exp $
+ * @version $Id: BundlerTest.java,v 1.2 2009/10/30 11:38:19 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT)
 public class BundlerTest {
@@ -21,7 +21,7 @@ public class BundlerTest {
             "thread_pool.rejection_policy=discard;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
             "oob_thread_pool.rejection_policy=discard;enable_bundling=true)";
     static final int NUM_THREADS=200;
-    static final int NUM_MSGS=10000;
+    static final int NUM_MSGS=1000;
     static final int SIZE=1000; // default size of a message in bytes
 
     @AfterMethod
@@ -89,10 +89,10 @@ public class BundlerTest {
         long start=System.currentTimeMillis();
         latch.countDown(); // starts all threads
 
-        long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS;
+        long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS *2;
 
         for(int i=0; i < 1000; i++) {
-            if(r1.getNum() == NUM_EXPECTED_MSGS && r2.getNum() == NUM_EXPECTED_MSGS)
+            if(r1.getNum() >= NUM_EXPECTED_MSGS && r2.getNum() >= NUM_EXPECTED_MSGS)
                 break;
             Util.sleep(2000);
         }
