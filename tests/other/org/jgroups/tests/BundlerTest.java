@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.4 2009/10/30 13:15:21 belaban Exp $
+ * @version $Id: BundlerTest.java,v 1.5 2009/10/30 16:30:13 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT)
 public class BundlerTest {
@@ -40,7 +40,6 @@ public class BundlerTest {
         c2.connect("testSimpleMessageReception");
 
         int NUM=100;
-        Address c1_addr=c1.getLocalAddress(), c2_addr=c2.getLocalAddress();
         for(int i=1; i <= NUM; i++) {
             c1.send(null, null, "bla");
             c2.send(null, null, "bla");
