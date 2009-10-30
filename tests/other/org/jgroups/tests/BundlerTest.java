@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.3 2009/10/30 12:02:43 belaban Exp $
+ * @version $Id: BundlerTest.java,v 1.4 2009/10/30 13:15:21 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT)
 public class BundlerTest {
@@ -74,6 +74,7 @@ public class BundlerTest {
         c1.connect("testSimpleMessageReception");
         c2.connect("testSimpleMessageReception");
 
+        System.out.println("starting to send messages");
         MySender[] c1_senders=new MySender[NUM_THREADS];
         for(int i=0; i < c1_senders.length; i++) {
             c1_senders[i]=new MySender(c1, latch);
