@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.33 2009/09/21 09:57:24 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.34 2009/10/31 06:42:18 belaban Exp $
  */
 public class AckReceiverWindow {
     private long                    next_to_remove=0;
@@ -118,7 +118,7 @@ public class AckReceiverWindow {
     }
 
     /**
-     * Removes as many messages as possible (in seqeuence, without gaps)
+     * Removes as many messages as possible (in sequence, without gaps)
      * @return
      */
     public List<Message> removeMany(AtomicBoolean processing) {
