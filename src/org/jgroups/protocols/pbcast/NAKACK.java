@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.234 2009/09/26 05:38:13 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.235 2009/11/03 16:47:30 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -844,22 +844,29 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             while(true) {
                 // we're removing a msg and set processing to false (if null) *atomically* (wrt to add())
-                Message msg_to_deliver=win.remove(processing);
-                if(msg_to_deliver == null) {
+                List<Message> msgs=win.removeMany(processing);
+                if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
-                    return; // processing will be set to false now
+                    return;
                 }
 
-                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
-                if(msg_to_deliver.isFlagSet(Message.OOB)) {
-                    continue;
-                }
-                num_regular_msgs_removed++;
-                // System.out.println("removed regular #" + ((NakAckHeader)msg_to_deliver.getHeader(name)).seqno);
+                for(Message msg_to_deliver: msgs) {
 
-                // Changed by bela Jan 29 2003: not needed (see above)
-                //msg_to_deliver.removeHeader(getName());
-                up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                    // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                    if(msg_to_deliver.isFlagSet(Message.OOB)) {
+                        continue;
+                    }
+                    num_regular_msgs_removed++;
+
+                    // Changed by bela Jan 29 2003: not needed (see above)
+                    //msg_to_deliver.removeHeader(getName());
+                    try {
+                        up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                    }
+                    catch(Throwable t) {
+                        log.error("couldn't deliver message " + msg, t);
+                    }
+                }
             }
         }
         finally {
