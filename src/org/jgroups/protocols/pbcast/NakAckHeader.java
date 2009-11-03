@@ -14,7 +14,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: NakAckHeader.java,v 1.21 2007/08/20 10:46:53 belaban Exp $
+ * @version $Id: NakAckHeader.java,v 1.22 2009/11/03 12:49:16 belaban Exp $
  */
 public class NakAckHeader extends Header implements Streamable {
     public static final byte MSG=1;       // regular msg
@@ -55,8 +55,21 @@ public class NakAckHeader extends Header implements Streamable {
         this.sender=sender;
     }
 
+    public byte getType() {
+        return type;
+    }
 
+    public long getSeqno() {
+        return seqno;
+    }
 
+    public Range getRange() {
+        return range;
+    }
+
+    public Address getSender() {
+        return sender;
+    }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(type);
