@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.10 2009/05/06 06:20:57 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.11 2009/11/03 16:41:03 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -560,12 +560,12 @@ public class NakReceiverWindowTest {
         win.add(5, msg());
         win.add(6, msg());
         System.out.println("win = " + win);
-        List<Message> msgs=win.removeMany();
+        List<Message> msgs=win.removeMany(null);
         System.out.println("msgs = " + msgs);
         assert msgs.size() == 3;
 
         win.add(4, msg());
-        msgs=win.removeMany();
+        msgs=win.removeMany(null);
         System.out.println("msgs = " + msgs);
         assert msgs.size() == 3;
     }
