@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.273 2009/11/03 15:02:32 belaban Exp $
+ * @version $Id: TP.java,v 1.274 2009/11/03 15:30:39 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -217,8 +217,6 @@ public abstract class TP extends Protocol {
 
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
-
-    protected boolean singleton=false;
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -735,8 +733,6 @@ public abstract class TP extends Protocol {
     public void init() throws Exception {
         super.init();
 
-        singleton=singleton_name != null && singleton_name.length() > 0;
-
         // Create the default thread factory
         global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
 
@@ -867,7 +863,7 @@ public abstract class TP extends Protocol {
     }
 
       public boolean isSingleton(){
-          return singleton;
+          return singleton_name != null;
       }
 
 
