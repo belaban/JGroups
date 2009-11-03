@@ -17,7 +17,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.5 2009/11/03 03:49:01 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.6 2009/11/03 16:51:24 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -26,8 +26,6 @@ public class ConnectionTableTest extends TestCase {
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
     int active_threads=0;
-    // needed as OSs need not release ports immediately after a socket has closed
-    int port_range = 3 ;
     
     final static int PORT1=7521, PORT2=8931;
 
@@ -152,17 +150,17 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000);
-        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000);
         // don't forget to start the connection tables and their acceptor thread
-        ct1.start();
-        ct2.start();
+//        ct1.start();
+//        ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000, false);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000, false);
         // don't forget to start the connection tables and their acceptor thread
         ct1.start();
         ct2.start();
