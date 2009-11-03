@@ -12,11 +12,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Simple receiver which buffers all messages
  * @author Bela Ban
- * @version $Id: MyReceiver.java,v 1.2 2009/06/19 14:45:41 belaban Exp $
+ * @version $Id: MyReceiver.java,v 1.3 2009/11/03 09:14:11 belaban Exp $
  */
 public class MyReceiver extends ReceiverAdapter {
-    private final Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();
-    private final String name;
+    protected final Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();
+    protected final String name;
 
     public MyReceiver(String name) {
         this.name=name;
