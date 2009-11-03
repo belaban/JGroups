@@ -17,7 +17,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.3 2009/06/26 19:27:06 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.4 2009/11/03 00:44:52 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -168,20 +168,23 @@ public class ConnectionTableTest extends TestCase {
 
     private void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
         table1.send(addr1, data, 0, data.length); // send to self
+        assertEquals(0, table1.getNumConnections()); // sending to self should not create a connection
         table1.send(addr2, data, 0, data.length); // send to other
 
         table2.send(addr2, data, 0, data.length); // send to self
         table2.send(addr1, data, 0, data.length); // send to other
+        
+        System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
 
-        assertEquals(2, table1.getNumConnections());
-        assertEquals(2, table2.getNumConnections());
+        assertEquals(1, table1.getNumConnections());
+        assertEquals(1, table2.getNumConnections());
 
         table2.stop();
         table1.stop();
         assertEquals(0, table1.getNumConnections());
         assertEquals(0, table2.getNumConnections());
 
-        // Util.sleep(1000);
+        Util.sleep(1000);
 
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
