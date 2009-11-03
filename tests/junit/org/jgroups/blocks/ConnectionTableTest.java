@@ -17,7 +17,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.6 2009/11/03 16:51:24 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.7 2009/11/03 21:23:21 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -46,6 +46,7 @@ public class ConnectionTableTest extends TestCase {
 
 
     protected void setUp() throws Exception {
+    	System.out.println("Starting: " + getName());
         super.setUp();
         active_threads=Thread.activeCount();
         System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
@@ -63,7 +64,10 @@ public class ConnectionTableTest extends TestCase {
             ct1.stop();
             ct1=null;
         }
+        // small delay seems to be required to allow ports to be reclaimed
+        Util.sleep(100) ;
         super.tearDown();
+    	System.out.println("Ending: " + getName());
     }
 
     /**
@@ -74,10 +78,9 @@ public class ConnectionTableTest extends TestCase {
         Sender sender1, sender2;
         CyclicBarrier barrier=new CyclicBarrier(3);
 
+        // connection table calls start() within its constructor
         ct1=new ConnectionTable(bind_addr, PORT1);
-        ct1.start();
         ct2=new ConnectionTable(bind_addr, PORT2);
-        ct2.start();
         BasicConnectionTable.Receiver dummy=new BasicConnectionTable.Receiver() {
             public void receive(Address sender, byte[] data, int offset, int length) {}
         };
@@ -150,18 +153,16 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTable() throws Exception {
+    	// ConnectionTable calls start() within its constructor
         ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000);
         ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000);
-        // don't forget to start the connection tables and their acceptor thread
-//        ct1.start();
-//        ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
+    	// ConnectionTableNIO will not call start() in its constructor, as we passed doStart == false
         ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1, 60000, 120000, false);
         ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2, 60000, 120000, false);
-        // don't forget to start the connection tables and their acceptor thread
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);
