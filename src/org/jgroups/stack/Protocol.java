@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.72 2009/09/25 12:37:42 belaban Exp $
+ * @version $Id: Protocol.java,v 1.73 2009/11/03 08:14:24 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -42,6 +42,7 @@ public abstract class Protocol {
     protected ProtocolStack    stack=null;
     
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
+    @ManagedAttribute(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
     protected boolean          stats=true;
 
     /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
