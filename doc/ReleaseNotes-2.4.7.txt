@@ -1,0 +1,22 @@
+Release Notes JGroups 2.4.7
+===========================
+
+This release is primarily a bug fix release for the JGroups 2.4.x branch.
+See the release notes below and the JIRA issues they refer to for details.
+
+
+Release Notes - JGroups - Version 2.4.7
+
+** Bug
+    * [JGRP-549] - ConnectionTable: spurious Connection instances on concurrent connects
+    * [JGRP-956] - Binding to mcast address in UDP.java is not working on Linux with IPv6
+    * [JGRP-967] - Deadlock in FD_SOCK 
+    * [JGRP-981] - Wrong view with concurrent startup
+    * [JGRP-984] - JGroups can not parse IPV6 literals in TCPPING protocol configuration
+    * [JGRP-990] - Grammatical Error in log message: I'm being am suspected.
+    * [JGRP-1000] - COMPRESS corrupts some messages
+    * [JGRP-1060] - NAKACK has inconsistent internal state after concurrent node startup
+
+** Task
+    * [JGRP-982] - Extend linux method of creating multicast socket to HP-UX
+
