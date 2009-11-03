@@ -17,7 +17,7 @@ import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2.2.4 2009/11/03 00:44:52 rachmatowicz Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.5 2009/11/03 03:49:01 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -154,12 +154,16 @@ public class ConnectionTableTest extends TestCase {
     public void testStopConnectionTable() throws Exception {
         ct1=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000);
         ct2=new ConnectionTable(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000);
+        // don't forget to start the connection tables and their acceptor thread
+        ct1.start();
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
         ct1=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT1, PORT1+port_range, 60000, 120000, false);
         ct2=new ConnectionTableNIO(new DummyReceiver(), bind_addr, null, PORT2, PORT2+port_range, 60000, 120000, false);
+        // don't forget to start the connection tables and their acceptor thread
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);
