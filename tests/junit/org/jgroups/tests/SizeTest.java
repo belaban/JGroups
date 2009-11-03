@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.17 2006/09/09 13:16:35 belaban Exp $$
+// $Id: SizeTest.java,v 1.17.2.1 2009/11/03 03:55:08 rachmatowicz Exp $$
 
 package org.jgroups.tests;
 
@@ -325,7 +325,7 @@ public class SizeTest extends TestCase {
 
         Digest digest=new Digest(2);
         digest.add(addr, 100, 200, 205);
-        digest.add(new IpAddress(2314), 102, 104, 105);
+        digest.add(new IpAddress("127.0.0.1", 2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
         _testSize(hdr);
 
