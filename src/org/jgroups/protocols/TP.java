@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.272 2009/10/30 14:54:50 belaban Exp $
+ * @version $Id: TP.java,v 1.273 2009/11/03 15:02:32 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -218,6 +218,7 @@ public abstract class TP extends Protocol {
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
 
+    protected boolean singleton=false;
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -734,6 +735,8 @@ public abstract class TP extends Protocol {
     public void init() throws Exception {
         super.init();
 
+        singleton=singleton_name != null && singleton_name.length() > 0;
+
         // Create the default thread factory
         global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
 
@@ -864,7 +867,7 @@ public abstract class TP extends Protocol {
     }
 
       public boolean isSingleton(){
-          return singleton_name != null && singleton_name.length() >0;
+          return singleton;
       }
 
 
@@ -905,7 +908,7 @@ public abstract class TP extends Protocol {
             log.trace("sending msg to " + msg.getDest() + ", src=" + msg.getSrc() + ", headers are " + msg.printHeaders());
         }
 
-        // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
+        // Don't send if destination is local address. Instead, switch dst and src and send it up the stack.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
         Address dest=msg.getDest();
@@ -916,7 +919,7 @@ public abstract class TP extends Protocol {
             msg.setDest(null);
         }
 
-        boolean multicast=dest == null || dest.isMulticastAddress();
+        final boolean multicast=dest == null || dest.isMulticastAddress();
         if(loopback && (multicast || dest.equals(msg.getSrc()))) {
 
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
@@ -929,7 +932,7 @@ public abstract class TP extends Protocol {
             Executor pool=msg.isFlagSet(Message.OOB)? oob_thread_pool : thread_pool;
             pool.execute(new Runnable() {
                 public void run() {
-                    passMessageUp(copy, false);
+                    passMessageUp(copy, false, multicast, false);
                 }
             });
 
@@ -945,8 +948,7 @@ public abstract class TP extends Protocol {
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) {
-                String dst=msg.getDest() == null? "null" : msg.getDest().toString();
-                log.error("failed sending message to " + dst + " (" + msg.size() + " bytes)", e);
+                log.error("failed sending message to " + dest + " (" + msg.size() + " bytes)", e);
             }
         }
         return null;
@@ -973,7 +975,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private void passMessageUp(Message msg, boolean perform_cluster_name_matching) {
+    private void passMessageUp(Message msg, boolean perform_cluster_name_matching, boolean multicast, boolean discard_own_mcast) {
         TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
         if(hdr == null) {
             if(log.isErrorEnabled())
@@ -986,22 +988,24 @@ public abstract class TP extends Protocol {
             log.trace(new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders()));
 
         String ch_name=hdr.channel_name;
-        if(isSingleton()) {
-            Protocol tmp_prot=up_prots.get(ch_name);
-            if(tmp_prot != null) {
-                tmp_prot.up(new Event(Event.MSG, msg));
-            }
-        }
-        else {
+
+        final Protocol tmp_prot=isSingleton()? up_prots.get(ch_name) : up_prot;
+        if(tmp_prot != null) {
+            boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
             // Discard if message's cluster name is not the same as our cluster name
-            if(perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
+            if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
                 if(log.isWarnEnabled() && log_discard_msgs)
                     log.warn(new StringBuilder("discarded message from different cluster \"").append(ch_name).
                             append("\" (our cluster is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()).toString());
+                return;
             }
-            else {
-                up_prot.up(new Event(Event.MSG, msg));
+
+            if(loopback && multicast && discard_own_mcast) {
+                Address local=is_protocol_adapter? ((ProtocolAdapter)tmp_prot).getAddress() : local_addr;
+                if(local != null && local.equals(msg.getSrc()))
+                    return;
             }
+            tmp_prot.up(new Event(Event.MSG, msg));
         }
     }
 
@@ -1499,12 +1503,7 @@ public abstract class TP extends Protocol {
                 num_msgs_received++;
                 num_bytes_received+=msg.getLength();
             }
-
-            if(loopback && multicast && msg.isFlagSet(Message.LOOPBACK)) {
-                return; // drop message that was already looped back and delivered
-            }
-
-            passMessageUp(msg, true);
+            passMessageUp(msg, true, multicast, true);
         }
     }
 
@@ -1624,12 +1623,12 @@ public abstract class TP extends Protocol {
                 lock.lock();
                 try {
                     if(!msgs.isEmpty()) {
-                try {
+                        try {
                             sendBundledMessages(msgs);
-                }
-                catch(Exception e) {
-                    log.error("failed sending bundled messages", e);
-                }
+                        }
+                        catch(Exception e) {
+                            log.error("failed sending bundled messages", e);
+                        }
                     }
                 }
                 finally {
@@ -1855,7 +1854,7 @@ public abstract class TP extends Protocol {
         final Set<Address> members=new CopyOnWriteArraySet<Address>();
         final ThreadFactory factory;
         Address local_addr;
-        
+
         static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, String transport_name, Protocol up, Protocol down, String pattern) {
@@ -1870,7 +1869,7 @@ public abstract class TP extends Protocol {
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());
             if(cluster_name != null)
-                factory.setClusterName(cluster_name);           
+                factory.setClusterName(cluster_name);
         }
 
         @ManagedAttribute(description="Name of the cluster to which this adapter proxies")
@@ -1907,16 +1906,15 @@ public abstract class TP extends Protocol {
         }
 
         public void start() throws Exception {
-            TP transport=getTransport();
-            if(transport != null)
-                transport.registerProbeHandler(this);
-
+            TP tp=getTransport();
+            if(tp != null)
+                tp.registerProbeHandler(this);
         }
 
         public void stop() {
-            TP transport=getTransport();
-            if(transport != null)
-                transport.unregisterProbeHandler(this);
+            TP tp=getTransport();
+            if(tp != null)
+                tp.unregisterProbeHandler(this);
         }
 
         public Object down(Event evt) {
