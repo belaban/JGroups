@@ -26,7 +26,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.14 2009/10/22 13:50:59 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.15 2009/11/04 11:54:44 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -81,7 +81,7 @@ public class PropertyConverters {
     	
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
 			// port range is 1
-            return Util.parseCommaDelimetedHosts2(prop_val, 1);
+            return Util.parseCommaDelimitedHosts2(prop_val, 1);
 		}
 
 		public String toString(Object value) {
