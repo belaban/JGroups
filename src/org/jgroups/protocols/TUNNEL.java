@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.88 2009/10/29 16:40:16 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.89 2009/11/04 11:54:42 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -87,7 +87,7 @@ public class TUNNEL extends TP {
       if (hosts.startsWith("[") && hosts.endsWith("]")) {
          hosts = hosts.substring(1, hosts.length() - 1);
       }
-      gossip_router_hosts.addAll(Util.parseCommaDelimetedHosts2(hosts, 1));
+      gossip_router_hosts.addAll(Util.parseCommaDelimitedHosts2(hosts, 1));
    }
 
    public String toString() {
