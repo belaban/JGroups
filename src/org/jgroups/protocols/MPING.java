@@ -5,6 +5,7 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.*;
 
@@ -20,8 +21,9 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.52 2009/10/20 14:52:52 belaban Exp $
+ * @version $Id: MPING.java,v 1.53 2009/11/04 12:32:33 belaban Exp $
  */
+@DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
     
     private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
@@ -58,7 +60,7 @@ public class MPING extends PING implements Runnable {
     @Property(description="Multicast port for discovery packets. Default is 7555", systemProperty=Global.MPING_MCAST_PORT)
     int mcast_port=7555;
 
-    @Property(name="bind_to_all_interfaces", deprecatedMessage="bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead", description="If true, the transport should use all available interfaces to receive multicast messages. Default is false")
+    @Property(description="If true, the transport should use all available interfaces to receive multicast messages. Default is false")
     boolean receive_on_all_interfaces=false;
 
     /**

@@ -44,11 +44,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.274 2009/11/03 15:30:39 belaban Exp $
+ * @version $Id: TP.java,v 1.275 2009/11/04 12:32:34 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
-        "use_concurrent_stack", "prevent_port_reuse", "persistent_ports", "pm_expiry_time", "persistent_ports_file"})
+        "use_concurrent_stack", "prevent_port_reuse", "persistent_ports", "pm_expiry_time", "persistent_ports_file",
+        "start_port", "end_port"})
 public abstract class TP extends Protocol {
 
     private static final byte LIST=1; // we have a list of messages rather than a single message when set
@@ -101,11 +102,10 @@ public abstract class TP extends Protocol {
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
-    @Property(name="start_port", deprecatedMessage="start_port is deprecated; use bind_port instead",
-                      description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
+    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
     protected int bind_port=0;
 
-    @Property(name="end_port", deprecatedMessage="end_port is deprecated; use port_range instead")
+    @Property(description="The range of valid ports, from bind_port to end_port. Infinite if 0")
     protected int port_range=5; // 27-6-2003 bgooren, Only try one port by default
 
   
