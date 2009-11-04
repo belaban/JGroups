@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.73 2009/10/26 14:33:52 belaban Exp $
+ * @version $Id: Configurator.java,v 1.74 2009/11/04 09:36:39 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -865,7 +865,8 @@ public class Configurator implements ProtocolStackFactory {
 
     public static void resolveAndInvokePropertyMethod(Object obj, Method method, Map<String,String> props) throws Exception {
     	String methodName=method.getName();
-    	if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
+        Property annotation=method.getAnnotation(Property.class);
+    	if(annotation != null && isSetPropertyMethod(method)) {
     		String propertyName=PropertyHelper.getPropertyName(method) ;
     		String propertyValue=props.get(propertyName);
 
@@ -873,6 +874,13 @@ public class Configurator implements ProtocolStackFactory {
             String tmp=grabSystemProp(method.getAnnotation(Property.class));
             if(tmp != null)
                 propertyValue=tmp;
+
+            if(propertyName != null && propertyValue != null) {
+                String deprecated_msg=annotation.deprecatedMessage();
+                if(deprecated_msg != null && deprecated_msg.length() > 0) {
+                    log.warn(method.getDeclaringClass().getSimpleName() + "." + methodName + ": " + deprecated_msg);
+                }
+            }
 
     		if(propertyValue != null) {
     			Object converted=null;
@@ -902,7 +910,8 @@ public class Configurator implements ProtocolStackFactory {
     }
 
     public static void resolveAndAssignField(Object obj, Field field, Map<String,String> props) throws Exception {
-    	if(field.isAnnotationPresent(Property.class)) {
+        Property annotation=field.getAnnotation(Property.class);
+    	if(annotation != null) {
     		String propertyName = PropertyHelper.getPropertyName(field, props) ;
     		String propertyValue=props.get(propertyName);
 
@@ -910,6 +919,13 @@ public class Configurator implements ProtocolStackFactory {
             String tmp=grabSystemProp(field.getAnnotation(Property.class));
             if(tmp != null)
                 propertyValue=tmp;
+
+            if(propertyName != null && propertyValue != null) {
+                String deprecated_msg=annotation.deprecatedMessage();
+                if(deprecated_msg != null && deprecated_msg.length() > 0) {
+                    log.warn(field.getDeclaringClass().getSimpleName() + "." + field.getName() + ": " + deprecated_msg);
+                }
+            }
             
     		if(propertyValue != null || !PropertyHelper.usesDefaultConverter(field)){
     			Object converted=null;
