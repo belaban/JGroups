@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.232 2009/11/04 11:54:41 belaban Exp $
+ * @version $Id: Util.java,v 1.233 2009/11/04 12:17:43 belaban Exp $
  */
 public class Util {
 
@@ -2925,7 +2925,7 @@ public class Util {
     		if(bind_intf != null) {
 
                 // check that the interface supports the IP version
-                boolean supportsVersion = interfaceHasIPAddresses(bind_interface_str, ip_version) ;
+                boolean supportsVersion = interfaceHasIPAddresses(bind_intf, ip_version) ;
                 if (!supportsVersion)
                     throw new IllegalArgumentException("bind_interface " + bind_interface_str + " has incorrect IP version") ;
             }
@@ -3021,7 +3021,7 @@ public class Util {
     	bind_intf=NetworkInterface.getByName(bind_interface_str);
     	if(bind_intf != null) {
             // check that the interface supports the IP version
-            boolean supportsVersion = interfaceHasIPAddresses(bind_interface_str, ip_version) ;
+            boolean supportsVersion = interfaceHasIPAddresses(bind_intf, ip_version) ;
             if (!supportsVersion)
                 throw new IllegalArgumentException("bind_interface " + bind_interface_str + " has incorrect IP version") ;
         }
@@ -3256,39 +3256,30 @@ public class Util {
      * A function to check if an interface supports an IP version (i.e has addresses 
      * defined for that IP version).
      * 
-     * @param intf_name
+     * @param intf
      * @return
      */
-    public static boolean interfaceHasIPAddresses(String intf_name, StackType ip_version) throws SocketException,UnknownHostException {
+    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws SocketException,UnknownHostException {
+        boolean supportsVersion = false ;
+        if (intf != null) {
+            // get all the InetAddresses defined on the interface
+            Enumeration addresses = intf.getInetAddresses() ;
+            while (addresses != null && addresses.hasMoreElements()) {
+                // get the next InetAddress for the current interface
+                InetAddress address = (InetAddress) addresses.nextElement() ;
 
-    	boolean supportsVersion = false ;
-    	try {
-    		// get the NetworkInterface 
-    		NetworkInterface intf = NetworkInterface.getByName(intf_name) ;
-    		if (intf != null) {
-    			// get all the InetAddresses defined on the interface
-    			Enumeration addresses = intf.getInetAddresses() ;
-    			while (addresses != null && addresses.hasMoreElements()) {
-    				// get the next InetAddress for the current interface
-    				InetAddress address = (InetAddress) addresses.nextElement() ;
-
-    				// check if we find an address of correct version
-                    if ((address instanceof Inet4Address && (ip_version == StackType.IPv4)) ||
-                            (address instanceof Inet6Address && (ip_version == StackType.IPv6))) {
-                        supportsVersion = true ;
-    					break ;
-    				}
-    			}
-    		}
-    		else {
-    			throw new UnknownHostException("network interface " + intf_name + " not found") ;
-    		}
-    	}
-    	catch(NullPointerException e) {
-    		// intf_name == null -> java.util.NullPointerException
-    		throw new IllegalArgumentException("interface name is null") ;
-    	}
-    	return supportsVersion ;
+                // check if we find an address of correct version
+                if ((address instanceof Inet4Address && (ip_version == StackType.IPv4)) ||
+                        (address instanceof Inet6Address && (ip_version == StackType.IPv6))) {
+                    supportsVersion = true ;
+                    break ;
+                }
+            }
+        }
+        else {
+            throw new UnknownHostException("network interface " + intf + " not found") ;
+        }
+        return supportsVersion ;
     }         
         
     /**
@@ -3298,7 +3289,7 @@ public class Util {
      * if the type cannot be detected
      */
     public static StackType getIpStackType() {
-    	boolean isIPv4StackAvailable = isStackAvailable(true) ;
+        boolean isIPv4StackAvailable = isStackAvailable(true) ;
     	boolean isIPv6StackAvailable = isStackAvailable(false) ;
     	
 		// if only IPv4 stack available
