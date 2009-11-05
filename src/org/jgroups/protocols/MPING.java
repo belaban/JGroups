@@ -21,7 +21,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.53 2009/11/04 12:32:33 belaban Exp $
+ * @version $Id: MPING.java,v 1.54 2009/11/05 08:11:57 belaban Exp $
  */
 @DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
@@ -107,13 +107,6 @@ public class MPING extends PING implements Runnable {
     
     private volatile Thread receiver=null;
 
-    /**
-     * Pre-allocated byte stream. Used for serializing datagram packets. Will
-     * grow as needed
-     */
-    private final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
-    
-    private final byte receive_buf[]=new byte[1024];
 
 
     public MPING() {        
@@ -285,7 +278,7 @@ public class MPING extends PING implements Runnable {
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            out_stream.reset();
+            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
             out=new DataOutputStream(out_stream);
             msg.writeTo(out);
             out.flush(); // flushes contents to out_stream
@@ -321,6 +314,7 @@ public class MPING extends PING implements Runnable {
 
 
     public void run() {
+        final byte[]         receive_buf=new byte[65535];
         DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
         byte[]               data;
         ByteArrayInputStream inp_stream;
