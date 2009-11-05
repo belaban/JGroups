@@ -5,17 +5,17 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.Property;
 import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.net.InetSocketAddress;
 
 
 /**
@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.45 2009/10/02 18:54:32 rachmatowicz Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.46 2009/11/05 08:44:50 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
