@@ -346,7 +346,7 @@ public class TCPConnectionMap{
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
             this.sock=new Socket();
             this.sock.bind(new InetSocketAddress(bind_addr, 0));
-            this.sock.connect(destAddr, sock_conn_timeout);
+            Util.connect(this.sock, destAddr, sock_conn_timeout);
             setSocketParameters(sock);
             this.out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
             this.in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));

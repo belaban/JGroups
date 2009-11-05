@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.52 2009/10/05 19:34:07 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.53 2009/11/05 08:45:48 belaban Exp $
  */
 public class RouterStub {
 
@@ -130,7 +130,7 @@ public class RouterStub {
                 sock.bind(new InetSocketAddress(bind_addr, 0));
                 sock.setSoTimeout(sock_read_timeout);
                 sock.setSoLinger(true, 2);
-                sock.connect(new InetSocketAddress(router_host, router_port), sock_conn_timeout);
+                Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
                 input=new DataInputStream(sock.getInputStream());
                 connectionStateChanged(ConnectionStatus.CONNECTED);
