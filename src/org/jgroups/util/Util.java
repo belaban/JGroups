@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.233 2009/11/04 12:17:43 belaban Exp $
+ * @version $Id: Util.java,v 1.234 2009/11/05 08:43:20 belaban Exp $
  */
 public class Util {
 
@@ -236,6 +236,26 @@ public class Util {
         }
     }
 
+
+    /**
+     * Utility method. If the dest address is IPv6, convert scoped link-local addrs into unscoped ones
+     * @param sock
+     * @param dest
+     * @param sock_conn_timeout
+     * @throws IOException
+     */
+    public static void connect(Socket sock, SocketAddress dest, int sock_conn_timeout) throws IOException {
+        if(dest instanceof InetSocketAddress) {
+            InetAddress addr=((InetSocketAddress)dest).getAddress();
+            if(addr instanceof Inet6Address) {
+                Inet6Address tmp=(Inet6Address)addr;
+                if(tmp.getScopeId() != 0) {
+                    dest=new InetSocketAddress(InetAddress.getByAddress(tmp.getAddress()), ((InetSocketAddress)dest).getPort());
+                }
+            }
+        }
+        sock.connect(dest, sock_conn_timeout);
+    }
 
     public static void close(InputStream inp) {
         if(inp != null)
