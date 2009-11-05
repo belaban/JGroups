@@ -26,7 +26,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.15 2009/11/04 11:54:44 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.16 2009/11/05 08:44:01 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -184,16 +184,16 @@ public class PropertyConverters {
                         // fix scope
                         Inet6Address ret=getScopedInetAddress(addr);
                         if(ret != null) {
-                            if(log.isWarnEnabled())
-                                log.warn("added scope-id to link-local IPv6 address " + ret + ", but you should change " +
-                                        propertyName + " to include a scope-id");
+                            //if(log.isWarnEnabled())
+                              //  log.warn("added scope-id to link-local IPv6 address " + ret + ", but you should change " +
+                                //        propertyName + " to include a scope-id");
                             retval=ret;
                         }
-                        else {
+                        /*else {
                             if(log.isWarnEnabled())
                                 log.warn("detected link-local IPv6 address " + addr +
                                         " without a scope-id (e.g. %3 or %eth1), this might cause problems");
-                        }
+                        }*/
                     }
                 }
                 return retval;
