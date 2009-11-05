@@ -3,17 +3,18 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.util.Util;
-import org.jgroups.util.UUID;
-import org.jgroups.util.Promise;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.Promise;
+import org.jgroups.util.UUID;
 
-import java.util.*;
-import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -35,7 +36,7 @@ import java.net.UnknownHostException;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.56 2009/10/22 07:27:50 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.57 2009/11/05 08:21:23 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -134,7 +135,7 @@ public class TCPPING extends Discovery {
                     }
                     catch(Exception ex){
                         if(log.isErrorEnabled())
-                            log.error("failed sending discovery request to " + addr, ex);
+                            log.error("failed sending discovery request to " + addr + ": " +  ex);
                     }
                 }
             });
