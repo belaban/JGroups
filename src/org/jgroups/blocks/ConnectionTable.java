@@ -1,8 +1,9 @@
-// $Id: ConnectionTable.java,v 1.69 2009/04/23 09:00:14 belaban Exp $
+// $Id: ConnectionTable.java,v 1.70 2009/11/05 08:46:13 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 import org.jgroups.stack.IpAddress;
 
 import java.io.IOException;
@@ -143,7 +144,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    sock.setSoLinger(true, linger);
                else
                    sock.setSoLinger(false, -1);
-               sock.connect(destAddr, sock_conn_timeout);
+               Util.connect(sock, destAddr, sock_conn_timeout);
 
                try {
                    sock.setSendBufferSize(send_buf_size);
