@@ -6,6 +6,7 @@
 # which may not work on Linux unless you have a multicast route set up for loopback
 jgroups.bind_addr=fe80::21b:21ff:fe07:a3b0%3
 jgroups.tcpping.initial_hosts=fe80::21b:21ff:fe07:a3b0%3[7800],fe80::21b:21ff:fe07:a3b0%3[7801]
+jgroups.tunnel.gossip_router_hosts=fe80::21b:21ff:fe07:a3b0%3[12001]
 jgroups.udp.mcast_addr=ff0e::5:6:7
 jgroups.udp.mcast_port=45588
 jgroups.udp.ip_ttl=5
