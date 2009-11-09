@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.15 2009/11/09 14:49:56 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.16 2009/11/09 17:09:42 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
@@ -83,8 +83,7 @@ public class GossipRouterTest {
         System.out.println("view=" + view);
         Assert.assertEquals(2, view.size());
 
-        c2.close();
-        c1.close();
+        Util.close(c2, c1);
     }
 
     private static void changeMergeInterval(JChannel c1) {
