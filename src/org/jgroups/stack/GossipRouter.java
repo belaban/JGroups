@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.66 2009/10/01 15:51:05 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.67 2009/11/09 11:53:03 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -517,6 +517,8 @@ public class GossipRouter {
         public void connectionTorn(ConnectionHandler ch, Exception e) {
             Set<String> groups = ch.known_groups;
             for (String group : groups) {
+                if(group == null)
+                    continue;
                 Map<Address, ConnectionHandler> map = routingTable.get(group);
                 if (map != null && !map.isEmpty()) {
                     for (Iterator<Entry<Address, ConnectionHandler>> i = map.entrySet().iterator(); i.hasNext();) {
