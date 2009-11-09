@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.14 2009/06/17 16:28:57 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.15 2009/11/09 11:44:31 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ public class SendAndReceiveTest {
     static final int NUM_MSGS=1000;
     static final long TIMEOUT=30000;
 
-    String props1="UDP(loopback=true;mcast_addr=228.8.8.8;mcast_port=27000;ip_ttl=1;" +
+    String props1="UDP(loopback=true;mcast_port=27000;ip_ttl=1;" +
             "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
             //"PIGGYBACK(max_wait_time=100;max_size=32000):" +
             "PING(timeout=2000;num_initial_members=3):" +
@@ -35,7 +35,7 @@ public class SendAndReceiveTest {
             "pbcast.GMS(join_timeout=5000;" +
             "print_local_addr=true)";
 
-        String props2="UDP(loopback=false;mcast_addr=228.8.8.8;mcast_port=27000;ip_ttl=1;" +
+        String props2="UDP(loopback=false;mcast_port=27000;ip_ttl=1;" +
                 "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
                 //"PIGGYBACK(max_wait_time=100;max_size=32000):" +
                 "PING(timeout=2000;num_initial_members=3):" +
