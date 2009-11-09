@@ -509,7 +509,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 log.debug("Connecting to state provider " + address.getIpAddress() + ":"
                         + address.getPort() + ", original buffer size was " + bufferSize
                         + " and was reset to " + socket.getReceiveBufferSize());
-            socket.connect(new InetSocketAddress(address.getIpAddress(), address.getPort()));
+            
+            Util.connect(socket, new InetSocketAddress(address.getIpAddress(), address.getPort()), 0);
             if (log.isDebugEnabled())
                 log.debug("Connected to state provider, my end of the socket is "
                         + socket.getLocalAddress() + ":" + socket.getLocalPort()
