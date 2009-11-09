@@ -13,8 +13,11 @@
             <name>JBoss Inc. Repository</name>
             <url>http://repository.jboss.com/maven2/</url>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
     </repositories>
     <dependencies>
@@ -22,23 +25,16 @@
             <groupId>bsh</groupId>
             <artifactId>bsh</artifactId>
             <version>1.2b7</version>
-        </dependency>
-        <dependency>
-            <groupId>xalan</groupId>
-            <artifactId>xalan</artifactId>
-            <version>2.7.1</version>
-        </dependency>
-        <dependency>
-            <groupId>xalan</groupId>
-            <artifactId>serializer</artifactId>
-            <version>2.7.1</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.14</version>
+            <optional>true</optional>
         </dependency>
-        <dependency>
+        <!--  Tests not included in maven build currently so commented out -->
+        <!-- <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>5.10</version>
@@ -50,7 +46,7 @@
             <artifactId>bcprov-jdk15</artifactId>
             <version>140</version>
             <scope>test</scope>
-        </dependency>
+        </dependency> -->
     </dependencies>
     <build>
         <sourceDirectory>src</sourceDirectory>
@@ -91,11 +87,13 @@
                         <configuration>
                             <tasks>
                                 <property name="compile_classpath" refid="maven.compile.classpath"/>
+                                <property name="plugin_classpath" refid="maven.plugin.classpath"/>
                                 <delete dir="${project.build.outputDirectory}/schema" failonerror="false"/>
                                 <mkdir dir="${project.build.outputDirectory}/schema"/>
                                 <java classname="org.jgroups.util.XMLSchemaGenerator">
                                     <classpath>
                                         <pathelement path="${compile_classpath}"/>
+                                        <pathelement path="${plugin_classpath}"/>
                                     </classpath>
                                     <arg line="-o ${project.build.outputDirectory}/schema"/>
                                 </java>
@@ -103,6 +101,18 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies> <!--  Not really needed in Java 5 -->
+                    <dependency>
+                        <groupId>xalan</groupId>
+                        <artifactId>xalan</artifactId>
+                        <version>2.7.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>xalan</groupId>
+                        <artifactId>serializer</artifactId>
+                        <version>2.7.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
