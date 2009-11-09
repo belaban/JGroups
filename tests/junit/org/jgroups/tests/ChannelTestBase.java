@@ -13,6 +13,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
+import org.jgroups.util.StackType;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
@@ -47,7 +48,7 @@ public class ChannelTestBase {
 
     protected boolean use_flush = false;
 
-    private String bind_addr = "127.0.0.1";
+    private String bind_addr = null;
 
     protected final Log log = LogFactory.getLog(this.getClass());
 
@@ -58,6 +59,9 @@ public class ChannelTestBase {
         // this should never ever happen!
         if (annotation == null)
             throw new Exception("Test is not marked with @Test annotation");
+
+        StackType type=Util.getIpStackType();
+        bind_addr=type == StackType.IPv6 ? "::1" : "127.0.0.1";
 
         List<String> groups = Arrays.asList(annotation.groups());
         boolean testRequiresFlush = groups.contains(Global.FLUSH);
@@ -294,8 +298,7 @@ public class ChannelTestBase {
 
                 Protocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)
-                    throw new IllegalStateException(
-                                    "TCP stack must consist of TCP:TCPPING - other config are not supported");
+                    throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
                 List<String> initial_hosts = new LinkedList<String>();
                 for (short port : ports) {
@@ -305,8 +308,7 @@ public class ChannelTestBase {
                 List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1);
                 ((TCPPING) ping).setInitialHosts(init_hosts);
             } else {
-                throw new IllegalStateException(
-                                "Only UDP and TCP are supported as transport protocols");
+                throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }
         }
     }

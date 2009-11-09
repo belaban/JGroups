@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.14 2009/10/05 19:35:44 vlada Exp $
+ * @version $Id: GossipRouterTest.java,v 1.15 2009/11/09 14:49:56 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
@@ -63,7 +63,7 @@ public class GossipRouterTest {
         c2.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(12001, "127.0.0.1");
+        router=new GossipRouter(12001, null);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");
