@@ -133,8 +133,11 @@ public abstract class BasicTCP extends TP {
             if(skip_suspected_members && !suspected_mbrs.contains(dest)) {
                 suspected_mbrs.add(dest);
                 Address logical_addr=logical_addr_cache.getByValue(dest);
-                if(logical_addr != null && members.contains(logical_addr))
-                    up_prot.up(new Event(Event.SUSPECT, logical_addr));
+                if(logical_addr != null) {
+                    if(members.contains(logical_addr))
+                        up_prot.up(new Event(Event.SUSPECT, logical_addr));
+                    logical_addr_cache.remove(logical_addr, true);
+                }
             }
             throw e;
         }
