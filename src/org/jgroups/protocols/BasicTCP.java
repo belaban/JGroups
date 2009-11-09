@@ -123,8 +123,8 @@ public abstract class BasicTCP extends TP {
         if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
-                if(log.isTraceEnabled())
-                    log.trace("will not send unicast message to " + dest + " as it is currently suspected");
+                if(log.isWarnEnabled())
+                    log.warn("will not send unicast message to " + dest + " as it is currently suspected");
                 return;
             }
         }
