@@ -78,7 +78,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.234 2009/11/10 05:21:55 belaban Exp $
+ * @version $Id: JChannel.java,v 1.235 2009/11/10 10:12:07 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -285,7 +285,6 @@ public class JChannel extends Channel {
         init(ch);
         receive_blocks=ch.receive_blocks;
         receive_local_msgs=ch.receive_local_msgs;
-        receive_blocks=ch.receive_blocks;
     }
 
  
@@ -940,8 +939,8 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     receive_blocks=((Boolean)value).booleanValue();
                 else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
+                        " (" + value + "): value has to be Boolean");
                 break;
 
             case GET_STATE_EVENTS:
@@ -953,8 +952,8 @@ public class JChannel extends Channel {
                 if(value instanceof Boolean)
                     receive_local_msgs=((Boolean)value).booleanValue();
                 else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                                                     " (" + value + "): value has to be Boolean");
+                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
+                        " (" + value + "): value has to be Boolean");
                 break;
 
             case AUTO_RECONNECT:
@@ -985,7 +984,7 @@ public class JChannel extends Channel {
             case VIEW:
             	return Boolean.TRUE;
             case BLOCK:
-            	return receive_blocks ? Boolean.TRUE : Boolean.FALSE;
+            	return receive_blocks;
             case SUSPECT:
             	return Boolean.TRUE;
             case AUTO_RECONNECT:
@@ -1453,10 +1452,8 @@ public class JChannel extends Channel {
 
 
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
-        if(up_handler != null) {
-            Object ret=up_handler.up(evt);      
-            return ret;
-        }
+        if(up_handler != null)
+            return up_handler.up(evt);
 
         switch(type) {
             case Event.MSG:
@@ -1543,7 +1540,7 @@ public class JChannel extends Channel {
 
             case Event.BLOCK:
                 if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
-                    return Boolean.TRUE;
+                    return true;
                 }
 
                 if(receiver != null) {
@@ -1554,7 +1551,7 @@ public class JChannel extends Channel {
                         if(log.isErrorEnabled())
                             log.error("failed calling block() in receiver", t);
                     }                     
-                    return Boolean.TRUE;
+                    return true;
                 }
                 break;
             case Event.UNBLOCK:
