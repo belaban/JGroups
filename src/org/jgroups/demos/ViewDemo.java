@@ -1,13 +1,10 @@
-// $Id: ViewDemo.java,v 1.16 2009/06/17 16:20:13 belaban Exp $
+// $Id: ViewDemo.java,v 1.17 2009/11/10 05:25:51 belaban Exp $
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -32,16 +29,10 @@ public class ViewDemo extends ReceiverAdapter {
 
 
 
-    public void start(String props, boolean use_additional_data) throws Exception {
+    public void start(String props) throws Exception {
 
         channel=new JChannel(props);
         channel.setReceiver(this);
-        if(use_additional_data) {
-            Map<String,Object> m=new HashMap<String,Object>();
-            m.put("additional_data", "bela".getBytes());
-            channel.down(new Event(Event.CONFIG, m));
-        }
-
         channel.connect("ViewDemo");
 
         while(true) {
@@ -52,7 +43,6 @@ public class ViewDemo extends ReceiverAdapter {
 
     public static void main(String args[]) {
         ViewDemo t=new ViewDemo();
-        boolean use_additional_data=false;
         String props="udp.xml";
 
         for(int i=0; i < args.length; i++) {
@@ -64,10 +54,6 @@ public class ViewDemo extends ReceiverAdapter {
                 props=args[++i];
                 continue;
             }
-            if("-use_additional_data".equals(args[i])) {
-                use_additional_data=Boolean.valueOf(args[++i]).booleanValue();
-                continue;
-            }
             if("-bind_addr".equals(args[i])) {
                 System.setProperty("jgroups.bind_addr", args[++i]);
                 continue;
@@ -77,7 +63,7 @@ public class ViewDemo extends ReceiverAdapter {
         }
 
         try {
-            t.start(props, use_additional_data);
+            t.start(props);
         }
         catch(Exception e) {
             e.printStackTrace();
