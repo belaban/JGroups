@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.77 2009/10/20 14:52:11 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.78 2009/11/10 04:44:54 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -57,7 +57,7 @@ public class MERGE2 extends Protocol {
     protected long max_interval=20000;
 
     /** Number of inconsistent  views with only 1 coord after a MERGE event is sent up */
-    @Property
+    @Property(description="Number of inconsistent  views with only 1 coord after a MERGE event is sent up")
     @ManagedAttribute(description="Number of inconsistent  views with only 1 coord after a MERGE event is sent up",
                       writable=true)
     protected int inconsistent_view_threshold=1;
