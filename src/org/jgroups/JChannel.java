@@ -78,7 +78,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.233 2009/10/23 19:58:12 vlada Exp $
+ * @version $Id: JChannel.java,v 1.234 2009/11/10 05:21:55 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -116,10 +116,10 @@ public class JChannel extends Channel {
     private boolean receive_local_msgs=true;
     
     /*channel connected flag*/
-    protected boolean connected=false;
+    protected volatile boolean connected=false;
 
     /*channel closed flag*/
-    protected boolean closed=false;      // close() has been called, channel is unusable
+    protected volatile boolean closed=false;      // close() has been called, channel is unusable
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
