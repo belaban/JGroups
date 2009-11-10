@@ -5,6 +5,7 @@ import org.jgroups.Global;
 import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.util.StackType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.14 2009/05/05 13:01:59 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.15 2009/11/10 10:41:16 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
@@ -28,7 +29,9 @@ public class ConnectionTableTest {
 
     static {
         try {
-            loopback_addr=InetAddress.getByName("127.0.0.1");
+            StackType type=Util.getIpStackType();
+            String tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+            loopback_addr=InetAddress.getByName(tmp);
         }
         catch(UnknownHostException e) {
             throw new RuntimeException("failed initializing loopback_addr", e);
