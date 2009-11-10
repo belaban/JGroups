@@ -1,13 +1,12 @@
 package org.jgroups.tests;
 
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.JChannel;
-import org.jgroups.View;
-import org.jgroups.ReceiverAdapter;
 import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -19,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.16 2009/11/09 17:09:42 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.17 2009/11/10 05:27:03 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
@@ -81,8 +80,7 @@ public class GossipRouterTest {
         Util.sleep(500);
         View view=c1.getView();
         System.out.println("view=" + view);
-        Assert.assertEquals(2, view.size());
-
+        assert view.size() == 2 : "view=" + view;
         Util.close(c2, c1);
     }
 
