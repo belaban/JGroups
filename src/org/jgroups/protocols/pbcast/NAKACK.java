@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.235 2009/11/03 16:47:30 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.236 2009/11/10 11:22:26 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
@@ -164,17 +164,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private long xmit_time_stats_start;
 
-    /**
-     * BoundedList<MissingMessage>. Keeps track of the last stats_list_size
-     * XMIT requests
-     */
-    private BoundedList<MissingMessage> receive_history;
-
-    /**
-     * BoundedList<XmitRequest>. Keeps track of the last stats_list_size
-     * missing messages received
-     */
-    private BoundedList<XmitRequest> send_history;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
     private ConcurrentMap<Address,StatsEntry> sent=new ConcurrentHashMap<Address,StatsEntry>();
@@ -294,10 +283,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         xmit_reqs_received=xmit_reqs_sent=xmit_rsps_received=xmit_rsps_sent=missing_msgs_received=0;
         sent.clear();
         received.clear();
-        if(receive_history !=null)
-            receive_history.clear();
-        if(send_history != null)
-            send_history.clear();
         stability_msgs.clear();
         digest_history.clear();
     }
@@ -317,10 +302,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        if(stats) {
-            send_history=new BoundedList<XmitRequest>(stats_list_size);
-            receive_history=new BoundedList<MissingMessage>(stats_list_size);
-        }
         TP transport=getTransport();
         if(transport != null)
             transport.registerProbeHandler(this);
@@ -425,16 +406,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(key == null || key == Global.NULL) key="<mcast dest>";
             StatsEntry val=entry.getValue();
             sb.append(key).append(": ").append(val).append("\n");
-        }
-
-        sb.append("\nXMIT_REQS sent:\n");
-        for(XmitRequest tmp: send_history) {
-            sb.append(tmp).append("\n");
-        }
-
-        sb.append("\nMissing messages received\n");
-        for(MissingMessage missing: receive_history) {
-            sb.append(missing).append("\n");
         }
 
         sb.append("\nStability messages received\n");
@@ -1471,8 +1442,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(stats) {
             xmit_reqs_sent+=last_seqno - first_seqno +1;
             updateStats(sent, sender, 1, 0, 0);
-            XmitRequest req=new XmitRequest(sender, first_seqno, last_seqno, sender);
-            send_history.add(req);
         }
     }
     /* ------------------- End of Interface Retransmitter.RetransmitCommand -------------------- */
@@ -1526,8 +1495,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(stats) {
             missing_msgs_received++;
             updateStats(received, original_sender, 0, 0, 1);
-            MissingMessage missing=new MissingMessage(original_sender, seqno);
-            receive_history.add(missing);
         }
     }
 
@@ -1778,42 +1745,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
-    static class XmitRequest {
-        final Address original_sender; // original sender of message
-        final long low, high, timestamp=System.currentTimeMillis();
-        final Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
-
-        XmitRequest(Address original_sender, long low, long high, Address xmit_dest) {
-            this.original_sender=original_sender;
-            this.xmit_dest=xmit_dest;
-            this.low=low;
-            this.high=high;
-        }
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #[").append(low);
-            sb.append("-").append(high).append("]");
-            sb.append(" (XMIT_REQ sent to ").append(xmit_dest).append(")");
-            return sb.toString();
-        }
-    }
-
-    static class MissingMessage {
-        final Address original_sender;
-        final long    seq, timestamp=System.currentTimeMillis();
-
-        MissingMessage(Address original_sender, long seqno) {
-            this.original_sender=original_sender;
-            this.seq=seqno;
-        }
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #").append(seq);
-            return sb.toString();
-        }
-    }
 
     /* ----------------------------- End of Private Methods ------------------------------------ */
 
