@@ -68,7 +68,9 @@ public class IpAddressTest {
     public static void testEqualityWithDnsRoundRobin() throws UnknownHostException {
         IpAddress x1, x2, x3;
 
-        InetAddress addr=InetAddress.getByName("127.0.0.1");
+        StackType type=Util.getIpStackType();
+        String tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+        InetAddress addr=InetAddress.getByName(tmp);
         byte[] rawAddr=addr.getAddress();
 
         InetAddress inet1=InetAddress.getByAddress("MyHost1", rawAddr);
