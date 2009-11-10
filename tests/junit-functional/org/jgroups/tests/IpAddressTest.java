@@ -1,37 +1,50 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Util;
-import org.jgroups.util.StackType;
-import org.jgroups.Global;
 import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Collections;
 
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class IpAddressTest {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
 
     
-    @BeforeMethod
+    @BeforeClass
     public void setUp() throws Exception {
-        a=new IpAddress("localhost", 5555);
-        b=new IpAddress("localhost", 5555);
+        StackType type=Util.getIpStackType();
+        if(type == StackType.IPv6) {
+            a=new IpAddress("::1", 5555);
+            b=new IpAddress("::1", 5555);
+            d=new IpAddress("::1", 5556);
+            e=new IpAddress("::1", 5555);
+            f=new IpAddress("2001:0db8:0000:0000:0000:002e:0370:2334", 80);
+            g=new IpAddress("2001:0db8:0000:0000:0000:002e:0370:2334", 8080);
+            h=new IpAddress("ff0e::3:4:5", 5555);
+        }
+        else {
+            a=new IpAddress("localhost", 5555);
+            b=new IpAddress("localhost", 5555);
+            d=new IpAddress("localhost", 5556);
+            e=new IpAddress("127.0.0.1", 5555);
+            f=new IpAddress("www.ibm.com", 80);
+            g=new IpAddress("www.ibm.com", 8080);
+            h=new IpAddress("224.0.0.1", 5555);
+        }
+
         c=b;
-        d=new IpAddress("localhost", 5556);
-        e=new IpAddress("127.0.0.1", 5555);
-        f=new IpAddress("www.ibm.com", 80);
-        g=new IpAddress("www.ibm.com", 8080);
-        h=new IpAddress("224.0.0.1", 5555);
     }
 
 
@@ -305,10 +318,10 @@ public class IpAddressTest {
         DataInputStream       ois;
         IpAddress             a2, b2, x, x2, y, y2;
 
-        x=new IpAddress(5555);
+        x=createStackConformantAddress(5555);
         x.setAdditionalData(new byte[]{'b','e','l','a'});
 
-        y=new IpAddress(1111);
+        y=createStackConformantAddress(1111);
         y.setAdditionalData(new byte[]{'b','e','l','a'});
 
         a.setAdditionalData(null);
@@ -356,7 +369,7 @@ public class IpAddressTest {
         DataInputStream       dis;
         IpAddress             x, x2;
 
-        x=new IpAddress(65535);
+        x=createStackConformantAddress(65535);
         x.writeTo(oos);
 
         buf=bos.toByteArray();
@@ -424,6 +437,13 @@ public class IpAddressTest {
     }
 
 
+    private static IpAddress createStackConformantAddress(int port) throws UnknownHostException {
+        StackType type=Util.getIpStackType();
+        if(type == StackType.IPv6)
+            return new IpAddress("::1", port);
+        else
+            return new IpAddress("127.0.0.1", port);
+    }
 
 
 }

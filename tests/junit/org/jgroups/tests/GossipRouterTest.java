@@ -7,8 +7,10 @@ import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Util;
+import org.jgroups.util.StackType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,13 +20,26 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.17 2009/11/10 05:27:03 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.18 2009/11/10 08:26:09 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
     final static String PROPS="tunnel.xml";
     GossipRouter router;
     JChannel c1, c2;
+    String bind_addr=null;
+
+    @BeforeClass
+    protected void setUp() {
+        bind_addr=Util.getProperty(Global.BIND_ADDR);
+        if(bind_addr == null) {
+            StackType type=Util.getIpStackType();
+            if(type == StackType.IPv6)
+                bind_addr="::1";
+            else
+                bind_addr="127.0.0.1";
+        }
+    }
 
 
     @AfterMethod (alwaysRun=true)
@@ -62,7 +77,7 @@ public class GossipRouterTest {
         c2.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(12001, null);
+        router=new GossipRouter(12001, bind_addr);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");
