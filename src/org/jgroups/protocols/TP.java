@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.276 2009/11/05 08:44:22 belaban Exp $
+ * @version $Id: TP.java,v 1.277 2009/11/12 09:07:42 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -99,6 +99,9 @@ public abstract class TP extends Protocol {
                       description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces=null;
 
+    @Property
+    @Deprecated
+    int marshaller_pool_size=0;
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
@@ -157,8 +160,8 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     @Property(name="oob_thread_pool.rejection_policy",
-                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Run")
-    String oob_thread_pool_rejection_policy="Run";
+              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
+    String oob_thread_pool_rejection_policy="discard";
 
     @ManagedAttribute(description="Minimum thread pool size for regular messages. Default is 2")
     @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
@@ -190,8 +193,8 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute
     @Property(name="thread_pool.rejection_policy",
-                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
-    protected String thread_pool_rejection_policy="Run";
+              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
+    protected String thread_pool_rejection_policy="Discard";
 
     @ManagedAttribute(description="Number of threads to be used by the timer thread pool")
     @Property(name="timer.num_threads",description="Number of threads to be used by the timer thread pool. Default is 4")
