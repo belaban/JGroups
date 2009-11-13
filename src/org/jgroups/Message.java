@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.100 2009/11/03 09:54:42 belaban Exp $
+ * @version $Id: Message.java,v 1.101 2009/11/13 15:02:34 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -45,6 +45,8 @@ public class Message implements Streamable {
 
     private byte      flags;
 
+    private byte      transient_flags; // transient_flags is neither marshalled nor copied
+
     protected static final Log log=LogFactory.getLog(Message.class);
 
     static final Set<Class>    nonStreamableHeaders=new HashSet<Class>();
@@ -62,6 +64,7 @@ public class Message implements Streamable {
     public static final byte HIGH_PRIO         =  1 << 2; // not yet sure if we want this flag...
     public static final byte LOOPBACK          =  1 << 3; // if message was sent to self
     public static final byte DONT_BUNDLE       =  1 << 4; // don't bundle message at the transport
+    public static final byte OOB_DELIVERED     =  1 << 5; // OOB which has already been delivered up the stack
 
 
 
@@ -296,18 +299,62 @@ public class Message implements Streamable {
     public void clearFlag(byte flag) {
         if(flag > Byte.MAX_VALUE || flag < 0)
             throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-//        if(isFlagSet(flag)) {
-//            flags ^= flag;
-//        }
         flags &= ~flag;
     }
 
     public boolean isFlagSet(byte flag) {
+        return isFlagSet(flags, flag);
+    }
+
+    /**
+     * Same as {@link #setFlag(byte)} but transient flags are never marshalled
+     * @param flag
+     */
+    public void setTransientFlag(byte flag) {
+        if(flag > Byte.MAX_VALUE || flag < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+        transient_flags |= flag;
+    }
+
+    /**
+     * Atomically checks if a given flag is set and - if not - sets it. When multiple threads concurrently call this
+     * method with the same flag, only one of them will be able to set the flag
+     * @param flag
+     * @return True if the flag could be set, false if not (was already set)
+     */
+    public boolean setTransientFlagIfAbsent(byte flag) {
+        if(flag > Byte.MAX_VALUE || flag < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+        synchronized(this) {
+            if(isTransientFlagSet(flag))
+                return false;
+            else
+                setTransientFlag(flag);
+            return true;
+        }
+    }
+
+    public void clearTransientFlag(byte flag) {
+        if(flag > Byte.MAX_VALUE || flag < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+        transient_flags &= ~flag;
+    }
+
+    public boolean isTransientFlagSet(byte flag) {
+        return isFlagSet(transient_flags, flag);
+    }
+
+
+    protected static boolean isFlagSet(byte flags, byte flag) {
         return (flags & flag) == flag;
     }
 
     public byte getFlags() {
         return flags;
+    }
+
+    public byte getTransientFlags() {
+        return transient_flags;
     }
 
 
@@ -322,10 +369,8 @@ public class Message implements Streamable {
      * Puts a header given a key into the map, only if the key doesn't exist yet
      * @param key
      * @param hdr
-     * @return the previous value associated with the specified key, or
-     *         <tt>null</tt> if there was no mapping for the key.
-     *         (A <tt>null</tt> return can also indicate that the map
-     *         previously associated <tt>null</tt> with the key,
+     * @return the previous value associated with the specified key, or <tt>null</tt> if there was no mapping for the key.
+     *         (A <tt>null</tt> return can also indicate that the map previously associated <tt>null</tt> with the key,
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
@@ -335,7 +380,7 @@ public class Message implements Streamable {
     /**
      *
      * @param key
-     * @return the header assoaicted with key
+     * @return the header associated with key
      * @deprecated Use getHeader() instead. The issue with removing a header is described in
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
@@ -409,7 +454,9 @@ public class Message implements Streamable {
             ret.append('0');
         ret.append(" bytes");
         if(flags > 0)
-            ret.append(", flags=").append(flagsToString());
+            ret.append(", flags=").append(flagsToString(flags));
+        if(transient_flags > 0)
+            ret.append(", transient_flags=" + flagsToString(transient_flags));
         ret.append(']');
         return ret.toString();
     }
@@ -429,8 +476,6 @@ public class Message implements Streamable {
             return "";
         }
     }
-
-
 
 
 
@@ -558,40 +603,47 @@ public class Message implements Streamable {
 
     /* ----------------------------------- Private methods ------------------------------- */
 
-    private String flagsToString() {
+    private String flagsToString(byte flags) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        if(isFlagSet(OOB)) {
+        if(isFlagSet(flags, OOB)) {
             first=false;
             sb.append("OOB");
         }
-        if(isFlagSet(LOW_PRIO)) {
+        if(isFlagSet(flags, LOW_PRIO)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("LOW_PRIO");
         }
-        if(isFlagSet(HIGH_PRIO)) {
+        if(isFlagSet(flags, HIGH_PRIO)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("HIGH_PRIO");
         }
-        if(isFlagSet(LOOPBACK)) {
+        if(isFlagSet(flags, LOOPBACK)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("LOOPBACK");
         }
-        if(isFlagSet(DONT_BUNDLE)) {
+        if(isFlagSet(flags, DONT_BUNDLE)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("DONT_BUNDLE");
+        }
+        if(isFlagSet(flags, OOB_DELIVERED)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("OOB_DELIVERED");
         }
         return sb.toString();
     }
@@ -684,7 +736,6 @@ public class Message implements Streamable {
 
 
     /* ------------------------------- End of Private methods ---------------------------- */
-
 
 
 }
