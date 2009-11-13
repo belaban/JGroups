@@ -32,10 +32,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.237 2009/11/10 11:27:31 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.238 2009/11/13 15:33:02 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release"})
+@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
 
     /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
@@ -133,12 +133,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
     protected boolean print_stability_history_on_failed_xmit=false;
-
-    @Property(description="Size of send and receive history. Default is 20 entries")
-    private int stats_list_size=20;
-
-
-
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -205,11 +199,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private volatile boolean leaving=false;
     private volatile boolean started=false;
     private TimeScheduler timer=null;
-    /**
-     * Keeps track of OOB messages sent by myself, needed by
-     * {@link #handleMessage(org.jgroups.Message, NakAckHeader)}
-     */
-    private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
 
     private final Lock rebroadcast_lock=new ReentrantLock();
 
@@ -511,7 +500,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public void stop() {
         started=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
-        oob_loopback_msgs.clear();
     }
 
 
@@ -634,8 +622,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return null;
             }
 
-            // Changed by bela Jan 29 2003: we must not remove the header, otherwise
-            // further xmit requests will fail !
+            // Changed by bela Jan 29 2003: we must not remove the header, otherwise further xmit requests will fail !
             //hdr=(NakAckHeader)msg.removeHeader(getName());
 
             switch(hdr.type) {
@@ -733,8 +720,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
-            if(msg.isFlagSet(Message.OOB))
-                oob_loopback_msgs.add(msg_id);
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
@@ -776,18 +761,35 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         boolean added_to_window=false;
         boolean added=loopback || (added_to_window=win.add(hdr.seqno, msg));
 
-        if(added_to_window)
+        if(added_to_window && !msg.isFlagSet(Message.OOB))
             undelivered_msgs.incrementAndGet();
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
         if(added && msg.isFlagSet(Message.OOB)) {
-            if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
-                up_prot.up(new Event(Event.MSG, msg));
-                win.removeOOBMessage();
-                if(!(win.hasMessagesToRemove() && undelivered_msgs.get() > 0))
-                    return;
+            msg=win.get(hdr.seqno);
+            if(msg != null) {
+                boolean pass_up=msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED);
+                if(pass_up)
+                    up_prot.up(new Event(Event.MSG, msg));
             }
+
+            while(true) {
+                final Message oob_msg=win.removeOOBMessage();
+                if(oob_msg == null)
+                    break;
+                boolean pass_up=oob_msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED);
+                if(pass_up) {
+                    timer.execute(new Runnable() {
+                        public void run() {
+                            up_prot.up(new Event(Event.MSG, oob_msg));
+                        }
+                    });
+                }
+            }
+
+            if(!(win.hasMessagesToRemove() && undelivered_msgs.get() > 0))
+                return;
         }
 
         // Efficient way of checking whether another thread is already processing messages from 'sender'.
@@ -834,7 +836,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg_to_deliver));
                     }
                     catch(Throwable t) {
-                        log.error("couldn't deliver message " + msg, t);
+                        log.error("couldn't deliver message " + msg_to_deliver, t);
                     }
                 }
             }
@@ -991,7 +993,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             Message xmit_msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
             // changed Bela Jan 4 2007: we should not use OOB for retransmitted messages, otherwise we tax the
             // OOB thread pool too much
-            // msg.setFlag(Message.OOB);
+            // xmit_msg.setFlag(Message.OOB);
+
+            if(msg.isFlagSet(Message.OOB)) // set OOB for the wrapping message if the wrapped message is OOB, too
+                xmit_msg.setFlag(Message.OOB);
+
             xmit_msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, seqno));
             down_prot.down(new Event(Event.MSG, xmit_msg));
         }
