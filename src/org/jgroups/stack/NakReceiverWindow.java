@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.68 2009/11/03 16:47:29 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.69 2009/11/13 15:02:58 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -268,7 +268,7 @@ public class NakReceiverWindow {
                 action=Action.PutIfAbsent;
             }
 
-            // Case #4: we received a seqno higher than expected: add NULL_MSG values for missing messages, add to Retransmitter
+            // Case #4: we received a seqno higher than expected: add to Retransmitter
             // We cannot move this out of the lock scope as other seqnos might get added by different threads
             else if(seqno > next_to_add) {
                 Message tmp=xmit_table.putIfAbsent(seqno, msg);
