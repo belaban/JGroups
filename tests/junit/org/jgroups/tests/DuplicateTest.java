@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
 import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
@@ -12,7 +13,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.12 2009/07/20 13:28:12 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.13 2009/11/13 15:01:09 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -35,6 +35,7 @@ public class DuplicateTest extends ChannelTestBase {
     @BeforeClass
     void classInit() throws Exception {
         createChannels(true, true, (short)2, (short)2);
+        c1.setName("C1"); c2.setName("C2"); c3.setName("C3");
         a1=c1.getAddress();
         a2=c2.getAddress();
         a3=c3.getAddress();
@@ -59,17 +60,20 @@ public class DuplicateTest extends ChannelTestBase {
 
     public void testRegularUnicastsToSelf() throws Exception {
         send(c1, c1.getAddress(), false, 10);
+        sendStableMessages(c1,c2, c3);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToSelf() throws Exception {
         send(c1, c1.getAddress(), true, 10);
+        sendStableMessages(c1,c2,c3);
         check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testRegularUnicastsToOthers() throws Exception {
         send(c1, c2.getAddress(), false, 10);
         send(c1, c3.getAddress(), false, 10);
+        sendStableMessages(c1,c2,c3);
         check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
@@ -77,6 +81,7 @@ public class DuplicateTest extends ChannelTestBase {
     public void testOOBUnicastsToOthers() throws Exception {
         send(c1, c2.getAddress(), true, 10);
         send(c1, c3.getAddress(), true, 10);
+        sendStableMessages(c1,c2,c3);
         check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
@@ -84,6 +89,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     public void testRegularMulticastToAll() throws Exception {
         send(c1, null /** multicast */, false, 10);
+        sendStableMessages(c1,c2,c3);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
@@ -92,6 +98,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     public void testOOBMulticastToAll() throws Exception {
         send(c1, null /** multicast */, true, 10);
+        sendStableMessages(c1,c2,c3);
         check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
@@ -102,6 +109,7 @@ public class DuplicateTest extends ChannelTestBase {
         send(c1, null /** multicast */, false, 10);
         send(c2, null /** multicast */, false, 10);
         send(c3, null /** multicast */, false, 10);
+        sendStableMessages(c1,c2,c3);
         check(r1, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r2, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r3, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
@@ -111,19 +119,21 @@ public class DuplicateTest extends ChannelTestBase {
         send(c1, null /** multicast */, true, 10);
         send(c2, null /** multicast */, true, 10);
         send(c3, null /** multicast */, true, 10);
+        sendStableMessages(c1,c2,c3);
         check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
     public void testMixedMulticastsToAll3Members() throws Exception {
-         send(c1, null /** multicast */, false, true, 10);
-         send(c2, null /** multicast */, false, true, 10);
-         send(c3, null /** multicast */, false, true, 10);
-         check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-         check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-     }
+        send(c1, null /** multicast */, false, true, 10);
+        send(c2, null /** multicast */, false, true, 10);
+        send(c3, null /** multicast */, false, true, 10);
+        sendStableMessages(c1,c2,c3);
+        check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+    }
 
 
      private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
@@ -146,6 +156,14 @@ public class DuplicateTest extends ChannelTestBase {
          }
      }
 
+
+    private static void sendStableMessages(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
+            if(stable != null)
+                stable.runMessageGarbageCollection();
+        }
+    }
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
@@ -179,7 +197,6 @@ public class DuplicateTest extends ChannelTestBase {
         for(Tuple<Address,Integer> tuple: vals) {
             Address addr=tuple.getVal1();
             List<Long> list=msgs.get(addr);
-            System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
             assert list != null : "no list available for " + addr;
 
             int expected_values=tuple.getVal2();
@@ -189,7 +206,8 @@ public class DuplicateTest extends ChannelTestBase {
                 Util.sleep(500);
             }
 
-            assert list.size() == tuple.getVal2() : "list's size is not " + tuple.getVal2() +", list: " + list;
+            System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
+            assert list.size() == expected_values : addr + "'s list's size is not " + tuple.getVal2() +", list: " + list;
             if(!oob) // if OOB messages, ordering is not guaranteed
                 check(addr, list);
             else
