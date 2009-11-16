@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.67 2009/11/09 11:53:03 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.68 2009/11/16 08:59:31 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -211,16 +211,16 @@ public class GossipRouter {
 
     public static String type2String(int type) {
         switch(type) {
-            case CONNECT:
-                return "CONNECT";
-            case DISCONNECT:
-                return "DISCONNECT";
-            case GOSSIP_GET:
-                return "GOSSIP_GET";
-            case SHUTDOWN:
-                return "SHUTDOWN";
+            case CONNECT:     return "CONNECT";
+            case DISCONNECT:  return "DISCONNECT";
+            case GOSSIP_GET:  return "GOSSIP_GET";
+            case SHUTDOWN:    return "SHUTDOWN";
+            case MESSAGE:     return "MESSAGE";
+            case SUSPECT:     return "SUSPECT";
+            case PING:        return "PING";
+            case CLOSE:       return "CLOSE";
             default:
-                return "unknown";
+                return "unknown (" + type + ")";
         }
     }
 
