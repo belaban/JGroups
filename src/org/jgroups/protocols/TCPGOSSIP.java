@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.46 2009/11/05 08:44:50 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.47 2009/11/16 09:10:43 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -71,6 +71,12 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
         if(timeout <= sock_conn_timeout)
             throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout ("
                     + sock_conn_timeout + ")");
+
+        // we cannot use TCPGOSSIP together with TUNNEL (https://jira.jboss.org/jira/browse/JGRP-1101)
+        TP transport=getTransport();
+        if(transport instanceof TUNNEL)
+            throw new IllegalStateException("TCPGOSSIP cannot be used with TUNNEL; use either TUNNEL:PING or " +
+                    "TCP:TCPGOSSIP as valid configurations");
     }
 
     public void start() throws Exception {
