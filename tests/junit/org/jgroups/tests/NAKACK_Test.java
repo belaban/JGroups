@@ -16,12 +16,12 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
+ * Tests the NAKACK protocol for OOB and regular msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.14 2009/08/18 10:50:30 belaban Exp $
+ * @version $Id: NAKACK_Test.java,v 1.1 2009/11/16 11:36:55 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
-public class NAKACK_OOB_Test extends ChannelTestBase {
+public class NAKACK_Test extends ChannelTestBase {
     JChannel c1, c2, c3;
 
 
@@ -46,9 +46,9 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
      */
     @Test
     public void testOutOfBandMessages() throws Exception {
-        NAKACK_OOB_Test.MyReceiver receiver1=new NAKACK_OOB_Test.MyReceiver();
-        NAKACK_OOB_Test.MyReceiver receiver2=new NAKACK_OOB_Test.MyReceiver();
-        NAKACK_OOB_Test.MyReceiver receiver3=new NAKACK_OOB_Test.MyReceiver();
+        NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver();
+        NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
+        NAKACK_Test.MyReceiver receiver3=new NAKACK_Test.MyReceiver();
         c1.setReceiver(receiver1);
         c2.setReceiver(receiver2);
         c3.setReceiver(receiver3);
