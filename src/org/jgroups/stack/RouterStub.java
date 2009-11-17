@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.53 2009/11/05 08:45:48 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.54 2009/11/17 08:48:35 belaban Exp $
  */
 public class RouterStub {
 
@@ -40,7 +40,7 @@ public class RouterStub {
 
     private volatile ConnectionStatus connectionState=ConnectionStatus.INITIAL;
 
-    private static final Log log=LogFactory.getLog(TUNNEL.class);
+    private static final Log log=LogFactory.getLog(RouterStub.class);
 
     private ConnectionListener conn_listener;
 
