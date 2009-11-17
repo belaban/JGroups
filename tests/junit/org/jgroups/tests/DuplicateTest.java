@@ -9,14 +9,14 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Tests whether UNICAST or NAKACK prevent delivery of duplicate messages. JGroups guarantees that a message is
@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.13 2009/11/13 15:01:09 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.14 2009/11/17 11:58:13 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -32,17 +32,15 @@ public class DuplicateTest extends ChannelTestBase {
     protected Address a1, a2, a3;
     private MyReceiver r1, r2, r3;
 
-    @BeforeClass
-    void classInit() throws Exception {
+
+    @BeforeMethod
+    void init() throws Exception {
         createChannels(true, true, (short)2, (short)2);
         c1.setName("C1"); c2.setName("C2"); c3.setName("C3");
         a1=c1.getAddress();
         a2=c2.getAddress();
         a3=c3.getAddress();
-    }
 
-    @BeforeMethod
-    void init() throws Exception {
         r1=new MyReceiver("C1");
         r2=new MyReceiver("C2");
         r3=new MyReceiver("C3");
@@ -184,7 +182,7 @@ public class DuplicateTest extends ChannelTestBase {
 
 
     private static void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
-        Map<Address, List<Long>> msgs=receiver.getMsgs();
+        Map<Address, Collection<Long>> msgs=receiver.getMsgs();
 
         for(int i=0; i < 10; i++) {
             if(msgs.size() == expected_size)
@@ -196,7 +194,7 @@ public class DuplicateTest extends ChannelTestBase {
 
         for(Tuple<Address,Integer> tuple: vals) {
             Address addr=tuple.getVal1();
-            List<Long> list=msgs.get(addr);
+            Collection<Long> list=msgs.get(addr);
             assert list != null : "no list available for " + addr;
 
             int expected_values=tuple.getVal2();
@@ -216,15 +214,15 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-    private static void check(Address addr, List<Long> list) {
-        long id=list.get(0);
+    private static void check(Address addr, Collection<Long> list) {
+        long id=list.iterator().next();
         for(long val: list) {
             assert val == id : "[" + addr + "]: val=" + val + " (expected " + id + "): list is " + list;
             id++;
         }
     }
 
-    private static void checkPresence(List<Long> list) {
+    private static void checkPresence(Collection<Long> list) {
         for(long l=1; l <= 10; l++) {
             assert list.contains(l) : l + " is not in the list " + list;
         }
@@ -235,7 +233,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         final String name;
-        private final Map<Address, List<Long>> msgs=new ConcurrentHashMap<Address,List<Long>>();
+        private final ConcurrentMap<Address, Collection<Long>> msgs=new ConcurrentHashMap<Address,Collection<Long>>();
 
         public MyReceiver(String name) {
             this.name=name;
@@ -245,7 +243,7 @@ public class DuplicateTest extends ChannelTestBase {
             return name;
         }
 
-        public Map<Address, List<Long>> getMsgs() {
+        public Map<Address, Collection<Long>> getMsgs() {
             return msgs;
         }
 
@@ -253,27 +251,25 @@ public class DuplicateTest extends ChannelTestBase {
             Address addr=msg.getSrc();
             Long val=(Long)msg.getObject();
 
-            synchronized(msgs) {
-                List<Long> list=msgs.get(addr);
-                if(list == null) {
-                    list=new CopyOnWriteArrayList<Long>();
-                    msgs.put(addr, list);
-                }
-                list.add(val);
+            Collection<Long> list=msgs.get(addr);
+            if(list == null) {
+                list=new ConcurrentLinkedQueue<Long>();
+                Collection<Long> tmp=msgs.putIfAbsent(addr, list);
+                if(tmp != null)
+                    list=tmp;
             }
+            list.add(val);
         }
 
         public void clear() {
-            synchronized(msgs) {
-                msgs.clear();
-            }
+            msgs.clear();
         }
 
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             sb.append("receiver " + name).append(":\n");
-            for(Map.Entry<Address,List<Long>> entry: msgs.entrySet()) {
+            for(Map.Entry<Address,Collection<Long>> entry: msgs.entrySet()) {
                 sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
             return sb.toString();
