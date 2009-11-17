@@ -22,7 +22,7 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.1 2009/11/17 10:32:48 belaban Exp $
+ * @version $Id: NAKACK_Delivery_Test.java,v 1.2 2009/11/17 11:04:07 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
@@ -73,8 +73,8 @@ public class NAKACK_Delivery_Test {
 
         pool=new ThreadPoolExecutor(1, 100, 1000, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
         // pool=new DirectExecutor();
-        if(pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)pool).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        // if(pool instanceof ThreadPoolExecutor)
+        ((ThreadPoolExecutor)pool).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
 
@@ -86,7 +86,10 @@ public class NAKACK_Delivery_Test {
     }
 
 
-
+    /**
+     * Sends NUM_MSGS (regular or OOB) multicasts on c1 and c2, checks that both c1 and c2 received NUM_MSGS messages.
+     * This test doesn't use a transport, but injects messages directly into NAKACK.
+     */
     public void testSendingOfRandomMessages() {
         List<Integer> seqnos=generateRandomNumbers(1, NUM_MSGS);
         seqnos.addAll(generateRandomNumbers(1, NUM_MSGS));
@@ -99,16 +102,13 @@ public class NAKACK_Delivery_Test {
         System.out.println("sending " + seqnos.size() + " msgs (including duplicates); size excluding duplicates=" +
                 no_duplicates.size());
 
-        System.out.println("seqnos = " + seqnos);
-
+        // we need to add our own messages (nak is for C1), or else they will get discarded by NAKACK.handleMessage()
         NakReceiverWindow win=nak.getWindow(c1);
         for(int i=1; i <= NUM_MSGS; i++)
             win.add(i, msg(c1, i, i, true));
 
-
         for(int i: seqnos) {
             boolean oob=Util.tossWeightedCoin(0.5);
-            // boolean oob=false;
             pool.execute(new Sender(c2, i, i, oob));
             pool.execute(new Sender(c1, i, i, oob));
         }
