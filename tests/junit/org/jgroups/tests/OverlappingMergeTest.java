@@ -17,7 +17,7 @@ import java.util.*;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingMergeTest.java,v 1.17 2009/11/17 10:58:56 belaban Exp $
+ * @version $Id: OverlappingMergeTest.java,v 1.18 2009/11/17 11:00:13 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingMergeTest extends ChannelTestBase {
@@ -177,13 +177,14 @@ public class OverlappingMergeTest extends ChannelTestBase {
         injectMergeEvent(merge_evt, a);
 
         System.out.println("\n==== checking views after merge ====:");
-        for(int i=0; i < 20; i++) {
+        for(int i=0; i < 10; i++) {
             if(a.getView().size() == 3 && b.getView().size() == 3 && c.getView().size() == 3) {
                 System.out.println("views are correct: all views have a size of 3");
                 break;
             }
             System.out.print(".");
-            Util.sleep(500);
+            for(JChannel ch: new JChannel[]{a,b,c}) runStableProtocol(ch);
+            Util.sleep(1000);
         }
 
         System.out.println("\n ==== Digests after the merge:\n" + dumpDigests(a,b,c));
