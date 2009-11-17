@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Tests the NAKACK protocol for OOB and regular msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_Test.java,v 1.1 2009/11/16 11:36:55 belaban Exp $
+ * @version $Id: NAKACK_Test.java,v 1.2 2009/11/17 11:06:05 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class NAKACK_Test extends ChannelTestBase {
@@ -45,6 +45,7 @@ public class NAKACK_Test extends ChannelTestBase {
      * @throws Exception
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testOutOfBandMessages() throws Exception {
         NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver();
         NAKACK_Test.MyReceiver receiver2=new NAKACK_Test.MyReceiver();
