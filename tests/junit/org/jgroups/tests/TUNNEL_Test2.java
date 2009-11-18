@@ -19,22 +19,30 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.23 2009/11/18 16:48:42 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.24 2009/11/18 18:47:55 vlada Exp $
  **/
 
-@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
+@Test(groups = {Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
     private GossipRouter gr1, gr2;
     private static final String props ="tunnel.xml";
-    private static final String bindAddress = "127.0.0.1";
+    private static String bindAddress = "127.0.0.1";
+    
+    
+    static {
+        try {
+            bindAddress = Util.getBindAddress(null).getHostAddress();
+        } catch (Exception e) {
+        }
+    }
 
     @BeforeMethod
     void startRouter() throws Exception {
-        gr1 = new GossipRouter(12003);
+        gr1 = new GossipRouter(12003,bindAddress);
         gr1.start();
 
-        gr2 = new GossipRouter(12004);
+        gr2 = new GossipRouter(12004,bindAddress);
         gr2.start();
     }
 
@@ -273,9 +281,9 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         gr2.stop();
 
         gr1.start();
-
         // give time to reconnect
         Util.sleep(6000);
+       
 
         channel.send(new Message(null, null, "payload"));
 
