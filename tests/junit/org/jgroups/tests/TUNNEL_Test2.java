@@ -19,10 +19,10 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.22 2009/09/29 21:22:28 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.23 2009/11/18 16:48:42 vlada Exp $
  **/
 
-@Test(groups = {Global.STACK_INDEPENDENT, "known-failures",Global.GOSSIP_ROUTER}, sequential = true)
+@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
     private GossipRouter gr1, gr2;
@@ -100,7 +100,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         modifyChannel(channel,coordinator);
         coordinator.connect("testConnectTwoChannelsBothGRDownReconnect");
         channel.connect("testConnectTwoChannelsBothGRDownReconnect");
-
+        Util.sleep(1000);
         gr1.stop();
         gr2.stop();
         // give time to reconnect
@@ -133,7 +133,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         third = new JChannel(props);
         modifyChannel(third);
         third.connect("testConnectThreeChannelsWithGRDown");
-
+        Util.sleep(1000);
         View view = channel.getView();
         assert channel.getView().size() == 3;
         assert third.getView().size() == 3;
@@ -187,6 +187,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         modifyChannel(channel);
         channel.connect("testConnectSendMessageSecondGRDown");
 
+        Util.sleep(1000);
         gr2.stop();
 
         channel.send(new Message(null, null, "payload"));
@@ -220,7 +221,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         channel = new JChannel(props);
         modifyChannel(channel);
         channel.connect("testConnectSendMessageBothGRDown");
-
+        Util.sleep(1000);
         gr1.stop();
         gr2.stop();
         
@@ -267,7 +268,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         modifyChannel(channel);
         channel.connect("testConnectSendMessageBothGRDownOnlyOneUp");
         
-
+        Util.sleep(1000);
         gr1.stop();
         gr2.stop();
 
@@ -304,7 +305,7 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         channel = new JChannel(props);
         modifyChannel(channel);
         channel.connect("testConnectSendMessageFirstGRDown");
-
+        Util.sleep(1000);
         gr1.stop();
 
         channel.send(new Message(null, null, "payload"));

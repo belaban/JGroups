@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.90 2009/11/09 16:36:56 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.91 2009/11/18 16:48:44 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -232,16 +232,16 @@ public class TUNNEL extends TP {
             final Runnable reconnector = new Runnable() {
                public void run() {
                   try {
-                      if (log.isDebugEnabled()) {
-                          log.debug("Reconnecting to router at " + stub.getGossipRouterAddress());
+                      if (log.isInfoEnabled()) {
+                          log.info("Reconnecting " + stub);
                       }
 
                       if(!isSingleton()){
                           PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
                           List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
                           stub.connect(channel_name, local_addr, UUID.get(local_addr), physical_addrs);
-                          if (log.isDebugEnabled()) {
-                              log.debug("Reconnected to router at " + stub.getGossipRouterAddress());
+                          if (log.isInfoEnabled()) {
+                              log.info("Reconnected " + stub);
                           }
                       }
                       else {
@@ -252,8 +252,8 @@ public class TUNNEL extends TP {
                                   PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
                                   List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
                                   stub.connect(cluster_name, local, UUID.get(local), physical_addrs);
-                                  if (log.isDebugEnabled()) {
-                                      log.debug("Reconnected to router at " + stub.getGossipRouterAddress());
+                                  if (log.isInfoEnabled()) {
+                                      log.info("Reconnected " + stub);
                                   }
                               }
                           }
