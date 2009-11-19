@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.3 2009/10/02 08:25:39 belaban Exp $
+ * @version $Id: Merger.java,v 1.4 2009/11/19 12:59:18 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -124,6 +124,10 @@ public class Merger {
             return;
         }
         Digest digest=fetchDigestsFromAllMembersInSubPartition(members);
+           if(digest.size() == 0) {
+               log.error("failed fetching digests from subpartition members; dropping merge response");
+               return;
+           }
         sendMergeResponse(sender, view, digest, merge_id);
     }
 
@@ -301,19 +305,24 @@ public class Merger {
 
         long max_wait_time=gms.merge_timeout > 0? gms.merge_timeout / 2 : 2000L;
         digest_collector.reset(current_mbrs);
+
+        // add my own digest first
+        Digest digest=(Digest)gms.getDownProtocol().down(Event.GET_DIGEST_EVT);
+        digest_collector.add(gms.local_addr, digest);
+
         gms.getDownProtocol().down(new Event(Event.MSG, get_digest_req));
         digest_collector.waitForAllResponses(max_wait_time);
-        if(log.isTraceEnabled()) {
+        if(log.isDebugEnabled()) {
             if(digest_collector.hasAllResponses())
-                log.trace(gms.local_addr + ": fetched all digests for " + current_mbrs);
+                log.debug(gms.local_addr + ": fetched all digests for " + current_mbrs);
             else
-                log.trace(gms.local_addr + ": fetched incomplete digests (after timeout of " + max_wait_time + ") ms for " + current_mbrs);
+                log.debug(gms.local_addr + ": fetched incomplete digests (after timeout of " + max_wait_time + ") ms for " + current_mbrs);
         }
         Map<Address,Digest> responses=new HashMap<Address,Digest>(digest_collector.getResults());
         MutableDigest retval=new MutableDigest(responses.size());
-        for(Digest digest: responses.values()) {
-            if(digest != null)
-                retval.add(digest);
+        for(Digest dig: responses.values()) {
+            if(dig != null)
+                retval.add(dig);
         }
         return retval;
     }
