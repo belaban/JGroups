@@ -18,12 +18,12 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.15 2009/10/14 09:41:48 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.16 2009/11/19 13:44:43 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
     JChannel a, b, c; // A is the coordinator
-    static final String GROUP="demo-group";
+    static final String GROUP="SequencerFailoverTest";
     static final int NUM_MSGS=50;
     static final String props="sequencer.xml";
 
@@ -108,7 +108,7 @@ public class SequencerFailoverTest {
         int i=1;
         for(Integer tmp: msgs) {
             if(tmp != i)
-                throw new Exception("[" + receiver.name + "] expected " + i + ", but got " + tmp + ", msg list: " + msgs);
+                throw new Exception("[" + receiver.name + "] expected msg #" + i + ", but got #" + tmp + ", msg list: " + msgs);
             i++;
         }
         System.out.println("[" + receiver.name + "] message order is OK");
@@ -140,7 +140,10 @@ public class SequencerFailoverTest {
         public int size() {return list.size();}
 
         public void receive(Message msg) {
-            list.add((Integer)msg.getObject());
+            Integer val=(Integer)msg.getObject();
+            synchronized(list) {
+                list.add(val);
+            }
         }
 
         void clear() {list.clear();}

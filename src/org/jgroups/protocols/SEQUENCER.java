@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.28 2009/09/21 09:57:25 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.29 2009/11/19 13:45:06 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -246,7 +246,7 @@ public class SEQUENCER extends Protocol {
         // this is the ack for the message sent by myself
         if(original_sender.equals(local_addr)) {
             synchronized(forward_table) {
-                forward_table.remove(new Long(msg_seqno));
+                forward_table.remove(msg_seqno);
             }
         }
 
