@@ -36,6 +36,38 @@ public class SHUFFLE extends Protocol {
     protected long max_time=1500L;
 
 
+    public boolean isUp() {
+        return up;
+    }
+
+    public void setUp(boolean up) {
+        this.up=up;
+    }
+
+    public boolean isDown() {
+        return down;
+    }
+
+    public void setDown(boolean down) {
+        this.down=down;
+    }
+
+    public int getMaxSize() {
+        return max_size;
+    }
+
+    public void setMaxSize(int max_size) {
+        this.max_size=max_size;
+    }
+
+    public long getMaxTime() {
+        return max_time;
+    }
+
+    public void setMaxTime(long max_time) {
+        this.max_time=max_time;
+    }
+
     public void init() throws Exception {
         super.init();
         timer=getTransport().getTimer();
