@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.33 2009/09/06 13:51:07 belaban Exp $
+// $Id: DISCARD.java,v 1.34 2009/11/19 15:15:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -156,7 +156,7 @@ public class DISCARD extends Protocol {
                 boolean dropMessage=ignoredMembers.contains(sender);
                 if (dropMessage) {
                     if (log.isTraceEnabled())
-                        log.trace("dropping message from " + sender);
+                        log.trace(localAddress + ": dropping message from " + sender);
                     num_up++;
                     return null;
                 }
@@ -169,7 +169,7 @@ public class DISCARD extends Protocol {
 								log.trace("excluding itself");
 						} else {						
 							if (log.isTraceEnabled())
-								log.trace("dropping message from " + sender);
+								log.trace(localAddress + ": dropping message from " + sender);
 							num_up++;
 							return null;							
 						}
@@ -238,6 +238,8 @@ public class DISCARD extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 localAddress=(Address)evt.getArg();
+                if(discard_dialog != null)
+                    discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
                 break;
         }
 
@@ -306,6 +308,7 @@ public class DISCARD extends Protocol {
 
 		}
 
+        @SuppressWarnings("unchecked")
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 			Set<Address> tmp = (Set<Address>) in.readObject();
 			dropMessages.clear();
