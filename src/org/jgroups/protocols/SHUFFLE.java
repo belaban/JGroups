@@ -5,104 +5,106 @@ import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.TimeScheduler;
 
-import java.util.*;
-
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
- * This layer shuffles upcoming messages, put it just above your bottom layer.
- * If you system sends less than 2 messages per sec you can notice a latency due
- * to this layer.
+ * Reorders messages by buffering them and shuffling the result after TIMEOUT ms.
  *
- * @author Gianluca Collot
+ * @author Bela Ban
  *
  */
 @Unsupported
-public class SHUFFLE extends Protocol implements Runnable {
+public class SHUFFLE extends Protocol {
+    protected TimeScheduler timer=null;
+    protected final List<Message> up_msgs=new LinkedList<Message>();
+    protected final List<Message> down_msgs=new LinkedList<Message>();
+    protected Future<?> task=null;
 
-    final List   messages;
-    Thread       messagesHandler;
 
-    public SHUFFLE() {
-        messages = Collections.synchronizedList(new ArrayList());
+    @Property protected boolean up=true;
+    @Property protected boolean down=false;
+    @Property(description="max number of messages before we bundle")
+    protected int max_size=10;
+    @Property(description="max time (ms) before we pass the bundled messages up or down")
+    protected long max_time=1500L;
+
+
+    public void init() throws Exception {
+        super.init();
+        timer=getTransport().getTimer();
     }
-
-    /**
-     * Adds upcoming messages to the <code>messages List<\code> where the <code>messagesHandler<\code>
-     * retrieves them.
-     */
 
     public Object up(Event evt) {
-        Message msg;
-
-        switch (evt.getType()) {
-
-            case Event.MSG:
-                msg=(Message)evt.getArg();
-                // Do something with the event, e.g. extract the message and remove a header.
-                // Optionally pass up
-                messages.add(msg);
-                return null;
+        if(!up)
+            return up_prot.up(evt);
+        if(evt.getType() != Event.MSG)
+            return up_prot.up(evt);
+        Message msg=(Message)evt.getArg();
+        synchronized(up_msgs) {
+            up_msgs.add(msg);
         }
-
-        return up_prot.up(evt);            // Pass up to the layer above us
+        if(up_msgs.size() >= max_size) {
+            shuffleAndSendMessages();
+        }
+        else
+            startTask();
+        return null;
     }
 
-
-
-
-    /**
-     * Starts the <code>messagesHandler<\code>
-     */
-    public void start() throws Exception {
-        messagesHandler = new Thread(this,"MessagesHandler");
-        messagesHandler.setDaemon(true);
-        messagesHandler.start();
+    public Object down(Event evt) {
+        if(!down)
+            return down_prot.down(evt);
+        if(evt.getType() != Event.MSG)
+            return down_prot.down(evt);
+        Message msg=(Message)evt.getArg();
+        synchronized(down_msgs) {
+            down_msgs.add(msg);
+        }
+        if(down_msgs.size() >= max_size) {
+            shuffleAndSendMessages();
+        }
+        else
+            startTask();
+        return null;
     }
 
-    /**
-     * Stops the messagesHandler
-     */
-    public void stop() {
-        Thread tmp = messagesHandler;
-        messagesHandler = null;
-        try {
-            tmp.join();
-        } catch (Exception ex) {ex.printStackTrace();}
-    }
+    private synchronized void startTask() {
+        if(task == null || task.isDone() || task.isCancelled()) {
+            task=timer.schedule(new Runnable() {
 
-    /**
-     * Removes a random chosen message from the <code>messages List<\code> if there
-     * are less than 10 messages in the List it waits some time to ensure to chose from
-     * a set of messages > 1.
-     */
-
-    public void run() {
-        Message msg;
-        while (messagesHandler != null) {
-            if (!messages.isEmpty()) {
-                msg = (Message) messages.remove(rnd(messages.size()));
-                up_prot.up(new Event(Event.MSG,msg));
-            }
-            if (messages.size() < 5) {
-                try {
-                    Thread.sleep(300); /** @todo make this time user configurable */
+                public void run() {
+                    shuffleAndSendMessages();
                 }
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }// while
-        // PassUp remaining messages
-        Iterator iter = messages.iterator();
-        while (iter.hasNext()) {
-            msg = (Message) iter.next();
-            up_prot.up(new Event(Event.MSG,msg));
+            }, max_time, TimeUnit.MILLISECONDS);
         }
     }
 
-    // random integer between 0 and n-1
-    int rnd(int n) { return (int)(Math.random()*n); }
+    private void shuffleAndSendMessages() {
+        synchronized(up_msgs) {
+            if(!up_msgs.isEmpty()) {
+                Collections.shuffle(up_msgs);
+                for(Message msg: up_msgs)
+                    up_prot.up(new Event(Event.MSG, msg));
+                up_msgs.clear();
+            }
+        }
+
+        synchronized(down_msgs) {
+            if(!down_msgs.isEmpty()) {
+                Collections.shuffle(down_msgs);
+                for(Message msg: down_msgs)
+                    down_prot.down(new Event(Event.MSG, msg));
+                down_msgs.clear();
+            }
+        }
+    }
+
 
 }
