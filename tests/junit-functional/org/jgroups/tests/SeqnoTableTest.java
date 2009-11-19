@@ -4,11 +4,11 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.SeqnoTable;
+import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.net.UnknownHostException;
 
@@ -20,7 +20,7 @@ public class SeqnoTableTest {
 
     @BeforeClass
     private static void init() throws UnknownHostException {
-        MBR=new IpAddress("127.0.0.1", 5555);
+        MBR=Util.createRandomAddress();
     }
 
 
