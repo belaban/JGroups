@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.235 2009/11/18 16:48:43 vlada Exp $
+ * @version $Id: Util.java,v 1.236 2009/11/19 13:24:16 vlada Exp $
  */
 public class Util {
 
@@ -2513,14 +2513,9 @@ public class Util {
 
         while(tok.hasMoreTokens()) {
             t=tok.nextToken().trim();
-            if (t.indexOf('[') < 0 && t.indexOf(':')<0) {
-                throw new IllegalArgumentException("Invalid host:port format. Should be either host:port or host[port]");
-            }
-            int index = (t.indexOf('[') < 0)?t.indexOf(':'):t.indexOf('[');
-            int lastindex = (t.indexOf(']') < 0)?t.length():t.indexOf(']');
-            String host=t.substring(0,index);
+            String host=t.substring(0, t.indexOf('['));
             host=host.trim();
-            int port=Integer.parseInt(t.substring(index + 1, lastindex));
+            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
             for(int i=port;i < port + port_range;i++) {
                 addr=new InetSocketAddress(host, i);
                 retval.add(addr);

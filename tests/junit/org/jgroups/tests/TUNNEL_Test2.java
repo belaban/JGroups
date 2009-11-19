@@ -19,10 +19,10 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.24 2009/11/18 18:47:55 vlada Exp $
+ * @version $Id: TUNNEL_Test2.java,v 1.25 2009/11/19 13:24:15 vlada Exp $
  **/
 
-@Test(groups = {Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER}, sequential = true)
+@Test(groups = {Global.STACK_INDEPENDENT,"known-failures",Global.GOSSIP_ROUTER}, sequential = true)
 public class TUNNEL_Test2 extends ChannelTestBase {
     private JChannel channel, coordinator;
     private GossipRouter gr1, gr2;
@@ -58,8 +58,8 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         for (JChannel c : channels) {
             ProtocolStack stack = c.getProtocolStack();
             TUNNEL t = (TUNNEL) stack.getBottomProtocol();
-            String s = bindAddress + ":" + gr1.getPort() + ",";
-            s+=bindAddress+":" + gr2.getPort();
+            String s = bindAddress + "[" + gr1.getPort() + "],";
+            s+=bindAddress+"[" + gr2.getPort() + "]";
             t.setGossipRouterHosts(s);
             t.init();
         }        
