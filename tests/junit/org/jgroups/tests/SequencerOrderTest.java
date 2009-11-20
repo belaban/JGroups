@@ -7,8 +7,8 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.SEQUENCER;
 import org.jgroups.protocols.SHUFFLE;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -28,15 +29,15 @@ import java.util.List;
  * concurrent senders; using one sender will cause NAKACK to FIFO order 
  * the messages and the assertions in this test will still hold true, whether
  * SEQUENCER is present or not. 
- * @version $Id: SequencerOrderTest.java,v 1.11 2009/11/20 08:57:52 belaban Exp $
+ * @version $Id: SequencerOrderTest.java,v 1.12 2009/11/20 10:42:54 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
-    private JChannel    c1, c2;
-    private MyReceiver  r1, r2;
+    private JChannel    c1, c2, c3;
+    private MyReceiver  r1, r2, r3;
     static final String GROUP="SequencerOrderTest";
-    static final int    NUM_MSGS=10; // messages per thread
-    static final int    NUM_THREADS=1;
+    static final int    NUM_MSGS=50; // messages per thread
+    static final int    NUM_THREADS=10;
     static final int    EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String props="sequencer.xml";
     private Sender[]    senders=new Sender[NUM_THREADS];
@@ -56,18 +57,27 @@ public class SequencerOrderTest {
         r2=new MyReceiver("B");
         c2.setReceiver(r2);
 
-        for(int i=0; i < senders.length; i++)
-            senders[i]=new Sender(NUM_MSGS, c1, c2);
+        c3=new JChannel(props);
+        c3.setName("C");
+        c3.connect(GROUP);
+        r3=new MyReceiver("C");
+        c3.setReceiver(r3);
+
+        AtomicInteger num=new AtomicInteger(1);
+
+        for(int i=0; i < senders.length; i++) {
+            senders[i]=new Sender(NUM_MSGS, num, c1, c2, c3);
+        }
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        Util.close(c2, c1);
+        Util.close(c3, c2, c1);
     }
 
     @Test @SuppressWarnings("unchecked")
     public void testBroadcastSequence() throws Exception {
-        insertShuffle(c1, c2);
+        insertShuffle(c1, c2, c3);
         
         // use concurrent senders to send messages to the group
         for(Sender sender: senders)
@@ -78,10 +88,11 @@ public class SequencerOrderTest {
 
         final List<String> l1=r1.getMsgs();
         final List<String> l2=r2.getMsgs();
+        final List<String> l3=r3.getMsgs();
         
         System.out.println("-- verifying messages on A and B");
-        verifyNumberOfMessages(EXPECTED_MSGS, l1, l2);
-        verifySameOrder(EXPECTED_MSGS, l1, l2);
+        verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
+        verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
     }
 
     private static void insertShuffle(JChannel... channels) throws Exception {
@@ -91,7 +102,7 @@ public class SequencerOrderTest {
             shuffle.setUp(true);
             shuffle.setMaxSize(10);
             shuffle.setMaxTime(1000);
-            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, SEQUENCER.class);
+            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK.class);
             shuffle.init(); // gets the timer
         }
     }
@@ -133,14 +144,17 @@ public class SequencerOrderTest {
                 }
             }
         }
+        System.out.println("OK, all lists have the same order");
     }
 
     private static class Sender extends Thread {
-        final int num_msgs;
+        final int        num_msgs;
         final JChannel[] channels;
+        final AtomicInteger num;
 
-        public Sender(int num_msgs, JChannel ... channels) {
+        public Sender(int num_msgs, AtomicInteger num, JChannel ... channels) {
             this.num_msgs=num_msgs;
+            this.num=num;
             this.channels=channels;
         }
 
@@ -149,7 +163,7 @@ public class SequencerOrderTest {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
                     String channel_name=ch.getName();
-                    ch.send(null, null, channel_name + ":" + i);
+                    ch.send(null, null, channel_name + ":" + num.getAndIncrement());
                 }
                 catch(Exception e) {
                 }
