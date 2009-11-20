@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.2 2008/10/06 16:05:53 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.3 2009/11/20 10:41:44 belaban Exp $
 
 
 Motivation
@@ -21,6 +21,15 @@ Overview
 When a member multicasts a group message, it sends it to the coordinator. The coord then wraps the message into
 its own message and multicasts it to the group. The SEQUENCER protocol (somewhere above NAKACK) unwraps the message
 so that the original sender is seen.
+
+It is the coordinator who decides on the ordering of messages from different senders. When receiving FORWARD
+messages from A, B and C, the coordinator establishes an ordered sequence, ordered by the seqno assigned by the
+coordinator when sending the message. This sequence is delivered in order at all receivers, therefore establishing
+total ordering.
+
+Note that there can be cases where a sender P sends message M1 and M2, but M2 is received first by the coordinator,
+then M1. In this case, M2 would be *before* M1 in the global sequence established by the coordinator. If this is not
+desired, then use a group RPC which gets acked by every node before a new message is sent.
 
 Example: group is {A,B,C}. B wants to multicast a message M to the group. It does so by sending M to A. A then
 adds a header which records the original sender (B) and replaces M's sender address with its own (A).
