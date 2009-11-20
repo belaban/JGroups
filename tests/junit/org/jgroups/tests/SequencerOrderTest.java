@@ -3,9 +3,14 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.protocols.SEQUENCER;
+import org.jgroups.protocols.SHUFFLE;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -23,162 +28,154 @@ import java.util.List;
  * concurrent senders; using one sender will cause NAKACK to FIFO order 
  * the messages and the assertions in this test will still hold true, whether
  * SEQUENCER is present or not. 
- * @version $Id: SequencerOrderTest.java,v 1.10 2009/04/09 09:11:17 belaban Exp $
+ * @version $Id: SequencerOrderTest.java,v 1.11 2009/11/20 08:57:52 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
-    private JChannel ch1, ch2;
-    private MyReceiver r1, r2;
-    static final String GROUP="SequencerOrderGroup";
-    static final int NUM_MSGS=1000;
+    private JChannel    c1, c2;
+    private MyReceiver  r1, r2;
+    static final String GROUP="SequencerOrderTest";
+    static final int    NUM_MSGS=10; // messages per thread
+    static final int    NUM_THREADS=1;
+    static final int    EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String props="sequencer.xml";
-
+    private Sender[]    senders=new Sender[NUM_THREADS];
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch1=new JChannel(props);
-        ch1.connect(GROUP);
+        c1=new JChannel(props);
+        c1.setName("A");
+        c1.connect(GROUP);
+        r1=new MyReceiver("A");
+        c1.setReceiver(r1);
 
-        ch2=new JChannel(props);
-        ch2.connect(GROUP);
+        c2=new JChannel(props);
+        c2.setName("B");
+        c2.connect(GROUP);
+        r2=new MyReceiver("B");
+        c2.setReceiver(r2);
+
+        for(int i=0; i < senders.length; i++)
+            senders[i]=new Sender(NUM_MSGS, c1, c2);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        if(ch2 != null) {
-            ch2.close();
-            ch2 = null;
-        }
-        if(ch1 != null) {
-            ch1.close();
-            ch1 = null;
-        }
+        Util.close(c2, c1);
     }
 
-    @Test
+    @Test @SuppressWarnings("unchecked")
     public void testBroadcastSequence() throws Exception {
-        r1=new MyReceiver(ch1.getAddress());
-        ch1.setReceiver(r1);
-        r2=new MyReceiver(ch2.getAddress());
-        ch2.setReceiver(r2);
+        insertShuffle(c1, c2);
         
         // use concurrent senders to send messages to the group
-        
-        Thread thread1 = new Thread() {
-        	public void run() {
-        		Util.sleep(300);
-                for(int i=1; i <= NUM_MSGS; i++) {
-                    try {
-                    	ch1.send(new Message(null, null, new Integer(i)));
-                    } catch (Exception e) {
-                    	throw new RuntimeException(e);
-                    }
-                    System.out.print("-- messages sent thread 1: " + i + "/" + NUM_MSGS + "\r");
-                }
+        for(Sender sender: senders)
+            sender.start();
 
-        	}
-        };
-        
-    	Thread thread2 = new Thread() {
-        	public void run() {
-        		Util.sleep(300);
-                for(int i=1; i <= NUM_MSGS; i++) {
-                    try {
-                    	ch2.send(new Message(null, null, new Integer(i)));
-                    } catch (Exception e) {
-                    	throw new RuntimeException(e);
-                    }
-                    System.out.print("-- messages sent thread 2: " + i + "/" + NUM_MSGS + "\r");
-                }
+        for(Sender sender: senders)
+            sender.join(20000);
 
-        	}
-        };
+        final List<String> l1=r1.getMsgs();
+        final List<String> l2=r2.getMsgs();
         
-        thread1.start();
-        thread2.start();
-        thread1.join();
-        thread2.join();
-        
-        System.out.println("");
-        System.out.println("-- verifying messages on ch1 and ch2");
-        verifyNumberOfMessages(NUM_MSGS * 2);
-        verifyMessageOrder(r1.getMsgs());
-        verifyMessageOrder(r2.getMsgs());
-        verifySameOrder();
+        System.out.println("-- verifying messages on A and B");
+        verifyNumberOfMessages(EXPECTED_MSGS, l1, l2);
+        verifySameOrder(EXPECTED_MSGS, l1, l2);
     }
 
-    private void verifyNumberOfMessages(int num_msgs) throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
+    private static void insertShuffle(JChannel... channels) throws Exception {
+        for(JChannel ch: channels) {
+            SHUFFLE shuffle=new SHUFFLE();
+            shuffle.setDown(false);
+            shuffle.setUp(true);
+            shuffle.setMaxSize(10);
+            shuffle.setMaxTime(1000);
+            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, SEQUENCER.class);
+            shuffle.init(); // gets the timer
+        }
+    }
 
+    private static void verifyNumberOfMessages(int num_msgs, List<String> ... lists) throws Exception {
         long end_time=System.currentTimeMillis() + 10000;
         while(System.currentTimeMillis() < end_time) {
-            if(l1.size() >= num_msgs && l2.size() >= num_msgs)
+            boolean all_correct=true;
+            for(List<String> list: lists) {
+                if(list.size() != num_msgs) {
+                    all_correct=false;
+                    break;
+                }
+            }
+            if(all_correct)
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
 
-        System.out.println("l1.size()=" + l1.size() + ", l2.size()=" + l2.size());
-        Assert.assertEquals(l1.size(), num_msgs, "list 1 should have " + num_msgs + " elements");
-        Assert.assertEquals(l2.size(), num_msgs, "list 2 should have " + num_msgs + " elements");
-    }
+        for(int i=0; i < lists.length; i++)
+            System.out.println("list #" + (i+1) + ": " + lists[i]);
 
-    private void verifyMessageOrder(List<Integer> list) throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
-        System.out.println("l1: " + l1);
-        System.out.println("l2: " + l2);
-        int i=1,j=1;
-        for(int count: list) {
-            if(count == i)
-                i++;
-            else if(count == j)
-                j++;
-            else
-                throw new Exception("got " + count + ", but expected " + i + " or " + j);
-        }
+        for(int i=0; i < lists.length; i++)
+            assert lists[i].size() == num_msgs : "list #" + (i+1) + " should have " + num_msgs + " elements";
+        System.out.println("OK, all lists have the same size (" + num_msgs + ")\n");
     }
 
 
-    private void verifySameOrder() throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
-        int[] arr1=new int[l1.size()];
-        int[] arr2=new int[l2.size()];
 
-        int index=0;
-        for(int el: l1) {
-            arr1[index++]=el;
-        }
-        index=0;
-        for(int el: l2) { 
-            arr2[index++]=el;
-        }
-
-        int count1, count2;
-        for(int i=0; i < arr1.length; i++) {
-            count1=arr1[i]; count2=arr2[i];
-            if(count1 != count2)
-                throw new Exception("lists are different at index " + i + ": count1=" + count1 + ", count2=" + count2);
+    private static void verifySameOrder(int expected_msgs, List<String> ... lists) throws Exception {
+        for(int index=0; index < expected_msgs; index++) {
+            String val=null;
+            for(List<String> list: lists) {
+                if(val == null)
+                    val=list.get(index);
+                else {
+                    String val2=list.get(index);
+                    assert val.equals(val2) : "found different values at index " + index + ": " + val + " != " + val2;
+                }
+            }
         }
     }
 
+    private static class Sender extends Thread {
+        final int num_msgs;
+        final JChannel[] channels;
+
+        public Sender(int num_msgs, JChannel ... channels) {
+            this.num_msgs=num_msgs;
+            this.channels=channels;
+        }
+
+        public void run() {
+            for(int i=1; i <= num_msgs; i++) {
+                try {
+                    JChannel ch=(JChannel)Util.pickRandomElement(channels);
+                    String channel_name=ch.getName();
+                    ch.send(null, null, channel_name + ":" + i);
+                }
+                catch(Exception e) {
+                }
+            }
+        }
+    }
 
     private static class MyReceiver extends ReceiverAdapter {
-        Address local_addr;
-        List<Integer> msgs=new LinkedList<Integer>();
+        final String name;
+        final List<String> msgs=new LinkedList<String>();
 
-        private MyReceiver(Address local_addr) {
-            this.local_addr=local_addr;
+        private MyReceiver(String name) {
+            this.name=name;
         }
 
-        public List<Integer> getMsgs() {
+        public List<String> getMsgs() {
             return msgs;
         }
 
         public void receive(Message msg) {
-            msgs.add((Integer)msg.getObject());
+            String val=(String)msg.getObject();
+            if(val != null) {
+                synchronized(msgs) {
+                    msgs.add(val);
+                }
+            }
         }
     }
 
