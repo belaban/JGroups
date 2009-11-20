@@ -22,12 +22,12 @@ import java.util.Set;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.1 2009/11/20 15:28:05 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.2 2009/11/20 15:30:43 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
-    final static int NUM_THREADS=10;
-    final static int NUM_MSGS=10;
+    final static int NUM_THREADS=200;
+    final static int NUM_MSGS=20;
 
     final Address self=Util.createRandomAddress();
     final Address sender=Util.createRandomAddress();
