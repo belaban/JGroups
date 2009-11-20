@@ -27,7 +27,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.7 2009/09/15 19:15:56 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.105.2.8 2009/11/20 13:09:01 bstansberry Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1960,7 +1960,7 @@ public class Util {
                 sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
                 sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
-                        "(see http://www.jboss.com/wiki/Edit.jsp?page=CrossTalking for details). ");
+                        "(see https://www.jboss.org/community/docs/DOC-9469 for details). ");
                 sb.append("\nException was: " + ex);
                 log.warn(sb);
             }
