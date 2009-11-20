@@ -2,33 +2,38 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.SeqnoTable;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Vector;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.29 2009/11/19 13:45:06 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.30 2009/11/20 12:17:05 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
-    private boolean           is_coord=false;
-    private long              seqno=0;
+    private volatile boolean  is_coord=false;
+    private AtomicLong        seqno=new AtomicLong(0);
 
-    /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet */
-    private final Map<Long,Message>          forward_table=new TreeMap<Long,Message>();
+    /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet.
+     * Needs to be sorted so we resend them in the right order
+     */
+    private final Map<Long,Message> forward_table=new TreeMap<Long,Message>();
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
     private final SeqnoTable received_table=new SeqnoTable(0);
@@ -71,11 +76,6 @@ public class SEQUENCER extends Protocol {
         return dumpStats().toString();
     }    
 
-    private final long nextSeqno() {
-        synchronized(this) {
-            return seqno++;
-        }
-    }
 
     
     public Object down(Event evt) {
@@ -84,14 +84,16 @@ public class SEQUENCER extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest == null || dest.isMulticastAddress()) { // only handle multicasts
-                    long next_seqno=nextSeqno();
-                    SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
-                    msg.putHeader(name, hdr);
-                    if(!is_coord) {
-                        forwardToCoord(msg, next_seqno);
+                    long next_seqno=seqno.getAndIncrement();
+                    if(is_coord) {
+                        SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);
+                        msg.putHeader(name, hdr);
+                        broadcast(msg, false); // don't copy, just use the message passed as argument
                     }
                     else {
-                        broadcast(msg);
+                        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
+                        msg.putHeader(name, hdr);
+                        forwardToCoord(msg, next_seqno);
                     }
                     return null; // don't pass down
                 }
@@ -126,11 +128,10 @@ public class SEQUENCER extends Protocol {
                     case SequencerHeader.FORWARD:
                         if(!is_coord) {
                             if(log.isErrorEnabled())
-                                log.warn("I (" + local_addr + ") am not the coord and don't handle " +
-                                        "FORWARD requests, ignoring request");
+                                log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
                             return null;
                         }
-                        broadcast(msg);
+                        broadcast(msg, true); // do copy the message
                         received_forwards++;
                         return null;
                     case SequencerHeader.BCAST:
@@ -186,42 +187,39 @@ public class SEQUENCER extends Protocol {
                 log.trace("resending msg " + msg + " to coord (" + coord + ")");
             }
             down_prot.down(new Event(Event.MSG, msg));
-            if (log.isTraceEnabled()) {
-                log.trace("done resending msg " + msg + " to coord (" + coord + ")");
-            }
         }
     }
 
 
     private void forwardToCoord(Message msg, long seqno) {
-        if (log.isTraceEnabled()) {
-            log.trace("forwarding msg " + msg + " (seqno " + seqno
-                    + ") to coord (" + coord + ")");
-        }
+        if(log.isTraceEnabled())
+            log.trace("forwarding msg " + msg + " (seqno " + seqno + ") to coord (" + coord + ")");
+
         msg.setDest(coord);  // we change the message dest from multicast to unicast (to coord)
         synchronized(forward_table) {
-            forward_table.put(new Long(seqno), msg);
+            forward_table.put(seqno, msg);
         }
         down_prot.down(new Event(Event.MSG, msg));
         forwarded_msgs++;
-        if (log.isTraceEnabled()) {
-            log.trace("done forwarding msg " + msg + " (seqno " + seqno
-                    + ") to coord (" + coord + ")");
-        }
     }
 
-    private void broadcast(Message msg) {
-        SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
-        hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
-        msg.setDest(null); // mcast
-        msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
-        if (log.isTraceEnabled()) {
-            log.trace("broadcasting msg " + msg + " (seqno " + hdr.getSeqno() + ")");
+    private void broadcast(final Message msg, boolean copy) {
+        Message bcast_msg=null;
+        final SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
+
+        if(!copy) {
+            bcast_msg=msg;
         }
-        down_prot.down(new Event(Event.MSG, msg));
-        if (log.isTraceEnabled()) {
-            log.trace("done broadcasting msg " + msg + " (seqno " + hdr.getSeqno() + ")");
+        else {
+            bcast_msg=new Message(null, local_addr, msg.getBuffer(), msg.getOffset(), msg.getLength());
+            SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.BCAST, hdr.getOriginalSender(), hdr.getSeqno());
+            bcast_msg.putHeader(name, new_hdr);
         }
+
+        if(log.isTraceEnabled())
+            log.trace("broadcasting msg " + bcast_msg + " (seqno " + hdr.getSeqno() + ")");
+
+        down_prot.down(new Event(Event.MSG, bcast_msg));
         bcast_msgs++;
     }
 
@@ -235,7 +233,7 @@ public class SEQUENCER extends Protocol {
         Address original_sender=hdr.getOriginalSender();
         if(original_sender == null) {
             if(log.isErrorEnabled())
-                log.error("original sender is null, cannot swap sender address back to original sender");
+                log.error("original sender is null, cannot swap sender's address back to original sender");
             return;
         }
         long msg_seqno=hdr.getSeqno();
@@ -264,20 +262,18 @@ public class SEQUENCER extends Protocol {
         Message tmp=msg.copy(true);
         tmp.setSrc(original_sender);
         up_prot.up(new Event(Event.MSG, tmp));
-        if (log.isTraceEnabled()) {
-            log.trace("done delivering msg " + tmp);
-        }
     }
 
-    /* ----------------------------- End of Private Methods -------------------------------- */
+/* ----------------------------- End of Private Methods -------------------------------- */
 
 
 
 
 
     public static class SequencerHeader extends Header implements Streamable {
-        static final byte FORWARD = 1;
-        static final byte BCAST   = 2;
+        private static final byte FORWARD = 1;
+        private static final byte BCAST   = 2;
+        private static final long serialVersionUID=6181860771697205253L;
 
         byte    type=-1;
         /** the original sender's address and a seqno */
