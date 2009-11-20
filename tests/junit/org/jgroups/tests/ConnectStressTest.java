@@ -18,15 +18,14 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.46 2009/11/20 11:15:18 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.47 2009/11/20 11:22:23 belaban Exp $
  */
-@Test(groups={Global.STACK_DEPENDENT, Global.STRESS}, sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT, Global.STRESS}, sequential=true)
 public class ConnectStressTest extends ChannelTestBase {
     static final int            NUM=20;
     private final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
     private final MyThread[]    threads=new MyThread[NUM];
     static final String         groupname="ConnectStressTest";
-
 
 
 
@@ -37,6 +36,8 @@ public class ConnectStressTest extends ChannelTestBase {
 
     public void testConcurrentJoinsAndLeaves() throws Exception {
         JChannel first=null;
+        channel_conf="udp.xml";
+        
         for(int i=0; i < threads.length; i++) {
             JChannel ch=null;
             if(i == 0) {
