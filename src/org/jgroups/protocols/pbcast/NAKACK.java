@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.241 2009/11/19 15:30:47 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.242 2009/11/20 16:37:44 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -777,23 +777,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
-        if(added && msg.isFlagSet(Message.OOB)) {
-            msg=win.get(hdr.seqno);
-            if(msg != null && msg.isFlagSet(Message.OOB)) {
-                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
-                    up_prot.up(new Event(Event.MSG, msg));
+        if(msg.isFlagSet(Message.OOB)) {
+            if(added) {
+                msg=win.get(hdr.seqno);
+                if(msg != null && msg.isFlagSet(Message.OOB)) {
+                    if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
+                        up_prot.up(new Event(Event.MSG, msg));
+                }
             }
-
-            while(true) {
-                final Message oob_msg=win.removeOOBMessage();
-                if(oob_msg == null)
-                    break;
-                if(oob_msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
-                    timer.execute(new Runnable() {
-                        public void run() {
-                            up_prot.up(new Event(Event.MSG, oob_msg));
-                        }
-                    });
+            while((msg=win.removeOOBMessage()) != null) {
+                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
+                    up_prot.up(new Event(Event.MSG, msg));
                 }
             }
 
