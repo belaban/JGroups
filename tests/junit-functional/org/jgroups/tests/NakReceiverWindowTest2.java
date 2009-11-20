@@ -25,7 +25,7 @@ import java.util.Collections;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.3 2009/11/20 16:00:28 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.4 2009/11/20 16:37:57 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
@@ -57,7 +57,7 @@ public class NakReceiverWindowTest2 {
      * @throws BrokenBarrierException
      * @throws InterruptedException
      */
-    @Test(invocationCount=5)
+    @Test(invocationCount=10)
     public void testConcurrentInsertions() throws BrokenBarrierException, InterruptedException {
         Sender[] senders=new Sender[NUM_THREADS];
         ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();

@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.14 2009/11/17 11:58:13 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.15 2009/11/20 16:37:05 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -35,7 +35,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     @BeforeMethod
     void init() throws Exception {
-        createChannels(true, true, (short)2, (short)2);
+        createChannels(true, true, (short)5, (short)5);
         c1.setName("C1"); c2.setName("C2"); c3.setName("C3");
         a1=c1.getAddress();
         a2=c2.getAddress();
@@ -113,6 +113,7 @@ public class DuplicateTest extends ChannelTestBase {
         check(r3, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
+    @Test(invocationCount=5)
     public void testOOBMulticastToAll3Senders() throws Exception {
         send(c1, null /** multicast */, true, 10);
         send(c2, null /** multicast */, true, 10);
