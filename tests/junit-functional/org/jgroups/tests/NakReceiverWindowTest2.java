@@ -18,16 +18,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.2 2009/11/20 15:30:43 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.3 2009/11/20 16:00:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
     final static int NUM_THREADS=200;
-    final static int NUM_MSGS=20;
+    final static int NUM_MSGS=5000;
 
     final Address self=Util.createRandomAddress();
     final Address sender=Util.createRandomAddress();
@@ -49,6 +52,12 @@ public class NakReceiverWindowTest2 {
     }
 
 
+    /**
+     * Has NUM_THREAD threads insert NUM_MSGS messages concurrently, checks whether messages are added only once
+     * @throws BrokenBarrierException
+     * @throws InterruptedException
+     */
+    @Test(invocationCount=5)
     public void testConcurrentInsertions() throws BrokenBarrierException, InterruptedException {
         Sender[] senders=new Sender[NUM_THREADS];
         ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
@@ -61,14 +70,21 @@ public class NakReceiverWindowTest2 {
         }
 
         Util.sleep(2000);
+        System.out.println("Concurrently inserting " + NUM_MSGS + " messages with " + NUM_THREADS + " threads");
         barrier.await();
 
         for(int i=0; i < senders.length; i++)
             senders[i].join(20000);
+        System.out.println("OK: " + NUM_MSGS + " were added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
 
         Set<Long> keys=successful_adds.keySet();
 
         System.out.println("checking for missing or duplicate seqnos in " + keys.size() + " seqnos:");
+        for(int i=1; i <= NUM_MSGS; i++) {
+            AtomicInteger val=successful_adds.get((long)i);
+            if(val.get() != 1)
+                System.err.println(i + " was not added exactly once (successful insertions=" + val.get() + ")");
+        }
         for(int i=1; i <= NUM_MSGS; i++) {
             AtomicInteger val=successful_adds.get((long)i);
             assert val != null : i + " is missing in " + successful_adds.keySet();
@@ -77,6 +93,77 @@ public class NakReceiverWindowTest2 {
 
         System.out.println("OK: " + keys.size() + " seqnos were added exactly once");
     }
+
+
+    @Test(invocationCount=5)
+    public void testConcurrentRandomInsertions() throws BrokenBarrierException, InterruptedException {
+        Sender[] senders=new RandomSender[NUM_THREADS];
+        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
+        for(int i=1; i <= NUM_MSGS; i++)
+            successful_adds.put((long)i, new AtomicInteger(0));
+
+        for(int i=0; i < senders.length; i++) {
+            senders[i]=new RandomSender(NUM_MSGS, win, sender, barrier, successful_adds);
+            senders[i].start();
+        }
+
+        Util.sleep(2000);
+        System.out.println("Concurrently inserting " + NUM_MSGS + " messages with " + NUM_THREADS + " threads");
+        barrier.await();
+
+        for(int i=0; i < senders.length; i++)
+            senders[i].join(20000);
+        System.out.println("OK: " + NUM_MSGS + " were added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
+
+        Set<Long> keys=successful_adds.keySet();
+
+        System.out.println("checking for missing or duplicate seqnos in " + keys.size() + " seqnos:");
+        for(int i=1; i <= NUM_MSGS; i++) {
+            AtomicInteger val=successful_adds.get((long)i);
+            if(val.get() != 1)
+                System.err.println(i + " was not added exactly once (successful insertions=" + val.get() + ")");
+        }
+        for(int i=1; i <= NUM_MSGS; i++) {
+            AtomicInteger val=successful_adds.get((long)i);
+            assert val != null : i + " is missing in " + successful_adds.keySet();
+            assert val.get() == 1 : i + " was not added exactly once (successful insertions=" + val.get() + ")";
+        }
+
+        System.out.println("OK: " + keys.size() + " seqnos were added exactly once");
+    }
+
+
+    @Test(invocationCount=5)
+    public void testConcurrentInsertionOfSameSeqno() throws BrokenBarrierException, InterruptedException {
+        Sender[] senders=new SameSeqnoSender[NUM_THREADS];
+        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
+        for(int i=1; i <= NUM_MSGS; i++)
+            successful_adds.put((long)i, new AtomicInteger(0));
+
+        for(int i=0; i < senders.length; i++) {
+            senders[i]=new SameSeqnoSender(NUM_MSGS, win, sender, barrier, successful_adds);
+            senders[i].start();
+        }
+
+        Util.sleep(2000);
+        System.out.println("Concurrently inserting 1 message with " + NUM_THREADS + " threads");
+        barrier.await();
+
+        for(int i=0; i < senders.length; i++)
+            senders[i].join(20000);
+        System.out.println("OK: 1 message was added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
+
+        Set<Long> keys=successful_adds.keySet();
+
+        System.out.println("checking for missing or duplicate seqnos in " + keys.size() + " seqnos:");
+        AtomicInteger val=successful_adds.get(1L);
+        if(val.get() != 1)
+            System.err.println("1 was not added exactly once (successful insertions=" + val.get() + ")");
+        assert val.get() == 1 : "1 was not added exactly once (successful insertions=" + val.get() + ")";
+
+        System.out.println("OK: 1 seqno was added exactly once");
+    }
+
 
 
     static class Sender extends Thread {
@@ -95,23 +182,68 @@ public class NakReceiverWindowTest2 {
         }
 
         public void run() {
+            waitForBarrier();
+
+            for(int i=1; i <= num; i++)
+                add(i);
+        }
+
+        protected void add(long seqno) {
+            NakAckHeader hdr=new NakAckHeader(NakAckHeader.MSG, seqno);
+            Message msg=new Message(null, sender, "hello");
+            msg.putHeader("NAKAC", hdr);
+            boolean added=win.add(seqno, msg);
+
+            if(added) {
+                AtomicInteger val=map.get((long)seqno);
+                val.incrementAndGet();
+            }
+        }
+
+        protected void waitForBarrier() {
             try {
                 barrier.await();
             }
             catch(Exception e) {
                 e.printStackTrace();
             }
-            for(int i=1; i <= num; i++) {
-                NakAckHeader hdr=new NakAckHeader(NakAckHeader.MSG, i);
-                Message msg=new Message(null, sender, "hello");
-                msg.putHeader("NAKAC", hdr);
-                boolean added=win.add(i, msg);
-                if(added) {
-                    AtomicInteger val=map.get((long)i);
-                    val.incrementAndGet();
-                    System.out.println(Thread.currentThread().getId() + ": added " + i);
-                }
-            }
+        }
+    }
+
+    static class RandomSender extends Sender {
+
+        public RandomSender(int num, NakReceiverWindow win, Address sender, CyclicBarrier barrier, ConcurrentMap<Long, AtomicInteger> map) {
+            super(num, win, sender, barrier, map);
+        }
+
+        public void run() {
+            final List<Long> seqnos;
+            seqnos=new ArrayList<Long>(num);
+            for(long i=1; i <= num; i++)
+                seqnos.add(i);
+
+            // now randomize the seqnos:
+            Collections.shuffle(seqnos);
+
+            waitForBarrier();
+            for(long seqno: seqnos)
+                add(seqno);
+        }
+    }
+
+    /**
+     * Inserts seqno 1 NUM_MSGS times
+     */
+    static class SameSeqnoSender extends Sender {
+
+        public SameSeqnoSender(int num, NakReceiverWindow win, Address sender, CyclicBarrier barrier, ConcurrentMap<Long, AtomicInteger> map) {
+            super(num, win, sender, barrier, map);
+        }
+
+        public void run() {
+            waitForBarrier();
+            for(int i=1; i <= num; i++)
+                add(1L);
         }
     }
 
