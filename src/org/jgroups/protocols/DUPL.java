@@ -10,7 +10,7 @@ import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.5 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: DUPL.java,v 1.6 2009/11/20 14:06:00 belaban Exp $
  */
 @Unsupported
 public class DUPL extends Protocol {
@@ -41,6 +41,38 @@ public class DUPL extends Protocol {
         this.outgoing_copies=outgoing_copies;
     }
 
+
+    public int getIncomingCopies() {
+        return incoming_copies;
+    }
+
+    public void setIncomingCopies(int incoming_copies) {
+        this.incoming_copies=incoming_copies;
+    }
+
+    public int getOutgoingCopies() {
+        return outgoing_copies;
+    }
+
+    public void setOutgoingCopies(int outgoing_copies) {
+        this.outgoing_copies=outgoing_copies;
+    }
+
+    public boolean isCopyUnicastMsgs() {
+        return copy_unicast_msgs;
+    }
+
+    public void setCopyUnicastMsgs(boolean copy_unicast_msgs) {
+        this.copy_unicast_msgs=copy_unicast_msgs;
+    }
+
+    public boolean isCopyMulticastMsgs() {
+        return copy_multicast_msgs;
+    }
+
+    public void setCopyMulticastMsgs(boolean copy_multicast_msgs) {
+        this.copy_multicast_msgs=copy_multicast_msgs;
+    }
 
     public Object down(Event evt) {
         boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && outgoing_copies > 0;
