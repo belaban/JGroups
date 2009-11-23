@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.15 2009/11/20 16:37:05 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.16 2009/11/23 10:17:15 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -182,13 +182,14 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-    private static void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
+    private void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
         Map<Address, Collection<Long>> msgs=receiver.getMsgs();
 
         for(int i=0; i < 10; i++) {
             if(msgs.size() == expected_size)
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
+            System.out.println("expected size=" + expected_size + ", actual size=" + msgs.size());
         }
         assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
 
@@ -199,14 +200,17 @@ public class DuplicateTest extends ChannelTestBase {
             assert list != null : "no list available for " + addr;
 
             int expected_values=tuple.getVal2();
-            for(int i=0; i < 10; i++) {
+            for(int i=0; i < 20; i++) {
                 if(list.size() == expected_values)
                     break;
-                Util.sleep(500);
+                Util.sleep(1000);
+                sendStableMessages(c1,c2,c3);
+                System.out.println("expected values=" + expected_values +", actual size=" + list.size());
             }
 
             System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
-            assert list.size() == expected_values : addr + "'s list's size is not " + tuple.getVal2() +", list: " + list;
+            assert list.size() == expected_values : addr + "'s list's size is not " + tuple.getVal2() +
+                    ", list: " + list + " (size=" + list.size() + ")";
             if(!oob) // if OOB messages, ordering is not guaranteed
                 check(addr, list);
             else
