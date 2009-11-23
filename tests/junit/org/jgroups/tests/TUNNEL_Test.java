@@ -13,6 +13,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
+import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -26,7 +27,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.15 2009/10/14 11:55:49 belaban Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.16 2009/11/23 17:21:58 vlada Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -37,7 +38,15 @@ public class TUNNEL_Test extends ChannelTestBase{
 
     @BeforeClass
     void startRouter() throws Exception {
-        gossipRouter=new GossipRouter();
+        String bind_addr=Util.getProperty(Global.BIND_ADDR);
+        if(bind_addr == null) {
+            StackType type=Util.getIpStackType();
+            if(type == StackType.IPv6)
+                bind_addr="::1";
+            else
+                bind_addr="127.0.0.1";
+        }
+        gossipRouter=new GossipRouter(12001, bind_addr);
         gossipRouter.start();
     }
     
