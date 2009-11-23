@@ -6,6 +6,8 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -15,7 +17,7 @@ import org.testng.annotations.Test;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.19 2009/10/05 19:33:16 vlada Exp $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.20 2009/11/23 20:12:55 vlada Exp $
  * @see TUNNELDeadLockTest#testStress
  */
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
@@ -36,8 +38,16 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
 
     @BeforeMethod
     void setUp() throws Exception {
+        String bind_addr=Util.getProperty(Global.BIND_ADDR);
+        if(bind_addr == null) {
+            StackType type=Util.getIpStackType();
+            if(type == StackType.IPv6)
+                bind_addr="::1";
+            else
+                bind_addr="127.0.0.1";
+        }
         promise=new Promise<Boolean>();
-        gossipRouter=new GossipRouter();
+        gossipRouter=new GossipRouter(GossipRouter.PORT,bind_addr);
         gossipRouter.start();
     }
 
