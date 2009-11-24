@@ -1,4 +1,4 @@
-// $Id: Range.java,v 1.5 2004/10/04 20:43:35 belaban Exp $
+// $Id: Range.java,v 1.6 2009/11/24 12:09:29 belaban Exp $
 
 package org.jgroups.util;
 
@@ -7,7 +7,7 @@ import java.io.*;
 
 
 
-public class Range implements Externalizable, Streamable {
+public class Range implements Externalizable, Streamable, Comparable<Range> {
     public long low=-1;  // first msg to be retransmitted
     public long high=-1; // last msg to be retransmitted
 
@@ -22,17 +22,30 @@ public class Range implements Externalizable, Streamable {
     }
 
 
-
     public String toString() {
         return "[" + low + " : " + high + ']';
     }
 
 
+    public int compareTo(Range other) {
+        if(low == other.low && high == other.high)
+            return 0;
+        return low < other.low? -1 : 1;
+    }
+
+    public int hashCode() {
+        return (int)low;
+    }
+
+    public boolean equals(Object obj) {
+        Range other=(Range)obj;
+        return compareTo(other) == 0;
+    }
+
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(low);
         out.writeLong(high);
     }
-
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -50,4 +63,6 @@ public class Range implements Externalizable, Streamable {
         low=in.readLong();
         high=in.readLong();
     }
+
+
 }
