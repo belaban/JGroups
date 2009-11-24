@@ -12,7 +12,7 @@ import java.util.TreeMap;
 
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.3 2009/11/24 15:27:28 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.4 2009/11/24 15:52:00 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
@@ -177,12 +177,13 @@ public class XmitRangeTest {
     public static void testCompareTo() {
         TreeMap<XmitRange,XmitRange> map=new TreeMap<XmitRange,XmitRange>();
 
-        XmitRange[] ranges=new XmitRange[]{new XmitRange(23,200), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(900,905)};
+        XmitRange[] ranges=new XmitRange[]{new XmitRange(900,905), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(23,200)};
 
         for(XmitRange range: ranges)
             map.put(range, range);
 
         System.out.println("map = " + map.keySet());
+        assert map.size() == 4;
 
         for(long num: new long[]{0, 1, 201, 202, 223, 1000}) {
             checkNull(map, num);
@@ -194,6 +195,39 @@ public class XmitRangeTest {
         checkInRange(map, 222, 222, 222);
         checkInRange(map, 750, 700, 800);
         checkInRange(map, 905, 900, 905);
+    }
+
+
+    public static void testRemovalFromHashMap() {
+        TreeMap<XmitRange,XmitRange> map=new TreeMap<XmitRange,XmitRange>();
+
+        XmitRange[] ranges=new XmitRange[]{new XmitRange(900,905), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(23,200)};
+
+        for(XmitRange range: ranges)
+            map.put(range, range);
+
+        System.out.println("map = " + map.keySet());
+        assert map.size() == 4;
+
+        XmitRange r=map.get(new XmitRange(222, true));
+        assert r != null;
+        map.remove(r);
+        assert map.size() == 3;
+
+        r=map.get(new XmitRange(108, true));
+        assert r != null;
+        map.remove(r);
+        assert map.size() == 2;
+
+        r=map.get(new XmitRange(902, true));
+        assert r != null;
+        map.remove(r);
+        assert map.size() == 1;
+
+        r=map.get(new XmitRange(800, true));
+        assert r != null;
+        map.remove(r);
+        assert map.isEmpty();
     }
 
 
