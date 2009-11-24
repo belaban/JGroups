@@ -7,10 +7,12 @@ import org.testng.annotations.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.2 2009/11/24 13:04:10 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.3 2009/11/24 15:27:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
@@ -169,6 +171,43 @@ public class XmitRangeTest {
     public static void testSetOfInvalidIndex() {
         XmitRange range=new XmitRange(10, 10);
         range.set(9);
+    }
+    
+    
+    public static void testCompareTo() {
+        TreeMap<XmitRange,XmitRange> map=new TreeMap<XmitRange,XmitRange>();
+
+        XmitRange[] ranges=new XmitRange[]{new XmitRange(23,200), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(900,905)};
+
+        for(XmitRange range: ranges)
+            map.put(range, range);
+
+        System.out.println("map = " + map.keySet());
+
+        for(long num: new long[]{0, 1, 201, 202, 223, 1000}) {
+            checkNull(map, num);
+        }
+
+        checkInRange(map,  23,  23, 200);
+        checkInRange(map, 100,  23, 200);
+        checkInRange(map, 200,  23, 200);
+        checkInRange(map, 222, 222, 222);
+        checkInRange(map, 750, 700, 800);
+        checkInRange(map, 905, 900, 905);
+    }
+
+
+    private static void checkInRange(Map<XmitRange,XmitRange> map, long seqno, long from, long to) {
+        XmitRange val=map.get(new XmitRange(seqno, true));
+        System.out.println("seqno=" + seqno + ", val = " + val);
+        assert val.contains(seqno);
+        assert val.getLow() == from;
+        assert val.getHigh() == to;
+    }
+
+    private static void checkNull(Map<XmitRange,XmitRange> map, long seqno) {
+        XmitRange val=map.get(new XmitRange(seqno, true));
+        assert val == null;
     }
 
 

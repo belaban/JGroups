@@ -13,7 +13,7 @@ import java.util.Map;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.3 2009/11/24 14:56:50 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.4 2009/11/24 15:27:27 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
@@ -69,11 +69,11 @@ public class XmitRange implements Comparable<XmitRange> {
     }
 
     public void set(long ... nums) {
-        if(nums != null) {
-            synchronized(this) {
-                for(long num: nums)
-                    set(num);
-            }
+        if(nums == null)
+            return;
+        synchronized(this) {
+            for(long num: nums)
+                set(num);
         }
     }
 
@@ -85,11 +85,11 @@ public class XmitRange implements Comparable<XmitRange> {
     }
 
     public void clear(long ... nums) {
-        if(nums != null) {
-            synchronized(this) {
-                for(long num: nums)
-                    clear(num);
-            }
+        if(nums == null)
+            return;
+        synchronized(this) {
+            for(long num: nums)
+                clear(num);
         }
     }
 
@@ -109,13 +109,20 @@ public class XmitRange implements Comparable<XmitRange> {
         return getBits(false);
     }
 
+    /**
+     * This method is key to add a range to a sorted set (or map). The key to compare on is 'low'. When we want to
+     * lookup a range given a seqno, we'll create a dummy Range and then the comparison checks whether the seqno
+     * is in the range
+     * @param range
+     * @return
+     */
     public int compareTo(XmitRange range) {
         if(range == null)
             throw new NullPointerException();
         if(!dummy)
             return low > range.low ? 1 : low < range.low? -1 : 0;
 
-        if(low == range.low && high == range.high)
+        if(low >= range.low && high <= range.high)
             return 0;
         if(low < range.low)
             return -1;
