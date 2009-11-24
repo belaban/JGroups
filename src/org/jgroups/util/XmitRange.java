@@ -8,14 +8,12 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
-// todo: add synchronization (BitSet is not synchronized) for concurrent access
-
 
 /**
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.2 2009/11/24 13:04:23 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.3 2009/11/24 14:56:50 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
@@ -57,30 +55,45 @@ public class XmitRange implements Comparable<XmitRange> {
     }
 
     public boolean get(long num) {
-        return bits.get(getIndex((int)num));
+        int index=getIndex((int)num);
+        synchronized(this) {
+            return bits.get(index);
+        }
     }
 
     public void set(long num) {
-        bits.set(getIndex((int)num));
+        int index=getIndex((int)num);
+        synchronized(this) {
+            bits.set(index);
+        }
     }
 
     public void set(long ... nums) {
-        if(nums != null)
-            for(long num: nums)
-                set(num);
+        if(nums != null) {
+            synchronized(this) {
+                for(long num: nums)
+                    set(num);
+            }
+        }
     }
 
     public void clear(long num) {
-        bits.clear(getIndex((int)num));
+        int index=getIndex((int)num);
+        synchronized(this) {
+            bits.clear(index);
+        }
     }
 
     public void clear(long ... nums) {
-        if(nums != null)
-            for(long num: nums)
-                clear(num);
+        if(nums != null) {
+            synchronized(this) {
+                for(long num: nums)
+                    clear(num);
+            }
+        }
     }
 
-    public int getNumberOfReceivedMessages() {
+    public synchronized int getNumberOfReceivedMessages() {
         return bits.cardinality();
     }
 
@@ -161,7 +174,7 @@ public class XmitRange implements Comparable<XmitRange> {
      * @param value If true, returns all bits set to 1, else 0
      * @return
      */
-    public Collection<Range> getBits(boolean value) {
+    public synchronized Collection<Range> getBits(boolean value) {
         int index=0;
         int start_range=0, end_range=0;
         int size=(int)((high - low) + 1);
