@@ -1,12 +1,16 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.util.Range;
 import org.jgroups.util.XmitRange;
 import org.testng.annotations.Test;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.1 2009/11/24 11:53:39 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.2 2009/11/24 13:04:10 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
@@ -29,11 +33,136 @@ public class XmitRangeTest {
         assert range.contains(14);
     }
 
-    public static void testSetAndGet() {
+    public static void testSetAndGetWith1Seqno() {
         XmitRange range=new XmitRange(10, 10);
         assert range.getNumberOfMissingMessages() == 1;
         assert range.getNumberOfReceivedMessages() == 0;
 
+        range.set(10);
+        assert range.getNumberOfMissingMessages() == 0;
+        assert range.getNumberOfReceivedMessages() == 1;
+
+        assert range.get(10);
+
+        range.clear(10);
+        assert !range.get(10);
+        assert range.getNumberOfMissingMessages() == 1;
+        assert range.getNumberOfReceivedMessages() == 0;
+    }
+
+    public static void testSetAndGetWith5Seqnos() {
+        XmitRange range=new XmitRange(10, 15);
+        System.out.println("range=" + print(range));
+
+        assert range.size() == 6;
+        assert range.getNumberOfMissingMessages() == 6;
+        assert range.getNumberOfReceivedMessages() == 0;
+
+        range.set(10);
+        assert range.getNumberOfMissingMessages() == 5;
+        assert range.getNumberOfReceivedMessages() == 1;
+
+        assert range.get(10);
+
+        range.set(13);
+        assert range.size() == 6;
+        assert range.getNumberOfMissingMessages() == 4;
+        assert range.getNumberOfReceivedMessages() == 2;
+
+        range.set(13);
+        assert range.size() == 6;
+        assert range.getNumberOfMissingMessages() == 4;
+        assert range.getNumberOfReceivedMessages() == 2;
+
+        System.out.println("range=" + print(range));
+
+        Collection<Range> xmits=range.getMessagesToRetransmit();
+        Collection<Range> cleared_bits=range.getBits(false);
+
+        System.out.println("xmits = " + xmits);
+        System.out.println("cleared_bits = " + cleared_bits);
+
+        assert xmits.equals(cleared_bits);
+    }
+
+
+    public static void testSet() {
+        XmitRange range=new XmitRange(10, 15);
+        range.set(11, 12, 13, 14);
+        System.out.println("range=" + print(range));
+        assert range.size() == 6;
+        assert range.getNumberOfReceivedMessages() == 4;
+        assert range.getNumberOfMissingMessages() == 2;
+        Collection<Range> xmits=range.getMessagesToRetransmit();
+        assert xmits.size() == 2;
+        Iterator<Range> it=xmits.iterator();
+        Range r=it.next();
+        assert r.low == 10 && r.high == 10;
+        r=it.next();
+        assert r.low == 15 && r.high == 15;
+
+
+        range=new XmitRange(10, 15);
+        range.set(10,11,12,13,14);
+        System.out.println("range=" + print(range));
+        assert range.size() == 6;
+        assert range.getNumberOfReceivedMessages() == 5;
+        assert range.getNumberOfMissingMessages() == 1;
+        xmits=range.getMessagesToRetransmit();
+        assert xmits.size() == 1;
+        it=xmits.iterator();
+        r=it.next();
+        assert r.low == 15 && r.high == 15;
+
+        range=new XmitRange(10, 15);
+        range.set(11,12,13,14,15);
+        System.out.println("range=" + print(range));
+        assert range.size() == 6;
+        assert range.getNumberOfReceivedMessages() == 5;
+        assert range.getNumberOfMissingMessages() == 1;
+        xmits=range.getMessagesToRetransmit();
+        assert xmits.size() == 1;
+        it=xmits.iterator();
+        r=it.next();
+        assert r.low == 10 && r.high == 10;
+
+        range=new XmitRange(10, 15);
+        range.set(10,11,12,13,14,15);
+        System.out.println("range=" + print(range));
+        assert range.size() == 6;
+        assert range.getNumberOfReceivedMessages() == 6;
+        assert range.getNumberOfMissingMessages() == 0;
+        xmits=range.getMessagesToRetransmit();
+        assert xmits.isEmpty();
+
+        range=new XmitRange(10, 15);
+        range.set(11,12,14,15);
+        System.out.println("range=" + print(range));
+        assert range.size() == 6;
+        assert range.getNumberOfReceivedMessages() == 4;
+        assert range.getNumberOfMissingMessages() == 2;
+        xmits=range.getMessagesToRetransmit();
+        assert xmits.size() == 2;
+        it=xmits.iterator();
+        r=it.next();
+        assert r.low == 10 && r.high == 10;
+        r=it.next();
+        assert r.low == 13 && r.high == 13;
+
+        range.set(13);
+        assert range.getNumberOfReceivedMessages() == 5;
+        assert range.getNumberOfMissingMessages() == 1;
+        xmits=range.getMessagesToRetransmit();
+        it=xmits.iterator();
+        r=it.next();
+        assert r.low == 10 && r.high == 10;
+
+        range.set(10);
+        System.out.println("range=" + print(range));
+        assert range.getNumberOfReceivedMessages() == 6;
+        assert range.getNumberOfMissingMessages() == 0;
+        xmits=range.getMessagesToRetransmit();
+        assert xmits.isEmpty();
     }
 
     @Test(expectedExceptions=IllegalArgumentException.class)

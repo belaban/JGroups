@@ -8,11 +8,14 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
+// todo: add synchronization (BitSet is not synchronized) for concurrent access
+
+
 /**
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.1 2009/11/24 11:10:41 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.2 2009/11/24 13:04:23 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
@@ -30,11 +33,23 @@ public class XmitRange implements Comparable<XmitRange> {
         bits=new BitSet(size);  // starts out with all bits set to 0 (false)
     }
 
-
+    /**
+     * Only used to compare a long against a range in a TreeSet / TreeMap. Used to find a range given a seqno
+     * @param num
+     * @param dummy
+     */
     public XmitRange(long num, boolean dummy) {
         this.dummy=dummy;
         low=high=num;
         bits=null;
+    }
+
+    public long getLow() {
+        return low;
+    }
+
+    public long getHigh() {
+        return high;
     }
 
     public boolean contains(long num) {
@@ -49,15 +64,27 @@ public class XmitRange implements Comparable<XmitRange> {
         bits.set(getIndex((int)num));
     }
 
+    public void set(long ... nums) {
+        if(nums != null)
+            for(long num: nums)
+                set(num);
+    }
+
     public void clear(long num) {
         bits.clear(getIndex((int)num));
+    }
+
+    public void clear(long ... nums) {
+        if(nums != null)
+            for(long num: nums)
+                clear(num);
     }
 
     public int getNumberOfReceivedMessages() {
         return bits.cardinality();
     }
 
-    public int getNumberOfNonReceivedMessages() {
+    public int getNumberOfMissingMessages() {
         return size() - getNumberOfReceivedMessages();
     }
 
@@ -65,11 +92,9 @@ public class XmitRange implements Comparable<XmitRange> {
         return (int)((high - low) + 1);
     }
 
-
     public Collection<Range> getMessagesToRetransmit() {
         return getBits(false);
     }
-
 
     public int compareTo(XmitRange range) {
         if(range == null)
@@ -106,14 +131,13 @@ public class XmitRange implements Comparable<XmitRange> {
         return low + " - " + high + ", set=" + printBits(true) + ", cleared=" + printBits(false);
     }
 
-
     protected int getIndex(int num) {
         if(num < low || num > high)
             throw new IllegalArgumentException(num + " is outside the range " + toString());
         return (int)(num - low);
     }
 
-    protected String printBits(boolean value) {
+    public String printBits(boolean value) {
         Collection<Range> ranges=getBits(value);
         StringBuilder sb=new StringBuilder();
         if(ranges != null && !ranges.isEmpty()) {
@@ -137,7 +161,7 @@ public class XmitRange implements Comparable<XmitRange> {
      * @param value If true, returns all bits set to 1, else 0
      * @return
      */
-    protected Collection<Range> getBits(boolean value) {
+    public Collection<Range> getBits(boolean value) {
         int index=0;
         int start_range=0, end_range=0;
         int size=(int)((high - low) + 1);
@@ -145,10 +169,10 @@ public class XmitRange implements Comparable<XmitRange> {
 
         while(index < size) {
             start_range=value? bits.nextSetBit(index) : bits.nextClearBit(index);
-            if(start_range < 0)
+            if(start_range < 0 || start_range >= size)
                 break;
             end_range=value? bits.nextClearBit(start_range) : bits.nextSetBit(start_range);
-            if(end_range < 0) {
+            if(end_range < 0 || end_range >= size) {
                 retval.add(new Range(start_range + low, size-1+low));
                 break;
             }
