@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: QueueTest.java,v 1.6 2009/08/21 07:20:28 belaban Exp $
+ * @version $Id: QueueTest.java,v 1.7 2009/11/25 10:03:42 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {
@@ -614,7 +614,6 @@ public class QueueTest {
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
      * (the one that has the element) */
-
     public static void testBarrierWithTimeOut() throws QueueClosedException {
         final Queue queue=new Queue();
         RemoveOneItemWithTimeout[] removers=new RemoveOneItemWithTimeout[10];
@@ -642,6 +641,8 @@ public class QueueTest {
             Util.sleep(500);
         }
         while(target_time > System.currentTimeMillis());
+
+        Util.sleep(3000);
 
         for(int i=0; i < removers.length; i++) {
             System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
