@@ -13,11 +13,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.6 2009/08/21 07:20:28 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.7 2009/11/25 10:17:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
@@ -72,12 +73,13 @@ public class BARRIERTest {
             }.start();
         }
 
-        Util.sleep(500);
+        Util.sleep(2000);
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
 
         s.send(new Event(Event.OPEN_BARRIER));
-        Util.sleep(500);
+        Util.sleep(2000);
+
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
         int received_msgs=receiver.getNumberOfReceivedMessages();
@@ -108,18 +110,18 @@ public class BARRIERTest {
 
 
     static class MyReceiver implements Simulator.Receiver {
-        int num_mgs_received=0;
+        AtomicInteger num_mgs_received=new AtomicInteger(0);
 
         public void receive(Event evt) {
             if(evt.getType() == Event.MSG) {
-                num_mgs_received++;
-                if(num_mgs_received % 1000 == 0)
-                    System.out.println("<== " + num_mgs_received);
+                num_mgs_received.incrementAndGet();
+                if(num_mgs_received.incrementAndGet() % 1000 == 0)
+                    System.out.println("<== " + num_mgs_received.get());
             }
         }
 
         public int getNumberOfReceivedMessages() {
-            return num_mgs_received;
+            return num_mgs_received.get();
         }
     }
 
