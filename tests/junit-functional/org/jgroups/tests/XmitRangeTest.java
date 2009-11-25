@@ -3,16 +3,15 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.util.Range;
 import org.jgroups.util.XmitRange;
+import org.jgroups.util.FixedSizeBitSet;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.4 2009/11/24 15:52:00 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.5 2009/11/25 08:51:32 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
@@ -195,6 +194,26 @@ public class XmitRangeTest {
         checkInRange(map, 222, 222, 222);
         checkInRange(map, 750, 700, 800);
         checkInRange(map, 905, 900, 905);
+    }
+
+
+    public static void testLargeRange() {
+        XmitRange range=new XmitRange(0, 1500);
+
+        Set<Integer> sorted_set=new TreeSet<Integer>();
+        for(int i=0; i < 500; i++) {
+            int num=(int)Util.random(1499);
+            sorted_set.add(num);
+        }
+
+        for(int num: sorted_set)
+            range.set(num);
+
+        int num_set=sorted_set.size();
+        System.out.println("set " + num_set + " bits");
+        assert range.getNumberOfReceivedMessages() == num_set;
+        Collection<Range> missing=range.getMessagesToRetransmit();
+        System.out.println("missing = " + missing);
     }
 
 
