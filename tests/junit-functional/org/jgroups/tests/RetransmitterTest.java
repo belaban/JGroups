@@ -1,12 +1,13 @@
-// $Id: RetransmitterTest.java,v 1.6 2009/05/06 06:08:52 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.7 2009/11/25 11:36:27 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.StaticInterval;
+import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -31,7 +32,7 @@ public class RetransmitterTest {
     }
 
     public void testNoEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
+        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -40,7 +41,7 @@ public class RetransmitterTest {
 
 
     public void testSingleEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
+        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 1);
         int size=xmitter.size();
@@ -50,7 +51,7 @@ public class RetransmitterTest {
 
 
     public void testEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
+        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
@@ -60,7 +61,7 @@ public class RetransmitterTest {
 
 
     public void testMultipleEntries() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
+        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
