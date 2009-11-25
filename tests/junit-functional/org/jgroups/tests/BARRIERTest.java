@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.7 2009/11/25 10:17:58 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.8 2009/11/25 10:25:05 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
@@ -114,7 +114,6 @@ public class BARRIERTest {
 
         public void receive(Event evt) {
             if(evt.getType() == Event.MSG) {
-                num_mgs_received.incrementAndGet();
                 if(num_mgs_received.incrementAndGet() % 1000 == 0)
                     System.out.println("<== " + num_mgs_received.get());
             }
