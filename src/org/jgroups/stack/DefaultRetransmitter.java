@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class DefaultRetransmitter extends Retransmitter {
     private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
@@ -47,8 +47,6 @@ public class DefaultRetransmitter extends Retransmitter {
      * Add the given range [first_seqno, last_seqno] in the list of
      * entries eligible for retransmission. If first_seqno > last_seqno,
      * then the range [last_seqno, first_seqno] is added instead
-     * <p>
-     * If retransmitter thread is suspended, wake it up
      */
     public void add(long first_seqno, long last_seqno) {
         if(first_seqno > last_seqno) {
@@ -60,7 +58,7 @@ public class DefaultRetransmitter extends Retransmitter {
         Task new_task;
         for(long seqno=first_seqno; seqno <= last_seqno; seqno++) {
             // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
-            new_task=new Task(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
+            new_task=new SeqnoTask(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
             Task old_task=msgs.putIfAbsent(seqno, new_task);
             if(old_task == null) // only schedule if we actually *added* the new task !
                 new_task.doSchedule(); // Entry adds itself to the timer
@@ -115,12 +113,25 @@ public class DefaultRetransmitter extends Retransmitter {
     }
 
 
+    protected class SeqnoTask extends Task {
+        private long              seqno=-1;
+
+        protected SeqnoTask(long seqno, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
+            super(intervals, cmd, msg_sender);
+            this.seqno=seqno;
+        }
 
 
-    /* ------------------------------- Private Methods -------------------------------------- */
+        public String toString() {
+            return String.valueOf(seqno);
+        }
+
+        protected void callRetransmissionCommand() {
+            command.retransmit(seqno, seqno, msg_sender);
+        }
+    }
 
 
-    /* ---------------------------- End of Private Methods ------------------------------------ */
 
 
 }
