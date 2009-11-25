@@ -5,9 +5,12 @@ import org.jgroups.util.FixedSizeBitSet;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.Set;
+import java.util.TreeSet;
+
 /**
  * @author Bela Ban
- * @version $Id: FixedSizeBitSetTest.java,v 1.1 2009/11/25 08:43:11 belaban Exp $
+ * @version $Id: FixedSizeBitSetTest.java,v 1.2 2009/11/25 08:48:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class FixedSizeBitSetTest {
@@ -101,11 +104,18 @@ public class FixedSizeBitSetTest {
 
     public static void testLargeSet() {
         FixedSizeBitSet set=new FixedSizeBitSet(1500);
+        Set<Integer> sorted_set=new TreeSet<Integer>();
         for(int i=0; i < 500; i++) {
             int num=(int)Util.random(1499);
-            set.set(num);
+            sorted_set.add(num);
         }
-        System.out.println("set = " + set);
+
+        for(int num: sorted_set)
+            set.set(num);
+
+        int num_set=sorted_set.size();
+        System.out.println("set " + num_set + " bits");
+        assert set.cardinality() == num_set;
     }
 
 }
