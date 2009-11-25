@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.22 2009/11/24 09:04:02 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.23 2009/11/25 09:57:14 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -265,7 +265,7 @@ public class OOBTest extends ChannelTestBase {
 
         Collection<Integer> msgs=receiver.getMsgs();
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(msgs.size() == NUM)
                 break;
             Util.sleep(1000);
