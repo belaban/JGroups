@@ -2,16 +2,15 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.util.Range;
-import org.jgroups.util.XmitRange;
-import org.jgroups.util.FixedSizeBitSet;
 import org.jgroups.util.Util;
+import org.jgroups.util.XmitRange;
 import org.testng.annotations.Test;
 
 import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.5 2009/11/25 08:51:32 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.6 2009/11/25 08:55:07 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
