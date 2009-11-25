@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.11 2009/11/03 16:41:03 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.12 2009/11/25 11:36:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;

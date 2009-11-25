@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.37 2009/11/23 13:51:20 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.38 2009/11/25 11:36:25 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,11 +23,11 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    private RetransmitCommand       retransmit_command = null;                            // called to request XMIT of msg
+    private RetransmitCommand                 retransmit_command = null;                 // called to request XMIT of msgs
     private final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>();
-    private Interval                interval=new StaticInterval(400,800,1200,1600);
-    private final Retransmitter     retransmitter;
-    private long                    lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
+    private Interval                          interval=new StaticInterval(400,800,1200,1600);
+    private final Retransmitter               retransmitter;
+    private long                              lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
 
 
     public interface RetransmitCommand {
@@ -37,21 +37,21 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public AckSenderWindow(RetransmitCommand com) {
         retransmit_command = com;
-        retransmitter = new Retransmitter(null, this, null);
+        retransmitter = new DefaultRetransmitter(null, this, null);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
     public AckSenderWindow(RetransmitCommand com, Interval interval, TimeScheduler sched) {
         retransmit_command = com;
         this.interval = interval;
-        retransmitter = new Retransmitter(null, this, sched);
+        retransmitter = new DefaultRetransmitter(null, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
     public AckSenderWindow(RetransmitCommand com, Interval interval, TimeScheduler sched, Address sender) {
         retransmit_command = com;
         this.interval = interval;
-        retransmitter = new Retransmitter(sender, this, sched);
+        retransmitter = new DefaultRetransmitter(sender, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
 

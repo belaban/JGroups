@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.70 2009/11/23 11:43:12 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.71 2009/11/25 11:36:25 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -134,7 +134,7 @@ public class NakReceiverWindow {
         if(sched == null)
             throw new IllegalStateException("timer has to be provided and cannot be null");
         if(cmd != null)
-            retransmitter=new Retransmitter(sender, cmd, sched);
+            retransmitter=new DefaultRetransmitter(sender, cmd, sched);
     }
 
 

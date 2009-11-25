@@ -10,6 +10,7 @@ import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.Retransmitter;
 
 import java.util.concurrent.CyclicBarrier;
@@ -25,7 +26,7 @@ import java.util.Collections;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.4 2009/11/20 16:37:57 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.5 2009/11/25 11:36:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
