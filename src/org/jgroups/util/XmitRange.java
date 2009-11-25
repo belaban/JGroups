@@ -12,7 +12,7 @@ import java.util.Map;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.5 2009/11/25 08:51:54 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.6 2009/11/25 08:55:32 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
@@ -54,45 +54,30 @@ public class XmitRange implements Comparable<XmitRange> {
     }
 
     public boolean get(long num) {
-        int index=getIndex((int)num);
-        synchronized(this) {
-            return bits.get(index);
-        }
+        return bits.get(getIndex((int)num));
     }
 
     public void set(long num) {
-        int index=getIndex((int)num);
-        synchronized(this) {
-            bits.set(index);
-        }
+        bits.set(getIndex((int)num));
     }
 
     public void set(long ... nums) {
-        if(nums == null)
-            return;
-        synchronized(this) {
+        if(nums != null)
             for(long num: nums)
                 set(num);
-        }
     }
 
     public void clear(long num) {
-        int index=getIndex((int)num);
-        synchronized(this) {
-            bits.clear(index);
-        }
+        bits.clear(getIndex((int)num));
     }
 
     public void clear(long ... nums) {
-        if(nums == null)
-            return;
-        synchronized(this) {
+        if(nums != null)
             for(long num: nums)
                 clear(num);
-        }
     }
 
-    public synchronized int getNumberOfReceivedMessages() {
+    public int getNumberOfReceivedMessages() {
         return bits.cardinality();
     }
 
@@ -180,7 +165,7 @@ public class XmitRange implements Comparable<XmitRange> {
      * @param value If true, returns all bits set to 1, else 0
      * @return
      */
-    public synchronized Collection<Range> getBits(boolean value) {
+    public Collection<Range> getBits(boolean value) {
         int index=0;
         int start_range=0, end_range=0;
         int size=(int)((high - low) + 1);
@@ -202,52 +187,5 @@ public class XmitRange implements Comparable<XmitRange> {
         return retval;
     }
     
-
-    public static void main(String[] args) throws IOException, ChannelException {
-        XmitRange range=new XmitRange(10,20);
-        System.out.println("range = " + range.print());
-
-        range.set(12);
-        range.set(17);
-        range.set(10);
-        range.set(11);
-        System.out.println("range = " + range.print());
-
-        boolean set=range.get(12);
-        System.out.println("set = " + set);
-
-        set=range.get(17);
-        System.out.println("set = " + set);
-
-        System.out.println("msgs to retransmit: " + range.printBits(false));
-
-
-
-       /* TreeMap<MyRange,MyRange> map=new TreeMap<MyRange,MyRange>();
-
-        MyRange[] ranges=new MyRange[]{new MyRange(23,200), new MyRange(222,222), new MyRange(700,800), new MyRange(900,905)};
-
-        for(MyRange range: ranges)
-            map.put(range, range);
-
-
-        System.out.println("map = " + map.keySet());
-
-
-        for(long num: new long[]{0, 1, 23, 100, 200, 201, 202, 222, 223, 750, 899, 905, 1000}) {
-            MyRange range=get(num, map);
-            if(range != null && range.contains(num))
-                System.out.println("range for " + num + ": " + range);
-            else
-                System.out.println("range for " + num + ": " + range);
-        }*/
-    }
-
-
-    public static XmitRange get(long num, Map<XmitRange, XmitRange> map) {
-        XmitRange range=map.get(new XmitRange(num, true));
-        if(range != null && range.contains(num))
-            return range;
-        return null;
-    }
+  
 }
