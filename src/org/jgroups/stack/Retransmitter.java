@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * It can be used e.g. by an ack-based scheme (e.g. AckSenderWindow) to retransmit a message to the receiver, or
  * by a nak-based scheme to send a retransmission request to the sender of the missing message.<br/>
  * @author Bela Ban
- * @version $Revision: 1.32 $
+ * @version $Revision: 1.33 $
  */
 public abstract class Retransmitter {
 
@@ -70,18 +70,12 @@ public abstract class Retransmitter {
 
 
     /**
-     * Add the given range [first_seqno, last_seqno] in the list of
-     * entries eligible for retransmission. If first_seqno > last_seqno,
-     * then the range [last_seqno, first_seqno] is added instead
-     * <p>
-     * If retransmitter thread is suspended, wake it up
+     * Add messages from <code>first_seqno</code> to <code>last_seqno</code/> for retransmission
      */
     public abstract void add(long first_seqno, long last_seqno);
+
     /**
-     * Remove the given sequence number from the list of seqnos eligible
-     * for retransmission. If there are no more seqno intervals in the
-     * respective entry, cancel the entry from the retransmission
-     * scheduler and remove it from the pending entries
+     * Remove the given sequence number from retransmission
      */
     public abstract int remove(long seqno);
 
@@ -102,17 +96,15 @@ public abstract class Retransmitter {
 
     /* ---------------------------- End of Private Methods ------------------------------------ */
 
-     protected class Task implements TimeScheduler.Task {
-        private final Interval    intervals;
-        private long              seqno=-1;
-        private volatile Future   future;
-        private Address           msg_sender=null;
-        protected int             num_retransmits=0;
-        private RetransmitCommand command;
-        private volatile boolean  cancelled=false;
+    protected abstract class Task implements TimeScheduler.Task {
+        protected final Interval       intervals;
+        protected volatile Future      future;
+        protected Address              msg_sender=null;
+        protected int                  num_retransmits=0;
+        protected RetransmitCommand    command;
+        protected volatile boolean     cancelled=false;
 
-        protected Task(long seqno, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
-            this.seqno=seqno;
+        protected Task(Interval intervals, RetransmitCommand cmd, Address msg_sender) {
             this.intervals=intervals;
             this.command=cmd;
             this.msg_sender=msg_sender;
@@ -147,7 +139,7 @@ public abstract class Retransmitter {
                 return;
             }
             try {
-                command.retransmit(seqno, seqno, msg_sender);
+                callRetransmissionCommand();
                 num_retransmits++;
             }
             catch(Throwable t) {
@@ -157,10 +149,9 @@ public abstract class Retransmitter {
             doSchedule();
         }
 
-         public String toString() {
-             return String.valueOf(seqno);
-         }
-     }
+
+        protected abstract void callRetransmissionCommand();
+    }
 
 
 }
