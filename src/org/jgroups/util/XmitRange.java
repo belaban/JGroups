@@ -3,7 +3,6 @@ package org.jgroups.util;
 import org.jgroups.ChannelException;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
@@ -13,13 +12,13 @@ import java.util.Map;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.4 2009/11/24 15:27:27 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.5 2009/11/25 08:51:54 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
     final long high;
     final boolean dummy;
-    final BitSet bits;
+    final FixedSizeBitSet bits;
 
     public XmitRange(long low, long high) {
         this.low=low;
@@ -28,7 +27,7 @@ public class XmitRange implements Comparable<XmitRange> {
         if(low > high)
             throw new IllegalArgumentException("low (" + low + ") must be <= high (" + high + ")");
         int size=(int)((high - low) + 1);
-        bits=new BitSet(size);  // starts out with all bits set to 0 (false)
+        bits=new FixedSizeBitSet(size);  // starts out with all bits set to 0 (false)
     }
 
     /**
