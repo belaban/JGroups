@@ -7,6 +7,7 @@ import org.jgroups.util.XmitRange;
 import org.jgroups.util.Range;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -21,7 +22,7 @@ import java.util.*;
  * task is cancelled.
  *
  * @author Bela Ban
- * @version $Id: RangeBasedRetransmitter.java,v 1.1 2009/11/25 12:35:28 belaban Exp $
+ * @version $Id: RangeBasedRetransmitter.java,v 1.2 2009/11/27 12:09:46 belaban Exp $
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 
@@ -29,6 +30,9 @@ public class RangeBasedRetransmitter extends Retransmitter {
     // todo: when JDK 6 is the baseline, convert the TreeMap to a TreeSet or ConcurrentSkipListSet and use ceiling()
     /** Sorted hashmap storing the ranges */
     private final Map<XmitRange,XmitRange> ranges=Collections.synchronizedSortedMap(new TreeMap<XmitRange,XmitRange>());
+
+    /** Association between ranges and retransmission tasks */
+    private final Map<XmitRange,Task> tasks=new ConcurrentHashMap<XmitRange,Task>();
 
 
     /**
@@ -60,11 +64,12 @@ public class RangeBasedRetransmitter extends Retransmitter {
         // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
         RangeTask new_task=new RangeTask(range, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
 
-
         XmitRange old_range=ranges.put(range, range);
         if(old_range != null) {
             log.error("new range " + range + " overlaps with old range " + old_range);
         }
+
+        tasks.put(range, new_task);
 
         new_task.doSchedule(); // Entry adds itself to the timer
     }
@@ -83,10 +88,14 @@ public class RangeBasedRetransmitter extends Retransmitter {
             return -1;
         }
         range.set(seqno);
-        if(range.getNumberOfMissingMessages() == 0) {
-            // todo: get associated task and cancel it
 
-            
+        // if the range has no missing messages, get the associated task and cancel it
+        if(range.getNumberOfMissingMessages() == 0) {
+            Task task=tasks.get(range);
+            if(task != null) {
+                task.cancel();
+                tasks.remove(range);
+            }            
             ranges.remove(range);
         }
 
@@ -100,17 +109,18 @@ public class RangeBasedRetransmitter extends Retransmitter {
     public void reset() {
         synchronized(ranges) {
             for(XmitRange range: ranges.keySet()) {
-                // todo: get task associated with range and cancel it
+                // get task associated with range and cancel it
+                Task task=tasks.get(range);
+                if(task != null) {
+                    task.cancel();
+                    tasks.remove(range);
+                }
             }
 
             ranges.clear();
         }
     }
 
-
-    public void stop() {
-        reset();
-    }
 
 
     public String toString() {
@@ -121,7 +131,6 @@ public class RangeBasedRetransmitter extends Retransmitter {
                 missing_msgs+=range.getNumberOfMissingMessages();
             }
         }
-
 
         StringBuilder sb=new StringBuilder();
         sb.append(missing_msgs).append(" messages to retransmit");
