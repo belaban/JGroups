@@ -3,7 +3,7 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.XmitRange;
+import org.jgroups.util.SeqnoRange;
 import org.jgroups.util.Range;
 
 import java.util.*;
@@ -15,24 +15,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * The ranges are stored in a sorted hashmap and the {@link Comparable#compareTo(Object)} method compares both ranges
  * again ranges, and ranges against seqnos. The latter helps to find a range given a seqno, e.g. seqno 105 will find
  * range [100-120].<p/>
- * Each range is implemented by {@link org.jgroups.util.XmitRange}, which has a bitset of all missing seqnos. When
+ * Each range is implemented by {@link org.jgroups.util.SeqnoRange}, which has a bitset of all missing seqnos. When
  * a seqno is received, that bit set is updated; the bit corresponding to the seqno is set to 1. A task linked to
  * the range periodically retransmits missing messages.<p/>
  * When all bits are 1 (= all messages have been received), the range is removed from the hashmap and the retransmission
  * task is cancelled.
  *
  * @author Bela Ban
- * @version $Id: RangeBasedRetransmitter.java,v 1.3 2009/11/27 15:36:36 belaban Exp $
+ * @version $Id: RangeBasedRetransmitter.java,v 1.4 2009/11/27 15:49:40 belaban Exp $
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 
 
     // todo: when JDK 6 is the baseline, convert the TreeMap to a TreeSet or ConcurrentSkipListSet and use ceiling()
     /** Sorted hashmap storing the ranges */
-    private final Map<XmitRange,XmitRange> ranges=Collections.synchronizedSortedMap(new TreeMap<XmitRange,XmitRange>());
+    private final Map<SeqnoRange, SeqnoRange> ranges=Collections.synchronizedSortedMap(new TreeMap<SeqnoRange, SeqnoRange>());
 
     /** Association between ranges and retransmission tasks */
-    private final Map<XmitRange,Task> tasks=new ConcurrentHashMap<XmitRange,Task>();
+    private final Map<SeqnoRange,Task> tasks=new ConcurrentHashMap<SeqnoRange,Task>();
 
 
     /**
@@ -59,12 +59,12 @@ public class RangeBasedRetransmitter extends Retransmitter {
             last_seqno=tmp;
         }
 
-        XmitRange range=new XmitRange(first_seqno, last_seqno);
+        SeqnoRange range=new SeqnoRange(first_seqno, last_seqno);
 
         // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
         RangeTask new_task=new RangeTask(range, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
 
-        XmitRange old_range=ranges.put(range, range);
+        SeqnoRange old_range=ranges.put(range, range);
         if(old_range != null)
             log.error("new range " + range + " overlaps with old range " + old_range);
 
@@ -83,8 +83,8 @@ public class RangeBasedRetransmitter extends Retransmitter {
      */
     public int remove(long seqno) {
         int retval=0;
-        XmitRange dummy_range=new XmitRange(seqno, true);
-        XmitRange range=ranges.get(dummy_range);
+        SeqnoRange dummy_range=new SeqnoRange(seqno, true);
+        SeqnoRange range=ranges.get(dummy_range);
         if(range == null)
             return 0;
         
@@ -114,7 +114,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
      */
     public void reset() {
         synchronized(ranges) {
-            for(XmitRange range: ranges.keySet()) {
+            for(SeqnoRange range: ranges.keySet()) {
                 // get task associated with range and cancel it
                 Task task=tasks.get(range);
                 if(task != null) {
@@ -136,7 +136,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
         int missing_msgs=0;
 
         synchronized(ranges) {
-            for(XmitRange range: ranges.keySet()) {
+            for(SeqnoRange range: ranges.keySet()) {
                 missing_msgs+=range.getNumberOfMissingMessages();
             }
         }
@@ -145,7 +145,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
         sb.append(missing_msgs).append(" messages to retransmit");
         if(missing_msgs < 50) {
             Collection<Range> all_missing_msgs=new LinkedList<Range>();
-            for(XmitRange range: ranges.keySet()) {
+            for(SeqnoRange range: ranges.keySet()) {
                 all_missing_msgs.addAll(range.getMessagesToRetransmit());
             }
             sb.append(": ").append(all_missing_msgs);
@@ -158,7 +158,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
         int retval=0;
 
         synchronized(ranges) {
-            for(XmitRange range: ranges.keySet()) {
+            for(SeqnoRange range: ranges.keySet()) {
                 retval+=range.getNumberOfMissingMessages();
             }
         }
@@ -167,9 +167,9 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
 
     protected class RangeTask extends Task {
-        protected final XmitRange range;
+        protected final SeqnoRange range;
 
-        protected RangeTask(XmitRange range, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
+        protected RangeTask(SeqnoRange range, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
             super(intervals, cmd, msg_sender);
             this.range=range;
         }
