@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * task is cancelled.
  *
  * @author Bela Ban
- * @version $Id: RangeBasedRetransmitter.java,v 1.2 2009/11/27 12:09:46 belaban Exp $
+ * @version $Id: RangeBasedRetransmitter.java,v 1.3 2009/11/27 15:36:36 belaban Exp $
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 
@@ -65,13 +65,14 @@ public class RangeBasedRetransmitter extends Retransmitter {
         RangeTask new_task=new RangeTask(range, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
 
         XmitRange old_range=ranges.put(range, range);
-        if(old_range != null) {
+        if(old_range != null)
             log.error("new range " + range + " overlaps with old range " + old_range);
-        }
 
         tasks.put(range, new_task);
-
         new_task.doSchedule(); // Entry adds itself to the timer
+
+        if(log.isTraceEnabled())
+            log.trace("added range " + sender + " [" + range + "]");
     }
 
     /**
@@ -81,13 +82,15 @@ public class RangeBasedRetransmitter extends Retransmitter {
      * scheduler and remove it from the pending entries
      */
     public int remove(long seqno) {
+        int retval=0;
         XmitRange dummy_range=new XmitRange(seqno, true);
         XmitRange range=ranges.get(dummy_range);
-        if(range == null) {
-            log.error("range for seqno " + seqno + " not found");
-            return -1;
-        }
+        if(range == null)
+            return 0;
+        
         range.set(seqno);
+        if(log.isTraceEnabled())
+            log.trace("removed " + sender + " #" + seqno + " from retransmitter");
 
         // if the range has no missing messages, get the associated task and cancel it
         if(range.getNumberOfMissingMessages() == 0) {
@@ -95,11 +98,14 @@ public class RangeBasedRetransmitter extends Retransmitter {
             if(task != null) {
                 task.cancel();
                 tasks.remove(range);
+                retval=task.getNumRetransmits();
             }            
             ranges.remove(range);
+            if(log.isTraceEnabled())
+                log.trace("all messages for " + sender + " [" + range + "] have been received; removing range");
         }
 
-        return -1;
+        return retval;
     }
 
     /**
@@ -119,6 +125,9 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
             ranges.clear();
         }
+
+        for(Task task: tasks.values())
+            task.cancel();
     }
 
 
@@ -146,7 +155,14 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
 
     public int size() {
-        return ranges.size();
+        int retval=0;
+
+        synchronized(ranges) {
+            for(XmitRange range: ranges.keySet()) {
+                retval+=range.getNumberOfMissingMessages();
+            }
+        }
+        return retval;
     }
 
 

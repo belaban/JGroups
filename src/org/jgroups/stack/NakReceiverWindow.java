@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.71 2009/11/25 11:36:25 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.72 2009/11/27 15:36:12 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -121,12 +121,20 @@ public class NakReceiverWindow {
      * @param sched the external scheduler to use for retransmission
      * requests of missing msgs. If it's not provided or is null, an internal
      */
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched) {
+    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno,
+                             long lowest_seqno, TimeScheduler sched) {
         this(null, sender, cmd, highest_delivered_seqno, lowest_seqno, sched);
     }
 
 
-    public NakReceiverWindow(Address local_addr, Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched) {
+    public NakReceiverWindow(Address local_addr, Address sender, Retransmitter.RetransmitCommand cmd, 
+                             long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched) {
+        this(local_addr, sender, cmd, highest_delivered_seqno, lowest_seqno, sched, true);
+    }
+
+    public NakReceiverWindow(Address local_addr, Address sender, Retransmitter.RetransmitCommand cmd,
+                             long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
+                             boolean use_range_based_retransmitter) {
         this.local_addr=local_addr;
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
@@ -134,7 +142,9 @@ public class NakReceiverWindow {
         if(sched == null)
             throw new IllegalStateException("timer has to be provided and cannot be null");
         if(cmd != null)
-            retransmitter=new DefaultRetransmitter(sender, cmd, sched);
+            retransmitter=use_range_based_retransmitter?
+                    new RangeBasedRetransmitter(sender, cmd, sched) :
+                    new DefaultRetransmitter(sender, cmd, sched);
     }
 
 
@@ -152,17 +162,7 @@ public class NakReceiverWindow {
         this(sender, cmd, highest_delivered_seqno, 0, sched);
     }
 
-    /**
-     * Creates a new instance with the given retransmit command
-     *
-     * @param sender The sender associated with this instance
-     * @param cmd The command used to retransmit a missing message, will
-     * be invoked by the table. If null, the retransmit thread will not be started
-     * @param highest_delivered_seqno The next seqno to remove is highest_delivered_seqno +1
-     */
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno) {
-        this(sender, cmd, highest_delivered_seqno, null);
-    }
+   
 
     public AtomicBoolean getProcessing() {
         return processing;
