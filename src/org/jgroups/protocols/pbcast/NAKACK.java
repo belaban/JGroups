@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.243 2009/11/25 11:36:29 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.244 2009/11/27 15:35:44 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -96,6 +96,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Use statistics gathered from actual retransmission times to compute new retransmission times. Default is false")
     private boolean use_stats_for_retransmission=false;
+
+    @ManagedAttribute(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
+            "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
+            "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
+    @Property(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
+            "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
+            "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
+    @Deprecated
+    private boolean use_range_based_retransmitter=true;
 
     /**
      * Messages that have been received in order are sent up the stack (=
@@ -181,6 +190,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     private final Map<Address,Double> smoothed_avg_xmit_times=new HashMap<Address,Double>();
 
+    /** Keeps the last 50 retransmit requests */
+    private final BoundedList<String> xmit_history=new BoundedList<String>(50);
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
@@ -283,6 +294,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         received.clear();
         stability_msgs.clear();
         digest_history.clear();
+        xmit_history.clear();
     }
 
     public void init() throws Exception {
@@ -1272,7 +1284,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
-        NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer);
+        NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer, 
+                                                    use_range_based_retransmitter);
 
         if(use_stats_for_retransmission) {
             win.setRetransmitTimeouts(new ActualInterval(sender));
@@ -1458,6 +1471,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             xmit_reqs_sent+=last_seqno - first_seqno +1;
             updateStats(sent, sender, 1, 0, 0);
         }
+
+        xmit_history.add(sender + ": " + first_seqno + "-" + last_seqno);
     }
     /* ------------------- End of Interface Retransmitter.RetransmitCommand -------------------- */
 
@@ -1596,6 +1611,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             BoundedList<Long> list=entry.getValue();
             sb.append(sender).append(": ").append(list).append("\n");
         }
+        return sb.toString();
+    }
+
+    @ManagedOperation(description="Prints the last N retransmission requests")
+    public String printXmitHistory() {
+        StringBuilder sb=new StringBuilder();
+        for(String req: xmit_history)
+            sb.append(req).append("\n");
         return sb.toString();
     }
 
