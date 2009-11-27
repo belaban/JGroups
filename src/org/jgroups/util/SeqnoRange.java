@@ -8,15 +8,15 @@ import java.util.LinkedList;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.7 2009/11/27 11:58:26 belaban Exp $
+ * @version $Id: SeqnoRange.java,v 1.1 2009/11/27 15:49:37 belaban Exp $
  */
-public class XmitRange implements Comparable<XmitRange> {
+public class SeqnoRange implements Comparable<SeqnoRange> {
     final long low;
     final long high;
     final boolean dummy;
     final FixedSizeBitSet bits;
 
-    public XmitRange(long low, long high) {
+    public SeqnoRange(long low, long high) {
         this.low=low;
         this.high=high;
         this.dummy=false;
@@ -31,7 +31,7 @@ public class XmitRange implements Comparable<XmitRange> {
      * @param num
      * @param dummy
      */
-    public XmitRange(long num, boolean dummy) {
+    public SeqnoRange(long num, boolean dummy) {
         this.dummy=dummy;
         low=high=num;
         bits=null;
@@ -96,7 +96,7 @@ public class XmitRange implements Comparable<XmitRange> {
      * @param range
      * @return
      */
-    public int compareTo(XmitRange range) {
+    public int compareTo(SeqnoRange range) {
         if(range == null)
             throw new NullPointerException();
         if(!dummy)
@@ -112,7 +112,7 @@ public class XmitRange implements Comparable<XmitRange> {
 
 
     public boolean equals(Object obj) {
-        return obj != null && compareTo((XmitRange)obj) == 0;
+        return obj != null && compareTo((SeqnoRange)obj) == 0;
     }
 
     public int hashCode() {
