@@ -1,18 +1,14 @@
 package org.jgroups.util;
 
-import org.jgroups.ChannelException;
-
-import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Map;
 
 
 /**
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: XmitRange.java,v 1.6 2009/11/25 08:55:32 belaban Exp $
+ * @version $Id: XmitRange.java,v 1.7 2009/11/27 11:58:26 belaban Exp $
  */
 public class XmitRange implements Comparable<XmitRange> {
     final long low;
