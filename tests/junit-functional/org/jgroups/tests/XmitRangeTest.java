@@ -7,10 +7,11 @@ import org.jgroups.util.XmitRange;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: XmitRangeTest.java,v 1.6 2009/11/25 08:55:07 belaban Exp $
+ * @version $Id: XmitRangeTest.java,v 1.7 2009/11/27 11:58:13 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class XmitRangeTest {
@@ -216,8 +217,8 @@ public class XmitRangeTest {
     }
 
 
-    public static void testRemovalFromHashMap() {
-        TreeMap<XmitRange,XmitRange> map=new TreeMap<XmitRange,XmitRange>();
+    public static void testRemovalFromTreeMap() {
+        Map<XmitRange,XmitRange> map=new TreeMap<XmitRange,XmitRange>();
 
         XmitRange[] ranges=new XmitRange[]{new XmitRange(900,905), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(23,200)};
 
@@ -246,6 +247,33 @@ public class XmitRangeTest {
         assert r != null;
         map.remove(r);
         assert map.isEmpty();
+    }
+
+
+     public static void testRemovalFromHashMap() {
+        Map<XmitRange,XmitRange> map=new ConcurrentHashMap<XmitRange,XmitRange>();
+
+        XmitRange[] ranges=new XmitRange[]{new XmitRange(900,905), new XmitRange(222,222), new XmitRange(700,800), new XmitRange(23,200)};
+
+        for(XmitRange range: ranges)
+            map.put(range, range);
+
+        System.out.println("map = " + map.keySet());
+        assert map.size() == 4;
+
+         for(XmitRange r: ranges) {
+             XmitRange range=map.get(r);
+             assert range != null;
+             assert range == r; // must point to the same object in memory
+         }
+
+         for(XmitRange r: ranges) {
+             XmitRange range=map.remove(r);
+             assert range != null;
+             assert range == r;
+         }
+
+         assert map.isEmpty();
     }
 
 
