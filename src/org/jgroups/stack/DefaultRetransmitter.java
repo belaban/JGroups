@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class DefaultRetransmitter extends Retransmitter {
     private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
@@ -89,11 +89,6 @@ public class DefaultRetransmitter extends Retransmitter {
         for(Task task: msgs.values())
             task.cancel();
         msgs.clear();
-    }
-
-
-    public void stop() {
-        reset();
     }
 
 
