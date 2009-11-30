@@ -8,38 +8,21 @@ import java.util.LinkedList;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: SeqnoRange.java,v 1.1 2009/11/27 15:49:37 belaban Exp $
+ * @version $Id: SeqnoRange.java,v 1.2 2009/11/30 11:41:58 belaban Exp $
  */
-public class SeqnoRange implements Comparable<SeqnoRange> {
-    final long low;
+public class SeqnoRange extends Seqno {
     final long high;
-    final boolean dummy;
     final FixedSizeBitSet bits;
 
     public SeqnoRange(long low, long high) {
-        this.low=low;
+        super(low);
         this.high=high;
-        this.dummy=false;
         if(low > high)
             throw new IllegalArgumentException("low (" + low + ") must be <= high (" + high + ")");
         int size=(int)((high - low) + 1);
         bits=new FixedSizeBitSet(size);  // starts out with all bits set to 0 (false)
     }
 
-    /**
-     * Only used to compare a long against a range in a TreeSet / TreeMap. Used to find a range given a seqno
-     * @param num
-     * @param dummy
-     */
-    public SeqnoRange(long num, boolean dummy) {
-        this.dummy=dummy;
-        low=high=num;
-        bits=null;
-    }
-
-    public long getLow() {
-        return low;
-    }
 
     public long getHigh() {
         return high;
@@ -89,46 +72,13 @@ public class SeqnoRange implements Comparable<SeqnoRange> {
         return getBits(false);
     }
 
-    /**
-     * This method is key to add a range to a sorted set (or map). The key to compare on is 'low'. When we want to
-     * lookup a range given a seqno, we'll create a dummy Range and then the comparison checks whether the seqno
-     * is in the range
-     * @param range
-     * @return
-     */
-    public int compareTo(SeqnoRange range) {
-        if(range == null)
-            throw new NullPointerException();
-        if(!dummy)
-            return low > range.low ? 1 : low < range.low? -1 : 0;
-
-        if(low >= range.low && high <= range.high)
-            return 0;
-        if(low < range.low)
-            return -1;
-        else
-            return 1;
-    }
-
-
-    public boolean equals(Object obj) {
-        return obj != null && compareTo((SeqnoRange)obj) == 0;
-    }
-
-    public int hashCode() {
-        return (int)low;
-    }
 
     public String toString() {
-        if(dummy)
-            return Long.toString(low);
-        return low + " - " + high;
+        return low + "-" + high;
     }
 
     public String print() {
-        if(dummy)
-            return Long.toString(low);
-        return low + " - " + high + ", set=" + printBits(true) + ", cleared=" + printBits(false);
+        return low + "-" + high + ", set=" + printBits(true) + ", cleared=" + printBits(false);
     }
 
     protected int getIndex(int num) {
