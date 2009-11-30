@@ -1,9 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.Range;
-import org.jgroups.util.Util;
-import org.jgroups.util.SeqnoRange;
+import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -11,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: SeqnoRangeTest.java,v 1.1 2009/11/27 15:49:38 belaban Exp $
+ * @version $Id: SeqnoRangeTest.java,v 1.2 2009/11/30 09:16:00 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class SeqnoRangeTest {
@@ -174,7 +172,7 @@ public class SeqnoRangeTest {
     
     
     public static void testCompareTo() {
-        TreeMap<SeqnoRange, SeqnoRange> map=new TreeMap<SeqnoRange, SeqnoRange>();
+        TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
         SeqnoRange[] ranges=new SeqnoRange[]{new SeqnoRange(900,905), new SeqnoRange(222,222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
 
@@ -195,6 +193,35 @@ public class SeqnoRangeTest {
         checkInRange(map, 750, 700, 800);
         checkInRange(map, 905, 900, 905);
     }
+
+
+    public static void testCompareTo2() {
+        TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
+
+        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(55), new SeqnoRange(222,222),
+                new SeqnoRange(700,800), new Seqno(650), new SeqnoRange(23,200)};
+
+        for(Seqno range: ranges)
+            map.put(range, range);
+
+        System.out.println("map = " + map.keySet());
+        assert map.size() == 6;
+
+        for(long num: new long[]{0, 1, 201, 202, 223, 1000}) {
+            checkNull(map, num);
+        }
+
+        checkInRange(map,  55,  55,  55);
+        checkInRange(map, 650, 650, 650);
+
+        checkInRange(map,  23,  23, 200);
+        checkInRange(map, 100,  23, 200);
+        checkInRange(map, 200,  23, 200);
+        checkInRange(map, 222, 222, 222);
+        checkInRange(map, 750, 700, 800);
+        checkInRange(map, 905, 900, 905);
+    }
+
 
 
     public static void testLargeRange() {
@@ -218,75 +245,73 @@ public class SeqnoRangeTest {
 
 
     public static void testRemovalFromTreeMap() {
-        Map<SeqnoRange, SeqnoRange> map=new TreeMap<SeqnoRange, SeqnoRange>();
+        Map<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
-        SeqnoRange[] ranges=new SeqnoRange[]{new SeqnoRange(900,905), new SeqnoRange(222,222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
+        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new Seqno(500),
+                new SeqnoRange(700,800), new Seqno(801), new SeqnoRange(23,200)};
 
-        for(SeqnoRange range: ranges)
+        for(Seqno range: ranges)
             map.put(range, range);
 
         System.out.println("map = " + map.keySet());
-        assert map.size() == 4;
+        assert map.size() == ranges.length;
 
-        SeqnoRange r=map.get(new SeqnoRange(222, true));
-        assert r != null;
-        map.remove(r);
-        assert map.size() == 3;
+        for(Seqno r: ranges) {
+            Seqno range=map.get(r);
+            assert range != null;
+            assert range == r; // must point to the same object in memory
+        }
 
-        r=map.get(new SeqnoRange(108, true));
-        assert r != null;
-        map.remove(r);
-        assert map.size() == 2;
+        for(Seqno r: ranges) {
+            Seqno range=map.remove(r);
+            assert range != null;
+            assert range == r;
+        }
 
-        r=map.get(new SeqnoRange(902, true));
-        assert r != null;
-        map.remove(r);
-        assert map.size() == 1;
-
-        r=map.get(new SeqnoRange(800, true));
-        assert r != null;
-        map.remove(r);
         assert map.isEmpty();
     }
 
 
-     public static void testRemovalFromHashMap() {
-        Map<SeqnoRange, SeqnoRange> map=new ConcurrentHashMap<SeqnoRange, SeqnoRange>();
+    public static void testRemovalFromHashMap() {
+        Map<Seqno,Seqno> map=new ConcurrentHashMap<Seqno,Seqno>();
 
-        SeqnoRange[] ranges=new SeqnoRange[]{new SeqnoRange(900,905), new SeqnoRange(222,222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
+        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800),
+                new SeqnoRange(23,200), new Seqno(201), new Seqno(205)};
 
-        for(SeqnoRange range: ranges)
+        for(Seqno range: ranges)
             map.put(range, range);
 
         System.out.println("map = " + map.keySet());
-        assert map.size() == 4;
+        assert map.size() == ranges.length;
 
-         for(SeqnoRange r: ranges) {
-             SeqnoRange range=map.get(r);
-             assert range != null;
-             assert range == r; // must point to the same object in memory
-         }
+        for(Seqno r: ranges) {
+            Seqno range=map.get(r);
+            assert range != null;
+            assert range == r; // must point to the same object in memory
+        }
 
-         for(SeqnoRange r: ranges) {
-             SeqnoRange range=map.remove(r);
-             assert range != null;
-             assert range == r;
-         }
+        for(Seqno r: ranges) {
+            Seqno range=map.remove(r);
+            assert range != null;
+            assert range == r;
+        }
 
-         assert map.isEmpty();
+        assert map.isEmpty();
     }
 
 
-    private static void checkInRange(Map<SeqnoRange, SeqnoRange> map, long seqno, long from, long to) {
-        SeqnoRange val=map.get(new SeqnoRange(seqno, true));
+    private static void checkInRange(Map<Seqno,Seqno> map, long seqno, long from, long to) {
+        Seqno val=map.get(new Seqno(seqno, true));
         System.out.println("seqno=" + seqno + ", val = " + val);
+        assert val != null;
         assert val.contains(seqno);
         assert val.getLow() == from;
-        assert val.getHigh() == to;
+        if(val instanceof SeqnoRange)
+            assert ((SeqnoRange)val).getHigh() == to;
     }
 
-    private static void checkNull(Map<SeqnoRange, SeqnoRange> map, long seqno) {
-        SeqnoRange val=map.get(new SeqnoRange(seqno, true));
+    private static void checkNull(Map<Seqno,Seqno> map, long seqno) {
+        Seqno val=map.get(new Seqno(seqno, true));
         assert val == null;
     }
 
