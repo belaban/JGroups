@@ -6,6 +6,7 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * task is cancelled.
  *
  * @author Bela Ban
- * @version $Id: RangeBasedRetransmitter.java,v 1.5 2009/11/30 11:43:15 belaban Exp $
+ * @version $Id: RangeBasedRetransmitter.java,v 1.6 2009/11/30 12:36:52 belaban Exp $
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 
@@ -31,6 +32,11 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
     /** Association between ranges and retransmission tasks */
     private final Map<Seqno,Task> tasks=new ConcurrentHashMap<Seqno,Task>();
+
+
+    private final AtomicLong num_missing_seqnos=new AtomicLong(0);
+    private final AtomicLong num_ranges=new AtomicLong(0);
+    private final AtomicLong num_single_msgs=new AtomicLong(0);
 
 
     /**
@@ -57,8 +63,14 @@ public class RangeBasedRetransmitter extends Retransmitter {
             last_seqno=tmp;
         }
 
+        num_missing_seqnos.addAndGet(last_seqno - first_seqno +1);
+
         // create a single seqno if we have no range or else a SeqnoRange
         Seqno range=first_seqno == last_seqno? new Seqno(first_seqno) : new SeqnoRange(first_seqno, last_seqno);
+        if(range instanceof SeqnoRange)
+            num_ranges.incrementAndGet();
+        else
+            num_single_msgs.incrementAndGet();
 
         // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
         RangeTask new_task=new RangeTask(range, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
@@ -127,6 +139,10 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
         for(Task task: tasks.values())
             task.cancel();
+
+        num_missing_seqnos.set(0);
+        num_ranges.set(0);
+        num_single_msgs.set(0);
     }
 
 
@@ -162,6 +178,17 @@ public class RangeBasedRetransmitter extends Retransmitter {
             }
         }
         return retval;
+    }
+
+
+    public String printStats() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("total seqnos=" + num_missing_seqnos);
+        sb.append(", single seqnos=" + num_single_msgs);
+        sb.append(", ranges=" + num_ranges);
+        double avg_seqnos_per_range=(double)(num_missing_seqnos.get() - num_single_msgs.get()) / num_ranges.get();
+        sb.append(", seqnos / range: " + avg_seqnos_per_range);
+        return sb.toString();
     }
 
 
