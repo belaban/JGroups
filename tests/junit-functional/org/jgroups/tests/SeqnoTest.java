@@ -9,10 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: SeqnoRangeTest.java,v 1.2 2009/11/30 09:16:00 belaban Exp $
+ * @version $Id: SeqnoTest.java,v 1.1 2009/11/30 11:40:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
-public class SeqnoRangeTest {
+public class SeqnoTest {
 
     public static void testConstructor() {
         SeqnoRange range=new SeqnoRange(10, 10);
@@ -33,7 +33,7 @@ public class SeqnoRangeTest {
     }
 
     public static void testSetAndGetWith1Seqno() {
-        SeqnoRange range=new SeqnoRange(10, 10);
+        Seqno range=new SeqnoRange(10, 10);
         assert range.getNumberOfMissingMessages() == 1;
         assert range.getNumberOfReceivedMessages() == 0;
 
@@ -174,13 +174,13 @@ public class SeqnoRangeTest {
     public static void testCompareTo() {
         TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
-        SeqnoRange[] ranges=new SeqnoRange[]{new SeqnoRange(900,905), new SeqnoRange(222,222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
+        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
 
-        for(SeqnoRange range: ranges)
+        for(Seqno range: ranges)
             map.put(range, range);
 
         System.out.println("map = " + map.keySet());
-        assert map.size() == 4;
+        assert map.size() == ranges.length;
 
         for(long num: new long[]{0, 1, 201, 202, 223, 1000}) {
             checkNull(map, num);
@@ -198,7 +198,7 @@ public class SeqnoRangeTest {
     public static void testCompareTo2() {
         TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
-        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(55), new SeqnoRange(222,222),
+        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(550), new Seqno(222),
                 new SeqnoRange(700,800), new Seqno(650), new SeqnoRange(23,200)};
 
         for(Seqno range: ranges)
@@ -211,7 +211,7 @@ public class SeqnoRangeTest {
             checkNull(map, num);
         }
 
-        checkInRange(map,  55,  55,  55);
+        checkInRange(map, 550, 550, 550);
         checkInRange(map, 650, 650, 650);
 
         checkInRange(map,  23,  23, 200);
@@ -316,12 +316,14 @@ public class SeqnoRangeTest {
     }
 
 
-    private static String print(SeqnoRange range) {
+    private static String print(Seqno seqno) {
         StringBuilder sb=new StringBuilder();
-        sb.append("low=" + range.getLow() + ", high=" + range.getHigh());
-        sb.append( ", size= " + range.size());
-        sb.append(", received=" + range.printBits(true) + " (" + range.getNumberOfReceivedMessages() + ")");
-        sb.append(", missing=" + range.printBits(false) + " (" + range.getNumberOfMissingMessages() + ")");
+        sb.append(seqno.toString());
+        sb.append(", size= " + seqno.size());
+        if(seqno instanceof SeqnoRange) {
+            sb.append(", received=" + ((SeqnoRange)seqno).printBits(true) + " (" + seqno.getNumberOfReceivedMessages() + ")");
+            sb.append(", missing=" + ((SeqnoRange)seqno).printBits(false) + " (" + seqno.getNumberOfMissingMessages() + ")");
+        }
         return sb.toString();
     }
 }
