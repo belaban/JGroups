@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.34 2009/11/19 15:15:55 belaban Exp $
+// $Id: DISCARD.java,v 1.35 2009/11/30 12:57:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,8 @@ import org.jgroups.*;
 import org.jgroups.Event;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -25,22 +27,34 @@ import java.awt.event.ActionEvent;
  */
 @Unsupported
 public class DISCARD extends Protocol {
-    @Property
+    @Property @ManagedAttribute(writable=true)
     double up=0.0;    // probability of dropping up   msgs
-    @Property
+
+    @Property @ManagedAttribute(writable=true)
     double down=0.0;  // probability of dropping down msgs
+
     @Property
     boolean excludeItself=true;   // if true don't discard messages sent/received in this stack
     Address localAddress;
-    int num_down=0, num_up=0;
+
+    @ManagedAttribute(description="Number of dropped down messages",name="droppedDownMessages")
+    int num_down=0;
+
+    @ManagedAttribute(description="Number of dropped up messages",name="droppedUpMessages")
+    int num_up=0;
     
     final Set<Address> ignoredMembers = new HashSet<Address>();
+
+
+    final Collection<Address> members=new ArrayList<Address>();
+
+    @ManagedAttribute(description="drop all messages (up or down)", writable=true)
     boolean discard_all=false;
 
-    // number of subsequent unicasts to drop in the down direction
+    @ManagedAttribute(description="Number of subsequent unicasts to drop in the down direction",writable=true)
     int drop_down_unicasts=0;
 
-    // number of subsequent multicasts to drop in the down direction
+    @ManagedAttribute(description="Number of subsequent multicasts to drop in the down direction",writable=true)
     int drop_down_multicasts=0;
 
     private DiscardDialog discard_dialog=null;
@@ -113,6 +127,23 @@ public class DISCARD extends Protocol {
 
     public void resetIgnoredMembers() {ignoredMembers.clear();}
 
+
+    @ManagedOperation
+    public void startGui() {
+        if(discard_dialog == null) {
+            discard_dialog=new DiscardDialog();
+            discard_dialog.init();
+            discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
+            discard_dialog.handleView(members);
+        }
+    }
+
+    @ManagedOperation
+    public void stopGui() {
+        if(discard_dialog != null)
+            discard_dialog.dispose();
+        discard_dialog=null;
+    }
 
     public void start() throws Exception {
         super.start();
@@ -231,6 +262,8 @@ public class DISCARD extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 Vector<Address> mbrs=view.getMembers();
+                members.clear();
+                members.addAll(mbrs);
                 ignoredMembers.retainAll(mbrs); // remove all non members
                 if(discard_dialog != null)
                     discard_dialog.handleView(mbrs);
