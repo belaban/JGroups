@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.72 2009/11/27 15:36:12 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.73 2009/11/30 12:36:16 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -563,6 +563,10 @@ public class NakReceiverWindow {
                 .append(num_missing).append("), loss rate=").append(getLossRate())
                 .append(", smoothed loss rate=").append(smoothed_loss_rate);
         return sb.toString();
+    }
+
+    public String printRetransmitStats() {
+        return retransmitter instanceof RangeBasedRetransmitter? ((RangeBasedRetransmitter)retransmitter).printStats() : "n/a";
     }
 
     /* ------------------------------- Private Methods -------------------------------------- */
