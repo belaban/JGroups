@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.244 2009/11/27 15:35:44 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.245 2009/11/30 09:27:50 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -104,7 +104,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
             "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
     @Deprecated
-    private boolean use_range_based_retransmitter=true;
+    private boolean use_range_based_retransmitter=false;
 
     /**
      * Messages that have been received in order are sent up the stack (=
