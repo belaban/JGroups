@@ -1,9 +1,8 @@
 package org.jgroups.tests.perf;
 
+import org.jgroups.Version;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.Version;
-import org.jgroups.Message;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -507,8 +506,7 @@ public class Test implements Receiver {
 
     void sendWarmupMessages(int num) throws Exception {
         Data data=new Data(Data.WARMUP);
-        byte[] tmp=new byte[(int)msg_size];
-        data.payload=tmp;
+        data.payload=new byte[(int)msg_size];
         
         final byte[] buf=generatePayload(data, null);
         System.out.println("sending " + num + " warmup messages");
