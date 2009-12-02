@@ -2,7 +2,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.5 2009/12/02 11:25:24 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.6 2009/12/02 11:31:15 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -24,6 +24,11 @@ a member is restarted - it will get the same IP address and port. Therefore, for
 Since a member's address is associated with state (e.g. retransmission tables and seqnos) in various protocols, some
 protocols might delete the state, other might not (if they haven't received the view excluding the member yet). This can
 lead to no messages being processed for a reincarnated member, or all messages being queued.
+
+A logical name is a name that's given a channel and stays with the channel until the channel is closed. This leads to
+much more readable output, e.g. we can replace view {192.168.1.5:56789|2: 192.168.1.5:56789, 192.168.2.30:4666} with
+{A|2: A, B}. This is very useful for example when reading logs.
+
 How to set a logical name in a channel is described in http://www.jgroups.org/manual/html/index.html ("JChannel").
 
 A blog entry about logical addresses is at http://belaban.blogspot.com/2009/02/whats-cool-about-logical-addresses.html.
