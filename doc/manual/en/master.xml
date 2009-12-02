@@ -14,8 +14,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2009/06/05 07:24:46 $</pubdate>
-        <releaseinfo>$Revision: 1.13 $</releaseinfo>
+        <pubdate>$Date: 2009/12/02 11:47:18 $</pubdate>
+        <releaseinfo>$Revision: 1.14 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -35,7 +35,7 @@
             <holder>Bela Ban</holder>
         </copyright>
          <copyright>
-            <year>2006-2009</year>
+            <year>2006-2010</year>
             <holder>Red Hat Inc</holder>
         </copyright>
         <legalnotice>
@@ -50,35 +50,22 @@
     <preface>
         <title>Foreword</title>
 
-        <para>This is the Programmer's and User's Guide for
-            JGroups. It provides information about the following areas:
+        <para>This is the JGroups manual. It provides information about:
             <orderedlist>
                 <listitem>
-                    <para>Installation and configuration.</para>
+                    <para>Installation and configuration</para>
                 </listitem>
                 <listitem>
-                    <para>Using JGroups.</para>
+                    <para>Using JGroups (the API)</para>
                 </listitem>
                 <listitem>
-                    <para>Architecture and implementation of JGroups. Focus on the
-                        protocol stack and protocols.</para>
+                    <para>Configuration of the JGroups protocols</para>
                 </listitem>
             </orderedlist>
         </para>
 
-        <para>Most of the Installation and User's Guide has been copied
-            from what is freely available on the
-            <ulink
-                    url="http://www.jgroups.org/">JGroups web site</ulink>
-            .
-            However, the focus of this document is to introduce programmers
-            who want to learn more about JGroups to the architecture and
-            implementation of JGroups. I will for example go into the
-            details of the protocol stack, how a message traverses the stack,
-            and how protocols can process it. I will also explain the various
-            design decisions I had to make when designing JGroups, which
-            hopefully leads to a better understanding of why things are the
-            way they are.
+        <para>
+            The focus is on how to <emphasis>use</emphasis> JGroups, not on how JGroups is implemented.
         </para>
 
         <para>Here are a couple of points I want to abide by throughout
@@ -91,7 +78,7 @@
                 </listitem>
                 <listitem>
                     <para>I like simplicity. Keep It Simple and Stupid. This is
-                        one of the biggest goals I have both in writing this book
+                        one of the biggest goals I have both in writing this manual
                         and in writing JGroups. It is easy to explain simple
                         concepts in complex terms, but it is hard to explain a
                         complex system in simple terms. I'll try to do the
@@ -104,13 +91,13 @@
         <bridgehead>So, how did it all start?</bridgehead>
 
         <para>I spent 1998-1999 at the Computer Science Department at
-            Cornell University for a post-doc, in Ken Birman's group. Ken is
+            Cornell University as a post-doc, in Ken Birman's group. Ken is
             credited with inventing the group communication paradigm,
             especially the Virtual Synchrony model. At the time they were
             working on their third generation group communication prototype,
             called Ensemble. Ensemble followed Horus (written in C by Robbert
             VanRenesse), which followed ISIS (written by Ken Birman, also in
-            C). Ensemble was written in OCaml, developed at INRIA, which is a
+            C). Ensemble was written in OCaml, developed at INRIA, and is a
             functional language and related to ML. I never liked the OCaml
             language, which in my opinion has a hideous syntax. Therefore I
             never got warm with Ensemble either.</para>
@@ -118,8 +105,7 @@
         <para>However, Ensemble had a Java interface (implemented by a
             student in a semester project) which allowed me to program in Java
             and use Ensemble underneath. The Java part would require that an
-            Ensemble process was running somewhere on the same machine, or
-            within the same network, and would connect to it via a
+            Ensemble process was running somewhere on the same machine, and would connect to it via a
             bidirectional pipe. The student had developed a simple protocol
             for talking to the Ensemble engine, and extended the engine as
             well to talk back to Java.</para>
@@ -160,7 +146,7 @@
         <para>
             In the fall of 2002, Sacha Labourey contacted me, letting me know that JGroups was being used by JBoss for
             their clustering implementation. I joined JBoss in 2003 and have been working on JGroups and JBossCache. My
-            goal is to make JGroups the most widely used clustering software in the Java space...
+            goal is to make JGroups the most widely used clustering software in Java ...
         </para>
 
         <para>Bela Ban, San Jose, Aug 2002, Kreuzlingen Switzerland 2006</para>
@@ -178,7 +164,7 @@
             many fruitful discussions of all aspects of group communication in
             particular and distributed systems in general.</para>
 
-        <para>I want to dedicate this book to Jeannette and Michelle.</para>
+        <para>I want to dedicate this manual to Jeannette and Michelle.</para>
 
     </preface>
 
