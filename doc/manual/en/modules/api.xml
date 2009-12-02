@@ -20,7 +20,7 @@
 
     <para>The <classname>org.jgroups.util.Util</classname> class contains a
     collection of useful functionality which cannot be assigned to any
-    particular other package.</para>
+    particular package.</para>
 
     <section>
       <title>objectToByteBuffer(), objectFromByteBuffer()</title>
@@ -69,7 +69,7 @@
     <section>
       <title>ExtendedMessageListener</title>
 
-      <para>JGroups release 2.3 introduces ExtendedMessageListener enabling
+      <para>JGroups release 2.3 introduced ExtendedMessageListener enabling
       partial state transfer (refer to <xref linkend="PartialStateTransfer" />
       ) while release 2.4 further expands ExtendedMessageListener with
       streaming state transfer callbacks:</para>
@@ -162,13 +162,13 @@
       <title>ChannelListener</title>
 
         <screen>
-                public interface ChannelListener {
-                    void channelConnected(Channel channel);
-                    void channelDisconnected(Channel channel);
-                    void channelClosed(Channel channel);
-                    void channelShunned(); // deprecated in 2.8
-                    void channelReconnected(Address addr); // deprecated in 2.8
-                }
+              public interface ChannelListener {
+                  void channelConnected(Channel channel);
+                  void channelDisconnected(Channel channel);
+                  void channelClosed(Channel channel);
+                  void channelShunned(); // deprecated in 2.8
+                  void channelReconnected(Address addr); // deprecated in 2.8
+              }
             </screen>
 
       <para>A class implementing <classname>ChannelListener</classname> can
@@ -182,8 +182,8 @@
       <title>Receiver</title>
 
       <screen>
-                public interface Receiver extends MessageListener, MembershipListener {
-                }
+              public interface Receiver extends MessageListener, MembershipListener {
+              }
             </screen>
 
       <para>A Receiver can be used to receive messages and view
@@ -201,12 +201,21 @@
       <title>ExtendedReceiver</title>
 
       <screen>
-                public interface ExtendedReceiver extends ExtendedMessageListener, MembershipListener {
-                }
+              public interface ExtendedReceiver extends ExtendedMessageListener, MembershipListener {
+              }
             </screen>
 
       <para>This is a receiver who will be able to handle partial state transfer</para>
     </section>
+
+      <section>
+          <title>ReceiverAdapter and ExtendedReceiverAdapter</title>
+          <para>
+              These classes implement Receiver and ExtendedReceiver. When implementing a callback, one can simply
+              extend ReceiverAdapter and overwrite receive() in order to not having to implement all callbacks of
+              the interface.
+          </para>
+      </section>
 
     <note>
       <title>Merging of Extended interfaces with their super interfaces</title>
@@ -229,10 +238,7 @@
     <screen>
             public interface Address extends Externalizable, Comparable, Cloneable {
                 boolean isMulticastAddress();
-                int compareTo(Object o) throws ClassCastException;
-                boolean equals(Object obj);
-                int hashCode();
-                String toString();
+                int size();
             }
         </screen>
 
@@ -352,7 +358,7 @@
     this:</para>
 
     <screen>
-            Message msg=new Message(null, null, "Hello".getBytes());
+            Message msg=new Message(null, null, "Hello");
             channel.send(msg);
         </screen>
   </section>
@@ -492,13 +498,13 @@
         <para>For example, the Draw demo can be launched as follows:</para>
 
         <screen>
-                    java org.javagroups.demos.Draw -props file:/home/bela/vsync.xml
+                java org.javagroups.demos.Draw -props file:/home/bela/udp.xml
                 </screen>
 
         <para>or</para>
 
         <screen>
-                    java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
+                java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
                 </screen>
 
         <para>
@@ -573,8 +579,8 @@
               Each element has to be the name of a Java class
               that resides in the <classname>org.jgroups.stack.protocols</classname>
               package. Note that only the base name has to be given, not the fully
-              specified class name ( <classname>UDP</classname> instead of
-              <classname>org.jgroups.stack.protocols.UDP</classname> ). If the
+              specified class name (<classname>UDP</classname> instead of
+              <classname>org.jgroups.stack.protocols.UDP</classname>). If the
               protocol class is not found, JGroups assumes that the name given is a
               fully qualified classname and will therefore try to instantiate that
               class. If this does not work an exception is thrown. This allows for
@@ -667,6 +673,15 @@
 
       <para>Given an option, the current value of the option is
       returned.</para>
+
+          <note>
+              <title>Deprecating options in 3.0</title>
+
+              <para>
+                  Most of the options (except LOCAL) have been deprecated in 2.6.x and will be removed in 3.0.
+              </para>
+          </note>
+
     </section>
 
     <section>
@@ -693,6 +708,18 @@
         <para>
             This should be done before connecting a channel. Note that the logical name stays with a channel until
             the channel is destroyed, whereas a UUID is created on each connection.
+        </para>
+
+        <para>
+            When JGroups starts, it prints the logical name and the associated physical address(es):
+            <screen>
+                -------------------------------------------------------------------
+                GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
+                -------------------------------------------------------------------
+                ** View=[mac-53465|0] [mac-53465]
+            </screen>
+
+            The logical name is mac-53465 and the physical address is 192.168.1.3:49932. The UUID is not shown here.
         </para>
     </section>
 
@@ -759,7 +786,9 @@
       <title>Getting the local address and the group name</title>
 
       <para>Method <methodname>getLocalAddress()</methodname> returns the
-      local address of the channel. In the case of
+      local address of the channel<footnote>
+              Since 2.8 the method is <methodname>getAddress()</methodname>
+      </footnote>. In the case of
       <classname>JChannel</classname> , the local address is generated by the
       bottom-most layer of the protocol stack when the stack is connected to.
       That means that -- depending on the channel implementation -- the local
@@ -767,7 +796,7 @@
       state.</para>
 
       <screen>
-                public Address getLocalAddress();
+                public Address getLocalAddress(); // use getAddress() with 2.8.0 and higher
             </screen>
 
       <para>Method <methodname>getClusterName()</methodname> returns the name
@@ -834,7 +863,7 @@
       of a group:</para>
 
       <screen>
-                Hashtable data; // any serializable data
+                HashtMap data; // any serializable data
                 try {
                     channel.send(null, null, data);
                 }
@@ -845,7 +874,7 @@
 
       <para>The null value as destination address means that the message will
       be sent to all members in the group. The sender's address will be filled
-      in by the bottom-most protocol. The payload is a hashtable, which will
+      in by the bottom-most protocol. The payload is a hashmap, which will
       be serialized into the message's buffer and unserialized at the
       receiver's end. Alternatively, any other means of generating a byte
       buffer and setting the message's buffer to it (e.g. using
@@ -855,11 +884,9 @@
       member (coordinator) of a group:</para>
 
       <screen>
-                Address receiver;
-                Message msg;
-                Hashtable data;
+                HashMap data;
                 try {
-                    receiver=channel.getView().getMembers().first();
+                    Address receiver=channel.getView().getMembers().first();
                     channel.send(receiver, null, data);
                 }
                 catch(Exception ex) {
@@ -1022,14 +1049,11 @@
       follows:</para>
 
       <screen>
-                Object obj;
-                Message msg;
-                View v;
-                obj=channel.receive(0); // wait forever
+                Object obj=channel.receive(0); // wait forever
                 if(obj instanceof Message)
-                    msg=(Message)obj;
+                    Message msg=(Message)obj;
                 else if(obj instanceof View)
-                    v=(View)obj;
+                    View v=(View)obj;
                 else
                     ; // don't handle suspicions or blocks
             </screen>
@@ -1048,9 +1072,8 @@
 
       <screen>
                 Message msg; // received above
-                String s;
                 try {
-                    s=(String)msg.getObject(); // error if object not Serializable
+                    String s=(String)msg.getObject(); // error if object not Serializable
                     // alternative: s=new String(msg.getBuffer());
                 }
                 catch(Exception ex) {
@@ -1067,9 +1090,10 @@
       <title>Using a Receiver to receive messages</title>
 
       <para>Instead of pulling messages from a channel in an application
-      thread, a Receiver can be registered with a channel; all received
-      messages, view changes and state transfer requests will invoke callbacks
-      on the registered Receiver:</para>
+          thread, a Receiver can be registered with a channel. This is the preferred and recommended way of receiving
+          messages. In 3.0, the receive() method will be removed from JChannel.
+          All received messages, view changes and state transfer requests will invoke callbacks
+          on the registered Receiver:</para>
 
       <screen>
                 JChannel ch=new JChannel();
