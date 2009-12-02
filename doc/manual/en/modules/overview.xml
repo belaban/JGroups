@@ -2,8 +2,8 @@
 
     <para>
         Group communication uses the terms <emphasis>group</emphasis> and <emphasis>member</emphasis>. Members are part
-        of a group. In the more common terminology, a member is a <emphasis>node</emphasis> and a groups is a
-        <emphasis>cluster</emphasis>. We use these words interchangeably.
+        of a group. In the more common terminology, a member is a <emphasis>node</emphasis> and a group is a
+        <emphasis>cluster</emphasis>. We use these terms interchangeably.
     </para>
     <para>
         A node is a process, residing on some host. A cluster can have one or more nodes belonging to it. There
@@ -30,33 +30,31 @@
     </figure>
 
 
-  <para>It consists of 3 parts: (1) the Channel API used by
+  <para>It consists of 3 parts: (1) the Channel used by
   application programmers to build reliable group communication
   applications, (2) the building blocks, which are layered on top of
   the channel and provide a higher abstraction level and (3) the
   protocol stack, which implements the properties specified for a
   given channel.</para>
 
-  <para>This document describes how to install and
-  <emphasis>use</emphasis> JGroups, ie. the Channel API and the
-  building blocks. The targeted audience is application programmers
-  who want to use JGroups to build reliable distributed programs
-  that need group communication. Programmers who want to
-  <emphasis>implement</emphasis> their own protocols to be used with
-  JGroups should consult the Programmer's Guide for more details
-  about the architecture and implementation of JGroups.</para>
+  <para>
+      This document describes how to install and <emphasis>use</emphasis> JGroups, ie. the Channel API and the
+      building blocks. The targeted audience is application programmers who want to use JGroups to
+      build reliable distributed programs that need group communication.
+  </para>
 
-  <para>A channel is connected to a protocol stack. Whenever the
-  application sends a message, the channel passes it on to the
-  protocol stack, which passes it to the topmost protocol. The
-  protocol processes the message and the passes it on to the protocol
-  below it. Thus the message is handed from protocol to protocol until
-  the bottom protocol puts it on the network. The same happens in the
-  reverse direction: the bottom (transport) protocol listens for
-  messages on the network. When a message is received it will be
-  handed up the protocol stack until it reaches the channel. The
-  channel stores the message in a queue until the application consumes
-  it.</para>
+  <para>
+      A channel is connected to a protocol stack. Whenever the
+      application sends a message, the channel passes it on to the
+      protocol stack, which passes it to the topmost protocol. The
+      protocol processes the message and the passes it on to the protocol
+      below it. Thus the message is handed from protocol to protocol until
+      the bottom (transport) protocol puts it on the network. The same happens in the
+      reverse direction: the transport protocol listens for
+      messages on the network. When a message is received it will be
+      handed up the protocol stack until it reaches the channel. The
+      channel stores the message in a queue until the application consumes it.
+  </para>
 
   <para>When an application connects to the channel, the protocol
   stack will be started, and when it disconnects the stack will be
@@ -88,7 +86,7 @@
     <emphasis>view</emphasis>. A process can select an address from
     this list and send a unicast message to it (also to itself), or it
     may send a multicast message to all members of the current
-    view. Whenever a process joins or leaves a group, or when a
+    view (also including itself). Whenever a process joins or leaves a group, or when a
     crashed process has been detected, a new <emphasis>view</emphasis>
     is sent to all remaining group members. When a member process is
     suspected of having crashed, a <emphasis>suspicion
@@ -104,12 +102,20 @@
     received.</para>
 
     <para>
+        <emphasis>
+            Note that the push approach to receiving messages and views is preferred. This involves setting a Receiver
+            in the channel and getting callbacks invoked by JGroups whenever a message or view is received.
+            The current pull approach (JChannel.receive() method) has been deprecated in 2.8 and will be removed in 3.0.
+        </emphasis>
+    </para>
+
+    <para>
         There is currently only one implementation of Channel: JChannel.
     </para>
 
     <para>
         The properties of a channel are typically defined in an XML file, but JGroups also allows for configuration
-        through simple strings, URIs, DOM trees or even programming.
+        through simple strings, URIs, DOM trees or even programmatically.
     </para>
   
     <para>The Channel API and its related classes is described in
@@ -164,7 +170,7 @@
     <para>The protocol stack
     containins a number of protocol layers in a bidirectional
     list. All messages sent and received over the channel have to pass
-    through the protocol stack. Every layer may modify, reorder, pass
+    through all protocols. Every layer may modify, reorder, pass
     or drop a message, or add a header to a message. A fragmentation
     layer might break up a message into several smaller messages,
     adding a header with an id to each fragment, and re-assemble the
@@ -173,8 +179,7 @@
     <para>The composition of the protocol stack, i.e. its layers, is
     determined by the creator of the channel: an XML file
     defines the layers to be used (and the parameters for each
-    layer). This string might be interpreted differently by each
-    channel implementation; in JChannel it is used to create the
+    layer). The configuration is used to create the
     stack, depending on the protocol names given in the
     property.</para>
 
