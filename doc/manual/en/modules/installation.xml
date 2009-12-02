@@ -1,7 +1,7 @@
 <chapter>
     <title>Installation and Configuration</title>
 
-    <para>The installation refers to version 2.5 of JGroups. Refer to the installation
+    <para>The installation refers to version 2.8 of JGroups. Refer to the installation
         instructions that are shipped with JGroups for details.</para>
 
     <para>Note that these instructions are also available in the
@@ -25,7 +25,7 @@
                 <para>JGroups 2.5 requires JDK 1.5 or higher.</para>
             </listitem>
             <listitem>
-                <para>There is no JNI code present so it should run on all platforms.</para>
+                <para>There is no JNI code present so JGroups should run on all platforms.</para>
             </listitem>
             <listitem>
                 <para>If you want to generate HTML-based test reports from the
@@ -151,7 +151,7 @@
                     <listitem>
                         <para>
                             <filename>jgroups-core.jar</filename>
-                            - the core JGroups library
+                            - the core JGroups library without unit tests and demos
                         </para>
                     </listitem>
                     <listitem>
@@ -242,11 +242,10 @@
             class is found:</para>
 
         <screen>
-            bela@dell /cygdrive/c/JGroups/dist
-            $ java -jar jgroups-all.jar
+            [mac] /Users/bela/JGroups$ java org.jgroups.Version
 
-            Version:        2.6.0 pre-alpha
-            CVS:            $Id: installation.xml,v 1.7 2009/06/19 14:05:56 belaban Exp $
+            Version:      2.8.0.GA
+            CVS:          $Id: installation.xml,v 1.8 2009/12/02 13:07:02 belaban Exp $
         </screen>
 
     </section>
@@ -279,6 +278,10 @@
         <para>You can change the properties of the demo to for example use
             a different transport if multicast doesn't work (it should always
             work on the same machine). Please consult the documentation to see how to do this.</para>
+
+        <para>
+            State transfer (see the section in the API later) can also be tested by passing the -state flag to Draw. 
+        </para>
 
     </section>
 
