@@ -2,7 +2,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.4 2009/08/11 11:26:41 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.5 2009/12/02 11:25:24 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -10,12 +10,12 @@ JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.
 Below is a summary (with links to the detailed description) of the major new features.
 
 
-Features
-========
+New features
+============
 
 
-Logical addresses
------------------
+Logical addresses and logical names
+-----------------------------------
 [https://jira.jboss.org/jira/browse/JGRP-129]
 [https://jira.jboss.org/jira/browse/JGRP-130]
 
@@ -29,13 +29,49 @@ How to set a logical name in a channel is described in http://www.jgroups.org/ma
 A blog entry about logical addresses is at http://belaban.blogspot.com/2009/02/whats-cool-about-logical-addresses.html.
 
 
+
 MERGE4: get rid of shunning and use only merging (getting rid of shunfests)
 ---------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1031]
 [https://jira.jboss.org/jira/browse/JGRP-937]
+[https://jira.jboss.org/jira/browse/JGRP-952]
+[https://jira.jboss.org/jira/browse/JGRP-948]
+[https://jira.jboss.org/jira/browse/JGRP-659]
+[https://jira.jboss.org/jira/browse/JGRP-980]
 
-This is *not* actually a new protocol: MERGE{2}, MERGEFAST etc can continue to e used, but the changes are in GMS. This
+This is *not* actually a new protocol: MERGE{2}, MERGEFAST etc can continue to be used, but the changes are in GMS. This
 feature provides support for merging of overlapping sub-partitions, e.g. {A,B} with {A,B,C}.
-The design is at JGroups/doc/design/MERGE4.txt.
+The design is described in JGroups/doc/design/MERGE4.txt.
+Note that shunning does not exist as result of this; if a member P is excluded (e.g. because it is overloaded),
+and later comes back, we'll have a merge between the existing members and P, rather than P getting shunned.
+
+Due to the new design, we don't need VIEW_SYNC any longer. It has been removed from all stack configurations
+shipped with JGroups.
+
+
+
+Better IPv6 support
+-------------------
+[https://jira.jboss.org/jira/browse/JGRP-977]
+[https://jira.jboss.org/jira/browse/JGRP-976]
+[https://jira.jboss.org/jira/browse/JGRP-951]
+[https://jira.jboss.org/jira/browse/JGRP-1080]
+
+Various fixes, e.g. IPv6 link local addresses are now properly supported
+
+
+
+Automatic setting of addresses of the right stack type
+------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1070]
+[https://jira.jboss.org/jira/browse/JGRP-1068]
+[https://jira.jboss.org/jira/browse/JGRP-1066]
+
+When we haven't set certain addresses (e.g. bind_addr or mcast_addr in UDP), JGroups now automatically picks
+an address of the right type. E.g. if we run IPv4, JGroups picks the first non-loopback *IPv4* address. If
+IPv6 is run, JGroups picks an IPv6 address. This also takes the java.net.preferIPv4Stack /
+java.net.preferIPv6Addresses system properties into account.
+
 
 
 FILE_PING: new discovery protocol
@@ -48,11 +84,14 @@ Nodes store their information in a file inside a directory (corresponding to the
 again on leaving. New nodes, find all current nodes by listing all files within their cluster directory.
 
 
+
 S3_PING: discovery protocol using S3
 ------------------------------------
 [https://jira.jboss.org/jira/browse/JGRP-1022]
 
-New discovery protocol, similar to FILE_PING, but using an Amazon S3 bucket as shared storage.
+New discovery protocol, similar to FILE_PING, but using an Amazon S3 bucket as shared storage. TCP:S3_PING is
+now an alternative to TCP:TCPGOSSIP if running JGroups on Amazon EC2.
+
 
 
 GossipRouter: major overhaul
@@ -63,12 +102,45 @@ GossipRouter: major overhaul
 Simplification and streamlining of GossipRouter. New features such as use of multiple GossipRouters in TUNNEL.
 
 
+
+Multiple protocols of the same type in the same stack
+-----------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1035]
+
+The use case was for multiple AUTH protocols to be present in the same config. Property"name" is used to
+differentiate, e.g. AUTH name="auth1" AUTH name="auth1". By default, the name is the protocol's name,
+ie. "AUTH"
+
+
+
+Flag to override message bundling per message
+---------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1036]
+
+If the Message.DONT_BUNDLE flag is set, then the message will be sent immediately by the transport, even if
+message bundling is enabled. The effect of message bundling on synchronous RPCs is described in
+http://www.jboss.org/community/docs/DOC-11690.
+
+
+
+UNICAST has high contention under load
+--------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1043]
+
+This was the result of UNICAST having one big lock through which both up and down traffic had to pass. This
+was changed, so that up and down traffic is now completely independent and the lock was made more fine grained
+(ie. smaller in scope).
+
+
+
 Schema for protocol stack configuration
 ---------------------------------------
 [https://jira.jboss.org/jira/browse/JGRP-448]
+[https://jira.jboss.org/jira/browse/JGRP-1076]
 
 We now have an XSD schema for the config, so that XML editors can validate a config against the schema and provide
 auto-completion of available protocols/attributes.
+
 
 
 STREAMING_STATE_TRANSFER: investigate use of UDP datagrams instead of TCP socket
@@ -76,14 +148,9 @@ STREAMING_STATE_TRANSFER: investigate use of UDP datagrams instead of TCP socket
 [https://jira.jboss.org/jira/browse/JGRP-911]
 
 STREAMING_STATE_TRANSFER can now use whatever transport is configured (e.g. UDP), or it can override that and fall
-back to the existing implementation of using a TCP connection.
+back to the existing implementation of using a TCP connection. If use_default_transport is set to true,
+STREAMING_STATE_TRANSFER won't create its own TCP sockets.
 
-
-Logging: configure at runtime
------------------------------
-[https://jira.jboss.org/jira/browse/JGRP-938]
-
-Logging levels in any of the protocols can now be changed at run time using JMX, e.g. NAKACK nak; nak.setLevel("trace");
 
 
 RpcDispatcher/MessageDispatcher: additional methods which return a Future rather than blocking
@@ -94,6 +161,24 @@ Some new methods which allow a synchronous call to return immediately, and then 
 for the result.
 
 
+
+Probe: added ability to invoke cluster wide operations
+------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1065]
+
+Example: invoke message garbage collection across the cluster:
+./probe.sh op=STABLE.runMessageGarbageCollection
+
+
+
+Logging: configure at runtime
+-----------------------------
+[https://jira.jboss.org/jira/browse/JGRP-938]
+
+Logging levels in any of the protocols can now be changed at run time using JMX, e.g. NAKACK nak; nak.setLevel("trace");
+
+
+
 Removal of commons-logging
 --------------------------
 [https://jira.jboss.org/jira/browse/JGRP-645]
@@ -102,16 +187,28 @@ This is the last dependency JGroups had ! Now we can only ship jgroups.jar !
 
 
 
+
 Bug fixes
 =========
 
-Merge and UNICAST sequencing problem
-------------------------------------
-[https://jira.jboss.org/jira/browse/JGRP-659]
+Duplicate delivery of messages
+------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1103]
 
-During a merge, the seqnos in UNICAST could get screwed up and UNICAST would either buffer all subsequent messages,
-resulting in out-of-memory exceptions, or discard them, resulting in missing messages. Fixed vy a redesign of UNICAST,
-the design is described in JGroups/doc/design/UNICAST.new.txt.
+Under load some messages could get delivered more than once. This is a regression, caused by an optimization, and does
+not exists in prior versions. Part of the optimizations were reversed to fix this.
+
+
+UNICAST redesign
+----------------
+[https://jira.jboss.org/jira/browse/JGRP-659]
+[https://jira.jboss.org/jira/browse/JGRP-968]
+[https://jira.jboss.org/jira/browse/JGRP-966]
+[https://jira.jboss.org/jira/browse/JGRP-950]
+
+Redesign of UNICAST, described in JGroups/doc/design/UNICAST.new.txt. This fixed various issues, e.g.
+during a merge, the seqnos in UNICAST could get screwed up and UNICAST would either buffer all subsequent messages,
+resulting in out-of-memory exceptions, or discard them, resulting in missing messages.
 
 
 Shared transport: 'members' variable incorrect
@@ -168,6 +265,6 @@ Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Torono, Canada
 
-August 2009
+December 2009
 
 
