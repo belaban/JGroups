@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.52 2009/10/14 09:38:38 belaban Exp $
+// $Id: Channel.java,v 1.53 2009/12/02 13:40:51 belaban Exp $
 
 package org.jgroups;
 
@@ -47,10 +47,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @MBean(description="Channel")
 public abstract class Channel implements Transport {
+    @Deprecated
     public static final int BLOCK=0;
+    @Deprecated
     public static final int VIEW=1;
+    @Deprecated
     public static final int SUSPECT=2;
     public static final int LOCAL=3;
+    @Deprecated
     public static final int GET_STATE_EVENTS=4;
     @Deprecated
     public static final int AUTO_RECONNECT=5;
