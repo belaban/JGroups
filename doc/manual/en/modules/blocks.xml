@@ -3,9 +3,11 @@
   <para>Building blocks are layered on top of channels. Most of them
   do not even need a channel, all they need is a class that implements
   interface <classname>Transport</classname> (channels do). This
-  enables them to work on any type of group transport that obeys this
+  enables them to work on any type of group transport that implements this
   interface.  Building blocks can be used instead of channels whenever
-  a higher-level interface is required. Whereas channels are simple
+  a higher-level interface is required.</para>
+
+  <para>Whereas channels are simple
   socket-like constructs, building blocks may offer a far more
   sophisticated interface. In some cases, building blocks offer access
   to the underlying channel, so that -- if the building block at hand
@@ -19,7 +21,9 @@
   <section><title>PullPushAdapter</title>
 
       <para>
-          Note that this building block has been deprecated and should not be used anymore !
+          <emphasis>Note that this building block has been deprecated and should not be used anymore !
+              Use a Receiver instead.
+          </emphasis>
       </para>
 
     <para>This class is a converter (or adapter, as used in <xref
@@ -272,7 +276,7 @@
     all methods shown):</para>
 
     <screen>
-    public class RspList {
+    public class RspList implements Map&lt;Address,Rsp&gt; {
         public boolean isReceived(Address sender);
         public int     numSuspectedMembers();
         public Vector  getResults();
@@ -280,7 +284,6 @@
         public boolean isSuspected(Address sender);
         public Object  get(Address sender);
         public int     size();
-        public Object  elementAt(int i) throws ArrayIndexOutOfBoundsException;
     }
     </screen>
 
@@ -382,14 +385,10 @@
     shown):</para>
 
     <screen>
-    public RspList callRemoteMethods(Vector dests, String method_name, 
-                                     int mode, long timeout);
-    public RspList callRemoteMethods(Vector dests, String method_name, 
-                                     Object arg1, int mode, long timeout);
-    public Object callRemoteMethod(Address dest, String method_name,
-                                   int mode, long timeout);
-    public Object callRemoteMethod(Address dest, String method_name, 
-                                   Object arg1, int mode, long timeout);
+    public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout);
+    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, int mode, long timeout);
+    public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout);
+    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode, long timeout);
     </screen>
 
     <para>The family of <methodname>callRemoteMethods()</methodname>
