@@ -1,8 +1,7 @@
-
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.6 2009/12/02 11:31:15 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.7 2009/12/03 04:29:25 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -176,6 +175,17 @@ Example: invoke message garbage collection across the cluster:
 
 
 
+
+Logging: ability to set custom log provider
+-------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1106]
+
+Currently we only support log4j and JDK logging as log implementations. Setting system property
+jgroups.logging.log_factory_class allows for custom log providers, supporting other logging frameworks
+
+
+
+
 Logging: configure at runtime
 -----------------------------
 [https://jira.jboss.org/jira/browse/JGRP-938]
@@ -271,5 +281,4 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Torono, Canada
 
 December 2009
-
 
