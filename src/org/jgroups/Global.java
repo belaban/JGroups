@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.48 2009/10/20 12:59:55 belaban Exp $
+ * @version $Id: Global.java,v 1.49 2009/12/03 04:25:28 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -50,6 +50,7 @@ public class Global {
     public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
+    public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
 
     public static final long   DEFAULT_FIRST_UNICAST_SEQNO = 1;
     
