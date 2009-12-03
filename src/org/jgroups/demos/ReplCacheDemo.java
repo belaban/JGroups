@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.15 2009/01/10 14:53:47 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.16 2009/12/03 10:01:12 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -137,13 +137,13 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
     }
 
 
-    private void start(String props,
+    private void start(String props, String cluster_name,
                        long rpc_timeout, long caching_time, boolean migrate_data, boolean use_l1_cache,
                        int l1_max_entries, long l1_reaping_interval,
                        int l2_max_entries, long l2_reaping_interval) throws Exception {
         MBeanServer server=ManagementFactory.getPlatformMBeanServer();
 
-        cache=new ReplCache<String,String>(props, "replcache-cluster");
+        cache=new ReplCache<String,String>(props, cluster_name);
         cache.setCallTimeout(rpc_timeout);
         cache.setCachingTime(caching_time);
         cache.setMigrateData(migrate_data);
@@ -296,6 +296,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
+        String cluster_name="replcache-cluster";
         long rpc_timeout=1500L, caching_time=30000L;
         boolean migrate_data=true, use_l1_cache=true;
         int l1_max_entries=5000, l2_max_entries=-1;
@@ -304,6 +305,10 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
                 props=args[++i];
+                continue;
+            }
+            if(args[i].equals("-cluster_name")) {
+                cluster_name=args[++i];
                 continue;
             }
             if(args[i].equals("-rpc_timeout")) {
@@ -344,7 +349,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         }
 
         ReplCacheDemo demo = new ReplCacheDemo();
-        demo.start(props, rpc_timeout, caching_time,
+        demo.start(props, cluster_name, rpc_timeout, caching_time,
                    migrate_data, use_l1_cache, l1_max_entries, l1_reaping_interval,
                    l2_max_entries, l2_reaping_interval);
     }
@@ -358,7 +363,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
     private static void help() {
-        System.out.println("ReplCacheServer [-help] [-props <props>] " +
+        System.out.println("ReplCacheServer [-help] [-props <props>] [-cluster_name <name>]" +
                 "[-rpc_timeout <ms>] [-caching_time <ms>] " +
                 "[-migrate_data <true|false>] [-use_l1_cache <true|false>] " +
                 "[-l1_max_entries <num>] [-l1_reaping_interval <ms>] " +
