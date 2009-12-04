@@ -8,7 +8,7 @@ import java.io.FileOutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStreamTest.java,v 1.1 2009/12/04 14:59:13 belaban Exp $
+ * @version $Id: GridInputStreamTest.java,v 1.2 2009/12/04 16:27:59 belaban Exp $
  */
 public class GridInputStreamTest {
     
@@ -46,21 +46,25 @@ public class GridInputStreamTest {
         cache.start();
         GridInputStream input=new GridInputStream(input_file, cache, 8000);
 
-        FileOutputStream out=output_file != null?  new FileOutputStream("/home/bela/TimeScheduler2.java") : null;
+        FileOutputStream out=output_file != null?  new FileOutputStream(output_file) : null;
         byte[] buf=new byte[50000];
         int total_bytes=0;
         int bytes_read;
+        long start=System.currentTimeMillis();
         while((bytes_read=input.read(buf, 0, buf.length)) != -1) {
             if(out != null)
                 out.write(buf, 0, bytes_read);
             total_bytes+=bytes_read;
         }
+        long diff=System.currentTimeMillis() - start;
 
         Util.close(input);
         Util.close(out);
 
         cache.stop();
 
-        System.out.println("read " + total_bytes + " bytes");
+        double throughput=total_bytes / (diff / 1000.0);
+        System.out.println("read " + Util.printBytes(total_bytes) + " bytes in " + diff + " ms, " +
+                "throughput=" + Util.printBytes(throughput) + " / sec");
     }
 }

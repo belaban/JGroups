@@ -1,10 +1,13 @@
 package org.jgroups.blocks;
 
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+
 import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStream.java,v 1.1 2009/12/04 14:59:14 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.2 2009/12/04 16:28:01 belaban Exp $
  */
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
@@ -15,6 +18,7 @@ public class GridInputStream extends InputStream {
     int                            local_index=0;
     byte[]                         current_buffer=null;
     boolean                        end_reached=false;
+    final static Log               log=LogFactory.getLog(GridInputStream.class);
 
 
 
@@ -103,7 +107,8 @@ public class GridInputStream extends InputStream {
         int chunk_number=getChunkNumber();
         String key=name + "#" + chunk_number;
         byte[] val= cache.get(key);
-        System.out.println("fetching index=" + index + ", key=" + key +": " + (val != null? val.length + " bytes" : "null"));
+        if(log.isTraceEnabled())
+            log.trace("fetching index=" + index + ", key=" + key +": " + (val != null? val.length + " bytes" : "null"));
         return val;
     }
 
