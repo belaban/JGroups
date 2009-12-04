@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStream.java,v 1.2 2009/12/04 16:28:01 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.3 2009/12/04 16:48:38 belaban Exp $
  */
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
@@ -29,21 +29,23 @@ public class GridInputStream extends InputStream {
     }
 
 
+
+
     public int read() throws IOException {
-        if(current_buffer == null)
-            current_buffer=fetchNextChunk();
-        if(current_buffer == null)
-            return -1;
-
-        if(current_buffer.length < chunk_size && local_index +1 >= current_buffer.length)
-            return -1;
-
-        byte retval=current_buffer[local_index++];
-        index++;
-        if(local_index >= chunk_size) {
+        int bytes_remaining_to_read=getBytesRemainingInChunk();
+        if(bytes_remaining_to_read == 0) {
+            if(end_reached)
+                return -1;
             current_buffer=fetchNextChunk();
             local_index=0;
+            if(current_buffer == null)
+                return -1;
+            else if(current_buffer.length < chunk_size)
+                end_reached=true;
+            bytes_remaining_to_read=getBytesRemainingInChunk();
         }
+        int retval=current_buffer[local_index++];
+        index++;
         return retval;
     }
 
@@ -52,13 +54,7 @@ public class GridInputStream extends InputStream {
     }
 
     public int read(byte[] b, int off, int len) throws IOException {
-        if(current_buffer == null)
-            current_buffer=fetchNextChunk();
-        if(current_buffer == null)
-            return -1;
-
         int bytes_read=0;
-
         while(len > 0) {
             int bytes_remaining_to_read=getBytesRemainingInChunk();
             if(bytes_remaining_to_read == 0) {
@@ -100,7 +96,7 @@ public class GridInputStream extends InputStream {
 
     private int getBytesRemainingInChunk() {
         // return chunk_size - local_index;
-        return current_buffer.length - local_index;
+        return current_buffer == null? 0 : current_buffer.length - local_index;
     }
 
     private byte[] fetchNextChunk() {
