@@ -10,12 +10,12 @@ import java.io.FileOutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileInputStreamTest.java,v 1.1 2009/12/04 14:10:06 belaban Exp $
+ * @version $Id: InMemoryFileInputStreamTest.java,v 1.2 2009/12/04 14:11:13 belaban Exp $
  */
 public class InMemoryFileInputStreamTest {
     
     public static void main(String[] args) throws Exception {
-        String props="/home/bela/fast.xml";
+        String props="udp.xml";
         String cluster_name="imfs-cluster";
         String input_file="/home/bela/tmp2.txt";
         String output_file=null;
