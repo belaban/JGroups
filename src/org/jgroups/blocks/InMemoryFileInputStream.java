@@ -1,0 +1,114 @@
+package org.jgroups.blocks;
+
+import java.io.*;
+
+/**
+ * @author Bela Ban
+ * @version $Id: InMemoryFileInputStream.java,v 1.1 2009/12/04 14:10:05 belaban Exp $
+ */
+public class InMemoryFileInputStream extends InputStream {
+    final ReplCache<String,byte[]> cache;
+    final int                      chunk_size;
+    final String                   name;
+
+    int                            index=0;                // index into the file for writing
+    int                            local_index=0;
+    byte[]                         current_buffer=null;
+    boolean                        end_reached=false;
+
+
+
+    public InMemoryFileInputStream(String name, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
+        this.cache=cache;
+        this.chunk_size=chunk_size;
+        this.name=name;
+    }
+
+
+    public int read() throws IOException {
+        if(current_buffer == null)
+            current_buffer=fetchNextChunk();
+        if(current_buffer == null)
+            return -1;
+
+        if(current_buffer.length < chunk_size && local_index +1 >= current_buffer.length)
+            return -1;
+
+        byte retval=current_buffer[local_index++];
+        index++;
+        if(local_index >= chunk_size) {
+            current_buffer=fetchNextChunk();
+            local_index=0;
+        }
+        return retval;
+    }
+
+    public int read(byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
+
+    public int read(byte[] b, int off, int len) throws IOException {
+        if(current_buffer == null)
+            current_buffer=fetchNextChunk();
+        if(current_buffer == null)
+            return -1;
+
+        int bytes_read=0;
+
+        while(len > 0) {
+            int bytes_remaining_to_read=getBytesRemainingInChunk();
+            if(bytes_remaining_to_read == 0) {
+                if(end_reached)
+                    return bytes_read > 0? bytes_read : -1;
+                current_buffer=fetchNextChunk();
+                local_index=0;
+                if(current_buffer == null)
+                    return bytes_read > 0? bytes_read : -1;
+                else if(current_buffer.length < chunk_size)
+                    end_reached=true;
+                bytes_remaining_to_read=getBytesRemainingInChunk();
+            }
+            int bytes_to_read=Math.min(len, bytes_remaining_to_read);
+            // bytes_to_read=Math.min(bytes_to_read, current_buffer.length - local_index);
+            System.arraycopy(current_buffer, local_index, b, off, bytes_to_read);
+            local_index+=bytes_to_read;
+            off+=bytes_to_read;
+            len-=bytes_to_read;
+            bytes_read+=bytes_to_read;
+            index+=bytes_to_read;
+        }
+
+        return bytes_read;
+    }
+
+    public long skip(long n) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public int available() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void close() throws IOException {
+        local_index=index=0;
+        end_reached=false;
+    }
+
+    private int getBytesRemainingInChunk() {
+        // return chunk_size - local_index;
+        return current_buffer.length - local_index;
+    }
+
+    private byte[] fetchNextChunk() {
+        int chunk_number=getChunkNumber();
+        String key=name + "#" + chunk_number;
+        byte[] val= cache.get(key);
+        System.out.println("fetching index=" + index + ", key=" + key +": " + (val != null? val.length + " bytes" : "null"));
+        return val;
+    }
+
+    private int getChunkNumber() {
+        return index / chunk_size;
+    }
+
+}
