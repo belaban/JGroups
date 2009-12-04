@@ -4,9 +4,9 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileInputStream.java,v 1.1 2009/12/04 14:10:05 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.1 2009/12/04 14:59:14 belaban Exp $
  */
-public class InMemoryFileInputStream extends InputStream {
+public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
     final int                      chunk_size;
     final String                   name;
@@ -18,7 +18,7 @@ public class InMemoryFileInputStream extends InputStream {
 
 
 
-    public InMemoryFileInputStream(String name, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
+    public GridInputStream(String name, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
         this.cache=cache;
         this.chunk_size=chunk_size;
         this.name=name;

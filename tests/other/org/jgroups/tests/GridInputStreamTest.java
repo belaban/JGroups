@@ -1,18 +1,16 @@
 package org.jgroups.tests;
 
 import org.jgroups.blocks.ReplCache;
-import org.jgroups.blocks.InMemoryFileOutputStream;
-import org.jgroups.blocks.InMemoryFileInputStream;
+import org.jgroups.blocks.GridInputStream;
 import org.jgroups.util.Util;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileInputStreamTest.java,v 1.2 2009/12/04 14:11:13 belaban Exp $
+ * @version $Id: GridInputStreamTest.java,v 1.1 2009/12/04 14:59:13 belaban Exp $
  */
-public class InMemoryFileInputStreamTest {
+public class GridInputStreamTest {
     
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
@@ -37,7 +35,7 @@ public class InMemoryFileInputStreamTest {
                 input_file=args[++i];
                 continue;
             }
-            System.out.println("InMemoryFileInputStreamTest [-props <JGroups config>] [-cluster_name <cluster name] " +
+            System.out.println("GridInputStreamTest [-props <JGroups config>] [-cluster_name <cluster name] " +
                     "[-input_file <file to read from cluster>]" +
                     "[-output_file <path to file to write to file system>]");
             return;
@@ -46,7 +44,7 @@ public class InMemoryFileInputStreamTest {
 
         ReplCache<String,byte[]> cache=new ReplCache<String,byte[]>(props, cluster_name);
         cache.start();
-        InMemoryFileInputStream input=new InMemoryFileInputStream(input_file, cache, 8000);
+        GridInputStream input=new GridInputStream(input_file, cache, 8000);
 
         FileOutputStream out=output_file != null?  new FileOutputStream("/home/bela/TimeScheduler2.java") : null;
         byte[] buf=new byte[50000];
