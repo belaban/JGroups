@@ -8,7 +8,7 @@ import java.io.FileInputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStreamTest.java,v 1.1 2009/12/04 14:59:13 belaban Exp $
+ * @version $Id: GridOutputStreamTest.java,v 1.2 2009/12/04 16:27:59 belaban Exp $
  */
 public class GridOutputStreamTest {
 
@@ -51,6 +51,6 @@ public class GridOutputStreamTest {
         Util.close(out);
         cache.stop();
 
-        System.out.println("Wrote " + total_bytes_written + " bytes into the cluster");
+        System.out.println("Wrote " + Util.printBytes(total_bytes_written) + " bytes into the cluster");
     }
 }

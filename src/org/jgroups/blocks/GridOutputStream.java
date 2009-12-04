@@ -1,10 +1,13 @@
 package org.jgroups.blocks;
 
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+
 import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.1 2009/12/04 14:59:14 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.2 2009/12/04 16:28:01 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
@@ -15,6 +18,7 @@ public class GridOutputStream extends OutputStream {
     int                            index=0;                // index into the file for writing
     int                            local_index=0;
     final byte[]                   current_buffer;
+    static final Log               log=LogFactory.getLog(GridOutputStream.class);
     
 
     public GridOutputStream(String name, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
@@ -76,7 +80,8 @@ public class GridOutputStream extends OutputStream {
         byte[] val=new byte[local_index];
         System.arraycopy(current_buffer, 0, val, 0, local_index);
         cache.put(key, val, repl_count, 0);
-        System.out.println("put(): index=" + index + ", key=" + key + ": " + val.length + " bytes");
+        if(log.isTraceEnabled())
+            log.trace("put(): index=" + index + ", key=" + key + ": " + val.length + " bytes");
     }
 
     private int getBytesRemainingInChunk() {
