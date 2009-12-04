@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.2 2009/12/04 16:28:01 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.3 2009/12/04 16:48:38 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
@@ -34,15 +34,19 @@ public class GridOutputStream extends OutputStream {
     }
 
 
+
     public void write(int b) throws IOException {
-        current_buffer[local_index]=(byte)b;
-        if(local_index + 1 >= chunk_size) {
+        int remaining=getBytesRemainingInChunk();
+        if(remaining == 0) {
             flush();
             local_index=0;
+            remaining=chunk_size;
         }
-        else
-            local_index++;
+        current_buffer[local_index]=(byte)b;
+        local_index++;
+        index++;
     }
+
 
     public void write(byte[] b) throws IOException {
         if(b != null)
