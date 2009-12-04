@@ -1,16 +1,16 @@
 package org.jgroups.tests;
 
 import org.jgroups.blocks.ReplCache;
-import org.jgroups.blocks.InMemoryFileOutputStream;
+import org.jgroups.blocks.GridOutputStream;
 import org.jgroups.util.Util;
 
 import java.io.FileInputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileOutputStreamTest.java,v 1.2 2009/12/04 14:11:13 belaban Exp $
+ * @version $Id: GridOutputStreamTest.java,v 1.1 2009/12/04 14:59:13 belaban Exp $
  */
-public class InMemoryFileOutputStreamTest {
+public class GridOutputStreamTest {
 
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
@@ -30,14 +30,14 @@ public class InMemoryFileOutputStreamTest {
                 input_file=args[++i];
                 continue;
             }
-            System.out.println("InMemoryFileOutputStreamTest [-props <JGroups config>] [-cluster_name <cluster name] " +
+            System.out.println("GridOutputStreamTest [-props <JGroups config>] [-cluster_name <cluster name] " +
                     "[-input_file <path to file to place into cluster>]");
             return;
         }
 
         ReplCache<String,byte[]> cache=new ReplCache<String,byte[]>(props, cluster_name);
         cache.start();
-        InMemoryFileOutputStream out=new InMemoryFileOutputStream(input_file, cache, (short)1, 8000);
+        GridOutputStream out=new GridOutputStream(input_file, cache, (short)1, 8000);
 
         FileInputStream input=new FileInputStream(input_file);
         byte[] buf=new byte[50000];

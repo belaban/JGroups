@@ -4,9 +4,9 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileOutputStream.java,v 1.1 2009/12/04 14:10:04 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.1 2009/12/04 14:59:14 belaban Exp $
  */
-public class InMemoryFileOutputStream extends OutputStream {
+public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
     final short                    repl_count;
     final int                      chunk_size;
@@ -17,11 +17,11 @@ public class InMemoryFileOutputStream extends OutputStream {
     final byte[]                   current_buffer;
     
 
-    public InMemoryFileOutputStream(String name, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
+    public GridOutputStream(String name, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
         this(name, false, cache, repl_count, chunk_size);
     }
 
-    public InMemoryFileOutputStream(String name, boolean append, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
+    public GridOutputStream(String name, boolean append, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
         this.name=name;
         this.cache=cache;
         this.repl_count=repl_count;
@@ -29,7 +29,7 @@ public class InMemoryFileOutputStream extends OutputStream {
         current_buffer=new byte[chunk_size];
     }
 
-    
+
     public void write(int b) throws IOException {
         current_buffer[local_index]=(byte)b;
         if(local_index + 1 >= chunk_size) {
