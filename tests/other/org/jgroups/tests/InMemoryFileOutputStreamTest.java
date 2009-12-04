@@ -8,12 +8,12 @@ import java.io.FileInputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: InMemoryFileOutputStreamTest.java,v 1.1 2009/12/04 14:10:06 belaban Exp $
+ * @version $Id: InMemoryFileOutputStreamTest.java,v 1.2 2009/12/04 14:11:13 belaban Exp $
  */
 public class InMemoryFileOutputStreamTest {
 
     public static void main(String[] args) throws Exception {
-        String props="/home/bela/fast.xml";
+        String props="udp.xml";
         String cluster_name="imfs-cluster";
         String input_file="/home/bela/profile3.jps";
 
