@@ -26,7 +26,7 @@ public abstract class BasicTCP extends TP {
     
     
     @Property(description="Should unicast messages to suspected members be dropped")
-    boolean skip_suspected_members=true;
+    boolean skip_suspected_members=false;
 
     @ManagedAttribute(description="Reaper interval", writable=true)
     @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
