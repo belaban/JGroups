@@ -3,11 +3,10 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -19,15 +18,11 @@ import java.util.Set;
  * Shared base class for tcpip protocols
  * @author Scott Marlow
  */
-@DeprecatedProperty(names="suspect_on_send_failure")
+@DeprecatedProperty(names={"suspect_on_send_failure", "skip_suspected_members"})
 public abstract class BasicTCP extends TP {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    
-    @Property(description="Should unicast messages to suspected members be dropped")
-    boolean skip_suspected_members=false;
-
     @ManagedAttribute(description="Reaper interval", writable=true)
     @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
     protected long reaper_interval=0; // time in msecs between connection reaps
@@ -74,12 +69,6 @@ public abstract class BasicTCP extends TP {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
 
-    /**
-     * List the maintains the currently suspected members. This is used so we
-     * don't send too many SUSPECT events up the stack (one per message !)
-     */
-    final BoundedList<PhysicalAddress>  suspected_mbrs=new BoundedList<PhysicalAddress>(20);
-      
     protected BasicTCP() {
         super();        
     }
@@ -120,27 +109,7 @@ public abstract class BasicTCP extends TP {
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + length + " bytes)");
-        if(skip_suspected_members && suspected_mbrs.contains(dest)) {
-            if(log.isTraceEnabled())
-                log.trace("dropping unicast message to " + dest + " as it is currently suspected");
-            return;
-        }
-
-        try {
-            send(dest, data, offset, length);
-        }
-        catch(Exception e) {
-            if(skip_suspected_members && !suspected_mbrs.contains(dest)) {
-                suspected_mbrs.add(dest);
-                Address logical_addr=logical_addr_cache.getByValue(dest);
-                if(logical_addr != null) {
-                    if(members.contains(logical_addr))
-                        up_prot.up(new Event(Event.SUSPECT, logical_addr));
-                    logical_addr_cache.remove(logical_addr, true);
-                }
-            }
-            throw e;
-        }
+        send(dest, data, offset, length);
     }
 
     public String getInfo() {
@@ -158,21 +127,12 @@ public abstract class BasicTCP extends TP {
 
     /** ConnectionMap.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        if(skip_suspected_members && !suspected_mbrs.isEmpty() && sender instanceof PhysicalAddress) {
-            PhysicalAddress physical_addr=(PhysicalAddress)sender;
-            if(suspected_mbrs.remove(physical_addr)) {
-                if(log.isTraceEnabled())
-                    log.trace("removed " + sender + " from suspected_mbrs as we received traffic from it");
-            }
-        }
         super.receive(sender, data, offset, length);
     }
 
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
-            suspected_mbrs.clear();
-
             Set<Address> physical_mbrs=new HashSet<Address>();
             for(Address addr: members) {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
@@ -180,12 +140,6 @@ public abstract class BasicTCP extends TP {
                     physical_mbrs.add(physical_addr);
             }
             retainAll(physical_mbrs); // remove all connections from the ConnectionTable which are not members
-        }
-        else if(evt.getType() == Event.UNSUSPECT) {
-            Address suspected_mbr=(Address)evt.getArg();
-            PhysicalAddress physical_addr=logical_addr_cache.get(suspected_mbr);
-            if(physical_addr != null)
-                suspected_mbrs.remove(physical_addr);
         }
         return ret;
     }
