@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.237 2009/11/20 13:22:07 bstansberry Exp $
+ * @version $Id: Util.java,v 1.238 2009/12/09 12:28:33 belaban Exp $
  */
 public class Util {
 
@@ -222,19 +222,7 @@ public class Util {
     }
 
 
-    /**
-     * Verifies that val is <= max memory
-     * @param buf_name
-     * @param val
-     */
-    public static void checkBufferSize(String buf_name, long val) {
-        // sanity check that max_credits doesn't exceed memory allocated to VM by -Xmx
-        long max_mem=Runtime.getRuntime().maxMemory();
-        if(val > max_mem) {
-            throw new IllegalArgumentException(buf_name + "(" + Util.printBytes(val) + ") exceeds max memory allocated to VM (" +
-                    Util.printBytes(max_mem) + ")");
-        }
-    }
+   
 
 
     /**

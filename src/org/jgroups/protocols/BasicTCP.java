@@ -82,9 +82,6 @@ public abstract class BasicTCP extends TP {
     public void init() throws Exception {
         super.init();
 
-        Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
-        Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
-       
         if(!isSingleton() && bind_port <= 0) {
             Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
             if(dynamic_discovery_prot == null)
