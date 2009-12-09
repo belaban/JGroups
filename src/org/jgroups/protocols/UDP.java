@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.208 2009/10/28 14:13:14 belaban Exp $
+ * @version $Id: UDP.java,v 1.209 2009/12/09 12:21:26 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -201,15 +201,6 @@ public class UDP extends TP {
 
 
     /*------------------------------ Protocol interface ------------------------------ */
-
-    public void init() throws Exception {
-        super.init();
-        Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
-        Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
-        Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
-        Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
-    }
-
 
 
 
