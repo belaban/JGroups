@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.101 2009/09/29 15:36:21 belaban Exp $
+ * @version $Id: STABLE.java,v 1.102 2009/12/09 12:28:30 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -210,7 +210,6 @@ public class STABLE extends Protocol {
     
     public void init() throws Exception {
         super.init();
-        Util.checkBufferSize("STABLE.max_bytes", max_bytes);      
     }
 
     public void start() throws Exception {
