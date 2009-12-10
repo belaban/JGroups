@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.239 2009/12/10 12:15:26 belaban Exp $
+ * @version $Id: Util.java,v 1.240 2009/12/10 13:02:46 belaban Exp $
  */
 public class Util {
 
@@ -1690,33 +1690,45 @@ public class Util {
     }
 
 
-    public static long readBytes(String input) {
+    public static long readBytesLong(String input) {
+        Tuple<String,Long> tuple=readBytes(input);
+        double num=Double.parseDouble(tuple.getVal1());
+        return (long)(num * tuple.getVal2());
+    }
+
+    public static int readBytesInteger(String input) {
+        Tuple<String,Long> tuple=readBytes(input);
+        double num=Double.parseDouble(tuple.getVal1());
+        return (int)(num * tuple.getVal2());
+    }
+
+    public static double readBytesDouble(String input) {
+        Tuple<String,Long> tuple=readBytes(input);
+        double num=Double.parseDouble(tuple.getVal1());
+        return num * tuple.getVal2();
+    }
+
+    private static Tuple<String,Long> readBytes(String input) {
         input=input.trim().toLowerCase();
 
-        int index=-1;
-        int factor=1;
+        int  index=-1;
+        long factor=1;
 
-        if((index=input.indexOf("k")) != -1) {
+        if((index=input.indexOf("k")) != -1)
             factor=1000;
-        }
-        else if((index=input.indexOf("kb")) != -1) {
+        else if((index=input.indexOf("kb")) != -1)
             factor=1000;
-        }
-        else if((index=input.indexOf("m")) != -1) {
+        else if((index=input.indexOf("m")) != -1)
             factor=1000000;
-        }
-        else if((index=input.indexOf("mb")) != -1) {
+        else if((index=input.indexOf("mb")) != -1)
             factor=1000000;
-        }
-        else if((index=input.indexOf("g")) != -1) {
+        else if((index=input.indexOf("g")) != -1)
             factor=1000000000;
-        }
-        else if((index=input.indexOf("gb")) != -1) {
+        else if((index=input.indexOf("gb")) != -1)
             factor=1000000000;
-        }
 
-        double num=index != -1? Double.parseDouble(input.substring(0, index).trim()) : Long.parseLong(input);
-        return (long)(num * factor);
+        String str=index != -1? input.substring(0, index) : input;
+        return new Tuple<String,Long>(str, factor);
     }
 
     public static String printBytes(double bytes) {
