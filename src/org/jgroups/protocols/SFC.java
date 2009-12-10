@@ -1,22 +1,17 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.Streamable;
 
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.TimeUnit;
-import java.io.*;
 
 /**
  * Simple flow control protocol. After max_credits bytes sent to the group (or an individual member), the sender blocks
@@ -25,7 +20,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.26 2009/12/09 12:28:32 belaban Exp $
+ * @version $Id: SFC.java,v 1.27 2009/12/10 09:05:10 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
