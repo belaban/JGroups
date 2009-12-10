@@ -26,7 +26,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.16 2009/11/05 08:44:01 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.17 2009/12/10 13:03:19 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -163,13 +163,16 @@ public class PropertyConverters {
             if(Boolean.TYPE.equals(propertyFieldType)) {
                 return Boolean.parseBoolean(propertyValue);
             } else if (Integer.TYPE.equals(propertyFieldType)) {
-                return Integer.parseInt(propertyValue);
+                // return Integer.parseInt(propertyValue);
+                return Util.readBytesInteger(propertyValue);
             } else if (Long.TYPE.equals(propertyFieldType)) {
-                return Long.parseLong(propertyValue);
+                // return Long.parseLong(propertyValue);
+                return Util.readBytesLong(propertyValue);
             } else if (Byte.TYPE.equals(propertyFieldType)) {
                 return Byte.parseByte(propertyValue);
             } else if (Double.TYPE.equals(propertyFieldType)) {
-                return Double.parseDouble(propertyValue);
+                // return Double.parseDouble(propertyValue);
+                return Util.readBytesDouble(propertyValue);
             } else if (Short.TYPE.equals(propertyFieldType)) {
                 return Short.parseShort(propertyValue);
             } else if (Float.TYPE.equals(propertyFieldType)) {
