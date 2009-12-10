@@ -2,9 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 
 import java.util.concurrent.TimeUnit;
@@ -16,8 +14,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Protocol which sends at most max_bytes in time_period milliseconds. Can be used instead of a flow control protocol,
  * e.g. FC or SFC (same position in the stack)
  * @author Bela Ban
- * @version $Id: RATE_LIMITER.java,v 1.1 2009/12/10 11:25:09 belaban Exp $
+ * @version $Id: RATE_LIMITER.java,v 1.2 2009/12/10 13:03:34 belaban Exp $
  */
+@Experimental @Unsupported
 public class RATE_LIMITER extends Protocol {
 
     @ManagedAttribute(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +

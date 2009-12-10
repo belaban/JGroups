@@ -1,7 +1,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.7 2009/12/03 04:29:25 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.8 2009/12/10 13:03:33 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -163,6 +163,16 @@ RpcDispatcher/MessageDispatcher: additional methods which return a Future rather
 
 Some new methods which allow a synchronous call to return immediately, and then later, the future can be checked
 for the result.
+
+
+
+Protocol property values for ints, longs and doubles can now be suffixes with K, M or G
+---------------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1112]
+
+Instead of writing max_credits="1200000", we can use max_credits="1.2M", or "1.2 MB", or "1200K" etc. Permitted suffixes
+are "K", "k", "KB", "kb" for kilobytes, "m", "M", "mb", "MB" for megabytes and "g", "G", "gb", "GB" for gigabytes
+
 
 
 
