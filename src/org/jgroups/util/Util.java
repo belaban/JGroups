@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.238 2009/12/09 12:28:33 belaban Exp $
+ * @version $Id: Util.java,v 1.239 2009/12/10 12:15:26 belaban Exp $
  */
 public class Util {
 
@@ -1689,6 +1689,35 @@ public class Util {
         }
     }
 
+
+    public static long readBytes(String input) {
+        input=input.trim().toLowerCase();
+
+        int index=-1;
+        int factor=1;
+
+        if((index=input.indexOf("k")) != -1) {
+            factor=1000;
+        }
+        else if((index=input.indexOf("kb")) != -1) {
+            factor=1000;
+        }
+        else if((index=input.indexOf("m")) != -1) {
+            factor=1000000;
+        }
+        else if((index=input.indexOf("mb")) != -1) {
+            factor=1000000;
+        }
+        else if((index=input.indexOf("g")) != -1) {
+            factor=1000000000;
+        }
+        else if((index=input.indexOf("gb")) != -1) {
+            factor=1000000000;
+        }
+
+        double num=index != -1? Double.parseDouble(input.substring(0, index).trim()) : Long.parseLong(input);
+        return (long)(num * factor);
+    }
 
     public static String printBytes(double bytes) {
         double tmp;
