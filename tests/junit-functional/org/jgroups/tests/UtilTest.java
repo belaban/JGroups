@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.16 2009/09/30 07:24:15 belaban Exp $
+// $Id: UtilTest.java,v 1.17 2009/12/10 12:15:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -223,6 +223,48 @@ public class UtilTest {
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
         Assert.assertEquals("1.2GB", s);
+    }
+
+
+    public static void testReadBytes() {
+        assert 10 == Util.readBytes("10");
+        assert 10 == Util.readBytes("10 ");
+        assert 10 == Util.readBytes(" 10");
+
+        assert 1000 == Util.readBytes("1000");
+        assert 1000 == Util.readBytes("1kb");
+        assert 1000 == Util.readBytes("1 kb");
+        assert 1000 == Util.readBytes("1k");
+        assert 1000 == Util.readBytes("1KB");
+        assert 1000 == Util.readBytes("1 K");
+        assert 1000 == Util.readBytes("1K");
+
+        assert 1234 == Util.readBytes("1.234K");
+
+        long M=1000*1000;
+        assert M == Util.readBytes("1M");
+        assert M == Util.readBytes("1  M");
+        assert M == Util.readBytes("1MB");
+        assert M == Util.readBytes("1 mb");
+        assert M == Util.readBytes("1m");
+        assert M == Util.readBytes("1 m");
+
+        M=(long)(25.5 * 1000*1000);
+        assert M == Util.readBytes("25.5M");
+        assert M == Util.readBytes("25.5m");
+        assert M == Util.readBytes("25.5 MB");
+        assert M == Util.readBytes("25.5 mB");
+        assert M == Util.readBytes("25.5   m");
+        assert M == Util.readBytes("25500K");
+
+        M=(long)(1.5 * 1000 * 1000 * 1000);
+        assert M == Util.readBytes("1.5GB");
+        assert M == Util.readBytes("1.5gb");
+        assert M == Util.readBytes("1.5g");
+        assert M == Util.readBytes("1.5G");
+        assert M == Util.readBytes("1500m");
+        assert M == Util.readBytes("1500000K");
+        assert M == Util.readBytes("1.5 gb");
     }
 
     @SuppressWarnings("unchecked")
