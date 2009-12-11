@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.19 2009/12/11 08:59:34 belaban Exp $
+// $Id: UtilTest.java,v 1.20 2009/12/11 09:26:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -845,6 +845,7 @@ public class UtilTest {
         _testMethodNameToAttributeName("isLogDiscardMessages", "log_discard_messages");
         _testMethodNameToAttributeName("setOOBMinPoolSize", "oob_min_pool_size");
         _testMethodNameToAttributeName("isOOBThreadPoolEnabled", "oob_thread_pool_enabled");
+        _testMethodNameToAttributeName("OOBMinPoolSize", "oob_min_pool_size");
     }
 
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
