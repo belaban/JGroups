@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.241 2009/12/11 09:03:49 belaban Exp $
+ * @version $Id: Util.java,v 1.242 2009/12/11 13:17:22 belaban Exp $
  */
 public class Util {
 
@@ -3884,7 +3884,6 @@ public class Util {
         // Pattern p=Pattern.compile("[A-Z]+");
         Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(methodName);
         StringBuffer sb=new StringBuffer();
-        boolean first=true;
         while(m.find()) {
             int start=m.start(), end=m.end();
             String str=methodName.substring(start, end).toLowerCase();
@@ -3893,8 +3892,7 @@ public class Util {
                 String tmp2=str.substring(str.length() -1);
                 str=tmp1 + "_" + tmp2;
             }
-            if(first) {
-                first=false;
+            if(start == 0) {
                 m.appendReplacement(sb, str);
             }
             else
