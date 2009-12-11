@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.18 2009/12/10 13:02:47 belaban Exp $
+// $Id: UtilTest.java,v 1.19 2009/12/11 08:59:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -826,6 +826,39 @@ public class UtilTest {
         System.out.println("merge_coords = " + merge_coords);
         assert merge_coords.size() == 2;
         assert merge_coords.contains(a) && merge_coords.contains(c);
+    }
+
+
+    public static void testAttributeNameToMethodName() {
+        _testAttributeNameToMethodName("my_name", "MyName");
+        _testAttributeNameToMethodName("bela", "Bela");
+        _testAttributeNameToMethodName("oob_max_input_size", "OobMaxInputSize");
+        _testAttributeNameToMethodName("a_b_c", "ABC");
+        _testAttributeNameToMethodName("aa_bb_cc", "AaBbCc");
+        _testAttributeNameToMethodName("i", "I");
+        _testAttributeNameToMethodName("tmp", "Tmp");
+    }
+
+    public static void testMethodNameToAttributeName() {
+        _testMethodNameToAttributeName("setFoo", "foo");
+        _testMethodNameToAttributeName("getFoo", "foo");
+        _testMethodNameToAttributeName("isLogDiscardMessages", "log_discard_messages");
+        _testMethodNameToAttributeName("setOOBMinPoolSize", "oob_min_pool_size");
+        _testMethodNameToAttributeName("isOOBThreadPoolEnabled", "oob_thread_pool_enabled");
+    }
+
+    private static void _testMethodNameToAttributeName(String input, String expected_output) {
+        String atttr_name=Util.methodNameToAttributeName(input);
+        System.out.println("method name=" + input + ", attrname=" + atttr_name + ", expected output=" + expected_output);
+        assert atttr_name.equals(expected_output) :
+                "method name=" + input + ", attrname=" + atttr_name + ", expected output=" + expected_output;
+    }
+
+    private static void _testAttributeNameToMethodName(String input, String expected_output) {
+        String method_name=Util.attributeNameToMethodName(input);
+        System.out.println("attrname=" + input + ", method name=" + method_name + ", expected output=" + expected_output);
+        assert method_name.equals(expected_output) :
+                "attrname=" + input + ", method name=" + method_name + ", expected output=" + expected_output;
     }
 
 }
