@@ -29,7 +29,7 @@ import org.jgroups.conf.PropertyConverters;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: Property.java,v 1.9 2009/10/20 13:56:52 belaban Exp $
+ * @version $Id: Property.java,v 1.10 2009/12/11 13:12:36 belaban Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -57,6 +57,12 @@ public @interface Property {
      * Global.NON_LOOPBACK_ADDRESS means pick any valid non-loopback IPv6 address
      */
     String defaultValueIPv6() default "" ;
+
+    /** Expose this property also as a managed attribute */
+    boolean exposeAsManagedAttribute() default true;
+
+    /* Should this managed attribute be writeable ? If set to true, automatically sets exposeAsManagedAttribute to true */
+    boolean writable() default true;
 }
 
 
