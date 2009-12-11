@@ -33,7 +33,7 @@ import org.w3c.dom.Element;
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.10 2009/10/23 17:01:41 vlada Exp $
+ * @version $Id: XMLSchemaGenerator.java,v 1.11 2009/12/11 13:20:05 belaban Exp $
  * 
  */
 public class XMLSchemaGenerator {
@@ -188,7 +188,7 @@ public class XMLSchemaGenerator {
             Property annotation = method.getAnnotation(Property.class);
             String name = annotation.name();
             if (name.length() < 1) {
-               name = Configurator.renameFromJavaCodingConvention(method.getName().substring(3));
+               name = Util.methodNameToAttributeName(method.getName());
             }
             Element attributeElement = xmldoc.createElement("xs:attribute");
             attributeElement.setAttribute("name", name);

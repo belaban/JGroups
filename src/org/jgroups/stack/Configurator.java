@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.74 2009/11/04 09:36:39 belaban Exp $
+ * @version $Id: Configurator.java,v 1.75 2009/12/11 13:18:20 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -973,17 +973,6 @@ public class Configurator implements ProtocolStackFactory {
                 method.getParameterTypes().length == 1);
     }
 
-    public static String renameFromJavaCodingConvention(String fieldName) {
-        Pattern p=Pattern.compile("[A-Z]");
-        Matcher m=p.matcher(fieldName.substring(1));
-        StringBuffer sb=new StringBuffer();
-        while(m.find()) {
-            m.appendReplacement(sb, "_" + fieldName.substring(m.end(), m.end() + 1).toLowerCase());
-        }
-        m.appendTail(sb);
-        sb.insert(0, fieldName.substring(0, 1).toLowerCase());
-        return sb.toString();
-    }
 
     public static void setField(Field field, Object target, Object value) {
         if(!Modifier.isPublic(field.getModifiers())) {

@@ -24,7 +24,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.21 2009/04/09 09:11:17 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.22 2009/12/11 13:17:50 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -95,8 +95,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
     private static void setOOBPoolSize(JChannel... channels) {
         for(JChannel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBMinPoolSize(1);
-            transport.setOOBMaxPoolSize(2);
+            transport.setOOBThreadPoolMinThreads(1);
+            transport.setOOBThreadPoolMaxThreads(2);
         }
     }
 

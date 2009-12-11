@@ -8,6 +8,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -28,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.96 2009/10/20 15:12:10 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.97 2009/12/11 13:19:49 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -188,7 +189,7 @@ public class ProtocolStack extends Protocol implements Transport {
                         if(annotation.name() != null)
                             possible_names.add(annotation.name());
                         possible_names.add(methodName.substring(3));
-                        possible_names.add(Configurator.renameFromJavaCodingConvention(methodName.substring(3)));
+                        possible_names.add(Util.methodNameToAttributeName(methodName));
                         Field field=findField(prot, possible_names);
                         if(field != null) {
                             Object value=Configurator.getField(field, prot);
@@ -424,7 +425,7 @@ public class ProtocolStack extends Protocol implements Transport {
                     if(annotation.name() != null)
                         possible_names.add(annotation.name());
                     possible_names.add(methodName.substring(3));
-                    possible_names.add(Configurator.renameFromJavaCodingConvention(methodName.substring(3)));
+                    possible_names.add(Util.methodNameToAttributeName(methodName));
                     Field field=findField(prot, possible_names);
                     if(field != null) {
                         Object value=Configurator.getField(field, prot);

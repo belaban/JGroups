@@ -4,17 +4,19 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Event;
+import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
+import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.ThreadFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.annotations.*;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -34,7 +36,7 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.73 2009/11/03 08:14:24 belaban Exp $
+ * @version $Id: Protocol.java,v 1.74 2009/12/11 13:19:31 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -47,7 +49,8 @@ public abstract class Protocol {
 
     /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
      * be set, e.g. only in cases where we want to create more than 1 protocol of the same class in the same stack */
-    @Property(name="name")
+    @Property(name="name",description="Give the protocol a different name if needed so we can have multiple " +
+            "instances of it in the same stack",writable=false)
     protected String           name=getClass().getSimpleName();
 
     protected final Log        log=LogFactory.getLog(this.getClass());
@@ -60,13 +63,12 @@ public abstract class Protocol {
      * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
      * (capitalization not relevant)
      */
-    @ManagedAttribute(name="level", description="Sets the logger level (see javadocs)")
+    @Property(name="level", description="Sets the logger level (see javadocs)")
     public void setLevel(String level) {
         log.setLevel(level);
     }
 
 
-    @ManagedAttribute(name="level",writable=true)
     public String getLevel() {
         return log.getLevel();
     }
@@ -179,19 +181,14 @@ public abstract class Protocol {
         HashMap<String,Object> map=new HashMap<String,Object>();
         for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
-            for(Field field:fields) {
-                if(field.isAnnotationPresent(ManagedAttribute.class)) {
+            for(Field field: fields) {
+                if(field.isAnnotationPresent(ManagedAttribute.class) ||
+                        (field.isAnnotationPresent(Property.class) && field.getAnnotation(Property.class).exposeAsManagedAttribute())) {
                     String attributeName=field.getName();
-                    Object value;
                     try {
                         field.setAccessible(true);
-                        value=field.get(this);
-                        if(value != null) {
-                            map.put(attributeName, value.toString());
-                        }
-                        else {
-                            map.put(attributeName, null);
-                        }
+                        Object value=field.get(this);
+                        map.put(attributeName, value != null? value.toString() : null);
                     }
                     catch(Exception e) {
                         log.warn("Could not retrieve value of attribute (field) " + attributeName,e);
@@ -200,24 +197,33 @@ public abstract class Protocol {
             }
 
             Method[] methods=this.getClass().getMethods();
-            for(Method method:methods) {
-                if(method.isAnnotationPresent(ManagedAttribute.class)) {
-                    ManagedAttribute annotation=method.getAnnotation(ManagedAttribute.class);
-                    if(!annotation.writable() && (method.getName().startsWith("is")
-                       || method.getName().startsWith("get"))) {
-                        Object value;
+            for(Method method: methods) {
+                if(method.isAnnotationPresent(ManagedAttribute.class) ||
+                        (method.isAnnotationPresent(Property.class) && method.getAnnotation(Property.class).exposeAsManagedAttribute())) {
+
+                    String method_name=method.getName();
+                    if(method_name.startsWith("is") || method_name.startsWith("get")) {
                         try {
-                            value=method.invoke(this);
-                            String attributeName=methodNameToAttributeName(method.getName());
-                            if(value != null) {
-                                map.put(attributeName, value.toString());
-                            }
-                            else {
-                                map.put(attributeName, null);
-                            }
+                            Object value=method.invoke(this);
+                            String attributeName=Util.methodNameToAttributeName(method_name);
+                            map.put(attributeName, value != null? value.toString() : null);
                         }
                         catch(Exception e) {
-                            log.warn("Could not retrieve value of attribute (method) " + method.getName(),e);
+                            log.warn("Could not retrieve value of attribute (method) " + method_name,e);
+                        }
+                    }
+                    else if(method_name.startsWith("set")) {
+                        String stem=method_name.substring(3);
+                        Method getter=ResourceDMBean.findGetter(getClass(), stem);
+                        if(getter != null) {
+                            try {
+                                Object value=getter.invoke(this);
+                                String attributeName=Util.methodNameToAttributeName(method_name);
+                                map.put(attributeName, value != null? value.toString() : null);
+                            }
+                            catch(Exception e) {
+                                log.warn("Could not retrieve value of attribute (method) " + method_name, e);
+                            }
                         }
                     }
                 }
@@ -226,19 +232,8 @@ public abstract class Protocol {
         return map;
     }
     
-    private static String methodNameToAttributeName(String methodName) {
-        methodName=methodName.startsWith("get") || methodName.startsWith("set")? methodName.substring(3): methodName;
-        methodName=methodName.startsWith("is")? methodName.substring(2) : methodName;
-        Pattern p=Pattern.compile("[A-Z]");
-        Matcher m=p.matcher(methodName.substring(1));
-        StringBuffer sb=new StringBuffer();
-        while(m.find()) {
-            m.appendReplacement(sb, "_" + methodName.substring(m.end(), m.end() + 1).toLowerCase());
-        }
-        m.appendTail(sb);
-        sb.insert(0, methodName.substring(0, 1).toLowerCase());
-        return sb.toString();
-    }
+
+
     
     /**
      * Called after instance has been created (null constructor) and before protocol is started.
