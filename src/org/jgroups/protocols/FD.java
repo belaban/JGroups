@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.78 2009/09/10 10:55:04 belaban Exp $
+ * @version $Id: FD.java,v 1.79 2009/12/11 13:01:10 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -43,11 +43,9 @@ public class FD extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P. Default is 3000 msec")
-    @ManagedAttribute(description="Timeout in msec to suspect a node P if neither a heartbeat nor data were received from P", writable=true)
-    long timeout=3000; 
+    long timeout=3000;
 
-    @Property(description="Number of times to send heartbeat. Default is 2")
-    @ManagedAttribute(description="Number of times to send a are-you-alive msg", writable=true)
+    @Property(description="Number of times to send an are-you-alive message")
     int max_tries=2;
     
     

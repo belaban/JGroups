@@ -5,7 +5,6 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -40,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.210 2009/12/10 13:02:11 belaban Exp $
+ * @version $Id: UDP.java,v 1.211 2009/12/11 13:10:33 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -57,42 +56,34 @@ public class UDP extends TP {
      * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
      * </UL>
      */
-    @ManagedAttribute(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
     @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
     private int tos=8; // valid values: 2, 4, 8 (default), 16
 
-    @ManagedAttribute
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8",
     		defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
-            systemProperty=Global.UDP_MCAST_ADDR)
+            systemProperty=Global.UDP_MCAST_ADDR,writable=false)
     private InetAddress mcast_group_addr=null;
 
-    @ManagedAttribute
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600",
-              systemProperty=Global.UDP_MCAST_PORT)
+              systemProperty=Global.UDP_MCAST_PORT, writable=false)
     private int mcast_port=7600;
 
-    @ManagedAttribute
-    @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. Default is true")
+    @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. " +
+            "Default is true", writable=false)
     private boolean ip_mcast=true;
 
-    @ManagedAttribute
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8",systemProperty=Global.UDP_IP_TTL)
     private int ip_ttl=8;
 
-    @ManagedAttribute
     @Property(description="Send buffer size of the multicast datagram socket. Default is 100'000 bytes")
     private int mcast_send_buf_size=100000;
 
-    @ManagedAttribute
     @Property(description="Receive buffer size of the multicast datagram socket. Default is 500'000 bytes")
     private int mcast_recv_buf_size=500000;
 
-    @ManagedAttribute
     @Property(description="Send buffer size of the unicast datagram socket. Default is 100'000 bytes")
     private int ucast_send_buf_size=100000;
 
-    @ManagedAttribute
     @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
     private int ucast_recv_buf_size=64000;
 

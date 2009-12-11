@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.util.UUID;
@@ -23,7 +22,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.11 2009/09/28 15:51:17 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.12 2009/12/11 13:02:28 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -33,7 +32,6 @@ public class FILE_PING extends Discovery {
 
 
     @Property(description="The absolute path of the shared file")
-    @ManagedAttribute(description="location of the shared file used for discovery")
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
 

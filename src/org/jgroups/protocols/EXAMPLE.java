@@ -1,11 +1,14 @@
-// $Id: EXAMPLE.java,v 1.9 2009/09/06 13:51:07 belaban Exp $
+// $Id: EXAMPLE.java,v 1.10 2009/12/11 12:59:56 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.Address;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 
 import java.io.Serializable;
@@ -30,7 +33,7 @@ class ExampleHeader implements Serializable {
  */
 @Unsupported
 public class EXAMPLE extends Protocol {
-    final Vector members=new Vector();
+    final Vector<Address> members=new Vector<Address>();
 
 
     /**
@@ -41,12 +44,10 @@ public class EXAMPLE extends Protocol {
 
 
     public Object up(Event evt) {
-        Message msg;
-
         switch(evt.getType()) {
 
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                Message msg=(Message)evt.getArg();
                 // Do something with the event, e.g. extract the message and remove a header.
                 // Optionally pass up
                 break;
@@ -61,7 +62,7 @@ public class EXAMPLE extends Protocol {
         switch(evt.getType()) {
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
-                Vector new_members=((View)evt.getArg()).getMembers();
+                Vector<Address> new_members=((View)evt.getArg()).getMembers();
                 synchronized(members) {
                     members.removeAllElements();
                     if(new_members != null && !new_members.isEmpty())

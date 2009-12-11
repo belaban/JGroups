@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.47 2009/11/16 09:10:43 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.48 2009/12/11 13:10:09 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -54,6 +54,10 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
 
     	this.initial_hosts = initial_hosts ;
+    }
+
+    public List<InetSocketAddress> getInitialHosts() {
+        return initial_hosts;
     }
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

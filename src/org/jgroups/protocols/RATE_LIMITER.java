@@ -14,18 +14,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * Protocol which sends at most max_bytes in time_period milliseconds. Can be used instead of a flow control protocol,
  * e.g. FC or SFC (same position in the stack)
  * @author Bela Ban
- * @version $Id: RATE_LIMITER.java,v 1.2 2009/12/10 13:03:34 belaban Exp $
+ * @version $Id: RATE_LIMITER.java,v 1.3 2009/12/11 13:08:03 belaban Exp $
  */
 @Experimental @Unsupported
 public class RATE_LIMITER extends Protocol {
 
-    @ManagedAttribute(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
-            "time period has started", writable=true)
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
             "time period has started")
     protected long max_bytes=500000;
 
-    @ManagedAttribute(description="Number of milliseconds during which max_bytes bytes can be sent", writable=true)
     @Property(description="Number of milliseconds during which max_bytes bytes can be sent")
     protected long time_period=1000L;
 
@@ -40,9 +37,6 @@ public class RATE_LIMITER extends Protocol {
 
     protected final Lock lock=new ReentrantLock();
     protected final Condition block=lock.newCondition();
-
-    // @ManagedAttribute(description="Is the protocol currently blocking")
-    // protected boolean blocking=false;
 
     @ManagedAttribute
     protected int num_blockings=0;

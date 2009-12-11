@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.106 2009/12/09 12:28:32 belaban Exp $
+ * @version $Id: FC.java,v 1.107 2009/12/11 13:01:10 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -50,20 +50,15 @@ public class FC extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     /**
-     * Max number of bytes to send per receiver until an ack must
-     * be received before continuing sending
+     * Max number of bytes to send per receiver until an ack must be received before continuing sending
      */
-    @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
-                                   "be received before continuing sending",writable=true)
-    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 500000 bytes")                                   
+    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 500000 bytes")
     private long max_credits=500000;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
-     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
-     * wait forever.
+     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
-    @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
     @Property(description="Max time (in milliseconds) to block. Default is 5000 msec")
     private long max_block_time=5000;
 
@@ -86,7 +81,6 @@ public class FC extends Protocol {
      * If credits fall below this limit, we send more credits to the sender. (We also send when
      * credits are exhausted (0 credits left))
      */
-    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",writable=true)
     @Property(description="If credits fall below this limit, we send more credits to the sender. Default is 0.25")
     private double min_threshold=0.25;
 
@@ -94,7 +88,6 @@ public class FC extends Protocol {
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation
      */
-    @ManagedAttribute(description="Computed as max_credits x min_theshold",writable=true)
     @Property(description="Computed as max_credits x min_theshold unless explicitely set")
     private long min_credits=0;
     
@@ -239,8 +232,7 @@ public class FC extends Protocol {
         max_block_time=t;
     }
 
-    @ManagedAttribute(writable=true)
-    @Property(description="Max times to block for the listed messages sizes (Message.getLength())")
+    @Property(description="Max times to block for the listed messages sizes (Message.getLength()). Example: \"1000:10,5000:30,10000:500\"")
     public void setMaxBlockTimes(String str) {
         if(str == null) return;
         Long prev_key=null, prev_val=null;
@@ -275,7 +267,6 @@ public class FC extends Protocol {
             log.debug("max_block_times: " + max_block_times);
     }
 
-    @ManagedAttribute
     public String getMaxBlockTimes() {
         if(max_block_times == null) return "n/a";
         StringBuilder sb=new StringBuilder();

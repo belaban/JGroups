@@ -26,12 +26,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.15 2009/09/10 10:58:43 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.16 2009/12/11 12:57:28 belaban Exp $
  */
 public class BARRIER extends Protocol {
     
-    @Property(description="Max time barrier can be closed. Default is 60000 msec")
-    @ManagedAttribute(writable=true,description="Max time barrier can be closed. Default is 60000 msec")
+    @Property(description="Max time barrier can be closed. Default is 60000 ms")
     long max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
     final Lock lock=new ReentrantLock();
     final AtomicBoolean barrier_closed=new AtomicBoolean(false);

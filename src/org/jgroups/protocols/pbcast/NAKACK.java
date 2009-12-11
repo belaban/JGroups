@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.248 2009/12/09 12:34:04 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.249 2009/12/11 13:04:43 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -55,17 +55,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="If true, retransmissions stats will be captured. Default is false")
     boolean enable_xmit_time_stats=false;
 
-    @ManagedAttribute(description="Garbage collection lag", writable=true)
-    @Property(description="Garbage collection lag. Default is 20 msec")
+    @Property(description="Garbage collection lag")
     private int gc_lag=20; // number of msgs garbage collection lags behind
 
     /**
-     * Retransmit messages using multicast rather than unicast. This has the
-     * advantage that, if many receivers lost a message, the sender only
-     * retransmits once.
+     * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
+     * lost a message, the sender only retransmits once
      */
-    @Property(description="Retransmit messages using multicast rather than unicast. Default is true")
-    @ManagedAttribute(description="Retransmit messages using multicast rather than unicast", writable=true)
+    @Property(description="Retransmit messages using multicast rather than unicast")
     private boolean use_mcast_xmit=true;
 
     /**
@@ -80,7 +77,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * true, discard_delivered_msgs will be set to false
      */
     @Property(description="Ask a random member for retransmission of a missing message. Default is false")
-    @ManagedAttribute(description="Ask a random member for retransmission of a missing message", writable=true)
     private boolean xmit_from_random_member=false;
 
     /**
@@ -97,9 +93,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="Use statistics gathered from actual retransmission times to compute new retransmission times. Default is false")
     private boolean use_stats_for_retransmission=false;
 
-    @ManagedAttribute(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
-            "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
-            "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
     @Property(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
             "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
             "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
@@ -116,8 +109,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * off, so we don't keep the message around, and don't need to wait for
      * garbage collection to remove them.
      */
-    @Property(description="Should messages delivered to application be discarded. Default is false")
-    @ManagedAttribute(description="Discard delivered messages", writable=true)
+    @Property(description="Should messages delivered to application be discarded")
     private boolean discard_delivered_msgs=false;
 
 
@@ -127,7 +119,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * the buffer size is exceeded. A value <= 0 means unbounded buffers
      */
     @Property(description="If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used. Default is 0")
-    @ManagedAttribute(description="If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used", writable=true)
     private int max_xmit_buf_size=0;
 
     @Property(description="Size of retransmission history. Default is 50 entries")
@@ -142,6 +133,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
     protected boolean print_stability_history_on_failed_xmit=false;
+
+
+    /** If true, logs messages discarded because received from other members */
+    @Property(description="discards warnings about promiscuous traffic")
+    private boolean log_discard_msgs=true;
+
+    @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
+    private boolean log_not_found_msgs=true;
+
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -228,14 +228,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String> digest_history=new BoundedList<String>(10);
 
-    /** If true, logs messages discarded because received from other members */
-    @ManagedAttribute(description="If true, log messages are discarded because received from other members", writable=true)
-    @Property(description="discards warnings about promiscuous traffic")
-    private boolean log_discard_msgs=true;
-
-    @ManagedAttribute(description="If true, trashes warnings about retransmission messages not found in the xmit_table")
-    @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
-    private boolean log_not_found_msgs=true;
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
@@ -256,7 +248,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public long getXmitResponsesSent() {return xmit_rsps_sent;}
     public long getMissingMessagesReceived() {return missing_msgs_received;}
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Total number of missing messages")
     public int getPendingRetransmissionRequests() {
         int num=0;
         for(NakReceiverWindow win: xmit_table.values()) {
