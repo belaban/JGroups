@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.20 2009/12/11 09:26:58 belaban Exp $
+// $Id: UtilTest.java,v 1.21 2009/12/11 13:17:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -837,6 +837,7 @@ public class UtilTest {
         _testAttributeNameToMethodName("aa_bb_cc", "AaBbCc");
         _testAttributeNameToMethodName("i", "I");
         _testAttributeNameToMethodName("tmp", "Tmp");
+        _testAttributeNameToMethodName("inet_address_method", "InetAddressMethod");
     }
 
     public static void testMethodNameToAttributeName() {
@@ -846,6 +847,7 @@ public class UtilTest {
         _testMethodNameToAttributeName("setOOBMinPoolSize", "oob_min_pool_size");
         _testMethodNameToAttributeName("isOOBThreadPoolEnabled", "oob_thread_pool_enabled");
         _testMethodNameToAttributeName("OOBMinPoolSize", "oob_min_pool_size");
+        _testMethodNameToAttributeName("inetAddressMethod", "inet_address_method"); 
     }
 
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
