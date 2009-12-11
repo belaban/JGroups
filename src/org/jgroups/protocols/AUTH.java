@@ -42,7 +42,7 @@ public class AUTH extends Protocol {
         auth_plugin.setAuth(this);
     }
 
-    
+    public String getAuthClass() {return auth_plugin != null? auth_plugin.getClass().getName() : null;}
 
     protected List<Object> getConfigurableObjects() {
         List<Object> retval=new LinkedList<Object>();
