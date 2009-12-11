@@ -1,14 +1,12 @@
-// $Id: EXAMPLE.java,v 1.10 2009/12/11 12:59:56 belaban Exp $
+// $Id: EXAMPLE.java,v 1.11 2009/12/11 13:00:40 belaban Exp $
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.Address;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 
 import java.io.Serializable;
