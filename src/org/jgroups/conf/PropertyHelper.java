@@ -5,6 +5,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -49,8 +50,8 @@ import java.util.Map;
     			throw new IllegalArgumentException("Cannot get property name for method " + 
     					method.getName() + " which is not annotated with @Property") ;
     		}    		
-    		String propertyName=annotation.name().length() > 0? annotation.name() : method.getName().substring(3);
-    		propertyName=Configurator.renameFromJavaCodingConvention(propertyName);
+    		String propertyName=annotation.name().length() > 0? annotation.name() : method.getName();
+    		propertyName=Util.methodNameToAttributeName(propertyName);
     		return propertyName ;
     	}
     	

@@ -48,7 +48,7 @@ import org.w3c.dom.Element;
  * <p/>
  * There are 1 arg: the input file
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.7 2009/01/23 09:50:40 belaban Exp $
+ * @version $Id: PropertiesToXML.java,v 1.8 2009/12/11 13:18:10 belaban Exp $
  * 
  */
 public class PropertiesToXML {
@@ -155,8 +155,7 @@ public class PropertiesToXML {
 
                         String name=annotation.name();
                         if(name.length() < 1) {
-                            name=Configurator.renameFromJavaCodingConvention(method.getName()
-                                                                                   .substring(3));
+                            name=Util.methodNameToAttributeName(method.getName());
                         }
                         nameToDescription.put(name, desc);
                     }
