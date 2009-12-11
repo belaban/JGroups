@@ -125,12 +125,14 @@ public class TCPConnectionMap{
         conn=mapper.getConnection(dest);           
 
         // 2. Send the message using that connection
-        try {
-            conn.send(data, offset, length);
-        }
-        catch(Exception ex) {            
-            mapper.removeConnection(dest);
-            throw ex;
+        if(conn != null) {
+            try {
+                conn.send(data, offset, length);
+            }
+            catch(Exception ex) {
+                mapper.removeConnection(dest);
+                throw ex;
+            }
         }
     }
 
@@ -699,11 +701,17 @@ public class TCPConnectionMap{
                 if (hasOpenConnection(dest)) {
                     conn = conns.get(dest);
                 } else {
-                    conn = new TCPConnection(dest);
-                    conn.start(getThreadFactory());
-                    addConnection(dest, conn);
-                    if (log.isTraceEnabled())
-                        log.trace("created socket to " + dest);
+                    try {
+                        conn = new TCPConnection(dest);
+                        conn.start(getThreadFactory());
+                        addConnection(dest, conn);
+                        if (log.isTraceEnabled())
+                            log.trace("created socket to " + dest);
+                    }
+                    catch(Exception ex) {
+                        if(log.isTraceEnabled())
+                            log.trace("failed creating connection to " + dest);
+                    }
                 }
             } finally {
                 getLock().unlock();
