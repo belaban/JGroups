@@ -28,12 +28,14 @@ import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.240 2009/12/10 13:02:46 belaban Exp $
+ * @version $Id: Util.java,v 1.241 2009/12/11 09:03:49 belaban Exp $
  */
 public class Util {
 
@@ -62,6 +64,9 @@ public class Util {
     static boolean      JGROUPS_COMPAT=false;
 
     private static short COUNTER=1;
+
+    private static Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
+    private static Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
 
     /**
      * Global thread group to which all (most!) JGroups threads belong
@@ -3872,6 +3877,58 @@ public class Util {
         }
     }
 
+
+    public static String methodNameToAttributeName(String methodName) {
+        methodName=methodName.startsWith("get") || methodName.startsWith("set")? methodName.substring(3): methodName;
+        methodName=methodName.startsWith("is")? methodName.substring(2) : methodName;
+        // Pattern p=Pattern.compile("[A-Z]+");
+        Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(methodName);
+        StringBuffer sb=new StringBuffer();
+        boolean first=true;
+        while(m.find()) {
+            int start=m.start(), end=m.end();
+            String str=methodName.substring(start, end).toLowerCase();
+            if(str.length() > 1) {
+                String tmp1=str.substring(0, str.length() -1);
+                String tmp2=str.substring(str.length() -1);
+                str=tmp1 + "_" + tmp2;
+            }
+            if(first) {
+                first=false;
+                m.appendReplacement(sb, str);
+            }
+            else
+                m.appendReplacement(sb, "_" + str);
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+
+    public static String attributeNameToMethodName(String attr_name) {
+        if(attr_name.contains("_")) {
+            // Pattern p=Pattern.compile("_.");
+            Matcher m=ATTR_NAME_TO_METHOD_NAME_PATTERN.matcher(attr_name);
+            StringBuffer sb=new StringBuffer();
+            while(m.find()) {
+                m.appendReplacement(sb, attr_name.substring(m.end() - 1, m.end()).toUpperCase());
+            }
+            m.appendTail(sb);
+            char first=sb.charAt(0);
+            if(Character.isLowerCase(first)) {
+                sb.setCharAt(0, Character.toUpperCase(first));
+            }
+            return sb.toString();
+        }
+        else {
+            if(Character.isLowerCase(attr_name.charAt(0))) {
+                return attr_name.substring(0, 1).toUpperCase() + attr_name.substring(1);
+            }
+            else {
+                return attr_name;
+            }
+        }
+    }
 
 }
 
