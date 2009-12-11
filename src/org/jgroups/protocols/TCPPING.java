@@ -36,7 +36,7 @@ import java.util.Set;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.57 2009/11/05 08:21:23 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.58 2009/12/11 13:10:09 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -51,7 +51,6 @@ public class TCPPING extends Discovery {
     private List<IpAddress> initial_hosts=null;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
-    @ManagedAttribute(writable=false)
     protected int max_dynamic_hosts=100;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 

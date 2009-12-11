@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.27 2009/12/10 09:05:10 belaban Exp $
+ * @version $Id: SFC.java,v 1.28 2009/12/11 13:08:23 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -93,7 +93,6 @@ public class SFC extends Protocol {
         blockings.clear();
     }
 
-    @ManagedAttribute
     public long getMaxCredits() {return max_credits;}
     @ManagedAttribute
     public long getCredits() {return curr_credits_available;}

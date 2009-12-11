@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.196 2009/09/28 07:23:51 belaban Exp $
+ * @version $Id: GMS.java,v 1.197 2009/12/11 13:04:43 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -36,7 +36,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
-    @ManagedAttribute(description="Join timeout", writable=true)
     @Property(description="Join timeout. Default is 5000 msec")
     long join_timeout=5000;
 
@@ -70,12 +69,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
      * request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time
      */
-    @ManagedAttribute(description="View bundling toggle", writable=true)
-    @Property(description="Should views be bundled? Default is true")    
+    @Property(description="View bundling toggle")
     private boolean view_bundling=true;
     
     @Property(description="Max view bundling timeout if view bundling is turned on. Default is 50 msec")
-    @ManagedAttribute
     private long max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
     
     @Property(description="Max number of old members to keep in history. Default is 50")
@@ -90,7 +87,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Use flush for view changes. Default is true")
     boolean use_flush_if_present=true;
     
-    @ManagedAttribute(writable=true, description="Logs failures for collecting all view acks if true")
+    @Property(description="Logs failures for collecting all view acks if true")
     boolean log_collect_msgs=true;
 
 
@@ -1232,7 +1229,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.196 2009/09/28 07:23:51 belaban Exp $
+     * @version $Id: GMS.java,v 1.197 2009/12/11 13:04:43 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

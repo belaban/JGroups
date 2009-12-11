@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.147 2009/11/24 16:13:09 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.148 2009/12/11 13:11:10 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -84,8 +84,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private long last_conn_id=0;
 
-    @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
-            "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
+
     protected long max_retransmit_time=60 * 1000L;
 
     private AgeOutCache<Address> cache=null;
@@ -152,11 +151,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return num_xmits;
     }
 
-    @ManagedAttribute(writable=true)
     public long getMaxRetransmitTime() {
         return max_retransmit_time;
     }
 
+    @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
+            "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
     public void setMaxRetransmitTime(long max_retransmit_time) {
         this.max_retransmit_time=max_retransmit_time;
         if(cache != null && max_retransmit_time > 0)

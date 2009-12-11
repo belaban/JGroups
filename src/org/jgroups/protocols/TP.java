@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.281 2009/12/10 12:45:28 belaban Exp $
+ * @version $Id: TP.java,v 1.282 2009/12/11 13:10:09 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -71,21 +71,20 @@ public abstract class TP extends Protocol {
 
 
 
-    @ManagedAttribute
-    @Property(name="bind_addr", description="The bind address which should be used by this transport", 
+    @Property(name="bind_addr", description="The bind address which should be used by this transport",
     		defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
-            systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD})
+            systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},writable=false)
     protected InetAddress bind_addr=null;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
-    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
+    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
+            exposeAsManagedAttribute=false)
     protected String bind_interface_str=null;
     
-    @Property(description="Ignores all bind address parameters and  let's the OS return the local host address. Default is false")
+    @Property(description="Ignores all bind address parameters and  let's the OS return the local host address")
     protected boolean use_local_host=false;
 
-    @ManagedAttribute
-    @Property(description=" If true, the transport should use all available interfaces to receive multicast messages. Default is false")
+    @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
     protected boolean receive_on_all_interfaces=false;
 
     /**
@@ -94,9 +93,8 @@ public abstract class TP extends Protocol {
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
      * an interface once. If this property is set, it overrides receive_on_all_interfaces.
      */
-    @ManagedAttribute
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
-                      description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
+              description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces=null;
 
     @Property
@@ -105,12 +103,10 @@ public abstract class TP extends Protocol {
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
-    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
-    @ManagedAttribute(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
+    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port",writable=false)
     protected int bind_port=0;
 
     @Property(description="The range of valid ports, from bind_port to end_port. Infinite if 0")
-    @ManagedAttribute(description="The range of valid ports, from bind_port to end_port. Infinite if 0")
     protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
 
   
@@ -119,7 +115,6 @@ public abstract class TP extends Protocol {
      * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
      * Window media (non)sense
      */
-    @ManagedAttribute(description="", writable=true)
     @Property(description="Messages to self are looped back immediately if true. Default is false")
     protected boolean loopback=false;
 
@@ -127,7 +122,6 @@ public abstract class TP extends Protocol {
      * Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets
      */
-    @ManagedAttribute(description="Discard packets with a different version", writable=true)
     @Property(description="Discard packets with a different version if true. Default is false")
     protected boolean discard_incompatible_packets=false;
 
@@ -135,74 +129,49 @@ public abstract class TP extends Protocol {
     @Property(description="Thread naming pattern for threads in this channel. Default is cl")
     protected String thread_naming_pattern="cl";
 
-    @Property(name="oob_thread_pool.enabled",description="Switch for enabling thread pool for OOB messages. Default true")
+    @Property(name="oob_thread_pool.enabled",description="Switch for enabling thread pool for OOB messages. " +
+            "Default=true",writable=false)
     protected boolean oob_thread_pool_enabled=true;
 
-    @ManagedAttribute(description="Minimum thread pool size for OOB messages. Default is 2")
-    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for OOB messages. Default is 2")
     protected int oob_thread_pool_min_threads=2;
 
-    @ManagedAttribute(description="Maximum thread pool size for OOB messages. Default is 10")
-    @Property(name="oob_thread_pool.max_threads",description="Maximum thread pool size for OOB messages. Default is 10")
     protected int oob_thread_pool_max_threads=10;
 
-    @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from OOB pool. Default is 30000")
-    @Property(name="oob_thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from OOB pool. Default is 30000")
     protected long oob_thread_pool_keep_alive_time=30000;
 
-    @ManagedAttribute(description="Use queue to enqueue incoming OOB messages. Default is true")
-    @Property(name="oob_thread_pool.queue_enabled",
-                      description="Use queue to enqueue incoming OOB messages. Default is true")
+    @Property(name="oob_thread_pool.queue_enabled", description="Use queue to enqueue incoming OOB messages")
     protected boolean oob_thread_pool_queue_enabled=true;
 
-
-    @ManagedAttribute(description="Maximum queue size for incoming OOB messages. Default is 500")
     @Property(name="oob_thread_pool.queue_max_size",description="Maximum queue size for incoming OOB messages. Default is 500")
     protected int oob_thread_pool_queue_max_size=500;
 
-    @ManagedAttribute
     @Property(name="oob_thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
     String oob_thread_pool_rejection_policy="discard";
 
-    @ManagedAttribute(description="Minimum thread pool size for regular messages. Default is 2")
-    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
     protected int thread_pool_min_threads=2;
 
-    @ManagedAttribute(description="Maximum thread pool size for regular messages. Default is 10")
-    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for regular messages. Default is 10")
     protected int thread_pool_max_threads=10;
 
-
-    @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
-    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
     protected long thread_pool_keep_alive_time=30000;
 
-    @ManagedAttribute(description="Switch for enabling thread pool for regular messages. Default true")
     @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages. Default true")
     protected boolean thread_pool_enabled=true;
 
-    @ManagedAttribute(description="Use queue to enqueue incoming regular messages")
-    @Property(name="thread_pool.queue_enabled",
-                      description="Use queue to enqueue incoming regular messages. Default is true")
+    @Property(name="thread_pool.queue_enabled", description="Use queue to enqueue incoming regular messages. Default is true")
     protected boolean thread_pool_queue_enabled=true;
 
 
-    @ManagedAttribute(description="Maximum queue size for incoming OOB messages")
-    @Property(name="thread_pool.queue_max_size",
-                      description="Maximum queue size for incoming OOB messages. Default is 500")
+    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming OOB messages. Default is 500")
     protected int thread_pool_queue_max_size=500;
 
-    @ManagedAttribute
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
     protected String thread_pool_rejection_policy="Discard";
 
-    @ManagedAttribute(description="Number of threads to be used by the timer thread pool")
     @Property(name="timer.num_threads",description="Number of threads to be used by the timer thread pool. Default is 4")
     protected int num_timer_threads=4;
 
-    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
     @Property(description="Enable bundling of smaller messages into bigger ones. Default is true")
     protected boolean enable_bundling=true;
 
@@ -223,6 +192,13 @@ public abstract class TP extends Protocol {
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
 
+    /** Whether or not warnings about messages from different groups are logged - private flag, not for common use */
+    @Property(description="whether or not warnings about messages from different groups are logged")
+    private boolean log_discard_msgs=true;
+
+
+
+
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
      * This value needs to be smaller than the largest datagram packet size in case of UDP
@@ -236,33 +212,108 @@ public abstract class TP extends Protocol {
     protected long max_bundle_timeout=20;
 
 
+
+    @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
+    public void setMaxBundleSize(int size) {
+        if(size <= 0) {
+            throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
+        }
+        max_bundle_size=size;
+    }
+
+    public long getMaxBundleTimeout() {return max_bundle_timeout;}
+    
+
+    @Property(name="max_bundle_timeout", description="Max number of milliseconds until queued messages are sent")
+    public void setMaxBundleTimeout(long timeout) {
+        if(timeout <= 0) {
+            throw new IllegalArgumentException("max_bundle_timeout of " + timeout + " is invalid");
+        }
+        max_bundle_timeout=timeout;
+    }
+
+    public int getMaxBundleSize() {return max_bundle_size;}
+
+    @Property(name="oob_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the OOB pool")
+    public void setOOBThreadPoolKeepAliveTime(long time) {
+        oob_thread_pool_keep_alive_time=time;
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+    }
+
+    public long getOOBThreadPoolKeepAliveTime() {return oob_thread_pool_keep_alive_time;}
+
+
+    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
+    public void setOOBThreadPoolMinThreads(int size) {
+        oob_thread_pool_min_threads=size;
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
+    }
+
+    public int getOOBThreadPoolMinThreads() {return oob_thread_pool_min_threads;}
+
+    @Property(name="oob_thread_pool.max_threads",description="Max thread pool size for the OOB thread pool")
+    public void setOOBThreadPoolMaxThreads(int size) {
+        oob_thread_pool_max_threads=size;
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getOOBThreadPoolMaxThreads() {return oob_thread_pool_max_threads;}
+
+
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
+    public void setThreadPoolMinThreads(int size) {
+        thread_pool_min_threads=size;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
+    }
+
+    public int getThreadPoolMinThreads() {return thread_pool_min_threads;}
+
+
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the regular thread pool")
+    public void setThreadPoolMaxThreads(int size) {
+        thread_pool_max_threads=size;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getThreadPoolMaxThreads() {return thread_pool_max_threads;}
+
+
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
+    public void setThreadPoolKeepAliveTime(long time) {
+        thread_pool_keep_alive_time=time;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+    }
+
+    public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of messages sent")
     protected long num_msgs_sent=0;
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of messages received")
     protected long num_msgs_received=0;
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of bytes sent")
     protected long num_bytes_sent=0;
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of bytes received")
     protected long num_bytes_received=0;
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
-    @ManagedAttribute
+    @ManagedAttribute(description="Channel (cluster) name")
     protected String channel_name=null;
 
-    /** whether or not warnings about messages from different groups are logged - private flag, not for common use */
-    @ManagedAttribute(writable=true, description="whether or not warnings about messages from different groups are logged")
-    private boolean log_discard_msgs=true;
-
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of OOB messages received")
     protected long num_oob_msgs_received=0;
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of regular messages received")
     protected long num_incoming_msgs_received=0;
 
 
@@ -516,35 +567,9 @@ public abstract class TP extends Protocol {
     @Deprecated
     public void setUseConcurrentStack(boolean flag) {}
 
-    @ManagedAttribute
     public boolean isOOBThreadPoolEnabled() { return oob_thread_pool_enabled; }
 
-    @ManagedAttribute
     public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }
-
-    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent")
-    public int getMaxBundleSize() {return max_bundle_size;}
-
-    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent",writable=true)
-    @Property(name="max_bundle_size")
-    public void setMaxBundleSize(int size) {
-        if(size <= 0) {
-            throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
-        }
-        max_bundle_size=size;
-    }
-
-    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent")
-    public long getMaxBundleTimeout() {return max_bundle_timeout;}
-
-    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", writable=true)
-    @Property(name="max_bundle_timeout")
-    public void setMaxBundleTimeout(long timeout) {
-        if(timeout <= 0) {
-            throw new IllegalArgumentException("max_bundle_timeout of " + timeout + " is invalid");
-        }
-        max_bundle_timeout=timeout;
-    }
 
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
@@ -552,59 +577,19 @@ public abstract class TP extends Protocol {
     /** @deprecated With the concurrent stack being the default, this property is ignored */
     public static boolean isUseIncomingPacketHandler() {return false;}
 
-    public ConcurrentMap<String,Protocol> getUpProtocols() {
-        return up_prots;
-    }
+    public ConcurrentMap<String,Protocol> getUpProtocols() {return up_prots;}
 
-    @ManagedAttribute
-    public int getOOBMinPoolSize() {
-        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getCorePoolSize() : 0;
-    }
-
-    @ManagedAttribute
-    public void setOOBMinPoolSize(int size) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
-            oob_thread_pool_min_threads=size;
-        }
-    }
-
-    @ManagedAttribute
-    public int getOOBMaxPoolSize() {
-        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getMaximumPoolSize() : 0;
-    }
-
-    @ManagedAttribute
-    public void setOOBMaxPoolSize(int size) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
-            oob_thread_pool_max_threads=size;
-        }
-    }
-
-    @ManagedAttribute
+    
+    @ManagedAttribute(description="Current number of threads in the OOB thread pool")
     public int getOOBPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
-    }
-
-    @ManagedAttribute
-    public long getOOBKeepAliveTime() {
-        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
-    }
-
-    @ManagedAttribute
-    public void setOOBKeepAliveTime(long time) {
-        if(oob_thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
-            oob_thread_pool_keep_alive_time=time;
-        }
     }
 
     public long getOOBMessages() {
         return num_oob_msgs_received;
     }
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of messages in the OOB thread pool's queue")
     public int getOOBQueueSize() {
         return oob_thread_pool_queue.size();
     }
@@ -613,10 +598,6 @@ public abstract class TP extends Protocol {
         return oob_thread_pool_queue_max_size;
     }
 
-    @ManagedAttribute
-    public int getOOBActiveThreads() {
-        return oob_thread_pool instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)oob_thread_pool).getActiveCount() : 0;
-    }
 
     public void setOOBRejectionPolicy(String rejection_policy) {
         RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
@@ -624,74 +605,32 @@ public abstract class TP extends Protocol {
             ((ThreadPoolExecutor)oob_thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
     }
 
-    @ManagedAttribute
-    public int getIncomingMinPoolSize() {
-        return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getCorePoolSize() : 0;
-    }
 
-    @ManagedAttribute
-    public void setIncomingMinPoolSize(int size) {
-        if(thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
-            thread_pool_min_threads=size;
-        }
-    }
-
-    @ManagedAttribute
-    public int getIncomingMaxPoolSize() {
-        return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getMaximumPoolSize() : 0;
-    }
-
-    @ManagedAttribute
-    public void setIncomingMaxPoolSize(int size) {
-        if(thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
-            thread_pool_max_threads=size;
-        }
-    }
-
-    @ManagedAttribute
-    public int getIncomingPoolSize() {
+    @ManagedAttribute(description="Current number of threads in the default thread pool")
+    public int getRegularPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getPoolSize() : 0;
     }
 
-    @ManagedAttribute
-    public long getIncomingKeepAliveTime() {
-        return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
-    }
-
-    @ManagedAttribute
-    public void setIncomingKeepAliveTime(long time) {
-        if(thread_pool instanceof ThreadPoolExecutor) {
-            ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
-            thread_pool_keep_alive_time=time;
-        }
-    }
-
-    public long getIncomingMessages() {
+    public long getRegularMessages() {
         return num_incoming_msgs_received;
     }
 
-    @ManagedAttribute
-    public int getIncomingQueueSize() {
+    @ManagedAttribute(description="Number of messages in the default thread pool's queue")
+    public int getRegularQueueSize() {
         return thread_pool_queue.size();
     }
 
-    public int getIncomingMaxQueueSize() {
+    public int getRegularMaxQueueSize() {
         return thread_pool_queue_max_size;
     }
 
-    @ManagedAttribute
-    public int getIncomingActiveThreads() {
-        return thread_pool instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)thread_pool).getActiveCount() : 0;
-    }
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Number of timer tasks queued up for execution")
     public int getNumTimerTasks() {
         return timer != null? timer.size() : -1;
     }
 
-    public void setIncomingRejectionPolicy(String rejection_policy) {
+    public void setRegularRejectionPolicy(String rejection_policy) {
         RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));

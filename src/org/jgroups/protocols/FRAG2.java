@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.51 2009/09/21 09:57:25 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.52 2009/12/11 13:02:28 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -46,8 +46,7 @@ public class FRAG2 extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 1500 bytes")
-    @ManagedAttribute(description="Fragmentation size", writable=true)
+    @Property(description="The max number of bytes in a message. Larger messages will be fragmented")
     int frag_size=1500;
   
     /* --------------------------------------------- Fields ------------------------------------------------------ */

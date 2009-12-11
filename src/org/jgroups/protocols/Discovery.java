@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.69 2009/09/30 06:54:32 belaban Exp $
+ * @version $Id: Discovery.java,v 1.70 2009/12/11 12:58:38 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -48,25 +48,19 @@ public abstract class Discovery extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to wait for the initial members. Default is 3000 msec")
-    @ManagedAttribute(description="Timeout (ms) to wait for the initial members", writable=true)
     long timeout=3000;
 
     @Property(description="Minimum number of initial members to get a response from. Default is 2")
-    @ManagedAttribute(description="Minimum number of initial members to get a response from", writable=true)
     int num_initial_members=2;
 
     @Property(description="Minimum number of server responses (PingData.isServer()=true). If this value is " +
             "greater than 0, we'll ignore num_initial_members")
-    @ManagedAttribute(writable=true, description="Minimum number of server responses (PingData.isServer()=true). " +
-            "If this value is greater than 0, we'll ignore num_initial_members")
     int num_initial_srv_members=0;
 
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
-    @ManagedAttribute(writable=true, description="Return from the discovery phase as soon as we have 1 coordinator response")
     boolean break_on_coord_rsp=true;
 
     @Property(description="Number of discovery requests to be sent distributed over timeout. Default is 2")
-    @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " + "distributed over timeout ms", writable=true)
     int num_ping_requests=2;
 
     @Property(description="Whether or not to return the entire logical-physical address cache mappings on a " +

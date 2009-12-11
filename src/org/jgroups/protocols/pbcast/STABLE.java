@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.102 2009/12/09 12:28:30 belaban Exp $
+ * @version $Id: STABLE.java,v 1.103 2009/12/11 13:07:37 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -47,17 +47,14 @@ public class STABLE extends Protocol {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     /**
-     * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping
-     * of STABLE messages
+     * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping of STABLE messages
      */
-    @ManagedAttribute(writable=true)
     @Property(description="Average time to send a STABLE message. Default is 20000 msec")
     private long desired_avg_gossip=20000;
 
     /**
      * delay before we send STABILITY msg (give others a change to send first).
-     * This should be set to a very small number (> 0 !) if
-     * <code>max_bytes</code> is used
+     * This should be set to a very small number (> 0 !) if <code>max_bytes</code> is used
      */
     @Property(description="Delay before stability message is sent. Default is 6000 msec")
     private long stability_delay=6000;
@@ -69,7 +66,6 @@ public class STABLE extends Protocol {
      * ideally <code>stability_delay</code> should be set to a low number as
      * well
      */
-    @ManagedAttribute(writable=true)
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered. Default is 0 (disabled)")
     private long max_bytes=0;
 

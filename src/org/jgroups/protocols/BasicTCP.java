@@ -4,10 +4,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -23,38 +21,31 @@ public abstract class BasicTCP extends TP {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @ManagedAttribute(description="Reaper interval", writable=true)
     @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
     protected long reaper_interval=0; // time in msecs between connection reaps
 
-    @ManagedAttribute(description="Connection expiration time", writable=true)
-    @Property(description="Max time connection can be idle before being reaped")
+    @Property(description="Max time connection can be idle before being reaped (in ms)")
     protected long conn_expire_time=0; // max time a conn can be idle before being reaped
 
-    @Property(description="Should separate send queues be used for each connection. Default is true")
+    @Property(description="Should separate send queues be used for each connection")
     boolean use_send_queues=true;
     
-    @Property(description="Max number of messages in a send queue. Default is 10000 messages")
+    @Property(description="Max number of messages in a send queue")
     int send_queue_size=10000;
     
-    @Property(description="Receiver buffer size in bytes. Default is 150000 bytes")
-    @ManagedAttribute(writable=false)
+    @Property(description="Receiver buffer size in bytes")
     int recv_buf_size=150000;
     
-    @Property(description="Send buffer size in bytes. Default is 150000 bytes")
-    @ManagedAttribute(writable=false)
+    @Property(description="Send buffer size in bytes")
     int send_buf_size=150000;
     
-    @Property(description="Max time allowed for a socket creation in ConnectionTable. Default is 2000 msec")
-    @ManagedAttribute(writable=false)
+    @Property(description="Max time allowed for a socket creation in ConnectionTable")
     int sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
     
-    @Property(description="Max time to block on reading of peer address. Default is 1000 msec")
-    @ManagedAttribute(writable=false)
+    @Property(description="Max time to block on reading of peer address")
     int peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
-    @Property(description="Should TCP no delay flag be turned on. Default is false")
-    @ManagedAttribute(writable=false)
+    @Property(description="Should TCP no delay flag be turned on")
     boolean tcp_nodelay=false;
     
     @Property(description="SO_LINGER in msec. Default of -1 disables it")

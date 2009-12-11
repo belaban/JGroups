@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.conf.PropertyConverters;
@@ -21,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.54 2009/11/05 08:11:57 belaban Exp $
+ * @version $Id: MPING.java,v 1.55 2009/12/11 13:04:42 belaban Exp $
  */
 @DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
@@ -36,7 +35,6 @@ public class MPING extends PING implements Runnable {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @ManagedAttribute(description="Bind address for multicast socket", writable=true)
     @Property(description="Bind address for multicast socket", systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null;
@@ -46,17 +44,14 @@ public class MPING extends PING implements Runnable {
     protected String bind_interface_str=null;
  
 
-    @ManagedAttribute(description="Time to live for discovery packets", writable=true)
     @Property(description="Time to live for discovery packets. Default is 8", systemProperty=Global.MPING_IP_TTL)
     int ip_ttl=8;
 
-    @ManagedAttribute(description="Multicast address for discovery packets", writable=true)
     @Property(name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
               defaultValueIPv4="230.5.6.7", defaultValueIPv6="ff0e::5:6:7")
     InetAddress mcast_addr=null;
 
 
-    @ManagedAttribute(description="Multicast port for discovery packets", writable=true)
     @Property(description="Multicast port for discovery packets. Default is 7555", systemProperty=Global.MPING_MCAST_PORT)
     int mcast_port=7555;
 
@@ -120,22 +115,18 @@ public class MPING extends PING implements Runnable {
         this.bind_addr=bind_addr;
     }
 
-    @ManagedAttribute(description="Receive interfaces")
     public List<NetworkInterface> getReceiveInterfaces() {
         return receive_interfaces;
     }
 
-    @ManagedAttribute(description="Send interfaces")
     public List<NetworkInterface> getSendInterfaces() {
         return send_interfaces;
     }
 
-    @ManagedAttribute
     public boolean isReceiveOnAllInterfaces() {
         return receive_on_all_interfaces;
     }
 
-    @ManagedAttribute
     public boolean isSendOnAllInterfaces() {
         return send_on_all_interfaces;
     }
@@ -170,7 +161,7 @@ public class MPING extends PING implements Runnable {
 
 
 
-
+    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         if(evt.getType() == Event.CONFIG) {
             if(bind_addr == null) {

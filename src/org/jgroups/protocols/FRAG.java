@@ -36,7 +36,7 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.47 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: FRAG.java,v 1.48 2009/12/11 13:02:28 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -44,11 +44,9 @@ public class FRAG extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
-    @ManagedAttribute(description="Fragmentation size", writable=true)
     private int frag_size=8192; // conservative value
 
     @Property(description="The max size in bytes for the byte array output buffer")
-    @ManagedAttribute(description="The max size in bytes the byte array output buffer should be, " + "otherwise we keep memory occupied unnecessarily", writable=true)
     private int max_retained_buffer=70000;
 
     

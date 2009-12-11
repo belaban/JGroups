@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.35 2009/11/30 12:57:26 belaban Exp $
+// $Id: DISCARD.java,v 1.36 2009/12/11 12:58:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,10 +27,10 @@ import java.awt.event.ActionEvent;
  */
 @Unsupported
 public class DISCARD extends Protocol {
-    @Property @ManagedAttribute(writable=true)
+    @Property
     double up=0.0;    // probability of dropping up   msgs
 
-    @Property @ManagedAttribute(writable=true)
+    @Property
     double down=0.0;  // probability of dropping down msgs
 
     @Property

@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE2.java,v 1.78 2009/11/10 04:44:54 belaban Exp $
+ * @version $Id: MERGE2.java,v 1.79 2009/12/11 13:04:42 belaban Exp $
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -48,18 +48,13 @@ public class MERGE2 extends Protocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @ManagedAttribute(description="Minimum time between runs to discover other clusters", writable=true)
-    @Property(description="Lower bound in msec to run merge protocol. Default is 5000 msec")
+    @Property(description="Minimum time in msbetween runs to discover other clusters")
     protected long min_interval=5000;
     
-    @ManagedAttribute(description="Maximum time between runs to discover other clusters", writable=true)
-    @Property(description="Upper bound in msec to run merge protocol. Default is 20000 msec")
+    @Property(description="Maximum time in ms between runs to discover other clusters")
     protected long max_interval=20000;
 
-    /** Number of inconsistent  views with only 1 coord after a MERGE event is sent up */
     @Property(description="Number of inconsistent  views with only 1 coord after a MERGE event is sent up")
-    @ManagedAttribute(description="Number of inconsistent  views with only 1 coord after a MERGE event is sent up",
-                      writable=true)
     protected int inconsistent_view_threshold=1;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */

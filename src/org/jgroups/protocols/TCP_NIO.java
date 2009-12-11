@@ -5,6 +5,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.blocks.BasicConnectionTable;
 import org.jgroups.blocks.ConnectionTableNIO;
 
@@ -16,9 +17,9 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.29 2009/12/11 13:07:38 belaban Exp $
  */
-@Experimental
+@Experimental @Unsupported
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
 
@@ -87,19 +88,12 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
        super.stop();
    }
 
-   @ManagedAttribute
    public int getReaderThreads() { return reader_threads; }
-   @ManagedAttribute
    public int getWriterThreads() { return writer_threads; }
-   @ManagedAttribute
    public int getProcessorThreads() { return processor_threads; }
-   @ManagedAttribute
    public int getProcessorMinThreads() { return processor_minThreads;}
-   @ManagedAttribute
    public int getProcessorMaxThreads() { return processor_maxThreads;}
-   @ManagedAttribute
    public int getProcessorQueueSize() { return processor_queueSize; }
-   @ManagedAttribute
    public long getProcessorKeepAliveTime() { return processor_keepAliveTime; }
    @ManagedAttribute
    public int getOpenConnections()      {return ct.getNumConnections();}

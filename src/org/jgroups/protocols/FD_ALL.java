@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.30 2009/09/21 09:57:25 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.31 2009/12/11 13:01:40 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -33,12 +33,10 @@ public class FD_ALL extends Protocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Property(description="Interval in which a HEARTBEAT is sent to the cluster. Default is 3000 msec")
-    @ManagedAttribute(description="Interval in which a HEARTBEAT is sent to the cluster. Default is 3000 msec", writable=true)
+    @Property(description="Interval in which a HEARTBEAT is sent to the cluster")
     long interval=3000;
 
-    @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P. Default is 5000 msec")
-    @ManagedAttribute(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
+    @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
     long timeout=5000;
     
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +

@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.35 2009/09/28 15:54:46 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.36 2009/12/11 13:11:31 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -36,7 +36,6 @@ public class VIEW_SYNC extends Protocol {
     /* -----------------------------------------    Properties     --------------------------------------- */
 
     @Property(description="View synchronization interval. Default is 60 sec")
-    @ManagedAttribute(description="View synchronization interval. Default is 60 sec", writable=true)
     private long avg_send_interval=60000;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */

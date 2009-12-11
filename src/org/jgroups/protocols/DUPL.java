@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.stack.Protocol;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -10,7 +9,7 @@ import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.6 2009/11/20 14:06:00 belaban Exp $
+ * @version $Id: DUPL.java,v 1.7 2009/12/11 12:58:59 belaban Exp $
  */
 @Unsupported
 public class DUPL extends Protocol {
@@ -18,16 +17,16 @@ public class DUPL extends Protocol {
     private static enum Direction {UP,DOWN};
 
 
-    @Property @ManagedAttribute(description="Number of copies of each incoming message (0=no copies)",writable=true)
+    @Property(description="Number of copies of each incoming message (0=no copies)")
     protected int incoming_copies=1;
 
-    @Property @ManagedAttribute(description="Number of copies of each outgoing message (0=no copies)",writable=true)
+    @Property(description="Number of copies of each outgoing message (0=no copies)")
     protected int outgoing_copies=1;
 
-    @Property @ManagedAttribute(description="Whether or not to copy unicast messages",writable=true)
+    @Property(description="Whether or not to copy unicast messages")
     protected boolean copy_unicast_msgs=true;
 
-    @Property @ManagedAttribute(description="Whether or not to copy multicast messages",writable=true)
+    @Property(description="Whether or not to copy multicast messages")
     protected boolean copy_multicast_msgs=true;
 
 
