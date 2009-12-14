@@ -84,7 +84,7 @@ public class FLUSH extends Protocol {
      */
 
     @GuardedBy("sharedLock")
-    private View currentView;
+    private View currentView=new View(new ViewId(), new Vector<Address>());
 
     private Address localAddress;
 
@@ -96,21 +96,21 @@ public class FLUSH extends Protocol {
     private Address flushCoordinator;
 
     @GuardedBy("sharedLock")
-    private final List<Address> flushMembers;
+    private final List<Address> flushMembers=new ArrayList<Address>();
 
     private final AtomicInteger viewCounter = new AtomicInteger(0);
 
     @GuardedBy("sharedLock")
-    private final Map<Address, Digest> flushCompletedMap;
+    private final Map<Address, Digest> flushCompletedMap=new HashMap<Address, Digest>();
 
     @GuardedBy("sharedLock")
-    private final List<Address> flushNotCompletedMap;
+    private final List<Address> flushNotCompletedMap=new ArrayList<Address>();
 
     @GuardedBy("sharedLock")
-    private final Set<Address> suspected;
+    private final Set<Address> suspected=new TreeSet<Address>();
 
     @GuardedBy("sharedLock")
-    private final List<Address> reconcileOks;
+    private final List<Address> reconcileOks=new ArrayList<Address>();
 
     private final Object sharedLock = new Object();
 
@@ -139,13 +139,6 @@ public class FLUSH extends Protocol {
     private final AtomicBoolean sentUnblock = new AtomicBoolean(false);
 
     public FLUSH() {
-        super();
-        currentView = new View(new ViewId(), new Vector<Address>());
-        flushCompletedMap = new HashMap<Address, Digest>();
-        flushNotCompletedMap = new ArrayList<Address>();
-        reconcileOks = new ArrayList<Address>();
-        flushMembers = new ArrayList<Address>();
-        suspected = new TreeSet<Address>();
     }
 
 
@@ -357,7 +350,7 @@ public class FLUSH extends Protocol {
                         case FlushHeader.FLUSH_BYPASS:
                             return up_prot.up(evt);
                         case FlushHeader.START_FLUSH:
-                            Collection<? extends Address> fp = fh.flushParticipants;
+                            Collection<Address> fp = fh.flushParticipants;
 
                             boolean amIParticipant = (fp != null && fp.contains(localAddress))
                                             || msg.getSrc().equals(localAddress);
@@ -379,7 +372,7 @@ public class FLUSH extends Protocol {
                             onStopFlush();
                             break;
                         case FlushHeader.ABORT_FLUSH:
-                            Collection<? extends Address> flushParticipants = fh.flushParticipants;
+                            Collection<Address> flushParticipants = fh.flushParticipants;
 
                             if (flushParticipants != null && flushParticipants.contains(localAddress)) {
                                 if (log.isDebugEnabled()) {
@@ -852,7 +845,7 @@ public class FLUSH extends Protocol {
         ArrayList<Address> flushMembersCopy = null;
         synchronized (sharedLock) {
             boolean flushCoordinatorSuspected = address.equals(flushCoordinator);
-            if (flushCoordinatorSuspected && flushMembers != null) {
+            if (flushCoordinatorSuspected) {
                 int indexOfCoordinator = flushMembers.indexOf(flushCoordinator);
                 int myIndex = flushMembers.indexOf(localAddress);
                 int diff = myIndex - indexOfCoordinator;
@@ -919,7 +912,7 @@ public class FLUSH extends Protocol {
 
         long viewID;
 
-        Collection<? extends Address> flushParticipants;
+        Collection<Address> flushParticipants;
 
         Digest digest = null;
         private static final long serialVersionUID = -6248843990215637687L;
@@ -1005,11 +998,12 @@ public class FLUSH extends Protocol {
             Util.writeStreamable(digest, out);
         }
 
+        @SuppressWarnings("unchecked")
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
                         InstantiationException {
             type = in.readByte();
             viewID = in.readLong();
-            flushParticipants = Util.readAddresses(in, ArrayList.class);
+            flushParticipants =(Collection<Address>)Util.readAddresses(in, ArrayList.class);
             digest = (Digest) Util.readStreamable(Digest.class, in);
         }
     }
