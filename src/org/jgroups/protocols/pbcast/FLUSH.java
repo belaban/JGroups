@@ -844,7 +844,7 @@ public class FLUSH extends Protocol {
         boolean amINeighbourOfCrashedFlushCoordinator = false;
         ArrayList<Address> flushMembersCopy = null;
         synchronized (sharedLock) {
-            boolean flushCoordinatorSuspected = address.equals(flushCoordinator);
+            boolean flushCoordinatorSuspected = address != null && address.equals(flushCoordinator);
             if (flushCoordinatorSuspected) {
                 int indexOfCoordinator = flushMembers.indexOf(flushCoordinator);
                 int myIndex = flushMembers.indexOf(localAddress);
