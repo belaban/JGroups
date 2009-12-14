@@ -18,13 +18,13 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.16 2009/11/19 13:44:43 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.17 2009/12/14 08:14:24 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
     JChannel a, b, c; // A is the coordinator
     static final String GROUP="SequencerFailoverTest";
-    static final int NUM_MSGS=50;
+    static final int    NUM_MSGS=50;
     static final String props="sequencer.xml";
 
 
@@ -95,24 +95,23 @@ public class SequencerFailoverTest {
             System.out.print("sleeping for " + (i/1000) + " seconds (B: " + s2 + " msgs, C: " + s3 + " msgs)\r");
         }
         System.out.println("-- verifying messages on B and C");
-        verifyNumberOfMessages(NUM_MSGS, rb);
-        verifyNumberOfMessages(NUM_MSGS, rc);
+        List<Integer> list_b=rb.getList(), list_c=rc.getList();
+        System.out.println("B: " + list_b + "\nC: " + list_c);
+
+        assert list_b.size() == list_c.size();
+        System.out.println("OK: both B and C have the same number of messages (" + list_b.size() + ")");
+
+        assert list_b.size() == NUM_MSGS && list_c.size() == NUM_MSGS;
+        System.out.println("OK: both B and C have the expected number (" + NUM_MSGS + ") of messages");
+
+        System.out.println("verifying B and C have the same order");
+        for(int i=0; i < list_b.size(); i++) {
+            Integer el_b=list_b.get(i), el_c=list_c.get(i);
+            assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
+                    ") is different from element " + i + " in C (" + el_c + ")"; 
+        }
     }
 
-    private static void verifyNumberOfMessages(int num_msgs, MyReceiver receiver) throws Exception {
-        List<Integer> msgs=receiver.getList();
-        int size=msgs.size();
-        assert num_msgs == size : "[" + receiver.name + "] list has " + size + " msgs (should have " + num_msgs + ")";
-        System.out.println("[" + receiver.name + "] list has " + size + " msgs: OK");
-        System.out.println("Verifying message order:");
-        int i=1;
-        for(Integer tmp: msgs) {
-            if(tmp != i)
-                throw new Exception("[" + receiver.name + "] expected msg #" + i + ", but got #" + tmp + ", msg list: " + msgs);
-            i++;
-        }
-        System.out.println("[" + receiver.name + "] message order is OK");
-    }
 
 
 
