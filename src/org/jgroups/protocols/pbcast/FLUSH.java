@@ -226,6 +226,10 @@ public class FLUSH extends Protocol {
         boolean successfulFlush = false;
         if (!flushInProgress.get()) {
             flush_promise.reset();
+            synchronized(sharedLock) {
+                if(flushParticipants == null)
+                    flushParticipants=new ArrayList<Address>(currentView.getMembers());
+            }
             onSuspend(flushParticipants);
             try {
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
