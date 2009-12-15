@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.32 2009/12/15 12:32:03 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.33 2009/12/15 12:49:26 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -100,10 +100,6 @@ public class SEQUENCER extends Protocol {
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
-                break;
-
-             case Event.SUSPECT:
-                System.out.println("DOWN: SUSPECT(" + evt.getArg() + ")");
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
