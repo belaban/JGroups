@@ -1,7 +1,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.9 2009/12/15 12:38:38 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.10 2009/12/15 12:39:14 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -98,13 +98,11 @@ now an alternative to TCP:TCPGOSSIP if running JGroups on Amazon EC2.
 
 
 
-
 RATE_LIMITER: new protocol to define the max speed at which a sender can send
 -----------------------------------------------------------------------------
 [https://jira.jboss.org/jira/browse/JGRP-1114]
 
 Very simple protocol to define the max throughput of a sender
-
 
 
 
