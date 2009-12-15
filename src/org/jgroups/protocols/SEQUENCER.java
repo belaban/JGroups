@@ -12,23 +12,22 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.31 2009/12/15 10:25:58 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.32 2009/12/15 12:32:03 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
-    private Address           local_addr=null, coord=null;
-    private volatile boolean  is_coord=false;
-    private AtomicLong        seqno=new AtomicLong(0);
+    private Address                    local_addr=null, coord=null;
+    private final Collection<Address>  members=new ArrayList<Address>();
+    private volatile boolean           is_coord=false;
+    private AtomicLong                 seqno=new AtomicLong(0);
 
     /** Maintains messages forwarded to the coord which which no ack has been received yet.
      * Needs to be sorted so we resend them in the right order
@@ -91,8 +90,8 @@ public class SEQUENCER extends Protocol {
                         broadcast(msg, false); // don't copy, just use the message passed as argument
                     }
                     else {
-                        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
-                        msg.putHeader(name, hdr);
+                        // SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
+                        // msg.putHeader(name, hdr);
                         forwardToCoord(msg, next_seqno);
                     }
                     return null; // don't pass down
@@ -101,6 +100,10 @@ public class SEQUENCER extends Protocol {
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
+                break;
+
+             case Event.SUSPECT:
+                System.out.println("DOWN: SUSPECT(" + evt.getArg() + ")");
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -136,19 +139,24 @@ public class SEQUENCER extends Protocol {
                         return null;
 
                     case SequencerHeader.BCAST:
-                        deliver(msg, hdr, false);  // deliver a copy and return (discard the original msg)
+                        deliver(msg, evt, hdr);
                         received_bcasts++;
                         return null;
 
                     case SequencerHeader.WRAPPED_BCAST:
-                        deliver(msg, hdr, true);  // unwrap the original message (in the payload) and deliver it
+                        unwrapAndDeliver(msg);  // unwrap the original message (in the payload) and deliver it
                         received_bcasts++;
                         return null;
                 }
                 break;
 
             case Event.VIEW_CHANGE:
+                Object retval=up_prot.up(evt);
                 handleViewChange((View)evt.getArg());
+                return retval;
+
+            case Event.SUSPECT:
+                handleSuspect((Address)evt.getArg());
                 break;
         }
 
@@ -160,19 +168,45 @@ public class SEQUENCER extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     private void handleViewChange(View v) {
-        Vector<Address> members=v.getMembers();
-        if(members.isEmpty()) return;
+        Vector<Address> mbrs=v.getMembers();
+        if(mbrs.isEmpty()) return;
+        boolean coord_changed=false;
 
-        Address prev_coord=coord;
-        coord=members.firstElement();
-        is_coord=local_addr != null && local_addr.equals(coord);
+        synchronized(this) {
+            members.clear();
+            members.addAll(mbrs);
+            Address prev_coord=coord;
+            coord=mbrs.firstElement();
+            is_coord=local_addr != null && local_addr.equals(coord);
+            coord_changed=prev_coord != null && !prev_coord.equals(coord);
+        }
 
-        boolean coord_changed=prev_coord != null && !prev_coord.equals(coord);
         if(coord_changed) {
             resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
         }
         // remove left members from received_table
-        received_table.retainAll(members);
+        received_table.retainAll(mbrs);
+    }
+
+    private void handleSuspect(Address suspected_mbr) {
+        boolean coord_changed=false;
+
+        if(suspected_mbr == null)
+            return;
+        
+        synchronized(this) {
+            List<Address> non_suspected_mbrs=new ArrayList<Address>(members);
+            non_suspected_mbrs.remove(suspected_mbr);
+            if(!non_suspected_mbrs.isEmpty()) {
+                Address prev_coord=coord;
+                coord=non_suspected_mbrs.get(0);
+                is_coord=local_addr != null && local_addr.equals(coord);
+                coord_changed=prev_coord != null && !prev_coord.equals(coord);
+            }
+        }
+        if(coord_changed) {
+            resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
+        }
     }
 
     /**
@@ -200,13 +234,6 @@ public class SEQUENCER extends Protocol {
             }
             down_prot.down(new Event(Event.MSG, forward_msg));
         }
-    }
-
-    private String print(Map<Long, byte[]> copy) {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Long,byte[]> entry: copy.entrySet())
-            sb.append(entry.getKey()).append(": ").append(entry.getValue().length + " bytes\n");
-        return sb.toString();
     }
 
 
@@ -253,48 +280,41 @@ public class SEQUENCER extends Protocol {
     }
 
     /**
-     * We copy the message in order to change the sender's address. If we did this on the original message,
-     * retransmission would likely run into problems, and possibly also stability (STABLE) of messages
+     * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
      * @param msg
-     * @param hdr
      */
-    private void deliver(Message msg, SequencerHeader hdr, boolean unwrap) {
-        if(unwrap) {
-            try {
-                hdr=(SequencerHeader)msg.getHeader(name);
-                long msg_seqno=hdr.getSeqno();
-                Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+    private void unwrapAndDeliver(final Message msg) {
+        try {
+            SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
+            Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            long msg_seqno=hdr.getSeqno();
+            if(!canDeliver(msg_to_deliver.getSrc(), msg_seqno))
+                return;
+            if(log.isTraceEnabled())
+                log.trace("delivering msg " + msg_to_deliver + " (seqno " + msg_seqno +
+                        "), original sender " + msg_to_deliver.getSrc());
 
-                if(!canDeliver(msg_to_deliver.getSrc(), msg_seqno))
-                    return;
-                if(log.isTraceEnabled())
-                    log.trace("delivering msg " + msg + " (seqno " + msg_seqno + "), original sender " + msg.getSrc());
-
-                up_prot.up(new Event(Event.MSG, msg_to_deliver));
-            }
-            catch(Exception e) {
-                log.error("failure unmarshalling buffer", e);
-            }
-            return;
+            up_prot.up(new Event(Event.MSG, msg_to_deliver));
         }
+        catch(Exception e) {
+            log.error("failure unmarshalling buffer", e);
+        }
+    }
 
 
-        Address original_sender=hdr.getOriginalSender();
-        if(original_sender == null) {
+    private void deliver(Message msg, Event evt, SequencerHeader hdr) {
+        Address sender=msg.getSrc();
+        if(sender == null) {
             if(log.isErrorEnabled())
-                log.error("original sender is null, cannot swap sender's address back to original sender");
+                log.error("sender is null, cannot deliver msg " + msg);
             return;
         }
         long msg_seqno=hdr.getSeqno();
-        if(!canDeliver(original_sender, msg_seqno))
+        if(!canDeliver(sender, msg_seqno))
             return;
         if(log.isTraceEnabled())
-            log.trace("delivering msg " + msg + " (seqno " + msg_seqno + "), original sender " + original_sender);
-
-        // pass a copy of the message up the stack
-        Message tmp=msg.copy(true);
-        tmp.setSrc(original_sender);
-        up_prot.up(new Event(Event.MSG, tmp));
+            log.trace("delivering msg " + msg + " (seqno " + msg_seqno + "), sender " + sender);
+        up_prot.up(evt);
     }
 
 
