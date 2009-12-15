@@ -1,7 +1,7 @@
 Release Notes JGroups 2.8
 =========================
 
-Version: $Id: ReleaseNotes-2.8.txt,v 1.8 2009/12/10 13:03:33 belaban Exp $
+Version: $Id: ReleaseNotes-2.8.txt,v 1.9 2009/12/15 12:38:38 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.8 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -95,6 +95,16 @@ S3_PING: discovery protocol using S3
 
 New discovery protocol, similar to FILE_PING, but using an Amazon S3 bucket as shared storage. TCP:S3_PING is
 now an alternative to TCP:TCPGOSSIP if running JGroups on Amazon EC2.
+
+
+
+
+RATE_LIMITER: new protocol to define the max speed at which a sender can send
+-----------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1114]
+
+Very simple protocol to define the max throughput of a sender
+
 
 
 
