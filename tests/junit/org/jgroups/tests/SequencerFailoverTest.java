@@ -18,7 +18,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.17 2009/12/14 08:14:24 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.18 2009/12/15 09:02:49 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
@@ -110,6 +110,7 @@ public class SequencerFailoverTest {
             assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
                     ") is different from element " + i + " in C (" + el_c + ")"; 
         }
+        System.out.println("OK: B and C's message are in the same order");
     }
 
 
