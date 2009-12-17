@@ -27,7 +27,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.9 2009/11/20 13:23:26 bstansberry Exp $
+ * @version $Id: Util.java,v 1.105.2.10 2009/12/17 16:24:21 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -824,7 +824,7 @@ public class Util {
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];
-            in.read(buf, 0, buf.length);
+            in.readFully(buf, 0, buf.length);
             return buf;
         }
         return null;

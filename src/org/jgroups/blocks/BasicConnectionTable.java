@@ -507,7 +507,7 @@ public abstract class BasicConnectionTable {
                initCookie(input_cookie);
 
                // read the cookie first
-               in.read(input_cookie, 0, input_cookie.length);
+               in.readFully(input_cookie, 0, input_cookie.length);
                if(!matchCookie(input_cookie))
                    throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
                                              client_peer_addr + " does not match own cookie; terminating connection");

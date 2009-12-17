@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.53 2006/08/13 15:38:52 belaban Exp $
+// $Id: Message.java,v 1.53.2.1 2009/12/17 16:24:24 belaban Exp $
 
 package org.jgroups;
 
@@ -622,7 +622,7 @@ public class Message implements Externalizable, Streamable {
         if((leading & BUF_SET) == BUF_SET) {
             len=in.readInt();
             buf=new byte[len];
-            in.read(buf, 0, len);
+            in.readFully(buf, 0, len);
             length=len;
         }
 
