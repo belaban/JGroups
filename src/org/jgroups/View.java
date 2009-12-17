@@ -20,7 +20,7 @@ import java.util.Vector;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.18 2007/10/01 07:24:41 belaban Exp $
+ * @version $Id: View.java,v 1.18.2.1 2009/12/17 16:30:09 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -269,7 +269,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         short payloadLength=in.readShort();
         if(payloadLength > 0) {
             byte[] buffer=new byte[payloadLength];
-            in.read(buffer);
+            in.readFully(buffer);
             try {
                 payload=(Map<String, Object>)Util.objectFromByteBuffer(buffer);
             }

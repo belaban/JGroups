@@ -12,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.11 2006/12/31 06:17:01 belaban Exp $
+ * @version $Id: Data.java,v 1.11.4.1 2009/12/17 16:30:06 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;
@@ -86,7 +86,7 @@ public class Data implements Streamable {
         if(in.readBoolean()) {
             int length=in.readInt();
             payload=new byte[length];
-            in.read(payload, 0, length);
+            in.readFully(payload, 0, length);
         }
         sender=in.readBoolean();
         num_msgs=in.readLong();
