@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.13 2009/07/16 16:55:31 rachmatowicz Exp $
+ * @version $Id: Util.java,v 1.137.2.14 2009/12/17 16:30:05 belaban Exp $
  */
 public class Util {
 
@@ -776,7 +776,7 @@ public class Util {
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];
-            in.read(buf, 0, buf.length);
+            in.readFully(buf, 0, buf.length);
             return buf;
         }
         return null;
