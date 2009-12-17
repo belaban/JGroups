@@ -454,17 +454,7 @@ public abstract class BasicConnectionTable {
                }
                catch(IOException io_ex) {
                    if(log.isWarnEnabled())
-                       log.warn("peer closed connection, trying to re-send msg");
-                   try {
-                       doSend(data, offset, length);
-                       updateLastAccessed();
-                   }
-                   catch(IOException io_ex2) {
-                       if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
-                   }
-                   catch(Exception ex2) {
-                       if(log.isErrorEnabled()) log.error("exception is " + ex2);
-                   }
+                       log.warn("peer closed connection");
                }
                catch(InterruptedException iex) {}
                catch(Throwable ex) {
