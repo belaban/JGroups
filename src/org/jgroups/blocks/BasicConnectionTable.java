@@ -647,18 +647,14 @@ public abstract class BasicConnectionTable {
 
 
        public void run() {
-           byte[] buf=new byte[256]; // start with 256, increase as we go
-           int len=0;
-
            while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
                try {
                    if(in == null) {
                        if(log.isErrorEnabled()) log.error("input stream is null !");
                        break;
                    }
-                   len=in.readInt();
-                   if(len > buf.length)
-                       buf=new byte[len];
+                   int len=in.readInt();
+                   final byte[] buf=new byte[len];
                    in.readFully(buf, 0, len);
                    updateLastAccessed();
                    receive(peer_addr, buf, 0, len); // calls receiver.receive(msg)
