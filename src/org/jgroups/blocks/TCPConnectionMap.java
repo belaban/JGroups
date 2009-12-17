@@ -546,14 +546,11 @@ public class TCPConnectionMap{
             }
 
             public void run() {
-                byte[] buf=new byte[256]; // start with 256, increase as we go
-                int len=0;
 
                 while(!Thread.currentThread().isInterrupted() && isOpen()) {
                     try {                    
-                        len=in.readInt();
-                        if(len > buf.length)
-                            buf=new byte[len];
+                        int len=in.readInt();
+                        byte[] buf=new byte[len];
                         in.readFully(buf, 0, len);
                         updateLastAccessed();
                         receiver.receive(peer_addr, buf, 0, len);
