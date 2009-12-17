@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.242 2009/12/11 13:17:22 belaban Exp $
+ * @version $Id: Util.java,v 1.243 2009/12/17 16:37:20 belaban Exp $
  */
 public class Util {
 
@@ -671,7 +671,7 @@ public class Util {
             case TYPE_BYTEARRAY:
                 int len=in.readInt();
                 byte[] tmpbuf=new byte[len];
-                in.read(tmpbuf, 0, tmpbuf.length);
+                in.readFully(tmpbuf, 0, tmpbuf.length);
                 retval=tmpbuf;
                 break;
             default:
@@ -1124,7 +1124,7 @@ public class Util {
         if(length == -1)
             return null;
         byte[] tmp=new byte[length];
-        in.read(tmp, 0, tmp.length);
+        in.readFully(tmp, 0, tmp.length);
         return new String(tmp, 0, tmp.length);
     }
 
@@ -1216,7 +1216,7 @@ public class Util {
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];
-            in.read(buf, 0, buf.length);
+            in.readFully(buf, 0, buf.length);
             return buf;
         }
         return null;

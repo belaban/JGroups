@@ -21,7 +21,7 @@ import java.util.Collection;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.23 2009/06/30 07:51:25 belaban Exp $
+ * @version $Id: View.java,v 1.24 2009/12/17 16:37:19 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -294,7 +294,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         short payloadLength=in.readShort();
         if(payloadLength > 0) {
             byte[] buffer=new byte[payloadLength];
-            in.read(buffer);
+            in.readFully(buffer);
             try {
                 payload=(Map<String, Object>)Util.objectFromByteBuffer(buffer);
             }

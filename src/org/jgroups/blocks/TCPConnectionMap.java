@@ -476,7 +476,7 @@ public class TCPConnectionMap{
             try {              
                 // read the cookie first
                 byte[] input_cookie=new byte[cookie.length];
-                in.read(input_cookie, 0, input_cookie.length);
+                in.readFully(input_cookie, 0, input_cookie.length);
                 if(!matchCookie(input_cookie))
                     throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie read by " + getLocalAddress()
                                               + " does not match own cookie; terminating connection");
