@@ -5,7 +5,7 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.8 2009/11/03 08:14:54 belaban Exp $
+  Version: $Id: fast-local.xml,v 1.9 2009/12/18 14:50:00 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -63,8 +63,8 @@
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 
                 view_bundling="true"/>
-    <FC max_credits="1000000"
-                    min_threshold="0.20"/>
+    <FC max_credits="1M"
+        min_threshold="0.20"/>
     <FRAG2 frag_size="60000"  />
     <!--pbcast.STREAMING_STATE_TRANSFER /-->
     <pbcast.STATE_TRANSFER  />
