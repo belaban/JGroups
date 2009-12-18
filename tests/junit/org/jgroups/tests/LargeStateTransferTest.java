@@ -24,7 +24,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.23 2009/12/17 16:37:21 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.24 2009/12/18 10:32:08 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -84,11 +84,11 @@ public class LargeStateTransferTest extends ChannelTestBase {
         start=System.currentTimeMillis();
         boolean rc=requester.getState(provider.getAddress(), 20000);
         log.info("getState(): result=" + rc);
-        Object result=p.getResult(10000);
+        int result=p.getResult(10000);
         stop=System.currentTimeMillis();
         log("result=" + result + " bytes (in " + (stop-start) + "ms)");
         assertNotNull(result);
-        assertEquals(result, new Integer(size));
+        assert result == size : "result=" + result + ", expected=" + size;
     }
 
 
@@ -114,7 +114,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
 
     private  class Provider extends ExtendedReceiverAdapter {
-        byte[] state;
+        private final byte[] state;
 
         public Provider(int size) {
             state=new byte[size];
@@ -129,15 +129,15 @@ public class LargeStateTransferTest extends ChannelTestBase {
         }
         
         public void getState(OutputStream ostream){      
-            ObjectOutputStream oos =null;
+            DataOutputStream out =null;
             try{
-               oos=new ObjectOutputStream(ostream);
-               oos.writeInt(state.length); 
-               oos.write(state);
+               out=new DataOutputStream(ostream);
+               out.writeInt(state.length);
+               out.write(state, 0, state.length);
             }
             catch (IOException e){}
             finally{
-               Util.close(ostream);
+               Util.close(out);
             }
         }
         public void setState(byte[] state) {
@@ -146,11 +146,11 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private  class Requester extends ExtendedReceiverAdapter {
-        Promise<Integer> p;
+    private class Requester extends ExtendedReceiverAdapter {
+        private final Promise<Integer> promise;
 
         public Requester(Promise<Integer> p) {
-            this.p=p;
+            this.promise=p;
         }
 
         public void viewAccepted(View new_view) {
@@ -162,22 +162,22 @@ public class LargeStateTransferTest extends ChannelTestBase {
         }
 
         public void setState(byte[] state) {
-            p.setResult(new Integer(state.length));
+            promise.setResult(new Integer(state.length));
         }
         public void setState(InputStream istream) {
-            ObjectInputStream ois=null;
+            DataInputStream in=null;
             int size=0;
-            try{
-               ois= new ObjectInputStream(istream);
-               size = ois.readInt();
-               byte []stateReceived= new byte[size];
-               ois.readFully(stateReceived);
+            try {
+                in=new DataInputStream(istream);
+                size=in.readInt();
+                byte[] stateReceived=new byte[size];
+                in.readFully(stateReceived, 0, stateReceived.length);
             }
             catch (IOException e) {}
             finally {
-               Util.close(ois);
+                Util.close(in);
             }
-            p.setResult(new Integer(size));
+            promise.setResult(size);
         }
     }
 
