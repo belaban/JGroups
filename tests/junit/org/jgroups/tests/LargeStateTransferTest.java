@@ -24,7 +24,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.26 2009/12/18 11:19:50 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.27 2009/12/18 11:20:54 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -126,10 +126,6 @@ public class LargeStateTransferTest extends ChannelTestBase {
             return state;
         }
 
-        public void viewAccepted(View new_view) {
-            // log("[provider] new_view = " + new_view);
-        }
-        
         public void getState(OutputStream ostream){      
             DataOutputStream out =null;
             try{
@@ -153,10 +149,6 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
         public Requester(Promise<Integer> p) {
             this.promise=p;
-        }
-
-        public void viewAccepted(View new_view) {
-            log("[requester] new_view = " + new_view);
         }
 
         public byte[] getState() {
