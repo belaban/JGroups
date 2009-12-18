@@ -24,7 +24,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.24 2009/12/18 10:32:08 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.25 2009/12/18 10:51:27 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
