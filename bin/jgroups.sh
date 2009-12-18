@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.13 2009/12/10 08:45:11 belaban Exp $
+# version: $Id: jgroups.sh,v 1.14 2009/12/18 12:27:01 belaban Exp $
 
 #!/bin/bash
 
@@ -25,10 +25,10 @@ if [ -f $HOME/log4j.properties ]; then
 fi;
 
 JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
+JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
 FLAGS="-server -Xmx600M -Xms600M -Xmn500M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
-FLAGS="$FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
 FLAGS="$FLAGS -Xshare:off -XX:+UseBiasedLocking"
 JMX="-Dcom.sun.management.jmxremote"
 EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB -XX:+DoEscapeAnalysis"
