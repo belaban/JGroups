@@ -24,14 +24,13 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.25 2009/12/18 10:51:27 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.26 2009/12/18 11:19:50 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
-    JChannel provider, requester;
-    Promise<Integer> p=new Promise<Integer>();    
-    long start, stop;
-    final static int SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
+    JChannel          provider, requester;
+    Promise<Integer>  p=new Promise<Integer>();
+    final static int  SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
 
     protected boolean useBlocking() {
@@ -42,8 +41,10 @@ public class LargeStateTransferTest extends ChannelTestBase {
     @BeforeMethod
     protected void setUp() throws Exception {
         provider=createChannel(true, 2);
+        provider.setName("provider");
         modifyStack(provider);
         requester=createChannel(provider);
+        requester.setName("requester");
         setOOBPoolSize(provider, requester);
     }
 
@@ -78,16 +79,17 @@ public class LargeStateTransferTest extends ChannelTestBase {
         p.reset();
         requester.setReceiver(new Requester(p));
         requester.connect(GROUP);
-        View view=requester.getView();
-        assert view.size() == 2 : "view is " + view + ", but should have 2 members";
-        log("requesting state of " + size + " bytes");
-        start=System.currentTimeMillis();
-        boolean rc=requester.getState(provider.getAddress(), 20000);
-        log.info("getState(): result=" + rc);
-        int result=p.getResult(10000);
-        stop=System.currentTimeMillis();
-        log("result=" + result + " bytes (in " + (stop-start) + "ms)");
+        View requester_view=requester.getView();
+        assert requester_view.size() == 2 : "requester view is " + requester_view + ", but should have 2 members";
+        View provider_view=provider.getView();
+        assert provider_view.size() == 2 : "provider view is " + provider_view + ", but should have 2 members";
+        log("requesting state of " + Util.printBytes(size));
+        long start=System.currentTimeMillis();
+        requester.getState(provider.getAddress(), 20000);
+        Integer result=p.getResult(20000);
+        long stop=System.currentTimeMillis();
         assertNotNull(result);
+        log("received " + Util.printBytes(result) + " (in " + (stop-start) + "ms)");
         assert result == size : "result=" + result + ", expected=" + size;
     }
 
@@ -101,8 +103,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    void log(String msg) {
-        log.info(Thread.currentThread() + " -- "+ msg);
+    static void log(String msg) {
+        System.out.println(" -- "+ msg);
     }
 
     private static void modifyStack(JChannel ch) {
@@ -113,7 +115,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private  class Provider extends ExtendedReceiverAdapter {
+    private static class Provider extends ExtendedReceiverAdapter {
         private final byte[] state;
 
         public Provider(int size) {
@@ -125,7 +127,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            log.info("[provider] new_view = " + new_view);
+            // log("[provider] new_view = " + new_view);
         }
         
         public void getState(OutputStream ostream){      
@@ -146,7 +148,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private class Requester extends ExtendedReceiverAdapter {
+    private static class Requester extends ExtendedReceiverAdapter {
         private final Promise<Integer> promise;
 
         public Requester(Promise<Integer> p) {
