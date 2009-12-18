@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.243 2009/12/17 16:37:20 belaban Exp $
+ * @version $Id: Util.java,v 1.244 2009/12/18 10:40:28 belaban Exp $
  */
 public class Util {
 
@@ -425,7 +425,7 @@ public class Util {
                     in=new DataInputStream(in_stream);
                     int len=((DataInputStream)in).readInt();
                     byte[] tmp=new byte[len];
-                    in.read(tmp, 0, tmp.length);
+                    ((DataInputStream)in).readFully(tmp, 0, tmp.length);
                     retval=tmp;
                     break;
                 default:
