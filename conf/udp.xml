@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.38 2009/12/11 13:12:08 belaban Exp $
+  version: $Id: udp.xml,v 1.39 2009/12/18 09:28:30 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -12,13 +12,13 @@
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
-         ucast_recv_buf_size="20000000"
-         ucast_send_buf_size="640000"
-         mcast_recv_buf_size="25000000"
-         mcast_send_buf_size="640000"
+         ucast_recv_buf_size="20M"
+         ucast_send_buf_size="640K"
+         mcast_recv_buf_size="25M"
+         mcast_send_buf_size="640K"
          loopback="false"
          discard_incompatible_packets="true"
-         max_bundle_size="64000"
+         max_bundle_size="64K"
          max_bundle_timeout="30"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_bundling="true"
@@ -57,13 +57,13 @@
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="1000000"/>
+                   max_bytes="1M"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
 
                 view_bundling="true"/>
-    <FC max_credits="500000"
+    <FC max_credits="500K"
                     min_threshold="0.20"/>
-    <FRAG2 frag_size="60000"  />
+    <FRAG2 frag_size="60K"  />
     <!--pbcast.STREAMING_STATE_TRANSFER /-->
     <pbcast.STATE_TRANSFER  />
     <!-- pbcast.FLUSH  /-->
