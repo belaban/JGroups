@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.4 2009/12/22 17:01:30 belaban Exp $
+ * @version $Id: GridFile.java,v 1.5 2009/12/22 17:23:38 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -105,6 +105,19 @@ public class GridFile extends File {
     public File[] listFiles(FileFilter filter) {
         return _listFiles(filter);
     }
+
+
+    public boolean isDirectory() {
+        Metadata val=cache.get(name);
+        return val.isDirectory();
+    }
+
+    public boolean isFile() {
+        Metadata val=cache.get(name);
+        return val.isFile();
+    }
+
+
 
 
     protected File[] _listFiles(Object filter) {
