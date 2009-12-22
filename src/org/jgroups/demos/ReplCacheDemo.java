@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * GUI demo of ReplCache
  * @author Bela Ban
- * @version $Id: ReplCacheDemo.java,v 1.17 2009/12/04 12:20:30 belaban Exp $
+ * @version $Id: ReplCacheDemo.java,v 1.18 2009/12/22 10:51:29 belaban Exp $
  */
 public class ReplCacheDemo extends JPanel implements ActionListener {
     private ReplCache<String,String> cache;
@@ -437,7 +437,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                         case 0:  return key;
                         case 1:
                             V value=tmp.getVal();
-                            return value instanceof byte[]? ((byte[])value).length + " bytes" : "n/a";
+                            return value instanceof byte[]? ((byte[])value).length + " bytes" : value;
                         case 2:  return tmp.getReplicationCount();
                         case 3:  return val.getTimeout();
                         default: return "n/a";
