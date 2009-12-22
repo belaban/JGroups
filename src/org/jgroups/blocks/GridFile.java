@@ -8,13 +8,12 @@ import java.io.IOException;
 import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.net.URI;
-import java.util.Date;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.2 2009/12/22 10:58:15 belaban Exp $
+ * @version $Id: GridFile.java,v 1.3 2009/12/22 16:29:06 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -24,28 +23,28 @@ public class GridFile extends File {
 
     public GridFile(String pathname, ReplCache<String, Metadata> cache, int chunk_size) {
         super(pathname);
-        this.name=pathname;
+        this.name=trim(pathname);
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
 
     public GridFile(String parent, String child, ReplCache<String, Metadata> cache, int chunk_size) {
         super(parent, child);
-        this.name=parent + File.separator + child;
+        this.name=trim(parent + File.separator + child);
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
 
     public GridFile(File parent, String child, ReplCache<String, Metadata> cache, int chunk_size) {
         super(parent, child);
-        this.name=parent.getAbsolutePath() + File.separator + child;
+        this.name=trim(parent.getAbsolutePath() + File.separator + child);
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
 
     public GridFile(URI uri, ReplCache<String, Metadata> cache, int chunk_size) {
         super(uri);
-        this.name=getAbsolutePath();
+        this.name=trim(getAbsolutePath());
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
@@ -82,7 +81,6 @@ public class GridFile extends File {
             return true;
         }
         catch(IOException e) {
-            e.printStackTrace();
             return false;
         }
     }
@@ -96,12 +94,34 @@ public class GridFile extends File {
         Set<String> keys=internal_cache.getInternalMap().keySet();
         if(keys == null)
             return null;
-        String[] retval=new String[keys.size()];
-        int index=0;
+        Collection<String> list=new ArrayList<String>(keys.size());
         for(String str: keys) {
-            retval[index++]=str;
+            if(isChildOf(name, str))
+                list.add(str);
+            else
+                System.err.println("omitting " + str);
         }
+        String[] retval=new String[list.size()];
+        int index=0;
+        for(String tmp: list)
+            retval[index++]=tmp;
         return retval;
+    }
+
+    /**
+     * Verifies whether child is a child (dir or file) of parent
+     * @param parent
+     * @param child
+     * @return True if child is a child, false otherwise
+     */
+    protected static boolean isChildOf(String parent, String child) {
+        if(parent == null || child == null)
+            return false;
+        if(!child.startsWith(parent))
+            return false;
+        int from=parent.length();
+        String[] comps=components(child, from);
+        return comps == null || comps.length <= 1;
     }
 
     /**
@@ -112,7 +132,7 @@ public class GridFile extends File {
      * @return
      */
     private boolean checkParentDirs(String path, boolean create_if_absent) throws IOException {
-        String[] components=components(path);
+        String[] components=components(path, 0);
         if(components == null)
             return false;
         if(components.length == 1) // no parent directories to create, e.g. "data.txt"
@@ -134,20 +154,33 @@ public class GridFile extends File {
                     throw new IOException("cannot create " + path + " as component " + comp + " is a file");
             }
             else {
-                cache.put(comp, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+                if(create_if_absent)
+                    cache.put(comp, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+                else
+                    return false;
             }
         }
         return true;
     }
 
-    private static String[] components(String path) {
+    private static String[] components(String path, int from) {
         if(path == null)
             return null;
         path=path.trim();
-        int index=path.indexOf(File.separator);
-        if(index == 0)
-            path=path.substring(1);
+        int index=path.indexOf(File.separator, from);
+        if(index == from)
+            path=path.substring(from+1);
+        else if(index == -1)
+            return null;
         return path.split(File.separator);
+    }
+
+    protected static String trim(String str) {
+        if(str == null) return null;
+        str=str.trim();
+        while(str.lastIndexOf(separator) == str.length()-1)
+            str=str.substring(0, str.length()-1);
+        return str;
     }
 
     private boolean exists(String key) {
@@ -160,6 +193,8 @@ public class GridFile extends File {
     }
 
 
+
+    
     public static class Metadata implements Streamable {
         public static final byte FILE = 1 << 0;
         public static final byte DIR  = 1 << 1;
