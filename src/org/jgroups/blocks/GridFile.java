@@ -3,17 +3,14 @@ package org.jgroups.blocks;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
+import java.io.*;
 import java.net.URI;
 import java.util.*;
 
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.3 2009/12/22 16:29:06 belaban Exp $
+ * @version $Id: GridFile.java,v 1.4 2009/12/22 17:01:30 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -90,16 +87,49 @@ public class GridFile extends File {
     }
 
     public String[] list() {
+        return list(null);
+    }
+
+    public String[] list(FilenameFilter filter) {
+        return _list(filter);
+    }
+
+    public File[] listFiles() {
+        return listFiles((FilenameFilter)null);
+    }
+
+    public File[] listFiles(FilenameFilter filter) {
+        return _listFiles(filter);
+    }
+
+    public File[] listFiles(FileFilter filter) {
+        return _listFiles(filter);
+    }
+
+
+    protected File[] _listFiles(Object filter) {
+        String[] files=_list(filter);
+        File[] retval=new File[files.length];
+        for(int i=0; i < files.length; i++)
+            retval[i]=new GridFile(files[i], cache, chunk_size);
+        return retval;
+    }
+
+
+    protected String[] _list(Object filter) {
         Cache<String, ReplCache.Value<Metadata>> internal_cache=cache.getL2Cache();
         Set<String> keys=internal_cache.getInternalMap().keySet();
         if(keys == null)
             return null;
         Collection<String> list=new ArrayList<String>(keys.size());
         for(String str: keys) {
-            if(isChildOf(name, str))
+            if(isChildOf(name, str)) {
+                if(filter instanceof FilenameFilter &&  !((FilenameFilter)filter).accept(new File(name), filename(str)))
+                    continue;
+                else if(filter instanceof FileFilter && !((FileFilter)filter).accept(new File(str)))
+                    continue;
                 list.add(str);
-            else
-                System.err.println("omitting " + str);
+            }
         }
         String[] retval=new String[list.size()];
         int index=0;
@@ -122,6 +152,11 @@ public class GridFile extends File {
         int from=parent.length();
         String[] comps=components(child, from);
         return comps == null || comps.length <= 1;
+    }
+
+    protected static String filename(String full_path) {
+        String[] comps=components(full_path, 0);
+        return comps != null? comps[comps.length -1] : null;
     }
 
     /**
