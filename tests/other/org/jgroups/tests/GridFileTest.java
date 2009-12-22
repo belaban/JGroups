@@ -5,11 +5,12 @@ import org.jgroups.blocks.GridFile;
 import org.jgroups.blocks.Cache;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFileTest.java,v 1.2 2009/12/22 16:29:05 belaban Exp $
+ * @version $Id: GridFileTest.java,v 1.3 2009/12/22 17:01:28 belaban Exp $
  */
 public class GridFileTest {
 
@@ -57,6 +58,12 @@ public class GridFileTest {
             File f2=new GridFile(subdir, name, cache, chunk_size);
             f2.createNewFile();
         }
+
+        /*String[] list=file.list(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name != null && name.endsWith("txt");
+            }
+        });*/
 
         String[] list=file.list();
         if(list != null) {
