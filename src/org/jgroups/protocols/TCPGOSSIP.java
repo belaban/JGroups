@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.48 2009/12/11 13:10:09 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.49 2009/12/22 09:02:01 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -101,6 +101,13 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
         stopReconnector();
 	}
 
+    public void destroy() {
+        for(RouterStub stub : stubs) {
+            stub.destroy();
+        }
+        super.destroy();
+    }
+
     public void handleConnect() {
         if(group_addr == null || local_addr == null) {
             if(log.isErrorEnabled())
@@ -109,7 +116,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
         else {
             if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
-             
+            for(RouterStub stub: stubs) // if there are any stubs, destroy them
+                stub.destroy();
             stubs.clear();
             
             for (InetSocketAddress host : initial_hosts) {
@@ -127,6 +135,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
     	for (RouterStub stub : stubs) {
 			try {
 				stub.disconnect(group_addr, local_addr);
+                stub.destroy();
 			} 
 			catch (Exception e) {
 			}
