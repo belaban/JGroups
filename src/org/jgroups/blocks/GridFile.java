@@ -14,7 +14,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.1 2009/12/11 13:22:42 belaban Exp $
+ * @version $Id: GridFile.java,v 1.2 2009/12/22 10:58:15 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -209,8 +209,13 @@ public class GridFile extends File {
         }
 
         public String toString() {
-            return "length=" + length + " bytes, modification_time=" + new Date(modification_time) +
-                    ", chunk_size=" + chunk_size + ", type=" + getType();
+            boolean is_file=Util.isFlagSet(flags, FILE);
+            StringBuilder sb=new StringBuilder();
+            sb.append(getType());
+            if(is_file)
+                sb.append(", len=" + Util.printBytes(length) + ", chunk_size=" + chunk_size);
+            sb.append(", mod_time=" + new Date(modification_time));
+            return sb.toString();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
