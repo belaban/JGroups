@@ -3,11 +3,12 @@ package org.jgroups.blocks;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.2 2009/12/23 14:08:27 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.3 2009/12/23 14:13:42 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
@@ -55,15 +56,21 @@ public class GridFilesystem {
         return new GridFile(parent, child, metadata, chunk_size);
     }
 
-    public OutputStream getOutput(String pathname) {
+    public OutputStream getOutput(String pathname) throws IOException {
         return getOutput(pathname, false);
     }
 
-    public OutputStream getOutput(String pathname, boolean append) {
+    public OutputStream getOutput(String pathname, boolean append) throws IOException {
         return getOutput(pathname, append, default_chunk_size);
     }
 
-    public OutputStream getOutput(String pathname, boolean append, int chunk_size) {
+    public OutputStream getOutput(String pathname, boolean append, int chunk_size) throws IOException {
+        GridFile file=(GridFile)getFile(pathname, chunk_size);
+        if(!file.createNewFile())
+            throw new IOException("creation of " + pathname + " failed");
+
+        // return new GridOutputStream(pathname, file, data, chunk_size);
+
         throw new UnsupportedOperationException();
     }
 
