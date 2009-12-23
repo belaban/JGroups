@@ -1,43 +1,58 @@
 package org.jgroups.blocks;
 
 import java.io.File;
-import java.io.OutputStream;
 import java.io.InputStream;
-import java.net.URI;
+import java.io.OutputStream;
 
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.1 2009/12/23 13:38:47 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.2 2009/12/23 14:08:27 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
     protected final ReplCache<String,GridFile.Metadata>  metadata;
+    protected final int default_chunk_size;
+
+
+    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata) {
+        this(data, metadata, 4000);
+    }
 
     /**
      * Creates an instance. The data and metadata caches should already have been setup and started
      * @param data
      * @param metadata
+     * @param default_chunk_size
      */
-    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata) {
+    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata, int default_chunk_size) {
         this.data=data;
         this.metadata=metadata;
+        this.default_chunk_size=default_chunk_size;
     }
 
     public File getFile(String pathname) {
-        throw new UnsupportedOperationException();
+        return getFile(pathname, default_chunk_size);
+    }
+
+    public File getFile(String pathname, int chunk_size) {
+        return new GridFile(pathname, metadata, chunk_size);
     }
 
     public File getFile(String parent, String child) {
-        throw new UnsupportedOperationException();
+        return getFile(parent, child, default_chunk_size);
+    }
+
+    public File getFile(String parent, String child, int chunk_size) {
+        return new GridFile(parent, child, metadata, chunk_size);
     }
 
     public File getFile(File parent, String child) {
-        throw new UnsupportedOperationException();
+        return getFile(parent, child, default_chunk_size);
     }
 
-    public File getFile(URI uri) {
-        throw new UnsupportedOperationException();
+    public File getFile(File parent, String child, int chunk_size) {
+        return new GridFile(parent, child, metadata, chunk_size);
     }
 
     public OutputStream getOutput(String pathname) {
@@ -45,10 +60,18 @@ public class GridFilesystem {
     }
 
     public OutputStream getOutput(String pathname, boolean append) {
+        return getOutput(pathname, append, default_chunk_size);
+    }
+
+    public OutputStream getOutput(String pathname, boolean append, int chunk_size) {
         throw new UnsupportedOperationException();
     }
 
     public OutputStream getOutput(File file) {
+        return getOutput(file, default_chunk_size);
+    }
+
+    public OutputStream getOutput(File file, int chunk_size) {
         throw new UnsupportedOperationException();
     }
 
