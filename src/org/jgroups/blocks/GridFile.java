@@ -4,13 +4,15 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Set;
 
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.5 2009/12/22 17:23:38 belaban Exp $
+ * @version $Id: GridFile.java,v 1.6 2009/12/23 14:08:19 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -39,12 +41,6 @@ public class GridFile extends File {
         this.chunk_size=chunk_size;
     }
 
-    public GridFile(URI uri, ReplCache<String, Metadata> cache, int chunk_size) {
-        super(uri);
-        this.name=trim(getAbsolutePath());
-        this.cache=cache;
-        this.chunk_size=chunk_size;
-    }
 
     public boolean createNewFile() throws IOException {
         if(exists())
