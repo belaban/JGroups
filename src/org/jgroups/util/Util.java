@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.244 2009/12/18 10:40:28 belaban Exp $
+ * @version $Id: Util.java,v 1.245 2009/12/23 08:22:39 belaban Exp $
  */
 public class Util {
 
@@ -3928,8 +3928,19 @@ public class Util {
         }
     }
 
-}
+    /**
+     * Runs a task on a separate thread
+     * @param task
+     * @param factory
+     * @param group
+     * @param thread_name
+     */
+    public static void runAsync(Runnable task, ThreadFactory factory, ThreadGroup group, String thread_name) {
+        Thread thread=factory.newThread(group, task, thread_name);
+        thread.start();
+    }
 
+}
 
 
 
