@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.4 2009/12/08 08:14:31 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.5 2009/12/23 13:01:32 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
@@ -88,7 +88,7 @@ public class GridOutputStream extends OutputStream {
 
     public void flush() throws IOException {
         int chunk_number=getChunkNumber();
-        String key=name + "#" + chunk_number;
+        String key=name + "." + chunk_number + ".#chunk";
         byte[] val=new byte[local_index];
         System.arraycopy(current_buffer, 0, val, 0, local_index);
         cache.put(key, val, repl_count, 0);

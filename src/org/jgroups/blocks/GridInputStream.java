@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStream.java,v 1.4 2009/12/08 08:14:31 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.5 2009/12/23 13:01:32 belaban Exp $
  */
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
@@ -105,7 +105,7 @@ public class GridInputStream extends InputStream {
 
     private byte[] fetchNextChunk() {
         int chunk_number=getChunkNumber();
-        String key=name + "#" + chunk_number;
+        String key=name + "." + chunk_number + ".#chunk";
         byte[] val= cache.get(key);
         if(log.isTraceEnabled())
             log.trace("fetching index=" + index + ", key=" + key +": " + (val != null? val.length + " bytes" : "null"));
