@@ -7,13 +7,13 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStream.java,v 1.5 2009/12/23 13:01:32 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.6 2009/12/28 13:15:34 belaban Exp $
  */
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
     final int                      chunk_size;
     final String                   name;
-
+    protected final GridFile       file; // file representing this input stream
     int                            index=0;                // index into the file for writing
     int                            local_index=0;
     byte[]                         current_buffer=null;
@@ -22,15 +22,11 @@ public class GridInputStream extends InputStream {
 
 
 
-    public GridInputStream(String name, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
+    GridInputStream(GridFile file, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
+        this.file=file;
+        this.name=file.getName();
         this.cache=cache;
         this.chunk_size=chunk_size;
-        this.name=name;
-    }
-
-
-    public GridInputStream(File file, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
-        this(file.getName(), cache, chunk_size);
     }
 
 
