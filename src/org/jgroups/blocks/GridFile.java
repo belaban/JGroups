@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.7 2009/12/28 13:15:34 belaban Exp $
+ * @version $Id: GridFile.java,v 1.8 2009/12/28 16:30:40 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -167,7 +167,7 @@ public class GridFile extends File {
             return false;
         int from=parent.length();
         String[] comps=components(child, from);
-        return comps == null || comps.length <= 1;
+        return comps != null && comps.length <= 1;
     }
 
     protected static String filename(String full_path) {
