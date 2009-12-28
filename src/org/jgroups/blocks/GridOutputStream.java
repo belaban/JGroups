@@ -7,39 +7,31 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.5 2009/12/23 13:01:32 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.6 2009/12/28 13:15:34 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
     final short                    repl_count;
     final int                      chunk_size;
     final String                   name;
-
+    protected final GridFile       file; // file representing this output stream
     int                            index=0;                // index into the file for writing
     int                            local_index=0;
     final byte[]                   current_buffer;
     static final Log               log=LogFactory.getLog(GridOutputStream.class);
     
 
-    public GridOutputStream(String name, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
-        this(name, false, cache, repl_count, chunk_size);
-    }
-
-    public GridOutputStream(File file, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
-        this(file.getName(), false, cache, repl_count, chunk_size);
-    }
-
-    public GridOutputStream(String name, boolean append, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
-        this.name=name;
+    
+    GridOutputStream(GridFile file, boolean append, ReplCache<String,byte[]> cache,
+                     short repl_count, int chunk_size) throws FileNotFoundException {
+        this.file=file;
+        this.name=file.getName();
         this.cache=cache;
         this.repl_count=repl_count;
         this.chunk_size=chunk_size;
         current_buffer=new byte[chunk_size];
     }
 
-    public GridOutputStream(File file, boolean append, ReplCache<String,byte[]> cache, short repl_count, int chunk_size) throws FileNotFoundException {
-        this(file.getName(), append, cache, repl_count, chunk_size);
-    }
 
 
 

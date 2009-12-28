@@ -2,19 +2,24 @@ package org.jgroups.tests;
 
 import org.jgroups.blocks.ReplCache;
 import org.jgroups.blocks.GridInputStream;
+import org.jgroups.blocks.GridFile;
+import org.jgroups.blocks.GridFilesystem;
 import org.jgroups.util.Util;
 
 import java.io.FileOutputStream;
+import java.io.File;
+import java.io.InputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStreamTest.java,v 1.2 2009/12/04 16:27:59 belaban Exp $
+ * @version $Id: GridInputStreamTest.java,v 1.3 2009/12/28 13:15:33 belaban Exp $
  */
 public class GridInputStreamTest {
     
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
         String cluster_name="imfs-cluster";
+        String metadata_cluster_name="metadata-cluster";
         String input_file="/home/bela/tmp2.txt";
         String output_file=null;
 
@@ -27,6 +32,10 @@ public class GridInputStreamTest {
                 cluster_name=args[++i];
                 continue;
             }
+            if(args[i].equals("-metadata_cluster_name")) {
+                metadata_cluster_name=args[++i];
+                continue;
+            }
             if(args[i].equals("-output_file")) {
                 output_file=args[++i];
                 continue;
@@ -36,15 +45,24 @@ public class GridInputStreamTest {
                 continue;
             }
             System.out.println("GridInputStreamTest [-props <JGroups config>] [-cluster_name <cluster name] " +
+                    "[-metadata_cluster_name <name>] " +
                     "[-input_file <file to read from cluster>]" +
                     "[-output_file <path to file to write to file system>]");
             return;
         }
 
 
-        ReplCache<String,byte[]> cache=new ReplCache<String,byte[]>(props, cluster_name);
-        cache.start();
-        GridInputStream input=new GridInputStream(input_file, cache, 8000);
+        ReplCache<String,byte[]> data=new ReplCache<String,byte[]>(props, cluster_name);
+        ReplCache<String, GridFile.Metadata> metadata=new ReplCache<String, GridFile.Metadata>(props, metadata_cluster_name);
+        data.start();
+        metadata.start();
+
+        GridFilesystem file_system=new GridFilesystem(data, metadata);
+
+        // Create parent dir if it doesn't exist
+        File file=file_system.getFile(new File(input_file).getParent());
+        file.mkdirs();
+        InputStream input=file_system.getInput(input_file);
 
         FileOutputStream out=output_file != null?  new FileOutputStream(output_file) : null;
         byte[] buf=new byte[50000];
@@ -61,7 +79,8 @@ public class GridInputStreamTest {
         Util.close(input);
         Util.close(out);
 
-        cache.stop();
+        data.stop();
+        metadata.stop();
 
         double throughput=total_bytes / (diff / 1000.0);
         System.out.println("read " + Util.printBytes(total_bytes) + " bytes in " + diff + " ms, " +

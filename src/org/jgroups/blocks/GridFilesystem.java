@@ -1,24 +1,19 @@
 package org.jgroups.blocks;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.3 2009/12/23 14:13:42 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.4 2009/12/28 13:15:34 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
     protected final ReplCache<String,GridFile.Metadata>  metadata;
-    protected final int default_chunk_size;
+    protected final int                                  default_chunk_size;
+    protected final short                                default_repl_count;
 
 
-    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata) {
-        this(data, metadata, 4000);
-    }
 
     /**
      * Creates an instance. The data and metadata caches should already have been setup and started
@@ -26,10 +21,16 @@ public class GridFilesystem {
      * @param metadata
      * @param default_chunk_size
      */
-    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata, int default_chunk_size) {
+    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata,
+                          short default_repl_count, int default_chunk_size) {
         this.data=data;
         this.metadata=metadata;
         this.default_chunk_size=default_chunk_size;
+        this.default_repl_count=default_repl_count;
+    }
+
+    public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata) {
+        this(data, metadata, (short)1, 4000);
     }
 
     public File getFile(String pathname) {
@@ -57,33 +58,32 @@ public class GridFilesystem {
     }
 
     public OutputStream getOutput(String pathname) throws IOException {
-        return getOutput(pathname, false);
+        return getOutput(pathname, false, default_repl_count, default_chunk_size);
     }
 
     public OutputStream getOutput(String pathname, boolean append) throws IOException {
-        return getOutput(pathname, append, default_chunk_size);
+        return getOutput(pathname, append, default_repl_count, default_chunk_size);
     }
 
-    public OutputStream getOutput(String pathname, boolean append, int chunk_size) throws IOException {
+    public OutputStream getOutput(String pathname, boolean append, short repl_count, int chunk_size) throws IOException {
         GridFile file=(GridFile)getFile(pathname, chunk_size);
         if(!file.createNewFile())
             throw new IOException("creation of " + pathname + " failed");
 
-        // return new GridOutputStream(pathname, file, data, chunk_size);
-
-        throw new UnsupportedOperationException();
+        return new GridOutputStream(file, append, data, repl_count, chunk_size);
     }
 
-    public OutputStream getOutput(File file) {
-        return getOutput(file, default_chunk_size);
+    public OutputStream getOutput(GridFile file) throws IOException {
+        return new GridOutputStream(file, false, data, default_repl_count, default_chunk_size);
     }
+    
 
-    public OutputStream getOutput(File file, int chunk_size) {
-        throw new UnsupportedOperationException();
-    }
 
-    public InputStream getInput(String pathname) {
-        throw new UnsupportedOperationException();
+    public InputStream getInput(String pathname) throws FileNotFoundException {
+        GridFile file=(GridFile)getFile(pathname);
+        if(!file.exists())
+            throw new FileNotFoundException(pathname);
+        return new GridInputStream(file, data, default_chunk_size);
     }
 
     public InputStream getInput(File pathname) {

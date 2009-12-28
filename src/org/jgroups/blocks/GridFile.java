@@ -12,19 +12,20 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.6 2009/12/23 14:08:19 belaban Exp $
+ * @version $Id: GridFile.java,v 1.7 2009/12/28 13:15:34 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
     private final ReplCache<String,Metadata> cache;
     private final String name;
-    private final int chunk_size;
+    private int chunk_size;
 
     public GridFile(String pathname, ReplCache<String, Metadata> cache, int chunk_size) {
         super(pathname);
         this.name=trim(pathname);
         this.cache=cache;
         this.chunk_size=chunk_size;
+        initMetadata();
     }
 
     public GridFile(String parent, String child, ReplCache<String, Metadata> cache, int chunk_size) {
@@ -32,6 +33,7 @@ public class GridFile extends File {
         this.name=trim(parent + File.separator + child);
         this.cache=cache;
         this.chunk_size=chunk_size;
+        initMetadata();
     }
 
     public GridFile(File parent, String child, ReplCache<String, Metadata> cache, int chunk_size) {
@@ -39,6 +41,7 @@ public class GridFile extends File {
         this.name=trim(parent.getAbsolutePath() + File.separator + child);
         this.cache=cache;
         this.chunk_size=chunk_size;
+        initMetadata();
     }
 
 
@@ -113,7 +116,11 @@ public class GridFile extends File {
         return val.isFile();
     }
 
-
+    protected void initMetadata() {
+        Metadata metadata=cache.get(name);
+        if(metadata != null)
+            this.chunk_size=metadata.getChunkSize();
+    }
 
 
     protected File[] _listFiles(Object filter) {
