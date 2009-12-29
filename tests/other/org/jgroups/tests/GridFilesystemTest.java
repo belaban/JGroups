@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.4 2009/12/29 16:37:47 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.5 2009/12/29 17:20:40 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -216,8 +216,28 @@ public class GridFilesystemTest {
                 return;
             }
             for(String dir: dir_names) {
+                if(!dir.startsWith(File.separator))
+                    dir=current_dir.equals(File.separator)? current_dir + dir : current_dir + File.separator + dir;
                 File file=fs.getFile(dir);
-                file.delete();
+                if(!file.exists()) {
+                    System.err.println("'" + file.getName() + "' doesn't exist");
+                    return;
+                }
+                if(file.isFile()) {
+                    if(!file.delete())
+                        System.err.println("cannot remove '" + file.getName() + "'");
+                    return;
+                }
+
+                if(!recursive) {
+                    if(!file.delete())
+                        System.err.println("cannot remove '" + file.getName() + "': is a directory");
+                }
+                else {
+                    if(!delete((GridFile)file)) { // recursive delete
+                        System.err.println("recursive removal of " + file.getName() + " failed");
+                    }
+                }
             }
         }
 
@@ -287,6 +307,23 @@ public class GridFilesystemTest {
         for(String str: args)
             if(!str.startsWith("-"))
                 retval[cnt++]=str;
+        return retval;
+    }
+
+    private static boolean delete(File dir) {
+        boolean retval=true;
+        if(dir == null)
+            return false;
+        File[] files=dir.listFiles();
+        if(files != null) {
+            for(File file: files) {
+                if(!delete(file))
+                    retval=false;
+            }
+        }
+        boolean rc=dir instanceof GridFile? ((GridFile)dir).delete(true) : dir.delete();
+        if(!rc)
+            retval=false;
         return retval;
     }
 
