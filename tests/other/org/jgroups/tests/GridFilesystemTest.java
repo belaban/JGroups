@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.1 2009/12/28 16:30:39 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.2 2009/12/29 15:26:20 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -27,6 +27,7 @@ public class GridFilesystemTest {
         commands.put("ls",    new ls());
         commands.put("cd",    new cd());
         commands.put("pwd",   new pwd());
+        commands.put("rm",    new rm());
     }
 
     public static void main(String[] args) throws Exception {
@@ -149,6 +150,8 @@ public class GridFilesystemTest {
             if(files == null || files.length == 0)
                 files=new String[]{current_dir};
             for(String str: files) {
+                if(!str.startsWith(File.separator))
+                    str=current_dir + File.separator + str;
                 File file=fs.getFile(str);
                 if(!file.exists()) {
                     System.err.println("File " + file + " doesn't exist");
@@ -179,7 +182,7 @@ public class GridFilesystemTest {
             boolean recursive=options.contains("p");
             String[] dir_names=getNonOptions(args);
             if(dir_names == null || dir_names.length < 1) {
-                System.err.println("mkdir [-p] dirs");
+                System.err.println(help());
                 return;
             }
             for(String dir: dir_names) {
@@ -198,6 +201,28 @@ public class GridFilesystemTest {
 
         public String help() {
             return "mkdir [-p] dirs";
+        }
+    }
+
+
+    private static class rm implements Command {
+
+        public void execute(GridFilesystem fs, String[] args) {
+            String options=parseOptions(args);
+            boolean recursive=options.contains("r");
+            String[] dir_names=getNonOptions(args);
+            if(dir_names == null || dir_names.length < 1) {
+                System.err.println(help());
+                return;
+            }
+            for(String dir: dir_names) {
+                File file=fs.getFile(dir);
+                file.delete();
+            }
+        }
+
+        public String help() {
+            return "rm [-fr] <files or dirs>";
         }
     }
 

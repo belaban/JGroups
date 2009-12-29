@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.8 2009/12/28 16:30:40 belaban Exp $
+ * @version $Id: GridFile.java,v 1.9 2009/12/29 15:26:17 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -51,6 +51,22 @@ public class GridFile extends File {
         if(!checkParentDirs(name, false))
             return false;
         cache.put(name, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.FILE), (short)-1, 0);
+        return true;
+    }
+
+    public boolean delete() {
+        if(!exists())
+            return false;
+        if(isFile()) {
+            cache.remove(name);
+            return true;
+        }
+        if(isDirectory()) {
+            File[] files=listFiles();
+            if(files != null && files.length > 0)
+                return false;
+            cache.remove(name);
+        }
         return true;
     }
 
@@ -165,13 +181,17 @@ public class GridFile extends File {
             return false;
         if(!child.startsWith(parent))
             return false;
-        int from=parent.length();
-        String[] comps=components(child, from);
+        if(child.length() <= parent.length())
+            return false;
+        int from=parent.length() +1;
+        //  if(from-1 > child.length())
+            // return false;
+        String[] comps=Util.components(child.substring(from), File.separator);
         return comps != null && comps.length <= 1;
     }
 
     protected static String filename(String full_path) {
-        String[] comps=components(full_path, 0);
+        String[] comps=Util.components(full_path, File.separator);
         return comps != null? comps[comps.length -1] : null;
     }
 
@@ -183,13 +203,13 @@ public class GridFile extends File {
      * @return
      */
     private boolean checkParentDirs(String path, boolean create_if_absent) throws IOException {
-        String[] components=components(path, 0);
+        String[] components=Util.components(path, File.separator);
         if(components == null)
             return false;
         if(components.length == 1) // no parent directories to create, e.g. "data.txt"
             return true;
 
-        StringBuilder sb=new StringBuilder(File.separator);
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
 
         for(int i=0; i < components.length-1; i++) {
@@ -214,22 +234,12 @@ public class GridFile extends File {
         return true;
     }
 
-    private static String[] components(String path, int from) {
-        if(path == null)
-            return null;
-        path=path.trim();
-        int index=path.indexOf(File.separator, from);
-        if(index == from)
-            path=path.substring(from+1);
-        else if(index == -1)
-            return null;
-        return path.split(File.separator);
-    }
+
 
     protected static String trim(String str) {
         if(str == null) return null;
         str=str.trim();
-        while(str.lastIndexOf(separator) == str.length()-1)
+        while(str.lastIndexOf(separator) == str.length()-1 && str.length() > 0)
             str=str.substring(0, str.length()-1);
         return str;
     }
