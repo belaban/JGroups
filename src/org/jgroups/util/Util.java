@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.245 2009/12/23 08:22:39 belaban Exp $
+ * @version $Id: Util.java,v 1.246 2009/12/29 15:26:19 belaban Exp $
  */
 public class Util {
 
@@ -1773,6 +1773,29 @@ public class Util {
                 retval.add(input.substring(index, end));
         }
         return retval;
+    }
+
+
+    public static String[] components(String path, String separator) {
+        if(path == null || path.length() == 0)
+            return null;
+        String[] tmp=path.split(separator + "+"); // multiple separators could be present
+        if(tmp == null)
+            return null;
+        if(tmp.length == 0)
+            return null;
+
+        if(tmp[0].length() == 0) {
+            tmp[0]=separator;
+            if(tmp.length > 1) {
+                String[] retval=new String[tmp.length -1];
+                retval[0]=tmp[0] + tmp[1];
+                System.arraycopy(tmp, 2, retval, 1, tmp.length-2);
+                return retval;
+            }
+            return tmp;
+        }
+        return tmp;
     }
 
 
