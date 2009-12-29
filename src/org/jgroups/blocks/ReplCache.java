@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.25 2009/12/08 08:41:14 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.26 2009/12/29 17:20:39 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -438,9 +438,19 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
      */
     @ManagedOperation
     public void remove(K key) {
+        remove(key, false); // by default we use asynchronous removals
+    }
+
+
+    /**
+     * Removes key in all nodes in the cluster, both from their local hashmaps and L1 caches
+     * @param key The key, needs to be serializable
+     */
+    @ManagedOperation
+    public void remove(K key, boolean synchronous) {
         try {
             disp.callRemoteMethods(null, new MethodCall(REMOVE, new Object[]{key}),
-                                   GroupRequest.GET_NONE, call_timeout);
+                                   synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE, call_timeout);
             if(l1_cache != null)
                 l1_cache.remove(key);
         }
@@ -449,6 +459,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                 log.warn("remove() failed", t);
         }
     }
+
 
     /**
      * Removes all keys and values in the L2 and L1 caches

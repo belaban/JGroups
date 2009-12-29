@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.11 2009/12/29 16:37:46 belaban Exp $
+ * @version $Id: GridFile.java,v 1.12 2009/12/29 17:20:39 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -69,6 +69,22 @@ public class GridFile extends File {
             if(files != null && files.length > 0)
                 return false;
             cache.remove(getPath());
+        }
+        return true;
+    }
+
+    public boolean delete(boolean synchronous) {
+        if(!exists())
+            return false;
+        if(isFile()) {
+            cache.remove(getPath(), synchronous);
+            return true;
+        }
+        if(isDirectory()) {
+            File[] files=listFiles();
+            if(files != null && files.length > 0)
+                return false;
+            cache.remove(getPath(), synchronous);
         }
         return true;
     }
