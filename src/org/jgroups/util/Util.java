@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.246 2009/12/29 15:26:19 belaban Exp $
+ * @version $Id: Util.java,v 1.247 2009/12/29 16:11:15 belaban Exp $
  */
 public class Util {
 
@@ -1776,7 +1776,7 @@ public class Util {
     }
 
 
-    public static String[] components(String path, String separator) {
+   /* public static String[] components(String path, String separator) {
         if(path == null || path.length() == 0)
             return null;
         String[] tmp=path.split(separator + "+"); // multiple separators could be present
@@ -1796,8 +1796,22 @@ public class Util {
             return tmp;
         }
         return tmp;
-    }
+    }*/
 
+
+     public static String[] components(String path, String separator) {
+        if(path == null || path.length() == 0)
+            return null;
+        String[] tmp=path.split(separator + "+"); // multiple separators could be present
+        if(tmp == null)
+            return null;
+        if(tmp.length == 0)
+            return null;
+
+        if(tmp[0].length() == 0)
+            tmp[0]=separator;
+        return tmp;
+    }
 
     /**
      Fragments a byte buffer into smaller fragments of (max.) frag_size.

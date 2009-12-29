@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.2 2009/12/29 15:26:20 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.3 2009/12/29 16:11:16 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();

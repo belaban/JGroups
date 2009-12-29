@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.9 2009/12/29 15:26:17 belaban Exp $
+ * @version $Id: GridFile.java,v 1.10 2009/12/29 16:11:14 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -44,6 +44,9 @@ public class GridFile extends File {
         initMetadata();
     }
 
+    public String getName() {
+        return name;
+    }
 
     public boolean createNewFile() throws IOException {
         if(exists())
@@ -183,7 +186,7 @@ public class GridFile extends File {
             return false;
         if(child.length() <= parent.length())
             return false;
-        int from=parent.length() +1;
+        int from=parent.length();
         //  if(from-1 > child.length())
             // return false;
         String[] comps=Util.components(child.substring(from), File.separator);
@@ -214,10 +217,12 @@ public class GridFile extends File {
 
         for(int i=0; i < components.length-1; i++) {
             String tmp=components[i];
-            if(first)
-                first=false;
-            else
-                sb.append(File.separator);
+            if(!tmp.equals(File.separator)) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(File.separator);
+            }
             sb.append(tmp);
             String comp=sb.toString();
             if(exists(comp)) {
@@ -225,8 +230,13 @@ public class GridFile extends File {
                     throw new IOException("cannot create " + path + " as component " + comp + " is a file");
             }
             else {
-                if(create_if_absent)
+                if(create_if_absent) {
+                    /*if(comp.startsWith(File.separator) && cache.get(File.separator) == null) {
+                        // create the root
+                        cache.put(File.separator, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+                    }*/
                     cache.put(comp, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+                }
                 else
                     return false;
             }
@@ -239,6 +249,8 @@ public class GridFile extends File {
     protected static String trim(String str) {
         if(str == null) return null;
         str=str.trim();
+        if(str.equals(File.separator))
+            return str;
         while(str.lastIndexOf(separator) == str.length()-1 && str.length() > 0)
             str=str.substring(0, str.length()-1);
         return str;
