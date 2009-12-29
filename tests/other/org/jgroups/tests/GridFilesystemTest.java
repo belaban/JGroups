@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.3 2009/12/29 16:11:16 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.4 2009/12/29 16:37:47 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -235,8 +235,11 @@ public class GridFilesystemTest {
                 String target_dir=tmp[0];
                 if(target_dir.equals(".."))
                     target_dir=new File(current_dir).getParent();
-                if(!target_dir.trim().startsWith(File.separator))
-                    target_dir=current_dir + File.separator + target_dir;
+                if(!target_dir.trim().startsWith(File.separator)) {
+                    target_dir=current_dir.equals(File.separator)?
+                            current_dir + target_dir :
+                            current_dir + File.separator + target_dir;
+                }
                 File dir=fs.getFile(target_dir);
                 if(!dir.exists()) {
                     System.err.println("Directory " + target_dir + " doesn't exist");

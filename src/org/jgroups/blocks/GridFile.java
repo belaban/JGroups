@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.10 2009/12/29 16:11:14 belaban Exp $
+ * @version $Id: GridFile.java,v 1.11 2009/12/29 16:37:46 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -51,9 +51,9 @@ public class GridFile extends File {
     public boolean createNewFile() throws IOException {
         if(exists())
             return false;
-        if(!checkParentDirs(name, false))
+        if(!checkParentDirs(getPath(), false))
             return false;
-        cache.put(name, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.FILE), (short)-1, 0);
+        cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.FILE), (short)-1, 0);
         return true;
     }
 
@@ -61,24 +61,24 @@ public class GridFile extends File {
         if(!exists())
             return false;
         if(isFile()) {
-            cache.remove(name);
+            cache.remove(getPath());
             return true;
         }
         if(isDirectory()) {
             File[] files=listFiles();
             if(files != null && files.length > 0)
                 return false;
-            cache.remove(name);
+            cache.remove(getPath());
         }
         return true;
     }
 
     public boolean mkdir() {
         try {
-            boolean parents_exist=checkParentDirs(name, false);
+            boolean parents_exist=checkParentDirs(getPath(), false);
             if(!parents_exist)
                 return false;
-            cache.put(name, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
             return true;
         }
         catch(IOException e) {
@@ -89,10 +89,10 @@ public class GridFile extends File {
 
     public boolean mkdirs() {
         try {
-            boolean parents_exist=checkParentDirs(name, true);
+            boolean parents_exist=checkParentDirs(getPath(), true);
             if(!parents_exist)
                 return false;
-            cache.put(name, new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
             return true;
         }
         catch(IOException e) {
@@ -101,7 +101,7 @@ public class GridFile extends File {
     }
 
     public boolean exists() {
-        return cache.get(name) != null;
+        return cache.get(getPath()) != null;
     }
 
     public String[] list() {
@@ -126,17 +126,17 @@ public class GridFile extends File {
 
 
     public boolean isDirectory() {
-        Metadata val=cache.get(name);
+        Metadata val=cache.get(getPath());
         return val.isDirectory();
     }
 
     public boolean isFile() {
-        Metadata val=cache.get(name);
+        Metadata val=cache.get(getPath());
         return val.isFile();
     }
 
     protected void initMetadata() {
-        Metadata metadata=cache.get(name);
+        Metadata metadata=cache.get(getPath());
         if(metadata != null)
             this.chunk_size=metadata.getChunkSize();
     }
@@ -158,7 +158,7 @@ public class GridFile extends File {
             return null;
         Collection<String> list=new ArrayList<String>(keys.size());
         for(String str: keys) {
-            if(isChildOf(name, str)) {
+            if(isChildOf(getPath(), str)) {
                 if(filter instanceof FilenameFilter &&  !((FilenameFilter)filter).accept(new File(name), filename(str)))
                     continue;
                 else if(filter instanceof FileFilter && !((FileFilter)filter).accept(new File(str)))
@@ -186,7 +186,7 @@ public class GridFile extends File {
             return false;
         if(child.length() <= parent.length())
             return false;
-        int from=parent.length();
+        int from=parent.equals(File.separator)? parent.length() : parent.length() +1;
         //  if(from-1 > child.length())
             // return false;
         String[] comps=Util.components(child.substring(from), File.separator);
@@ -251,9 +251,10 @@ public class GridFile extends File {
         str=str.trim();
         if(str.equals(File.separator))
             return str;
-        while(str.lastIndexOf(separator) == str.length()-1 && str.length() > 0)
-            str=str.substring(0, str.length()-1);
-        return str;
+        String[] comps=Util.components(str, File.separator);
+        return comps != null && comps.length > 0? comps[comps.length-1] : null;
+        //while(str.lastIndexOf(separator) == str.length()-1 && str.length() > 0)
+          //  str=str.substring(0, str.length()-1);
     }
 
     private boolean exists(String key) {
