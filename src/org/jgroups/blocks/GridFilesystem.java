@@ -5,7 +5,7 @@ import java.io.*;
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.4 2009/12/28 13:15:34 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.5 2009/12/30 12:45:59 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
@@ -74,6 +74,8 @@ public class GridFilesystem {
     }
 
     public OutputStream getOutput(GridFile file) throws IOException {
+        if(!file.createNewFile())
+            throw new IOException("creation of " + file + " failed");
         return new GridOutputStream(file, false, data, default_repl_count, default_chunk_size);
     }
     

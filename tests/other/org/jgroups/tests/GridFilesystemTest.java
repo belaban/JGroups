@@ -11,11 +11,12 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.7 2009/12/30 08:06:35 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.8 2009/12/30 12:46:01 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
     static String current_dir="/";
+    static final String HOME=System.getProperty("user.home");
 
     static {
         commands.put("mkdir", new mkdir());
@@ -153,7 +154,7 @@ public class GridFilesystemTest {
                     System.err.println("File " + file + " doesn't exist");
                     continue;
                 }
-                print(file, detailed, recursive, 0);
+                print(file, detailed, recursive, 0, file.isDirectory());
             }
         }
 
@@ -277,7 +278,7 @@ public class GridFilesystemTest {
         public void execute(GridFilesystem fs, String[] args) {
             String   options=parseOptions(args);
             String[] real_args=getNonOptions(args);
-            boolean overwrite=options.contains("f");
+            boolean  overwrite=options.contains("f");
 
             if(real_args.length == 0) {
                 System.err.println(help());
@@ -285,12 +286,24 @@ public class GridFilesystemTest {
             }
 
             String local_path=real_args[0], grid_path=real_args.length > 1? real_args[1] : null;
+            if(HOME != null && local_path.contains("~"))
+                local_path=local_path.replace("~", HOME);
             String target_path=grid_path != null? grid_path : local_path;
+            if(target_path.contains("~"))
+                target_path=target_path.replace("~", HOME);
+            if(target_path.equals("."))
+                target_path=current_dir;
 
             File target=fs.getFile(target_path);
             if(!overwrite && target.exists() && target.isFile()) {
                 System.err.println("grid file " + target_path + " already exists; use -f to force overwrite");
                 return;
+            }
+            
+            if(target.exists() && target.isDirectory()) {
+                String[] comps=Util.components(local_path, File.separator);
+                String filename=comps[comps.length - 1];
+                target_path=target_path + (target_path.equals(File.separator)? filename : File.separator + filename);
             }
 
             FileInputStream in=null;
@@ -309,7 +322,6 @@ public class GridFilesystemTest {
                     out.write(buf, 0, len);
                     total+=len;
                 }
-                out.flush();
                 System.out.println("uploaded " + local_path + " to " + target_path + " (" + total + " bytes)");
             }
             catch(FileNotFoundException e) {
@@ -373,31 +385,47 @@ public class GridFilesystemTest {
         return retval;
     }
 
-    private static void print(File file, boolean details, boolean recursive, int indent) {
+    private static void print(File file, boolean details, boolean recursive, int indent, boolean exclude_self) {
         if(file.isDirectory()) {
+            if(!exclude_self)
+                System.out.print(print(file, details, indent));
             File[] children=file.listFiles();
             for(File child: children) {
-                System.out.print(indent(indent) + child.getName());
-                if(recursive) {
-                    System.out.println(":");
-                    if(child.isDirectory())
-                        print(child, details, recursive, indent+2);
+                if(!recursive)
+                    System.out.print(print(child, details, indent));
+                else {
+                    print(child, details, recursive, indent +4, false);
                 }
-                else
-                    System.out.print(" ");
             }
             if(children.length > 0)
                 System.out.println("");
         }
-        else if(file.isFile()) {
-            StringBuilder sb=new StringBuilder(file.getPath());
+        else {
+            String tmp=print(file, details, indent);
+            System.out.print(tmp);
+        }
+    }
+
+    private static String print(File file, boolean details, int indent) {
+        StringBuilder sb=new StringBuilder();
+        if(file.isDirectory()) {
+            if(details)
+                sb.append(indent(indent));
+            sb.append(file.getName()).append("/");
+        }
+        else {
+            if(details)
+                sb.append(indent(indent));
+            sb.append(file.getName());
             if(details) {
                 sb.append(" " + Util.printBytes(file.length()));
                 if(file instanceof GridFile)
                     sb.append(", chunk_sise=" + ((GridFile)file).getChunkSize());
             }
-            System.out.println(sb);
+
         }
+        sb.append(details? '\n' : ' ');
+        return sb.toString();
     }
 
     private static String indent(int num) {

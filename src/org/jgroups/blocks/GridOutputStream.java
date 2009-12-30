@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.6 2009/12/28 13:15:34 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.7 2009/12/30 12:45:59 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
@@ -86,6 +86,7 @@ public class GridOutputStream extends OutputStream {
         cache.put(key, val, repl_count, 0);
         if(log.isTraceEnabled())
             log.trace("put(): index=" + index + ", key=" + key + ": " + val.length + " bytes");
+        file.setLength(index);
     }
 
     private int getBytesRemainingInChunk() {

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.26 2009/12/29 17:20:39 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.27 2009/12/30 12:45:59 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -331,6 +331,37 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     }
 
 
+    /**
+     * Places a key/value pair into one or several nodes in the cluster.
+     * @param key The key, needs to be serializable
+     * @param val The value, needs to be serializable
+     * @param repl_count Number of replicas. The total number of times a data item should be present in a cluster.
+     * Needs to be &gt; 0
+     * <ul>
+     * <li>-1: create key/val in all the nodes in the cluster
+     * <li>1: create key/val only in one node in the cluster, picked by computing the consistent hash of KEY
+     * <li>K &gt; 1: create key/val in those nodes in the cluster which match the consistent hashes created for KEY
+     * </ul>
+     * @param timeout Expiration time for key/value.
+     * <ul>
+     * <li>-1: don't cache at all in the L1 cache
+     * <li>0: cache forever, until removed or evicted because we need space for newer elements
+     * <li>&gt; 0: number of milliseconds to keep an idle element in the cache. An element is idle when not accessed.
+     * </ul>
+     * @param synchronous Whether or not to block until all cluster nodes have applied the change
+     */
+    @ManagedOperation
+    public void put(K key, V val, short repl_count, long timeout, boolean synchronous) {
+        if(repl_count == 0) {
+            if(log.isWarnEnabled())
+                log.warn("repl_count of 0 is invalid, data will not be stored in the cluster");
+            return;
+        }
+        mcastPut(key, val, repl_count, timeout, synchronous);
+        if(l1_cache != null && timeout >= 0)
+            l1_cache.put(key, val, timeout);
+    }
+
     
     /**
      * Places a key/value pair into one or several nodes in the cluster.
@@ -352,14 +383,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
      */
     @ManagedOperation
     public void put(K key, V val, short repl_count, long timeout) {
-        if(repl_count == 0) {
-            if(log.isWarnEnabled())
-                log.warn("repl_count of 0 is invalid, data will not be stored in the cluster");
-            return;
-        }
-        mcastPut(key, val, repl_count, timeout, false);
-        if(l1_cache != null && timeout >= 0)
-            l1_cache.put(key, val, timeout);
+        put(key, val, repl_count, timeout, false); // don't block (asynchronous put) by default
     }
 
 
