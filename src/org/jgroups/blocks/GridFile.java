@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.13 2009/12/30 07:09:29 belaban Exp $
+ * @version $Id: GridFile.java,v 1.14 2009/12/30 12:45:59 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -48,6 +48,24 @@ public class GridFile extends File {
         return name;
     }
 
+    public long length() {
+        Metadata metadata=cache.get(getPath());
+        if(metadata != null)
+            return metadata.length;
+        return 0;
+    }
+
+    void setLength(int new_length) {
+        Metadata metadata=cache.get(getPath());
+        if(metadata != null) {
+            metadata.length=new_length;
+            metadata.setModificationTime(System.currentTimeMillis());
+            cache.put(getPath(), metadata, (short)-1, 0, false);
+        }
+        else
+            System.err.println("metadata for " + getPath() + " not found !");
+    }
+
     public int getChunkSize() {
         return chunk_size;
     }
@@ -57,24 +75,12 @@ public class GridFile extends File {
             return false;
         if(!checkParentDirs(getPath(), false))
             return false;
-        cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.FILE), (short)-1, 0);
+        cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.FILE), (short)-1, 0, true);
         return true;
     }
 
     public boolean delete() {
-        if(!exists())
-            return false;
-        if(isFile()) {
-            cache.remove(getPath());
-            return true;
-        }
-        if(isDirectory()) {
-            File[] files=listFiles();
-            if(files != null && files.length > 0)
-                return false;
-            cache.remove(getPath());
-        }
-        return true;
+        return delete(false); // asynchronous delete by default
     }
 
     public boolean delete(boolean synchronous) {
@@ -98,7 +104,7 @@ public class GridFile extends File {
             boolean parents_exist=checkParentDirs(getPath(), false);
             if(!parents_exist)
                 return false;
-            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0, true);
             return true;
         }
         catch(IOException e) {
@@ -112,7 +118,7 @@ public class GridFile extends File {
             boolean parents_exist=checkParentDirs(getPath(), true);
             if(!parents_exist)
                 return false;
-            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0);
+            cache.put(getPath(), new Metadata(0, System.currentTimeMillis(), chunk_size, Metadata.DIR), (short)-1, 0, true);
             return true;
         }
         catch(IOException e) {
