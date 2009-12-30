@@ -11,7 +11,9 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.10 2009/12/30 14:42:09 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.11 2009/12/30 14:43:25 belaban Exp $
+ * todo: regexp for file ls, rm, down and up
+ * todo: recursive up and down
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
