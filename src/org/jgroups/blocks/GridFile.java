@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.12 2009/12/29 17:20:39 belaban Exp $
+ * @version $Id: GridFile.java,v 1.13 2009/12/30 07:09:29 belaban Exp $
  */
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
@@ -46,6 +46,10 @@ public class GridFile extends File {
 
     public String getName() {
         return name;
+    }
+
+    public int getChunkSize() {
+        return chunk_size;
     }
 
     public boolean createNewFile() throws IOException {

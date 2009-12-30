@@ -1,22 +1,17 @@
 package org.jgroups.tests;
 
-import org.jgroups.blocks.ReplCache;
-import org.jgroups.blocks.GridOutputStream;
-import org.jgroups.blocks.GridFilesystem;
 import org.jgroups.blocks.GridFile;
+import org.jgroups.blocks.GridFilesystem;
+import org.jgroups.blocks.ReplCache;
 import org.jgroups.util.Util;
 
-import java.io.FileInputStream;
-import java.io.OutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.5 2009/12/29 17:20:40 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.6 2009/12/30 07:09:30 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -157,16 +152,7 @@ public class GridFilesystemTest {
                     System.err.println("File " + file + " doesn't exist");
                     continue;
                 }
-                if(file.isDirectory()) {
-                    File[] children=file.listFiles();
-                    for(File child: children) {
-                        System.out.print(child.getName() + " ");
-                        System.out.println("");
-                    }
-                    System.out.println("");
-                }
-                else if(file.isFile())
-                    System.out.println(file.getPath());
+                print(file, detailed, recursive, 0);
             }
         }
 
@@ -325,6 +311,40 @@ public class GridFilesystemTest {
         if(!rc)
             retval=false;
         return retval;
+    }
+
+    private static void print(File file, boolean details, boolean recursive, int indent) {
+        if(file.isDirectory()) {
+            File[] children=file.listFiles();
+            for(File child: children) {
+                System.out.print(indent(indent) + child.getName());
+                if(recursive) {
+                    System.out.println(":");
+                    if(child.isDirectory())
+                        print(child, details, recursive, indent+2);
+                }
+                else
+                    System.out.print(" ");
+            }
+            if(children.length > 0)
+                System.out.println("");
+        }
+        else if(file.isFile()) {
+            StringBuilder sb=new StringBuilder(file.getPath());
+            if(details) {
+                sb.append(" " + Util.printBytes(file.length()));
+                if(file instanceof GridFile)
+                    sb.append(", chunk_sise=" + ((GridFile)file).getChunkSize());
+            }
+            System.out.println(sb);
+        }
+    }
+
+    private static String indent(int num) {
+        StringBuilder sb=new StringBuilder();
+        for(int i=0; i < num; i++)
+            sb.append(' ');
+        return sb.toString();
     }
 
 
