@@ -5,7 +5,7 @@ import java.io.*;
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.5 2009/12/30 12:45:59 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.6 2009/12/30 13:41:22 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
@@ -38,7 +38,7 @@ public class GridFilesystem {
     }
 
     public File getFile(String pathname, int chunk_size) {
-        return new GridFile(pathname, metadata, chunk_size);
+        return new GridFile(pathname, metadata, chunk_size, this);
     }
 
     public File getFile(String parent, String child) {
@@ -46,7 +46,7 @@ public class GridFilesystem {
     }
 
     public File getFile(String parent, String child, int chunk_size) {
-        return new GridFile(parent, child, metadata, chunk_size);
+        return new GridFile(parent, child, metadata, chunk_size, this);
     }
 
     public File getFile(File parent, String child) {
@@ -54,7 +54,7 @@ public class GridFilesystem {
     }
 
     public File getFile(File parent, String child, int chunk_size) {
-        return new GridFile(parent, child, metadata, chunk_size);
+        return new GridFile(parent, child, metadata, chunk_size, this);
     }
 
     public OutputStream getOutput(String pathname) throws IOException {
@@ -88,7 +88,19 @@ public class GridFilesystem {
         return new GridInputStream(file, data, default_chunk_size);
     }
 
-    public InputStream getInput(File pathname) {
-        throw new UnsupportedOperationException();
+    public InputStream getInput(File pathname) throws FileNotFoundException {
+        return pathname != null? getInput(pathname.getPath()) : null;
+    }
+
+
+    public void remove(String path, boolean synchronous) {
+        if(path == null)
+            return;
+        GridFile.Metadata md=metadata.get(path);
+        if(md == null)
+            return;
+        int num_chunks=md.getLength() / md.getChunkSize() + 1;
+        for(int i=0; i < num_chunks; i++)
+            data.remove(path + ".#" + i, synchronous);
     }
 }
