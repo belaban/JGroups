@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.9 2009/12/30 13:41:24 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.10 2009/12/30 14:42:09 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -25,6 +25,7 @@ public class GridFilesystemTest {
         commands.put("pwd",   new pwd());
         commands.put("rm",    new rm());
         commands.put("up",    new up());
+        commands.put("down",  new down());
     }
 
     public static void main(String[] args) throws Exception {
@@ -319,6 +320,13 @@ public class GridFilesystemTest {
                     System.err.println("target " + target_path + " is a directory");
                     return;
                 }
+                if(out_file.exists() && out_file.isFile() && overwrite) {
+                    if(out_file instanceof GridFile)
+                        ((GridFile)out_file).delete(true);
+                    else
+                        out_file.delete();
+                }
+
                 out=fs.getOutput((GridFile)out_file);
                 byte[] buf=new byte[50000];
                 int len, total=0;
@@ -341,7 +349,76 @@ public class GridFilesystemTest {
         }
 
         public String help() {
-            return "up [-f] <path to local file> [<path in grid>]";
+            return "up [-f] <local path> [<grid path>]";
+        }
+    }
+
+
+    private static class down implements Command {
+
+        public void execute(GridFilesystem fs, String[] args) {
+            String   options=parseOptions(args);
+            String[] real_args=getNonOptions(args);
+            boolean  overwrite=options.contains("f");
+
+            if(real_args.length == 0) {
+                System.err.println(help());
+                return;
+            }
+
+            String grid_path=real_args[0], local_path=real_args.length > 1? real_args[1] : null;
+            if(HOME != null && grid_path.contains("~"))
+                grid_path=grid_path.replace("~", HOME);
+            String target_path=local_path != null? local_path : grid_path;
+            if(target_path.contains("~"))
+                target_path=target_path.replace("~", HOME);
+            if(target_path.equals("."))
+                target_path=System.getProperty("user.dir");
+
+            File target=new File(target_path);
+            if(!overwrite && target.exists() && target.isFile()) {
+                System.err.println("grid file " + target_path + " already exists; use -f to force overwrite");
+                return;
+            }
+
+            if(target.exists() && target.isDirectory()) {
+                String[] comps=Util.components(grid_path, File.separator);
+                String filename=comps[comps.length - 1];
+                target_path=target_path + (target_path.endsWith(File.separator)? filename : File.separator + filename);
+            }
+
+            InputStream in=null;
+            FileOutputStream out=null;
+            try {
+                in=fs.getInput(grid_path);
+                File out_file=new File(target_path);
+                if(out_file.exists() && out_file.isDirectory()) {
+                    System.err.println("target " + target_path + " is a directory");
+                    return;
+                }
+                out=new FileOutputStream(out_file);
+                byte[] buf=new byte[50000];
+                int len, total=0;
+                while((len=in.read(buf, 0, buf.length)) != -1) {
+                    out.write(buf, 0, len);
+                    total+=len;
+                }
+                System.out.println("downloaded " + local_path + " to " + target_path + " (" + total + " bytes)");
+            }
+            catch(FileNotFoundException e) {
+                System.err.println("local file " + local_path + " not found");
+            }
+            catch(IOException e) {
+                System.err.println("cannot create " + target_path);
+            }
+            finally {
+                Util.close(in);
+                Util.close(out);
+            }
+        }
+
+        public String help() {
+            return "down [-f] <grid path> [<local path>]";
         }
     }
 
