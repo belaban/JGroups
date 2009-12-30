@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.8 2009/12/30 12:46:01 belaban Exp $
+ * @version $Id: GridFilesystemTest.java,v 1.9 2009/12/30 13:41:24 belaban Exp $
  */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<String,Command>();
@@ -208,21 +208,21 @@ public class GridFilesystemTest {
                     dir=current_dir.equals(File.separator)? current_dir + dir : current_dir + File.separator + dir;
                 File file=fs.getFile(dir);
                 if(!file.exists()) {
-                    System.err.println("'" + file.getName() + "' doesn't exist");
+                    System.err.println(file.getName() + " doesn't exist");
                     return;
                 }
                 if(file.isFile()) {
                     if(!file.delete())
-                        System.err.println("cannot remove '" + file.getName() + "'");
+                        System.err.println("cannot remove " + file.getName());
                     return;
                 }
 
                 if(!recursive) {
                     if(!file.delete())
-                        System.err.println("cannot remove '" + file.getName() + "': is a directory");
+                        System.err.println("cannot remove " + file.getName() + ": is a directory");
                 }
                 else {
-                    if(!delete((GridFile)file)) { // recursive delete
+                    if(!delete(file)) { // recursive delete
                         System.err.println("recursive removal of " + file.getName() + " failed");
                     }
                 }
@@ -239,21 +239,25 @@ public class GridFilesystemTest {
 
         public void execute(GridFilesystem fs, String[] args) {
             String[] tmp=getNonOptions(args);
-            if(tmp != null && tmp.length == 1) {
-                String target_dir=tmp[0];
-                if(target_dir.equals(".."))
-                    target_dir=new File(current_dir).getParent();
-                if(!target_dir.trim().startsWith(File.separator)) {
-                    target_dir=current_dir.equals(File.separator)?
-                            current_dir + target_dir :
-                            current_dir + File.separator + target_dir;
-                }
-                File dir=fs.getFile(target_dir);
-                if(!dir.exists()) {
-                    System.err.println("Directory " + target_dir + " doesn't exist");
-                }
-                current_dir=target_dir;
+            String target_dir="~";
+            if(tmp != null && tmp.length == 1)
+                target_dir=tmp[0];
+
+            if(target_dir.equals(".."))
+                target_dir=new File(current_dir).getParent();
+            if(target_dir.contains("~") && HOME != null)
+                target_dir=target_dir.replace("~", HOME);
+            if(!target_dir.trim().startsWith(File.separator)) {
+                target_dir=current_dir.equals(File.separator)?
+                        current_dir + target_dir :
+                        current_dir + File.separator + target_dir;
             }
+            File dir=fs.getFile(target_dir);
+            if(!dir.exists()) {
+                System.err.println("Directory " + target_dir + " doesn't exist");
+            }
+            else
+                current_dir=target_dir;
         }
 
         public String help() {

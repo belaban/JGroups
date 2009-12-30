@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.7 2009/12/30 12:45:59 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.8 2009/12/30 13:41:22 belaban Exp $
  */
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
@@ -25,7 +25,7 @@ public class GridOutputStream extends OutputStream {
     GridOutputStream(GridFile file, boolean append, ReplCache<String,byte[]> cache,
                      short repl_count, int chunk_size) throws FileNotFoundException {
         this.file=file;
-        this.name=file.getName();
+        this.name=file.getPath();
         this.cache=cache;
         this.repl_count=repl_count;
         this.chunk_size=chunk_size;
@@ -80,7 +80,7 @@ public class GridOutputStream extends OutputStream {
 
     public void flush() throws IOException {
         int chunk_number=getChunkNumber();
-        String key=name + "." + chunk_number + ".#chunk";
+        String key=name + ".#" + chunk_number;
         byte[] val=new byte[local_index];
         System.arraycopy(current_buffer, 0, val, 0, local_index);
         cache.put(key, val, repl_count, 0);

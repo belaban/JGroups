@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridInputStream.java,v 1.6 2009/12/28 13:15:34 belaban Exp $
+ * @version $Id: GridInputStream.java,v 1.7 2009/12/30 13:41:22 belaban Exp $
  */
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
@@ -24,7 +24,7 @@ public class GridInputStream extends InputStream {
 
     GridInputStream(GridFile file, ReplCache<String, byte[]> cache, int chunk_size) throws FileNotFoundException {
         this.file=file;
-        this.name=file.getName();
+        this.name=file.getPath();
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
@@ -101,7 +101,7 @@ public class GridInputStream extends InputStream {
 
     private byte[] fetchNextChunk() {
         int chunk_number=getChunkNumber();
-        String key=name + "." + chunk_number + ".#chunk";
+        String key=name + ".#" + chunk_number;
         byte[] val= cache.get(key);
         if(log.isTraceEnabled())
             log.trace("fetching index=" + index + ", key=" + key +": " + (val != null? val.length + " bytes" : "null"));
