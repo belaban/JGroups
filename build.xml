@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.229 2009/12/21 13:10:18 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.230 2010/01/06 10:32:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -126,7 +126,7 @@
     <target name="jgroups-all.jar"
             description="Creates the jgroups-all.jar (includes everything)" depends="compile,create-schema">
     	<mkdir dir="${dist.dir}"/>
-    <jar destfile="${dist.dir}/jgroups-all.jar"
+    <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
          manifest="${conf.dir}/manifest.mf"
          includes="org/jgroups/**,schema/**">
@@ -196,7 +196,7 @@
                 <include name="licenses/*"/>
             </fileset>
             <fileset dir="${dist.dir}">
-                <include name="jgroups-all*.jar"/>
+                <include name="jgroups-${version}*.jar"/>
             </fileset>
             <fileset dir="${conf.dir}">
                 <include name="config.txt"/>
