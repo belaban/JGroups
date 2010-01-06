@@ -5,7 +5,7 @@ import java.io.*;
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.6 2009/12/30 13:41:22 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.7 2010/01/06 07:51:03 belaban Exp $
  */
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
@@ -30,7 +30,7 @@ public class GridFilesystem {
     }
 
     public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata) {
-        this(data, metadata, (short)1, 4000);
+        this(data, metadata, (short)1, 8000);
     }
 
     public File getFile(String pathname) {
