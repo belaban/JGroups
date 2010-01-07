@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.247 2009/12/29 16:11:15 belaban Exp $
+ * @version $Id: Util.java,v 1.248 2010/01/07 08:12:40 belaban Exp $
  */
 public class Util {
 
@@ -2783,17 +2783,13 @@ public class Util {
 
 
     public static String shortName(String hostname) {
-        int index;
-        StringBuilder sb=new StringBuilder();
-
         if(hostname == null) return null;
 
-        index=hostname.indexOf('.');
+        int index=hostname.indexOf('.');
         if(index > 0 && !Character.isDigit(hostname.charAt(0)))
-            sb.append(hostname.substring(0, index));
+            return hostname.substring(0, index);
         else
-            sb.append(hostname);
-        return sb.toString();
+            return hostname;
     }
 
     public static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts,  long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
@@ -2843,7 +2839,7 @@ public class Util {
     public static String generateLocalName() {
         String retval=null;
         try {
-            retval=InetAddress.getLocalHost().getHostName();
+            retval=shortName(InetAddress.getLocalHost().getHostName());
         }
         catch(UnknownHostException e) {
             retval="localhost";
