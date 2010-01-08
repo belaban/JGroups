@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.148 2009/12/11 13:11:10 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.149 2010/01/08 07:51:59 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -311,7 +311,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 SenderEntry entry=send_table.get(dst);
-                    if(entry == null) {
+                if(entry == null) {
                     entry=new SenderEntry(getNewConnectionId(), this, timeout, timer, local_addr);
                     SenderEntry existing=send_table.putIfAbsent(dst, entry);
                     if(existing != null)
