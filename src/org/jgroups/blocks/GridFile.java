@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.annotations.Experimental;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -12,8 +13,9 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.16 2009/12/31 14:55:38 belaban Exp $
+ * @version $Id: GridFile.java,v 1.17 2010/01/08 16:41:12 belaban Exp $
  */
+@Experimental
 public class GridFile extends File {
     private static final long serialVersionUID=-6729548421029004260L;
     private final ReplCache<String,Metadata> cache;

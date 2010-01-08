@@ -2,13 +2,15 @@ package org.jgroups.blocks;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.annotations.Experimental;
 
 import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.8 2009/12/30 13:41:22 belaban Exp $
+ * @version $Id: GridOutputStream.java,v 1.9 2010/01/08 16:41:12 belaban Exp $
  */
+@Experimental
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;
     final short                    repl_count;
