@@ -257,13 +257,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
             switch(type) {
                 case 0:
                     long arg=buf.getLong();
-                    return new MethodCall(START, new Object[]{arg});
+                    return new MethodCall((short)0, new Object[]{arg});
                 case 1:
                     arg=buf.getLong();
                     int len=buf.getInt();
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
-                    return new MethodCall(RECEIVE, new Object[]{arg, arg2});
+                    return new MethodCall((short)1, new Object[]{arg, arg2});
                 default:
                     throw new IllegalStateException("type " + type + " not known");
             }
