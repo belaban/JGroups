@@ -1,13 +1,11 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.MethodLookup;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
@@ -17,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Vector;
+import java.nio.ByteBuffer;
 
 
 /**
@@ -38,11 +37,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     private static final Method START;
     private static final Method RECEIVE;
+    private static final Method[] METHODS=new Method[2];
 
     static {
         try {
             START=UnicastTestRpc.class.getMethod("startTest", long.class);
             RECEIVE=UnicastTestRpc.class.getMethod("receiveData", long.class, byte[].class);
+            METHODS[0]=START;
+            METHODS[1]=RECEIVE;
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -56,6 +58,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
         this.busy_sleep=busy_sleep;
         channel=new JChannel(props);
         disp=new RpcDispatcher(channel, null, this, this);
+        disp.setMethodLookup(new MethodLookup() {
+            public Method findMethod(short id) {
+                return METHODS[id];
+            }
+        });
+        disp.setRequestMarshaller(new CustomMarshaller());
         channel.connect(groupname);
 
         try {
@@ -116,7 +124,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             case -1:
                 break;
             case '1':
-                sendMessages();
+                invokeRpcs();
                 break;
             case '2':
                 printView();
@@ -160,24 +168,24 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    void sendMessages() throws Throwable {
+    void invokeRpcs() throws Throwable {
         long num_msgs=Util.readLongFromStdin("Number of RPCs: ");
         int msg_size=Util.readIntFromStdin("Message size: ");
         Address destination=getReceiver();
 
         if(destination == null) {
-            System.err.println("UnicastTest.sendMessages(): receiver is null, cannot send messages");
+            System.err.println("UnicastTest.invokeRpcs(): receiver is null, cannot send messages");
             return;
         }
 
         System.out.println("invoking " + num_msgs + " RPCs on " + destination);
 
-        disp.callRemoteMethod(destination, new MethodCall(START, new Object[]{num_msgs}), GroupRequest.GET_NONE, 5000);
+        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), GroupRequest.GET_NONE, 5000);
 
         int print=(int)(num_msgs / 10);
         byte[] buf=new byte[msg_size];
         for(int i=1; i <= num_msgs; i++) {
-            disp.callRemoteMethod(destination, new MethodCall(RECEIVE, new Object[]{i, buf}), GroupRequest.GET_NONE, 5000);
+            disp.callRemoteMethod(destination, new MethodCall((short)1, new Object[]{(long)i, buf}), GroupRequest.GET_NONE, 5000);
             if(i % print == 0)
                 System.out.println("-- invoked " + i);
             if(sleep_time > 0)
@@ -217,6 +225,48 @@ public class UnicastTestRpc extends ReceiverAdapter {
         catch(Exception e) {
             System.err.println("UnicastTest.getReceiver(): " + e);
             return null;
+        }
+    }
+
+
+    static class CustomMarshaller implements RpcDispatcher.Marshaller {
+
+        public byte[] objectToByteBuffer(Object obj) throws Exception {
+            MethodCall call=(MethodCall)obj;
+            if(call.getId() == 0) {
+                Long arg=(Long)call.getArgs()[0];
+                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE);
+                buf.put((byte)0).putLong(arg);
+                return buf.array();
+            }
+            else if(call.getId() == 1) {
+                Long arg=(Long)call.getArgs()[0];
+                byte[] arg2=(byte[])call.getArgs()[1];
+                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE + Global.INT_SIZE + arg2.length);
+                buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                return buf.array();
+            }
+            else
+                throw new IllegalStateException("method " + call.getMethod() + " not known");
+        }
+
+        public Object objectFromByteBuffer(byte[] buffer) throws Exception {
+            ByteBuffer buf=ByteBuffer.wrap(buffer);
+
+            byte type=buf.get();
+            switch(type) {
+                case 0:
+                    long arg=buf.getLong();
+                    return new MethodCall(START, new Object[]{arg});
+                case 1:
+                    arg=buf.getLong();
+                    int len=buf.getInt();
+                    byte[] arg2=new byte[len];
+                    buf.get(arg2, 0, arg2.length);
+                    return new MethodCall(RECEIVE, new Object[]{arg, arg2});
+                default:
+                    throw new IllegalStateException("type " + type + " not known");
+            }
         }
     }
 
@@ -264,9 +314,6 @@ public class UnicastTestRpc extends ReceiverAdapter {
         System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
                            "[-exit_on_end] [-busy-sleep]");
     }
-
-
-
 
 
 }
