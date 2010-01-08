@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.14 2009/10/15 08:44:22 belaban Exp $
+// $Id: UnicastTest.java,v 1.15 2010/01/08 13:25:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
+import org.jgroups.util.Streamable;
 
 import javax.management.MBeanServer;
 import java.io.*;
@@ -17,84 +18,14 @@ import java.util.Vector;
  *
  * @author Bela Ban
  */
-public class UnicastTest implements Runnable {
-    UnicastTest test;
-    JChannel channel;
+public class UnicastTest extends ReceiverAdapter {
+    private JChannel channel;
+    private final MyReceiver receiver=new MyReceiver();
     static final String groupname="UnicastTest-Group";
-    Thread t=null;
-    long sleep_time=0;
-    boolean exit_on_end=false, busy_sleep=false;
+    private long sleep_time=0;
+    private boolean exit_on_end=false, busy_sleep=false;
 
 
-    public static class Data implements Externalizable {
-        private static final long serialVersionUID=1003736026732652933L;
-
-        public Data() {
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        }
-    }
-
-    public static class StartData extends Data {
-        long num_values=0;
-        private static final long serialVersionUID=-516765916297174993L;
-
-        public StartData() {
-            super();
-        }
-
-        StartData(long num_values) {
-            this.num_values=num_values;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(num_values);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            num_values=in.readLong();
-        }
-    }
-
-    public static class Value extends Data {
-        long value=0;
-        byte[] buf=null;
-        private static final long serialVersionUID=-7003810772187537719L;
-
-        public Value() {
-            super();
-        }
-
-        Value(long value, int len) {
-            this.value=value;
-            if(len > 0)
-                this.buf=new byte[len];
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(value);
-            if(buf != null) {
-                out.writeInt(buf.length);
-                out.write(buf, 0, buf.length);
-            }
-            else {
-                out.writeInt(0);
-            }
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            value=in.readLong();
-            int len=in.readInt();
-            if(len > 0) {
-                buf=new byte[len];
-                in.read(buf, 0, len);
-            }
-        }
-    }
 
 
     public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep) throws Exception {
@@ -103,6 +34,7 @@ public class UnicastTest implements Runnable {
         this.busy_sleep=busy_sleep;
         channel=new JChannel(props);
         channel.connect(groupname);
+        channel.setReceiver(receiver);
 
         try {
             MBeanServer server=Util.getMBeanServer();
@@ -111,89 +43,6 @@ public class UnicastTest implements Runnable {
         catch(Throwable ex) {
             System.err.println("registering the channel in JMX failed: " + ex);
         }
-
-
-        t=new Thread(this, "UnicastTest - receiver thread");
-        t.start();
-    }
-
-
-    public void run() {
-        Data data;
-        Message msg;
-        Object obj;
-        boolean started=false;
-        long start=0, stop=0;
-        long current_value=0, tmp=0, num_values=0;
-        long total_time=0, msgs_per_sec;
-
-        while(true) {
-            try {
-                obj=channel.receive(0);
-                if(obj instanceof View)
-                    System.out.println("** view: " + obj);
-                else
-                    if(obj instanceof Message) {
-                        msg=(Message)obj;
-                        data=(Data)msg.getObject();
-
-                        if(data instanceof StartData) {
-                            if(started) {
-                                System.err.println("UnicastTest.run(): received START data, but am already processing data");
-                            }
-                            else {
-                                started=true;
-                                current_value=0; // first value to be received
-                                tmp=0;
-                                num_values=((StartData)data).num_values;
-                                start=System.currentTimeMillis();
-                            }
-                        }
-                        else
-                            if(data instanceof Value) {
-                                tmp=((Value)data).value;
-                                if(current_value + 1 != tmp) {
-                                    System.err.println("-- message received (" + tmp + ") is not 1 greater than " + current_value);
-                                }
-                                else {
-                                    current_value++;
-                                    if(current_value % 1000 == 0)
-                                        System.out.println("received " + current_value);
-                                    if(current_value >= num_values) {
-                                        stop=System.currentTimeMillis();
-                                        total_time=stop - start;
-                                        msgs_per_sec=(long)(num_values / (total_time / 1000.0));
-                                        System.out.println("-- received " + num_values + " messages in " + total_time +
-                                                           " ms (" + msgs_per_sec + " messages/sec)");
-                                        started=false;
-                                        if(exit_on_end)
-                                            System.exit(0);
-                                    }
-                                }
-                            }
-                    }
-            }
-            catch(ChannelNotConnectedException not_connected) {
-                System.err.println(not_connected);
-                break;
-            }
-            catch(ChannelClosedException closed_ex) {
-                System.err.println(closed_ex);
-                break;
-            }
-            catch(TimeoutException timeout) {
-                System.err.println(timeout);
-                break;
-            }
-            catch(Throwable th) {
-                System.err.println(th);
-                started=false;
-                current_value=0;
-                tmp=0;
-                Util.sleep(1000);
-            }
-        }
-        // System.out.println("UnicastTest.run(): receiver thread terminated");
     }
 
 
@@ -256,28 +105,32 @@ public class UnicastTest implements Runnable {
     void sendMessages() throws Exception {
         long num_msgs=Util.readLongFromStdin("Number of messages: ");
         int msg_size=Util.readIntFromStdin("Message size: ");
-        Address receiver=getReceiver();
+        Address destination=getReceiver();
         Message msg;
 
-        if(receiver == null) {
+        if(destination == null) {
             System.err.println("UnicastTest.sendMessages(): receiver is null, cannot send messages");
             return;
         }
 
-        System.out.println("sending " + num_msgs + " messages to " + receiver);
-        msg=new Message(receiver, null, new StartData(num_msgs));
+        System.out.println("sending " + num_msgs + " messages to " + destination);
+        byte[] buf=Util.objectToByteBuffer(new StartData(num_msgs));
+        msg=new Message(destination, null, buf);
+
         channel.send(msg);
+        int print=(int)(num_msgs / 10);
 
         for(int i=1; i <= num_msgs; i++) {
             Value val=new Value(i, msg_size);
-            msg=new Message(receiver, null, val);
-            if(i % 1000 == 0)
+            buf=Util.objectToByteBuffer(val);
+            msg=new Message(destination, null, buf);
+            if(i % print == 0)
                 System.out.println("-- sent " + i);
             channel.send(msg);
             if(sleep_time > 0)
                 Util.sleep(sleep_time, busy_sleep);
         }
-        System.out.println("done sending " + num_msgs + " to " + receiver);
+        System.out.println("done sending " + num_msgs + " to " + destination);
     }
 
     void printView() {
@@ -291,7 +144,7 @@ public class UnicastTest implements Runnable {
 
 
 
-    Address getReceiver() {
+    private Address getReceiver() {
         Vector mbrs=null;
         int index;
         BufferedReader reader;
@@ -363,4 +216,121 @@ public class UnicastTest implements Runnable {
         System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
                            "[-exit_on_end] [-busy-sleep]");
     }
+
+
+    public abstract static class Data implements Streamable {
+    }
+
+    public static class StartData extends Data {
+        long num_values=0;
+
+        public StartData() {}
+
+        StartData(long num_values) {
+            this.num_values=num_values;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(num_values);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            num_values=in.readLong();
+        }
+    }
+
+    public static class Value extends Data {
+        long value=0;
+        byte[] buf=null;
+
+        public Value() {
+        }
+
+        Value(long value, int len) {
+            this.value=value;
+            if(len > 0)
+                this.buf=new byte[len];
+        }
+
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(value);
+            if(buf != null) {
+                out.writeInt(buf.length);
+                out.write(buf, 0, buf.length);
+            }
+            else {
+                out.writeInt(0);
+            }
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            value=in.readLong();
+            int len=in.readInt();
+            if(len > 0) {
+                buf=new byte[len];
+                in.read(buf, 0, len);
+            }
+        }
+    }
+
+
+    private class MyReceiver extends ReceiverAdapter {
+        private Data data;
+        private boolean started=false;
+        private long start=0, stop=0;
+        private long current_value=0, tmp=0, num_values=0;
+        private long total_time=0, msgs_per_sec;
+
+
+        public void receive(Message msg) {
+            try {
+                data=(Data)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                return;
+            }
+
+            if(data instanceof StartData) {
+                if(started) {
+                    System.err.println("UnicastTest.run(): received START data, but am already processing data");
+                }
+                else {
+                    started=true;
+                    current_value=0; // first value to be received
+                    tmp=0;
+                    num_values=((StartData)data).num_values;
+                    start=System.currentTimeMillis();
+                }
+            }
+            else
+            if(data instanceof Value) {
+                tmp=((Value)data).value;
+                if(current_value + 1 != tmp) {
+                    System.err.println("-- message received (" + tmp + ") is not 1 greater than " + current_value);
+                }
+                else {
+                    current_value++;
+                    if(current_value % (num_values / 10) == 0)
+                        System.out.println("received " + current_value);
+                    if(current_value >= num_values) {
+                        stop=System.currentTimeMillis();
+                        total_time=stop - start;
+                        msgs_per_sec=(long)(num_values / (total_time / 1000.0));
+                        System.out.println("-- received " + num_values + " messages in " + total_time +
+                                " ms (" + msgs_per_sec + " messages/sec)");
+                        started=false;
+                        if(exit_on_end)
+                            System.exit(0);
+                    }
+                }
+            }
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("** view: " + new_view);
+        }
+    }
+
 }
