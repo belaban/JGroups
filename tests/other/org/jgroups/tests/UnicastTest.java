@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.15 2010/01/08 13:25:28 belaban Exp $
+// $Id: UnicastTest.java,v 1.16 2010/01/08 14:32:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -50,8 +50,7 @@ public class UnicastTest extends ReceiverAdapter {
         int c;
 
         while(true) {
-            System.out.print("[1] Send msgs [2] Print view [3] Print connections " +
-                    "[4] Trash connection [5] Trash all connections [q] Quit ");
+            System.out.print("[1] Send msgs [2] Print view [3] Print conns [4] Trash conn [5] Trash all conns [q] Quit ");
             System.out.flush();
             c=System.in.read();
             switch(c) {
