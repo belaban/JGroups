@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,7 +55,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.41 2009/06/28 16:12:15 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.42 2010/01/08 16:37:59 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
@@ -81,7 +82,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
     private static final Log log=LogFactory.getLog(GroupRequest.class);
 
     /** to generate unique request IDs (see getRequestId()) */
-    private static long last_req_id=1;
+    private static final AtomicLong REQUEST_ID=new AtomicLong(1);
 
     private Address caller;
 
@@ -503,13 +504,8 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
     }
 
     /** Generates a new unique request ID */
-    private static synchronized long getRequestId() {
-        long result=System.currentTimeMillis();
-        if(result <= last_req_id) {
-            result=last_req_id + 1;
-        }
-        last_req_id=result;
-        return result;
+    private static long getRequestId() {
+        return REQUEST_ID.incrementAndGet();
     }
 
     /** This method runs with lock locked (called by <code>execute()</code>). */
