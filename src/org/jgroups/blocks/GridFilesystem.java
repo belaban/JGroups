@@ -1,12 +1,15 @@
 package org.jgroups.blocks;
 
+import org.jgroups.annotations.Experimental;
+
 import java.io.*;
 
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.7 2010/01/06 07:51:03 belaban Exp $
+ * @version $Id: GridFilesystem.java,v 1.8 2010/01/08 16:41:12 belaban Exp $
  */
+@Experimental
 public class GridFilesystem {
     protected final ReplCache<String,byte[]>             data;
     protected final ReplCache<String,GridFile.Metadata>  metadata;
