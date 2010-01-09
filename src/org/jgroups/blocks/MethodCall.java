@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.35 $
  */
 public class MethodCall implements Externalizable {
 
@@ -37,13 +37,13 @@ public class MethodCall implements Externalizable {
     protected Class[] types;
 
     /** The signature, e.g., new String[]{String.class.getName(), int.class.getName()}. */
-    protected String[] signature;
+    @Deprecated protected String[] signature;
 
     /** The Method of the call. */
     protected Method method;
 
     /** To carry arbitrary data with a method call, data needs to be serializable if sent across the wire */
-    protected Map payload;
+    @Deprecated protected Map payload;
 
     protected static final Log log=LogFactory.getLog(MethodCall.class);
 
@@ -231,12 +231,14 @@ public class MethodCall implements Externalizable {
         this.filter=filter;
     }
 
+    @Deprecated
     public synchronized Object put(Object key, Object value) {
         if(payload == null)
             payload=new HashMap();
         return payload.put(key, value);
     }
 
+    @Deprecated
     public synchronized Object get(Object key) {
         return payload != null? payload.get(key) : null;
     }
