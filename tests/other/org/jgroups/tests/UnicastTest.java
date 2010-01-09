@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.16 2010/01/08 14:32:55 belaban Exp $
+// $Id: UnicastTest.java,v 1.17 2010/01/09 16:31:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -275,14 +275,15 @@ public class UnicastTest extends ReceiverAdapter {
 
 
     private class MyReceiver extends ReceiverAdapter {
-        private Data data;
         private boolean started=false;
         private long start=0, stop=0;
         private long current_value=0, tmp=0, num_values=0;
         private long total_time=0, msgs_per_sec;
+        private long total_bytes=0;
 
 
         public void receive(Message msg) {
+            Data data;
             try {
                 data=(Data)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             }
@@ -300,6 +301,7 @@ public class UnicastTest extends ReceiverAdapter {
                     current_value=0; // first value to be received
                     tmp=0;
                     num_values=((StartData)data).num_values;
+                    total_bytes=0;
                     start=System.currentTimeMillis();
                 }
             }
@@ -311,14 +313,18 @@ public class UnicastTest extends ReceiverAdapter {
                 }
                 else {
                     current_value++;
+                    if(((Value)data).buf != null)
+                        total_bytes+=((Value)data).buf.length;
                     if(current_value % (num_values / 10) == 0)
                         System.out.println("received " + current_value);
                     if(current_value >= num_values) {
                         stop=System.currentTimeMillis();
                         total_time=stop - start;
                         msgs_per_sec=(long)(num_values / (total_time / 1000.0));
-                        System.out.println("-- received " + num_values + " messages in " + total_time +
-                                " ms (" + msgs_per_sec + " messages/sec)");
+                        double throughput=total_bytes / (total_time / 1000.0);
+                        System.out.println("-- received " + num_values + " messages (" + Util.printBytes(total_bytes) +
+                                ") in " + total_time + " ms (" + msgs_per_sec + " messages/sec, " +
+                                Util.printBytes(throughput) + " / sec)");
                         started=false;
                         if(exit_on_end)
                             System.exit(0);
