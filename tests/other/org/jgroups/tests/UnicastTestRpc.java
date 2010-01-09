@@ -28,7 +28,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private RpcDispatcher disp;
     static final String groupname="UnicastTest-Group";
     private long sleep_time=0;
-    private boolean exit_on_end=false, busy_sleep=false;
+    private boolean exit_on_end=false, busy_sleep=false, sync=false;
 
     private boolean started=false;
     private long start=0, stop=0;
@@ -52,10 +52,11 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep) throws Exception {
+    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync) throws Exception {
         this.sleep_time=sleep_time;
         this.exit_on_end=exit_on_end;
         this.busy_sleep=busy_sleep;
+        this.sync=sync;
         channel=new JChannel(props);
         disp=new RpcDispatcher(channel, null, this, this);
         disp.setMethodLookup(new MethodLookup() {
@@ -73,6 +74,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
         catch(Throwable ex) {
             System.err.println("registering the channel in JMX failed: " + ex);
         }
+    }
+
+    void stop() {
+        if(disp != null)
+            disp.stop();
+        Util.close(channel);
     }
 
     public void viewAccepted(View new_view) {
@@ -97,7 +104,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return;
         }
         current_value++;
-        if(current_value % (num_values / 10) == 0)
+        int print=(int)(num_values / 10);
+        if(print > 0 && current_value % print == 0)
             System.out.println("received " + current_value);
         if(current_value >= num_values) {
             stop=System.currentTimeMillis();
@@ -116,15 +124,20 @@ public class UnicastTestRpc extends ReceiverAdapter {
         int c;
 
         while(true) {
-            System.out.print("[1] Send msgs [2] Print view [3] Print connections " +
-                    "[4] Trash connection [5] Trash all connections [q] Quit ");
+            System.out.print("[1] Send msgs [2] Print view [3] Print conns " +
+                    "[4] Trash conn [5] Trash all conns [q] Quit ");
             System.out.flush();
             c=System.in.read();
             switch(c) {
             case -1:
                 break;
             case '1':
-                invokeRpcs();
+                try {
+                    invokeRpcs(sync);
+                }
+                catch(Throwable t) {
+                    System.err.println(t);
+                }
                 break;
             case '2':
                 printView();
@@ -168,7 +181,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    void invokeRpcs() throws Throwable {
+    void invokeRpcs(boolean sync) throws Throwable {
         long num_msgs=Util.readLongFromStdin("Number of RPCs: ");
         int msg_size=Util.readIntFromStdin("Message size: ");
         Address destination=getReceiver();
@@ -178,15 +191,19 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return;
         }
 
-        System.out.println("invoking " + num_msgs + " RPCs on " + destination);
+        System.out.println("invoking " + num_msgs + " RPCs on " + destination + (sync? " synchronously" : " asynchronously"));
 
-        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), GroupRequest.GET_NONE, 5000);
+        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}),
+                              sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000);
 
         int print=(int)(num_msgs / 10);
         byte[] buf=new byte[msg_size];
         for(int i=1; i <= num_msgs; i++) {
-            disp.callRemoteMethod(destination, new MethodCall((short)1, new Object[]{(long)i, buf}), GroupRequest.GET_NONE, 5000);
-            if(i % print == 0)
+            MethodCall call=new MethodCall((short)1, new Object[]{(long)i, buf});
+            if(sync)
+                call.setFlags(Message.DONT_BUNDLE);
+            disp.callRemoteMethod(destination, call, sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000);
+            if(print > 0 && i % print == 0)
                 System.out.println("-- invoked " + i);
             if(sleep_time > 0)
                 Util.sleep(sleep_time, busy_sleep);
@@ -276,6 +293,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         boolean exit_on_end=false;
         boolean busy_sleep=false;
         String props=null;
+        boolean sync=false;
 
 
         for(int i=0; i < args.length; i++) {
@@ -295,24 +313,30 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 busy_sleep=true;
                 continue;
             }
+            if("-sync".equals(args[i])) {
+                sync=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
             help();
             return;
         }
 
-
+        UnicastTestRpc  test=null;
         try {
-            UnicastTestRpc test=new UnicastTestRpc();
-            test.init(props, sleep_time, exit_on_end, busy_sleep);
+            test=new UnicastTestRpc();
+            test.init(props, sleep_time, exit_on_end, busy_sleep, sync);
             test.eventLoop();
         }
         catch(Throwable ex) {
             System.err.println(ex);
+            if(test != null)
+                test.stop();
         }
     }
 
     static void help() {
-        System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep]");
+        System.out.println("UnicastTestRpc [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
+                           "[-exit_on_end] [-busy-sleep] [-sync <true | false>]");
     }
 
 
