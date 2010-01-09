@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.37 2009/05/13 13:06:54 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.38 2010/01/09 16:03:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -33,7 +33,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.37 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.38 2010/01/09 16:03:11 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 @Unsupported
@@ -150,6 +150,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
      * @param state_timeout Max number of milliseconds to wait until state is
      * retrieved
      */
+    @Deprecated
     public DistributedHashtable(PullPushAdapter adapter, Serializable id, long state_timeout)
         throws ChannelNotConnectedException, ChannelClosedException {
         initSignatures();
@@ -159,6 +160,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
         start(state_timeout);
     }
 
+    @Deprecated
     public DistributedHashtable(PullPushAdapter adapter, Serializable id) {
         initSignatures();
         this.channel = (Channel)adapter.getTransport();
