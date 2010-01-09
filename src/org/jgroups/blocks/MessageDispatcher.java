@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.90 2009/10/29 11:45:12 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.91 2010/01/09 11:03:19 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -73,7 +73,7 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-
+    @Deprecated
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, boolean deadlock_detection) {
         this.channel=channel;
         prot_adapter=new ProtocolAdapter();
@@ -88,6 +88,7 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
+    @Deprecated
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2,
                              boolean deadlock_detection, boolean concurrent_processing) {
         this.channel=channel;
@@ -110,12 +111,14 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
+    @Deprecated
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
                              boolean deadlock_detection) {
         this(channel, l, l2, deadlock_detection, false);
         setRequestHandler(req_handler);
     }
 
+    @Deprecated
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
                              boolean deadlock_detection, boolean concurrent_processing) {
         this(channel, l, l2, deadlock_detection, concurrent_processing);
@@ -133,6 +136,7 @@ public class MessageDispatcher implements RequestHandler {
      * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
      *           requests/responses for different building blocks on top of PullPushAdapter.
      */
+    @Deprecated
     public MessageDispatcher(PullPushAdapter adapter, Serializable id,
                              MessageListener l, MembershipListener l2) {
         this.adapter=adapter;
@@ -169,6 +173,7 @@ public class MessageDispatcher implements RequestHandler {
      *           requests/responses for different building blocks on top of PullPushAdapter.
      * @param req_handler The object implementing RequestHandler. It will be called when a request is received
      */
+    @Deprecated
     public MessageDispatcher(PullPushAdapter adapter, Serializable id,
                              MessageListener l, MembershipListener l2,
                              RequestHandler req_handler) {
@@ -196,7 +201,7 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-
+    @Deprecated
     public MessageDispatcher(PullPushAdapter adapter, Serializable id,
                              MessageListener l, MembershipListener l2,
                              RequestHandler req_handler, boolean concurrent_processing) {
