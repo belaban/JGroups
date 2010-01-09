@@ -1,4 +1,4 @@
-// $Id: RspList.java,v 1.9 2007/07/30 10:40:45 belaban Exp $
+// $Id: RspList.java,v 1.10 2010/01/09 11:18:47 belaban Exp $
 
 package org.jgroups.util;
 
@@ -13,9 +13,11 @@ import java.util.*;
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
 public class RspList implements Map<Address,Rsp> {
+    public static final RspList EMPTY_RSP_LIST=new RspList();
 
     /** Map<Address, Rsp> */
     final Map<Address,Rsp> rsps=new HashMap<Address,Rsp>();
+
 
     public RspList() {
 
