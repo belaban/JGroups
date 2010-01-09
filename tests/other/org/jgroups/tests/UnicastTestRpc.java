@@ -2,10 +2,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.blocks.MethodLookup;
+import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
@@ -33,7 +30,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private boolean started=false;
     private long start=0, stop=0;
     private long current_value=0, num_values=0;
-    private long total_time=0, msgs_per_sec;
+    private long total_time=0, msgs_per_sec, total_bytes=0;
 
     private static final Method START;
     private static final Method RECEIVE;
@@ -93,6 +90,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         else {
             started=true;
             current_value=0; // first value to be received
+            total_bytes=0;
             this.num_values=num_values;
             start=System.currentTimeMillis();
         }
@@ -104,6 +102,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return;
         }
         current_value++;
+        total_bytes+=buffer.length;
         int print=(int)(num_values / 10);
         if(print > 0 && current_value % print == 0)
             System.out.println("received " + current_value);
@@ -111,8 +110,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
             stop=System.currentTimeMillis();
             total_time=stop - start;
             msgs_per_sec=(long)(num_values / (total_time / 1000.0));
+            double throughput=total_bytes / (total_time / 1000.0);
             System.out.println("-- received " + num_values + " messages in " + total_time +
-                    " ms (" + msgs_per_sec + " messages/sec)");
+                    " ms (" + msgs_per_sec + " messages/sec, " + Util.printBytes(throughput) + " / sec)");
             started=false;
             if(exit_on_end)
                 System.exit(0);
@@ -198,11 +198,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
         int print=(int)(num_msgs / 10);
         byte[] buf=new byte[msg_size];
+        RequestOptions options=new RequestOptions(sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000, false, null);
+        if(sync) options.setFlags(Message.DONT_BUNDLE);
+
         for(int i=1; i <= num_msgs; i++) {
             MethodCall call=new MethodCall((short)1, new Object[]{(long)i, buf});
-            if(sync)
-                call.setFlags(Message.DONT_BUNDLE);
-            disp.callRemoteMethod(destination, call, sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000);
+            disp.callRemoteMethod(destination, call, options);
             if(print > 0 && i % print == 0)
                 System.out.println("-- invoked " + i);
             if(sleep_time > 0)
