@@ -1,4 +1,4 @@
-// $Id: QuoteClient.java,v 1.12 2009/09/21 09:57:32 belaban Exp $
+// $Id: QuoteClient.java,v 1.13 2010/01/09 16:08:44 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -136,7 +136,6 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     public void actionPerformed(ActionEvent e) {
         String command=e.getActionCommand();
         RspList rsp_list;
-        Rsp     first_rsp;
 
         try {
             if(command.equals("Get")) {
@@ -147,7 +146,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                 }
                 showMsg("Looking up value for " + stock_name + ':');
                 rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
-                                                new String[]{String.class.getName()},
+                                                new Class[]{String.class},
                                                 GroupRequest.GET_ALL, 10000);
 
                 Float val=null;
