@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.38 2009/11/25 11:36:25 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.39 2010/01/11 08:14:20 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -74,6 +74,14 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      */
     public void add(long seqno, Message msg) {
         msgs.putIfAbsent(seqno, msg);
+        retransmitter.add(seqno, seqno);
+    }
+
+    public void addToMessages(long seqno, Message msg) {
+        msgs.putIfAbsent(seqno, msg);
+    }
+
+    public void addToRetransmitter(long seqno, Message msg) {
         retransmitter.add(seqno, seqno);
     }
 
