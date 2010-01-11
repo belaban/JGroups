@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.9 2009/10/21 07:51:09 belaban Exp $
+// $Id: DeadlockTest.java,v 1.10 2010/01/11 08:20:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,6 +7,7 @@ import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.RequestOptions;
 
 import java.lang.reflect.Method;
 
@@ -46,9 +47,12 @@ public class DeadlockTest {
 
 
 
-	private void cast_call(Method method, boolean oob) {
-		MethodCall call=new MethodCall(method);
-        disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0, false, oob);
+    private void cast_call(Method method, boolean oob) {
+        MethodCall call=new MethodCall(method);
+        RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 0, false, null, (byte)0);
+        if(oob)
+            options.setFlags(Message.OOB);
+        disp.callRemoteMethods(null, call, options);
 	}
 
 	// .......................................................................
@@ -66,7 +70,6 @@ public class DeadlockTest {
 		// Call foo() which in turn calls bar()
 		cast_call(FOO, false);
 		channel.close();
-		System.out.println("Disconnected");
 	}
 
 	// .......................................................................

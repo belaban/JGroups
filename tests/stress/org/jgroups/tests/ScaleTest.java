@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MembershipListenerAdapter;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.*;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
@@ -13,7 +10,7 @@ import java.util.Date;
 
 /**
  * @author Bela Ban
- * @version $Id: ScaleTest.java,v 1.3 2009/10/16 07:14:47 belaban Exp $
+ * @version $Id: ScaleTest.java,v 1.4 2010/01/11 08:22:18 belaban Exp $
  */
 public class ScaleTest {
     JChannel ch;
@@ -85,15 +82,14 @@ public class ScaleTest {
     private void invokeRpcs() throws Exception {
         Method method=MethodCall.findMethod(ScaleTest.class, "getAddress", null);
         MethodCall call=new MethodCall(method);
-        call.setRequestMode(GroupRequest.GET_ALL);
-        call.setTimeout(5000);
-        call.setFlags(Message.DONT_BUNDLE);
+        RequestOptions opts=new RequestOptions().setMode(GroupRequest.GET_ALL)
+                .setTimeout(5000).setFlags(Message.DONT_BUNDLE);
         int num_msgs=Util.readIntFromStdin("Number of RPCs: ");
         int print=num_msgs / 10;
         System.out.println("Invoking " + num_msgs + " RPCs:");
         long start=System.currentTimeMillis();
         for(int i=0; i < num_msgs; i++) {
-            disp.callRemoteMethods(null, call);
+            disp.callRemoteMethods(null, call, opts);
             if(print > 0 && i % print == 0)
                 System.out.println("invoking RPC #" + i);
         }
