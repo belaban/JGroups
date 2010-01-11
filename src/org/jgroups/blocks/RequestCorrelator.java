@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.50 2009/10/22 07:43:04 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.51 2010/01/11 08:19:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -505,12 +505,10 @@ public class RequestCorrelator {
      * @param id the id of the <tt>RequestEntry</tt> to remove
      */
     private void removeEntry(long id) {
-        Long id_obj = new Long(id);
-
         // changed by bela Feb 28 2003 (bug fix for 690606)
         // changed back to use synchronization by bela June 27 2003 (bug fix for #761804),
         // we can do this because we now copy for iteration (viewChange() and suspect())
-        requests.remove(id_obj);
+        requests.remove(id);
     }
 
 

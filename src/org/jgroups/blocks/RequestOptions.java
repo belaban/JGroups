@@ -5,24 +5,28 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.1 2010/01/09 11:44:09 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.2 2010/01/11 08:21:50 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
-    private int mode=GroupRequest.GET_NONE;
+    private int       mode=GroupRequest.GET_NONE;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
-    private long timeout=0; // used when mode != GET_NONE
+    private long      timeout=0; // used when mode != GET_NONE
 
     /** Turns on anycasting; this results in multiple unicasts rather than a multicast for group calls */
-    private boolean use_anycasting=false;
+    private boolean   use_anycasting=false;
 
     /** Allows for filtering of responses */
     private RspFilter rsp_filter=null;
 
     /** The flags set in the message in which a request is sent */
-    private byte flags; // Message.OOB, Message.DONT_BUNDLE etc
+    private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
 
+
+
+    public RequestOptions() {
+    }
 
     public RequestOptions(int mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, byte flags) {
         this.mode=mode;
@@ -30,6 +34,10 @@ public class RequestOptions {
         this.use_anycasting=use_anycasting;
         this.rsp_filter=rsp_filter;
         this.flags=flags;
+    }
+
+    public RequestOptions(int mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
+        this(mode, timeout, use_anycasting, rsp_filter, (byte)0);
     }
 
 
