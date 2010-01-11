@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.nio.ByteBuffer;
 
 
@@ -27,11 +28,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
     static final String groupname="UnicastTest-Group";
     private long sleep_time=0;
     private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false;
+    private int num_threads=1;
+    private int num_msgs=100000, msg_size=1000;
 
     private boolean started=false;
     private long start=0, stop=0;
-    private AtomicLong current_value=new AtomicLong(0);
-    private long num_values=0, print;
+    private AtomicInteger current_value=new AtomicInteger(0);
+    private int num_values=0, print;
     private long msgs_per_sec, total_time=0;
     private AtomicLong total_bytes=new AtomicLong(0);
 
@@ -41,8 +44,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     static {
         try {
-            START=UnicastTestRpc.class.getMethod("startTest", long.class);
-            RECEIVE=UnicastTestRpc.class.getMethod("receiveData", long.class, byte[].class);
+            START=UnicastTestRpc.class.getMethod("startTest", int.class);
+            RECEIVE=UnicastTestRpc.class.getMethod("receiveData", int.class, byte[].class);
             METHODS[0]=START;
             METHODS[1]=RECEIVE;
         }
@@ -87,7 +90,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         System.out.println("** view: " + new_view);
     }
 
-    public void startTest(long num_values) {
+    public void startTest(int num_values) {
         if(started) {
             System.err.println("UnicastTest.run(): received START data, but am already processing data");
         }
@@ -101,7 +104,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         }
     }
 
-    public void receiveData(long value, byte[] buffer) {
+    public void receiveData(int value, byte[] buffer) {
         long new_val=current_value.incrementAndGet();
         total_bytes.addAndGet(buffer.length);
         if(print > 0 && new_val % print == 0)
@@ -125,7 +128,11 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
         while(true) {
             System.out.print("[1] Send msgs [2] Print view [3] Print conns " +
-                    "[4] Trash conn [5] Trash all conns [q] Quit ");
+                    "[4] Trash conn [5] Trash all conns" +
+                    "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
+                    "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
+                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync + ")" +
+                    "\n[q] Quit\n");
             System.out.flush();
             c=System.in.read();
             switch(c) {
@@ -133,7 +140,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 break;
             case '1':
                 try {
-                    invokeRpcs(sync);
+                    invokeRpcs();
                 }
                 catch(Throwable t) {
                     System.err.println(t);
@@ -152,6 +159,21 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 removeAllConnections();
                 break;
             case '6':
+                setSenderThreads();
+                break;
+            case '7':
+                setNumMessages();
+                break;
+            case '8':
+                setMessageSize();
+                break;
+            case 'o':
+                oob=!oob;
+                System.out.println("oob=" + oob);
+                break;
+            case 's':
+                sync=!sync;
+                System.out.println("sync=" + sync);
                 break;
             case 'q':
                 channel.close();
@@ -181,19 +203,22 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    void invokeRpcs(boolean sync) throws Throwable {
-        long num_msgs=Util.readLongFromStdin("Number of RPCs: ");
-        int msg_size=Util.readIntFromStdin("Message size: ");
+    void invokeRpcs() throws Throwable {
         Address destination=getReceiver();
+
+        if(num_threads > 1 && num_msgs % num_threads != 0) {
+            System.err.println("num_msgs (" + num_msgs + " ) has to be divisible by num_threads (" + num_threads + ")");
+            return;
+        }
 
         if(destination == null) {
             System.err.println("UnicastTest.invokeRpcs(): receiver is null, cannot send messages");
             return;
         }
 
-        System.out.println("invoking " + num_msgs + " RPCs on " + destination + (sync? " synchronously" : " asynchronously") +
-                ", oob=" + oob);
-
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + " on " +
+                destination + ", sync=" + sync + ", oob=" + oob);
+        
         // The first call needs to be synchronous with OO B !
         RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 5000, false, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
@@ -202,17 +227,33 @@ public class UnicastTestRpc extends ReceiverAdapter {
         disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
         options.setMode(sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE);
 
-        byte[] buf=new byte[msg_size];
+        Invoker[] invokers=new Invoker[num_threads];
+        for(int i=0; i < invokers.length; i++)
+            invokers[i]=new Invoker(destination, options, num_msgs / num_threads);
+        for(Invoker invoker: invokers)
+            invoker.start();
+        for(Invoker invoker: invokers)
+            invoker.join();
 
-        for(int i=1; i <= num_msgs; i++) {
-            MethodCall call=new MethodCall((short)1, new Object[]{(long)i, buf});
-            disp.callRemoteMethod(destination, call, options);
-            if(print > 0 && i % print == 0)
-                System.out.println("-- invoked " + i);
-            if(sleep_time > 0)
-                Util.sleep(sleep_time, busy_sleep);
-        }
         System.out.println("done sending " + num_msgs + " to " + destination);
+    }
+
+    void setSenderThreads() throws Exception {
+        int threads=Util.readIntFromStdin("Number of sender threads: ");
+        int old=this.num_threads;
+        this.num_threads=threads;
+        System.out.println("sender threads set to " + num_threads + " (from " + old + ")");
+    }
+
+    void setNumMessages() throws Exception {
+        num_msgs=Util.readIntFromStdin("Number of RPCs: ");
+        System.out.println("Set num_msgs=" + num_msgs);
+        print=num_msgs / 10;
+    }
+
+    void setMessageSize() throws Exception {
+        msg_size=Util.readIntFromStdin("Message size: ");
+        System.out.println("set msg_size=" + msg_size);
     }
 
     void printView() {
@@ -249,22 +290,53 @@ public class UnicastTestRpc extends ReceiverAdapter {
         }
     }
 
+    private class Invoker extends Thread {
+        private final Address destination;
+        private final RequestOptions options;
+        private final int number_of_msgs;
+
+        
+        public Invoker(Address destination, RequestOptions options, int number_of_msgs) {
+            this.destination=destination;
+            this.options=options;
+            this.number_of_msgs=number_of_msgs;
+        }
+
+        public void run() {
+            byte[] buf=new byte[msg_size];
+
+            for(int i=1; i <= number_of_msgs; i++) {
+                MethodCall call=new MethodCall((short)1, new Object[]{i, buf});
+                try {
+                    disp.callRemoteMethod(destination, call, options);
+                    if(print > 0 && i % print == 0)
+                        System.out.println("-- invoked " + i);
+                    if(sleep_time > 0)
+                        Util.sleep(sleep_time, busy_sleep);
+                }
+                catch(Throwable throwable) {
+                    throwable.printStackTrace();
+                }
+            }
+        }
+    }
+
 
     static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
         public byte[] objectToByteBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
             if(call.getId() == 0) {
-                Long arg=(Long)call.getArgs()[0];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE);
-                buf.put((byte)0).putLong(arg);
+                Integer arg=(Integer)call.getArgs()[0];
+                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE);
+                buf.put((byte)0).putInt(arg);
                 return buf.array();
             }
             else if(call.getId() == 1) {
-                Long arg=(Long)call.getArgs()[0];
+                Integer arg=(Integer)call.getArgs()[0];
                 byte[] arg2=(byte[])call.getArgs()[1];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE + Global.INT_SIZE + arg2.length);
-                buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.INT_SIZE + arg2.length);
+                buf.put((byte)1).putInt(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
                 return buf.array();
             }
             else
@@ -277,10 +349,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
             byte type=buf.get();
             switch(type) {
                 case 0:
-                    long arg=buf.getLong();
+                    int arg=buf.getInt();
                     return new MethodCall((short)0, new Object[]{arg});
                 case 1:
-                    arg=buf.getLong();
+                    arg=buf.getInt();
                     int len=buf.getInt();
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
@@ -345,7 +417,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     static void help() {
         System.out.println("UnicastTestRpc [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep] [-sync] [-oob]");
+                           "[-exit_on_end] [-busy-sleep]");
     }
 
 
