@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.149 2010/01/08 07:51:59 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.150 2010/01/11 08:26:32 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -340,12 +340,18 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     // a ConcurrentSkipListMap, which is faster (log(n) access cost for most ops). CSLM requires JDK 1.6
                     // Note that moving the next statement out of the lock scope made for some really ugly code, that's
                     // why this was reverted !
-                    entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+
+                    // entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                    // entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                    entry.sent_msgs.add(seqno, msg);
+                    
                     entry.sent_msgs_seqno++;
                 }
                 finally {
                     entry.unlock();
                 }
+
+                // entry.sent_msgs.addToRetransmitter(seqno, msg);  // adds to retransmitter
 
                 if(log.isTraceEnabled()) {
                     StringBuilder sb=new StringBuilder();
