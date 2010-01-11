@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicLong;
 import java.nio.ByteBuffer;
 
 
@@ -25,12 +26,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private RpcDispatcher disp;
     static final String groupname="UnicastTest-Group";
     private long sleep_time=0;
-    private boolean exit_on_end=false, busy_sleep=false, sync=false;
+    private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false;
 
     private boolean started=false;
     private long start=0, stop=0;
-    private long current_value=0, num_values=0;
-    private long total_time=0, msgs_per_sec, total_bytes=0;
+    private AtomicLong current_value=new AtomicLong(0);
+    private long num_values=0, print;
+    private long msgs_per_sec, total_time=0;
+    private AtomicLong total_bytes=new AtomicLong(0);
 
     private static final Method START;
     private static final Method RECEIVE;
@@ -49,11 +52,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync) throws Exception {
+    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync, boolean oob) throws Exception {
         this.sleep_time=sleep_time;
         this.exit_on_end=exit_on_end;
         this.busy_sleep=busy_sleep;
         this.sync=sync;
+        this.oob=oob;
         channel=new JChannel(props);
         disp=new RpcDispatcher(channel, null, this, this);
         disp.setMethodLookup(new MethodLookup() {
@@ -89,28 +93,24 @@ public class UnicastTestRpc extends ReceiverAdapter {
         }
         else {
             started=true;
-            current_value=0; // first value to be received
-            total_bytes=0;
+            current_value.set(0); // first value to be received
+            total_bytes.set(0);
             this.num_values=num_values;
+            print=num_values / 10;
             start=System.currentTimeMillis();
         }
     }
 
     public void receiveData(long value, byte[] buffer) {
-        if(current_value + 1 != value) {
-            System.err.println("-- message received (" + value + ") is not 1 greater than " + current_value);
-            return;
-        }
-        current_value++;
-        total_bytes+=buffer.length;
-        int print=(int)(num_values / 10);
-        if(print > 0 && current_value % print == 0)
+        long new_val=current_value.incrementAndGet();
+        total_bytes.addAndGet(buffer.length);
+        if(print > 0 && new_val % print == 0)
             System.out.println("received " + current_value);
-        if(current_value >= num_values) {
+        if(new_val >= num_values) {
             stop=System.currentTimeMillis();
             total_time=stop - start;
             msgs_per_sec=(long)(num_values / (total_time / 1000.0));
-            double throughput=total_bytes / (total_time / 1000.0);
+            double throughput=total_bytes.get() / (total_time / 1000.0);
             System.out.println("-- received " + num_values + " messages in " + total_time +
                     " ms (" + msgs_per_sec + " messages/sec, " + Util.printBytes(throughput) + " / sec)");
             started=false;
@@ -191,15 +191,18 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return;
         }
 
-        System.out.println("invoking " + num_msgs + " RPCs on " + destination + (sync? " synchronously" : " asynchronously"));
+        System.out.println("invoking " + num_msgs + " RPCs on " + destination + (sync? " synchronously" : " asynchronously") +
+                ", oob=" + oob);
 
-        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}),
-                              sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000);
-
-        int print=(int)(num_msgs / 10);
-        byte[] buf=new byte[msg_size];
-        RequestOptions options=new RequestOptions(sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE, 5000, false, null);
+        // The first call needs to be synchronous with OO B !
+        RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 5000, false, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
+        if(oob) options.setFlags(Message.OOB);
+
+        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
+        options.setMode(sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE);
+
+        byte[] buf=new byte[msg_size];
 
         for(int i=1; i <= num_msgs; i++) {
             MethodCall call=new MethodCall((short)1, new Object[]{(long)i, buf});
@@ -295,6 +298,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         boolean busy_sleep=false;
         String props=null;
         boolean sync=false;
+        boolean oob=false;
 
 
         for(int i=0; i < args.length; i++) {
@@ -315,7 +319,11 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 continue;
             }
             if("-sync".equals(args[i])) {
-                sync=Boolean.parseBoolean(args[++i]);
+                sync=true;
+                continue;
+            }
+            if("-oob".equals(args[i])) {
+                oob=true;
                 continue;
             }
             help();
@@ -325,7 +333,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         UnicastTestRpc  test=null;
         try {
             test=new UnicastTestRpc();
-            test.init(props, sleep_time, exit_on_end, busy_sleep, sync);
+            test.init(props, sleep_time, exit_on_end, busy_sleep, sync, oob);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -337,7 +345,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     static void help() {
         System.out.println("UnicastTestRpc [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep] [-sync <true | false>]");
+                           "[-exit_on_end] [-busy-sleep] [-sync] [-oob]");
     }
 
 
