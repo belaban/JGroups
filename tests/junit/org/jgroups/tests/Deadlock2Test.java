@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.22 2009/10/21 07:53:29 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.23 2010/01/11 08:20:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,9 +6,11 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.RequestOptions;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -24,7 +26,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
@@ -163,7 +165,9 @@ public class Deadlock2Test extends ChannelTestBase {
             log("**** outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 5000);
-            RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0, false, true);
+            RequestOptions opts=new RequestOptions(GroupRequest.GET_ALL, 0, false, null, (byte)0);
+            opts.setFlags(Message.OOB);
+            RspList rspList = disp.callRemoteMethods(null, call, opts);
             Vector results = rspList.getResults();
             log("results of calling innerMethod():\n" + rspList);
             StringBuilder sb=new StringBuilder("outerMethod[");
