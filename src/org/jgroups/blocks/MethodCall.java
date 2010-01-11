@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.35 $
+ * @version $Revision: 1.36 $
  */
 public class MethodCall implements Externalizable {
 
@@ -65,15 +65,6 @@ public class MethodCall implements Externalizable {
     /** Use an ID to map to a method */
     protected static final short ID=5;
 
-    transient int request_mode=0; // GET_ALL, GET_FIRST etc
-
-    transient protected long timeout=0;
-
-    transient protected byte flags=0;
-
-    transient protected boolean use_anycasting=false;
-
-    transient protected RspFilter filter=null;
 
 
     /**
@@ -187,49 +178,6 @@ public class MethodCall implements Externalizable {
     }
 
 
-    public int getRequestMode() {
-        return request_mode;
-    }
-
-    public void setRequestMode(int request_mode) {
-        this.request_mode=request_mode;
-    }
-
-    public long getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(long timeout) {
-        this.timeout=timeout;
-    }
-
-    public byte getFlags() {
-        return flags;
-    }
-
-    /**
-     * Sets a flag (Message.OOB or Message.DONT_BUNDLE for example)
-     * @param flags
-     */
-    public void setFlags(byte flags) {
-        this.flags=flags;
-    }
-
-    public boolean isUseAnycasting() {
-        return use_anycasting;
-    }
-
-    public void setUseAnycasting(boolean use_anycasting) {
-        this.use_anycasting=use_anycasting;
-    }
-
-    public RspFilter getFilter() {
-        return filter;
-    }
-
-    public void setFilter(RspFilter filter) {
-        this.filter=filter;
-    }
 
     @Deprecated
     public synchronized Object put(Object key, Object value) {
