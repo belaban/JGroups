@@ -55,7 +55,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.43 2010/01/09 11:37:28 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.44 2010/01/11 08:20:37 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
@@ -267,7 +267,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
         }
 
         sendRequest(targets, req_id, use_anycasting);
-        if(!block_for_results)
+        if(!block_for_results || rsp_mode == GET_NONE)
             return true;
 
         lock.lock();
