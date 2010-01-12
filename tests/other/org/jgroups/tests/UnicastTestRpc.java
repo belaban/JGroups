@@ -219,8 +219,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + " on " +
                 destination + ", sync=" + sync + ", oob=" + oob);
         
-        // The first call needs to be synchronous with OO B !
-        RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 5000, false, null);
+        // The first call needs to be synchronous with OOB !
+        RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 0, false, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
         if(oob) options.setFlags(Message.OOB);
 
@@ -304,9 +304,11 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
         public void run() {
             byte[] buf=new byte[msg_size];
+            Object[] args=new Object[]{0, buf};
+            MethodCall call=new MethodCall((short)1, args);
 
             for(int i=1; i <= number_of_msgs; i++) {
-                MethodCall call=new MethodCall((short)1, new Object[]{i, buf});
+                args[0]=i;
                 try {
                     disp.callRemoteMethod(destination, call, options);
                     if(print > 0 && i % print == 0)

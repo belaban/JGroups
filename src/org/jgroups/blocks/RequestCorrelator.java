@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.51 2010/01/11 08:19:40 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.52 2010/01/12 15:34:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -12,10 +12,7 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -117,6 +114,7 @@ public class RequestCorrelator {
      * order to solve deadlocks. Slows down processing a little bit when
      * enabled due to runtime checks involved.
      */
+    @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection) {
         this.name               = name;
@@ -125,7 +123,7 @@ public class RequestCorrelator {
         start();
     }
 
-
+    @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
         this.name                  = name;
@@ -134,6 +132,7 @@ public class RequestCorrelator {
         start();
     }
 
+    @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, Address local_addr) {
         this.name               = name;
@@ -143,6 +142,7 @@ public class RequestCorrelator {
         start();
     }
 
+    @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler,
                              boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
         this.name                  = name;
@@ -152,6 +152,7 @@ public class RequestCorrelator {
         start();
     }
 
+    @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler,
                              Address local_addr, boolean concurrent_processing) {
         this.name                  = name;
