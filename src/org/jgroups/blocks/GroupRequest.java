@@ -55,7 +55,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.44 2010/01/11 08:20:37 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.45 2010/01/12 15:35:38 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command, Future<RspList> {
     /** return only first response */
@@ -108,7 +108,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
     protected final RequestCorrelator corr; // either use RequestCorrelator or ...
     protected final Transport transport;    // Transport (one of them has to be non-null)
 
-    protected RspFilter rsp_filter=null;
+    protected RspFilter rsp_filter;
 
     protected final int rsp_mode;
     protected volatile boolean done=false;
@@ -169,7 +169,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
      @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public GroupRequest(Message m, RequestCorrelator corr, Vector<Address> mbrs, int rsp_mode,
+    public GroupRequest(Message m, RequestCorrelator corr, Collection<Address> mbrs, int rsp_mode,
                         long timeout, int expected_mbrs) {
         this.request_msg=m;
         this.transport = null;
@@ -178,18 +178,28 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
         this.req_id=getRequestId();  
         this.timeout=timeout;
         this.expected_mbrs=expected_mbrs;
-        if(mbrs != null) {            
-            for(Address mbr: mbrs) {
-                requests.put(mbr, new Rsp(mbr));
-            }            
-            this.members.clear();
-            this.members.addAll(mbrs);
-        }
+        setTargets(mbrs);
     }
+
+    public GroupRequest(Message m, RequestCorrelator corr, Address target, int rsp_mode,
+                        long timeout, int expected_mbrs) {
+        this.request_msg=m;
+        this.transport = null;
+        this.corr=corr;
+        this.rsp_mode=rsp_mode;
+        this.req_id=getRequestId();
+        this.timeout=timeout;
+        this.expected_mbrs=expected_mbrs;
+        setTarget(target);
+    }
+
+    
+
+
 
 
     public GroupRequest(Message m, Transport transport, Vector<Address> members, int rsp_mode) {
-       this(m,transport,members,rsp_mode,0,0);
+        this(m,transport,members,rsp_mode,0,0);
     }
 
 
@@ -199,7 +209,7 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
      */
     public GroupRequest(Message m,
                         Transport transport,
-                        Vector<Address> mbrs,
+                        Collection<Address> mbrs,
                         int rsp_mode,
                         long timeout,
                         int expected_mbrs) {
@@ -210,10 +220,22 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
         this.req_id=getRequestId();        
         this.timeout=timeout;
         this.expected_mbrs=expected_mbrs;
-        if(mbrs != null) {            
+        setTargets(mbrs);
+    }
+
+    void setTarget(Address mbr) {
+        if(mbr != null) {
+            requests.put(mbr, new Rsp(mbr));
+            this.members.clear();
+            this.members.add(mbr);
+        }
+    }
+
+    void setTargets(Collection<Address> mbrs) {
+        if(mbrs != null) {
             for(Address mbr: mbrs) {
                 requests.put(mbr, new Rsp(mbr));
-            }            
+            }
             this.members.clear();
             this.members.addAll(mbrs);
         }
@@ -367,9 +389,12 @@ public class GroupRequest implements RspCollector, Command, Future<RspList> {
         Address mbr;
         Vector<Address> mbrs=new_view != null? new_view.getMembers() : null;
 
+        if(mbrs == null)
+            return;
+
         lock.lock();
         try {
-            if(requests == null || requests.isEmpty() || mbrs == null)
+            if(requests == null || requests.isEmpty())
                 return;
 
             this.members.clear();
