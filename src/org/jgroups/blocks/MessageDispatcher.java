@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.92 2010/01/11 08:19:08 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.93 2010/01/12 15:36:27 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -493,7 +493,6 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public Object sendMessage(Message msg, RequestOptions opts) throws TimeoutException, SuspectedException {
-        Vector<Address> mbrs=new Vector<Address>();
         Address dest=msg.getDest();
         if(dest == null) {
             if(log.isErrorEnabled())
@@ -501,9 +500,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        mbrs.addElement(dest);   // dummy membership (of destination address)
-
-        GroupRequest req=new GroupRequest(msg, corr, mbrs, opts.getMode(), opts.getTimeout(), 0);
+        GroupRequest req=new GroupRequest(msg, corr, dest, opts.getMode(), opts.getTimeout(), 0);
         req.setCaller(local_addr);
         try {
             req.execute();
@@ -536,28 +533,23 @@ public class MessageDispatcher implements RequestHandler {
 
     
     public <T> Future<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        Vector mbrs=new Vector();
-        Object dest=msg.getDest();
-        GroupRequest _req;
-
+        Address dest=msg.getDest();
         if(dest == null) {
             if(log.isErrorEnabled())
                 log.error("the message's destination is null, cannot send message");
             return null;
         }
 
-        mbrs.addElement(dest);   // dummy membership (of destination address)
-
-        _req=new GroupRequest(msg, corr, mbrs, mode, timeout, 0);
-        _req.setCaller(local_addr);
+        GroupRequest req=new GroupRequest(msg, corr, dest, mode, timeout, 0);
+        req.setCaller(local_addr);
         try {
-            _req.execute(false, false);
+            req.execute(false, false);
             if(mode == GroupRequest.GET_NONE)
                 return new NullFuture();
-            return new SingleFuture<T>(_req);
+            return new SingleFuture<T>(req);
         }
         catch(Exception t) {
-            throw new RuntimeException("failed executing request " + _req, t);
+            throw new RuntimeException("failed executing request " + req, t);
         }
     }
 
