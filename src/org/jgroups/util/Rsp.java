@@ -1,4 +1,4 @@
-// $Id: Rsp.java,v 1.8 2009/09/20 16:11:57 belaban Exp $
+// $Id: Rsp.java,v 1.9 2010/01/13 13:18:52 belaban Exp $
 
 package org.jgroups.util;
 
@@ -8,18 +8,18 @@ import org.jgroups.Address;
 /**
  * class that represents a response from a communication
  */
-public class Rsp {
+public class Rsp<T> {
     /* flag that represents whether the response was received */
-    boolean received=false;
+    boolean received;
 
     /* flag that represents whether the response was suspected */
-    boolean suspected=false;
+    boolean suspected;
 
     /* The sender of this response */
-    Address sender=null;
+    Address sender;
 
     /* the value from the response */
-    Object retval=null;
+    T retval;
 
 
     public Rsp(Address sender) {
@@ -31,7 +31,7 @@ public class Rsp {
         this.suspected=suspected;
     }
 
-    public Rsp(Address sender, Object retval) {
+    public Rsp(Address sender, T retval) {
         this.sender=sender;
         this.retval=retval;
         received=true;
@@ -50,11 +50,11 @@ public class Rsp {
         return sender != null? sender.hashCode() : 0;
     }
 
-    public Object getValue() {
+    public T getValue() {
         return retval;
     }
 
-    public void setValue(Object val) {
+    public void setValue(T val) {
         this.retval=val;
     }
 
