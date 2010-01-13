@@ -295,9 +295,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         private final RequestOptions options;
         private final int number_of_msgs;
 
-        long total_time=0;
 
-        
         public Invoker(Address destination, RequestOptions options, int number_of_msgs) {
             this.destination=destination;
             this.options=options;
@@ -312,11 +310,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             for(int i=1; i <= number_of_msgs; i++) {
                 args[0]=i;
                 try {
-                    long start=System.currentTimeMillis();
                     disp.callRemoteMethod(destination, call, options);
-                    long diff=System.currentTimeMillis();
-                    total_time+=diff;
-
                     if(print > 0 && i % print == 0)
                         System.out.println("-- invoked " + i);
                     if(sleep_time > 0)
@@ -326,9 +320,6 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     throwable.printStackTrace();
                 }
             }
-
-            double time_per_req=(double)total_time / number_of_msgs;
-            System.out.println(time_per_req + " ms / req");
         }
     }
 
