@@ -1,21 +1,16 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Command;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
 
-import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -26,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.1 2010/01/12 17:44:50 belaban Exp $
+ * @version $Id: Request.java,v 1.2 2010/01/13 13:13:32 belaban Exp $
  */
 public abstract class Request implements RspCollector, Command {
     /** return only first response */
@@ -47,12 +42,11 @@ public abstract class Request implements RspCollector, Command {
     /** return no response (async call) */
     public static final int GET_NONE=6;
 
+
     protected static final Log log=LogFactory.getLog(Request.class);
 
     /** To generate unique request IDs (see getRequestId()) */
     protected static final AtomicLong REQUEST_ID=new AtomicLong(1);
-
-    protected Address caller;
 
     protected final Lock lock=new ReentrantLock();
 
@@ -72,6 +66,7 @@ public abstract class Request implements RspCollector, Command {
     protected final long              req_id; // request ID for this request
 
 
+    
 
     public Request(Message request, RequestCorrelator corr, Transport transport, RspFilter filter, int mode, long timeout) {
         this.request_msg=request;
@@ -83,14 +78,6 @@ public abstract class Request implements RspCollector, Command {
         this.req_id=getRequestId();
     }
 
-
-    public Address getCaller() {
-        return caller;
-    }
-
-    public void setCaller(Address caller) {
-        this.caller=caller;
-    }
 
     public void setResponseFilter(RspFilter filter) {
         rsp_filter=filter;
@@ -138,7 +125,7 @@ public abstract class Request implements RspCollector, Command {
 
     public abstract void suspect(Address mbr);
 
-    protected abstract void adjustMembership();
+    protected void adjustMembership() {}
     
     protected abstract boolean responsesComplete();
 
@@ -173,6 +160,13 @@ public abstract class Request implements RspCollector, Command {
         return done;
     }
 
+
+    public String toString() {
+        StringBuilder ret=new StringBuilder(128);
+        ret.append(super.toString());
+        ret.append("req_id=").append(req_id).append(", mode=" + modeToString(rsp_mode));
+        return ret.toString();
+    }
 
 
     /* --------------------------------- Private Methods -------------------------------------*/

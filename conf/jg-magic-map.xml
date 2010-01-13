@@ -18,7 +18,6 @@
     <class id="31" name="org.jgroups.View"/>
     <class id="32" name="org.jgroups.ViewId"/>
     <class id="34" name="org.jgroups.Address"/>
-    <class id="35" name="org.jgroups.blocks.RequestCorrelator$Header"/>
     <class id="36" name="org.jgroups.protocols.PingData"/>
     <class id="38" name="java.util.Vector"/>
     <class id="39" name="org.jgroups.protocols.pbcast.JoinRsp"/>
@@ -41,4 +40,6 @@
     <class id="68" name="org.jgroups.util.UUID"/>
     <class id="69" name="org.jgroups.protocols.MERGE3$CoordAnnouncement"/>
     <class id="70" name="org.jgroups.protocols.MERGEFAST$MergefastHeader"/>
+    <class id="71" name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
+    <class id="72" name="org.jgroups.blocks.RequestCorrelator$SingleDestinationHeader"/>
 </magic-number-class-mapping>
