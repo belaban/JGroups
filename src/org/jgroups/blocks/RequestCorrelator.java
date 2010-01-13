@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.52 2010/01/12 15:34:54 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.53 2010/01/13 13:17:47 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -189,6 +189,7 @@ public class RequestCorrelator {
     /**
      * Helper method for {@link #sendRequest(long,List,Message,RspCollector)}.
      */
+    @Deprecated
     public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
         sendRequest(id, null, msg, coll);
     }
@@ -212,43 +213,34 @@ public class RequestCorrelator {
     }
 
     /**
-     * Send a request to a group. If no response collector is given, no
-     * responses are expected (making the call asynchronous).
+     * Sends a request to a group. If no response collector is given, no responses are expected (making the call asynchronous)
      *
-     * @param id The request ID. Must be unique for this JVM (e.g. current
-     * time in millisecs)
+     * @param id The request ID. Must be unique for this JVM (e.g. current time in millisecs)
      * @param dest_mbrs The list of members who should receive the call. Usually a group RPC
      *                  is sent via multicast, but a receiver drops the request if its own address
      *                  is not in this list. Will not be used if it is null.
      * @param msg The request to be sent. The body of the message carries
      * the request data
      *
-     * @param coll A response collector (usually the object that invokes
-     * this method). Its methods <code>receiveResponse()</code> and
-     * <code>suspect()</code> will be invoked when a message has been received
+     * @param coll A response collector (usually the object that invokes this method). Its methods
+     * <code>receiveResponse()</code> and <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
-        Header hdr;
-
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
         }
 
-        // i. Create the request correlator header and add it to the
-        // msg
-        // ii. If a reply is expected (sync call / 'coll != null'), add a
-        // coresponding entry in the pending requests table
+        // i.   Create the request correlator header and add it to the msg
+        // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
-        // iv. Pass the msg down to the protocol layer below
-        hdr=new Header(Header.REQ, id, (coll != null), name);
-        hdr.dest_mbrs=dest_mbrs;
-
-        if (coll != null) {
-            addEntry(hdr.id, coll);
-        }
+        // iv.  Pass the msg down to the protocol layer below
+        Header hdr=new MultiDestinationHeader(Header.REQ, id, (coll != null), name, dest_mbrs);
         msg.putHeader(name, hdr);
+
+        if(coll != null)
+            addEntry(hdr.id, coll);
 
         if(transport instanceof Protocol) {
             if(use_anycasting) {
@@ -282,13 +274,47 @@ public class RequestCorrelator {
             throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " + transport.getClass());
     }
 
+    /**
+     * Sends a request to a single destination
+     * @param id
+     * @param target
+     * @param msg
+     * @param coll
+     * @throws Exception
+     */
+    public void sendUnicastRequest(long id, Address target, Message msg, RspCollector coll) throws Exception {
+        if(transport == null) {
+            if(log.isWarnEnabled()) log.warn("transport is not available !");
+            return;
+        }
+
+        // i.   Create the request correlator header and add it to the msg
+        // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
+        // iii. If deadlock detection is enabled, set/update the call stack
+        // iv.  Pass the msg down to the protocol layer below
+        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), name, target);
+        msg.putHeader(name, hdr);
+
+        if(coll != null)
+            addEntry(hdr.id, coll);
+
+        if(transport instanceof Protocol) {
+            ((Protocol)transport).down(new Event(Event.MSG, msg));
+        }
+        else if(transport instanceof Transport) {
+            ((Transport)transport).send(msg);
+        }
+        else
+            throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " +
+                    transport.getClass());
+    }
+
 
 
 
 
     /**
-     * Used to signal that a certain request may be garbage collected as
-     * all responses have been received.
+     * Used to signal that a certain request may be garbage collected as all responses have been received.
      */
     public void done(long id) {
         removeEntry(id);
@@ -417,17 +443,33 @@ public class RequestCorrelator {
             return false;
         }
 
-        // If the header contains a destination list, and we are not part of it, then we discard the
-        // request (was addressed to other members)
-        java.util.List dests=hdr.dest_mbrs;
-        if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-            if(log.isTraceEnabled()) {
-                log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
-                          append(" as we are not part of destination list (local_addr=").
-                          append(local_addr).append(", hdr=").append(hdr).append(')'));
+        if(hdr instanceof MultiDestinationHeader) {
+            // If the header contains a destination list, and we are not part of it, then we discard the
+            // request (was addressed to other members)
+            java.util.List dests=((MultiDestinationHeader)hdr).dest_mbrs;
+            if(dests != null && local_addr != null && !dests.contains(local_addr)) {
+                if(log.isTraceEnabled()) {
+                    log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
+                            append(" as we are not part of destination list (local_addr=").
+                            append(local_addr).append(", hdr=").append(hdr).append(')'));
+                }
+                return true; // don't pass this message further up
             }
+        }
+        else if(hdr instanceof SingleDestinationHeader) {
+            Address target=((SingleDestinationHeader)hdr).target;
+            if(target != null && local_addr != null && !target.equals(local_addr)) {
+                if(log.isTraceEnabled())
+                    log.trace("discarded request from " + msg.getSrc() + " as the target " + target +
+                            " doesn't match our local address (" + local_addr + ")");
+                return true; // don't pass this message further up
+            }
+        }
+        else {
+            log.error("header is not known: " + hdr.getClass());
             return true; // don't pass this message further up
         }
+
 
 
         // [Header.REQ]:
@@ -452,7 +494,6 @@ public class RequestCorrelator {
                 break;
 
             case Header.RSP:
-                msg.getHeader(name);
                 RspCollector coll=requests.get(hdr.id);
                 if(coll != null) {
                     Address sender=msg.getSrc();
@@ -573,7 +614,7 @@ public class RequestCorrelator {
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
-        rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
+        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, name, rsp.getDest());
         rsp.putHeader(name, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
@@ -602,27 +643,22 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static final class Header extends org.jgroups.Header implements Streamable {
+    public static abstract class Header extends org.jgroups.Header implements Streamable {
         public static final byte REQ = 0;
         public static final byte RSP = 1;
 
         /** Type of header: request or reply */
-        public byte type=REQ;
+        public byte type;
         /**
-         * The id of this request to distinguish among other requests from
-         * the same <tt>RequestCorrelator</tt> */
-        public long id=0;
+         * The id of this request to distinguish among other requests from the same <tt>RequestCorrelator</tt> */
+        public long id;
 
         /** msg is synchronous if true */
-        public boolean rsp_expected=true;
+        public boolean rsp_expected;
 
         /** The unique name of the associated <tt>RequestCorrelator</tt> */
-        public String corrName=null;
+        public String corrName;
 
-        /** Contains a list of members who should receive the request (others will drop). Ignored if null */
-        public java.util.List<Address> dest_mbrs=null;
-        
-        private static final long serialVersionUID=7550174166881969250L;
 
 
         /**
@@ -648,12 +684,10 @@ public class RequestCorrelator {
          */
         public String toString() {
             StringBuilder ret=new StringBuilder();
-            ret.append("[Header: name=" + corrName + ", type=");
+            ret.append("name=" + corrName + ", type=");
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
-            ret.append(", rsp_expected=" + rsp_expected + ']');
-            if(dest_mbrs != null)
-                ret.append(", dest_mbrs=").append(dest_mbrs);
+            ret.append(", rsp_expected=" + rsp_expected);
             return ret.toString();
         }
 
@@ -669,7 +703,6 @@ public class RequestCorrelator {
             else {
                 out.writeBoolean(false);
             }
-            out.writeObject(dest_mbrs);
         }
 
 
@@ -679,7 +712,6 @@ public class RequestCorrelator {
             rsp_expected = in.readBoolean();
             if(in.readBoolean())
                 corrName         = in.readUTF();
-            dest_mbrs=(java.util.List<Address>)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
@@ -694,7 +726,6 @@ public class RequestCorrelator {
             else {
                 out.writeBoolean(false);
             }
-            Util.writeAddresses(dest_mbrs, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -706,8 +737,6 @@ public class RequestCorrelator {
             present=in.readBoolean();
             if(present)
                 corrName=in.readUTF();
-
-            dest_mbrs=(List<Address>)Util.readAddresses(in, java.util.LinkedList.class);
         }
 
         public int size() {
@@ -718,11 +747,100 @@ public class RequestCorrelator {
             retval+=Global.BYTE_SIZE; // presence for corrName
             if(corrName != null)
                 retval+=corrName.length() +2; // UTF
-
-            retval+=Util.size(dest_mbrs);
             return retval;
         }
     }
+
+
+    public static final class SingleDestinationHeader extends Header {
+        public Address target;
+        private static final long serialVersionUID=-7662054209190400349L;
+
+        public SingleDestinationHeader() {
+        }
+
+        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, String name, Address target) {
+            super(type, id, rsp_expected, name);
+            this.target=target;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(target);
+        }
+
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            target=(Address)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            super.writeTo(out);
+            Util.writeAddress(target, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            target=Util.readAddress(in);
+        }
+
+        public int size() {
+            return super.size() + Util.size(target);
+        }
+
+        public String toString() {
+            return super.toString() + ", target=" + target;
+        }
+    }
+
+    public static final class MultiDestinationHeader extends Header {
+        /** Contains a list of members who should receive the request (others will drop). Ignored if null */
+        public java.util.List<Address> dest_mbrs=null;
+        private static final long serialVersionUID=-2636993059660054696L;
+
+        public MultiDestinationHeader() {
+        }
+
+        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, String name, List<Address> dest_mbrs) {
+            super(type, id, rsp_expected, name);
+            this.dest_mbrs=dest_mbrs;
+        }
+
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(dest_mbrs);
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            dest_mbrs=(java.util.List<Address>)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            super.writeTo(out);
+            Util.writeAddresses(dest_mbrs, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            dest_mbrs=(List<Address>)Util.readAddresses(in, java.util.LinkedList.class);
+        }
+
+        public int size() {
+            return (int)(super.size() + Util.size(dest_mbrs));
+        }
+
+        public String toString() {
+            String str=super.toString();
+            if(dest_mbrs != null)
+                str=str+ ", dest_mbrs=" + dest_mbrs;
+            return str;
+        }
+    }
+
+
 
     private static class MyProbeHandler implements TP.ProbeHandler {
         private final ConcurrentMap<Long,RspCollector> requests;
