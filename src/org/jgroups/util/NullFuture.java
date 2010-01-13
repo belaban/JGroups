@@ -7,9 +7,15 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * @author Bela Ban
- * @version $Id: NullFuture.java,v 1.2 2009/06/16 08:29:14 belaban Exp $
+ * @version $Id: NullFuture.java,v 1.3 2010/01/13 13:18:00 belaban Exp $
  */
-public class NullFuture<T> implements Future<RspList> {
+public class NullFuture<T> implements Future<T> {
+    final T retval;
+
+    public NullFuture(T retval) {
+        this.retval=retval;
+    }
+
     public boolean cancel(boolean mayInterruptIfRunning) {
         return true;
     }
@@ -22,11 +28,11 @@ public class NullFuture<T> implements Future<RspList> {
         return true;
     }
 
-    public RspList get() throws InterruptedException, ExecutionException {
-        return new RspList();
+    public T get() throws InterruptedException, ExecutionException {
+        return retval;
     }
 
-    public RspList get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return new RspList();
+    public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return retval;
     }
 }

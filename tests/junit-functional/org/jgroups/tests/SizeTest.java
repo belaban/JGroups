@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.26 2009/07/08 15:30:33 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.27 2010/01/13 13:19:01 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -665,17 +665,16 @@ public class SizeTest {
     public static void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 322649, false, "HelloWorld");
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, false, "HelloWorld", null);
         _testSize(hdr);
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
         java.util.List<Address> l=new LinkedList<Address>();
         l.add(new IpAddress(1111));
         l.add(new IpAddress(2222));
-        hdr.dest_mbrs=l;
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", l);
         _testSize(hdr);
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", null);
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -688,7 +687,29 @@ public class SizeTest {
         ByteArrayInputStream input=new ByteArrayInputStream(buf);
         DataInputStream in=new DataInputStream(input);
 
-        hdr=new RequestCorrelator.Header();
+        hdr=new RequestCorrelator.MultiDestinationHeader();
+        hdr.readFrom(in);
+
+        Assert.assertEquals(322649, hdr.id);
+        assert hdr.rsp_expected;
+        Assert.assertEquals("bla", hdr.corrName);
+        Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
+
+
+        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", Util.createRandomAddress());
+
+        output=new ByteArrayOutputStream();
+        out=new DataOutputStream(output);
+        hdr.writeTo(out);
+        out.flush();
+
+        buf=output.toByteArray();
+        out.close();
+
+        input=new ByteArrayInputStream(buf);
+        in=new DataInputStream(input);
+
+        hdr=new RequestCorrelator.SingleDestinationHeader();
         hdr.readFrom(in);
 
         Assert.assertEquals(322649, hdr.id);
