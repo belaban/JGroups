@@ -35,7 +35,6 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private long start=0, stop=0;
     private AtomicInteger current_value=new AtomicInteger(0);
     private int num_values=0, print;
-    private long msgs_per_sec, total_time=0;
     private AtomicLong total_bytes=new AtomicLong(0);
 
     private static final Method START;
@@ -111,8 +110,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
             System.out.println("received " + current_value);
         if(new_val >= num_values) {
             stop=System.currentTimeMillis();
-            total_time=stop - start;
-            msgs_per_sec=(long)(num_values / (total_time / 1000.0));
+            long total_time=stop - start;
+            long msgs_per_sec=(long)(num_values / (total_time / 1000.0));
             double throughput=total_bytes.get() / (total_time / 1000.0);
             System.out.println("-- received " + num_values + " messages in " + total_time +
                     " ms (" + msgs_per_sec + " messages/sec, " + Util.printBytes(throughput) + " / sec)");
