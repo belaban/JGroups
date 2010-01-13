@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.93 2010/01/12 15:36:27 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.94 2010/01/13 13:20:59 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -415,7 +415,7 @@ public class MessageDispatcher implements RequestHandler {
 
     public Future<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
         GroupRequest req=cast(dests, msg, options, false);
-        return req != null? req : new NullFuture();
+        return req != null? req : new NullFuture(RspList.EMPTY_RSP_LIST);
     }
 
     protected GroupRequest cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
@@ -463,10 +463,12 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         GroupRequest req=new GroupRequest(msg, corr, real_dests, options.getMode(), options.getTimeout(), 0);
-        req.setCaller(this.local_addr);
         req.setResponseFilter(options.getRspFilter());
+        req.setAnycasting(options.getAnycasting());
+        req.setBlockForResults(block_for_results);
+
         try {
-            req.execute(options.getAnycasting(), block_for_results);
+            req.execute();
             return req;
         }
         catch(Exception ex) {
@@ -500,8 +502,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        GroupRequest req=new GroupRequest(msg, corr, dest, opts.getMode(), opts.getTimeout(), 0);
-        req.setCaller(local_addr);
+        UnicastRequest req=new UnicastRequest(msg, corr, dest, opts.getMode(), opts.getTimeout());
         try {
             req.execute();
         }
@@ -509,23 +510,12 @@ public class MessageDispatcher implements RequestHandler {
             throw new RuntimeException("failed executing request " + req, t);
         }
 
-        if(opts.getMode() == GroupRequest.GET_NONE)
+        if(opts.getMode() == Request.GET_NONE)
             return null;
 
-        RspList rsp_list=req.getResults();
-        if(rsp_list.isEmpty()) {
-            if(log.isWarnEnabled())
-                log.warn(" response list is empty");
-            return null;
-        }
-        if(rsp_list.size() > 1) {
-            if(log.isWarnEnabled())
-                log.warn("response list contains more that 1 response; returning first response !");
-        }
-        Rsp rsp=(Rsp)rsp_list.elementAt(0);
-        if(rsp.wasSuspected()) {
+        Rsp rsp=req.getResult();
+        if(rsp.wasSuspected())
             throw new SuspectedException(dest);
-        }
         if(!rsp.wasReceived())
             throw new TimeoutException("timeout sending message to " + dest);
         return rsp.getValue();
@@ -540,12 +530,12 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        GroupRequest req=new GroupRequest(msg, corr, dest, mode, timeout, 0);
-        req.setCaller(local_addr);
+        UnicastRequest req=new UnicastRequest(msg, corr, dest, mode, timeout);
+        req.setBlockForResults(false);
         try {
-            req.execute(false, false);
-            if(mode == GroupRequest.GET_NONE)
-                return new NullFuture();
+            req.execute();
+            if(mode == Request.GET_NONE)
+                return new NullFuture(null);
             return new SingleFuture<T>(req);
         }
         catch(Exception t) {
@@ -750,7 +740,7 @@ public class MessageDispatcher implements RequestHandler {
 
     }
 
-
+    @Deprecated
     class TransportAdapter implements Transport {
 
         public void send(Message msg) throws Exception {
@@ -785,7 +775,7 @@ public class MessageDispatcher implements RequestHandler {
         }
     }
 
-
+    @Deprecated
     class PullPushHandler implements ExtendedMessageListener, MembershipListener {
 
 
