@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.94 2010/01/13 13:20:59 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.95 2010/01/14 14:15:05 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -521,8 +521,12 @@ public class MessageDispatcher implements RequestHandler {
         return rsp.getValue();
     }
 
-    
+    @Deprecated
     public <T> Future<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
+        return sendMessageWithFuture(msg, new RequestOptions(mode, timeout, false, null));
+    }
+
+    public <T> Future<T> sendMessageWithFuture(Message msg, RequestOptions options) throws TimeoutException, SuspectedException {
         Address dest=msg.getDest();
         if(dest == null) {
             if(log.isErrorEnabled())
@@ -530,11 +534,11 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, mode, timeout);
+        UnicastRequest req=new UnicastRequest(msg, corr, dest, options.getMode(), options.getTimeout());
         req.setBlockForResults(false);
         try {
             req.execute();
-            if(mode == Request.GET_NONE)
+            if(options.getMode() == Request.GET_NONE)
                 return new NullFuture(null);
             return new SingleFuture<T>(req);
         }

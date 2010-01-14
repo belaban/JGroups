@@ -5,11 +5,11 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.2 2010/01/11 08:21:50 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.3 2010/01/14 14:14:52 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
-    private int       mode=GroupRequest.GET_NONE;
+    private int       mode=Request.GET_NONE;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
     private long      timeout=0; // used when mode != GET_NONE
