@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.53 2010/01/13 13:17:47 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.54 2010/01/14 12:56:32 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -244,10 +244,8 @@ public class RequestCorrelator {
 
         if(transport instanceof Protocol) {
             if(use_anycasting) {
-                Message copy;
-                for(Iterator it=dest_mbrs.iterator(); it.hasNext();) {
-                    Address mbr=(Address)it.next();
-                    copy=msg.copy(true);
+                for(Address mbr: dest_mbrs) {
+                    Message copy=msg.copy(true);
                     copy.setDest(mbr);
                     ((Protocol)transport).down(new Event(Event.MSG, copy));
                 }
@@ -258,10 +256,8 @@ public class RequestCorrelator {
         }
         else if(transport instanceof Transport) {
             if(use_anycasting) {
-                Message copy;
-                for(Iterator it=dest_mbrs.iterator(); it.hasNext();) {
-                    Address mbr=(Address)it.next();
-                    copy=msg.copy(true);
+                for(Address mbr: dest_mbrs) {
+                    Message copy=msg.copy(true);
                     copy.setDest(mbr);
                     ((Transport)transport).send(copy);
                 }
