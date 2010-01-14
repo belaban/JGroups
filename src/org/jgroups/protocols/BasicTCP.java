@@ -46,7 +46,7 @@ public abstract class BasicTCP extends TP {
     int peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
     @Property(description="Should TCP no delay flag be turned on")
-    boolean tcp_nodelay=false;
+    boolean tcp_nodelay=true;
     
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     int linger=-1; // SO_LINGER (number of ms, -1 disables it)
