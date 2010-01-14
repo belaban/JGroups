@@ -41,10 +41,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private static final Method RECEIVE;
     private static final Method[] METHODS=new Method[2];
 
+
+    long tot=0;
+    int num_reqs=0;
+
     static {
         try {
             START=UnicastTestRpc.class.getMethod("startTest", int.class);
-            RECEIVE=UnicastTestRpc.class.getMethod("receiveData", int.class, byte[].class);
+            RECEIVE=UnicastTestRpc.class.getMethod("receiveData", long.class, byte[].class);
             METHODS[0]=START;
             METHODS[1]=RECEIVE;
         }
@@ -99,11 +103,18 @@ public class UnicastTestRpc extends ReceiverAdapter {
             total_bytes.set(0);
             this.num_values=num_values;
             print=num_values / 10;
+
+            tot=0; num_reqs=0;
+
             start=System.currentTimeMillis();
         }
     }
 
-    public void receiveData(int value, byte[] buffer) {
+    public long receiveData(long value, byte[] buffer) {
+        long diff=System.currentTimeMillis() - value;
+        tot+=diff;
+        num_reqs++;
+
         long new_val=current_value.incrementAndGet();
         total_bytes.addAndGet(buffer.length);
         if(print > 0 && new_val % print == 0)
@@ -113,12 +124,19 @@ public class UnicastTestRpc extends ReceiverAdapter {
             long total_time=stop - start;
             long msgs_per_sec=(long)(num_values / (total_time / 1000.0));
             double throughput=total_bytes.get() / (total_time / 1000.0);
-            System.out.println("-- received " + num_values + " messages in " + total_time +
+            System.out.println("\n-- received " + num_values + " messages in " + total_time +
                     " ms (" + msgs_per_sec + " messages/sec, " + Util.printBytes(throughput) + " / sec)");
+
+
+
+            double time_per_req=(double)tot / num_reqs;
+            System.out.println("num reqs=" + num_reqs + ", total time=" + tot + ", " + time_per_req + " ms / req (only request)\n");
+
             started=false;
             if(exit_on_end)
                 System.exit(0);
         }
+        return System.currentTimeMillis();
     }
 
 
@@ -219,12 +237,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 destination + ", sync=" + sync + ", oob=" + oob);
         
         // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(GroupRequest.GET_ALL, 0, false, null);
+        RequestOptions options=new RequestOptions(Request.GET_ALL, 0, false, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
         if(oob) options.setFlags(Message.OOB);
 
         disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
-        options.setMode(sync? GroupRequest.GET_ALL : GroupRequest.GET_NONE);
+        options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++)
@@ -294,6 +312,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         private final RequestOptions options;
         private final int number_of_msgs;
 
+        long total_req=0, total_rsp=0;
 
         public Invoker(Address destination, RequestOptions options, int number_of_msgs) {
             this.destination=destination;
@@ -307,9 +326,21 @@ public class UnicastTestRpc extends ReceiverAdapter {
             MethodCall call=new MethodCall((short)1, args);
 
             for(int i=1; i <= number_of_msgs; i++) {
-                args[0]=i;
+                args[0]=System.currentTimeMillis();
                 try {
-                    disp.callRemoteMethod(destination, call, options);
+                    long start=System.currentTimeMillis();
+                    Object retval=disp.callRemoteMethod(destination, call, options);
+                    long current_time=System.currentTimeMillis();
+                    long diff=current_time - start;
+                    total_req+=diff;
+
+                    if(sync) {
+                        if(retval instanceof Long) {
+                            diff=System.currentTimeMillis() - (Long)retval;
+                            total_rsp+=diff;
+                        }
+                    }
+
                     if(print > 0 && i % print == 0)
                         System.out.println("-- invoked " + i);
                     if(sleep_time > 0)
@@ -319,6 +350,18 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     throwable.printStackTrace();
                 }
             }
+
+            double time_per_req=total_req / (double)number_of_msgs;
+            System.out.println("\ninvoked " + number_of_msgs + " requests in " + total_req + " ms: " + time_per_req +
+                    " ms / req (entire request)");
+
+            if(sync) {
+                double time_per_rsp=total_rsp / (double)number_of_msgs;
+                System.out.println("invoked " + number_of_msgs + " responses in " + total_rsp + " ms: " + time_per_rsp +
+                        " ms / rsp (only response)\n");
+            }
+
+
         }
     }
 
@@ -334,10 +377,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 return buf.array();
             }
             else if(call.getId() == 1) {
-                Integer arg=(Integer)call.getArgs()[0];
+                Long arg=(Long)call.getArgs()[0];
                 byte[] arg2=(byte[])call.getArgs()[1];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.INT_SIZE + arg2.length);
-                buf.put((byte)1).putInt(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
+                buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
                 return buf.array();
             }
             else
@@ -353,11 +396,11 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     int arg=buf.getInt();
                     return new MethodCall((short)0, new Object[]{arg});
                 case 1:
-                    arg=buf.getInt();
+                    Long longarg=buf.getLong();
                     int len=buf.getInt();
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
-                    return new MethodCall((short)1, new Object[]{arg, arg2});
+                    return new MethodCall((short)1, new Object[]{longarg, arg2});
                 default:
                     throw new IllegalStateException("type " + type + " not known");
             }
