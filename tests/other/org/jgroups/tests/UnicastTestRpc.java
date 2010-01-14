@@ -384,6 +384,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
             Object[] args=new Object[]{0, buf};
             MethodCall call=new MethodCall((short)1, args);
 
+            //if(anycasting && sync)
+               //  options.setMode(Request.GET_FIRST);
+
             for(int i=1; i <= number_of_msgs; i++) {
                 args[0]=System.currentTimeMillis();
                 Object retval=null;
