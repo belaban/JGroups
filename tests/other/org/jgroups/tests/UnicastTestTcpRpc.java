@@ -1,20 +1,15 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
 
-import javax.management.MBeanServer;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.lang.reflect.Method;
-import java.util.Vector;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -22,14 +17,19 @@ import java.nio.ByteBuffer;
  *
  * @author Bela Ban
  */
-public class UnicastTestRpc extends ReceiverAdapter {
-    private JChannel channel;
-    private RpcDispatcher disp;
-    static final String groupname="UnicastTest-Group";
+public class UnicastTestTcpRpc {
+    private ServerSocket srv_sock;
+    private volatile Socket sock;
+    private DataInputStream sock_in;
+    private DataOutputStream sock_out;
+
     private long sleep_time=0;
     private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false;
     private int num_threads=1;
     private int num_msgs=100000, msg_size=1000;
+
+    private InetAddress addr=null;
+    private int local_port=8000, dest_port=9000;
 
     private boolean started=false;
     private long start=0, stop=0;
@@ -37,61 +37,112 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private int num_values=0, print;
     private AtomicLong total_bytes=new AtomicLong(0);
 
-    private static final Method START;
-    private static final Method RECEIVE;
-    private static final Method[] METHODS=new Method[2];
+    private Thread acceptor;
+
+    private final byte[] buf=new byte[65535];
+    long total_req_time=0, total_rsp_time=0, entire_req_time=0, num_entire_reqs=0;
+    int num_reqs=0, num_rsps=0;
+
+    static final byte START         =  0;
+    static final byte RECEIVE_ASYNC =  1;
+    static final byte RECEIVE_SYNC  =  2;
+    static final byte ACK           = 10;
 
 
-    long tot=0;
-    int num_reqs=0;
-
-    static {
-        try {
-            START=UnicastTestRpc.class.getMethod("startTest", int.class);
-            RECEIVE=UnicastTestRpc.class.getMethod("receiveData", long.class, byte[].class);
-            METHODS[0]=START;
-            METHODS[1]=RECEIVE;
-        }
-        catch(NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync, boolean oob) throws Exception {
+    public void init(long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync, boolean oob,
+                     String addr, int local_port, int dest_port) throws Exception {
         this.sleep_time=sleep_time;
         this.exit_on_end=exit_on_end;
         this.busy_sleep=busy_sleep;
         this.sync=sync;
         this.oob=oob;
-        channel=new JChannel(props);
-        disp=new RpcDispatcher(channel, null, this, this);
-        disp.setMethodLookup(new MethodLookup() {
-            public Method findMethod(short id) {
-                return METHODS[id];
+        this.addr=InetAddress.getByName(addr);
+        this.local_port=local_port;
+        this.dest_port=dest_port;
+        srv_sock=new ServerSocket(local_port);
+        System.out.println("Listening on " + srv_sock.getLocalSocketAddress());
+        
+        acceptor=new Thread() {
+            public void run() {
+                while(true) {
+                    Socket client_sock=null;
+                    DataInputStream in=null;
+                    DataOutputStream out=null;
+                    try {
+                        client_sock=srv_sock.accept();
+                        set(client_sock);
+                        in=new DataInputStream(client_sock.getInputStream());
+                        out=new DataOutputStream(client_sock.getOutputStream());
+                        if(!handleRequest(in, out)) {
+                            Util.close(client_sock);
+                        Util.close(out);
+                        Util.close(in);
+                        break;
+                        }
+                    }
+                    catch(IOException e) {
+                        Util.close(client_sock);
+                        Util.close(out);
+                        Util.close(in);
+                        break;
+                    }
+                }
             }
-        });
-        disp.setRequestMarshaller(new CustomMarshaller());
-        channel.connect(groupname);
+        };
+        acceptor.start();
+    }
 
-        try {
-            MBeanServer server=Util.getMBeanServer();
-            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getClusterName(), true);
-        }
-        catch(Throwable ex) {
-            System.err.println("registering the channel in JMX failed: " + ex);
+    void createSocket() throws IOException {
+        if(sock == null) {
+            sock=new Socket(addr, dest_port);
+            set(sock);
+            sock_in=new DataInputStream(sock.getInputStream());
+            sock_out=new DataOutputStream(sock.getOutputStream());
         }
     }
+
+
+
+    boolean handleRequest(DataInputStream in, DataOutputStream out) throws IOException {
+           while(true) {
+               byte type=(byte)in.read();
+               if(type == -1)
+                   return false;
+
+               switch(type) {
+                   case START:
+                       int num=in.readInt();
+                       startTest(num);
+                       break;
+                   case RECEIVE_ASYNC:
+                   case RECEIVE_SYNC:
+                       long val=in.readLong();
+                       int len=in.readInt();
+                       byte data[]=new byte[len];
+                       in.readFully(data, 0, data.length);
+                       receiveData(val, data);
+                       if(type == RECEIVE_SYNC) {
+                           out.writeLong(System.currentTimeMillis());
+                           out.flush();
+                       }
+                       break;
+                   default:
+                       System.err.println("type " + type + " not known");
+               }
+           }
+    }
+
+
+    static void set(Socket socket) throws SocketException {
+        socket.setTcpNoDelay(true);
+        socket.setReceiveBufferSize(20000000);
+        socket.setSendBufferSize(10000000);
+    }
+
 
     void stop() {
-        if(disp != null)
-            disp.stop();
-        Util.close(channel);
     }
 
-    public void viewAccepted(View new_view) {
-        System.out.println("** view: " + new_view);
-    }
 
     public void startTest(int num_values) {
         if(started) {
@@ -104,15 +155,16 @@ public class UnicastTestRpc extends ReceiverAdapter {
             this.num_values=num_values;
             print=num_values / 10;
 
-            tot=0; num_reqs=0;
+            total_req_time=0; num_reqs=0; total_rsp_time=0; num_rsps=0; entire_req_time=0;
+            num_entire_reqs=0;
 
             start=System.currentTimeMillis();
         }
     }
 
-    public long receiveData(long value, byte[] buffer) {
+    public void receiveData(long value, byte[] buffer) {
         long diff=System.currentTimeMillis() - value;
-        tot+=diff;
+        total_req_time+=diff;
         num_reqs++;
 
         long new_val=current_value.incrementAndGet();
@@ -129,14 +181,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
 
 
-            double time_per_req=(double)tot / num_reqs;
-            System.out.println("received " + num_reqs + "requests in =" + tot + " ms, " + time_per_req + " ms / req (only request)\n");
+            double time_per_req=(double)total_req_time / num_reqs;
+            System.out.println("received " + num_reqs + " requests in " + total_req_time + " ms, " + time_per_req +
+                    " ms / req (only requests)\n");
 
             started=false;
             if(exit_on_end)
                 System.exit(0);
         }
-        return System.currentTimeMillis();
     }
 
 
@@ -164,16 +216,12 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 }
                 break;
             case '2':
-                printView();
                 break;
             case '3':
-                printConnections();
                 break;
             case '4':
-                removeConnection();
                 break;
             case '5':
-                removeAllConnections();
                 break;
             case '6':
                 setSenderThreads();
@@ -193,7 +241,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 System.out.println("sync=" + sync);
                 break;
             case 'q':
-                channel.close();
+                Util.close(sock);
+                Util.close(srv_sock);
                 return;
             default:
                 break;
@@ -201,58 +250,59 @@ public class UnicastTestRpc extends ReceiverAdapter {
         }
     }
 
-    private void printConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        System.out.println("connections:\n" + unicast.printConnections());
-    }
 
-    private void removeConnection() {
-        Address member=getReceiver();
-        if(member != null) {
-            UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-            unicast.removeConnection(member);
-        }
-    }
-
-    private void removeAllConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        unicast.removeAllConnections();
-    }
 
 
     void invokeRpcs() throws Throwable {
-        Address destination=getReceiver();
+        if(sock == null)
+            createSocket();
 
         if(num_threads > 1 && num_msgs % num_threads != 0) {
             System.err.println("num_msgs (" + num_msgs + " ) has to be divisible by num_threads (" + num_threads + ")");
             return;
         }
 
-        if(destination == null) {
-            System.err.println("UnicastTest.invokeRpcs(): receiver is null, cannot send messages");
-            return;
-        }
-
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + " on " +
-                destination + ", sync=" + sync + ", oob=" + oob);
-        
-        // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0, false, null);
-        if(sync) options.setFlags(Message.DONT_BUNDLE);
-        if(oob) options.setFlags(Message.OOB);
+                ", sync=" + sync + ", oob=" + oob);
 
-        disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
-        options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
+        num_entire_reqs=entire_req_time=total_rsp_time=num_rsps=0;
 
-        Invoker[] invokers=new Invoker[num_threads];
-        for(int i=0; i < invokers.length; i++)
-            invokers[i]=new Invoker(destination, options, num_msgs / num_threads);
-        for(Invoker invoker: invokers)
-            invoker.start();
-        for(Invoker invoker: invokers)
-            invoker.join();
+        sock_out.write(START);
+        sock_out.writeInt(num_msgs);
 
-        System.out.println("done sending " + num_msgs + " to " + destination);
+        byte[] data=new byte[msg_size];
+        byte type=sync? RECEIVE_SYNC : RECEIVE_ASYNC;
+        for(int i=0; i < num_msgs; i++) {
+            long tmp_start=System.currentTimeMillis();
+            sock_out.write(type);
+            sock_out.writeLong(tmp_start);
+            sock_out.writeInt(msg_size);
+            sock_out.write(data, 0, data.length);
+            // sock_out.flush();
+            if(sync) {
+                long timestamp=sock_in.readLong();
+                long curr_time=System.currentTimeMillis();
+                long diff=curr_time - tmp_start;
+                num_entire_reqs++;
+                entire_req_time+=diff;
+                diff=curr_time - timestamp;
+                total_rsp_time+=diff;
+                num_rsps++;
+            }
+        }
+        sock_out.flush();
+
+        System.out.println("done sending " + num_msgs + " to " + sock.getRemoteSocketAddress());
+
+        double time_per_req=entire_req_time / (double)num_msgs;
+            System.out.println("\ninvoked " + num_entire_reqs + " requests in " + entire_req_time + " ms: " + time_per_req +
+                    " ms / req (entire request)");
+
+        if(sync) {
+                double time_per_rsp=total_rsp_time / (double)num_rsps;
+                System.out.println("received " + num_rsps + " responses in " + total_rsp_time + " ms: " + time_per_rsp +
+                        " ms / rsp (only response)\n");
+        }
     }
 
     void setSenderThreads() throws Exception {
@@ -273,46 +323,16 @@ public class UnicastTestRpc extends ReceiverAdapter {
         System.out.println("set msg_size=" + msg_size);
     }
 
-    void printView() {
-        System.out.println("\n-- view: " + channel.getView() + '\n');
-        try {
-            System.in.skip(System.in.available());
-        }
-        catch(Exception e) {
-        }
-    }
 
 
 
-    private Address getReceiver() {
-        try {
-            Vector<Address> mbrs=channel.getView().getMembers();
-            System.out.println("pick receiver from the following members:");
-            for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getAddress()))
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
-                else
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i));
-            }
-            System.out.flush();
-            System.in.skip(System.in.available());
-            BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
-            String str=reader.readLine().trim();
-            int index=Integer.parseInt(str);
-            return mbrs.elementAt(index); // index out of bounds caught below
-        }
-        catch(Exception e) {
-            System.err.println("UnicastTest.getReceiver(): " + e);
-            return null;
-        }
-    }
 
-    private class Invoker extends Thread {
+  /*  private class Invoker extends Thread {
         private final Address destination;
         private final RequestOptions options;
         private final int number_of_msgs;
 
-        long total_req=0, total_rsp=0;
+        long total=0;
 
         public Invoker(Address destination, RequestOptions options, int number_of_msgs) {
             this.destination=destination;
@@ -329,17 +349,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 args[0]=System.currentTimeMillis();
                 try {
                     long start=System.currentTimeMillis();
-                    Object retval=disp.callRemoteMethod(destination, call, options);
-                    long current_time=System.currentTimeMillis();
-                    long diff=current_time - start;
-                    total_req+=diff;
-
-                    if(sync) {
-                        if(retval instanceof Long) {
-                            diff=System.currentTimeMillis() - (Long)retval;
-                            total_rsp+=diff;
-                        }
-                    }
+                    disp.callRemoteMethod(destination, call, options);
+                    long diff=System.currentTimeMillis() - start;
+                    total+=diff;
 
                     if(print > 0 && i % print == 0)
                         System.out.println("-- invoked " + i);
@@ -351,22 +363,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 }
             }
 
-            double time_per_req=total_req / (double)number_of_msgs;
-            System.out.println("\ninvoked " + number_of_msgs + " requests in " + total_req + " ms: " + time_per_req +
-                    " ms / req (entire request)");
-
-            if(sync) {
-                double time_per_rsp=total_rsp / (double)number_of_msgs;
-                System.out.println("received " + number_of_msgs + " responses in " + total_rsp + " ms: " + time_per_rsp +
-                        " ms / rsp (only response)\n");
-            }
-
-
+            double time_per_req=total / (double)number_of_msgs;
+            System.out.println("invoked " + number_of_msgs + " requests in " + total + " ms: " + time_per_req +
+                    " ms / req");
         }
-    }
+    }*/
 
 
-    static class CustomMarshaller implements RpcDispatcher.Marshaller {
+   /* static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
         public byte[] objectToByteBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
@@ -405,23 +409,21 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     throw new IllegalStateException("type " + type + " not known");
             }
         }
-    }
+    }*/
 
 
     public static void main(String[] args) {
         long sleep_time=0;
         boolean exit_on_end=false;
         boolean busy_sleep=false;
-        String props=null;
         boolean sync=false;
         boolean oob=false;
 
+        String addr=null;
+        int dest_port=9000, local_port=8000;
+
 
         for(int i=0; i < args.length; i++) {
-            if("-props".equals(args[i])) {
-                props=args[++i];
-                continue;
-            }
             if("-sleep".equals(args[i])) {
                 sleep_time=Long.parseLong(args[++i]);
                 continue;
@@ -442,14 +444,26 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 oob=true;
                 continue;
             }
+            if("-addr".equals(args[i])) {
+                addr=args[++i];
+                continue;
+            }
+            if("-dest_port".equals(args[i])) {
+                dest_port=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-local_port".equals(args[i])) {
+                local_port=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
 
-        UnicastTestRpc  test=null;
+        UnicastTestTcpRpc test=null;
         try {
-            test=new UnicastTestRpc();
-            test.init(props, sleep_time, exit_on_end, busy_sleep, sync, oob);
+            test=new UnicastTestTcpRpc();
+            test.init(sleep_time, exit_on_end, busy_sleep, sync, oob, addr, local_port, dest_port);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -460,8 +474,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UnicastTestRpc [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep]");
+        System.out.println("UnicastTestRpc [-help] [-sleep <time in ms between msg sends] " +
+                           "[-exit_on_end] [-busy-sleep] [-addr address] [-port port]");
     }
 
 
