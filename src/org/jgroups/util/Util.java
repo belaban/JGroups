@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.248 2010/01/07 08:12:40 belaban Exp $
+ * @version $Id: Util.java,v 1.249 2010/01/14 11:42:32 belaban Exp $
  */
 public class Util {
 
@@ -451,7 +451,7 @@ public class Util {
         if(JGROUPS_COMPAT)
             return oldObjectToByteBuffer(obj);
 
-        byte[] result=null;
+        byte[] result;
         final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
         if(obj == null) {
