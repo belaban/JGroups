@@ -1,13 +1,10 @@
-// $Id: RpcDispatcher.java,v 1.45 2010/01/13 13:21:29 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.46 2010/01/15 11:48:53 belaban Exp $
 
 package org.jgroups.blocks;
 
 
 import org.jgroups.*;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.NullFuture;
+import org.jgroups.util.*;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -275,7 +272,29 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         msg.setFlag(options.getFlags());
 
+        //RspList retval=null;
+        //if(dests == null)
         RspList retval=super.castMessage(dests, msg, options);
+        /*else {
+            retval=new RspList();
+            for(Address dest: dests) {
+                Message copy=msg.copy(true);
+                copy.setDest(dest);
+                Rsp rsp=new Rsp(dest);
+                try {
+                    Object obj=super.sendMessage(copy, options);
+                    rsp.setValue(obj);
+                    rsp.setReceived(true);
+                }
+                catch(SuspectedException e) {
+                    rsp.setSuspected(true);
+                }
+                catch(TimeoutException e) {
+                }
+                retval.put(dest, rsp);
+            }
+        }*/
+
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
