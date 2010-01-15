@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.211 2009/12/11 13:10:33 belaban Exp $
+ * @version $Id: UDP.java,v 1.212 2010/01/15 12:23:56 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -87,6 +87,9 @@ public class UDP extends TP {
     @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
     private int ucast_recv_buf_size=64000;
 
+    @Property
+    boolean disable_loopback=false;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
@@ -133,6 +136,9 @@ public class UDP extends TP {
     public UDP() {
     }
 
+    public boolean supportsMulticasting() {
+        return true;
+    }
 
     public void setMulticastAddress(InetAddress addr) {this.mcast_group_addr=addr;}
     public InetAddress getMulticastAddress() {return mcast_group_addr;}
@@ -341,6 +347,9 @@ public class UDP extends TP {
                 mcast_sock=Util.createMulticastSocket(mcast_group_addr, mcast_port, log);
             else
                 mcast_sock=new MulticastSocket(mcast_port);
+
+            if(disable_loopback)
+                mcast_sock.setLoopbackMode(disable_loopback);
 
             mcast_sock.setTimeToLive(ip_ttl);
 

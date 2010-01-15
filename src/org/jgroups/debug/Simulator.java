@@ -16,7 +16,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.18 2009/09/21 09:57:34 belaban Exp $
+ * @version $Id: Simulator.java,v 1.19 2010/01/15 12:24:00 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -363,7 +363,11 @@ public class Simulator {
 			timer=new TimeScheduler();
 		}
 
-		public TimeScheduler getTimer() {
+        public boolean supportsMulticasting() {
+            return false;
+        }
+
+        public TimeScheduler getTimer() {
 			return timer;
 		}
 

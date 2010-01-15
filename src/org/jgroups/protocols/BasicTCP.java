@@ -63,7 +63,11 @@ public abstract class BasicTCP extends TP {
     protected BasicTCP() {
         super();        
     }
-    
+
+    public boolean supportsMulticasting() {
+        return false;
+    }
+
     public long getReaperInterval() {return reaper_interval;}
     public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
     public long getConnExpireTime() {return conn_expire_time;}

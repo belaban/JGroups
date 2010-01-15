@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.33 2009/10/20 13:02:35 belaban Exp $
+// $Id: LOOPBACK.java,v 1.34 2010/01/15 12:23:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -26,6 +26,9 @@ public class LOOPBACK extends TP {
     public LOOPBACK() {
     }
 
+    public boolean supportsMulticasting() {
+        return false;
+    }
 
     public String toString() {
         return "LOOPBACK(local address: " + local_addr + ')';
