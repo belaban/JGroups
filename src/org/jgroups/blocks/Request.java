@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.2 2010/01/13 13:13:32 belaban Exp $
+ * @version $Id: Request.java,v 1.3 2010/01/15 13:43:51 belaban Exp $
  */
 public abstract class Request implements RspCollector, Command {
     /** return only first response */
@@ -130,6 +130,17 @@ public abstract class Request implements RspCollector, Command {
     protected abstract boolean responsesComplete();
 
 
+    public boolean getResponsesComplete() {
+        lock.lock();
+        try {
+            return responsesComplete();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
     public boolean cancel(boolean mayInterruptIfRunning) {
         lock.lock();
         try {
@@ -223,6 +234,7 @@ public abstract class Request implements RspCollector, Command {
         }
     }
 
+    @GuardedBy("lock")
     protected boolean waitForResults(long timeout)  {
         if(timeout <= 0) {
             while(true) { /* Wait for responses: */

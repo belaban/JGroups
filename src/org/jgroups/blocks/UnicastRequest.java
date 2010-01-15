@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.1 2010/01/13 13:18:39 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.2 2010/01/15 13:43:51 belaban Exp $
  */
 public class UnicastRequest extends Request implements Future<Rsp> {
     protected final Rsp        result;
@@ -154,38 +154,28 @@ public class UnicastRequest extends Request implements Future<Rsp> {
     }
 
 
-    public boolean cancel(boolean mayInterruptIfRunning) {
-        lock.lock();
-        try {
-            boolean retval=!done;
-            done=true;
-            if(corr != null)
-                corr.done(req_id);
-            completed.signalAll();
-            return retval;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    public boolean isCancelled() {
-        lock.lock();
-        try {
-            return done;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
+  
 
     public Rsp get() throws InterruptedException, ExecutionException {
-        waitForResults(0);
-        return result;
+        lock.lock();
+        try {
+            waitForResults(0);
+            return result;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public Rsp get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        boolean ok=waitForResults(unit.toMillis(timeout));
+        boolean ok;
+        lock.lock();
+        try {
+            ok=waitForResults(unit.toMillis(timeout));
+        }
+        finally {
+            lock.unlock();
+        }
         if(!ok)
             throw new TimeoutException();
         return result;
