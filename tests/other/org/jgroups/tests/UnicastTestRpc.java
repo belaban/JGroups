@@ -30,9 +30,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private RpcDispatcher disp;
     static final String groupname="UnicastTest-Group";
     private long sleep_time=0;
-    private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false, anycasting=false;
+    private boolean sync=false, oob=false, anycasting=false;
     private int num_threads=1;
-    private int num_msgs=100000, msg_size=1000;
+    private int num_msgs=50000, msg_size=1000;
     private int anycast_count=1;
     private final Collection<Address> anycast_mbrs=new ArrayList<Address>();
     private Address destination=null;
@@ -64,13 +64,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync, boolean oob) throws Exception {
+    public void init(String props, long sleep_time, boolean sync, boolean oob, String name) throws Exception {
         this.sleep_time=sleep_time;
-        this.exit_on_end=exit_on_end;
-        this.busy_sleep=busy_sleep;
         this.sync=sync;
         this.oob=oob;
         channel=new JChannel(props);
+        if(name != null)
+            channel.setName(name);
         disp=new RpcDispatcher(channel, null, this, this);
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {
@@ -141,8 +141,6 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     " ms / req (only request)\n");
 
             started=false;
-            if(exit_on_end)
-                System.exit(0);
         }
         return System.currentTimeMillis();
     }
@@ -388,10 +386,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
                //  options.setMode(Request.GET_FIRST);
 
             for(int i=1; i <= number_of_msgs; i++) {
-                args[0]=System.currentTimeMillis();
                 Object retval=null;
                 try {
                     long start=System.currentTimeMillis();
+                    args[0]=start;
                     if(dests != null)
                         disp.callRemoteMethods(dests, call, options);
                     else
@@ -410,7 +408,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
                     if(print > 0 && i % print == 0)
                         System.out.println("-- invoked " + i);
                     if(sleep_time > 0)
-                        Util.sleep(sleep_time, busy_sleep);
+                        Util.sleep(sleep_time);
                 }
                 catch(Throwable throwable) {
                     throwable.printStackTrace();
@@ -476,11 +474,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     public static void main(String[] args) {
         long sleep_time=0;
-        boolean exit_on_end=false;
-        boolean busy_sleep=false;
         String props=null;
         boolean sync=false;
         boolean oob=false;
+        String name=null;
 
 
         for(int i=0; i < args.length; i++) {
@@ -492,20 +489,16 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 sleep_time=Long.parseLong(args[++i]);
                 continue;
             }
-            if("-exit_on_end".equals(args[i])) {
-                exit_on_end=true;
-                continue;
-            }
-            if("-busy_sleep".equals(args[i])) {
-                busy_sleep=true;
-                continue;
-            }
             if("-sync".equals(args[i])) {
                 sync=true;
                 continue;
             }
             if("-oob".equals(args[i])) {
                 oob=true;
+                continue;
+            }
+            if("-name".equals(args[i])) {
+                name=args[++i];
                 continue;
             }
             help();
@@ -515,7 +508,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         UnicastTestRpc  test=null;
         try {
             test=new UnicastTestRpc();
-            test.init(props, sleep_time, exit_on_end, busy_sleep, sync, oob);
+            test.init(props, sleep_time, sync, oob, name);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -526,7 +519,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UnicastTestRpc [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
+        System.out.println("UnicastTestRpc [-help] [-props <props>] [-name name] [-sleep <time in ms between msg sends] " +
                            "[-exit_on_end] [-busy-sleep]");
     }
 
