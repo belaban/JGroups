@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.2 2010/01/15 13:43:51 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.3 2010/01/15 14:20:57 belaban Exp $
  */
 public class UnicastRequest extends Request implements Future<Rsp> {
     protected final Rsp        result;
@@ -74,11 +74,10 @@ public class UnicastRequest extends Request implements Future<Rsp> {
      * <code>execute()</code> returns.
      */
     public void receiveResponse(Object response_value, Address sender) {
-        if(done)
-            return;
-
         lock.lock();
         try {
+            if(done)
+                return;
             if(!result.wasReceived()) {
                 boolean responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
                 result.setValue(response_value);
