@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.212 2010/01/15 12:23:56 belaban Exp $
+ * @version $Id: UDP.java,v 1.213 2010/01/15 13:48:24 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -137,7 +137,7 @@ public class UDP extends TP {
     }
 
     public boolean supportsMulticasting() {
-        return true;
+        return ip_mcast;
     }
 
     public void setMulticastAddress(InetAddress addr) {this.mcast_group_addr=addr;}
