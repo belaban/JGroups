@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.151 2010/01/14 16:21:45 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.152 2010/01/15 11:47:11 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -673,7 +673,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Message ack=new Message(dst);
         // commented Jan 23 2008 (bela): TP.enable_unicast_bundling should decide whether we bundle or not, and *not*
         // the OOB flag ! Bundling UNICAST ACKs should be really fast
-        ack.setFlag(Message.OOB);
+
+        // https://jira.jboss.org/jira/browse/JGRP-1125; will be reverted in 2.10
+        // ack.setFlag(Message.OOB);
+
         ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
