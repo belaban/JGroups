@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.54 2010/01/14 12:56:32 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.55 2010/01/15 10:20:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -792,7 +792,7 @@ public class RequestCorrelator {
 
     public static final class MultiDestinationHeader extends Header {
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
-        public java.util.List<Address> dest_mbrs=null;
+        public java.util.List<Address> dest_mbrs;
         private static final long serialVersionUID=-2636993059660054696L;
 
         public MultiDestinationHeader() {
