@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.95 2010/01/14 14:15:05 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.96 2010/01/15 15:05:25 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -53,7 +53,7 @@ public class MessageDispatcher implements RequestHandler {
     protected PullPushHandler handler=null;
     protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
-
+    protected boolean hardware_multicast_supported=false;
 
 
     public MessageDispatcher() {
@@ -285,8 +285,10 @@ public class MessageDispatcher implements RequestHandler {
             if(channel instanceof JChannel) {
                 TP transport=channel.getProtocolStack().getTransport();
                 corr.registerProbeHandler(transport);
+            }
+            TP transport=channel.getProtocolStack().getTransport();
+            hardware_multicast_supported=transport.supportsMulticasting();
         }
-    }
     }
 
     protected void correlatorStarted() {
@@ -464,8 +466,11 @@ public class MessageDispatcher implements RequestHandler {
 
         GroupRequest req=new GroupRequest(msg, corr, real_dests, options.getMode(), options.getTimeout(), 0);
         req.setResponseFilter(options.getRspFilter());
-        req.setAnycasting(options.getAnycasting());
         req.setBlockForResults(block_for_results);
+
+        // we override anycasting and always send a multicast if the transport supports IP multicasting
+        boolean use_anycasting=options.getAnycasting() && !hardware_multicast_supported;
+        req.setAnycasting(use_anycasting);
 
         try {
             req.execute();
