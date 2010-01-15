@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.249 2009/12/11 13:04:43 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.250 2010/01/15 15:15:38 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -314,8 +314,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         TP transport=getTransport();
-        if(transport != null)
+        if(transport != null) {
             transport.registerProbeHandler(this);
+            if(!transport.supportsMulticasting()) {
+                if(use_mcast_xmit) {
+                    log.warn("use_mcast_xmit should not be used because the transport (" + transport.getName() +
+                            ") does not support IP multicasting; setting use_mcast_xmit to false");
+                    use_mcast_xmit=false;
+                }
+                if(use_mcast_xmit_req) {
+                    log.warn("use_mcast_xmit_req should not be used because the transport (" + transport.getName() +
+                            ") does not support IP multicasting; setting use_mcast_xmit_req to false");
+                    use_mcast_xmit_req=false;
+                }
+            }
+        }
     }
 
 
