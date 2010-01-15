@@ -48,7 +48,7 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.47 2010/01/15 12:03:08 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.48 2010/01/15 13:43:51 belaban Exp $
  */
 public class GroupRequest extends Request implements Future<RspList> {
     /** keep suspects vector bounded */
@@ -178,16 +178,6 @@ public class GroupRequest extends Request implements Future<RspList> {
 
     public void setAnycasting(boolean anycasting) {
         this.use_anycasting=anycasting;
-    }
-
-    public boolean getResponsesComplete() {
-        lock.lock();
-        try {
-            return responsesComplete();
-        }
-        finally {
-            lock.unlock();
-        }
     }
 
 
@@ -350,38 +340,27 @@ public class GroupRequest extends Request implements Future<RspList> {
     }
 
 
-    public boolean cancel(boolean mayInterruptIfRunning) {
-        lock.lock();
-        try {
-            boolean retval=!done;
-            done=true;
-            if(corr != null)
-                corr.done(req_id);
-            completed.signalAll();
-            return retval;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    public boolean isCancelled() {
-        lock.lock();
-        try {
-            return done;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
 
     public RspList get() throws InterruptedException, ExecutionException {
-        waitForResults(0);
+        lock.lock();
+        try {
+            waitForResults(0);
+        }
+        finally {
+            lock.unlock();
+        }
         return getResults();
     }
 
     public RspList get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        boolean ok=waitForResults(unit.toMillis(timeout));
+        boolean ok;
+        lock.lock();
+        try {
+            ok=waitForResults(unit.toMillis(timeout));
+        }
+        finally {
+            lock.unlock();
+        }
         if(!ok)
             throw new TimeoutException();
         return getResults();
@@ -417,12 +396,6 @@ public class GroupRequest extends Request implements Future<RspList> {
     public Vector<Address> getSuspects() {
         return new Vector<Address>(suspects);
     }
-
-
-    public boolean isDone() {
-        return done;
-    }
-
 
 
     /* --------------------------------- Private Methods -------------------------------------*/
