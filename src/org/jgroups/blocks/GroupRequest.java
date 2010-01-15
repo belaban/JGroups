@@ -48,7 +48,7 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.46 2010/01/13 13:15:37 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.47 2010/01/15 12:03:08 belaban Exp $
  */
 public class GroupRequest extends Request implements Future<RspList> {
     /** keep suspects vector bounded */
@@ -178,6 +178,16 @@ public class GroupRequest extends Request implements Future<RspList> {
 
     public void setAnycasting(boolean anycasting) {
         this.use_anycasting=anycasting;
+    }
+
+    public boolean getResponsesComplete() {
+        lock.lock();
+        try {
+            return responsesComplete();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
