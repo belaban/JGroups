@@ -22,7 +22,7 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.2 2009/11/17 11:04:07 belaban Exp $
+ * @version $Id: NAKACK_Delivery_Test.java,v 1.3 2010/01/15 12:23:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
@@ -41,6 +41,7 @@ public class NAKACK_Delivery_Test {
         nak=new NAKACK();
 
         nak.setDownProtocol(new TP() {
+            public boolean supportsMulticasting() {return false;}
             public String getName() {return "blo";}
             public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}

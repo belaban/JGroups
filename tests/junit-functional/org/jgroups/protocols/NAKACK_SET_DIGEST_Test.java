@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
  * @author Bela Ban
- * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.1 2009/09/25 08:28:34 belaban Exp $
+ * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.2 2010/01/15 12:23:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_SET_DIGEST_Test {
@@ -35,6 +35,7 @@ public class NAKACK_SET_DIGEST_Test {
         d2.add(c, 10, 50, 50);
 
         nak.setDownProtocol(new TP() {
+            public boolean supportsMulticasting() {return false;}
             public String getName() {return "blo";}
             public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
