@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.96 2010/01/15 15:05:25 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.97 2010/01/16 13:21:14 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -545,7 +545,7 @@ public class MessageDispatcher implements RequestHandler {
             req.execute();
             if(options.getMode() == Request.GET_NONE)
                 return new NullFuture(null);
-            return new SingleFuture<T>(req);
+            return req;
         }
         catch(Exception t) {
             throw new RuntimeException("failed executing request " + req, t);
