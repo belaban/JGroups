@@ -19,10 +19,10 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.3 2010/01/15 14:20:57 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.4 2010/01/16 13:20:52 belaban Exp $
  */
-public class UnicastRequest extends Request implements Future<Rsp> {
-    protected final Rsp        result;
+public class UnicastRequest<T> extends Request implements Future<T> {
+    protected final Rsp<T>     result;
     protected final Address    target;
 
 
@@ -80,7 +80,7 @@ public class UnicastRequest extends Request implements Future<Rsp> {
                 return;
             if(!result.wasReceived()) {
                 boolean responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
-                result.setValue(response_value);
+                result.setValue((T)response_value);
                 result.setReceived(responseReceived);
                 if(log.isTraceEnabled())
                     log.trace(new StringBuilder("received response for request ").append(req_id)
@@ -105,7 +105,7 @@ public class UnicastRequest extends Request implements Future<Rsp> {
      * (where available). It is used to exclude faulty members from the response list.
      */
     public void suspect(Address suspected_member) {
-        if(suspected_member == null)
+        if(suspected_member == null || !suspected_member.equals(target))
             return;
 
         lock.lock();
@@ -155,18 +155,18 @@ public class UnicastRequest extends Request implements Future<Rsp> {
 
   
 
-    public Rsp get() throws InterruptedException, ExecutionException {
+    public T get() throws InterruptedException, ExecutionException {
         lock.lock();
         try {
             waitForResults(0);
-            return result;
+            return result.getValue();
         }
         finally {
             lock.unlock();
         }
     }
 
-    public Rsp get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         boolean ok;
         lock.lock();
         try {
@@ -177,7 +177,7 @@ public class UnicastRequest extends Request implements Future<Rsp> {
         }
         if(!ok)
             throw new TimeoutException();
-        return result;
+        return result.getValue();
     }
 
     public String toString() {
