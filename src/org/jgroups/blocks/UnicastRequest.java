@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.4 2010/01/16 13:20:52 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.5 2010/01/16 15:05:20 belaban Exp $
  */
 public class UnicastRequest<T> extends Request implements Future<T> {
     protected final Rsp<T>     result;
@@ -86,7 +86,6 @@ public class UnicastRequest<T> extends Request implements Future<T> {
                     log.trace(new StringBuilder("received response for request ").append(req_id)
                             .append(", sender=").append(sender).append(", val=").append(response_value));
             }
-            // done=rsp_filter != null && !rsp_filter.needMoreResponses();
             done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
             if(done && corr != null)
                 corr.done(req_id);
@@ -112,10 +111,12 @@ public class UnicastRequest<T> extends Request implements Future<T> {
         try {
             if(done)
                 return;
-            if(result != null && !result.wasReceived()) {
+            if(result != null && !result.wasReceived())
                 result.setSuspected(true);
-                completed.signalAll();
-            }
+            done=true;
+            if(corr != null)
+                corr.done(req_id);
+            completed.signalAll();
         }
         finally {
             lock.unlock();
@@ -137,6 +138,8 @@ public class UnicastRequest<T> extends Request implements Future<T> {
             if(!mbrs.contains(target)) {
                 result.setReceived(false);
                 done=true;
+                if(corr != null)
+                    corr.done(req_id);
                 completed.signalAll();
             }
         }
