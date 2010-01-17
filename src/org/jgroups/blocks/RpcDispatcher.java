@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.46 2010/01/15 11:48:53 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.47 2010/01/17 12:11:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -8,9 +8,7 @@ import org.jgroups.util.*;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.lang.IllegalArgumentException ;
 import java.util.*;
-import java.util.concurrent.Future;
 
 
 /**
@@ -31,7 +29,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
     protected Marshaller2   rsp_marshaller=null;
-    protected final List    additionalChannelListeners=new ArrayList();
+    protected final List<ChannelListener> additionalChannelListeners=new ArrayList<ChannelListener>();
     protected MethodLookup  method_lookup=null;
 
 
@@ -187,20 +185,20 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
                                      Class[] types, int mode, long timeout) {
         return callRemoteMethods(dests, method_name, args, types, mode, timeout, false);
     }
 
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
                                      Class[] types, int mode, long timeout, boolean use_anycasting) {
         return callRemoteMethods(dests, method_name, args, types, mode, timeout, use_anycasting, null);
     }
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
                                      Class[] types, int mode, long timeout, boolean use_anycasting, RspFilter filter) {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethods(dests, method_call,
@@ -214,20 +212,20 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
                                      String[] signature, int mode, long timeout) {
         return callRemoteMethods(dests, method_name, args, signature, mode, timeout, false);
     }
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
                                      String[] signature, int mode, long timeout, boolean use_anycasting) {
         MethodCall method_call=new MethodCall(method_name, args, signature);
         return callRemoteMethods(dests, method_call, new RequestOptions(mode, timeout, use_anycasting, null, (byte)0));
     }
 
     @Deprecated
-    public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout) {
+    public RspList callRemoteMethods(Vector<Address> dests, MethodCall method_call, int mode, long timeout) {
         return callRemoteMethods(dests, method_call,  new RequestOptions().setMode(mode).setTimeout(timeout));
     }
 
@@ -300,7 +298,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     @Deprecated
-    public Future<RspList> callRemoteMethodsWithFuture(Vector dests, MethodCall method_call, int mode, long timeout,
+    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call, int mode, long timeout,
                                                        boolean use_anycasting, boolean oob, RspFilter filter) {
         RequestOptions options=new RequestOptions(mode, timeout, use_anycasting, filter);
         if(oob) options.setFlags(Message.OOB);
@@ -308,16 +306,16 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     @Deprecated
-    public Future<RspList> callRemoteMethodsWithFuture(Vector dests, MethodCall method_call) {
+    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call) {
         return callRemoteMethodsWithFuture(dests, method_call, new RequestOptions());
     }
 
-    public Future<RspList> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
+    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
                         append("() is empty: no need to send message"));
-            return new NullFuture(RspList.EMPTY_RSP_LIST);
+            return new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
         }
 
         if(log.isTraceEnabled())
@@ -343,7 +341,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
         msg.setFlag(options.getFlags());
-        Future<RspList>  retval=super.castMessageWithFuture(dests, msg, options);
+        NotifyingFuture<RspList>  retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
@@ -405,18 +403,18 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     @Deprecated
-    public <T> Future<T> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
         RequestOptions options=new RequestOptions(mode, timeout, false, null);
         if(oob) options.setFlags(Message.OOB);
         return callRemoteMethodWithFuture(dest, method_call, options);
     }
 
     @Deprecated
-    public <T> Future<T> callRemoteMethodWithFuture(Address dest, MethodCall call) throws Throwable {
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call) throws Throwable {
         return callRemoteMethodWithFuture(dest, call, new RequestOptions());
     }
 
-    public <T> Future<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Throwable {
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
 
@@ -427,7 +425,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
-        return super.sendMessageWithFuture(msg, options.getMode(), options.getTimeout());
+        return super.sendMessageWithFuture(msg, options);
     }
 
 
