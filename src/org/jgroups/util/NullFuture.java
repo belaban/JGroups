@@ -1,15 +1,14 @@
 package org.jgroups.util;
 
-import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
  * @author Bela Ban
- * @version $Id: NullFuture.java,v 1.3 2010/01/13 13:18:00 belaban Exp $
+ * @version $Id: NullFuture.java,v 1.4 2010/01/17 12:12:01 belaban Exp $
  */
-public class NullFuture<T> implements Future<T> {
+public class NullFuture<T> implements NotifyingFuture<T> {
     final T retval;
 
     public NullFuture(T retval) {
@@ -34,5 +33,11 @@ public class NullFuture<T> implements Future<T> {
 
     public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return retval;
+    }
+
+    public NotifyingFuture setListener(FutureListener<T> listener) {
+        if(listener != null)
+            listener.futureDone(this);
+        return this;
     }
 }

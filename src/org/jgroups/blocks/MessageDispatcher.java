@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.97 2010/01/16 13:21:14 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.98 2010/01/17 12:11:15 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -410,12 +410,12 @@ public class MessageDispatcher implements RequestHandler {
     }
 
     @Deprecated
-    public Future<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                                                 RspFilter filter) {
+    public NotifyingFuture<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
+                                                          RspFilter filter) {
         return castMessageWithFuture(dests, msg, new RequestOptions(mode, timeout, use_anycasting, filter));
     }
 
-    public Future<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
+    public NotifyingFuture<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
         GroupRequest req=cast(dests, msg, options, false);
         return req != null? req : new NullFuture(RspList.EMPTY_RSP_LIST);
     }
@@ -527,11 +527,11 @@ public class MessageDispatcher implements RequestHandler {
     }
 
     @Deprecated
-    public <T> Future<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
+    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
         return sendMessageWithFuture(msg, new RequestOptions(mode, timeout, false, null));
     }
 
-    public <T> Future<T> sendMessageWithFuture(Message msg, RequestOptions options) throws TimeoutException, SuspectedException {
+    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws TimeoutException, SuspectedException {
         Address dest=msg.getDest();
         if(dest == null) {
             if(log.isErrorEnabled())
