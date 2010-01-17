@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.28 2009/05/20 15:00:39 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.29 2010/01/17 11:29:56 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -109,7 +109,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
             System.out.println("view channel 1= " + view);
 
             assert view.size() == 2;
-            RspList rsps=d1.callRemoteMethods(null, "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+            RspList rsps=d1.callRemoteMethods(null, "foo", null, (Class[])null, Request.GET_ALL, 5000);
             System.out.println("rsps:\n" + rsps);
             assert rsps.size() == 2;
             for(Rsp rsp: rsps.values()) {
@@ -127,7 +127,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
             d1.setServerObject(server_object);
             d2.setServerObject(server_object);
 
-            rsps=d2.callRemoteMethods(null, "foobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+            rsps=d2.callRemoteMethods(null, "foobar", null, (Class[])null, Request.GET_ALL, 5000);
             System.out.println("rsps:\n" + rsps);
             assert rsps.size() == 2;
             for(Rsp rsp: rsps.values()) {
@@ -159,7 +159,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     	
     	final long timeout = 10 * 1000 ;
     	
-        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null,GroupRequest.GET_ALL, timeout, false,
+        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null,Request.GET_ALL, timeout, false,
                                              new RspFilter() {
                                                  int num=0;
                                                  public boolean isAcceptable(Object response, Address sender) {
@@ -184,7 +184,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     public void testFuture() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
         Future<RspList> future;
-        future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 5000L, false, false, null);
+        future=disp1.callRemoteMethodsWithFuture(null, sleep, Request.GET_ALL, 5000L, false, false, null);
         assert !future.isDone();
         assert !future.isCancelled();
         try {
@@ -212,7 +212,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
         Future<RspList> future;
         for(int i=0; i < 10; i++) {
-            future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 30000L, false, false, null);
+            future=disp1.callRemoteMethodsWithFuture(null, sleep, Request.GET_ALL, 30000L, false, false, null);
             futures.add(future);
         }
 
@@ -240,7 +240,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     public void testFutureCancel() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
         Future<RspList> future;
-        future=disp1.callRemoteMethodsWithFuture(null, sleep, GroupRequest.GET_ALL, 5000L, false, false, null);
+        future=disp1.callRemoteMethodsWithFuture(null, sleep, Request.GET_ALL, 5000L, false, false, null);
         assert !future.isDone();
         assert !future.isCancelled();
         future.cancel(true);
@@ -309,7 +309,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         
         // make an RPC call using C's now outdated view of membership
         System.out.println("calling method foo() in " + members + " (view=" + c2.getView() + ")");
-        RspList rsps=disp1.callRemoteMethods(members, "foo", null, (Class[])null, GroupRequest.GET_ALL, timeout);
+        RspList rsps=disp1.callRemoteMethods(members, "foo", null, (Class[])null, Request.GET_ALL, timeout);
         
         // all responses 
         System.out.println("responses:\n" + rsps);
@@ -370,7 +370,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     	final long timeout = 20 * 1000 ;
     		
         System.out.println("\ntesting with " + size + " bytes");
-        RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, timeout);
+        RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, Request.GET_ALL, timeout);
         System.out.println("rsps:");
         assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
                 " were received: " + rsps;
@@ -405,7 +405,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     	final long timeout = 20 * 1000 ;
     	
         System.out.println("\ntesting with " + size + " bytes");
-        RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, timeout);
+        RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, Request.GET_ALL, timeout);
         System.out.println("rsps:");
         assert rsps != null;
         assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
@@ -458,7 +458,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         System.out.println("\ntesting unicast call with " + size + " bytes");
         assertNotNull(dst);
         
-        Object retval=disp1.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, timeout);
+        Object retval=disp1.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, Request.GET_ALL, timeout);
 
     	// it's possible that an exception was raised
         if (retval instanceof java.lang.Throwable) {
