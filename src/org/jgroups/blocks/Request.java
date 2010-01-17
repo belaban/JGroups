@@ -9,7 +9,10 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Command;
+import org.jgroups.util.FutureListener;
+import org.jgroups.util.NotifyingFuture;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -21,9 +24,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.3 2010/01/15 13:43:51 belaban Exp $
+ * @version $Id: Request.java,v 1.4 2010/01/17 12:10:05 belaban Exp $
  */
-public abstract class Request implements RspCollector, Command {
+public abstract class Request implements RspCollector, Command, NotifyingFuture {
     /** return only first response */
     public static final int GET_FIRST=1;
 
@@ -65,6 +68,8 @@ public abstract class Request implements RspCollector, Command {
     protected final long              timeout;
     protected final long              req_id; // request ID for this request
 
+    protected volatile FutureListener listener;
+
 
     
 
@@ -90,8 +95,13 @@ public abstract class Request implements RspCollector, Command {
     public void setBlockForResults(boolean block_for_results) {
         this.block_for_results=block_for_results;
     }
-    
 
+    public NotifyingFuture setListener(FutureListener listener) {
+        this.listener=listener;
+        if(done)
+            listener.futureDone(this);
+        return this;
+    }
 
     public boolean execute() throws Exception {
         if(corr == null && transport == null) {
@@ -183,6 +193,10 @@ public abstract class Request implements RspCollector, Command {
     /* --------------------------------- Private Methods -------------------------------------*/
 
 
+    protected void checkCompletion(Future future) {
+        if(listener != null && responsesComplete())
+            listener.futureDone(future);
+    }
 
     /** Generates a new unique request ID */
     protected static long getRequestId() {

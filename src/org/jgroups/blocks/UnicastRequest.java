@@ -10,7 +10,6 @@ import org.jgroups.util.Rsp;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -19,9 +18,9 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.5 2010/01/16 15:05:20 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.6 2010/01/17 12:10:40 belaban Exp $
  */
-public class UnicastRequest<T> extends Request implements Future<T> {
+public class UnicastRequest<T> extends Request {
     protected final Rsp<T>     result;
     protected final Address    target;
 
@@ -94,6 +93,7 @@ public class UnicastRequest<T> extends Request implements Future<T> {
             completed.signalAll(); // wakes up execute()
             lock.unlock();
         }
+        checkCompletion(this);
     }
 
 
@@ -121,6 +121,7 @@ public class UnicastRequest<T> extends Request implements Future<T> {
         finally {
             lock.unlock();
         }
+        checkCompletion(this);
     }
 
 
@@ -146,6 +147,8 @@ public class UnicastRequest<T> extends Request implements Future<T> {
         finally {
             lock.unlock();
         }
+        
+        checkCompletion(this);
     }
 
 
@@ -155,8 +158,6 @@ public class UnicastRequest<T> extends Request implements Future<T> {
         return result;
     }
 
-
-  
 
     public T get() throws InterruptedException, ExecutionException {
         lock.lock();
