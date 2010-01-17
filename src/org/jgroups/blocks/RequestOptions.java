@@ -5,7 +5,7 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.4 2010/01/16 14:59:05 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.5 2010/01/17 12:07:56 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
@@ -38,6 +38,10 @@ public class RequestOptions {
 
     public RequestOptions(int mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
         this(mode, timeout, use_anycasting, rsp_filter, (byte)0);
+    }
+
+    public RequestOptions(int mode, long timeout) {
+        this(mode, timeout, false, null);
     }
 
 
