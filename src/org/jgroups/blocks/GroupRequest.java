@@ -11,7 +11,6 @@ import org.jgroups.util.RspList;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -48,9 +47,9 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.48 2010/01/15 13:43:51 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.49 2010/01/17 12:09:28 belaban Exp $
  */
-public class GroupRequest extends Request implements Future<RspList> {
+public class GroupRequest extends Request {
     /** keep suspects vector bounded */
     private static final int MAX_SUSPECTS=40;
     
@@ -234,6 +233,7 @@ public class GroupRequest extends Request implements Future<RspList> {
             completed.signalAll(); // wakes up execute()
             lock.unlock();
         }
+        checkCompletion(this);
     }
 
 
@@ -260,6 +260,7 @@ public class GroupRequest extends Request implements Future<RspList> {
         finally {
             lock.unlock();
         }
+        checkCompletion(this);
     }
 
 
@@ -320,6 +321,7 @@ public class GroupRequest extends Request implements Future<RspList> {
         finally {
             lock.unlock();
         }
+        checkCompletion(this);
     }
 
 
@@ -436,11 +438,11 @@ public class GroupRequest extends Request implements Future<RspList> {
 
     @GuardedBy("lock")
     protected boolean responsesComplete() {
-        int num_received=0, num_not_received=0, num_suspected=0;
-        final int num_total=requests.size();
-
         if(done)
             return true;
+
+        int num_received=0, num_not_received=0, num_suspected=0;
+        final int num_total=requests.size();
 
         for(Rsp rsp: requests.values()) {
             if(rsp.wasReceived()) {
@@ -533,10 +535,6 @@ public class GroupRequest extends Request implements Future<RspList> {
                 suspects.remove(0); // keeps queue bounded
         }
     }
-
-
-
-
 
 
 }
