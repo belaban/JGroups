@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.56 2010/01/18 07:23:58 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.57 2010/01/18 07:42:19 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -442,7 +442,7 @@ public class RequestCorrelator {
         if(hdr instanceof MultiDestinationHeader) {
             // If the header contains a destination list, and we are not part of it, then we discard the
             // request (was addressed to other members)
-            java.util.List dests=((MultiDestinationHeader)hdr).dest_mbrs;
+            java.util.Collection dests=((MultiDestinationHeader)hdr).dest_mbrs;
             if(dests != null && local_addr != null && !dests.contains(local_addr)) {
                 if(log.isTraceEnabled()) {
                     log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
@@ -793,7 +793,7 @@ public class RequestCorrelator {
 
     public static final class MultiDestinationHeader extends Header {
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
-        public java.util.List<Address> dest_mbrs;
+        public java.util.Collection<? extends Address> dest_mbrs;
         private static final long serialVersionUID=-2636993059660054696L;
 
         public MultiDestinationHeader() {
@@ -810,6 +810,7 @@ public class RequestCorrelator {
             out.writeObject(dest_mbrs);
         }
 
+        @SuppressWarnings("unchecked")
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             super.readExternal(in);
             dest_mbrs=(java.util.List<Address>)in.readObject();
@@ -822,7 +823,7 @@ public class RequestCorrelator {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             super.readFrom(in);
-            dest_mbrs=(List<Address>)Util.readAddresses(in, java.util.LinkedList.class);
+            dest_mbrs=Util.readAddresses(in, LinkedList.class);
         }
 
         public int size() {
