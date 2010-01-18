@@ -1,9 +1,9 @@
 
 package org.jgroups.blocks;
 
+import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -12,11 +12,7 @@ import org.jgroups.util.*;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.concurrent.Future;
+import java.util.*;
 
 
 /**
@@ -37,7 +33,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.99 2010/01/18 08:00:34 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.100 2010/01/18 13:47:10 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -421,18 +417,18 @@ public class MessageDispatcher implements RequestHandler {
     }
 
     protected GroupRequest cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
-        Vector<Address> real_dests;
+        List<Address> real_dests;
 
         // we need to clone because we don't want to modify the original
         // (we remove ourselves if LOCAL is false, see below) !
         // real_dests=dests != null ? (Vector) dests.clone() : (members != null ? new Vector(members) : null);
         if(dests != null) {
-            real_dests=new Vector<Address>(dests);
+            real_dests=new ArrayList<Address>(dests);
             real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {
-                real_dests=new Vector(members);
+                real_dests=new ArrayList(members);
             }
         }
 
@@ -450,7 +446,7 @@ public class MessageDispatcher implements RequestHandler {
                 local_addr=tmp.getAddress();
             }
             if(local_addr != null) {
-                real_dests.removeElement(local_addr);
+                real_dests.remove(local_addr);
             }
         }
 
