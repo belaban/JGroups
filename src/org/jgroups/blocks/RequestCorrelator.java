@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.57 2010/01/18 07:42:19 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.58 2010/01/18 14:32:37 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -226,7 +226,7 @@ public class RequestCorrelator {
      * <code>receiveResponse()</code> and <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
+    public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
@@ -799,7 +799,7 @@ public class RequestCorrelator {
         public MultiDestinationHeader() {
         }
 
-        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, String name, List<Address> dest_mbrs) {
+        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, String name, Collection<Address> dest_mbrs) {
             super(type, id, rsp_expected, name);
             this.dest_mbrs=dest_mbrs;
         }

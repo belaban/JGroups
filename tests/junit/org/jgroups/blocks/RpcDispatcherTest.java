@@ -40,7 +40,7 @@ import java.util.concurrent.TimeoutException;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.30 2010/01/17 12:07:43 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.31 2010/01/18 14:32:45 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -56,15 +56,18 @@ public class RpcDispatcherTest extends ChannelTestBase {
     @BeforeMethod
     protected void setUp() throws Exception {
         c1=createChannel(true, 3);
+        c1.setName("A");
         final String GROUP="RpcDispatcherTest";
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
         c1.connect(GROUP);
 
         c2=createChannel(c1);
+        c2.setName("B");
         disp2=new RpcDispatcher(c2, null, null, new ServerObject(2));
         c2.connect(GROUP);
 
         c3=createChannel(c1);
+        c3.setName("C");
         disp3=new RpcDispatcher(c3, null, null, new ServerObject(3));
         c3.connect(GROUP);
 
@@ -308,6 +311,13 @@ public class RpcDispatcherTest extends ChannelTestBase {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
         Future<RspList> future;
         future=disp1.callRemoteMethodsWithFuture(null, sleep, new RequestOptions(Request.GET_ALL, 5000L));
+        assert !future.isDone();
+        assert !future.isCancelled();
+        future.cancel(true);
+        assert future.isDone();
+        assert future.isCancelled();
+
+        future=disp1.callRemoteMethodsWithFuture(null, sleep, new RequestOptions(Request.GET_ALL, 0));
         assert !future.isDone();
         assert !future.isCancelled();
         future.cancel(true);

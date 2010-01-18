@@ -16,7 +16,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: GroupRequestTest.java,v 1.11 2009/06/22 14:34:29 belaban Exp $
+ * @version $Id: GroupRequestTest.java,v 1.12 2010/01/18 14:32:24 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
@@ -81,7 +81,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_FIRST, 0, 3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_FIRST, 0, 3);
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -101,7 +101,6 @@ public class GroupRequestTest {
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(0, req.getSuspects().size());
         assert req.isDone();
         RspList results=req.getResults();
         Assert.assertEquals(3, results.size());
@@ -116,7 +115,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 3);
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -137,7 +136,6 @@ public class GroupRequestTest {
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(0, req.getSuspects().size());
         assert req.isDone();
         RspList results=req.getResults();
         Assert.assertEquals(3, results.size());
@@ -177,12 +175,11 @@ public class GroupRequestTest {
         MyDelayedTransport tp = new MyDelayedTransport(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest req=new GroupRequest(new Message(), tp, dests, GroupRequest.GET_ALL, timeout, dests.size());
+        GroupRequest req=new GroupRequest(new Message(), tp, dests, Request.GET_ALL, timeout, dests.size());
         tp.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(0, req.getSuspects().size());
         assert req.isDone();
         RspList results = req.getResults();
         Assert.assertEquals(dests.size(), results.size());
@@ -193,12 +190,11 @@ public class GroupRequestTest {
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(0, req.getSuspects().size());
         assert req.isDone();
         RspList results=req.getResults();
         Assert.assertEquals(2, results.size());
@@ -207,12 +203,11 @@ public class GroupRequestTest {
     private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        assert req.getSuspects().size() == 1;
         assert req.isDone();
         RspList results=req.getResults();
         assert results.size() == 2;
@@ -228,12 +223,11 @@ public class GroupRequestTest {
                                         new View(Util.createRandomAddress(), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(req.getSuspects().size(), 0, "suspects are " + req.getSuspects());
         assert req.isDone();
         RspList results=req.getResults();
         Assert.assertEquals(2, results.size());
@@ -246,14 +240,13 @@ public class GroupRequestTest {
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(Util.createRandomAddress(), 322649, new_dests)};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
 
         transport.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
         boolean rc=req.execute();
         System.out.println("group request after execution: " + req);
         assert rc;
-        Assert.assertEquals(req.getSuspects().size(), 1, "suspects are " + req.getSuspects());
         assert req.isDone();
         RspList results=req.getResults();
         Assert.assertEquals(2, results.size());
