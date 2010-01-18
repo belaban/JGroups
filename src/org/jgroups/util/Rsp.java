@@ -1,4 +1,4 @@
-// $Id: Rsp.java,v 1.9 2010/01/13 13:18:52 belaban Exp $
+// $Id: Rsp.java,v 1.10 2010/01/18 08:32:03 belaban Exp $
 
 package org.jgroups.util;
 
@@ -76,10 +76,12 @@ public class Rsp<T> {
         return suspected;
     }
 
-    public void setSuspected(boolean suspected) {
+    public boolean setSuspected(boolean suspected) {
+        boolean changed=!this.suspected && suspected;
         this.suspected=suspected;
         if(suspected)
             received=false;
+        return changed;
     }
 
     public String toString() {
