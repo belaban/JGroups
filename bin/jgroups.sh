@@ -1,5 +1,5 @@
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.17 2009/12/21 12:08:41 belaban Exp $
+# version: $Id: jgroups.sh,v 1.18 2010/01/18 07:24:22 belaban Exp $
 
 #!/bin/bash
 
@@ -32,7 +32,8 @@ FLAGS="$FLAGS -Xshare:off"
 JMX="-Dcom.sun.management.jmxremote"
 #EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
 
-EXPERIMENTAL="$EXPERIMENTAL -XX:+DoEscapeAnalysis -XX:+EliminateLocks -XX:+UseBiasedLocking"
+#EXPERIMENTAL="$EXPERIMENTAL -XX:+DoEscapeAnalysis -XX:+EliminateLocks -XX:+UseBiasedLocking"
+EXPERIMENTAL="$EXPERIMENTAL -XX:+EliminateLocks -XX:+UseBiasedLocking"
 
 #EXPERIMENTAL="$EXPERIMENTAL -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+EliminateLocks -XX:+UseBiasedLocking -XX:+UseCompressedOops"
 #EXPERIMENTAL="$EXPERIMENTAL -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC"
