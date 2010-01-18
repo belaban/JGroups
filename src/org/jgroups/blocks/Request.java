@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.4 2010/01/17 12:10:05 belaban Exp $
+ * @version $Id: Request.java,v 1.5 2010/01/18 14:34:13 belaban Exp $
  */
 public abstract class Request implements RspCollector, Command, NotifyingFuture {
     /** return only first response */
@@ -115,11 +115,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
         lock.lock();
         try {
-            done=false;
-            boolean retval=responsesComplete(timeout);
-            if(retval == false && log.isTraceEnabled())
-                log.trace("call did not execute correctly, request is " + toString());
-            return retval;
+            return responsesComplete(timeout);
         }
         finally {
             done=true;
@@ -135,8 +131,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
     public abstract void suspect(Address mbr);
 
-    protected void adjustMembership() {}
-    
     protected abstract boolean responsesComplete();
 
 
@@ -207,30 +201,23 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     @GuardedBy("lock")
     protected boolean responsesComplete(long timeout) throws InterruptedException {
         if(timeout <= 0) {
-            while(true) { /* Wait for responses: */
-                adjustMembership(); // may not be necessary, just to make sure...
+            while(!done) { /* Wait for responses: */
                 if(responsesComplete()) {
-                    if(corr != null) {
+                    if(corr != null)
                         corr.done(req_id);
-                    }
-                    if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
-                        log.trace("received all responses: " + toString());
-                    }
                     return true;
                 }
                 completed.await();
             }
+            return responsesComplete();
         }
         else {
             long start_time=System.currentTimeMillis();
             long timeout_time=start_time + timeout;
-            while(timeout > 0) { /* Wait for responses: */
+            while(timeout > 0 && !done) { /* Wait for responses: */
                 if(responsesComplete()) {
                     if(corr != null)
                         corr.done(req_id);
-                    if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
-                        log.trace("received all responses: " + toString());
-                    }
                     return true;
                 }
                 timeout=timeout_time - System.currentTimeMillis();
@@ -238,13 +225,9 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
                     completed.await(timeout, TimeUnit.MILLISECONDS);
                 }
             }
-            if(corr != null) {
+            if(corr != null)
                 corr.done(req_id);
-            }
-            if(log.isTraceEnabled())
-                log.trace("timed out waiting for responses");
-
-            return false;
+            return responsesComplete();
         }
     }
 
@@ -252,7 +235,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     protected boolean waitForResults(long timeout)  {
         if(timeout <= 0) {
             while(true) { /* Wait for responses: */
-                adjustMembership(); // may not be necessary, just to make sure...
                 if(responsesComplete())
                     return true;
                 try {completed.await();} catch(Exception e) {}
