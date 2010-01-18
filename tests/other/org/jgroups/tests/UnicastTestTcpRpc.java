@@ -475,7 +475,7 @@ public class UnicastTestTcpRpc {
 
     static void help() {
         System.out.println("UnicastTestRpc [-help] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep] [-addr address] [-port port]");
+                           "[-exit_on_end] [-busy-sleep] [-addr address] [-dest_port port] [-local_port port]");
     }
 
 
