@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.98 2010/01/17 12:11:15 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.99 2010/01/18 08:00:34 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -469,8 +469,9 @@ public class MessageDispatcher implements RequestHandler {
         req.setBlockForResults(block_for_results);
 
         // we override anycasting and always send a multicast if the transport supports IP multicasting
-        boolean use_anycasting=options.getAnycasting() && !hardware_multicast_supported;
-        req.setAnycasting(use_anycasting);
+        // boolean use_anycasting=options.getAnycasting() && !hardware_multicast_supported;
+        // req.setAnycasting(use_anycasting);
+        req.setAnycasting(options.getAnycasting());
 
         try {
             req.execute();
