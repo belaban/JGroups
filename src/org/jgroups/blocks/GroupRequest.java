@@ -47,7 +47,7 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.49 2010/01/17 12:09:28 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.50 2010/01/18 08:08:56 belaban Exp $
  */
 public class GroupRequest extends Request {
     /** keep suspects vector bounded */
@@ -208,11 +208,11 @@ public class GroupRequest extends Request {
      * <code>execute()</code> returns.
      */
     public void receiveResponse(Object response_value, Address sender) {
+        if(done)
+            return;
+
         lock.lock();
         try {
-            if(done)
-                return;
-
             Rsp rsp=requests.get(sender);
             if(rsp == null)
                 return;
