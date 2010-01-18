@@ -26,7 +26,7 @@ public class UnicastTestTcpRpc {
     private long sleep_time=0;
     private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false;
     private int num_threads=1;
-    private int num_msgs=100000, msg_size=1000;
+    private int num_msgs=50000, msg_size=1000;
 
     private InetAddress addr=null;
     private int local_port=8000, dest_port=9000;
