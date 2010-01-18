@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.55 2010/01/15 10:20:34 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.56 2010/01/18 07:23:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -606,6 +606,7 @@ public class RequestCorrelator {
 
         rsp=req.makeReply();
         rsp.setFlag(Message.OOB);
+        rsp.setFlag(Message.DONT_BUNDLE);
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
