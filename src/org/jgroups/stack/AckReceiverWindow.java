@@ -20,10 +20,10 @@ import java.util.concurrent.ConcurrentMap;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.37 2010/01/19 14:44:10 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.38 2010/01/19 17:05:10 belaban Exp $
  */
 public class AckReceiverWindow {
-    private AtomicLong                        next_to_remove=new AtomicLong(0);
+    private final AtomicLong                  next_to_remove=new AtomicLong(0);
     private final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>();
     private final AtomicBoolean               processing=new AtomicBoolean(false);
 
@@ -45,7 +45,7 @@ public class AckReceiverWindow {
 
 
     /**
-     *
+     * Adds a message if not yet received
      * @param seqno
      * @param msg
      * @return -1 if not added because seqno < next_to_remove, 0 if not added because already present,
@@ -75,44 +75,22 @@ public class AckReceiverWindow {
         return retval;
     }
 
-    /**
-     * We need to have the lock on 'msgs' while we're setting processing to false (if no message is available), because
-     * this prevents some other thread from adding a message. Use case:
-     * <ol>
-     * <li>Thread 1 calls msgs.remove() --> returns null
-     * <li>Thread 2 calls add()
-     * <li>Thread 2 checks the CAS and returns because Thread1 hasn't yet released it
-     * <li>Thread 1 releases the CAS
-     * </ol>
-     * The result here is that Thread 2 didn't go into the remove() processing and returned, and Thread 1 didn't see
-     * the new message and therefore returned as well. Result: we have an unprocessed message in 'msgs' !
-     * @param processing
-     * @return
-     */
-    public Message remove(AtomicBoolean processing) {
-        Message retval=msgs.remove(next_to_remove.get());
-        if(retval != null)
-            next_to_remove.incrementAndGet();
-        else
-            processing.set(false);
-        return retval;
-    }
+   
 
     /**
      * Removes as many messages as possible (in sequence, without gaps)
      * @return
      */
-    public List<Message> removeMany(AtomicBoolean processing) {
+    public List<Message> removeMany() {
         List<Message> retval=new LinkedList<Message>(); // we remove msgs.size() messages *max*
         Message msg;
         while((msg=msgs.remove(next_to_remove.get())) != null) {
             next_to_remove.incrementAndGet();
             retval.add(msg);
         }
-        if(retval.isEmpty())
-            processing.set(false);
         return retval;
     }
+    
 
     public Message removeOOBMessage() {
         long seqno=next_to_remove.get();
