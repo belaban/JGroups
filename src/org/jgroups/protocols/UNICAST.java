@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.153 2010/01/18 21:01:37 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.154 2010/01/19 17:25:40 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -434,7 +434,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         ReceiverEntry entry2=recv_table.remove(mbr);
         if(entry2 != null)
             entry2.reset();
-        }
+    }
 
     /**
      * This method is public only so it can be invoked by unit testing, but should not otherwise be used !
@@ -490,36 +490,36 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             log.trace(sb);
         }
 
-        AckReceiverWindow win;
-        Address send_request_for_first_seqno=null;
-        synchronized(recv_table) {
-            ReceiverEntry entry=recv_table.get(sender);
-            win=entry != null? entry.received_msgs : null;
+        ReceiverEntry entry=recv_table.get(sender);
+        AckReceiverWindow win=entry != null? entry.received_msgs : null;
 
-            if(first) {
-                if(entry == null || win == null) {
-                    win=createReceiverWindow(sender, entry, seqno, conn_id);
-                }
-                else {  // entry != null && win != null
-                    if(conn_id != entry.recv_conn_id) {
-                        if(log.isTraceEnabled())
-                            log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
-                        win=createReceiverWindow(sender, entry, seqno, conn_id);
-                    }
-                    else {
-                        ;
-                    }
-                }
+        if(first) {
+            if(entry == null) {
+                entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
+                win=entry.received_msgs;
             }
-            else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
-                if(win == null || entry.recv_conn_id != conn_id)
-                    send_request_for_first_seqno=sender; // drops the message and returns (see below)
+            else {  // entry != null && win != null
+                if(conn_id != entry.recv_conn_id) {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
+
+                    ReceiverEntry entry2=recv_table.remove(sender);
+                    if(entry2 != null)
+                        entry2.received_msgs.reset();
+                    
+                    entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
+                    win=entry.received_msgs;
+                }
+                else {
+                    ;
+                }
             }
         }
-
-        if(send_request_for_first_seqno != null) {
-            sendRequestForFirstSeqno(send_request_for_first_seqno);
-            return;
+        else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
+            if(win == null || entry.recv_conn_id != conn_id) {
+                sendRequestForFirstSeqno(sender); // drops the message and returns (see below)
+                return;
+            }
         }
 
         byte result=win.add2(seqno, msg); // win is guaranteed to be non-null if we get here
@@ -560,8 +560,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return;
         }
 
-        // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-        boolean released_processing=false;
+        // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         int num_regular_msgs_removed=0;
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
@@ -572,11 +571,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // order in which they were sent by their senders
         try {
             while(true) {
-                List<Message> msgs=win.removeMany(processing);
-                if(msgs.isEmpty()) {
-                    released_processing=true;
+                List<Message> msgs=win.removeMany();
+                if(msgs.isEmpty())
                     return;
-                }
+
                 Message highest_removed=msgs.get(msgs.size() -1);
                 sendAckForMessage(highest_removed); // guaranteed not to throw an exception !
                 for(Message m: msgs) {
@@ -598,29 +596,20 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             // When we have such messages pending, then even OOB threads will remove and process them
             // http://jira.jboss.com/jira/browse/JGRP-781
             undelivered_msgs.addAndGet(-num_regular_msgs_removed);
-
-            // double dutch: m == null always releases 'processing', however if remove() throws an exception we still
-            // release 'processing'
-            if(!released_processing)
-                processing.set(false);
+            processing.set(false);
         }
     }
 
 
-    private AckReceiverWindow createReceiverWindow(Address sender, ReceiverEntry entry, long seqno, long conn_id) {
-        if(entry == null) {
-            entry=new ReceiverEntry();
-            recv_table.put(sender, entry);
-        }
-        if(entry.received_msgs != null)
-            entry.received_msgs.reset();
-        entry.received_msgs=new AckReceiverWindow(seqno);
-        entry.recv_conn_id=conn_id;
+    private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
+        ReceiverEntry entry=new ReceiverEntry(new AckReceiverWindow(seqno), conn_id);
+        ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
+        if(entry2 != null)
+            return entry2;
         if(log.isTraceEnabled())
             log.trace(local_addr + ": created receiver window for " + sender + " at seqno=#" + seqno + " for conn-id=" + conn_id);
-        return entry.received_msgs;
+        return entry;
     }
-
 
 
     /** Add the ACK to hashtable.sender.sent_msgs */
@@ -848,8 +837,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
     private static final class ReceiverEntry {
-        AckReceiverWindow  received_msgs=null;  // stores all msgs rcvd by a certain peer in seqno-order
-        long               recv_conn_id=0;
+        private final AckReceiverWindow  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
+        private final long               recv_conn_id;
+
+        
+        public ReceiverEntry(AckReceiverWindow received_msgs, long recv_conn_id) {
+            this.received_msgs=received_msgs;
+            this.recv_conn_id=recv_conn_id;
+        }
 
         void reset() {
             if(received_msgs != null)
