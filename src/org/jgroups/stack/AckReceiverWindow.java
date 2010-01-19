@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.35 2010/01/18 21:01:08 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.36 2010/01/19 14:39:58 belaban Exp $
  */
 public class AckReceiverWindow {
     private AtomicLong                        next_to_remove=new AtomicLong(0);
@@ -144,6 +144,8 @@ public class AckReceiverWindow {
                 highest=Math.max(highest, seqno);
                 next_to_remove.incrementAndGet();
             }
+            else
+                break;
         }
         return highest;
     }
