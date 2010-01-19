@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.36 2010/01/19 14:39:58 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.37 2010/01/19 14:44:10 belaban Exp $
  */
 public class AckReceiverWindow {
     private AtomicLong                        next_to_remove=new AtomicLong(0);
@@ -103,7 +103,7 @@ public class AckReceiverWindow {
      * @return
      */
     public List<Message> removeMany(AtomicBoolean processing) {
-        List<Message> retval=new ArrayList<Message>(msgs.size()); // we remove msgs.size() messages *max*
+        List<Message> retval=new LinkedList<Message>(); // we remove msgs.size() messages *max*
         Message msg;
         while((msg=msgs.remove(next_to_remove.get())) != null) {
             next_to_remove.incrementAndGet();
