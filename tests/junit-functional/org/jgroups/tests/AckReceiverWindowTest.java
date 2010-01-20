@@ -12,7 +12,7 @@ import org.testng.annotations.AfterMethod;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.9 2010/01/18 21:01:49 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.10 2010/01/20 06:07:17 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -116,13 +116,13 @@ public class AckReceiverWindowTest {
 
     public void testRemoveManyOOBMessages() {
         win.add(2, msg(true));
-        long seqno=win.removeManyOOBMessages();
+        long seqno=win.removeOOBMessages();
         assert seqno == -1;
         assert win.size() == 1;
 
         win.add(1, msg(true));
         System.out.println("win = " + win);
-        seqno=win.removeManyOOBMessages();
+        seqno=win.removeOOBMessages();
         assert seqno == 2;
         assert win.size() == 0;
 
@@ -132,11 +132,11 @@ public class AckReceiverWindowTest {
         win.add(4, msg(true));
         win.add(7, msg());
 
-        seqno=win.removeManyOOBMessages();
+        seqno=win.removeOOBMessages();
         assert seqno == -1;
         win.remove();
 
-        seqno=win.removeManyOOBMessages();
+        seqno=win.removeOOBMessages();
         assert seqno == 6;
         assert win.size() == 1;
     }

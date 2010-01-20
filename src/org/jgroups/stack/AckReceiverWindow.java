@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.38 2010/01/19 17:05:10 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.39 2010/01/20 06:07:06 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                  next_to_remove=new AtomicLong(0);
@@ -109,7 +109,7 @@ public class AckReceiverWindow {
      * Removes as many OOB messages as possible and return the highest seqno
      * @return the highest seqno or -1 if no OOB message was found
      */
-    public long removeManyOOBMessages() {
+    public long removeOOBMessages() {
         long highest=-1;
 
         while(true) {
