@@ -2,12 +2,12 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Message;
+import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -20,26 +20,25 @@ import java.util.concurrent.ConcurrentMap;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.40 2010/01/20 06:59:15 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.41 2010/01/20 11:42:04 belaban Exp $
  */
 public class AckReceiverWindow {
-    private final AtomicLong                  next_to_remove=new AtomicLong(0);
-    private final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>();
-    private final AtomicBoolean               processing=new AtomicBoolean(false);
+    @GuardedBy("lock")
+    private long                    next_to_remove=0;
+    @GuardedBy("lock")
+    private final Map<Long,Message> msgs=new HashMap<Long,Message>();
+    private final AtomicBoolean     processing=new AtomicBoolean(false);
+    private final Lock              lock=new ReentrantLock();
 
 
     public AckReceiverWindow(long initial_seqno) {
-        next_to_remove.set(initial_seqno);
+        next_to_remove=initial_seqno;
     }
 
     public AtomicBoolean getProcessing() {
         return processing;
     }
 
-
-    public Message get(long seqno) {
-        return msgs.get(seqno);
-    }
 
 
     /** Adds a new message. Message cannot be null
@@ -60,25 +59,38 @@ public class AckReceiverWindow {
     public byte add2(long seqno, Message msg) {
         if(msg == null)
             throw new IllegalArgumentException("msg must be non-null");
-        if(seqno < next_to_remove.get())
-            return -1;
-        if(msgs.putIfAbsent(seqno, msg) == null)
-            return 1;
-        else
-            return 0;
+        lock.lock();
+        try {
+            if(seqno < next_to_remove)
+                return -1;
+            if(!msgs.containsKey(seqno)) {
+                msgs.put(seqno, msg);
+                return 1;
+            }
+            else
+                return 0;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
     /**
-     * Removes a message whose seqno is equal to <code>next_to_remove</code>, increments the latter.
-     * Returns message that was removed, or null, if no message can be removed. Messages are thus
-     * removed in order.
+     * Removes a message whose seqno is equal to <code>next_to_remove</code>, increments the latter. Returns message
+     * that was removed, or null, if no message can be removed. Messages are thus removed in order.
      */
     public Message remove() {
-        Message retval=msgs.remove(next_to_remove.get());
-        if(retval != null)
-            next_to_remove.incrementAndGet();
-        return retval;
+        lock.lock();
+        try {
+            Message retval=msgs.remove(next_to_remove);
+            if(retval != null)
+                next_to_remove++;
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
    
@@ -90,25 +102,36 @@ public class AckReceiverWindow {
     public List<Message> removeMany() {
         List<Message> retval=new LinkedList<Message>(); // we remove msgs.size() messages *max*
         Message msg;
-        while((msg=msgs.remove(next_to_remove.get())) != null) {
-            next_to_remove.incrementAndGet();
-            retval.add(msg);
+        lock.lock();
+        try {
+            while((msg=msgs.remove(next_to_remove)) != null) {
+                next_to_remove++;
+                retval.add(msg);
+            }
+            return retval;
         }
-        return retval;
+        finally {
+            lock.unlock();
+        }
     }
     
 
     public Message removeOOBMessage() {
-        long seqno=next_to_remove.get();
-        Message retval=msgs.get(seqno);
-        if(retval != null) {
-            if(!retval.isFlagSet(Message.OOB))
-                return null;
-            retval=msgs.remove(seqno);
-            if(retval != null)
-                next_to_remove.incrementAndGet();
+        lock.lock();
+        try {
+            Message retval=msgs.get(next_to_remove);
+            if(retval != null) {
+                if(!retval.isFlagSet(Message.OOB))
+                    return null;
+                retval=msgs.remove(next_to_remove);
+                if(retval != null)
+                    next_to_remove++;
+            }
+            return retval;
         }
-        return retval;
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -118,25 +141,30 @@ public class AckReceiverWindow {
     public long removeOOBMessages() {
         long highest=-1;
 
-        while(true) {
-            long seqno=next_to_remove.get();
-            Message retval=msgs.get(seqno);
-            if(retval == null || !retval.isFlagSet(Message.OOB))
-                break;
-            retval=msgs.remove(seqno);
-            if(retval != null) {
-                highest=Math.max(highest, seqno);
-                next_to_remove.incrementAndGet();
+        lock.lock();
+        try {
+            while(true) {
+                Message retval=msgs.get(next_to_remove);
+                if(retval == null || !retval.isFlagSet(Message.OOB))
+                    break;
+                retval=msgs.remove(next_to_remove);
+                if(retval != null) {
+                    highest=Math.max(highest, next_to_remove);
+                    next_to_remove++;
+                }
+                else
+                    break;
             }
-            else
-                break;
+            return highest;
         }
-        return highest;
+        finally {
+            lock.unlock();
+        }
     }
 
 
     public boolean hasMessagesToRemove() {
-        return msgs.containsKey(next_to_remove.get());
+        return msgs.containsKey(next_to_remove);
     }
 
 
