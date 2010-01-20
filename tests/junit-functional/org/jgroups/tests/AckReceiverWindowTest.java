@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.util.Util;
 import org.jgroups.stack.AckReceiverWindow;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -10,11 +11,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterMethod;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.List;
+import java.util.LinkedList;
 
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.11 2010/01/20 08:19:18 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.12 2010/01/20 10:36:49 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -246,6 +249,44 @@ public class AckReceiverWindowTest {
         assert win.size() == NUM -1;
     }
 
+    public static void testConcurrentAddsAndRemoves() throws InterruptedException {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        final int NUM=100;
+        final int NUM_THREADS=10;
+        final CountDownLatch latch=new CountDownLatch(1);
+
+        final Adder[] adders=new Adder[NUM_THREADS];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(1, NUM, 10, win, latch);
+            adders[i].start();
+        }
+
+        final Remover[] removers=new Remover[NUM_THREADS];
+        for(int i=0; i < removers.length; i++) {
+            removers[i]=new Remover(win, latch);
+            removers[i].start();
+        }
+
+        latch.countDown();
+
+        for(Adder adder: adders)
+            adder.join();
+
+        System.out.println("win = " + win);
+
+        int total=0;
+        int index=0;
+        for(Remover remover: removers) {
+            remover.join();
+            List<Message> list=remover.getList();
+            System.out.println("remover #" + index++ + ": " + list.size() + " msgs");
+            total+=list.size();
+        }
+
+        System.out.println("total = " + total);
+        assert total == NUM - 1;
+    }
+
 
 
     private static Message msg() {
@@ -271,6 +312,7 @@ public class AckReceiverWindowTest {
             this.duplicates=duplicates;
             this.win=win;
             this.latch=latch;
+            setName("Adder");
         }
 
         public void run() {
@@ -286,6 +328,48 @@ public class AckReceiverWindowTest {
                     win.add(i, msg(true));
                 }
             }
+        }
+    }
+
+    private static class Remover extends Thread {
+        private final AckReceiverWindow win;
+        private final CountDownLatch latch;
+        private final List<Message> list=new LinkedList<Message>();
+
+        public Remover(AckReceiverWindow win, CountDownLatch latch) {
+            this.win=win;
+            this.latch=latch;
+            setName("Remover");
+        }
+
+        public List<Message> getList() {
+            return list;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(Thread.currentThread() + " started");
+
+            int cnt=5;
+            while(true) {
+                Message msg=win.remove();
+                if(msg != null) {
+                    list.add(msg);
+                    // Util.sleep(1);
+                }
+                else {
+                    if(cnt-- <= 0)
+                        break;
+                    else
+                        Util.sleep(1);
+                }
+            }
+            
         }
     }
 
