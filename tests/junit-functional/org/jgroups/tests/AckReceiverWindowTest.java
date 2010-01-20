@@ -9,10 +9,12 @@ import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterMethod;
 
+import java.util.concurrent.CountDownLatch;
+
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.10 2010/01/20 06:07:17 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.11 2010/01/20 08:19:18 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -222,6 +224,29 @@ public class AckReceiverWindowTest {
     }
 
 
+    public static void testConcurrentAdds() throws InterruptedException {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        final int NUM=100;
+        final int NUM_THREADS=10;
+        final CountDownLatch latch=new CountDownLatch(1);
+
+        final Adder[] adders=new Adder[NUM_THREADS];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(1, NUM, 10, win, latch);
+        }
+        for(Adder adder: adders)
+            adder.start();
+
+        latch.countDown();
+
+        for(Adder adder: adders)
+            adder.join();
+
+        System.out.println("win = " + win);
+        assert win.size() == NUM -1;
+    }
+
+
 
     private static Message msg() {
         return msg(false);
@@ -235,5 +260,33 @@ public class AckReceiverWindowTest {
     }
 
 
+    private static class Adder extends Thread {
+        private final long from, to, duplicates;
+        private final AckReceiverWindow win;
+        private final CountDownLatch latch;
+
+        public Adder(long from, long to, long duplicates, AckReceiverWindow win, CountDownLatch latch) {
+            this.from=from;
+            this.to=to;
+            this.duplicates=duplicates;
+            this.win=win;
+            this.latch=latch;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(Thread.currentThread() + " started");
+            for(long i=from; i < to; i++) {
+                for(int j=0; j < duplicates; j++) {
+                    win.add(i, msg(true));
+                }
+            }
+        }
+    }
 
 }
