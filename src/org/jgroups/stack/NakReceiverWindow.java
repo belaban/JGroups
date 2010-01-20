@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.73 2009/11/30 12:36:16 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.74 2010/01/20 06:24:30 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -298,9 +298,15 @@ public class NakReceiverWindow {
 
 
     public Message remove() {
+        return remove(true);
+    }
+
+
+    public Message remove(boolean acquire_lock) {
         Message retval;
 
-        lock.writeLock().lock();
+        if(acquire_lock)
+            lock.writeLock().lock();
         try {
             long next_to_remove=highest_delivered +1;
             retval=xmit_table.get(next_to_remove);
@@ -325,10 +331,10 @@ public class NakReceiverWindow {
             return null;
         }
         finally {
-            lock.writeLock().unlock();
+            if(acquire_lock)
+                lock.writeLock().unlock();
         }
     }
-
 
 
     /**
@@ -381,7 +387,7 @@ public class NakReceiverWindow {
         try {
             Message retval=xmit_table.get(highest_delivered +1);
             if(retval != null && retval.isFlagSet(Message.OOB)) {
-                return remove();
+                return remove(false);
             }
             return null;
         }
@@ -389,6 +395,31 @@ public class NakReceiverWindow {
             lock.writeLock().unlock();
         }
     }
+
+    /** Removes as many OOB messages as possible */
+    public List<Message> removeOOBMessages() {
+        final List<Message> retval=new LinkedList<Message>();
+
+        lock.writeLock().lock();
+        try {
+            while(true) {
+                Message msg=xmit_table.get(highest_delivered +1);
+                if(msg != null && msg.isFlagSet(Message.OOB)) {
+                    msg=remove(false);
+                    if(msg != null)
+                        retval.add(msg);
+                }
+                else
+                    break;
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+
+        return retval;
+    }
+
 
     public boolean hasMessagesToRemove() {
         lock.readLock().lock();
