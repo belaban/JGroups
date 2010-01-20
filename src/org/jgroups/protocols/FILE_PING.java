@@ -22,7 +22,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.12 2009/12/11 13:02:28 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.13 2010/01/20 05:23:26 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -78,7 +78,7 @@ public class FILE_PING extends Discovery {
 
             // 1. Send GET_MBRS_REQ message to members listed in the file
             for(PingData tmp: existing_mbrs) {
-                Collection<PhysicalAddress> dests=tmp.getPhysicalAddrs();
+                Collection<PhysicalAddress> dests=tmp != null? tmp.getPhysicalAddrs() : null;
                 if(dests == null)
                     continue;
                 for(final PhysicalAddress dest: dests) {
