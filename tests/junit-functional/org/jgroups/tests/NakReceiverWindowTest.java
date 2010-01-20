@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.12 2009/11/25 11:36:27 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.13 2010/01/20 06:24:47 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,7 +7,6 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -532,6 +531,26 @@ public class NakReceiverWindowTest {
         assert win.remove() == null;
         assert win.removeOOBMessage() == null;
     }
+
+
+    public void testRemoveOOBMessages() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        win.add(0, msg());
+        List<Message> list=win.removeOOBMessages();
+        assert list.isEmpty();
+        win.add(1, oob());
+        win.add(2, oob());
+        win.add(3, msg());
+        win.add(4, oob());
+        list=win.removeOOBMessages();
+        assert list.size() == 2;
+        list=win.removeOOBMessages();
+        assert list.isEmpty();
+        win.remove();
+        list=win.removeOOBMessages();
+        assert list.size() == 1;
+    }
+
 
     public void testRemoveRegularAndOOBMessages() {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
