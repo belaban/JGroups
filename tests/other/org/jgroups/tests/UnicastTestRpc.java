@@ -47,6 +47,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private static final Method RECEIVE;
     private static final Method[] METHODS=new Method[2];
 
+    private final AtomicInteger COUNTER=new AtomicInteger(1);
+
 
     long tot=0;
     int num_reqs=0;
@@ -361,6 +363,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         private final RequestOptions      options;
         private final int                 number_of_msgs;
 
+
         long total_req=0, total_rsp=0;
 
         public Invoker(Address dest, RequestOptions options, int number_of_msgs) {
@@ -368,6 +371,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             this.dests=null;
             this.options=options;
             this.number_of_msgs=number_of_msgs;
+            setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
         public Invoker(Collection<Address> dests, RequestOptions options, int number_of_msgs) {
@@ -375,6 +379,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             this.dests=dests;
             this.options=options;
             this.number_of_msgs=number_of_msgs;
+            setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
         public void run() {
