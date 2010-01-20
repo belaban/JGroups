@@ -8,7 +8,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.19 2010/01/20 07:36:00 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.20 2010/01/20 08:28:34 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -49,7 +49,7 @@ public class DuplicateTest extends ChannelTestBase {
         c3.setReceiver(r3);
     }
 
-    @AfterClass
+    @AfterMethod
     void tearDown() throws Exception {
         Util.close(c3, c2, c1);
     }
