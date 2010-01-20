@@ -388,8 +388,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
 
         ThreadFactory factory = new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+           
             public Thread newThread(final Runnable command) {
-                return getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");
+                return getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER-sender-" 
+                      + threadNumber.getAndIncrement());
             }
         };
         threadPool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(threadPool
