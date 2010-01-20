@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.250 2010/01/15 15:15:38 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.251 2010/01/20 11:48:12 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -811,9 +811,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg));
                 }
             }
-            while((msg=win.removeOOBMessage()) != null) {
-                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
-                    up_prot.up(new Event(Event.MSG, msg));
+            List<Message> msgs;
+            while(!(msgs=win.removeOOBMessages()).isEmpty()) {
+                for(Message tmp_msg: msgs) {
+                    if(tmp_msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
+                        up_prot.up(new Event(Event.MSG, tmp_msg));
+                    }
                 }
             }
 
