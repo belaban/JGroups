@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.155 2010/01/20 06:07:37 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.156 2010/01/20 12:26:26 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -247,7 +247,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         started=false;
         removeAllConnections();
         undelivered_msgs.set(0);
-    }
+        }
 
 
     public Object up(Event evt) {
@@ -342,16 +342,26 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     // why this was reverted !
 
                     // entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
-                    // entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
-                    entry.sent_msgs.add(seqno, msg);
-                    
+                    entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                     entry.sent_msgs_seqno++;
                 }
                 finally {
                     entry.unlock();
                 }
 
-                // entry.sent_msgs.addToRetransmitter(seqno, msg);  // adds to retransmitter
+                long sleep_time=100;
+                for(int i=1; i <= 10; i++) {
+                    try {
+                        entry.sent_msgs.addToRetransmitter(seqno, msg);  // adds to retransmitter
+                        break;
+                    }
+                    catch(Throwable t) {
+                        log.error("failed adding message " + seqno + " to " + dst +
+                                " to the retransmitter, retrying... (attempt #" + i + ")");
+                        Util.sleep(sleep_time);
+                        sleep_time*=2;
+                    }
+                }
 
                 if(log.isTraceEnabled()) {
                     StringBuilder sb=new StringBuilder();
