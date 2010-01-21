@@ -6,10 +6,10 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 
 import javax.management.MBeanServer;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -43,7 +43,17 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private int num_values=0, print;
     private AtomicLong total_bytes=new AtomicLong(0);
 
-    private static final Method[] METHODS=new Method[2];
+    private static final Method[] METHODS=new Method[10];
+
+    private static final short RECEIVE           =  0;
+    private static final short START             =  1;
+    private static final short SET_OOB           =  2;
+    private static final short SET_SYNC          =  3;
+    private static final short SET_ANYCASTING    =  4;
+    private static final short SET_NUM_MSGS      =  5;
+    private static final short SET_NUM_THREADS   =  6;
+    private static final short SET_MSG_SIZE      =  7;
+    private static final short SET_ANYCAST_COUNT =  8;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -54,8 +64,15 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     static {
         try {
-            METHODS[0]=UnicastTestRpcDist.class.getMethod("receiveData", long.class, byte[].class);
-            METHODS[1]=UnicastTestRpcDist.class.getMethod("startTest", int.class);
+            METHODS[RECEIVE]           = UnicastTestRpcDist.class.getMethod("receiveData", long.class, byte[].class);
+            METHODS[START]             = UnicastTestRpcDist.class.getMethod("startTest", int.class);
+            METHODS[SET_OOB]           = UnicastTestRpcDist.class.getMethod("setOOB", boolean.class);
+            METHODS[SET_SYNC]          = UnicastTestRpcDist.class.getMethod("setSync", boolean.class);
+            METHODS[SET_ANYCASTING]    = UnicastTestRpcDist.class.getMethod("setAnycasting", boolean.class);
+            METHODS[SET_NUM_MSGS]      = UnicastTestRpcDist.class.getMethod("setNumMessages", int.class);
+            METHODS[SET_NUM_THREADS]   = UnicastTestRpcDist.class.getMethod("setNumThreads", int.class);
+            METHODS[SET_MSG_SIZE]      = UnicastTestRpcDist.class.getMethod("setMessageSize", int.class);
+            METHODS[SET_ANYCAST_COUNT] = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -118,7 +135,44 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
     }
 
-    // received by another node in the cluster
+    public void setOOB(boolean oob) {
+        this.oob=oob;
+        System.out.println("oob=" + oob);
+    }
+
+    public void setSync(boolean val) {
+        this.sync=val;
+        System.out.println("sync=" + sync);
+    }
+
+    public void setAnycasting(boolean val) {
+        this.anycasting=val;
+        System.out.println("anycasting = " + anycasting);
+    }
+
+    public void setNumMessages(int num) {
+        num_msgs=num;
+        System.out.println("num_msgs = " + num_msgs);
+        print=num_msgs / 10;
+    }
+
+    public void setNumThreads(int num) {
+        num_threads=num;
+        System.out.println("num_threads = " + num_threads);
+    }
+
+    public void setMessageSize(int num) {
+        msg_size=num;
+        System.out.println("msg_size = " + msg_size);
+    }
+
+    public void setAnycastCount(int num) {
+        anycast_count=num;
+        System.out.println("anycast_count = " + anycast_count);
+    }
+
+
+   /* // received by another node in the cluster
     public void config(ConfigOptions options) {
         this.oob=options.oob;
         this.sync=options.sync;
@@ -127,7 +181,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         this.num_msgs=options.num_msgs;
         this.msg_size=options.msg_size;
         this.anycast_count=options.anycast_count;
-    }
+    }*/
 
 
     public byte[] get(long key) {
@@ -172,67 +226,68 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         int c;
 
         while(true) {
-            System.out.print("[1] Send msgs [2] Print view [3] Print conns " +
+            c=Util.keyPress("[1] Send msgs [2] Print view [3] Print conns " +
                     "[4] Trash conn [5] Trash all conns" +
                     "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                     "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
                     " [9] Set anycast count (" + anycast_count + ")" +
                     "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync + ") [a] Toggle anycasting (" + anycasting + ")" +
                     "\n[q] Quit\n");
-            System.out.flush();
-            c=System.in.read();
             switch(c) {
-            case -1:
-                break;
-            case '1':
-                try {
-                    invokeRpcs();
-                }
-                catch(Throwable t) {
-                    System.err.println(t);
-                }
-                break;
-            case '2':
-                printView();
-                break;
-            case '3':
-                printConnections();
-                break;
-            case '4':
-                removeConnection();
-                break;
-            case '5':
-                removeAllConnections();
-                break;
-            case '6':
-                setSenderThreads();
-                break;
-            case '7':
-                setNumMessages();
-                break;
-            case '8':
-                setMessageSize();
-                break;
-            case '9':
-                setAnycastCount();
-                break;
-            case 'o':
-                oob=!oob;
-                System.out.println("oob=" + oob);
-                break;
-            case 's':
-                sync=!sync;
-                System.out.println("sync=" + sync);
-                break;
-            case 'a':
-                anycasting=!anycasting;
-                System.out.println("anycasting=" + anycasting);
-                break;
-            case 'q':
-                channel.close();
-                return;
-            default:
-                break;
+                case -1:
+                    break;
+                case '1':
+                    try {
+                        invokeRpcs();
+                    }
+                    catch(Throwable t) {
+                        System.err.println(t);
+                    }
+                    break;
+                case '2':
+                    printView();
+                    break;
+                case '3':
+                    printConnections();
+                    break;
+                case '4':
+                    removeConnection();
+                    break;
+                case '5':
+                    removeAllConnections();
+                    break;
+                case '6':
+                    setSenderThreads();
+                    break;
+                case '7':
+                    setNumMessages();
+                    break;
+                case '8':
+                    setMessageSize();
+                    break;
+                case '9':
+                    setAnycastCount();
+                    break;
+                case 'o':
+                    boolean new_value=!oob;
+                    disp.callRemoteMethods(null, new MethodCall(SET_OOB, new_value), RequestOptions.SYNC);
+                    break;
+                case 's':
+                    boolean new_val=!sync;
+                    disp.callRemoteMethods(null, new MethodCall(SET_SYNC, new_val), RequestOptions.SYNC);
+                    break;
+                case 'a':
+                    new_val=!anycasting;
+                    disp.callRemoteMethods(null, new MethodCall(SET_ANYCASTING, new_val), RequestOptions.SYNC);
+                    break;
+                case 'q':
+                    channel.close();
+                    return;
+                case '\n':
+                case '\r':
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -281,9 +336,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         if(oob) options.setFlags(Message.OOB);
 
         if(anycasting)
-            disp.callRemoteMethods(anycast_mbrs, new MethodCall((short)0, new Object[]{num_msgs}), options);
+            disp.callRemoteMethods(anycast_mbrs, new MethodCall(START, num_msgs), options);
         else
-            disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
+            disp.callRemoteMethod(destination, new MethodCall(START, num_msgs), options);
         options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
 
         Invoker[] invokers=new Invoker[num_threads];
@@ -303,20 +358,17 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     void setSenderThreads() throws Exception {
         int threads=Util.readIntFromStdin("Number of sender threads: ");
-        int old=this.num_threads;
-        this.num_threads=threads;
-        System.out.println("sender threads set to " + num_threads + " (from " + old + ")");
+        disp.callRemoteMethods(null, new MethodCall(SET_NUM_THREADS, threads), RequestOptions.SYNC);
     }
 
     void setNumMessages() throws Exception {
-        num_msgs=Util.readIntFromStdin("Number of RPCs: ");
-        System.out.println("Set num_msgs=" + num_msgs);
-        print=num_msgs / 10;
+        int tmp=Util.readIntFromStdin("Number of RPCs: ");
+        disp.callRemoteMethods(null, new MethodCall(SET_NUM_MSGS, tmp), RequestOptions.SYNC);
     }
 
     void setMessageSize() throws Exception {
-        msg_size=Util.readIntFromStdin("Message size: ");
-        System.out.println("set msg_size=" + msg_size);
+        int tmp=Util.readIntFromStdin("Message size: ");
+        disp.callRemoteMethods(null, new MethodCall(SET_MSG_SIZE, tmp), RequestOptions.SYNC);
     }
 
     void setAnycastCount() throws Exception {
@@ -326,9 +378,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             System.err.println("anycast count must be smaller or equal to the view size (" + view + ")\n");
             return;
         }
-
-        anycast_count=tmp;
-        System.out.println("set anycast_count=" + anycast_count);
+        disp.callRemoteMethods(null, new MethodCall(SET_ANYCAST_COUNT, tmp), RequestOptions.SYNC);
     }
 
     void populateAnycastList(View view) {
@@ -405,7 +455,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         public void run() {
             byte[] buf=new byte[msg_size];
             Object[] args=new Object[]{0, buf};
-            MethodCall call=new MethodCall((short)1, args);
+            MethodCall call=new MethodCall(RECEIVE, args);
 
             //if(anycasting && sync)
                //  options.setMode(Request.GET_FIRST);
@@ -482,40 +532,76 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
         public byte[] objectToByteBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
-            if(call.getId() == 0) {
-                Integer arg=(Integer)call.getArgs()[0];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE);
-                buf.put((byte)0).putInt(arg);
-                return buf.array();
+            ByteBuffer buf;
+            switch(call.getId()) {
+                case RECEIVE:
+                    return intBuffer(RECEIVE, (Integer)call.getArgs()[0]);
+                case START:
+                    Long long_arg=(Long)call.getArgs()[0];
+                    byte[] arg2=(byte[])call.getArgs()[1];
+                    buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
+                    buf.put((byte)START).putLong(long_arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                    return buf.array();
+                case SET_OOB:
+                case SET_SYNC:
+                case SET_ANYCASTING:
+                    return booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]);
+                case SET_NUM_MSGS:
+                case SET_NUM_THREADS:
+                case SET_MSG_SIZE:
+                case SET_ANYCAST_COUNT:
+                    return intBuffer(call.getId(), (Integer)call.getArgs()[0]);
+                default:
+                    throw new IllegalStateException("method " + call.getMethod() + " not known");
             }
-            else if(call.getId() == 1) {
-                Long arg=(Long)call.getArgs()[0];
-                byte[] arg2=(byte[])call.getArgs()[1];
-                ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
-                buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
-                return buf.array();
-            }
-            else
-                throw new IllegalStateException("method " + call.getMethod() + " not known");
         }
+
+
 
         public Object objectFromByteBuffer(byte[] buffer) throws Exception {
             ByteBuffer buf=ByteBuffer.wrap(buffer);
 
             byte type=buf.get();
             switch(type) {
-                case 0:
+                case RECEIVE:
                     int arg=buf.getInt();
-                    return new MethodCall((short)0, new Object[]{arg});
-                case 1:
+                    return new MethodCall(type, arg);
+                case START:
                     Long longarg=buf.getLong();
                     int len=buf.getInt();
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
-                    return new MethodCall((short)1, new Object[]{longarg, arg2});
+                    return new MethodCall(type, longarg, arg2);
+                case SET_OOB:
+                case SET_SYNC:
+                case SET_ANYCASTING:
+                    return new MethodCall(type, buf.get() == 1);
+                case SET_NUM_MSGS:
+                case SET_NUM_THREADS:
+                case SET_MSG_SIZE:
+                case SET_ANYCAST_COUNT:
+                    return new MethodCall(type, buf.getInt());
                 default:
                     throw new IllegalStateException("type " + type + " not known");
             }
+        }
+
+        private static byte[] intBuffer(short type, Integer num) {
+            ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE);
+            buf.put((byte)type).putInt(num);
+            return buf.array();
+        }
+
+        private static byte[] longBuffer(short type, Long num) {
+            ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE);
+            buf.put((byte)type).putLong(num);
+            return buf.array();
+        }
+
+        private static byte[] booleanBuffer(short type, Boolean arg) {
+            ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE *2);
+            buf.put((byte)type).put((byte)(arg? 1 : 0));
+            return buf.array();
         }
     }
 
