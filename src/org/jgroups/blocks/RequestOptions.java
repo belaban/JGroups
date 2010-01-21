@@ -5,20 +5,20 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.5 2010/01/17 12:07:56 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.6 2010/01/21 13:09:55 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
     private int       mode=Request.GET_NONE;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
-    private long      timeout=0; // used when mode != GET_NONE
+    private long      timeout; // used when mode != GET_NONE
 
     /** Turns on anycasting; this results in multiple unicasts rather than a multicast for group calls */
-    private boolean   use_anycasting=false;
+    private boolean   use_anycasting;
 
     /** Allows for filtering of responses */
-    private RspFilter rsp_filter=null;
+    private RspFilter rsp_filter;
 
     /** The flags set in the message in which a request is sent */
     private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
