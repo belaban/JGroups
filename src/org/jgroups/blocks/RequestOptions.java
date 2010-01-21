@@ -5,7 +5,7 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.6 2010/01/21 13:09:55 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.7 2010/01/21 13:31:56 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
@@ -23,6 +23,9 @@ public class RequestOptions {
     /** The flags set in the message in which a request is sent */
     private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
 
+
+    public static final RequestOptions SYNC=new RequestOptions(Request.GET_ALL, 5000);
+    public static final RequestOptions ASYNC=new RequestOptions(Request.GET_NONE, 5000);
 
 
     public RequestOptions() {
