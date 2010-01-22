@@ -126,6 +126,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             this.num_msgs=config.num_msgs;
             this.msg_size=config.msg_size;
             this.anycast_count=config.anycast_count;
+            this.read_percentage=config.read_percentage;
             System.out.println("Fetched config from " + coord + ": " + config);
         }
         else
@@ -555,7 +556,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
         public String toString() {
             return "oob=" + oob + ", sync=" + sync + ", anycast_count=" + anycast_count +
-                    ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size;
+                    ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size +
+                    ", read percentage=" + read_percentage;
         }
     }
 
