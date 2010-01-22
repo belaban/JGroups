@@ -146,6 +146,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
 
         long total_time=System.currentTimeMillis() - start;
+        System.out.println("done (in " + total_time + " ms)");
         return new Results(total_gets, total_puts, total_time);
     }
 
@@ -329,7 +330,10 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             return;
         }
 
-        RspList responses=disp.callRemoteMethods(null, new MethodCall(START), new RequestOptions(Request.GET_ALL, 0));
+        RequestOptions options=new RequestOptions(Request.GET_ALL, 0);
+        options.setFlags(Message.OOB);
+        options.setFlags(Message.DONT_BUNDLE);
+        RspList responses=disp.callRemoteMethods(null, new MethodCall(START), options);
         System.out.println("\n======================= Results: ===========================");
         for(Map.Entry<Address,Rsp> entry: responses.entrySet()) {
             Address mbr=entry.getKey();
@@ -449,7 +453,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
         private Address pickTarget() {
             int index=dests.indexOf(local_addr);
-            return dests.get(index +1 % dests.size());
+            int new_index=(index +1) % dests.size();
+            return dests.get(new_index);
         }
 
         private Collection<Address> pickAnycastTargets() {
