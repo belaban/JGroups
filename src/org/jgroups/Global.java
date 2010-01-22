@@ -4,13 +4,14 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.49 2009/12/03 04:25:28 belaban Exp $
+ * @version $Id: Global.java,v 1.50 2010/01/22 11:25:21 belaban Exp $
  */
 public class Global {
-    public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
-    public static final int SHORT_SIZE = Short.SIZE   / 8; // 2
-    public static final int INT_SIZE   = Integer.SIZE / 8; // 4
-    public static final int LONG_SIZE  = Long.SIZE    / 8; // 8
+    public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
+    public static final int SHORT_SIZE  = Short.SIZE   / 8; // 2
+    public static final int INT_SIZE    = Integer.SIZE / 8; // 4
+    public static final int LONG_SIZE   = Long.SIZE    / 8; // 8
+    public static final int DOUBLE_SIZE = Double.SIZE  / 8; // 8;
 
     public static final Object NULL=new Object();
 
