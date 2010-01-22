@@ -85,6 +85,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
             f.setGroupingUsed(false);
+            f.setMinimumFractionDigits(2);
             f.setMaximumFractionDigits(2);
         }
         catch(NoSuchMethodException e) {
