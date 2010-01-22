@@ -6,17 +6,17 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Rsp;
 
 import javax.management.MBeanServer;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Vector;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -25,23 +25,23 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  */
 public class UnicastTestRpcDist extends ReceiverAdapter {
-    private JChannel channel;
-    private Address local_addr;
-    private RpcDispatcher disp;
-    static final String groupname="UnicastTest-Group";
-    private long sleep_time=0;
-    private boolean sync=false, oob=false, anycasting=false;
+    private JChannel                  channel;
+    private Address                   local_addr;
+    private RpcDispatcher             disp;
+    static final String               groupname="UnicastTest-Group";
+    private final Collection<Address> members=new ArrayList<Address>();
+    private int                       print=1000;
+
+
+    // ============ configurable properties ==================
+    private boolean sync=false, oob=false;
     private int num_threads=1;
     private int num_msgs=50000, msg_size=1000;
     private int anycast_count=1;
-    private final Collection<Address> anycast_mbrs=new ArrayList<Address>();
-    private Address destination=null;
+    private static final double READ_PERCENTAGE=0.8; // 80% reads, 20% writes
+    // =======================================================
 
-    private boolean started=false;
-    private long start=0, stop=0;
-    private AtomicInteger current_value=new AtomicInteger(0);
-    private int num_values=0, print;
-    private AtomicLong total_bytes=new AtomicLong(0);
+
 
     private static final Method[] METHODS=new Method[10];
 
@@ -49,11 +49,12 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private static final short START             =  1;
     private static final short SET_OOB           =  2;
     private static final short SET_SYNC          =  3;
-    private static final short SET_ANYCASTING    =  4;
-    private static final short SET_NUM_MSGS      =  5;
-    private static final short SET_NUM_THREADS   =  6;
-    private static final short SET_MSG_SIZE      =  7;
-    private static final short SET_ANYCAST_COUNT =  8;
+    private static final short SET_NUM_MSGS      =  4;
+    private static final short SET_NUM_THREADS   =  5;
+    private static final short SET_MSG_SIZE      =  6;
+    private static final short SET_ANYCAST_COUNT =  7;
+    private static final short GET               =  8;
+    private static final short PUT               = 9;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -65,14 +66,15 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     static {
         try {
             METHODS[RECEIVE]           = UnicastTestRpcDist.class.getMethod("receiveData", long.class, byte[].class);
-            METHODS[START]             = UnicastTestRpcDist.class.getMethod("startTest", int.class);
+            METHODS[START]             = UnicastTestRpcDist.class.getMethod("startTest");
             METHODS[SET_OOB]           = UnicastTestRpcDist.class.getMethod("setOOB", boolean.class);
             METHODS[SET_SYNC]          = UnicastTestRpcDist.class.getMethod("setSync", boolean.class);
-            METHODS[SET_ANYCASTING]    = UnicastTestRpcDist.class.getMethod("setAnycasting", boolean.class);
             METHODS[SET_NUM_MSGS]      = UnicastTestRpcDist.class.getMethod("setNumMessages", int.class);
             METHODS[SET_NUM_THREADS]   = UnicastTestRpcDist.class.getMethod("setNumThreads", int.class);
             METHODS[SET_MSG_SIZE]      = UnicastTestRpcDist.class.getMethod("setMessageSize", int.class);
             METHODS[SET_ANYCAST_COUNT] = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
+            METHODS[GET]               = UnicastTestRpcDist.class.getMethod("get");
+            METHODS[PUT]               = UnicastTestRpcDist.class.getMethod("put", byte[].class);
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -80,10 +82,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
 
-    public void init(String props, long sleep_time, boolean sync, boolean oob, String name) throws Exception {
-        this.sleep_time=sleep_time;
-        this.sync=sync;
-        this.oob=oob;
+    public void init(String props, String name) throws Exception {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
@@ -114,26 +113,39 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
+        members.clear();
+        members.addAll(new_view.getMembers());
     }
 
     // =================================== callbacks ======================================
 
-    public void startTest(int num_values) {
-        if(started) {
-            System.err.println("UnicastTest.run(): received START data, but am already processing data");
-        }
-        else {
-            started=true;
-            current_value.set(0); // first value to be received
-            total_bytes.set(0);
-            this.num_values=num_values;
-            print=num_values / 10;
+    public Results startTest() throws Throwable {
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size)
+                + ", sync=" + sync + ", oob=" + oob);
 
-            tot=0; num_reqs=0;
+        RequestOptions options=new RequestOptions(sync? Request.GET_ALL : Request.GET_NONE, 0);
+        if(sync) options.setFlags(Message.DONT_BUNDLE);
+        if(oob) options.setFlags(Message.OOB);
 
-            start=System.currentTimeMillis();
+        Invoker[] invokers=new Invoker[num_threads];
+        for(int i=0; i < invokers.length; i++) {
+            invokers[i]=new Invoker(members, options, num_msgs / num_threads);
         }
+
+        long start=System.currentTimeMillis();
+        for(Invoker invoker: invokers)
+            invoker.start();
+
+        for(Invoker invoker: invokers)
+            invoker.join();
+
+        long total_time=System.currentTimeMillis() - start;
+
+        Results results=new Results();
+        results.time=total_time;
+        return results;
     }
+
 
     public void setOOB(boolean oob) {
         this.oob=oob;
@@ -143,11 +155,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     public void setSync(boolean val) {
         this.sync=val;
         System.out.println("sync=" + sync);
-    }
-
-    public void setAnycasting(boolean val) {
-        this.anycasting=val;
-        System.out.println("anycasting = " + anycasting);
     }
 
     public void setNumMessages(int num) {
@@ -190,11 +197,11 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
     public void put(long key, byte[] val) {
-
+        
     }
 
 
-    public long receiveData(long value, byte[] buffer) {
+/*    public long receiveData(long value, byte[] buffer) {
         long diff=System.currentTimeMillis() - value;
         tot+=diff;
         num_reqs++;
@@ -203,6 +210,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         total_bytes.addAndGet(buffer.length);
         if(print > 0 && new_val % print == 0)
             System.out.println("received " + current_value);
+
+
         if(new_val >= num_values) {
             stop=System.currentTimeMillis();
             long total_time=stop - start;
@@ -215,9 +224,12 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     " ms / req (only request)\n");
 
             started=false;
+            current_value.set(0); // first value to be received
+            total_bytes.set(0);
+            tot=0; num_reqs=0;
         }
         return System.currentTimeMillis();
-    }
+    }*/
 
     // ================================= end of callbacks =====================================
 
@@ -231,14 +243,14 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                     "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
                     " [9] Set anycast count (" + anycast_count + ")" +
-                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync + ") [a] Toggle anycasting (" + anycasting + ")" +
+                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync + ")" +
                     "\n[q] Quit\n");
             switch(c) {
                 case -1:
                     break;
                 case '1':
                     try {
-                        invokeRpcs();
+                        startBenchmark();
                     }
                     catch(Throwable t) {
                         System.err.println(t);
@@ -276,10 +288,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     boolean new_val=!sync;
                     disp.callRemoteMethods(null, new MethodCall(SET_SYNC, new_val), RequestOptions.SYNC);
                     break;
-                case 'a':
-                    new_val=!anycasting;
-                    disp.callRemoteMethods(null, new MethodCall(SET_ANYCASTING, new_val), RequestOptions.SYNC);
-                    break;
                 case 'q':
                     channel.close();
                     return;
@@ -311,50 +319,22 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
 
-    void invokeRpcs() throws Throwable {
+    /** Kicks off the benchmark on all cluster nodes */
+    void startBenchmark() throws Throwable {
         if(num_threads > 1 && num_msgs % num_threads != 0) {
             System.err.println("num_msgs (" + num_msgs + " ) has to be divisible by num_threads (" + num_threads + ")");
             return;
         }
 
-        if(anycasting) {
-            populateAnycastList(channel.getView());
+        RspList responses=disp.callRemoteMethods(null, new MethodCall(START), new RequestOptions(Request.GET_ALL, 0));
+        System.out.println("Results:");
+        for(Map.Entry<Address,Rsp> entry: responses.entrySet()) {
+            Address mbr=entry.getKey();
+            Rsp rsp=entry.getValue();
+            System.out.println(mbr + ": " + rsp.getValue());
         }
-        else {
-            if((destination=getReceiver()) == null) {
-                System.err.println("UnicastTest.invokeRpcs(): receiver is null, cannot send messages");
-                return;
-            }
-        }
-
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + " on " +
-                (anycasting? anycast_mbrs : destination) + ", sync=" + sync + ", oob=" + oob + ", anycasting=" + anycasting);
-
-        // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0, anycasting, null);
-        if(sync) options.setFlags(Message.DONT_BUNDLE);
-        if(oob) options.setFlags(Message.OOB);
-
-        if(anycasting)
-            disp.callRemoteMethods(anycast_mbrs, new MethodCall(START, num_msgs), options);
-        else
-            disp.callRemoteMethod(destination, new MethodCall(START, num_msgs), options);
-        options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
-
-        Invoker[] invokers=new Invoker[num_threads];
-        for(int i=0; i < invokers.length; i++) {
-            if(anycasting)
-                invokers[i]=new Invoker(anycast_mbrs, options, num_msgs / num_threads);
-            else
-                invokers[i]=new Invoker(destination, options, num_msgs / num_threads);
-        }
-        for(Invoker invoker: invokers)
-            invoker.start();
-        for(Invoker invoker: invokers)
-            invoker.join();
-
-        System.out.println("done invoking " + num_msgs + " in " + destination);
     }
+    
 
     void setSenderThreads() throws Exception {
         int threads=Util.readIntFromStdin("Number of sender threads: ");
@@ -381,8 +361,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         disp.callRemoteMethods(null, new MethodCall(SET_ANYCAST_COUNT, tmp), RequestOptions.SYNC);
     }
 
-    void populateAnycastList(View view) {
-        if(!anycasting) return;
+    /*void populateAnycastList(View view) {
         anycast_mbrs.clear();
         Vector<Address> mbrs=view.getMembers();
         int index=mbrs.indexOf(local_addr);
@@ -391,7 +370,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             anycast_mbrs.add(mbrs.get(new_index));
         }
         System.out.println("local_addr=" + local_addr + ", anycast_mbrs = " + anycast_mbrs);
-    }
+    }*/
 
     void printView() {
         System.out.println("\n-- view: " + channel.getView() + '\n');
@@ -403,23 +382,13 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
 
-
+    /** Picks the next member in the view */
     private Address getReceiver() {
         try {
             Vector<Address> mbrs=channel.getView().getMembers();
-            System.out.println("pick receiver from the following members:");
-            for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getAddress()))
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
-                else
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i));
-            }
-            System.out.flush();
-            System.in.skip(System.in.available());
-            BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
-            String str=reader.readLine().trim();
-            int index=Integer.parseInt(str);
-            return mbrs.elementAt(index); // index out of bounds caught below
+            int index=mbrs.indexOf(local_addr);
+            int new_index=index + 1 % mbrs.size();
+            return mbrs.get(new_index);
         }
         catch(Exception e) {
             System.err.println("UnicastTest.getReceiver(): " + e);
@@ -429,79 +398,60 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     private class Invoker extends Thread {
         private final Address             dest;
-        private final Collection<Address> dests;
-        private final RequestOptions      options;
+        private final Collection<Address> dests=new ArrayList<Address>();
         private final int                 number_of_msgs;
 
 
-        long total_req=0, total_rsp=0;
-
-        public Invoker(Address dest, RequestOptions options, int number_of_msgs) {
-            this.dest=dest;
-            this.dests=null;
-            this.options=options;
-            this.number_of_msgs=number_of_msgs;
-            setName("Invoker-" + COUNTER.getAndIncrement());
-        }
-
         public Invoker(Collection<Address> dests, RequestOptions options, int number_of_msgs) {
             this.dest=null;
-            this.dests=dests;
-            this.options=options;
+            this.dests.addAll(dests);
             this.number_of_msgs=number_of_msgs;
             setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
-        public void run() {
-            byte[] buf=new byte[msg_size];
-            Object[] args=new Object[]{0, buf};
-            MethodCall call=new MethodCall(RECEIVE, args);
 
-            //if(anycasting && sync)
-               //  options.setMode(Request.GET_FIRST);
+        public void run() {
+            final byte[] buf=new byte[msg_size];
+            Object[] put_args=new Object[]{0};
+            MethodCall get_call=new MethodCall(GET);
+            MethodCall put_call=new MethodCall(PUT, put_args);
+            RequestOptions get_options=new RequestOptions(Request.GET_ALL, 5000, false, null);
+            RequestOptions put_options=new RequestOptions(Request.GET_ALL, 5000, true, null);
 
             for(int i=1; i <= number_of_msgs; i++) {
-                Object retval=null;
+                boolean get=Util.tossWeightedCoin(READ_PERCENTAGE);
+
                 try {
-                    long start=System.currentTimeMillis();
-                    args[0]=start;
-                    if(dests != null)
-                        disp.callRemoteMethods(dests, call, options);
-                    else
-                        retval=disp.callRemoteMethod(dest, call, options);
-                    long current_time=System.currentTimeMillis();
-                    long diff=current_time - start;
-                    total_req+=diff;
-
-                    if(sync) {
-                        if(retval instanceof Long) {
-                            diff=System.currentTimeMillis() - (Long)retval;
-                            total_rsp+=diff;
-                        }
+                    if(get) { // sync GET
+                        Address target=pickTarget();
+                        Object retval=disp.callRemoteMethod(target, get_call, get_options);
                     }
-
-                    if(print > 0 && i % print == 0)
-                        System.out.println("-- invoked " + i);
-                    if(sleep_time > 0)
-                        Util.sleep(sleep_time);
+                    else {    // sync or async (based on value of 'sync') PUT
+                        Collection<Address> targets=pickAnycastTargets();
+                        put_args[0]=i;
+                        RspList responses=disp.callRemoteMethods(targets, put_call, put_options);
+                    }
                 }
                 catch(Throwable throwable) {
                     throwable.printStackTrace();
                 }
             }
-
-            double time_per_req=total_req / (double)number_of_msgs;
-            System.out.println("\ninvoked " + number_of_msgs + " requests in " + total_req + " ms: " + time_per_req +
-                    " ms / req (entire request)");
-
-            if(sync) {
-                double time_per_rsp=total_rsp / (double)number_of_msgs;
-                System.out.println("received " + number_of_msgs + " responses in " + total_rsp + " ms: " + time_per_rsp +
-                        " ms / rsp (only response)\n");
-            }
-
-
         }
+
+        private Address pickTarget() {
+            return null;
+        }
+
+        private Collection<Address> pickAnycastTargets() {
+            return null;
+        }
+    }
+
+
+    public static class Results {
+        long num_gets=0;
+        long num_puts=0;
+        long time=0;
     }
 
 
@@ -544,7 +494,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     return buf.array();
                 case SET_OOB:
                 case SET_SYNC:
-                case SET_ANYCASTING:
                     return booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]);
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:
@@ -574,7 +523,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     return new MethodCall(type, longarg, arg2);
                 case SET_OOB:
                 case SET_SYNC:
-                case SET_ANYCASTING:
                     return new MethodCall(type, buf.get() == 1);
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:
@@ -607,28 +555,13 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-        long sleep_time=0;
         String props=null;
-        boolean sync=false;
-        boolean oob=false;
         String name=null;
 
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
                 props=args[++i];
-                continue;
-            }
-            if("-sleep".equals(args[i])) {
-                sleep_time=Long.parseLong(args[++i]);
-                continue;
-            }
-            if("-sync".equals(args[i])) {
-                sync=true;
-                continue;
-            }
-            if("-oob".equals(args[i])) {
-                oob=true;
                 continue;
             }
             if("-name".equals(args[i])) {
@@ -642,7 +575,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         UnicastTestRpcDist test=null;
         try {
             test=new UnicastTestRpcDist();
-            test.init(props, sleep_time, sync, oob, name);
+            test.init(props, name);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -653,8 +586,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UnicastTestRpc [-help] [-props <props>] [-name name] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep]");
+        System.out.println("UnicastTestRpc [-props <props>] [-name name]");
     }
 
 
