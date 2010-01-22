@@ -40,23 +40,24 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private int num_threads=1;
     private int num_msgs=50000, msg_size=1000;
     private int anycast_count=1;
-    private static final double READ_PERCENTAGE=0.8; // 80% reads, 20% writes
+    private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
 
 
 
-    private static final Method[] METHODS=new Method[10];
+    private static final Method[] METHODS=new Method[15];
 
-    private static final short START             =  0;
-    private static final short SET_OOB           =  1;
-    private static final short SET_SYNC          =  2;
-    private static final short SET_NUM_MSGS      =  3;
-    private static final short SET_NUM_THREADS   =  4;
-    private static final short SET_MSG_SIZE      =  5;
-    private static final short SET_ANYCAST_COUNT =  6;
-    private static final short GET               =  7;
-    private static final short PUT               =  8;
-    private static final short GET_CONFIG        =  9;
+    private static final short START               =  0;
+    private static final short SET_OOB             =  1;
+    private static final short SET_SYNC            =  2;
+    private static final short SET_NUM_MSGS        =  3;
+    private static final short SET_NUM_THREADS     =  4;
+    private static final short SET_MSG_SIZE        =  5;
+    private static final short SET_ANYCAST_COUNT   =  6;
+    private static final short SET_READ_PERCENTAGE =  7;
+    private static final short GET                 =  8;
+    private static final short PUT                 =  9;
+    private static final short GET_CONFIG          = 10;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -69,16 +70,17 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     static {
         try {
-            METHODS[START]             = UnicastTestRpcDist.class.getMethod("startTest");
-            METHODS[SET_OOB]           = UnicastTestRpcDist.class.getMethod("setOOB", boolean.class);
-            METHODS[SET_SYNC]          = UnicastTestRpcDist.class.getMethod("setSync", boolean.class);
-            METHODS[SET_NUM_MSGS]      = UnicastTestRpcDist.class.getMethod("setNumMessages", int.class);
-            METHODS[SET_NUM_THREADS]   = UnicastTestRpcDist.class.getMethod("setNumThreads", int.class);
-            METHODS[SET_MSG_SIZE]      = UnicastTestRpcDist.class.getMethod("setMessageSize", int.class);
-            METHODS[SET_ANYCAST_COUNT] = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
-            METHODS[GET]               = UnicastTestRpcDist.class.getMethod("get", long.class);
-            METHODS[PUT]               = UnicastTestRpcDist.class.getMethod("put", long.class, byte[].class);
-            METHODS[GET_CONFIG]        = UnicastTestRpcDist.class.getMethod("getConfig");
+            METHODS[START]               = UnicastTestRpcDist.class.getMethod("startTest");
+            METHODS[SET_OOB]             = UnicastTestRpcDist.class.getMethod("setOOB", boolean.class);
+            METHODS[SET_SYNC]            = UnicastTestRpcDist.class.getMethod("setSync", boolean.class);
+            METHODS[SET_NUM_MSGS]        = UnicastTestRpcDist.class.getMethod("setNumMessages", int.class);
+            METHODS[SET_NUM_THREADS]     = UnicastTestRpcDist.class.getMethod("setNumThreads", int.class);
+            METHODS[SET_MSG_SIZE]        = UnicastTestRpcDist.class.getMethod("setMessageSize", int.class);
+            METHODS[SET_ANYCAST_COUNT]   = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
+            METHODS[SET_READ_PERCENTAGE] = UnicastTestRpcDist.class.getMethod("setReadPercentage", double.class);
+            METHODS[GET]                 = UnicastTestRpcDist.class.getMethod("get", long.class);
+            METHODS[PUT]                 = UnicastTestRpcDist.class.getMethod("put", long.class, byte[].class);
+            METHODS[GET_CONFIG]          = UnicastTestRpcDist.class.getMethod("getConfig");
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -198,18 +200,10 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         System.out.println("anycast_count = " + anycast_count);
     }
 
-
-   /* // received by another node in the cluster
-    public void config(ConfigOptions options) {
-        this.oob=options.oob;
-        this.sync=options.sync;
-        this.anycasting=options.anycasting;
-        this.num_threads=options.num_threads;
-        this.num_msgs=options.num_msgs;
-        this.msg_size=options.msg_size;
-        this.anycast_count=options.anycast_count;
-    }*/
-
+    public void setReadPercentage(double val) {
+        this.read_percentage=val;
+        System.out.println("read_percentage = " + read_percentage);
+    }
 
     public byte[] get(long key) {
         return GET_RSP;
@@ -221,39 +215,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
     public ConfigOptions getConfig() {
-        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count);
+        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, read_percentage);
     }
-
-
-/*    public long receiveData(long value, byte[] buffer) {
-        long diff=System.currentTimeMillis() - value;
-        tot+=diff;
-        num_reqs++;
-
-        long new_val=current_value.incrementAndGet();
-        total_bytes.addAndGet(buffer.length);
-        if(print > 0 && new_val % print == 0)
-            System.out.println("received " + current_value);
-
-
-        if(new_val >= num_values) {
-            stop=System.currentTimeMillis();
-            long total_time=stop - start;
-            long msgs_per_sec=(long)(num_values / (total_time / 1000.0));
-            double throughput=total_bytes.get() / (total_time / 1000.0);
-            System.out.println("\n-- received " + num_values + " messages in " + total_time +
-                    " ms (" + msgs_per_sec + " messages/sec, " + Util.printBytes(throughput) + " / sec)");
-            double time_per_req=(double)tot / num_reqs;
-            System.out.println("received " + num_reqs + " requests in " + tot + " ms, " + time_per_req +
-                    " ms / req (only request)\n");
-
-            started=false;
-            current_value.set(0); // first value to be received
-            total_bytes.set(0);
-            tot=0; num_reqs=0;
-        }
-        return System.currentTimeMillis();
-    }*/
 
     // ================================= end of callbacks =====================================
 
@@ -267,7 +230,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                     "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
                     " [9] Set anycast count (" + anycast_count + ")" +
-                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync + ")" +
+                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
+                    ") [r] Set read percentage (" + f.format(read_percentage) + ")" +
                     "\n[q] Quit\n");
             switch(c) {
                 case -1:
@@ -311,6 +275,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                 case 's':
                     boolean new_val=!sync;
                     disp.callRemoteMethods(null, new MethodCall(SET_SYNC, new_val), RequestOptions.SYNC);
+                    break;
+                case 'r':
+                    setReadPercentage();
                     break;
                 case 'q':
                     channel.close();
@@ -388,6 +355,15 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         disp.callRemoteMethods(null, new MethodCall(SET_MSG_SIZE, tmp), RequestOptions.SYNC);
     }
 
+    void setReadPercentage() throws Exception {
+        double tmp=Util.readDoubleFromStdin("Read percentage: ");
+        if(tmp < 0 || tmp > 1.0) {
+            System.err.println("read percentage must be >= 0 or <= 1.0");
+            return;
+        }
+        disp.callRemoteMethods(null, new MethodCall(SET_READ_PERCENTAGE, tmp), RequestOptions.SYNC);
+    }
+
     void setAnycastCount() throws Exception {
         int tmp=Util.readIntFromStdin("Anycast count: ");
         View view=channel.getView();
@@ -458,7 +434,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             put_options.setFlags(flags);
 
             for(long i=1; i <= number_of_msgs; i++) {
-                boolean get=Util.tossWeightedCoin(READ_PERCENTAGE);
+                boolean get=Util.tossWeightedCoin(read_percentage);
 
                 try {
                     if(get) { // sync GET
@@ -540,17 +516,20 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         private int num_threads;
         private int num_msgs, msg_size;
         private int anycast_count;
+        private double read_percentage;
 
         public ConfigOptions() {
         }
 
-        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size, int anycast_count) {
+        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size, int anycast_count,
+                             double read_percentage) {
             this.oob=oob;
             this.sync=sync;
             this.num_threads=num_threads;
             this.num_msgs=num_msgs;
             this.msg_size=msg_size;
             this.anycast_count=anycast_count;
+            this.read_percentage=read_percentage;
         }
 
 
@@ -561,6 +540,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             out.writeInt(num_msgs);
             out.writeInt(msg_size);
             out.writeInt(anycast_count);
+            out.writeDouble(read_percentage);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -570,6 +550,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             num_msgs=in.readInt();
             msg_size=in.readInt();
             anycast_count=in.readInt();
+            read_percentage=in.readDouble();
         }
 
         public String toString() {
@@ -604,7 +585,12 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     Long long_arg=(Long)call.getArgs()[0];
                     byte[] arg2=(byte[])call.getArgs()[1];
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
-                    buf.put((byte)PUT).putLong(long_arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                    buf.put((byte)call.getId()).putLong(long_arg).putInt(arg2.length).put(arg2, 0, arg2.length);
+                    return buf.array();
+                case SET_READ_PERCENTAGE:
+                    Double double_arg=(Double)call.getArgs()[0];
+                    buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE);
+                    buf.put((byte)call.getId()).putDouble(double_arg);
                     return buf.array();
                 default:
                     throw new IllegalStateException("method " + call.getMethod() + " not known");
@@ -637,6 +623,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
                     return new MethodCall(type, longarg, arg2);
+                case SET_READ_PERCENTAGE:
+                    return new MethodCall(type, buf.getDouble());
                 default:
                     throw new IllegalStateException("type " + type + " not known");
             }
