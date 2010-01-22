@@ -28,12 +28,11 @@ import java.text.NumberFormat;
  * @author Bela Ban
  */
 public class UnicastTestRpcDist extends ReceiverAdapter {
-    private JChannel                  channel;
-    private Address                   local_addr;
-    private RpcDispatcher             disp;
-    static final String               groupname="UnicastTest-Group";
-    private final Collection<Address> members=new ArrayList<Address>();
-    private int                       print=1000;
+    private JChannel             channel;
+    private Address              local_addr;
+    private RpcDispatcher        disp;
+    static final String          groupname="UnicastTest-Group";
+    private final List<Address>  members=new ArrayList<Address>();
 
 
     // ============ configurable properties ==================
@@ -57,6 +56,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private static final short SET_ANYCAST_COUNT =  6;
     private static final short GET               =  7;
     private static final short PUT               =  8;
+    private static final short GET_CONFIG        =  9;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -78,6 +78,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             METHODS[SET_ANYCAST_COUNT] = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
             METHODS[GET]               = UnicastTestRpcDist.class.getMethod("get", long.class);
             METHODS[PUT]               = UnicastTestRpcDist.class.getMethod("put", long.class, byte[].class);
+            METHODS[GET_CONFIG]        = UnicastTestRpcDist.class.getMethod("getConfig");
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -90,7 +91,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name) throws Exception {
+    public void init(String props, String name) throws Throwable {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
@@ -111,6 +112,22 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         catch(Throwable ex) {
             System.err.println("registering the channel in JMX failed: " + ex);
         }
+
+        if(members.size() < 2)
+            return;
+        Address coord=members.get(0);
+        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(Request.GET_ALL, 5000));
+        if(config != null) {
+            this.oob=config.oob;
+            this.sync=config.sync;
+            this.num_threads=config.num_threads;
+            this.num_msgs=config.num_msgs;
+            this.msg_size=config.msg_size;
+            this.anycast_count=config.anycast_count;
+            System.out.println("Fetched config from " + coord + ": " + config);
+        }
+        else
+            System.err.println("failed to fetch config from " + coord);
     }
 
     void stop() {
@@ -164,7 +181,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     public void setNumMessages(int num) {
         num_msgs=num;
         System.out.println("num_msgs = " + num_msgs);
-        print=num_msgs / 10;
     }
 
     public void setNumThreads(int num) {
@@ -202,6 +218,10 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     public void put(long key, byte[] val) {
         
+    }
+
+    public ConfigOptions getConfig() {
+        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count);
     }
 
 
@@ -334,12 +354,21 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
         RspList responses=disp.callRemoteMethods(null, new MethodCall(START), options);
+
+        long total_reqs=0;
+        long total_time=0;
+
         System.out.println("\n======================= Results: ===========================");
         for(Map.Entry<Address,Rsp> entry: responses.entrySet()) {
             Address mbr=entry.getKey();
             Rsp rsp=entry.getValue();
-            System.out.println(mbr + ": " + rsp.getValue());
+            Results result=(Results)rsp.getValue();
+            total_reqs+=result.num_gets + result.num_puts;
+            total_time+=result.time;
+            System.out.println(mbr + ": " + result);
         }
+        double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
+        System.out.println("\nAverage of " + f.format(total_reqs_sec) + " requests / sec");
         System.out.println("\n\n");
     }
     
@@ -506,24 +535,45 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
 
-    static class ConfigOptions {
-        private final boolean sync, oob, anycasting;
-        private final int num_threads;
-        private final int num_msgs, msg_size;
-        private final int anycast_count;
+    public static class ConfigOptions implements Streamable {
+        private boolean sync, oob;
+        private int num_threads;
+        private int num_msgs, msg_size;
+        private int anycast_count;
 
-        public ConfigOptions(boolean oob, boolean sync, boolean anycasting, int num_threads, int num_msgs, int msg_size, int anycast_count) {
+        public ConfigOptions() {
+        }
+
+        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size, int anycast_count) {
             this.oob=oob;
             this.sync=sync;
-            this.anycasting=anycasting;
             this.num_threads=num_threads;
             this.num_msgs=num_msgs;
             this.msg_size=msg_size;
             this.anycast_count=anycast_count;
         }
 
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeBoolean(oob);
+            out.writeBoolean(sync);
+            out.writeInt(num_threads);
+            out.writeInt(num_msgs);
+            out.writeInt(msg_size);
+            out.writeInt(anycast_count);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            oob=in.readBoolean();
+            sync=in.readBoolean();
+            num_threads=in.readInt();
+            num_msgs=in.readInt();
+            msg_size=in.readInt();
+            anycast_count=in.readInt();
+        }
+
         public String toString() {
-            return "oob=" + oob + ", sync=" + sync + ", anycasting=" + anycasting + ", anycast_count=" + anycast_count +
+            return "oob=" + oob + ", sync=" + sync + ", anycast_count=" + anycast_count +
                     ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size;
         }
     }
@@ -536,8 +586,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             ByteBuffer buf;
             switch(call.getId()) {
                 case START:
+                case GET_CONFIG:
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE);
-                    buf.put((byte)START);
+                    buf.put((byte)call.getId());
                     return buf.array();
                 case SET_OOB:
                 case SET_SYNC:
@@ -568,6 +619,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             byte type=buf.get();
             switch(type) {
                 case START:
+                case GET_CONFIG:
                     return new MethodCall(type);
                 case SET_OOB:
                 case SET_SYNC:
