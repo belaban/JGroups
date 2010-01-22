@@ -532,7 +532,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             double gets_per_sec=num_gets / (total_get_time / 1000.0);
             double puts_per_sec=num_puts / (total_put_time / 1000.0);
 
-            return f.format(total_reqs_per_sec) + " requests/sec: " +
+            return f.format(total_reqs_per_sec) + " reqs/sec: " +
                     f.format(gets_per_sec) + " GETs/sec (" + num_gets + " reqs), " +
                     f.format(puts_per_sec) + " PUTs/sec (" + num_puts + " reqs)";
         }
