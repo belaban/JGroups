@@ -150,7 +150,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     public Results startTest() throws Throwable {
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync + ", oob=" + oob);
         int total_gets=0, total_puts=0;
-        long total_get_time=0, total_put_time=0;
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++)
@@ -164,13 +163,11 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             invoker.join();
             total_gets+=invoker.numGets();
             total_puts+=invoker.numPuts();
-            total_get_time+=invoker.getTotalGetTime();
-            total_put_time+=invoker.getTotalPutTime();
         }
 
         long total_time=System.currentTimeMillis() - start;
         System.out.println("done (in " + total_time + " ms)");
-        return new Results(total_gets, total_puts, total_time, total_get_time, total_put_time);
+        return new Results(total_gets, total_puts, total_time);
     }
 
 
@@ -409,8 +406,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         private final int            number_of_msgs;
         private int                  num_gets=0;
         private int                  num_puts=0;
-        private long                 total_get_time=0;
-        private long                 total_put_time=0;
 
 
         public Invoker(Collection<Address> dests, int number_of_msgs) {
@@ -422,8 +417,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         
         public int numGets() {return num_gets;}
         public int numPuts() {return num_puts;}
-        public long getTotalGetTime() {return total_get_time;}
-        public long getTotalPutTime() {return total_put_time;}
 
 
         public void run() {
@@ -445,7 +438,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                 boolean get=Util.tossWeightedCoin(read_percentage);
 
                 try {
-                    long start=System.currentTimeMillis();
                     if(get) { // sync GET
                         Address target=pickTarget();
                         get_args[0]=i;
@@ -458,11 +450,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                         disp.callRemoteMethods(targets, put_call, put_options);
                         num_puts++;
                     }
-                    long diff=System.currentTimeMillis() - start;
-                    if(get)
-                        total_get_time+=diff;
-                    else
-                        total_put_time+=diff;
                 }
                 catch(Throwable throwable) {
                     throwable.printStackTrace();
@@ -492,19 +479,15 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         long num_gets=0;
         long num_puts=0;
         long time=0;
-        long total_get_time=0;
-        long total_put_time=0;
 
         public Results() {
             
         }
 
-        public Results(int num_gets, int num_puts, long time, long total_get_time, long total_put_time) {
+        public Results(int num_gets, int num_puts, long time) {
             this.num_gets=num_gets;
             this.num_puts=num_puts;
             this.time=time;
-            this.total_get_time=total_get_time;
-            this.total_put_time=total_put_time;
         }
 
 
@@ -514,27 +497,19 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             out.writeLong(num_gets);
             out.writeLong(num_puts);
             out.writeLong(time);
-            out.writeLong(total_get_time);
-            out.writeLong(total_put_time);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             num_gets=in.readLong();
             num_puts=in.readLong();
             time=in.readLong();
-            total_get_time=in.readLong();
-            total_put_time=in.readLong();
         }
 
         public String toString() {
             long total_reqs=num_gets + num_puts;
             double total_reqs_per_sec=total_reqs / (time / 1000.0);
-            double gets_per_sec=num_gets / (total_get_time / 1000.0);
-            double puts_per_sec=num_puts / (total_put_time / 1000.0);
 
-            return f.format(total_reqs_per_sec) + " reqs/sec: " +
-                    f.format(gets_per_sec) + " GETs/sec (" + num_gets + " reqs), " +
-                    f.format(puts_per_sec) + " PUTs/sec (" + num_puts + " reqs)";
+            return f.format(total_reqs_per_sec) + " reqs/sec (" + num_gets + " GETs, " + num_puts + " PUTs total)";
         }
     }
 
