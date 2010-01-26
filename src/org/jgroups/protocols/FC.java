@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.111 2010/01/26 15:15:08 belaban Exp $
+ * @version $Id: FC.java,v 1.112 2010/01/26 15:55:45 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -125,7 +125,7 @@ public class FC extends Protocol {
      * currently used as there might be null values
      */
     @GuardedBy("sent_lock")
-    private final Map<Address, Long> sent=new HashMap<Address, Long>(11);   
+    private final Map<Address,Long> sent=new HashMap<Address, Long>(11);
 
     /**
      * Map<Address,Long>: keys are members, values are credits left (in bytes).
@@ -134,7 +134,7 @@ public class FC extends Protocol {
      * is received after reaching <tt>min_credits</tt> credits.
      */
     @GuardedBy("received_lock")
-    private final Map<Address, Long> received=new ConcurrentHashMap<Address, Long>(11);
+    private final Map<Address,Long> received=new HashMap<Address, Long>(11);
 
 
     /**
@@ -659,8 +659,7 @@ public class FC extends Protocol {
                 lowest-=credits;
                 m.put(dest, lowest);
                 if(log.isTraceEnabled())
-                	log.trace("sender " + dest + " minus " + credits
-							+ " credits, " + lowest + " remaining");
+                	log.trace("sender " + dest + " minus " + credits + " credits, " + lowest + " remaining");
                 return lowest;
             }
         }
@@ -864,11 +863,6 @@ public class FC extends Protocol {
                     it.remove(); // modified the underlying map
             }
 
-            // remove all creditors which are not in the new view
-            /*for(Address creditor: creditors) {
-                if(!mbrs.contains(creditor))
-                    creditors.remove(creditor);
-            }*/
             // fixed http://jira.jboss.com/jira/browse/JGRP-754 (CCME)
             for(Iterator<Address> it=creditors.iterator(); it.hasNext();) {
                 Address creditor=it.next();
