@@ -1,11 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
@@ -13,7 +9,6 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -38,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.112 2010/01/26 15:55:45 belaban Exp $
+ * @version $Id: FC.java,v 1.113 2010/01/27 09:19:25 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -416,10 +411,13 @@ public class FC extends Protocol {
     }
 
 
+    @SuppressWarnings("unchecked")
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_FC))
+                    break;
                 int length=msg.getLength();
                 if(length == 0)
                     break;
@@ -435,6 +433,7 @@ public class FC extends Protocol {
     }
 
 
+    @SuppressWarnings("unchecked")
     public Object up(Event evt) {
         switch(evt.getType()) {
 
@@ -443,6 +442,8 @@ public class FC extends Protocol {
                 // JGRP-465. We only deal with msgs to avoid having to use a concurrent collection; ignore views,
                 // suspicions, etc which can come up on unusual threads.
                 Message msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_FC))
+                    break;
                 FcHeader hdr=(FcHeader)msg.getHeader(name);
                 if(hdr != null) {
                     switch(hdr.type) {
