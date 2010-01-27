@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.105 2010/01/12 15:32:25 belaban Exp $
+ * @version $Id: Message.java,v 1.106 2010/01/27 09:20:49 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -58,15 +58,15 @@ public class Message implements Streamable {
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
 
 
-    // =========================== Flags ==============================
+    // =============================== Flags ====================================
     public static final byte OOB               =  1 << 0;
-    public static final byte LOW_PRIO          =  1 << 1; // not yet sure if we want this flag...
-    public static final byte HIGH_PRIO         =  1 << 2; // not yet sure if we want this flag...
-    public static final byte LOOPBACK          =  1 << 3; // if message was sent to self
-    public static final byte DONT_BUNDLE       =  1 << 4; // don't bundle message at the transport
-    public static final byte OOB_DELIVERED     =  1 << 5; // OOB which has already been delivered up the stack
+    public static final byte LOOPBACK          =  1 << 1; // if message was sent to self
+    public static final byte DONT_BUNDLE       =  1 << 2; // don't bundle message at the transport
+    public static final byte NO_FC             =  1 << 3; // bypass flow control
 
 
+    // =========================== Transient flags ==============================
+    public static final byte OOB_DELIVERED     =  1 << 0; // OOB which has already been delivered up the stack
 
 
 
@@ -610,20 +610,6 @@ public class Message implements Streamable {
             first=false;
             sb.append("OOB");
         }
-        if(isFlagSet(flags, LOW_PRIO)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("LOW_PRIO");
-        }
-        if(isFlagSet(flags, HIGH_PRIO)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("HIGH_PRIO");
-        }
         if(isFlagSet(flags, LOOPBACK)) {
             if(!first)
                 sb.append("|");
@@ -637,6 +623,13 @@ public class Message implements Streamable {
             else
                 first=false;
             sb.append("DONT_BUNDLE");
+        }
+        if(isFlagSet(flags, NO_FC)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("NO_FC");
         }
         if(isFlagSet(flags, OOB_DELIVERED)) {
             if(!first)
