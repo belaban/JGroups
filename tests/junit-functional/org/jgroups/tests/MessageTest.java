@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.12 2009/04/09 09:11:24 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.13 2010/01/27 09:21:03 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
@@ -37,9 +37,9 @@ public class MessageTest {
         Message m1=new Message();
         m1.setFlag(Message.OOB);
         assert m1.isFlagSet(Message.OOB);
-        Assert.assertEquals(Message.OOB, (m1.getFlags() & Message.OOB));
-        assert !(m1.isFlagSet(Message.LOW_PRIO));
-        Assert.assertNotSame((m1.getFlags() & Message.LOW_PRIO), Message.LOW_PRIO);
+        assert Message.OOB == (m1.getFlags() & Message.OOB);
+        assert !(m1.isFlagSet(Message.DONT_BUNDLE));
+        Assert.assertNotSame((m1.getFlags() & Message.DONT_BUNDLE), Message.DONT_BUNDLE);
     }
 
     public static void testFlags3() {
@@ -68,30 +68,30 @@ public class MessageTest {
     public static void testClearFlags2() {
         Message msg=new Message();
         msg.setFlag(Message.OOB);
-        msg.setFlag(Message.HIGH_PRIO);
-        assert msg.isFlagSet(Message.LOW_PRIO) == false;
+        msg.setFlag(Message.NO_FC);
+        assert msg.isFlagSet(Message.DONT_BUNDLE) == false;
         assert msg.isFlagSet(Message.OOB);
-        assert msg.isFlagSet(Message.HIGH_PRIO);
+        assert msg.isFlagSet(Message.NO_FC);
 
         msg.clearFlag(Message.OOB);
         assert msg.isFlagSet(Message.OOB) == false;
-        msg.setFlag(Message.LOW_PRIO);
-        assert msg.isFlagSet(Message.LOW_PRIO);
-        assert msg.isFlagSet(Message.HIGH_PRIO);
-        msg.clearFlag(Message.HIGH_PRIO);
-        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
-        msg.clearFlag(Message.HIGH_PRIO);
-        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
-        msg.clearFlag(Message.LOW_PRIO);
+        msg.setFlag(Message.DONT_BUNDLE);
+        assert msg.isFlagSet(Message.DONT_BUNDLE);
+        assert msg.isFlagSet(Message.NO_FC);
+        msg.clearFlag(Message.NO_FC);
+        assert msg.isFlagSet(Message.NO_FC) == false;
+        msg.clearFlag(Message.NO_FC);
+        assert msg.isFlagSet(Message.NO_FC) == false;
+        msg.clearFlag(Message.DONT_BUNDLE);
         msg.clearFlag(Message.OOB);
         assert msg.getFlags() == 0;
         assert msg.isFlagSet(Message.OOB) == false;
-        assert msg.isFlagSet(Message.LOW_PRIO) == false;
-        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
-        msg.setFlag(Message.LOW_PRIO);
-        assert msg.isFlagSet(Message.LOW_PRIO);
-        msg.setFlag(Message.LOW_PRIO);
-        assert msg.isFlagSet(Message.LOW_PRIO);
+        assert msg.isFlagSet(Message.DONT_BUNDLE) == false;
+        assert msg.isFlagSet(Message.NO_FC) == false;
+        msg.setFlag(Message.DONT_BUNDLE);
+        assert msg.isFlagSet(Message.DONT_BUNDLE);
+        msg.setFlag(Message.DONT_BUNDLE);
+        assert msg.isFlagSet(Message.DONT_BUNDLE);
     }
 
 
@@ -322,7 +322,7 @@ public class MessageTest {
     public static void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
         Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), null);
         msg.setFlag(Message.OOB);
-        msg.setFlag(Message.LOW_PRIO);
+        msg.setFlag(Message.DONT_BUNDLE);
         _testSize(msg);
     }
 
