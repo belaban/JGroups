@@ -322,6 +322,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         RequestOptions options=new RequestOptions(Request.GET_ALL, 0);
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
+        options.setFlags(Message.NO_FC);
         RspList responses=disp.callRemoteMethods(null, new MethodCall(START), options);
 
         long total_reqs=0;
@@ -431,7 +432,10 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
             byte flags=0;
             if(oob) flags=Util.setFlag(flags, Message.OOB);
-            if(sync) flags=Util.setFlag(flags, Message.DONT_BUNDLE);
+            if(sync) {
+                flags=Util.setFlag(flags, Message.DONT_BUNDLE);
+                flags=Util.setFlag(flags, Message.NO_FC);
+            }
             get_options.setFlags(flags);
             put_options.setFlags(flags);
 
