@@ -313,11 +313,6 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
-        if(num_threads > 1 && num_msgs % num_threads != 0) {
-            System.err.println("num_msgs (" + num_msgs + " ) has to be divisible by num_threads (" + num_threads + ")");
-            return;
-        }
-
         RequestOptions options=new RequestOptions(Request.GET_ALL, 0);
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
