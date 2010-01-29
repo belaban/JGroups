@@ -43,6 +43,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
 
+    private final AtomicInteger num_reqs_sent=new AtomicInteger(0);
 
 
     private static final Method[] METHODS=new Method[15];
@@ -151,10 +152,11 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     public Results startTest() throws Throwable {
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync + ", oob=" + oob);
         int total_gets=0, total_puts=0;
+        final AtomicInteger num_msgs_sent=new AtomicInteger(0);
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++)
-            invokers[i]=new Invoker(members, num_msgs / num_threads);
+            invokers[i]=new Invoker(members, num_msgs, num_msgs_sent);
 
         long start=System.currentTimeMillis();
         for(Invoker invoker: invokers)
@@ -405,14 +407,16 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     private class Invoker extends Thread {
         private final List<Address>  dests=new ArrayList<Address>();
-        private final int            number_of_msgs;
+        private final int            num_msgs_to_send;
+        private final AtomicInteger  num_msgs_sent;
         private int                  num_gets=0;
         private int                  num_puts=0;
 
 
-        public Invoker(Collection<Address> dests, int number_of_msgs) {
+        public Invoker(Collection<Address> dests, int num_msgs_to_send, AtomicInteger num_msgs_sent) {
+            this.num_msgs_sent=num_msgs_sent;
             this.dests.addAll(dests);
-            this.number_of_msgs=number_of_msgs;
+            this.num_msgs_to_send=num_msgs_to_send;
             setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
@@ -439,7 +443,11 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             get_options.setFlags(flags);
             put_options.setFlags(flags);
 
-            for(long i=1; i <= number_of_msgs; i++) {
+            while(true) {
+                long i=num_msgs_sent.getAndIncrement();
+                if(i >= num_msgs_to_send)
+                    break;
+                
                 boolean get=Util.tossWeightedCoin(read_percentage);
 
                 try {
