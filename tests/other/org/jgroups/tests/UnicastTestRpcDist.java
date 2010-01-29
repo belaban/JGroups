@@ -36,15 +36,12 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
     // ============ configurable properties ==================
-    private boolean sync=false, oob=false;
-    private int num_threads=1;
-    private int num_msgs=50000, msg_size=1000;
-    private int anycast_count=1;
+    private boolean sync=true, oob=true;
+    private int num_threads=25;
+    private int num_msgs=20000, msg_size=1000;
+    private int anycast_count=2;
     private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
-
-    private final AtomicInteger num_reqs_sent=new AtomicInteger(0);
-
 
     private static final Method[] METHODS=new Method[15];
 
