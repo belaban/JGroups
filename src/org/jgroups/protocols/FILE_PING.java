@@ -22,7 +22,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.13 2010/01/20 05:23:26 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.14 2010/01/29 16:16:50 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -82,7 +82,7 @@ public class FILE_PING extends Discovery {
                 if(dests == null)
                     continue;
                 for(final PhysicalAddress dest: dests) {
-                    if(dest.equals(physical_addr))
+                    if(dest == null || dest.equals(physical_addr))
                         continue;
                     PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
                     hdr.return_view_only=return_views_only;
