@@ -6,7 +6,7 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.9 2009/10/28 08:29:37 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.10 2010/02/08 07:11:15 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
@@ -26,7 +26,7 @@
                     ip_ttl="32" ip_mcast="true"
                     mcast_send_buf_size="80000" mcast_recv_buf_size="150000"
                     ucast_send_buf_size="80000" ucast_recv_buf_size="150000"
-                    loopback="false"/>
+                    loopback="true"/>
                 <PING timeout="2000" num_initial_members="3"/>
                 <MERGE2 min_interval="10000" max_interval="20000"/>
                 <FD />
