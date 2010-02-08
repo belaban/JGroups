@@ -10,21 +10,27 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ExposedDataOutputStream;
 import org.jgroups.util.Util;
+import org.jgroups.util.ExposedByteArrayInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 
 /**
  * Fragmentation layer. Fragments messages larger than FRAG_SIZE into smaller
  * packets. Reassembles fragmented packets into bigger ones. The fragmentation
- * number is prepended to the messages as a header (and removed at the receiving
- * side).
+ * number is added to the messages as a header (and removed at the receiving side).
+ * <p>
+ * Contrary to {@link org.jgroups.protocols.FRAG2}, FRAG marshals the entire message (including the headers) into
+ * a byte[] buffer and the fragments that buffer. Because {@link org.jgroups.Message#size()} is called rather than
+ * {@link org.jgroups.Message#getLength()}, and because of the overhead of marshalling, this will be slower than
+ * FRAG2.
  * <p>
  * Each fragment is identified by (a) the sender (part of the message to which
  * the header is appended), (b) the fragmentation ID (which is unique per FRAG
@@ -36,7 +42,7 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.48 2009/12/11 13:02:28 belaban Exp $
+ * @version $Id: FRAG.java,v 1.49 2010/02/08 14:03:58 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -46,20 +52,20 @@ public class FRAG extends Protocol {
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
     private int frag_size=8192; // conservative value
 
-    @Property(description="The max size in bytes for the byte array output buffer")
+    @Property(description="The max size in bytes for the byte array output buffer",
+              deprecatedMessage="not used anymore")
+    @Deprecated
     private int max_retained_buffer=70000;
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    /*the fragmentation list contains a fragmentation table per sender
-     *this way it becomes easier to clean up if a sender (member) leaves or crashes
-     */
-    private final FragmentationList fragment_list=new FragmentationList();
-    private int curr_id=1;
-    private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(1024);
-    private final Vector<Address> members=new Vector<Address>(11);
+    /** Contains a frag table per sender, this way it becomes easier to clean up if a sender leaves or crashes */
+    private final FragmentationList  fragment_list=new FragmentationList();
+
+    private AtomicInteger            curr_id=new AtomicInteger(1);
+    private final Vector<Address>    members=new Vector<Address>(11);
     
     
  
@@ -113,7 +119,7 @@ public class FRAG extends Protocol {
                         sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
                         log.trace(sb.toString());
                     }
-                    fragment(msg);  // Fragment and pass down
+                    fragment(msg, size);  // Fragment and pass down
                     return null;
                 }
                 break;
@@ -173,8 +179,8 @@ public class FRAG extends Protocol {
         members.addAll(new_mbrs);
 
         for(Address mbr: left_mbrs){
-            //the new view doesn't contain the sender, he must have left,
-            //hence we will clear all his fragmentation tables
+            // the new view doesn't contain the sender, it must have left,
+            // hence we will clear all of itsfragmentation tables
             fragment_list.remove(mbr);
             if(log.isTraceEnabled())
                 log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
@@ -193,29 +199,18 @@ public class FRAG extends Protocol {
      * [2344,3,2]{dst,src,buf3}
      * </pre>
      */
-    private void fragment(Message msg) {
-        DataOutputStream   out=null;
-        byte[]             buffer;
-        byte[]             fragments[];
-        Event              evt;
-        FragHeader         hdr;
-        Message            frag_msg;
+    private void fragment(Message msg, long size) {
         Address            dest=msg.getDest(), src=msg.getSrc();
-        long               id=curr_id++; // used as seqnos
+        long               id=curr_id.getAndIncrement(); // used as seqnos
         int                num_frags;
 
         try {
-            // Write message into a byte buffer and fragment it
-            // Synchronization around bos is needed for concurrent access (http://jira.jboss.com/jira/browse/JGRP-215)
-            synchronized(bos) {
-                bos.reset(this.max_retained_buffer);
-                out=new DataOutputStream(bos);
-                msg.writeTo(out);
-                out.flush();
-                buffer=bos.getRawBuffer();
-                fragments=Util.fragmentBuffer(buffer, frag_size, bos.size());
-            }
-
+            // write message into a byte buffer and fragment it
+            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(size + 50));
+            ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
+            msg.writeTo(dos);
+            byte[] buffer=out_stream.getRawBuffer();
+            byte[][] fragments=Util.fragmentBuffer(buffer, frag_size, dos.size());
             num_frags=fragments.length;
             num_sent_frags+=num_frags;
 
@@ -228,18 +223,15 @@ public class FRAG extends Protocol {
             }
 
             for(int i=0; i < num_frags; i++) {
-                frag_msg=new Message(dest, src, fragments[i]);
-                hdr=new FragHeader(id, i, num_frags);
+                Message frag_msg=new Message(dest, src, fragments[i]);
+                FragHeader hdr=new FragHeader(id, i, num_frags);
                 frag_msg.putHeader(name, hdr);
-                evt=new Event(Event.MSG, frag_msg);
+                Event evt=new Event(Event.MSG, frag_msg);
                 down_prot.down(evt);
             }
         }
         catch(Exception e) {
             log.error("exception occurred trying to fragment message", e);
-        }
-        finally {
-            Util.close(out);
         }
     }
 
@@ -252,14 +244,8 @@ public class FRAG extends Protocol {
      * 5. Pass msg up the stack
      */
     private void unfragment(Message msg, FragHeader hdr) {
-        FragmentationTable   frag_table;
-        Address              sender=msg.getSrc();
-        Message              assembled_msg;
-        byte[]               m;
-        ByteArrayInputStream bis;
-        DataInputStream      in=null;
-
-        frag_table=fragment_list.get(sender);
+        Address            sender=msg.getSrc();
+        FragmentationTable frag_table=fragment_list.get(sender);
         if(frag_table == null) {
             frag_table=new FragmentationTable(sender);
             try {
@@ -270,12 +256,13 @@ public class FRAG extends Protocol {
             }
         }
         num_received_frags++;
-        m=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg.getBuffer());
-        if(m != null) {
+        byte[] buf=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg.getBuffer());
+        if(buf != null) {
+            DataInputStream in=null;
             try {
-                bis=new ByteArrayInputStream(m);
+                ByteArrayInputStream bis=new ExposedByteArrayInputStream(buf);
                 in=new DataInputStream(bis);
-                assembled_msg=new Message(false);
+                Message assembled_msg=new Message(false);
                 assembled_msg.readFrom(in);
                 if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
