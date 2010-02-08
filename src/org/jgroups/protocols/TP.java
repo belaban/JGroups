@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.286 2010/01/29 09:21:57 belaban Exp $
+ * @version $Id: TP.java,v 1.287 2010/02/08 07:11:17 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -115,8 +115,8 @@ public abstract class TP extends Protocol {
      * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
      * Window media (non)sense
      */
-    @Property(description="Messages to self are looped back immediately if true. Default is false")
-    protected boolean loopback=false;
+    @Property(description="Messages to self are looped back immediately if true")
+    protected boolean loopback=true;
 
     /**
      * Discard packets with a different version. Usually minor version differences are okay. Setting this property
