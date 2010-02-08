@@ -1,7 +1,7 @@
 
 <!--
 Total order protocol stack using the SEQUENCER protocol
-Version: $Id: sequencer.xml,v 1.7.2.1 2007/11/20 08:53:40 belaban Exp $
+Version: $Id: sequencer.xml,v 1.7.2.2 2010/02/08 07:18:11 belaban Exp $
 -->
 <config>
     <UDP
@@ -12,7 +12,7 @@ Version: $Id: sequencer.xml,v 1.7.2.1 2007/11/20 08:53:40 belaban Exp $
          ucast_send_buf_size="640000"
          mcast_recv_buf_size="25000000" 
          mcast_send_buf_size="640000" 
-         loopback="false"
+         loopback="true"
          discard_incompatible_packets="true"
          max_bundle_size="64000"
          max_bundle_timeout="30"
