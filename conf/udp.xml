@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.24.2.2 2008/11/10 06:36:54 belaban Exp $
+  version: $Id: udp.xml,v 1.24.2.3 2010/02/08 07:18:11 belaban Exp $
 -->
 
 <config>
@@ -15,7 +15,7 @@
          ucast_send_buf_size="640000"
          mcast_recv_buf_size="25000000"
          mcast_send_buf_size="640000"
-         loopback="false"
+         loopback="true"
          discard_incompatible_packets="true"
          max_bundle_size="64000"
          max_bundle_timeout="30"
