@@ -4,12 +4,14 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
  * and press <return> to get the round trip times for all nodes in the cluster
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.2 2010/02/10 09:04:48 belaban Exp $
+ * @version $Id: PingPong.java,v 1.3 2010/02/10 09:08:27 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
@@ -22,6 +24,8 @@ public class PingPong extends ReceiverAdapter {
 
     long start=0;
 
+    final List<Address> members=new ArrayList<Address>();
+
     private static NumberFormat f;
 
     static {
@@ -31,7 +35,7 @@ public class PingPong extends ReceiverAdapter {
     }
 
 
-    public void start(String props, String name) throws ChannelException {
+    public void start(String props, String name, boolean unicast) throws ChannelException {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
@@ -40,7 +44,11 @@ public class PingPong extends ReceiverAdapter {
 
         while(true) {
             Util.keyPress("enter to ping");
-            Message msg=new Message(null, null, PING_REQ);
+            Address dest=null;
+            if(unicast)
+                dest=(Address)Util.pickRandomElement(members);
+            
+            Message msg=new Message(dest, null, PING_REQ);
             msg.setFlag(Message.DONT_BUNDLE);
             msg.setFlag(Message.NO_FC);
             start=System.nanoTime();
@@ -50,6 +58,8 @@ public class PingPong extends ReceiverAdapter {
 
     public void viewAccepted(View new_view) {
         System.out.println("view: " + new_view);
+        members.clear();
+        members.addAll(new_view.getMembers());
     }
 
     public void receive(Message msg) {
@@ -77,6 +87,7 @@ public class PingPong extends ReceiverAdapter {
     public static void main(String[] args) throws ChannelException {
         String props="udp.xml";
         String name=null;
+        boolean unicast=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -87,9 +98,13 @@ public class PingPong extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
-            System.out.println("PingPong [-props <XML config>] [-name name]");
+            if(args[i].equals("-unicast")) {
+                unicast=true;
+                continue;
+            }
+            System.out.println("PingPong [-props <XML config>] [-name name] [-unicast]");
         }
 
-        new PingPong().start(props, name);
+        new PingPong().start(props, name, unicast);
     }
 }
