@@ -9,7 +9,7 @@ import java.text.NumberFormat;
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
  * and press <return> to get the round trip times for all nodes in the cluster
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.1 2010/02/10 09:01:20 belaban Exp $
+ * @version $Id: PingPong.java,v 1.2 2010/02/10 09:04:48 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
@@ -31,8 +31,10 @@ public class PingPong extends ReceiverAdapter {
     }
 
 
-    public void start(String props) throws ChannelException {
+    public void start(String props, String name) throws ChannelException {
         ch=new JChannel(props);
+        if(name != null)
+            ch.setName(name);
         ch.setReceiver(this);
         ch.connect("ping");
 
@@ -74,15 +76,20 @@ public class PingPong extends ReceiverAdapter {
 
     public static void main(String[] args) throws ChannelException {
         String props="udp.xml";
+        String name=null;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
                 props=args[++i];
                 continue;
             }
-            System.out.println("PingPong [-props <XML config>]");
+            if(args[i].equals("-name")) {
+                name=args[++i];
+                continue;
+            }
+            System.out.println("PingPong [-props <XML config>] [-name name]");
         }
 
-        new PingPong().start(props);
+        new PingPong().start(props, name);
     }
 }
