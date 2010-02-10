@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.106 2010/01/27 09:20:49 belaban Exp $
+ * @version $Id: Message.java,v 1.107 2010/02/10 14:03:01 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -642,29 +642,27 @@ public class Message implements Streamable {
     }
 
     private static void writeHeader(Header value, DataOutputStream out) throws IOException {
-        short magic_number;
-        String classname;
-        ObjectOutputStream oos=null;
         int size=value.size();
-        try {
-            magic_number=ClassConfigurator.getMagicNumber(value.getClass());
-            // write the magic number or the class name
-            out.writeShort(magic_number);
-            if(magic_number == -1) {
-                classname=value.getClass().getName();
-                out.writeUTF(classname);
-                if(log.isWarnEnabled())
-                    log.warn("magic number for " + classname + " not found, make sure you add your header to " +
-                            "jg-magic-map.xml, or register it programmatically with the ClassConfigurator");
-            }
+        short magic_number=ClassConfigurator.getMagicNumber(value.getClass());
+        // write the magic number or the class name
+        out.writeShort(magic_number);
+        if(magic_number == -1) {
+            String classname=value.getClass().getName();
+            out.writeUTF(classname);
+            if(log.isWarnEnabled())
+                log.warn("magic number for " + classname + " not found, make sure you add your header to " +
+                        "jg-magic-map.xml, or register it programmatically with the ClassConfigurator");
+        }
 
-            out.writeShort(size);
+        out.writeShort(size);
 
-            // write the contents
-            if(value instanceof Streamable) {
-                ((Streamable)value).writeTo(out);
-            }
-            else {
+        // write the contents
+        if(value instanceof Streamable) {
+            ((Streamable)value).writeTo(out);
+        }
+        else {
+            ObjectOutputStream oos=null;
+            try {
                 oos=new ObjectOutputStream(out);
                 value.writeExternal(oos);
                 if(!nonStreamableHeaders.contains(value.getClass())) {
@@ -673,35 +671,30 @@ public class Message implements Streamable {
                         log.trace("encountered non-Streamable header: " + value.getClass());
                 }
             }
-        }
-        finally {
-            if(oos != null)
-                oos.close(); // this is a no-op on ByteArrayOutputStream
+            finally {
+                Util.close(oos);
+            }
         }
     }
 
 
     private static Header readHeader(DataInputStream in) throws IOException {
-        Header            hdr;
-        short             magic_number;
-        String            classname;
-        Class             clazz;
-
         try {
-            magic_number=in.readShort();
+            short magic_number=in.readShort();
+            Class clazz;
             if(magic_number != -1) {
                 clazz=ClassConfigurator.get(magic_number);
                 if(clazz == null)
                     throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
             }
             else {
-                classname=in.readUTF();
+                String classname=in.readUTF();
                 clazz=ClassConfigurator.get(classname);
             }
 
             in.readShort(); // we discard the size since we don't use it
 
-            hdr=(Header)clazz.newInstance();
+            Header hdr=(Header)clazz.newInstance();
             if(hdr instanceof Streamable) {
                ((Streamable)hdr).readFrom(in);
             }
@@ -709,13 +702,13 @@ public class Message implements Streamable {
                 ObjectInputStream ois=new ObjectInputStream(in);
                 hdr.readExternal(ois);
             }
+            return hdr;
         }
         catch(Exception ex) {
             IOException io_ex=new IOException("failed reading header");
             io_ex.initCause(ex);
             throw io_ex;
         }
-        return hdr;
     }
 
     private static Headers createHeaders(int size) {
