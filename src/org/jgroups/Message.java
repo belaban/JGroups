@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.107 2010/02/10 14:03:01 belaban Exp $
+ * @version $Id: Message.java,v 1.108 2010/02/10 17:17:44 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -641,34 +641,31 @@ public class Message implements Streamable {
         return sb.toString();
     }
 
-    private static void writeHeader(Header value, DataOutputStream out) throws IOException {
-        int size=value.size();
-        short magic_number=ClassConfigurator.getMagicNumber(value.getClass());
+    private static void writeHeader(Header hdr, DataOutputStream out) throws IOException {
+        short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
         // write the magic number or the class name
         out.writeShort(magic_number);
         if(magic_number == -1) {
-            String classname=value.getClass().getName();
+            String classname=hdr.getClass().getName();
             out.writeUTF(classname);
             if(log.isWarnEnabled())
                 log.warn("magic number for " + classname + " not found, make sure you add your header to " +
                         "jg-magic-map.xml, or register it programmatically with the ClassConfigurator");
         }
 
-        out.writeShort(size);
-
         // write the contents
-        if(value instanceof Streamable) {
-            ((Streamable)value).writeTo(out);
+        if(hdr instanceof Streamable) {
+            ((Streamable)hdr).writeTo(out);
         }
         else {
             ObjectOutputStream oos=null;
             try {
                 oos=new ObjectOutputStream(out);
-                value.writeExternal(oos);
-                if(!nonStreamableHeaders.contains(value.getClass())) {
-                    nonStreamableHeaders.add(value.getClass());
+                hdr.writeExternal(oos);
+                if(!nonStreamableHeaders.contains(hdr.getClass())) {
+                    nonStreamableHeaders.add(hdr.getClass());
                     if(log.isTraceEnabled())
-                        log.trace("encountered non-Streamable header: " + value.getClass());
+                        log.trace("encountered non-Streamable header: " + hdr.getClass());
                 }
             }
             finally {
@@ -691,8 +688,6 @@ public class Message implements Streamable {
                 String classname=in.readUTF();
                 clazz=ClassConfigurator.get(classname);
             }
-
-            in.readShort(); // we discard the size since we don't use it
 
             Header hdr=(Header)clazz.newInstance();
             if(hdr instanceof Streamable) {
