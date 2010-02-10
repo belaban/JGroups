@@ -1,10 +1,12 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
-import org.testng.annotations.AfterMethod;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,22 +14,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.5 2009/10/30 16:30:13 belaban Exp $
+ * @version $Id: BundlerTest.java,v 1.6 2010/02/10 17:28:03 belaban Exp $
  */
-@Test(groups=Global.STACK_INDEPENDENT)
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class BundlerTest {
-    JChannel c1, c2;
     static final String props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
-            "thread_pool.rejection_policy=discard;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
-            "oob_thread_pool.rejection_policy=discard;enable_bundling=true)";
+            "thread_pool.rejection_policy=run;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
+            "oob_thread_pool.rejection_policy=run;enable_bundling=true)";
     static final int NUM_THREADS=200;
     static final int NUM_MSGS=1000;
     static final int SIZE=1000; // default size of a message in bytes
 
-    @AfterMethod
-    protected void tearDown() throws Exception {
-        Util.close(c2, c1);
-    }
 
 
     public static void testSimpleMessageReception() throws Exception {
@@ -53,6 +50,8 @@ public class BundlerTest {
 
         System.out.println("c1 received " + r1.getNum() + " msgs");
         System.out.println("c2 received " + r2.getNum() + " msgs");
+
+        Util.close(c2, c1);
 
         assert r1.getNum() == NUM * 2: "expected " + NUM *2 + ", but got " + r1.getNum();
         assert r2.getNum() == NUM * 2: "expected " + NUM *2 + ", but got " + r2.getNum();
@@ -100,15 +99,13 @@ public class BundlerTest {
         System.out.println("c1 received " + r1.getNum() + " msgs");
         System.out.println("c2 received " + r2.getNum() + " msgs");
 
+        long diff=System.currentTimeMillis() - start;
+        Util.close(c2, c1);
+
         assert r1.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r1.getNum();
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
-
-        long diff=System.currentTimeMillis() - start;
-
         System.out.println("sending and receiving of " + NUM_EXPECTED_MSGS + " took " + diff + " ms");
     }
-
-
 
 
 
