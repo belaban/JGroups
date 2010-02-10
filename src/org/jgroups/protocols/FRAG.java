@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.49 2010/02/08 14:03:58 belaban Exp $
+ * @version $Id: FRAG.java,v 1.50 2010/02/10 17:37:28 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -264,8 +264,8 @@ public class FRAG extends Protocol {
                 in=new DataInputStream(bis);
                 Message assembled_msg=new Message(false);
                 assembled_msg.readFrom(in);
-                if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
+                if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 num_received_msgs++;
                 up_prot.up(new Event(Event.MSG, assembled_msg));
             }
