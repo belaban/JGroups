@@ -4,7 +4,7 @@ Release Notes JGroups 2.9
 =========================
 
 
-Version: $Id: ReleaseNotes-2.9.txt,v 1.1 2010/02/11 09:05:16 belaban Exp $
+Version: $Id: ReleaseNotes-2.9.txt,v 1.2 2010/02/11 09:16:28 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.9 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -14,6 +14,52 @@ Below is a summary (with links to the detailed description) of the major new fea
 
 New features
 ============
+
+
+
+Notification when unicast or group request is done
+--------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1030]
+
+When using an async call which returns a future, get() would block until all responses had been received. Now, we
+can register with the future to get notified when the results have been received.
+Example:
+
+NotifyingFuture<RspList> future=dispatcher.callRemoteMethodsWithFuture(...);
+future.setListener(new FutureListener() {
+    void futureDone(Future<T> future) {
+         System.out.println("result is " + future.get());
+    }
+}
+);
+
+See the documentation for details.
+
+
+
+Flag to bypass flow control
+---------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1143]
+
+The Message.NO_FC flag has been added. When set in a message, flow control (FC) will be bypassed. This can be useful
+for example for synchronous RPCs. To set the flag:
+
+   Message msg;
+   msg.setFlag(Message.NO_FC);
+
+
+
+
+Optimizations
+=============
+
+
+UNICAST
+-------
+[https://jira.jboss.org/jira/browse/JGRP-1122]
+
+The big fat lock in down(), acquired by every thread, was eliminated and replaced with a lock-free algorithm.
+
 
 
 Optimization of unicast requests
@@ -30,12 +76,11 @@ response value. Uses less memory, and has less locking (= reduced contention).
 Bug fixes
 =========
 
-Duplicate delivery of messages
-------------------------------
-[https://jira.jboss.org/jira/browse/JGRP-1103]
+Leak in TCPGOSSIP
+-----------------
+[https://jira.jboss.org/jira/browse/JGRP-1120]
 
-Under load some messages could get delivered more than once. This is a regression, caused by an optimization, and does
-not exists in prior versions. Part of the optimizations were reversed to fix this.
+On disconnect / reconnect, TCPGOSSIP could have a leak.
 
 
 
