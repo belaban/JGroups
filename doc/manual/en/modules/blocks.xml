@@ -484,6 +484,72 @@
       by providing a higher abstraction level between the application
       and the primitive channels.</para>
 
+        <section><title>RequestOptions</title>
+            <para>
+                RequestOptions is a collection of options that can be passed into a call, e.g. the mode (GET_ALL, GET_NONE),
+                timeout, flags etc. It is an alternative to passing multiple arguments to a method.
+            </para>
+
+            <para>
+                All calls with individual parameters have been deprecated in 2.9 and the new calls with RequestOptions
+                are:
+                <screen>
+                    public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
+                                                     Class[] types, RequestOptions options);
+                    public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
+                                                     RequestOptions options);
+                    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
+                                                   Class[] types, RequestOptions options); 
+                    public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
+                </screen>
+            </para>
+
+            <para>
+                An example of how to use RequestOptions is:
+                <screen>
+                    RpcDispatcher disp;
+                    RequestOptions opts=new RequestOptions(Request.GET_ALL).setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+                    Object val=disp.callRemoteMethod(target, method_call, opts);
+                </screen>
+            </para>
+        </section>
+
+        <section><title>Asynchronous calls with futures</title>
+
+            <para>
+                When invoking a synchronous call, the calling thread is blocked until the response (or responses) has
+                been received.
+            </para>
+
+            <para>
+                A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
+                2.9, two new methods, which return futures, have been added to RpcDispatcher:
+                <screen>
+                    public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                                  MethodCall method_call, RequestOptions options);
+                    public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+                                                                  RequestOptions options);
+                </screen>
+            </para>
+
+            <para>
+                A NotifyingFuture extends java.util.concurrent.Future, with its regular methods such as isDone(),
+                get() and cancel(). NotifyingFuture adds setListener&lt;FutureListener&gt; to get notified when
+                the result is available. This is shown in the following code:
+                <screen>
+                    NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
+                    future.setListener(new FutureListener() {
+                        void futureDone(Future&lt;T&gt; future) {
+                             System.out.println("result is " + future.get());
+                        }
+                    }
+                    );
+                </screen>
+            </para>
+
+        </section>
+
+
     </section>
     
   </section>
