@@ -731,8 +731,8 @@
       to be joined:</para>
 
       <screen>
-                public void connect(String clustername) throws ChannelClosed;
-            </screen>
+           public void connect(String clustername) throws ChannelClosed;
+      </screen>
 
       <para>The cluster name is a string, naming the cluster to be joined. All
       channels that are connected to the same name form a cluster.
@@ -796,15 +796,15 @@
       state.</para>
 
       <screen>
-                public Address getLocalAddress(); // use getAddress() with 2.8.0 and higher
-            </screen>
+          public Address getLocalAddress(); // use getAddress() with 2.8.0 and higher
+      </screen>
 
       <para>Method <methodname>getClusterName()</methodname> returns the name
       of the cluster in which the channel is a member:</para>
 
       <screen>
-                public String getClusterName();
-            </screen>
+          public String getClusterName();
+      </screen>
 
       <para>Again, the result is undefined if the channel is in the
       unconnected or closed state.</para>
@@ -839,9 +839,9 @@
       <methodname>send()</methodname> methods:</para>
 
       <screen>
-                public void send(Message msg) throws ChannelNotConnected, ChannelClosed;
-                public void send(Address dst, Address src, Object obj) throws ChannelNotConnected, ChannelClosed;
-            </screen>
+          public void send(Message msg) throws ChannelNotConnected, ChannelClosed;
+          public void send(Address dst, Address src, Object obj) throws ChannelNotConnected, ChannelClosed;
+      </screen>
 
       <para>The first <methodname>send()</methodname> method has only one
       argument, which is the message to be sent. The message's destination
@@ -863,7 +863,7 @@
       of a group:</para>
 
       <screen>
-                HashtMap data; // any serializable data
+                Map data; // any serializable data
                 try {
                     channel.send(null, null, data);
                 }
@@ -906,8 +906,8 @@
       messages, views, suspicions and blocks:</para>
 
       <screen>
-                public Object receive(long timeout) throws ChannelNotConnected, ChannelClosed, Timeout;
-            </screen>
+          public Object receive(long timeout) throws ChannelNotConnected, ChannelClosed, Timeout;
+      </screen>
 
       <para>A channel receives messages asynchronously from the network and
       stores them in a queue. When receive() is called, the next available
@@ -1228,29 +1228,29 @@
       example above would look like this:</para>
 
       <screen>
-                class MyReceiver extends ReceiverAdapter {
-                    final Map m=new HashMap();
-                    public byte[] getState() {
-                        synchronized(m) { // so nobody else can modify the map while we serialize it
-                            byte[] state=Util.objectToByteBuffer(m);
-                            return state;
-                        }
-                    }
+          class MyReceiver extends ReceiverAdapter {
+              final Map m=new HashMap();
+              public byte[] getState() {
+                  synchronized(m) { // so nobody else can modify the map while we serialize it
+                      byte[] state=Util.objectToByteBuffer(m);
+                      return state;
+                  }
+              }
 
-                    public void setState(byte[] state) {
-                        synchronized(m) {
-                            Map new_m=(Map)Util.objectFromByteBuffer(state);
-                            m.clear();
-                            m.addAll(new_m);
-                        }
-                    }
-                }
+              public void setState(byte[] state) {
+                  synchronized(m) {
+                      Map new_m=(Map)Util.objectFromByteBuffer(state);
+                      m.clear();
+                      m.addAll(new_m);
+                  }
+              }
+          }
 
-                channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
-                channel.setReceiver(new MyReceiver());
-                channel.connect("TestChannel");
-                boolean rc=channel.getState(null, 5000);
-            </screen>
+          channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
+          channel.setReceiver(new MyReceiver());
+          channel.connect("TestChannel");
+          boolean rc=channel.getState(null, 5000);
+      </screen>
 
       <para>In a group consisting of A,B and C, with D joining the group and
       calling Channel.getState(), the following sequence of callbacks happens:
