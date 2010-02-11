@@ -9,9 +9,9 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.8 2010/02/11 07:54:53 belaban Exp $
+ * @version $Id: LatencyTest.java,v 1.6 2010/02/11 07:57:51 belaban Exp $
  */
-public class JGroupsLatencyTest {
+public class LatencyTest {
     JChannel ch;
 
 
@@ -90,7 +90,7 @@ public class JGroupsLatencyTest {
             help();
             return;
         }
-        new JGroupsLatencyTest().start(sender, local, props);
+        new LatencyTest().start(sender, local, props);
     }
 
 

@@ -6,14 +6,13 @@ import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
-import java.text.NumberFormat;
 
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
  * and press <return> to get the round trip times for all nodes in the cluster, This program doesn't use JGroups at all,
  * see {@link org.jgroups.tests.PingPong} for a comparison.
  * @author Bela Ban
- * @version $Id: PingPongDatagram.java,v 1.1 2010/02/10 10:43:04 belaban Exp $
+ * @version $Id: PingPongDatagram.java,v 1.2 2010/02/11 07:54:53 belaban Exp $
  */
 public class PingPongDatagram {
     MulticastSocket mcast_sock;
@@ -31,12 +30,8 @@ public class PingPongDatagram {
 
     long start=0;
 
-    private static NumberFormat f;
 
     static {
-        f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(false);
-        f.setMaximumFractionDigits(2);
         MCAST_GROUP=new InetSocketAddress("239.5.5.5", 7500);
     }
 
@@ -78,7 +73,7 @@ public class PingPongDatagram {
                         case PONG:
                             long rtt=System.nanoTime() - start;
                             double ms=rtt / 1000.0 / 1000.0;
-                            System.out.println("RTT for " + sender + ": " + f.format(ms) + " ms");
+                            System.out.println("RTT for " + sender + ": " + Util.format(ms) + " ms");
                             break;
                         default:
                             System.err.println("type " + type + " unknown");
