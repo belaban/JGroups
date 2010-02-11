@@ -10,9 +10,9 @@ import java.util.List;
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
  * and press <return> to get the round trip times for all nodes in the cluster<p/>
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
- * {@link org.jgroups.tests.JGroupsLatencyTest} for simple (unicast) latency tests (not round trip).
+ * {@link org.jgroups.tests.JGroupsLatencyTest} for simple latency tests (not round trip).
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.6 2010/02/11 07:54:12 belaban Exp $
+ * @version $Id: PingPong.java,v 1.7 2010/02/11 07:56:00 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
