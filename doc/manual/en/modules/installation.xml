@@ -22,7 +22,7 @@
 
         <itemizedlist>
             <listitem>
-                <para>JGroups 2.5 requires JDK 1.5 or higher.</para>
+                <para>JGroups 2.5 requires JDK 1.5 or higher. Version 2.9 requires JDK 1.6 or higher.</para>
             </listitem>
             <listitem>
                 <para>There is no JNI code present so JGroups should run on all platforms.</para>
@@ -245,7 +245,7 @@
             [mac] /Users/bela/JGroups$ java org.jgroups.Version
 
             Version:      2.8.0.GA
-            CVS:          $Id: installation.xml,v 1.8 2009/12/02 13:07:02 belaban Exp $
+            CVS:          $Id: installation.xml,v 1.9 2010/02/11 10:51:45 belaban Exp $
         </screen>
 
     </section>
