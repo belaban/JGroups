@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.251 2010/02/11 07:52:41 belaban Exp $
+ * @version $Id: Util.java,v 1.252 2010/02/11 14:17:45 belaban Exp $
  */
 public class Util {
 
@@ -96,7 +96,7 @@ public class Util {
         }
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
-        f.setMinimumFractionDigits(2);
+        // f.setMinimumFractionDigits(2);
         f.setMaximumFractionDigits(2);
 
         try {
