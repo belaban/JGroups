@@ -5,7 +5,6 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
-import org.jgroups.protocols.TUNNEL;
 import org.jgroups.protocols.TUNNEL.StubReceiver;
 import org.jgroups.util.Util;
 
@@ -22,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.54 2009/11/17 08:48:35 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.55 2010/02/11 14:00:19 belaban Exp $
  */
 public class RouterStub {
 
@@ -200,6 +199,10 @@ public class RouterStub {
         List<PingData> retval=new ArrayList<PingData>();
         try {
 
+            // we might get a spurious SUSPECT message from the router, just ignore it
+            if(input.available() > 0) // fixes https://jira.jboss.org/jira/browse/JGRP-1151
+                input.skipBytes(input.available());
+
             GossipData request=new GossipData(GossipRouter.GOSSIP_GET, group, null);
             request.writeTo(output);
             output.flush();
@@ -218,7 +221,7 @@ public class RouterStub {
         }
         catch(Exception e) {
             if(log.isErrorEnabled())
-                log.error("Router stub " + this + " failed sending message to router");
+                log.error("Router stub " + this + " failed sending message to router", e);
             connectionStateChanged(ConnectionStatus.DISCONNECTED);
             throw new Exception("Connection broken", e);
         }
