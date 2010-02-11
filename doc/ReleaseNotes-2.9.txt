@@ -1,0 +1,58 @@
+
+
+Release Notes JGroups 2.9
+=========================
+
+
+Version: $Id: ReleaseNotes-2.9.txt,v 1.1 2010/02/11 09:05:16 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.9 is API-backwards compatible with previous versions (down to 2.2.7).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+New features
+============
+
+
+Optimization of unicast requests
+--------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1123]
+
+Invoking unicast RPCs has always been seen as a special case of a group request (1 target member). This was
+changed, e.g. we don't need a hashmap for collecting responses from multiple members, but simply a single
+response value. Uses less memory, and has less locking (= reduced contention).
+
+
+
+
+Bug fixes
+=========
+
+Duplicate delivery of messages
+------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-1103]
+
+Under load some messages could get delivered more than once. This is a regression, caused by an optimization, and does
+not exists in prior versions. Part of the optimizations were reversed to fix this.
+
+
+
+
+Manual
+======
+
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Torono, Canada
+
+February 2010
+
