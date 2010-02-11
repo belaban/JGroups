@@ -9,7 +9,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: LatencyTest.java,v 1.6 2010/02/11 07:57:51 belaban Exp $
+ * @version $Id: LatencyTest.java,v 1.7 2010/02/11 08:04:21 belaban Exp $
  */
 public class LatencyTest {
     JChannel ch;
@@ -24,7 +24,10 @@ public class LatencyTest {
             ch2.setReceiver(new MyReceiver());
             ch2.connect("x");
             for(int i=0; i < 10; i++) {
-                ch1.send(new Message(null, null, System.nanoTime()));
+                Message msg=new Message();
+                msg.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
+                msg.setObject(System.nanoTime());
+                ch1.send(msg);
                 Util.sleep(1000);
             }
             ch2.close();
@@ -37,7 +40,10 @@ public class LatencyTest {
             disableBundling(ch);
             ch.connect("x");
             for(int i=0; i < 10; i++) {
-                ch.send(new Message(null, null, System.nanoTime()));
+                Message msg=new Message();
+                msg.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
+                msg.setObject(System.nanoTime());
+                ch.send(msg);
                 Util.sleep(1000);
             }
             ch.close();
