@@ -493,24 +493,24 @@
             <para>
                 All calls with individual parameters have been deprecated in 2.9 and the new calls with RequestOptions
                 are:
-                <screen>
-                    public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
-                                                     Class[] types, RequestOptions options);
-                    public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
-                                                     RequestOptions options);
-                    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                                   Class[] types, RequestOptions options); 
-                    public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
-                </screen>
+      <screen>
+        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
+                                         Class[] types, RequestOptions options);
+        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
+                                         RequestOptions options);
+        public Object callRemoteMethod(Address dest, String method_name, Object[] args,
+                                       Class[] types, RequestOptions options);
+        public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
+      </screen>
             </para>
 
             <para>
                 An example of how to use RequestOptions is:
-                <screen>
-                    RpcDispatcher disp;
-                    RequestOptions opts=new RequestOptions(Request.GET_ALL).setFlags(Message.NO_FC | Message.DONT_BUNDLE);
-                    Object val=disp.callRemoteMethod(target, method_call, opts);
-                </screen>
+      <screen>
+        RpcDispatcher disp;
+        RequestOptions opts=new RequestOptions(Request.GET_ALL).setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+        Object val=disp.callRemoteMethod(target, method_call, opts);
+      </screen>
             </para>
         </section>
 
@@ -536,15 +536,15 @@
                 A NotifyingFuture extends java.util.concurrent.Future, with its regular methods such as isDone(),
                 get() and cancel(). NotifyingFuture adds setListener&lt;FutureListener&gt; to get notified when
                 the result is available. This is shown in the following code:
-                <screen>
-                    NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
-                    future.setListener(new FutureListener() {
-                        void futureDone(Future&lt;T&gt; future) {
-                             System.out.println("result is " + future.get());
-                        }
-                    }
-                    );
-                </screen>
+      <screen>
+        NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
+        future.setListener(new FutureListener() {
+            void futureDone(Future&lt;T&gt; future) {
+                System.out.println("result is " + future.get());
+            }
+        }
+        );
+      </screen>
             </para>
 
         </section>
