@@ -12,7 +12,7 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.6 2008/05/23 10:46:00 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.7 2010/02/11 07:54:12 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
@@ -27,7 +27,7 @@ public class JGroupsLatencyTest {
             ch2.setReceiver(new MyReceiver());
             ch2.connect("x");
             for(int i=0; i < 10; i++) {
-                ch1.send(new Message(null, null, System.currentTimeMillis()));
+                ch1.send(new Message(null, null, System.nanoTime()));
                 Util.sleep(1000);
             }
             ch2.close();
@@ -40,7 +40,7 @@ public class JGroupsLatencyTest {
             disableBundling(ch);
             ch.connect("x");
             for(int i=0; i < 10; i++) {
-                ch.send(new Message(null, null, System.currentTimeMillis()));
+                ch.send(new Message(null, null, System.nanoTime()));
                 Util.sleep(1000);
             }
             ch.close();
@@ -68,7 +68,9 @@ public class JGroupsLatencyTest {
 
         public void receive(Message msg) {
             Long timestamp=(Long)msg.getObject();
-            System.out.println("time for message: " + (System.currentTimeMillis() - timestamp.longValue()) + " ms");
+            long time=System.nanoTime() - timestamp.longValue();
+            double time_ms=time / 1000.0 / 1000.0;
+            System.out.println("time for message: " + Util.format(time_ms) + " ms");
         }
     }
 

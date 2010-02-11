@@ -3,15 +3,16 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
- * and press <return> to get the round trip times for all nodes in the cluster
+ * and press <return> to get the round trip times for all nodes in the cluster<p/>
+ * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
+ * {@link org.jgroups.tests.JGroupsLatencyTest} for simple (unicast) latency tests (not round trip).
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.5 2010/02/10 13:40:38 belaban Exp $
+ * @version $Id: PingPong.java,v 1.6 2010/02/11 07:54:12 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
@@ -25,14 +26,6 @@ public class PingPong extends ReceiverAdapter {
     long start=0;
 
     final List<Address> members=new ArrayList<Address>();
-
-    private static NumberFormat f;
-
-    static {
-        f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(false);
-        f.setMaximumFractionDigits(2);
-    }
 
 
     public void start(String props, String name, boolean unicast) throws ChannelException {
@@ -80,7 +73,7 @@ public class PingPong extends ReceiverAdapter {
                 // hdr.response_received=System.nanoTime();
                 long rtt=System.nanoTime() - start;
                 double ms=rtt / 1000.0 / 1000.0;
-                System.out.println("RTT for " + msg.getSrc() + ": " + f.format(ms) + " ms");
+                System.out.println("RTT for " + msg.getSrc() + ": " + Util.format(ms) + " ms");
                 break;
         }
     }
