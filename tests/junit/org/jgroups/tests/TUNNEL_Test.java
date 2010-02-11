@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.16 2009/11/23 17:21:58 vlada Exp $
+ * @version $Id: TUNNEL_Test.java,v 1.17 2010/02/11 13:49:03 belaban Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
@@ -137,7 +137,7 @@ public class TUNNEL_Test extends ChannelTestBase{
 
         channel.send(new Message(null, null, "payload"));
 
-        Message msg=(Message)msgPromise.getResult(20000);
+        Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert "payload".equals(msg.getObject());
     }
