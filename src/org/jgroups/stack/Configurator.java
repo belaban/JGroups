@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.76 2010/01/06 07:42:12 belaban Exp $
+ * @version $Id: Configurator.java,v 1.77 2010/02/12 14:53:34 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -98,17 +98,16 @@ public class Configurator implements ProtocolStackFactory {
         StackType ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6
 
         if(!addrs.isEmpty()) {
-            // check that all user-supplied InetAddresses have a consistent version
-            StackType addr_versions=determineIpVersionFromAddresses(addrs);
+            // check that all user-supplied InetAddresses have a consistent version:
+            // 1. If an addr is IPv6 and we have an IPv4 stack --> FAIL
+            // 2. If an address is an IPv4 class D (multicast) address and the stack is IPv6: FAIL
+            // Else pass
 
-            if(ip_version == StackType.Unknown)
-                ip_version=addr_versions;
-            else {
-                if(addr_versions != ip_version) { // mismatch between user supplied addresses and type of stack
-                    log.warn("the type of the stack (" + ip_version + ") and the user supplied " +
-                            "addresses (" + addr_versions + ") don't match: " + Util.print(addrs) +
-                            ".\nUse system props " + Global.IPv4 + " or " + Global.IPv6 + " to pick the correct stack");
-                }
+            for(InetAddress addr: addrs) {
+                if(addr instanceof Inet6Address && ip_version == StackType.IPv4)
+                    throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4 stack");
+                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
+                    throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
             }
         }
 
