@@ -1,11 +1,11 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.22 2009/10/28 08:10:33 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.23 2010/02/12 09:13:21 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
 
 Pre-release:
 - Do a cvs update -dP and commit all pending changes
-- Run all unit tests (all-tests-cc target)
+- Run all unit tests: ./build clean all-tests reports
 - Run the manual tests in doc/tests/ManualTests.txt
 - Run the performance tests to see whether performance is about the same
   (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTests)
