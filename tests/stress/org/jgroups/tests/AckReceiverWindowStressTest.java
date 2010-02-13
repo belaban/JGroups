@@ -7,13 +7,14 @@ import org.jgroups.util.Util;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.List;
 
 
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.2 2010/02/13 16:21:57 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.3 2010/02/13 17:20:23 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
@@ -61,6 +62,7 @@ public class AckReceiverWindowStressTest {
         final CountDownLatch latch;
         final AtomicInteger num_msgs;
         final AtomicLong current_seqno;
+        final AtomicBoolean processing=new AtomicBoolean(false);
         int removed_msgs=0;
 
         public Adder(AckReceiverWindow win, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno) {
@@ -89,8 +91,17 @@ public class AckReceiverWindowStressTest {
                 int result=win.add2(seqno, msg);
                 if(result != 1)
                     System.err.println("seqno " + seqno + " not added correctly");
-                List<Message> msgs=win.removeMany();
-                removed_msgs+=msgs.size();
+
+                // simulates UNICAST: all threads call add2() concurrently, but only 1 thread removes messages
+                if(processing.compareAndSet(false, true)) {
+                    try {
+                        List<Message> msgs=win.removeMany();
+                        removed_msgs+=msgs.size();
+                    }
+                    finally {
+                        processing.set(false);
+                    }
+                }
             }
         }
     }
