@@ -1,21 +1,20 @@
 package org.jgroups.util;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.1 2010/02/15 10:42:33 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.2 2010/02/15 11:51:39 belaban Exp $
  */
 public class RingBuffer<T> {
     private final T[]           queue;
     private final AtomicInteger size=new AtomicInteger(0);
-    private AtomicInteger       next_to_add=new AtomicInteger(0);
-    private AtomicInteger       next_to_remove=new AtomicInteger(0);
+    private AtomicLong          next_to_add=new AtomicLong(0);
+    private AtomicLong          next_to_remove=new AtomicLong(0);
 
-
-    private final AtomicInteger remove_counter=new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
     public RingBuffer(int capacity) {
@@ -30,37 +29,37 @@ public class RingBuffer<T> {
         int counter=0;
         while(true) {
             if(size.get() < queue.length) {
-                int index=next_to_add.get();
-                if(next_to_add.compareAndSet(index, (index +1) % queue.length)) {
-                    queue[index]=obj;
+                long index=next_to_add.get();
+                if(next_to_add.compareAndSet(index, index +1)) {
                     size.incrementAndGet();
+                    queue[(int)(index % queue.length)]=obj;
                     return;
                 }
             }
-            counter++;
+
             if(counter >= 10)
                 LockSupport.parkNanos(10); // sleep for 10 ns after 10 attempts
+            else
+                counter++;
         }
     }
 
     public T remove() {
         while(true) {
-            if(size.get() == 0)
+            if(next_to_remove.get() >= next_to_add.get())
                 break;
-            int index=next_to_remove.get();
-            if(next_to_remove.compareAndSet(index, (index +1) % queue.length)) {
+            long index=next_to_remove.get();
+            T retval=queue[(int)(index % queue.length)];
+            if(retval != null && next_to_remove.compareAndSet(index, index +1)) {
                 size.decrementAndGet();
-                return queue[index];
+                return retval;
             }
-            else
-                remove_counter.incrementAndGet();
         }
 
         return null;
     }
 
     public void dump() {
-        System.out.println("remove_counter=" + remove_counter);
     }
 
 
