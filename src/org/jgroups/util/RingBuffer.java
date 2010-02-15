@@ -6,16 +6,19 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * 
  * @author Bela Ban
- * @version $Id: BlockingRingBuffer.java,v 1.1 2010/02/15 09:19:29 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.1 2010/02/15 10:42:33 belaban Exp $
  */
-public class BlockingRingBuffer<T> {
-    private final T[] queue;
+public class RingBuffer<T> {
+    private final T[]           queue;
     private final AtomicInteger size=new AtomicInteger(0);
-    private AtomicInteger next_to_add=new AtomicInteger(0);
-    private AtomicInteger next_to_remove=new AtomicInteger(0);
+    private AtomicInteger       next_to_add=new AtomicInteger(0);
+    private AtomicInteger       next_to_remove=new AtomicInteger(0);
+
+
+    private final AtomicInteger remove_counter=new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
-    public BlockingRingBuffer(int capacity) {
+    public RingBuffer(int capacity) {
         queue=(T[])new Object[capacity];
     }
 
@@ -26,7 +29,7 @@ public class BlockingRingBuffer<T> {
     public void add(T obj) {
         int counter=0;
         while(true) {
-            if(!isFull()) {
+            if(size.get() < queue.length) {
                 int index=next_to_add.get();
                 if(next_to_add.compareAndSet(index, (index +1) % queue.length)) {
                     queue[index]=obj;
@@ -42,29 +45,29 @@ public class BlockingRingBuffer<T> {
 
     public T remove() {
         while(true) {
-            if(isEmpty())
+            if(size.get() == 0)
                 break;
             int index=next_to_remove.get();
             if(next_to_remove.compareAndSet(index, (index +1) % queue.length)) {
                 size.decrementAndGet();
                 return queue[index];
             }
+            else
+                remove_counter.incrementAndGet();
         }
 
         return null;
     }
 
-    private boolean isFull() {
-        return size.get() == queue.length;
+    public void dump() {
+        System.out.println("remove_counter=" + remove_counter);
     }
 
-    private boolean isEmpty() {
-        return size.get() == 0;
-    }
+
 
 
     public static void main(String[] args) {
-        BlockingRingBuffer<Integer> queue=new BlockingRingBuffer<Integer>(3);
+        RingBuffer<Integer> queue=new RingBuffer<Integer>(3);
         queue.add(1);
         queue.add(2);
         queue.add(3);
