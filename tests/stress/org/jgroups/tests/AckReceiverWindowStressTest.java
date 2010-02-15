@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.3 2010/02/13 17:20:23 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.4 2010/02/15 09:52:10 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
@@ -62,7 +62,7 @@ public class AckReceiverWindowStressTest {
         final CountDownLatch latch;
         final AtomicInteger num_msgs;
         final AtomicLong current_seqno;
-        final AtomicBoolean processing=new AtomicBoolean(false);
+        final static AtomicBoolean processing=new AtomicBoolean(false);
         int removed_msgs=0;
 
         public Adder(AckReceiverWindow win, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno) {
@@ -85,9 +85,11 @@ public class AckReceiverWindowStressTest {
                 return;
             }
 
+            Message msg=new Message(false);
+
             while(num_msgs.getAndDecrement() > 0) {
                 long seqno=current_seqno.getAndIncrement();
-                Message msg=new Message();
+
                 int result=win.add2(seqno, msg);
                 if(result != 1)
                     System.err.println("seqno " + seqno + " not added correctly");
