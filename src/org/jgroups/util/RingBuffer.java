@@ -1,19 +1,19 @@
 package org.jgroups.util;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.2 2010/02/15 11:51:39 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.3 2010/02/15 16:46:45 belaban Exp $
  */
 public class RingBuffer<T> {
     private final T[]           queue;
-    private final AtomicInteger size=new AtomicInteger(0);
     private AtomicLong          next_to_add=new AtomicLong(0);
     private AtomicLong          next_to_remove=new AtomicLong(0);
+
+    private static final int LAG=1;
 
 
     @SuppressWarnings("unchecked")
@@ -23,21 +23,28 @@ public class RingBuffer<T> {
 
     /**
      * Adds an elements into the buffer. Blocks if full
-     * @param obj
+     * @param el
      */
-    public void add(T obj) {
+    public void add(T el) {
+        if(el == null)
+            throw new IllegalArgumentException("null element");
         int counter=0;
         while(true) {
-            if(size.get() < queue.length) {
-                long index=next_to_add.get();
-                if(next_to_add.compareAndSet(index, index +1)) {
-                    size.incrementAndGet();
-                    queue[(int)(index % queue.length)]=obj;
+            long next=next_to_add.get();
+            long size=next - next_to_remove.get() + LAG;
+            if(size < queue.length) {
+                int index=(int)(next % queue.length);
+                if(next_to_add.compareAndSet(next, next +1)) {
+
+                    // Util.sleep(2000);
+                    
+                    queue[index]=el;
+                    // System.out.println("added " + el + ", next=" + next + " (index " + index + ", size=" + size + ")");
                     return;
                 }
             }
 
-            if(counter >= 10)
+            if(counter >= 3)
                 LockSupport.parkNanos(10); // sleep for 10 ns after 10 attempts
             else
                 counter++;
@@ -46,20 +53,21 @@ public class RingBuffer<T> {
 
     public T remove() {
         while(true) {
-            if(next_to_remove.get() >= next_to_add.get())
+            long next=next_to_remove.get();
+            if(next >= next_to_add.get())
                 break;
-            long index=next_to_remove.get();
-            T retval=queue[(int)(index % queue.length)];
-            if(retval != null && next_to_remove.compareAndSet(index, index +1)) {
-                size.decrementAndGet();
+            int index=(int)(next % queue.length);
+            T retval=queue[index];
+            // System.out.println("remove(): retval = " + retval);
+            if(retval != null && next_to_remove.compareAndSet(next, next +1)) {
+                // System.out.println("removed " + retval + ", next=" + next + " (index " + index + ", size=" +
+                    //    (next_to_add.get() - next_to_remove.get() + ")"));
+                queue[index]=null;
                 return retval;
             }
         }
 
         return null;
-    }
-
-    public void dump() {
     }
 
 
