@@ -1,24 +1,27 @@
 package org.jgroups.util;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.3 2010/02/15 16:46:45 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.4 2010/02/16 14:10:51 belaban Exp $
  */
 public class RingBuffer<T> {
-    private final T[]           queue;
-    private AtomicLong          next_to_add=new AtomicLong(0);
-    private AtomicLong          next_to_remove=new AtomicLong(0);
+    private final AtomicReferenceArray<T> queue;
+    private final int                     capacity;
+    private AtomicLong                    next_to_add=new AtomicLong(0);
+    private AtomicLong                    next_to_remove=new AtomicLong(0);
 
     private static final int LAG=1;
 
 
     @SuppressWarnings("unchecked")
     public RingBuffer(int capacity) {
-        queue=(T[])new Object[capacity];
+        queue=new AtomicReferenceArray<T>(capacity);
+        this.capacity=capacity;
     }
 
     /**
@@ -31,17 +34,23 @@ public class RingBuffer<T> {
         int counter=0;
         while(true) {
             long next=next_to_add.get();
-            long size=next - next_to_remove.get() + LAG;
-            if(size < queue.length) {
-                int index=(int)(next % queue.length);
-                if(next_to_add.compareAndSet(next, next +1)) {
+            long size=next - next_to_remove.get();
+            if(size + LAG < capacity) {
+                int index=(int)(next % capacity);
 
-                    // Util.sleep(2000);
-                    
-                    queue[index]=el;
-                    // System.out.println("added " + el + ", next=" + next + " (index " + index + ", size=" + size + ")");
+                if(queue.compareAndSet(index, null, el)) {
+                    // System.out.println("add(" + el + "), next=" + next + " (index " + index + ", size=" + size + ")");
+
+                    if(next_to_add.compareAndSet(next, next +1)) {
+                        ;
+                    }
+                    else
+                        System.err.println("\n** add(" + el + "): CAS(" + next + ", " + (next+1) + ") failed, " +
+                                "next is " + next_to_add.get() + ", index=" + index);
+
                     return;
                 }
+
             }
 
             if(counter >= 3)
@@ -56,13 +65,20 @@ public class RingBuffer<T> {
             long next=next_to_remove.get();
             if(next >= next_to_add.get())
                 break;
-            int index=(int)(next % queue.length);
-            T retval=queue[index];
+            int index=(int)(next % capacity);
+            T retval=queue.get(index);
             // System.out.println("remove(): retval = " + retval);
-            if(retval != null && next_to_remove.compareAndSet(next, next +1)) {
-                // System.out.println("removed " + retval + ", next=" + next + " (index " + index + ", size=" +
-                    //    (next_to_add.get() - next_to_remove.get() + ")"));
-                queue[index]=null;
+            if(retval != null && queue.compareAndSet(index, retval, null)) {
+
+                //System.out.println("removed " + retval + ", next=" + next + " (index " + index + ", size=" +
+                  //      (next_to_add.get() - next_to_remove.get() + ")"));
+
+                if(next_to_remove.compareAndSet(next, next +1)) {
+                    ;
+                }
+                else
+                    System.err.println("\n** remove(): CAS(" + next + ", " + (next+1) + ") failed, next is " + next_to_remove.get());
+
                 return retval;
             }
         }
@@ -72,15 +88,4 @@ public class RingBuffer<T> {
 
 
 
-
-    public static void main(String[] args) {
-        RingBuffer<Integer> queue=new RingBuffer<Integer>(3);
-        queue.add(1);
-        queue.add(2);
-        queue.add(3);
-
-        Object val=queue.remove();
-        val=queue.remove();
-        val=queue.remove();
-    }
 }
