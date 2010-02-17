@@ -13,7 +13,7 @@ import java.util.Collections;
 /**
  * Tests {@link org.jgroups.util.RingBuffer} for concurrent insertion and removal
  * @author Bela Ban
- * @version $Id: RingBufferStressTest.java,v 1.3 2010/02/17 11:05:59 belaban Exp $
+ * @version $Id: RingBufferStressTest.java,v 1.4 2010/02/17 16:50:58 belaban Exp $
  */
 public class RingBufferStressTest {
 
@@ -118,9 +118,9 @@ public class RingBufferStressTest {
         }
 
         if(count == 0)
-            System.out.println("Found no missing messages\n");
+            System.out.println("Found no missing elements\n");
         else
-            System.out.println("Found " + count + " missing messages\n");
+            System.out.println("Found " + count + " missing elements\n");
 
     }
 
