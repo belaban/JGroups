@@ -8,7 +8,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.5 2010/02/17 08:58:13 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.6 2010/02/17 09:17:51 belaban Exp $
  */
 public class RingBuffer<T> {
     private final AtomicReference<T>[]  queue;
@@ -52,41 +52,35 @@ public class RingBuffer<T> {
             size.decrementAndGet();
 
             if(counter >= 3)
-                LockSupport.parkNanos(10); // sleep for 10 ns after 10 attempts
+                LockSupport.parkNanos(10); // sleep for 10 ns after 3 attempts -- make configurable
             else
                 counter++;
         }
     }
 
     public T remove() {
+        int counter=0;
+        long next=next_to_remove.getAndIncrement();
         while(true) {
-            long next=next_to_remove.get();
-            if(next >= next_to_add.get())
+            if(next >= next_to_add.get()) {
+                next_to_remove.decrementAndGet();
                 break;
-            int index=(int)(next % capacity);
+            }
 
-            // T retval=queue[index];
+            int index=(int)(next % capacity);
             AtomicReference<T> ref=queue[index];
             T retval=ref.get();
 
-
             // System.out.println("remove(): retval = " + retval);
-            if(ref.compareAndSet(retval, null)) {
-                //System.out.println("removed " + retval + ", next=" + next + " (index " + index + ", size=" +
-                //      (next_to_add.get() - next_to_remove.get() + ")"));
-
+            if(retval != null && ref.compareAndSet(retval, null)) {
                 size.decrementAndGet();
-
-                if(next_to_remove.compareAndSet(next, next +1)) {
-                    ;
-                }
-                else
-                    System.err.println("\n** remove(): CAS(" + next + ", " + (next+1) +
-                            ") failed, next is " + next_to_remove.get());
-
                 return retval;
             }
-
+            
+            if(counter >= 3)
+                LockSupport.parkNanos(10); // sleep for 10 ns after 3 attempts -- make configurable
+            else
+                counter++;
         }
 
         return null;
