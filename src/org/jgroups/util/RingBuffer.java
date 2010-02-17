@@ -8,7 +8,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.7 2010/02/17 11:05:57 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.8 2010/02/17 11:57:48 belaban Exp $
  */
 public class RingBuffer<T> {
     private final AtomicReference<T>[]  queue;
@@ -66,11 +66,9 @@ public class RingBuffer<T> {
     }
 
     public T remove() {
-        long next=next_to_remove.getAndIncrement();
-        if(next >= next_to_add.get()) {
-            next_to_remove.decrementAndGet();
+        long next=next_to_remove.get();
+        if(next >= next_to_add.get())
             return null;
-        }
 
         int index=(int)(next % capacity);
         AtomicReference<T> ref=queue[index];
@@ -79,6 +77,7 @@ public class RingBuffer<T> {
         // System.out.println("remove(): retval = " + retval);
         if(retval != null && ref.compareAndSet(retval, null)) {
             size.decrementAndGet();
+            next_to_remove.incrementAndGet();
             return retval;
         }
 
