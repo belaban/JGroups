@@ -13,7 +13,7 @@ import java.util.Collections;
 /**
  * Tests {@link org.jgroups.util.RingBuffer} for concurrent insertion and removal
  * @author Bela Ban
- * @version $Id: RingBufferStressTest.java,v 1.2 2010/02/17 09:01:16 belaban Exp $
+ * @version $Id: RingBufferStressTest.java,v 1.3 2010/02/17 11:05:59 belaban Exp $
  */
 public class RingBufferStressTest {
 
@@ -23,15 +23,25 @@ public class RingBufferStressTest {
         final AtomicInteger seqno=new AtomicInteger(1);
         final AtomicInteger removed=new AtomicInteger(0);
 
+        final Adder[] adders=new Adder[num_adders];
+        final Remover[] removers=new Remover[num_removers];
+
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.out.println("added=" + added + ", removed=" + removed + ", seqno=" + seqno);
+                dump(removers);
+            }
+        });
+
         final CountDownLatch latch=new CountDownLatch(1);
 
-        Adder[] adders=new Adder[num_adders];
+
         for(int i=0; i < adders.length; i++) {
             adders[i]=new Adder(buffer, latch, num_msgs, added, seqno);
             adders[i].start();
         }
-
-        Remover[] removers=new Remover[num_removers];
+        
         for(int i=0; i < removers.length; i++) {
             removers[i]=new Remover(buffer, latch, num_msgs, removed);
             removers[i].start();
@@ -57,7 +67,8 @@ public class RingBufferStressTest {
             }
         }
 
-        List<Integer> all_values=new LinkedList<Integer>();
+        final List<Integer> all_values=new LinkedList<Integer>();
+
 
         for(Remover remover: removers) {
             try {
@@ -69,8 +80,6 @@ public class RingBufferStressTest {
             }
         }
 
-
-
         long time=System.currentTimeMillis() - start;
         double requests_sec=num_msgs / (time / 1000.0);
         System.out.println("\nTime: " + time + " ms, " + Util.format(requests_sec) + " requests / sec\n");
@@ -81,6 +90,37 @@ public class RingBufferStressTest {
             System.out.println("values (expected=" + num_msgs + ", removed=" + all_values.size() +
                     "):\n" + Util.print(all_values));
         }
+
+        // dump(all_values);
+    }
+
+    static void dump(Remover[] removers) {
+        final LinkedList<Integer> list=new LinkedList<Integer>();
+        for(Remover remover: removers) {
+            list.addAll(remover.getList());
+        }
+
+        Collections.sort(list);
+        System.out.println("\n" + list.size() + " elements: " + list.getFirst() + " - " + list.getLast());
+
+        System.out.println("Checking for missing elements:");
+
+        int prev=0;
+        int count=0;
+        for(Integer i: list) {
+            if(prev +1 != i) {
+                System.err.println((prev+1) + " is missing, sequence: prev=" + (prev) + ", current=" + i);
+                count+=i - prev -1;
+                prev=i;
+            }
+            else
+                prev++;
+        }
+
+        if(count == 0)
+            System.out.println("Found no missing messages\n");
+        else
+            System.out.println("Found " + count + " missing messages\n");
 
     }
 
@@ -113,7 +153,11 @@ public class RingBufferStressTest {
                 return;
             }
 
-            while(added_msgs.incrementAndGet() <= num_msgs) {
+            while(true) {
+                if(added_msgs.incrementAndGet() > num_msgs) {
+                    added_msgs.decrementAndGet();
+                    break;
+                }
                 int seqno=current_seqno.getAndIncrement();
                 buffer.add(seqno);
             }
@@ -125,7 +169,7 @@ public class RingBufferStressTest {
         final CountDownLatch              latch;
         final int                         msgs_to_remove;
         final AtomicInteger               removed_msgs;
-        final List<Integer>               list=new LinkedList<Integer>();
+        final LinkedList<Integer>         list=new LinkedList<Integer>();
 
 
         public Remover(RingBuffer<Integer> buffer, CountDownLatch latch, int msgs_to_remove, AtomicInteger removed_msgs) {
@@ -158,8 +202,6 @@ public class RingBufferStressTest {
                 }
             }
         }
-
-
 
     }
 
