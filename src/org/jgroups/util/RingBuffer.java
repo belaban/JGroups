@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.9 2010/02/21 12:25:22 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.10 2010/02/21 12:27:53 belaban Exp $
  */
 public class RingBuffer<T> {
     private final AtomicStampedReference<T>[]  queue;
@@ -25,7 +25,7 @@ public class RingBuffer<T> {
     private final AtomicInteger failed_removes=new AtomicInteger(0);
 
 
-    private final ConcurrentLinkedQueue<String> operations=new ConcurrentLinkedQueue<String>();
+    // private final ConcurrentLinkedQueue<String> operations=new ConcurrentLinkedQueue<String>();
 
 
     @SuppressWarnings("unchecked")
@@ -66,7 +66,7 @@ public class RingBuffer<T> {
                 AtomicStampedReference<T> ref=queue[index];
 
                 if(ref.compareAndSet(null, el, -1, stamp)) {
-                    operations.add("queue[" + index + "]=" + el + " (next=" + next + ", next_to_remove=" + next_to_remove + ")");
+                    // operations.add("queue[" + index + "]=" + el + " (next=" + next + ", next_to_remove=" + next_to_remove + ")");
                     successful_adds.incrementAndGet();
                     return;
                 }
@@ -98,7 +98,7 @@ public class RingBuffer<T> {
 
 
         if(retval != null && ref.compareAndSet(retval, null, stamp, -1)) {
-            operations.add("queue[" + index + "]: " + retval + " = null (next=" + next + ")");
+            // operations.add("queue[" + index + "]: " + retval + " = null (next=" + next + ")");
             successful_removes.incrementAndGet();
             next_to_remove.incrementAndGet();
             return retval;
