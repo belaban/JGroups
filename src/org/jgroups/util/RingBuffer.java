@@ -3,33 +3,47 @@ package org.jgroups.util;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.8 2010/02/17 11:57:48 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.9 2010/02/21 12:25:22 belaban Exp $
  */
 public class RingBuffer<T> {
-    private final AtomicReference<T>[]  queue;
-    private final int                   capacity;
-    private final AtomicLong            next_to_add=new AtomicLong(0);
-    private final AtomicLong            next_to_remove=new AtomicLong(0);
-    private final AtomicInteger         size=new AtomicInteger(0);
+    private final AtomicStampedReference<T>[]  queue;
+    private final int                          capacity;
+    private final AtomicLong                   next_to_add=new AtomicLong(0);
+    private final AtomicLong                   next_to_remove=new AtomicLong(0);
 
+
+    private final AtomicInteger successful_adds=new AtomicInteger(0);
+    private final AtomicInteger successful_removes=new AtomicInteger(0);
+    private final AtomicInteger failed_adds=new AtomicInteger(0);
+    private final AtomicInteger failed_removes=new AtomicInteger(0);
+
+
+    private final ConcurrentLinkedQueue<String> operations=new ConcurrentLinkedQueue<String>();
 
 
     @SuppressWarnings("unchecked")
     public RingBuffer(int capacity) {
-        queue=new AtomicReference[capacity];
+        queue=new AtomicStampedReference[capacity];
         this.capacity=capacity;
         for(int i=0; i < capacity; i++)
-            queue[i]=new AtomicReference<T>();
+            queue[i]=new AtomicStampedReference<T>(null, -1);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                System.out.println("next_to_add=" + next_to_add + ", next_to_remove=" + next_to_remove +
-                ", size=" + size);
+                System.out.println("next_to_add=" + next_to_add + ", next_to_remove=" + next_to_remove);
+                System.out.println("successful_adds=" + successful_adds + ", successful_removes=" + successful_removes);
+                System.out.println("failed_adds=" + failed_adds + ", failed_removes=" + failed_removes);
+
+//                System.out.println("\nOperations");
+//                for(String op: operations)
+//                    System.out.println(op);
             }
         });
     }
@@ -43,20 +57,26 @@ public class RingBuffer<T> {
             throw new IllegalArgumentException("null element");
         int counter=0;
         long next=next_to_add.getAndIncrement();
-        while(true) {
-            int tmp_size=size.incrementAndGet();
+        int stamp=(int)(next / capacity);
 
-            if(tmp_size < capacity) {
+        while(true) {
+            if(next - next_to_remove.get() < capacity) {
                 int index=(int)(next % capacity);
 
-                AtomicReference<T> ref=queue[index];
+                AtomicStampedReference<T> ref=queue[index];
 
-                if(ref.compareAndSet(null, el)) {
-                    // System.out.println("add(" + el + "), next=" + next + " (index " + index + ", size=" + size + ")");
+                if(ref.compareAndSet(null, el, -1, stamp)) {
+                    operations.add("queue[" + index + "]=" + el + " (next=" + next + ", next_to_remove=" + next_to_remove + ")");
+                    successful_adds.incrementAndGet();
                     return;
                 }
+                else {
+                    failed_adds.incrementAndGet();
+                    System.err.println("add(" + el + ") failed at index " + index + ": next_to_add=" + next_to_add +
+                            ", next=" + next + ", next_to_remove=" + next_to_remove +
+                    ", queue[" + index + "]=" + queue[index].getReference());
+                }
             }
-            size.decrementAndGet();
 
             if(counter >= 5)
                 LockSupport.parkNanos(10); // sleep a little after N attempts -- make configurable
@@ -70,29 +90,49 @@ public class RingBuffer<T> {
         if(next >= next_to_add.get())
             return null;
 
-        int index=(int)(next % capacity);
-        AtomicReference<T> ref=queue[index];
-        T retval=ref.get();
+        int stamp=(int)(next / capacity);
 
-        // System.out.println("remove(): retval = " + retval);
-        if(retval != null && ref.compareAndSet(retval, null)) {
-            size.decrementAndGet();
+        int index=(int)(next % capacity);
+        AtomicStampedReference<T> ref=queue[index];
+        T retval=ref.getReference();
+
+
+        if(retval != null && ref.compareAndSet(retval, null, stamp, -1)) {
+            operations.add("queue[" + index + "]: " + retval + " = null (next=" + next + ")");
+            successful_removes.incrementAndGet();
             next_to_remove.incrementAndGet();
             return retval;
         }
+        else
+            failed_removes.incrementAndGet();
 
         return null;
     }
 
     public String dumpNonNullElements() {
         StringBuilder sb=new StringBuilder();
-        for(AtomicReference<T> ref: queue)
-            if(ref.get() != null)
-                sb.append(ref.get() + " ");
+        for(AtomicStampedReference<T> ref: queue)
+            if(ref.getReference() != null)
+                sb.append(ref.getReference() + " ");
         return sb.toString();
     }
 
+    public int size() {
+        int size=0;
+        int index=(int)(next_to_remove.get() % capacity);
+        for(int i=index; i < index + capacity; i++)
+            if(queue[i % capacity].getReference() != null)
+                size++;
+        return size;
+    }
+
     public String toString() {
-        return size.get() + " elements";
+        StringBuilder sb=new StringBuilder();
+        sb.append(size() + " elements");
+        if(size() < 100) {
+            sb.append(": ").append(dumpNonNullElements());
+        }
+
+        return sb.toString();
     }
 }
