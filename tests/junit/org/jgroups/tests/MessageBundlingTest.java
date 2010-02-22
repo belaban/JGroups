@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.18 2009/06/04 09:01:46 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.19 2010/02/22 13:38:12 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class MessageBundlingTest extends ChannelTestBase {
@@ -78,8 +78,8 @@ public class MessageBundlingTest extends ChannelTestBase {
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
-                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff >= LATENCY && diff <= LATENCY * 2);
+        assertTrue("latency (" + diff + "ms) should be less than 2 times the LATENCY (" + LATENCY *2 + ")",
+                   diff <= LATENCY * 2);
     }
 
 
@@ -101,8 +101,8 @@ public class MessageBundlingTest extends ChannelTestBase {
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
-                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff >= LATENCY && diff <= LATENCY * 2);
+        assertTrue("latency (" + diff + "ms) should be less than 2 times the LATENCY (" + LATENCY *2 + ")",
+                   diff <= LATENCY * 2);
     }
 
 
@@ -141,11 +141,13 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     private void createChannels(String cluster) throws Exception {
         ch1=createChannel(true, 2);
+        ch1.setName("A");
         setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
         ch1.setReceiver(new NullReceiver());
         ch1.connect("MessageBundlingTest-" + cluster);
         ch2=createChannel(ch1);
+        ch2.setName("B");
         // setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
         // setLoopback(ch2, false);
         r2=new MyReceiver();
