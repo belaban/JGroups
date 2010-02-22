@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.289 2010/02/22 12:41:41 belaban Exp $
+ * @version $Id: TP.java,v 1.290 2010/02/22 13:41:44 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1674,45 +1674,40 @@ public abstract class TP extends Protocol {
             public void run() {
                 next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
                 while(running) {
-                    long current_time=System.currentTimeMillis();
-                    long sleep_time=next_bundle_time - current_time;
                     Message msg=null;
+                    long sleep_time=next_bundle_time - System.currentTimeMillis();
 
                     try {
-                        // System.out.println("sleep_time=" + sleep_time);
                         if(count == 0)
                             msg=buffer.take();
                         else
                             msg=buffer.poll(sleep_time, TimeUnit.MILLISECONDS);
-                    }
-                    catch(InterruptedException e) {
-                        if(!running)
-                            break;
-                    }
 
-                    long size=msg != null? msg.size() : 0;
+                        long size=msg != null? msg.size() : 0;
+                        boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
+                                buffer.size() >= THRESHOLD ||
+                                System.currentTimeMillis() >= next_bundle_time;
 
-                    boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
-                            buffer.size() >= THRESHOLD ||
-                            System.currentTimeMillis() >= next_bundle_time;
-
-                    if(send_msgs) {
-                        next_bundle_time=System.currentTimeMillis() + 30;
-                        try {
-                            if(!msgs.isEmpty()) {
-                                sendBundledMessages(msgs);
-                                msgs.clear();
+                        if(send_msgs) {
+                            next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
+                            try {
+                                if(!msgs.isEmpty()) {
+                                    sendBundledMessages(msgs);
+                                    msgs.clear();
+                                }
+                                count=0;
                             }
-                            count=0;
+                            catch(Exception e) {
+                                log.error("failed sending bundled messages", e);
+                            }
                         }
-                        catch(Exception e) {
-                            log.error("failed sending bundled messages", e);
+
+                        if(msg != null) {
+                            count+=size;
+                            addMessage(msg, msg.getDest());
                         }
                     }
-
-                    if(msg != null) {
-                        count+=size;
-                        addMessage(msg, msg.getDest());
+                    catch(Throwable t) {
                     }
                 }
             }
