@@ -12,7 +12,7 @@ import java.util.List;
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
  * {@link LatencyTest} for simple latency tests (not round trip).
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.10 2010/02/22 14:27:12 belaban Exp $
+ * @version $Id: PingPong.java,v 1.11 2010/02/22 14:42:24 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
@@ -59,7 +59,7 @@ public class PingPong extends ReceiverAdapter {
         switch(type) {
             case PING:
                 final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);
-                msg.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
+                rsp.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
                 try {
                     ch.send(rsp);
                 }
@@ -68,7 +68,6 @@ public class PingPong extends ReceiverAdapter {
                 }
                 break;
             case PONG:
-                // hdr.response_received=System.nanoTime();
                 long rtt=System.nanoTime() - start;
                 double ms=rtt / 1000.0 / 1000.0;
                 System.out.println("RTT for " + msg.getSrc() + ": " + Util.format(ms) + " ms");
