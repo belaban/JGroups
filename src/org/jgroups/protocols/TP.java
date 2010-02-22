@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.287 2010/02/08 07:11:17 belaban Exp $
+ * @version $Id: TP.java,v 1.288 2010/02/22 11:40:16 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -782,6 +782,7 @@ public abstract class TP extends Protocol {
 
         if(enable_bundling) {
             bundler=new DefaultBundler();
+            // bundler=new TransferQueueBundler();
         }
 
         // local_addr is null when shared transport
@@ -1595,6 +1596,153 @@ public abstract class TP extends Protocol {
             }
         }
     }
+
+
+
+    private class TransferQueueBundler implements Bundler {
+        static final int              CAPACITY=10000;
+        static final int              THRESHOLD=(int)(CAPACITY * .9); // 90% of capacity
+        final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(CAPACITY);
+        BundlerThread                 bundler_thread=new BundlerThread();
+
+
+        private TransferQueueBundler() {
+            bundler_thread.start();
+        }
+
+        public void send(Message msg, Address dest) throws Exception {
+            long length=msg.size();
+            checkLength(length);
+            buffer.put(msg);
+        }
+        
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
+                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+
+        private class BundlerThread extends Thread {
+            /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
+            final Map<Address,List<Message>>   msgs=new HashMap<Address,List<Message>>(36);
+            long                               count=0;    // current number of bytes accumulated
+            int                                num_msgs=0;
+            long                               next_bundle_time;
+            
+            public void run() {
+                next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
+                while(true) {
+                    long current_time=System.currentTimeMillis();
+                    long sleep_time=next_bundle_time - current_time;
+                    Message msg=null;
+
+                    try {
+                        // System.out.println("sleep_time=" + sleep_time);
+                        if(count == 0)
+                            msg=buffer.take();
+                        else
+                            msg=buffer.poll(sleep_time, TimeUnit.MILLISECONDS);
+                    }
+                    catch(InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    long size=msg != null? msg.size() : 0;
+
+                    boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
+                            buffer.size() >= THRESHOLD ||
+                            System.currentTimeMillis() >= next_bundle_time;
+
+                    if(send_msgs) {
+                        next_bundle_time=System.currentTimeMillis() + 30;
+                        try {
+                            if(!msgs.isEmpty()) {
+                                sendBundledMessages(msgs);
+                                msgs.clear();
+                            }
+                            count=0;
+                        }
+                        catch(Exception e) {
+                            log.error("failed sending bundled messages", e);
+                        }
+                    }
+
+                    if(msg != null) {
+                        count+=size;
+                        addMessage(msg, msg.getDest());
+                    }
+                }
+            }
+
+
+
+
+            /** Run with lock acquired */
+            private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
+                List<Message> tmp=msgs.get(dest);
+                if(tmp == null) {
+                    tmp=new LinkedList<Message>();
+                    msgs.put(dest, tmp);
+                }
+                tmp.add(msg);
+                num_msgs++;
+            }
+
+
+
+            /**
+             * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
+             * This method may be called by timer and bundler concurrently
+             * @param msgs
+             */
+            private void sendBundledMessages(final Map<Address,List<Message>> msgs) throws Exception {
+                boolean   multicast;
+                Address   dst;
+
+                if(log.isTraceEnabled()) {
+                    long stop=System.currentTimeMillis();
+                    double percentage=100.0 / max_bundle_size * count;
+                    StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                    num_msgs=0;
+                    sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                    if(next_bundle_time > 0) {
+                        sb.append(", collected in ").append(stop-next_bundle_time).append("ms) ");
+                    }
+                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                    if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                    log.trace(sb);
+                }
+
+                ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream((int)(count + 50));
+                ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
+
+                for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
+                    List<Message> list=entry.getValue();
+                    if(list.isEmpty())
+                        continue;
+                    dst=entry.getKey();
+                    multicast=dst == null || dst.isMulticastAddress();
+                    try {
+                        bundler_out_stream.reset();
+                        bundler_dos.reset();
+                        writeMessageList(list, bundler_dos, multicast); // flushes output stream when done
+                        Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                        doSend(buffer, dst, multicast);
+                    }
+                    catch(Throwable e) {
+                        if(log.isErrorEnabled()) log.error("exception sending bundled msgs", e);
+                    }
+                }
+            }
+
+        }
+
+    }
+
+
+
 
     public interface ProbeHandler {
         /**
