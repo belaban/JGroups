@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.10 2010/02/21 12:27:53 belaban Exp $
+ * @version $Id: RingBuffer.java,v 1.11 2010/02/22 12:28:32 belaban Exp $
  */
 public class RingBuffer<T> {
     private final AtomicStampedReference<T>[]  queue;
@@ -19,10 +19,10 @@ public class RingBuffer<T> {
     private final AtomicLong                   next_to_remove=new AtomicLong(0);
 
 
-    private final AtomicInteger successful_adds=new AtomicInteger(0);
+    /*private final AtomicInteger successful_adds=new AtomicInteger(0);
     private final AtomicInteger successful_removes=new AtomicInteger(0);
     private final AtomicInteger failed_adds=new AtomicInteger(0);
-    private final AtomicInteger failed_removes=new AtomicInteger(0);
+    private final AtomicInteger failed_removes=new AtomicInteger(0);*/
 
 
     // private final ConcurrentLinkedQueue<String> operations=new ConcurrentLinkedQueue<String>();
@@ -35,7 +35,7 @@ public class RingBuffer<T> {
         for(int i=0; i < capacity; i++)
             queue[i]=new AtomicStampedReference<T>(null, -1);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        /*Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 System.out.println("next_to_add=" + next_to_add + ", next_to_remove=" + next_to_remove);
                 System.out.println("successful_adds=" + successful_adds + ", successful_removes=" + successful_removes);
@@ -45,7 +45,7 @@ public class RingBuffer<T> {
 //                for(String op: operations)
 //                    System.out.println(op);
             }
-        });
+        });*/
     }
 
     /**
@@ -67,14 +67,14 @@ public class RingBuffer<T> {
 
                 if(ref.compareAndSet(null, el, -1, stamp)) {
                     // operations.add("queue[" + index + "]=" + el + " (next=" + next + ", next_to_remove=" + next_to_remove + ")");
-                    successful_adds.incrementAndGet();
+                    // successful_adds.incrementAndGet();
                     return;
                 }
                 else {
-                    failed_adds.incrementAndGet();
-                    System.err.println("add(" + el + ") failed at index " + index + ": next_to_add=" + next_to_add +
-                            ", next=" + next + ", next_to_remove=" + next_to_remove +
-                    ", queue[" + index + "]=" + queue[index].getReference());
+//                    failed_adds.incrementAndGet();
+//                    System.err.println("add(" + el + ") failed at index " + index + ": next_to_add=" + next_to_add +
+//                            ", next=" + next + ", next_to_remove=" + next_to_remove +
+//                    ", queue[" + index + "]=" + queue[index].getReference());
                 }
             }
 
@@ -99,12 +99,12 @@ public class RingBuffer<T> {
 
         if(retval != null && ref.compareAndSet(retval, null, stamp, -1)) {
             // operations.add("queue[" + index + "]: " + retval + " = null (next=" + next + ")");
-            successful_removes.incrementAndGet();
+            // successful_removes.incrementAndGet();
             next_to_remove.incrementAndGet();
             return retval;
         }
-        else
-            failed_removes.incrementAndGet();
+//        else
+//            failed_removes.incrementAndGet();
 
         return null;
     }
