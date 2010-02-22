@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.288 2010/02/22 11:40:16 belaban Exp $
+ * @version $Id: TP.java,v 1.289 2010/02/22 12:41:41 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -211,6 +211,8 @@ public abstract class TP extends Protocol {
      */
     protected long max_bundle_timeout=20;
 
+    @Property(description="The type of bundler used. Has to be \"old\" (default) or \"new\"")
+    protected String bundler_type="old";
 
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
@@ -233,6 +235,12 @@ public abstract class TP extends Protocol {
     }
 
     public int getMaxBundleSize() {return max_bundle_size;}
+
+    @ManagedAttribute public int getBundlerBufferSize() {
+        if(bundler instanceof TransferQueueBundler)
+            return ((TransferQueueBundler)bundler).getBufferSize();
+        return 0;
+    }
 
     @Property(name="oob_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the OOB pool")
     public void setOOBThreadPoolKeepAliveTime(long time) {
@@ -781,8 +789,16 @@ public abstract class TP extends Protocol {
         }
 
         if(enable_bundling) {
-            bundler=new DefaultBundler();
-            // bundler=new TransferQueueBundler();
+            if(bundler_type.equals("new"))
+                bundler=new TransferQueueBundler();
+            else if(bundler_type.equals("old"))
+                bundler=new DefaultBundler();
+            else
+                log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler");
+            if(bundler == null)
+                bundler=new DefaultBundler();
+
+            bundler.start();
         }
 
         // local_addr is null when shared transport
@@ -796,6 +812,8 @@ public abstract class TP extends Protocol {
             diag_handler=null;
         }
         preregistered_probe_handlers.clear();
+        if(bundler != null)
+            bundler.stop();
     }
 
 
@@ -1462,6 +1480,8 @@ public abstract class TP extends Protocol {
 
 
     protected interface Bundler {
+        void start();
+        void stop();
         void send(Message msg, Address dest) throws Exception;
     }
 
@@ -1479,6 +1499,11 @@ public abstract class TP extends Protocol {
         long                               last_bundle_time;
         final ReentrantLock                lock=new ReentrantLock();
 
+        public void start() {
+        }
+
+        public void stop() {
+        }
 
         public void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
@@ -1600,20 +1625,29 @@ public abstract class TP extends Protocol {
 
 
     private class TransferQueueBundler implements Bundler {
-        static final int              CAPACITY=10000;
+        static final int              CAPACITY=5000;
         static final int              THRESHOLD=(int)(CAPACITY * .9); // 90% of capacity
         final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(CAPACITY);
         BundlerThread                 bundler_thread=new BundlerThread();
 
 
-        private TransferQueueBundler() {
+
+        public void start() {
             bundler_thread.start();
+        }
+
+        public void stop() {
+            bundler_thread.stopWork();
         }
 
         public void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
             checkLength(length);
             buffer.put(msg);
+        }
+
+        public int getBufferSize() {
+            return buffer.size();
         }
         
 
@@ -1630,10 +1664,16 @@ public abstract class TP extends Protocol {
             long                               count=0;    // current number of bytes accumulated
             int                                num_msgs=0;
             long                               next_bundle_time;
+            volatile boolean                   running=true;
+
+            public void stopWork() {
+                running=false;
+                interrupt();
+            }
             
             public void run() {
                 next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
-                while(true) {
+                while(running) {
                     long current_time=System.currentTimeMillis();
                     long sleep_time=next_bundle_time - current_time;
                     Message msg=null;
@@ -1646,7 +1686,8 @@ public abstract class TP extends Protocol {
                             msg=buffer.poll(sleep_time, TimeUnit.MILLISECONDS);
                     }
                     catch(InterruptedException e) {
-                        e.printStackTrace();
+                        if(!running)
+                            break;
                     }
 
                     long size=msg != null? msg.size() : 0;
