@@ -12,7 +12,7 @@ import java.util.List;
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
  * {@link LatencyTest} for simple latency tests (not round trip).
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.9 2010/02/11 08:04:21 belaban Exp $
+ * @version $Id: PingPong.java,v 1.10 2010/02/22 14:27:12 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;
@@ -97,6 +97,7 @@ public class PingPong extends ReceiverAdapter {
                 continue;
             }
             System.out.println("PingPong [-props <XML config>] [-name name] [-unicast]");
+            return;
         }
 
         new PingPong().start(props, name, unicast);
