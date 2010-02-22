@@ -2,6 +2,8 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
@@ -44,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.291 2010/02/22 13:49:45 belaban Exp $
+ * @version $Id: TP.java,v 1.292 2010/02/22 16:02:26 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1498,6 +1500,7 @@ public abstract class TP extends Protocol {
         int                                num_bundling_tasks=0;
         long                               last_bundle_time;
         final ReentrantLock                lock=new ReentrantLock();
+        final Log                          log=LogFactory.getLog(getClass());
 
         public void start() {
         }
@@ -1629,6 +1632,7 @@ public abstract class TP extends Protocol {
         static final int              THRESHOLD=(int)(CAPACITY * .9); // 90% of capacity
         final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(CAPACITY);
         BundlerThread                 bundler_thread=new BundlerThread();
+        final Log                     log=LogFactory.getLog(getClass());
 
 
 
