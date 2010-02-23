@@ -22,7 +22,7 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.3 2010/01/15 12:23:58 belaban Exp $
+ * @version $Id: NAKACK_Delivery_Test.java,v 1.4 2010/02/23 17:26:46 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
@@ -152,7 +152,7 @@ public class NAKACK_Delivery_Test {
         if(oob)
             msg.setFlag(Message.OOB);
         if(seqno != -1)
-            msg.putHeader(NAME, new NakAckHeader(NakAckHeader.MSG, seqno));
+            msg.putHeader(NAME, NakAckHeader.createMessageHeader(seqno));
         return msg;
     }
 

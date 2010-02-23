@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.13 2010/01/27 09:21:03 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.14 2010/02/23 17:26:45 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
@@ -364,7 +364,7 @@ public class MessageTest {
         msg.putHeader("TP", tp_hdr);
         PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster");
         msg.putHeader("PING", ping_hdr);
-        NakAckHeader nak_hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104);
+        NakAckHeader nak_hdr=NakAckHeader.createXmitRequestHeader(100, 104, null);
         msg.putHeader("NAKACK", nak_hdr);
     }
 

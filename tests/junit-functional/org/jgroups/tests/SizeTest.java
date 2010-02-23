@@ -8,9 +8,8 @@ import org.jgroups.mux.MuxHeader;
 import org.jgroups.mux.ServiceInfo;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.GossipData;
-import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 import org.testng.Assert;
@@ -23,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.27 2010/01/13 13:19:01 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.28 2010/02/23 17:26:45 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -162,10 +161,9 @@ public class SizeTest {
     }
 
     public static void testNakackHeader() throws Exception {
-        _testSize(new NakAckHeader(NakAckHeader.MSG, 322649));
-        _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, Util.createRandomAddress()));
-        _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 100, 104, Util.createRandomAddress()));
-        _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 322649));
+        _testSize(NakAckHeader.createMessageHeader(322649));
+        _testSize(NakAckHeader.createXmitRequestHeader(100, 104, Util.createRandomAddress()));
+        _testSize(NakAckHeader.createXmitResponseHeader());
     }
 
 

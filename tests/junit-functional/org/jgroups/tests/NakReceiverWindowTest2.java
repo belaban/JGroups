@@ -26,7 +26,7 @@ import java.util.Collections;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.5 2009/11/25 11:36:27 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.6 2010/02/23 17:26:45 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
@@ -190,7 +190,7 @@ public class NakReceiverWindowTest2 {
         }
 
         protected void add(long seqno) {
-            NakAckHeader hdr=new NakAckHeader(NakAckHeader.MSG, seqno);
+            NakAckHeader hdr=NakAckHeader.createMessageHeader(seqno);
             Message msg=new Message(null, sender, "hello");
             msg.putHeader("NAKAC", hdr);
             boolean added=win.add(seqno, msg);
