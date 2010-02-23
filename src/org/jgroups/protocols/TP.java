@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.292 2010/02/22 16:02:26 belaban Exp $
+ * @version $Id: TP.java,v 1.293 2010/02/23 08:12:39 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -214,7 +214,11 @@ public abstract class TP extends Protocol {
     protected long max_bundle_timeout=20;
 
     @Property(description="The type of bundler used. Has to be \"old\" (default) or \"new\"")
-    protected String bundler_type="old";
+    protected String bundler_type="new";
+
+    @Experimental
+    @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
+    protected int bundler_capacity=20000;
 
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
@@ -791,8 +795,10 @@ public abstract class TP extends Protocol {
         }
 
         if(enable_bundling) {
-            if(bundler_type.equals("new"))
+            if(bundler_type.equals("new")) {
                 bundler=new TransferQueueBundler();
+                ((TransferQueueBundler)bundler).setCapacity(bundler_capacity);
+            }
             else if(bundler_type.equals("old"))
                 bundler=new DefaultBundler();
             else
@@ -1628,13 +1634,17 @@ public abstract class TP extends Protocol {
 
 
     private class TransferQueueBundler implements Bundler {
-        static final int              CAPACITY=5000;
-        static final int              THRESHOLD=(int)(CAPACITY * .9); // 90% of capacity
-        final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(CAPACITY);
+        int                           capacity=20000;
+        int                           threshold=(int)(capacity * .9); // 90% of capacity
+        final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(capacity);
         BundlerThread                 bundler_thread=new BundlerThread();
         final Log                     log=LogFactory.getLog(getClass());
 
 
+        void setCapacity(int capacity) {
+            this.capacity=capacity;
+            threshold=(int)(capacity * .9);
+        }
 
         public void start() {
             bundler_thread.start();
@@ -1689,7 +1699,7 @@ public abstract class TP extends Protocol {
 
                         long size=msg != null? msg.size() : 0;
                         boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
-                                buffer.size() >= THRESHOLD ||
+                                buffer.size() >= threshold ||
                                 System.currentTimeMillis() >= next_bundle_time;
 
                         if(send_msgs) {
