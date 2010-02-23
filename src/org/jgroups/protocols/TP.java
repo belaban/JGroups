@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.293 2010/02/23 08:12:39 belaban Exp $
+ * @version $Id: TP.java,v 1.294 2010/02/23 14:18:09 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1125,32 +1125,60 @@ public abstract class TP extends Protocol {
 
 
 
-    private static void writeMessageList(List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
-        byte flags=0;
-        int len=msgs != null? msgs.size() : 0;
 
+    /**
+     * Write a lits of messages with the same destination and *mostly* the same src addresses. The message list is
+     * marshalled as follows:
+     * <pre>
+     * List: * | version | flags | dest | src | Message*] |
+     *
+     * Message:  | presence | leading | flags | [src] | length | [buffer] | size | [Headers*] |
+     *
+     * </pre>
+     * @param dest
+     * @param src
+     * @param msgs
+     * @param dos
+     * @param multicast
+     * @throws Exception
+     */
+    private static void writeMessageList(Address dest, Address src,
+                                          List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
         dos.writeShort(Version.version);
-        flags+=LIST;
+
+        byte flags=LIST;
         if(multicast)
             flags+=MULTICAST;
+        
         dos.writeByte(flags);
-        dos.writeInt(len);
+
+        Util.writeAddress(dest, dos);
+
+        Util.writeAddress(src, dos);
+
         if(msgs != null) {
             for(Message msg: msgs) {
-                msg.writeTo(dos);
+                dos.writeBoolean(true);
+                msg.writeToNoAddrs(src, dos);
             }
         }
+
+        dos.writeBoolean(false); // terminating presence - no more messages will follow
     }
 
-    private static List<Message> readMessageList(DataInputStream instream) throws Exception {
-        int           len;
-        Message       msg;
 
-        len=instream.readInt();
-        List<Message> list=new ArrayList<Message>(len);
-        for(int i=0; i < len; i++) {
-            msg=new Message(false); // don't create headers, readFrom() will do this
-            msg.readFrom(instream);
+
+    private static List<Message> readMessageList(DataInputStream in) throws Exception {
+        List<Message> list=new LinkedList<Message>();
+        Address dest=Util.readAddress(in);
+        Address src=Util.readAddress(in);
+
+        while(in.readBoolean()) {
+            Message msg=new Message(false);
+            msg.readFrom(in);
+            msg.setDest(dest);
+            if(msg.getSrc() == null)
+                msg.setSrc(src);
             list.add(msg);
         }
         return list;
@@ -1584,11 +1612,12 @@ public abstract class TP extends Protocol {
                 if(list.isEmpty())
                     continue;
                 dst=entry.getKey();
+                Address src_addr=list.get(0).getSrc();
                 multicast=dst == null || dst.isMulticastAddress();
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
-                    writeMessageList(list, bundler_dos, multicast); // flushes output stream when done
+                    writeMessageList(dst, src_addr, list, bundler_dos, multicast); // flushes output stream when done
                     Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
                     doSend(buffer, dst, multicast);
                 }
@@ -1768,12 +1797,15 @@ public abstract class TP extends Protocol {
                     List<Message> list=entry.getValue();
                     if(list.isEmpty())
                         continue;
+
                     dst=entry.getKey();
+                    Address src_addr=list.get(0).getSrc();
+
                     multicast=dst == null || dst.isMulticastAddress();
                     try {
                         bundler_out_stream.reset();
                         bundler_dos.reset();
-                        writeMessageList(list, bundler_dos, multicast); // flushes output stream when done
+                        writeMessageList(dst, src_addr, list, bundler_dos, multicast); // flushes output stream when done
                         Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
                         doSend(buffer, dst, multicast);
                     }
