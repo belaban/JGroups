@@ -16,9 +16,9 @@ import org.testng.annotations.Test;
 import java.io.DataOutputStream;
 
 /**
- * Tests the size of marshalled messages (multicast, unicast, individual messages or message lists)
+ * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.1 2010/02/23 15:34:50 belaban Exp $
+ * @version $Id: MessageSizeTest.java,v 1.2 2010/02/23 16:15:18 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {
@@ -27,7 +27,7 @@ public class MessageSizeTest {
 
     /**
      * Tests size of a multicast message.
-     * Current record: 144 bytes
+     * Current record: 144 bytes (Feb 2010)
      * @throws Exception
      */
     public static void testMulticast() throws Exception {
@@ -38,6 +38,26 @@ public class MessageSizeTest {
 
         int len=buf.getLength();
         System.out.println("len = " + len);
+
+        assert len <= 144;
+    }
+
+    /**
+     * Tests size of a unicast message.
+     * Current record: 162 (Feb 2010)
+     * @throws Exception
+     */
+    public static void testUnicast() throws Exception {
+        Address dest=Util.createRandomAddress();
+        Address src=Util.createRandomAddress();
+        Message msg=createMessage(dest, src);
+        Buffer buf=marshal(msg);
+        System.out.println("buf = " + buf);
+
+        int len=buf.getLength();
+        System.out.println("len = " + len);
+
+        assert len <= 162;
     }
 
 
