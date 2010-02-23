@@ -7,7 +7,7 @@ import org.jgroups.protocols.UNICAST;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageStressTest.java,v 1.3 2008/07/29 12:08:31 belaban Exp $
+ * @version $Id: MessageStressTest.java,v 1.4 2010/02/23 17:26:47 belaban Exp $
  */
 public class MessageStressTest {
     public static final int NUM=1000 * 1000;
@@ -25,7 +25,7 @@ public class MessageStressTest {
             //if(i % cnt == 0)
               //  System.out.println(i);
             msg=new Message(); // creates 'headers' hashmap
-            msg.putHeader(NAKACK, new NakAckHeader(NakAckHeader.MSG, (long)i));
+            msg.putHeader(NAKACK, NakAckHeader.createMessageHeader((long)i));
             msg.putHeader(UNICAST, new UNICAST.UnicastHeader((byte)0, i));
             msg.putHeader(UDP, new TpHeader("demo"));
             msg.getHeader(UDP);

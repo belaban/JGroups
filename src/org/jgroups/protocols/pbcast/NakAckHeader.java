@@ -14,17 +14,16 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: NakAckHeader.java,v 1.22 2009/11/03 12:49:16 belaban Exp $
+ * @version $Id: NakAckHeader.java,v 1.23 2010/02/23 17:26:48 belaban Exp $
  */
 public class NakAckHeader extends Header implements Streamable {
     public static final byte MSG=1;       // regular msg
     public static final byte XMIT_REQ=2;  // retransmit request
     public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
 
-
     byte  type=0;
     long  seqno=-1;        // seqno of regular message (MSG)
-    Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
+    Range range=null;      // range of msgs to be retransmitted (XMIT_REQ)
     Address sender;        // the original sender of the message (for XMIT_REQ)
     private static final long serialVersionUID=-4305600151593420827L;
 
@@ -33,25 +32,34 @@ public class NakAckHeader extends Header implements Streamable {
     }
 
 
+    public static NakAckHeader createMessageHeader(long seqno) {
+        return new NakAckHeader(MSG, seqno);
+    }
+
+    public static NakAckHeader createXmitRequestHeader(long low, long high, Address orginal_sender) {
+        return new NakAckHeader(XMIT_REQ, low, high, orginal_sender);
+    }
+
+    public static NakAckHeader createXmitResponseHeader() {
+        return new NakAckHeader(XMIT_RSP, -1);
+    }
+
+
     /**
-     * Constructor for regular messages
+     * Constructor for regular messages or XMIT responses
      */
-    public NakAckHeader(byte type, long seqno) {
+    private NakAckHeader(byte type, long seqno) {
         this.type=type;
         this.seqno=seqno;
     }
 
+
     /**
-     * Constructor for retransmit requests/responses (low and high define the range of msgs)
+     * Constructor for retransmit requests (XMIT_REQs) (low and high define the range of msgs)
      */
-    public NakAckHeader(byte type, long low, long high) {
+    private NakAckHeader(byte type, long low, long high, Address sender) {
         this.type=type;
         range=new Range(low, high);
-    }
-
-
-    public NakAckHeader(byte type, long low, long high, Address sender) {
-        this(type, low, high);
         this.sender=sender;
     }
 
@@ -98,32 +106,59 @@ public class NakAckHeader extends Header implements Streamable {
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeByte(type);
-        out.writeLong(seqno);
-        Util.writeStreamable(range, out);
-        Util.writeAddress(sender, out);
+        switch(type) {
+            case MSG:
+                out.writeLong(seqno);
+                break;
+            case XMIT_REQ:
+                Util.writeStreamable(range, out);
+                Util.writeAddress(sender, out);
+                break;
+            case XMIT_RSP:
+                break;
+        }
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
-        seqno=in.readLong();
-        range=(Range)Util.readStreamable(Range.class, in);
-        sender=Util.readAddress(in);
+        switch(type) {
+            case MSG:
+                seqno=in.readLong();
+                break;
+            case XMIT_REQ:
+                range=(Range)Util.readStreamable(Range.class, in);
+                sender=Util.readAddress(in);
+                break;
+            case XMIT_RSP:
+                break;
+        }
     }
+    
 
     public int size() {
-        // type (1 byte) + seqno (8 bytes)
-        int retval=Global.BYTE_SIZE;
-        retval+=Global.LONG_SIZE;
-        retval+=Global.BYTE_SIZE; // presence for range
-        if(range != null)
-            retval+=2 * Global.LONG_SIZE; // 2 times 8 bytes for seqno
-        retval+=Util.size(sender);
+        int retval=Global.BYTE_SIZE; // type
+        switch(type) {
+            case MSG:
+                return retval + Global.LONG_SIZE; // seqno
+
+            case XMIT_REQ:
+                retval+=Global.BYTE_SIZE; // presence for range
+                if(range != null)
+                    retval+=2 * Global.LONG_SIZE; // 2 times 8 bytes for seqno
+                retval+=Util.size(sender);
+                return retval;
+
+            case XMIT_RSP:
+                return retval;
+        }
         return retval;
     }
 
 
     public NakAckHeader copy() {
-        NakAckHeader ret=new NakAckHeader(type, seqno);
+        NakAckHeader ret=new NakAckHeader();
+        ret.type=type;
+        ret.seqno=seqno;
         ret.range=range;
         ret.sender=sender;
         return ret;
