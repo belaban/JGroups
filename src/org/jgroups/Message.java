@@ -25,7 +25,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.108 2010/02/10 17:17:44 belaban Exp $
+ * @version $Id: Message.java,v 1.109 2010/02/23 14:11:00 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -516,6 +516,52 @@ public class Message implements Streamable {
 
         // 4. src_addr
         if(src_addr != null)
+            Util.writeAddress(src_addr, out);
+
+        // 5. buf
+        if(buf != null) {
+            out.writeInt(length);
+            out.write(buf, offset, length);
+        }
+
+        // 6. headers
+        int size=headers.size();
+        out.writeShort(size);
+        final Object[] data=headers.getRawData();
+        for(int i=0; i < data.length; i+=2) {
+            if(data[i] != null) {
+                out.writeUTF((String)data[i]);
+                writeHeader((Header)data[i+1], out);
+            }
+        }
+    }
+
+    /**
+     * Writes the message to the output stream, but excludes the dest and src addresses unless the src address given
+     * as argument is different from the message's src address
+     * @param src
+     * @param out
+     * @throws IOException
+     */
+    public void writeToNoAddrs(Address src, DataOutputStream out) throws IOException {
+        byte leading=0;
+
+        boolean write_src_addr=src == null || src_addr != null && !src_addr.equals(src);
+
+        if(write_src_addr)
+            leading=Util.setFlag(leading, SRC_SET);
+
+        if(buf != null)
+            leading=Util.setFlag(leading, BUF_SET);
+
+        // 1. write the leading byte first
+        out.write(leading);
+
+        // 2. the flags (e.g. OOB, LOW_PRIO)
+        out.write(flags);
+
+        // 4. src_addr
+        if(write_src_addr)
             Util.writeAddress(src_addr, out);
 
         // 5. buf
