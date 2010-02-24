@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.16 2009/12/11 12:57:28 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.17 2010/02/24 11:03:51 belaban Exp $
  */
 public class BARRIER extends Protocol {
     
@@ -164,13 +164,13 @@ public class BARRIER extends Protocol {
                     }
                 }
                 if(!in_flight_threads.isEmpty()) {
-                try {
+                    try {
                         no_msgs_pending.await(1000, TimeUnit.MILLISECONDS);
-                }
-                catch(InterruptedException e) {
+                    }
+                    catch(InterruptedException e) {
+                    }
                 }
             }
-        }
         }
         finally {
             for(Thread thread: threads)
