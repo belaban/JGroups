@@ -413,7 +413,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
 
         
-        public int numGets() {return num_gbets;}
+        public int numGets() {return num_gets;}
         public int numPuts() {return num_puts;}
 
 
