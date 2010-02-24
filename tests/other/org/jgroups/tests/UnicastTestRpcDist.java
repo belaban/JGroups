@@ -413,7 +413,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
 
         
-        public int numGets() {return num_gets;}
+        public int numGets() {return num_gbets;}
         public int numPuts() {return num_puts;}
 
 
@@ -423,8 +423,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             Object[] get_args=new Object[]{0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
-            RequestOptions get_options=new RequestOptions(Request.GET_ALL, 5000, false, null);
-            RequestOptions put_options=new RequestOptions(sync ? Request.GET_ALL : Request.GET_NONE, 5000, true, null);
+            RequestOptions get_options=new RequestOptions(Request.GET_ALL, 20000, false, null);
+            RequestOptions put_options=new RequestOptions(sync ? Request.GET_ALL : Request.GET_NONE, 20000, true, null);
 
             byte flags=0;
             if(oob) flags=Util.setFlag(flags, Message.OOB);
