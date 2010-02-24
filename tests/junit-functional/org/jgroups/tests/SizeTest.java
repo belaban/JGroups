@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.28 2010/02/23 17:26:45 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.29 2010/02/24 10:10:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -232,13 +232,19 @@ public class SizeTest {
 
 
     public static void testUnicastHeader() throws Exception {
-        UNICAST.UnicastHeader hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649);
+        UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(322649, (short)127, false);
         _testSize(hdr);
 
-        hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649, System.currentTimeMillis());
+        hdr=UNICAST.UnicastHeader.createDataHeader(322649, Short.MAX_VALUE, false);
         _testSize(hdr);
 
-        hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649, System.currentTimeMillis(), true);
+        hdr=UNICAST.UnicastHeader.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
+        _testSize(hdr);
+
+        hdr=UNICAST.UnicastHeader.createAckHeader(322649);
+        _testSize(hdr);
+
+        hdr=UNICAST.UnicastHeader.createSendFirstSeqnoHeader();
         _testSize(hdr);
     }
 
