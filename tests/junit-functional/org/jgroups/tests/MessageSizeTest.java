@@ -18,7 +18,7 @@ import java.io.DataOutputStream;
 /**
  * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.3 2010/02/23 17:26:45 belaban Exp $
+ * @version $Id: MessageSizeTest.java,v 1.4 2010/02/24 10:10:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {
@@ -27,7 +27,8 @@ public class MessageSizeTest {
 
     /**
      * Tests size of a multicast message.
-     * Current record: 109 bytes (Feb 2010)
+     * Current record: 103 bytes (Feb 2010)
+     * Prev: 166, 109
      * @throws Exception
      */
     public static void testMulticast() throws Exception {
@@ -39,12 +40,13 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 109;
+        assert len <= 103;
     }
 
     /**
      * Tests size of a unicast message.
-     * Current record: 127 (Feb 2010)
+     * Current record: 121 (Feb 2010)
+     * Prev: 161, 127
      * @throws Exception
      */
     public static void testUnicast() throws Exception {
@@ -57,7 +59,7 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 127;
+        assert len <= 121;
     }
 
 
@@ -83,7 +85,7 @@ public class MessageSizeTest {
     static Message createMessage(Address dest, Address src) {
         Message msg=new Message(dest, src, "hello world");
         msg.putHeader("NAKACK", NakAckHeader.createMessageHeader(322649));
-        msg.putHeader("UNICAST", new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 465784, 23323, true));
+        msg.putHeader("UNICAST", UNICAST.UnicastHeader.createDataHeader(465784, (short)23323, true));
         msg.putHeader("UDP", new TpHeader("DrawDemo"));
         return msg;
     }

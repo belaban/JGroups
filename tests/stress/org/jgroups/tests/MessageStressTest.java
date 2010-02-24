@@ -7,13 +7,13 @@ import org.jgroups.protocols.UNICAST;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageStressTest.java,v 1.4 2010/02/23 17:26:47 belaban Exp $
+ * @version $Id: MessageStressTest.java,v 1.5 2010/02/24 10:10:28 belaban Exp $
  */
 public class MessageStressTest {
     public static final int NUM=1000 * 1000;
     public static final String UDP="UDP";
     public static final String NAKACK="NAKACK";
-    public static final String UNICAST="UNICAST";
+    public static final String UNICAST_STR="UNICAST";
     int cnt=NUM / 10;
     
 
@@ -26,11 +26,11 @@ public class MessageStressTest {
               //  System.out.println(i);
             msg=new Message(); // creates 'headers' hashmap
             msg.putHeader(NAKACK, NakAckHeader.createMessageHeader((long)i));
-            msg.putHeader(UNICAST, new UNICAST.UnicastHeader((byte)0, i));
+            msg.putHeader(UNICAST_STR, UNICAST.UnicastHeader.createAckHeader(i));
             msg.putHeader(UDP, new TpHeader("demo"));
             msg.getHeader(UDP);
             msg.getHeader(NAKACK);
-            msg.getHeader(UNICAST);
+            msg.getHeader(UNICAST_STR);
             msg.size();
         }
         long total=System.nanoTime() - start;
