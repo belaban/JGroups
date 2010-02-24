@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.294 2010/02/23 14:18:09 belaban Exp $
+ * @version $Id: TP.java,v 1.295 2010/02/24 19:58:42 vlada Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -795,10 +795,8 @@ public abstract class TP extends Protocol {
         }
 
         if(enable_bundling) {
-            if(bundler_type.equals("new")) {
-                bundler=new TransferQueueBundler();
-                ((TransferQueueBundler)bundler).setCapacity(bundler_capacity);
-            }
+            if(bundler_type.equals("new")) 
+                bundler=new TransferQueueBundler(bundler_capacity);                           
             else if(bundler_type.equals("old"))
                 bundler=new DefaultBundler();
             else
@@ -1663,17 +1661,18 @@ public abstract class TP extends Protocol {
 
 
     private class TransferQueueBundler implements Bundler {
-        int                           capacity=20000;
-        int                           threshold=(int)(capacity * .9); // 90% of capacity
-        final BlockingQueue<Message>  buffer=new LinkedBlockingQueue<Message>(capacity);
-        BundlerThread                 bundler_thread=new BundlerThread();
-        final Log                     log=LogFactory.getLog(getClass());
+        final int threshold;
+        final BlockingQueue<Message> buffer;
+        final BundlerThread bundler_thread;
+        final Log log = LogFactory.getLog(getClass());
 
 
-        void setCapacity(int capacity) {
-            this.capacity=capacity;
-            threshold=(int)(capacity * .9);
-        }
+        public TransferQueueBundler(int capacity) {
+            if(capacity <=0) throw new IllegalArgumentException("Bundler capacity cannot be " + capacity);
+            buffer=new LinkedBlockingQueue<Message>(capacity);
+            threshold=(int)(capacity * .9);// 90% of capacity
+            bundler_thread = new BundlerThread();
+        }       
 
         public void start() {
             bundler_thread.start();
