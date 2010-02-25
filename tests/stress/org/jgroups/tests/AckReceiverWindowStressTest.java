@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.5 2010/02/25 14:36:02 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.6 2010/02/25 15:33:52 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
@@ -112,7 +112,7 @@ public class AckReceiverWindowStressTest {
 
 
     public static void main(String[] args) {
-        int num_threads=10;
+        int num_threads=50;
         int num_msgs=1000000;
 
         for(int i=0; i < args.length; i++) {
