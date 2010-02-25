@@ -2,6 +2,7 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Message;
+import org.jgroups.util.Tuple;
 import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
@@ -20,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.41 2010/01/20 11:42:04 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.42 2010/02/25 14:35:53 belaban Exp $
  */
 public class AckReceiverWindow {
     @GuardedBy("lock")
@@ -97,17 +98,27 @@ public class AckReceiverWindow {
 
     /**
      * Removes as many messages as possible (in sequence, without gaps)
-     * @return
+     * @param max Max number of messages to be removed
+     * @return Tuple<List<Message>,Long>: a tuple of the message list and the highest seqno removed
      */
-    public List<Message> removeMany() {
-        List<Message> retval=new LinkedList<Message>(); // we remove msgs.size() messages *max*
+    public Tuple<List<Message>,Long> removeMany(int max) {
+        List<Message> list=new LinkedList<Message>(); // we remove msgs.size() messages *max*
+        Tuple<List<Message>,Long> retval=new Tuple<List<Message>,Long>(list, 0L);
+
         Message msg;
+        long highest=0;
+        int count=0;
+
         lock.lock();
         try {
             while((msg=msgs.remove(next_to_remove)) != null) {
+                highest=next_to_remove;
                 next_to_remove++;
-                retval.add(msg);
+                list.add(msg);
+                if(++count > max)
+                    break;
             }
+            retval.setVal2(highest);
             return retval;
         }
         finally {

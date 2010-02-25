@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.util.Tuple;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,7 +15,7 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.4 2010/02/15 09:52:10 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.5 2010/02/25 14:36:02 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
@@ -97,7 +98,8 @@ public class AckReceiverWindowStressTest {
                 // simulates UNICAST: all threads call add2() concurrently, but only 1 thread removes messages
                 if(processing.compareAndSet(false, true)) {
                     try {
-                        List<Message> msgs=win.removeMany();
+                        Tuple<List<Message>,Long> tuple=win.removeMany(20000);
+                        List<Message> msgs=tuple.getVal1();
                         removed_msgs+=msgs.size();
                     }
                     finally {
