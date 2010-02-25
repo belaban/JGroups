@@ -23,11 +23,11 @@ import java.util.ArrayList;
 /**
  * Tests time for N threads to deliver M messages to UNICAST
  * @author Bela Ban
- * @version $Id: UNICAST_StressTest.java,v 1.2 2010/02/24 16:45:54 belaban Exp $
+ * @version $Id: UNICAST_StressTest.java,v 1.3 2010/02/25 14:36:28 belaban Exp $
  */
 public class UNICAST_StressTest {
 
-    static void start(final int num_threads, final int num_msgs, boolean oob) {
+    static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size) {
         final UNICAST unicast=new UNICAST();
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
@@ -38,12 +38,12 @@ public class UNICAST_StressTest {
         final Address local_addr=Util.createRandomAddress();
         final Address sender=Util.createRandomAddress();
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                System.out.println("\ndelivered_msgs=" + delivered_msgs);
-                System.out.println("stats:\n" + unicast.dumpStats());
-            }
-        });
+//        Runtime.getRuntime().addShutdownHook(new Thread() {
+//            public void run() {
+//                System.out.println("\ndelivered_msgs=" + delivered_msgs);
+//                System.out.println("stats:\n" + unicast.dumpStats());
+//            }
+//        });
         
         unicast.setDownProtocol(new Protocol() {
             public Object down(Event evt) {
@@ -75,6 +75,8 @@ public class UNICAST_StressTest {
 
         unicast.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
 
+        unicast.setMaxMessageBatchSize(max_msg_batch_size);
+
         // send the first message manually, to initialize the AckReceiverWindow tables
         Message msg=createMessage(local_addr, sender, 1L, oob, true);
         unicast.up(new Event(Event.MSG, msg));
@@ -96,7 +98,8 @@ public class UNICAST_StressTest {
             while(delivered_msgs.get() < num_msgs) {
                 try {
                     all_msgs_delivered.await(1000, TimeUnit.MILLISECONDS);
-
+                    System.out.println("received " + delivered_msgs.get() + " msgs");
+                    
                     // send a spurious message to trigger removal of pending messages in AckReceiverWindow
                     msg=createMessage(local_addr, sender, 1L, oob, false);
                     unicast.up(new Event(Event.MSG, msg));
@@ -189,6 +192,7 @@ public class UNICAST_StressTest {
     public static void main(String[] args) {
         int num_threads=10;
         int num_msgs=1000000;
+        int max=20000;
         boolean oob=false;
 
         for(int i=0; i < args.length; i++) {
@@ -204,9 +208,14 @@ public class UNICAST_StressTest {
                 oob=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            System.out.println("UNICAST_StressTest [-num_msgs msgs] [-num_threads threads] [-oob <true | false>]");
+            if(args[i].equals("-max")) {
+                max=Integer.parseInt(args[++i]);
+                continue;
+            }
+            System.out.println("UNICAST_StressTest [-num_msgs msgs] [-num_threads threads] " +
+                    "[-oob <true | false>] + [-max <batch size>]");
             return;
         }
-        start(num_threads, num_msgs, oob);
+        start(num_threads, num_msgs, oob, max);
     }
 }
