@@ -11,11 +11,11 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -35,7 +35,7 @@ import java.util.concurrent.locks.Lock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.159 2010/02/24 16:14:31 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.160 2010/02/25 14:37:36 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -54,6 +54,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
+
+    @Property(description="Max number of messages to be removed from the AckReceiverWindow. This property might " +
+            "get removed anytime, so don't use it !")
+    private int max_msg_batch_size=10000;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
@@ -79,20 +83,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // didn't make this 'connected' in case we need to send early acks which may race to the socket
     private volatile boolean disconnected=false;
 
-    /** <em>Regular</em> messages which have been added, but not removed */
-    private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
-
     private short last_conn_id=0;
-
 
     protected long max_retransmit_time=60 * 1000L;
 
     private AgeOutCache<Address> cache=null;
 
 
-    @ManagedAttribute
-    public int getUndeliveredMessages() {
-        return undelivered_msgs.get();
+    @Deprecated @ManagedAttribute
+    public static int getUndeliveredMessages() {
+        return 0;
     }
 
     public long[] getTimeout() {return timeout;}
@@ -101,6 +101,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public void setTimeout(long[] val) {
         if(val != null)
             timeout=val;
+    }
+
+    public void setMaxMessageBatchSize(int size) {
+        if(size >= 1)
+            max_msg_batch_size=size;
     }
 
     @ManagedAttribute
@@ -246,7 +251,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public void stop() {
         started=false;
         removeAllConnections();
-        undelivered_msgs.set(0);
     }
 
 
@@ -272,7 +276,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 src=msg.getSrc();
                 switch(hdr.type) {
                     case UnicastHeader.DATA:      // received regular message
-                        handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg);
+                        handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case UnicastHeader.ACK:  // received ACK for previously sent message
                         handleAckReceived(src, hdr.seqno);
@@ -491,7 +495,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    private void handleDataReceived(Address sender, long seqno, long conn_id,  boolean first, Message msg) {
+    private void handleDataReceived(Address sender, long seqno, long conn_id,  boolean first, Message msg, Event evt) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -538,9 +542,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
-        if(added && !msg.isFlagSet(Message.OOB))
-            undelivered_msgs.incrementAndGet();
-
         // Cannot be replaced with if(!added), see https://jira.jboss.org/jira/browse/JGRP-1043 comment 15/Sep/09 06:57 AM
 
         // We *have* to do send the ACK, to cover the following scenario:
@@ -550,19 +551,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // - A keeps retransmitting #3 to B, until it gets an ACK(3)
         // -B will never ACK #3 if the 2 lines below are commented ==> endless retransmission of A's #3 !
         if(result == -1) { // only ack if seqno was < next_to_remove !
-            sendAck(msg.getSrc(), seqno);
+            sendAck(sender, seqno);
         }
 
-        // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
+        // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.OOB)) {
-            if(added)
-                up_prot.up(new Event(Event.MSG, msg));
-            long highest_oob_seqno=win.removeOOBMessages();
-            if(!(undelivered_msgs.get() > 0 && win.hasMessagesToRemove())) {
-                if(highest_oob_seqno != -1)
-                    sendAck(sender, highest_oob_seqno);
-                return;
+        if(msg.isFlagSet(Message.OOB) && added) {
+            try {
+                up_prot.up(evt);
+            }
+            catch(Throwable t) {
+                log.error("couldn't deliver OOB message " + msg, t);
             }
         }
 
@@ -572,27 +571,28 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-        int num_regular_msgs_removed=0;
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
-        // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
+        // this is all the more important once we have a concurrent stack (http://jira.jboss.com/jira/browse/JGRP-181),
         // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
         try {
             while(true) {
-                List<Message> msgs=win.removeMany();
+                Tuple<List<Message>,Long> tuple=win.removeMany(max_msg_batch_size);
+                List<Message> msgs=tuple.getVal1();
                 if(msgs.isEmpty())
                     return;
 
-                Message highest_removed=msgs.get(msgs.size() -1);
-                sendAckForMessage(highest_removed); // guaranteed not to throw an exception !
+                long highest_removed=tuple.getVal2();
+                if(highest_removed > 0)
+                    sendAck(sender, highest_removed); // guaranteed not to throw an exception !
+
                 for(Message m: msgs) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                     if(m.isFlagSet(Message.OOB))
                         continue;
-                    num_regular_msgs_removed++;
                     try {
                         up_prot.up(new Event(Event.MSG, m));
                     }
@@ -603,10 +603,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
         finally {
-            // We keep track of regular messages that we added, but couldn't remove (because of ordering).
-            // When we have such messages pending, then even OOB threads will remove and process them
-            // http://jira.jboss.com/jira/browse/JGRP-781
-            undelivered_msgs.addAndGet(-num_regular_msgs_removed);
             processing.set(false);
         }
     }
@@ -691,13 +687,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
-    private void sendAckForMessage(Message msg) {
-        UnicastHeader hdr=msg != null? (UnicastHeader)msg.getHeader(name) : null;
-        Address sender=msg != null? msg.getSrc() : null;
-        if(hdr != null && sender != null)
-            sendAck(sender, hdr.seqno);
-    }
-
+   
     private short getNewConnectionId() {
         synchronized(this) {
             short retval=last_conn_id;
