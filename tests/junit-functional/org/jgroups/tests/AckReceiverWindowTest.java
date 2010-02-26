@@ -17,7 +17,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.12 2010/01/20 10:36:49 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.13 2010/02/26 11:03:56 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -103,49 +103,6 @@ public class AckReceiverWindowTest {
     }
 
 
-    public void testRemoveOOBMessage() {
-        System.out.println("win = " + win);
-        win.add(2, msg());
-        System.out.println("win = " + win);
-        assert win.removeOOBMessage() == null;
-        assert win.remove() == null;
-        win.add(1, msg(true));
-        System.out.println("win = " + win);
-        assert win.removeOOBMessage() != null;
-        System.out.println("win = " + win);
-        assert win.removeOOBMessage() == null;
-        assert win.remove() != null;
-        assert win.remove() == null;
-        assert win.removeOOBMessage() == null;
-    }
-
-    public void testRemoveManyOOBMessages() {
-        win.add(2, msg(true));
-        long seqno=win.removeOOBMessages();
-        assert seqno == -1;
-        assert win.size() == 1;
-
-        win.add(1, msg(true));
-        System.out.println("win = " + win);
-        seqno=win.removeOOBMessages();
-        assert seqno == 2;
-        assert win.size() == 0;
-
-        win.add(3, msg());
-        win.add(5, msg(true));
-        win.add(6, msg(true));
-        win.add(4, msg(true));
-        win.add(7, msg());
-
-        seqno=win.removeOOBMessages();
-        assert seqno == -1;
-        win.remove();
-
-        seqno=win.removeOOBMessages();
-        assert seqno == 6;
-        assert win.size() == 1;
-    }
-
 
     public void testDuplicates() {
         Assert.assertEquals(0, win.size());
@@ -159,37 +116,10 @@ public class AckReceiverWindowTest {
         assert !win.add(4, msg());
     }
 
-    public static void testMessageReadyForRemoval() {
-        AckReceiverWindow win=new AckReceiverWindow(1);
-        System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
-        win.add(2, msg());
-        System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
-        win.add(3, msg());
-        System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
-        win.add(1, msg());
-        System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
-
-        win.remove();
-        System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
-
-        win.remove();
-        System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
-
-        win.remove();
-        System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
-    }
 
 
 
-
-    public static void testRemoveRegularAndOOBMessages() {
+    public static void testRemoveRegularMessages() {
         AckReceiverWindow win=new AckReceiverWindow(1);
         win.add(1, msg());
         System.out.println("win = " + win);
@@ -203,7 +133,7 @@ public class AckReceiverWindowTest {
         assert win.size() == 1;
 
         win.add(2, msg(true));
-        win.removeOOBMessage();
+        win.remove();
         System.out.println("win = " + win);
 
         assert win.size() == 1;

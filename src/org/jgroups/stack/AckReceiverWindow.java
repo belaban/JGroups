@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.42 2010/02/25 14:35:53 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.43 2010/02/26 11:03:58 belaban Exp $
  */
 public class AckReceiverWindow {
     @GuardedBy("lock")
@@ -126,58 +126,7 @@ public class AckReceiverWindow {
         }
     }
     
-
-    public Message removeOOBMessage() {
-        lock.lock();
-        try {
-            Message retval=msgs.get(next_to_remove);
-            if(retval != null) {
-                if(!retval.isFlagSet(Message.OOB))
-                    return null;
-                retval=msgs.remove(next_to_remove);
-                if(retval != null)
-                    next_to_remove++;
-            }
-            return retval;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Removes as many OOB messages as possible and return the highest seqno
-     * @return the highest seqno or -1 if no OOB message was found
-     */
-    public long removeOOBMessages() {
-        long highest=-1;
-
-        lock.lock();
-        try {
-            while(true) {
-                Message retval=msgs.get(next_to_remove);
-                if(retval == null || !retval.isFlagSet(Message.OOB))
-                    break;
-                retval=msgs.remove(next_to_remove);
-                if(retval != null) {
-                    highest=Math.max(highest, next_to_remove);
-                    next_to_remove++;
-                }
-                else
-                    break;
-            }
-            return highest;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-
-    public boolean hasMessagesToRemove() {
-        return msgs.containsKey(next_to_remove);
-    }
-
+   
 
     public void reset() {
         msgs.clear();
