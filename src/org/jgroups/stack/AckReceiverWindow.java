@@ -3,12 +3,14 @@ package org.jgroups.stack;
 
 import org.jgroups.Message;
 import org.jgroups.util.Tuple;
-import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 
 /**
@@ -21,19 +23,40 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.43 2010/02/26 11:03:58 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.44 2010/02/26 15:48:10 belaban Exp $
  */
 public class AckReceiverWindow {
-    @GuardedBy("lock")
-    private long                    next_to_remove=0;
-    @GuardedBy("lock")
-    private final Map<Long,Message> msgs=new HashMap<Long,Message>();
-    private final AtomicBoolean     processing=new AtomicBoolean(false);
-    private final Lock              lock=new ReentrantLock();
+    private final AtomicLong                   next_to_remove;
+    private final AtomicBoolean                processing=new AtomicBoolean(false);
+    private final ConcurrentMap<Long,Segment>  segments=new ConcurrentHashMap<Long,Segment>();
+    private volatile Segment                   current_segment=null;
+    private final int                          segment_capacity;
+    private long                               highest_segment_created=0;
+
+    static final Message                       TOMBSTONE=new Message(false) {
+        public String toString() {
+            return "tombstone";
+        }
+    };
 
 
     public AckReceiverWindow(long initial_seqno) {
-        next_to_remove=initial_seqno;
+        this(initial_seqno, 20000);
+    }
+    
+
+    public AckReceiverWindow(long initial_seqno, int segment_capacity) {
+        next_to_remove=new AtomicLong(initial_seqno);
+        this.segment_capacity=segment_capacity;
+        long index=next_to_remove.get() / segment_capacity;
+        long first_seqno=(next_to_remove.get() / segment_capacity) * segment_capacity;
+        this.segments.put(index, new Segment(first_seqno, segment_capacity));
+        Segment initial_segment=findOrCreateSegment(next_to_remove.get());
+        current_segment=initial_segment;
+        for(long i=0; i < next_to_remove.get(); i++) {
+            initial_segment.add(i, TOMBSTONE);
+            initial_segment.remove(i);
+        }
     }
 
     public AtomicBoolean getProcessing() {
@@ -58,22 +81,15 @@ public class AckReceiverWindow {
      *          1 if added successfully
      */
     public byte add2(long seqno, Message msg) {
-        if(msg == null)
-            throw new IllegalArgumentException("msg must be non-null");
-        lock.lock();
-        try {
-            if(seqno < next_to_remove)
-                return -1;
-            if(!msgs.containsKey(seqno)) {
-                msgs.put(seqno, msg);
-                return 1;
-            }
-            else
-                return 0;
+        Segment segment=current_segment;
+        if(segment == null || !segment.contains(seqno)) {
+            segment=findOrCreateSegment(seqno);
+            if(segment != null)
+                current_segment=segment;
         }
-        finally {
-            lock.unlock();
-        }
+        if(segment == null)
+            return -1;
+        return segment.add(seqno, msg);
     }
 
 
@@ -82,78 +98,210 @@ public class AckReceiverWindow {
      * that was removed, or null, if no message can be removed. Messages are thus removed in order.
      */
     public Message remove() {
-        lock.lock();
-        try {
-            Message retval=msgs.remove(next_to_remove);
-            if(retval != null)
-                next_to_remove++;
-            return retval;
+        long next=next_to_remove.get();
+        Segment segment=findSegment(next);
+        if(segment == null)
+            return null;
+        Message retval=segment.remove(next);
+        if(retval != null) {
+            next_to_remove.compareAndSet(next, next +1);
+            if(segment.allRemoved())
+                segments.remove(next / segment_capacity);
         }
-        finally {
-            lock.unlock();
-        }
+        return retval;
     }
 
-   
+
 
     /**
      * Removes as many messages as possible (in sequence, without gaps)
      * @param max Max number of messages to be removed
      * @return Tuple<List<Message>,Long>: a tuple of the message list and the highest seqno removed
      */
-    public Tuple<List<Message>,Long> removeMany(int max) {
+    public Tuple<List<Message>,Long> removeMany(final int max) {
         List<Message> list=new LinkedList<Message>(); // we remove msgs.size() messages *max*
         Tuple<List<Message>,Long> retval=new Tuple<List<Message>,Long>(list, 0L);
 
-        Message msg;
-        long highest=0;
         int count=0;
+        boolean looping=true;
+        while(count < max && looping) {
+            long next=next_to_remove.get();
+            Segment segment=findSegment(next);
+            if(segment == null)
+                return retval;
 
-        lock.lock();
-        try {
-            while((msg=msgs.remove(next_to_remove)) != null) {
-                highest=next_to_remove;
-                next_to_remove++;
-                list.add(msg);
-                if(++count > max)
+            long segment_id=next;
+            long end=segment.getEndIndex();
+            while(next < end && count < max) {
+                Message msg=segment.remove(next);
+                if(msg == null) {
+                    looping=false;
                     break;
+                }
+                list.add(msg);
+                count++;
+                retval.setVal2(next);
+                next_to_remove.compareAndSet(next, ++next);
+                if(segment.allRemoved())
+                    segments.remove(segment_id / segment_capacity);
             }
-            retval.setVal2(highest);
-            return retval;
         }
-        finally {
-            lock.unlock();
-        }
-    }
-    
-   
 
+        return retval;
+    }
+
+
+    
     public void reset() {
-        msgs.clear();
     }
 
     public int size() {
-        return msgs.size();
+        int retval=0;
+        for(Segment segment: segments.values())
+            retval+=segment.size();
+        return retval;
     }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")");
-        TreeSet<Long> s=new TreeSet<Long>(msgs.keySet());
-        if(!s.isEmpty()) {
-            sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
-            sb.append(": ").append(s);
-        }
+        int size=size();
+        sb.append(size + " messages");
+        if(size <= 100)
+            sb.append(" in " + segments.size() + " segments: ").append(printMessages());
         return sb.toString();
     }
 
-
-    public String printDetails() {
+    public String printMessages() {
         StringBuilder sb=new StringBuilder();
-        sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")").
-                append(", msgs=" ).append(new TreeSet<Long>(msgs.keySet()));
+        List<Long> keys=new LinkedList<Long>(segments.keySet());
+        Collections.sort(keys);
+        for(long key: keys) {
+            Segment segment=segments.get(key);
+            if(segment == null)
+                continue;
+            for(long i=segment.getStartIndex(); i < segment.getEndIndex(); i++) {
+                Message msg=segment.get(i);
+                if(msg == null)
+                    continue;
+                if(msg == TOMBSTONE)
+                    sb.append("T ");
+                else
+                    sb.append(i + " ");
+            }
+        }
+
         return sb.toString();
     }
 
+
+    private Segment findOrCreateSegment(long seqno) {
+        long index=seqno / segment_capacity;
+        if(index > highest_segment_created) {
+            long start_seqno=seqno / segment_capacity * segment_capacity;
+            Segment segment=new Segment(start_seqno, segment_capacity);
+            Segment tmp=segments.putIfAbsent(index, segment);
+            if(tmp != null) // segment already exists
+                segment=tmp;
+            else
+                highest_segment_created=index;
+            return segment;
+        }
+
+        return segments.get(index);
+    }
+
+    private Segment findSegment(long seqno) {
+        long index=seqno / segment_capacity;
+        return segments.get(index);
+    }
+
+
+
+    private static class Segment {
+        final long                          start_index; // e.g. 5000. Then seqno 5100 would be at index 100
+        final int                           capacity;
+        final AtomicReferenceArray<Message> array;
+        final AtomicInteger                 num_tombstones=new AtomicInteger(0);
+
+        public Segment(long start_index, int capacity) {
+            this.start_index=start_index;
+            this.capacity=capacity;
+            this.array=new AtomicReferenceArray<Message>(capacity);
+        }
+
+        public long getStartIndex() {
+            return start_index;
+        }
+
+        public long getEndIndex() {
+            return start_index + capacity;
+        }
+
+        public boolean contains(long seqno) {
+            return seqno >= start_index && seqno < getEndIndex();
+        }
+
+        public Message get(long seqno) {
+            int index=index(seqno);
+            if(index < 0 || index >= array.length())
+                return null;
+            return array.get(index);
+        }
+
+        public byte add(long seqno, Message msg) {
+            int index=index(seqno);
+            if(index < 0)
+                return -1;
+            boolean success=array.compareAndSet(index, null, msg);
+            if(success) {
+                return 1;
+            }
+            else
+                return 0;
+        }
+
+        public Message remove(long seqno) {
+            int index=index(seqno);
+            if(index < 0)
+                return null;
+            Message retval=array.get(index);
+            if(retval != null && array.compareAndSet(index, retval, TOMBSTONE)) {
+                num_tombstones.incrementAndGet();
+                return retval;
+            }
+            return null;
+        }
+
+        public boolean allRemoved() {
+            return num_tombstones.get() >= capacity;
+        }
+
+        public String toString() {
+            return start_index + " - " + (start_index + capacity -1) + " (" + size() + " elements)";
+        }
+
+        public int size() {
+            int retval=0;
+            for(int i=0; i < capacity; i++) {
+                Message tmp=array.get(i);
+                if(tmp != null && tmp != TOMBSTONE)
+                    retval++;
+            }
+            return retval;
+        }
+
+        private int index(long seqno) {
+            if(seqno < start_index)
+                return -1;
+
+            int index=(int)(seqno - start_index);
+            if(index < 0 || index >= capacity) {
+                // todo: replace with returning -1
+                throw new IndexOutOfBoundsException("index=" + index + ", start_index=" + start_index + ", seqno=" + seqno);
+            }
+            return index;
+        }
+
+    }
 
 }
