@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow2.java,v 1.1 2010/02/26 09:02:03 belaban Exp $
+ * @version $Id: AckReceiverWindow2.java,v 1.2 2010/02/26 09:21:20 belaban Exp $
  */
 public class AckReceiverWindow2 {
     private final AtomicLong                   next_to_remove;
@@ -33,8 +33,17 @@ public class AckReceiverWindow2 {
     private final int                          segment_capacity;
     private long                               highest_segment_created=0;
 
-    static final Message                       TOMBSTONE=new Message(true);
+    static final Message                       TOMBSTONE=new Message(false) {
+        public String toString() {
+            return "tombstone";
+        }
+    };
 
+
+    public AckReceiverWindow2(long initial_seqno) {
+        this(initial_seqno, 1000);
+    }
+    
 
     public AckReceiverWindow2(long initial_seqno, int segment_capacity) {
         next_to_remove=new AtomicLong(initial_seqno);
@@ -45,6 +54,7 @@ public class AckReceiverWindow2 {
         Segment initial_segment=findOrCreateSegment(next_to_remove.get());
         for(long i=0; i < next_to_remove.get(); i++) {
             initial_segment.add(i, TOMBSTONE);
+            initial_segment.remove(i);
         }
     }
 
@@ -87,8 +97,11 @@ public class AckReceiverWindow2 {
         if(segment == null)
             return null;
         Message retval=segment.remove(next);
-        if(retval != null)
+        if(retval != null) {
             next_to_remove.compareAndSet(next, next +1);
+            if(segment.allRemoved())
+                segments.remove(next / segment_capacity);
+        }
         return retval;
     }
 
@@ -129,12 +142,15 @@ public class AckReceiverWindow2 {
     }
 
     public int size() {
-        return 0;
+        int retval=0;
+        for(Segment segment: segments.values())
+            retval+=segment.size();
+        return retval;
     }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-
+        sb.append(size() + " messages");
         return sb.toString();
     }
 
@@ -166,7 +182,8 @@ public class AckReceiverWindow2 {
         final long                          start_index; // e.g. 5000. Then seqno 5100 would be at index 100
         final int                           capacity;
         final AtomicReferenceArray<Message> array;
-        final AtomicInteger                 count=new AtomicInteger(0); // counts the numbers of non-empty elements (also tombstones)
+        final AtomicInteger                 added=new AtomicInteger(0); // counts the numbers of non-empty elements (also tombstones)
+        final AtomicInteger                 num_tombstones=new AtomicInteger(0);
 
         public Segment(long start_index, int capacity) {
             this.start_index=start_index;
@@ -180,7 +197,7 @@ public class AckReceiverWindow2 {
                 return -1;
             boolean success=array.compareAndSet(index, null, msg);
             if(success) {
-                count.incrementAndGet();
+                added.incrementAndGet();
                 return 1;
             }
             else
@@ -190,13 +207,23 @@ public class AckReceiverWindow2 {
         public Message remove(long seqno) {
             int index=index(seqno);
             Message retval=array.get(index);
-            if(retval != null && array.compareAndSet(index, retval, TOMBSTONE))
+            if(retval != null && array.compareAndSet(index, retval, TOMBSTONE)) {
+                num_tombstones.incrementAndGet();
                 return retval;
+            }
             return null;
         }
 
+        public boolean allRemoved() {
+            return num_tombstones.get() >= capacity;
+        }
+
         public String toString() {
-            return start_index + " - " + (start_index + capacity -1) + " (" + count + " elements set)";
+            return start_index + " - " + (start_index + capacity -1) + " (" + size() + " elements)";
+        }
+
+        public int size() {
+            return added.get() - num_tombstones.get();
         }
 
         private int index(long seqno) {
