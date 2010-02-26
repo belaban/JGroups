@@ -10,7 +10,7 @@ import java.util.Arrays;
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
  * toByteArray() which copies the internal buffer
  * @author Bela Ban
- * @version $Id: ExposedByteArrayOutputStream.java,v 1.7 2008/10/28 14:29:02 belaban Exp $
+ * @version $Id: ExposedByteArrayOutputStream.java,v 1.8 2010/02/26 15:27:37 belaban Exp $
  */
 public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
@@ -34,6 +34,10 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
 
     public byte[] getRawBuffer() {
         return buf;
+    }
+
+    public Buffer getBuffer() {
+        return new Buffer(buf, 0, count);
     }
 
     public int getCapacity() {
