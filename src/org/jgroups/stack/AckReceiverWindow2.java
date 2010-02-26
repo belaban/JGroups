@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow2.java,v 1.2 2010/02/26 09:21:20 belaban Exp $
+ * @version $Id: AckReceiverWindow2.java,v 1.3 2010/02/26 10:43:31 belaban Exp $
  */
 public class AckReceiverWindow2 {
     private final AtomicLong                   next_to_remove;
@@ -93,7 +93,7 @@ public class AckReceiverWindow2 {
      */
     public Message remove() {
         long next=next_to_remove.get();
-        Segment segment=findOrCreateSegment(next);
+        Segment segment=findSegment(next);
         if(segment == null)
             return null;
         Message retval=segment.remove(next);
@@ -112,11 +112,36 @@ public class AckReceiverWindow2 {
      * @param max Max number of messages to be removed
      * @return Tuple<List<Message>,Long>: a tuple of the message list and the highest seqno removed
      */
-    public Tuple<List<Message>,Long> removeMany(int max) {
+    public Tuple<List<Message>,Long> removeMany(final int max) {
         List<Message> list=new LinkedList<Message>(); // we remove msgs.size() messages *max*
         Tuple<List<Message>,Long> retval=new Tuple<List<Message>,Long>(list, 0L);
 
-        return null;
+        int count=0;
+        boolean looping=true;
+        while(count < max && looping) {
+            long next=next_to_remove.get();
+            Segment segment=findSegment(next);
+            if(segment == null)
+                return retval;
+
+            long segment_id=next;
+            long end=segment.getEndIndex();
+            while(next < end && count < max) {
+                Message msg=segment.remove(next);
+                if(msg == null) {
+                    looping=false;
+                    break;
+                }
+                list.add(msg);
+                count++;
+                retval.setVal2(next);
+                next_to_remove.compareAndSet(next, ++next);
+                if(segment.allRemoved())
+                    segments.remove(segment_id / segment_capacity);
+            }
+        }
+
+        return retval;
     }
 
 
@@ -177,12 +202,17 @@ public class AckReceiverWindow2 {
         return segments.get(index);
     }
 
+    private Segment findSegment(long seqno) {
+        long index=seqno / segment_capacity;
+        return segments.get(index);
+    }
+
+
 
     private static class Segment {
         final long                          start_index; // e.g. 5000. Then seqno 5100 would be at index 100
         final int                           capacity;
         final AtomicReferenceArray<Message> array;
-        final AtomicInteger                 added=new AtomicInteger(0); // counts the numbers of non-empty elements (also tombstones)
         final AtomicInteger                 num_tombstones=new AtomicInteger(0);
 
         public Segment(long start_index, int capacity) {
@@ -191,13 +221,16 @@ public class AckReceiverWindow2 {
             this.array=new AtomicReferenceArray<Message>(capacity);
         }
 
+        public long getEndIndex() {
+            return start_index + capacity;
+        }
+
         public byte add(long seqno, Message msg) {
             int index=index(seqno);
             if(index < 0)
                 return -1;
             boolean success=array.compareAndSet(index, null, msg);
             if(success) {
-                added.incrementAndGet();
                 return 1;
             }
             else
@@ -206,6 +239,8 @@ public class AckReceiverWindow2 {
 
         public Message remove(long seqno) {
             int index=index(seqno);
+            if(index < 0)
+                return null;
             Message retval=array.get(index);
             if(retval != null && array.compareAndSet(index, retval, TOMBSTONE)) {
                 num_tombstones.incrementAndGet();
@@ -223,7 +258,13 @@ public class AckReceiverWindow2 {
         }
 
         public int size() {
-            return added.get() - num_tombstones.get();
+            int retval=0;
+            for(int i=0; i < capacity; i++) {
+                Message tmp=array.get(i);
+                if(tmp != null && tmp != TOMBSTONE)
+                    retval++;
+            }
+            return retval;
         }
 
         private int index(long seqno) {
