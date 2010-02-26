@@ -4,8 +4,7 @@ package org.jgroups.stack;
 import org.jgroups.Message;
 import org.jgroups.util.Tuple;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow2.java,v 1.3 2010/02/26 10:43:31 belaban Exp $
+ * @version $Id: AckReceiverWindow2.java,v 1.4 2010/02/26 11:23:43 belaban Exp $
  */
 public class AckReceiverWindow2 {
     private final AtomicLong                   next_to_remove;
@@ -145,24 +144,7 @@ public class AckReceiverWindow2 {
     }
 
 
-    public Message removeOOBMessage() {
-        return null;
-    }
-
-    /**
-     * Removes as many OOB messages as possible and return the highest seqno
-     * @return the highest seqno or -1 if no OOB message was found
-     */
-    public long removeOOBMessages() {
-        return -1;
-    }
-
-
-    public boolean hasMessagesToRemove() {
-        return false;
-    }
-
-
+    
     public void reset() {
     }
 
@@ -175,16 +157,35 @@ public class AckReceiverWindow2 {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(size() + " messages");
+        int size=size();
+        sb.append(size + " messages");
+        if(size <= 100)
+            sb.append(" in " + segments.size() + " segments: ").append(printMessages());
         return sb.toString();
     }
 
-
-    public String printDetails() {
+    public String printMessages() {
         StringBuilder sb=new StringBuilder();
+        List<Long> keys=new LinkedList<Long>(segments.keySet());
+        Collections.sort(keys);
+        for(long key: keys) {
+            Segment segment=segments.get(key);
+            if(segment == null)
+                continue;
+            for(long i=segment.getStartIndex(); i < segment.getEndIndex(); i++) {
+                Message msg=segment.get(i);
+                if(msg == null)
+                    continue;
+                if(msg == TOMBSTONE)
+                    sb.append("T ");
+                else
+                    sb.append(i + " ");
+            }
+        }
 
         return sb.toString();
     }
+
 
     private Segment findOrCreateSegment(long seqno) {
         long index=seqno / segment_capacity;
@@ -221,8 +222,19 @@ public class AckReceiverWindow2 {
             this.array=new AtomicReferenceArray<Message>(capacity);
         }
 
+        public long getStartIndex() {
+            return start_index;
+        }
+
         public long getEndIndex() {
             return start_index + capacity;
+        }
+
+        public Message get(long seqno) {
+            int index=index(seqno);
+            if(index < 0 || index >= array.length())
+                return null;
+            return array.get(index);
         }
 
         public byte add(long seqno, Message msg) {
