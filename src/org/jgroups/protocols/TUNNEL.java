@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.92 2010/01/15 12:23:57 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.93 2010/02/26 18:10:10 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -301,9 +301,10 @@ public class TUNNEL extends TP {
          this.stub = stub;
       }
 
-      public void connectionStatusChange(RouterStub.ConnectionStatus newState) {
+      public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
          if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
              stub.interrupt();
+             stub.destroy();
              startReconnecting(stub);
          }
          else if (currentState != RouterStub.ConnectionStatus.CONNECTED

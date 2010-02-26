@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.55 2010/02/11 14:00:19 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.56 2010/02/26 18:10:13 vlada Exp $
  */
 public class RouterStub {
 
@@ -54,7 +54,7 @@ public class RouterStub {
     private StubReceiver receiver;
 
     public interface ConnectionListener {
-        void connectionStatusChange(ConnectionStatus state);
+        void connectionStatusChange(RouterStub stub, ConnectionStatus state);
     }
 
     /**
@@ -134,14 +134,12 @@ public class RouterStub {
                 input=new DataInputStream(sock.getInputStream());
                 connectionStateChanged(ConnectionStatus.CONNECTED);
             }
-            catch(Exception e) {
-                if(log.isWarnEnabled())
-                    log.warn(this + " failed connecting to " + router_host + ":" + router_port);
+            catch(Exception e) {                
                 Util.close(sock);
                 Util.close(input);
                 Util.close(output);
                 connectionStateChanged(ConnectionStatus.DISCONNECTED);
-                throw e;
+                throw new Exception("Could not connect to " + getGossipRouterAddress() , e);
             }
         }
     }
@@ -199,6 +197,7 @@ public class RouterStub {
         List<PingData> retval=new ArrayList<PingData>();
         try {
 
+            if(!isConnected() || input == null) throw new IOException ("Connection broken");
             // we might get a spurious SUSPECT message from the router, just ignore it
             if(input.available() > 0) // fixes https://jira.jboss.org/jira/browse/JGRP-1151
                 input.skipBytes(input.available());
@@ -213,17 +212,10 @@ public class RouterStub {
                 rsp.readFrom(input);
                 retval.add(rsp);
             }
-        }
-        catch(SocketException se) {
-            if(log.isWarnEnabled())
-                log.warn("Router stub " + this + " did not send message", se);
+        }       
+        catch(Exception e) {           
             connectionStateChanged(ConnectionStatus.DISCONNECTED);
-        }
-        catch(Exception e) {
-            if(log.isErrorEnabled())
-                log.error("Router stub " + this + " failed sending message to router", e);
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
-            throw new Exception("Connection broken", e);
+            throw new Exception("Connection to " + getGossipRouterAddress() + " broken. Could not send GOSSIP_GET request", e);
         }
         return retval;
     }
@@ -242,25 +234,15 @@ public class RouterStub {
         sendToMember(group, null, data, offset, length); // null destination represents mcast
     }
 
-    public synchronized void sendToMember(String group, Address dest, byte[] data, int offset, int length)
-            throws Exception {
+    public synchronized void sendToMember(String group, Address dest, byte[] data, int offset, int length) throws Exception {
         try {
-            GossipData request=new GossipData(GossipRouter.MESSAGE, group, dest, data, offset, length);
+            GossipData request = new GossipData(GossipRouter.MESSAGE, group, dest, data, offset, length);
             request.writeTo(output);
             output.flush();
-        }
-        catch(SocketException se) {
-            if(log.isWarnEnabled())
-                log.warn("Router stub " + this + " did not send message to "
-                        + (dest == null? "mcast" : dest + " since underlying socket is closed"));
+        } catch (Exception e) {
             connectionStateChanged(ConnectionStatus.DISCONNECTED);
-            throw new Exception("dest=" + dest + " (" + length + " bytes)", se);
-        }
-        catch(Exception e) {
-            if(log.isErrorEnabled())
-                log.error("Router stub " + this + " failed sending message to router");
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
-            throw new Exception("dest=" + dest + " (" + length + " bytes)", e);
+            throw new Exception("Connection to " + getGossipRouterAddress()
+                            + " broken. Could not send message to " + dest, e);
         }
     }
 
@@ -273,7 +255,7 @@ public class RouterStub {
         connectionState=newState;
         if(notify && conn_listener != null) {
             try {
-                conn_listener.connectionStatusChange(newState);
+                conn_listener.connectionStatusChange(this, newState);
             }
             catch(Throwable t) {
                 log.error("failed notifying ConnectionListener " + conn_listener, t);
