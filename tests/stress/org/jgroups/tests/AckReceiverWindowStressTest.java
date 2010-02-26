@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.6 2010/02/25 15:33:52 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.7 2010/02/26 16:13:43 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
@@ -23,11 +23,12 @@ public class AckReceiverWindowStressTest {
         final AckReceiverWindow win=new AckReceiverWindow(1);
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
+        final AtomicInteger removed_msgs=new AtomicInteger(0);
 
         final CountDownLatch latch=new CountDownLatch(1);
         Adder[] adders=new Adder[num_threads];
         for(int i=0; i < adders.length; i++) {
-            adders[i]=new Adder(win, latch, counter, seqno);
+            adders[i]=new Adder(win, latch, counter, seqno, removed_msgs);
             adders[i].start();
         }
 
@@ -43,18 +44,26 @@ public class AckReceiverWindowStressTest {
             }
         }
 
+        for(int i=0; i < 50; i++) {
+            if(removed_msgs.get() >= num_msgs)
+                break;
+            else {
+                System.out.println("removed: " + removed_msgs.get());
+                Util.sleep(100);
+                Tuple<List<Message>,Long> tuple=win.removeMany(20000);
+                List<Message> msgs=tuple.getVal1();
+                if(!msgs.isEmpty())
+                    removed_msgs.addAndGet(msgs.size());
+            }
+        }
+
         long time=System.currentTimeMillis() - start;
         double requests_sec=num_msgs / (time / 1000.0);
         System.out.println("\nTime: " + time + " ms, " + Util.format(requests_sec) + " requests / sec\n");
-
-        int total=0;
-        for(Adder adder: adders) {
-            int num_removed=adder.getRemovedMessages();
-            // System.out.println(adder + ": " + num_removed + " removed messages");
-            total+=num_removed;
+        System.out.println("Total removed messages: " + removed_msgs);
+        if(removed_msgs.get() != num_msgs) {
+            System.err.println("removed messages (" + removed_msgs.get() + ") != num_msgs (" + num_msgs + ")");
         }
-        System.out.println("Total removed messages: " + total);
-
     }
 
 
@@ -63,19 +72,18 @@ public class AckReceiverWindowStressTest {
         final CountDownLatch latch;
         final AtomicInteger num_msgs;
         final AtomicLong current_seqno;
+        final AtomicInteger removed_msgs;
         final static AtomicBoolean processing=new AtomicBoolean(false);
-        int removed_msgs=0;
 
-        public Adder(AckReceiverWindow win, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno) {
+        public Adder(AckReceiverWindow win, CountDownLatch latch, AtomicInteger num_msgs,
+                     AtomicLong current_seqno, AtomicInteger removed_msgs) {
             this.win=win;
             this.latch=latch;
             this.num_msgs=num_msgs;
             this.current_seqno=current_seqno;
+            this.removed_msgs=removed_msgs;
         }
 
-        public int getRemovedMessages() {
-            return removed_msgs;
-        }
 
         public void run() {
             try {
@@ -98,9 +106,13 @@ public class AckReceiverWindowStressTest {
                 // simulates UNICAST: all threads call add2() concurrently, but only 1 thread removes messages
                 if(processing.compareAndSet(false, true)) {
                     try {
-                        Tuple<List<Message>,Long> tuple=win.removeMany(20000);
-                        List<Message> msgs=tuple.getVal1();
-                        removed_msgs+=msgs.size();
+                        while(true) {
+                            Tuple<List<Message>,Long> tuple=win.removeMany(20000);
+                            List<Message> msgs=tuple.getVal1();
+                            if(msgs.isEmpty())
+                                break;
+                            removed_msgs.addAndGet(msgs.size());
+                        }
                     }
                     finally {
                         processing.set(false);
