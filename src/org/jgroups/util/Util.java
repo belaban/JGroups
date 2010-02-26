@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.252 2010/02/11 14:17:45 belaban Exp $
+ * @version $Id: Util.java,v 1.253 2010/02/26 15:01:44 belaban Exp $
  */
 public class Util {
 
@@ -360,7 +360,7 @@ public class Util {
             return oldObjectFromByteBuffer(buffer, offset, length);
         Object retval=null;
         InputStream in=null;
-        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
         byte b=(byte)in_stream.read();
 
         try {
@@ -453,7 +453,7 @@ public class Util {
             return oldObjectToByteBuffer(obj);
 
         byte[] result;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
 
         if(obj == null) {
             out_stream.write(TYPE_NULL);
@@ -466,12 +466,12 @@ public class Util {
         try {
             if(obj instanceof Streamable) {  // use Streamable if we can
                 out_stream.write(TYPE_STREAMABLE);
-                out=new DataOutputStream(out_stream);
+                out=new ExposedDataOutputStream(out_stream);
                 writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
             }
             else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
                 out_stream.write(type.byteValue());
-                out=new DataOutputStream(out_stream);
+                out=new ExposedDataOutputStream(out_stream);
                 switch(type.byteValue()) {
                     case TYPE_BOOLEAN:
                         ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
@@ -695,14 +695,14 @@ public class Util {
         Object retval=null;
 
         try {  // to read the object as an Externalizable
-            ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+            ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
             ObjectInputStream in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
             retval=in.readObject();
             in.close();
         }
         catch(StreamCorruptedException sce) {
             try {  // is it Streamable?
-                ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+                ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
                 DataInputStream in=new DataInputStream(in_stream);
                 retval=readGenericStreamable(in);
                 in.close();
@@ -729,9 +729,9 @@ public class Util {
      */
     public static byte[] oldObjectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
         if(obj instanceof Streamable) {  // use Streamable if we can
-            DataOutputStream out=new DataOutputStream(out_stream);
+            DataOutputStream out=new ExposedDataOutputStream(out_stream);
             writeGenericStreamable((Streamable)obj, out);
             out.close();
         }
@@ -750,7 +750,7 @@ public class Util {
     public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
         if(buffer == null) return null;
         Streamable retval=null;
-        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer);
+        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer);
         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
         retval=(Streamable)cl.newInstance();
         retval.readFrom(in);
@@ -762,7 +762,7 @@ public class Util {
     public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
         Streamable retval=null;
-        ByteArrayInputStream in_stream=new ByteArrayInputStream(buffer, offset, length);
+        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
         retval=(Streamable)cl.newInstance();
         retval.readFrom(in);
@@ -772,8 +772,8 @@ public class Util {
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
-        DataOutputStream out=new DataOutputStream(out_stream);
+        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new ExposedDataOutputStream(out_stream);
         obj.writeTo(out);
         result=out_stream.toByteArray();
         out.close();
@@ -783,8 +783,8 @@ public class Util {
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
-        DataOutputStream out=new DataOutputStream(out_stream);
+        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new ExposedDataOutputStream(out_stream);
         Util.writeAddresses(c, out);
         result=out_stream.toByteArray();
         out.close();
@@ -1231,7 +1231,7 @@ public class Util {
 
     public static Buffer messageToByteBuffer(Message msg) throws IOException {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new DataOutputStream(output);
+        DataOutputStream out=new ExposedDataOutputStream(output);
 
         out.writeBoolean(msg != null);
         if(msg != null)
@@ -1244,7 +1244,7 @@ public class Util {
     }
 
     public static Message byteBufferToMessage(byte[] buffer, int offset, int length) throws Exception {
-        ByteArrayInputStream input=new ByteArrayInputStream(buffer, offset, length);
+        ByteArrayInputStream input=new ExposedByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(input);
 
         if(!in.readBoolean())
@@ -1265,7 +1265,7 @@ public class Util {
        */
     public static Buffer msgListToByteBuffer(List<Message> xmit_list) throws IOException {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new DataOutputStream(output);
+        DataOutputStream out=new ExposedDataOutputStream(output);
         Buffer retval=null;
 
         out.writeInt(xmit_list.size());
@@ -1281,7 +1281,7 @@ public class Util {
 
     public static List<Message> byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
         List<Message>  retval=null;
-        ByteArrayInputStream input=new ByteArrayInputStream(buffer, offset, length);
+        ByteArrayInputStream input=new ExposedByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(input);
         int size=in.readInt();
 
@@ -2327,16 +2327,12 @@ public class Util {
     }
 
     public static int  sizeOf(Streamable inst) {
-        byte[] data;
-        ByteArrayOutputStream output;
-        DataOutputStream out;
-
         try {
-            output=new ByteArrayOutputStream();
-            out=new DataOutputStream(output);
+            ByteArrayOutputStream output=new ExposedByteArrayOutputStream();
+            DataOutputStream out=new ExposedDataOutputStream(output);
             inst.writeTo(out);
             out.flush();
-            data=output.toByteArray();
+            byte[] data=output.toByteArray();
             return data.length;
         }
         catch(Exception ex) {
