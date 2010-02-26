@@ -23,12 +23,13 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow2.java,v 1.4 2010/02/26 11:23:43 belaban Exp $
+ * @version $Id: AckReceiverWindow2.java,v 1.5 2010/02/26 11:46:40 belaban Exp $
  */
 public class AckReceiverWindow2 {
     private final AtomicLong                   next_to_remove;
     private final AtomicBoolean                processing=new AtomicBoolean(false);
     private final ConcurrentMap<Long,Segment>  segments=new ConcurrentHashMap<Long,Segment>();
+    private volatile Segment                   current_segment=null;
     private final int                          segment_capacity;
     private long                               highest_segment_created=0;
 
@@ -51,6 +52,7 @@ public class AckReceiverWindow2 {
         long first_seqno=(next_to_remove.get() / segment_capacity) * segment_capacity;
         this.segments.put(index, new Segment(first_seqno, segment_capacity));
         Segment initial_segment=findOrCreateSegment(next_to_remove.get());
+        current_segment=initial_segment;
         for(long i=0; i < next_to_remove.get(); i++) {
             initial_segment.add(i, TOMBSTONE);
             initial_segment.remove(i);
@@ -79,7 +81,12 @@ public class AckReceiverWindow2 {
      *          1 if added successfully
      */
     public byte add2(long seqno, Message msg) {
-        Segment segment=findOrCreateSegment(seqno);
+        Segment segment=current_segment;
+        if(segment == null || !segment.contains(seqno)) {
+            segment=findOrCreateSegment(seqno);
+            if(segment != null)
+                current_segment=segment;
+        }
         if(segment == null)
             return -1;
         return segment.add(seqno, msg);
@@ -228,6 +235,10 @@ public class AckReceiverWindow2 {
 
         public long getEndIndex() {
             return start_index + capacity;
+        }
+
+        public boolean contains(long seqno) {
+            return seqno >= start_index && seqno < getEndIndex();
         }
 
         public Message get(long seqno) {
