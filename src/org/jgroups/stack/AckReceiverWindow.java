@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.47 2010/03/01 15:12:58 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.48 2010/03/01 15:35:47 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                   next_to_remove;
@@ -126,8 +126,8 @@ public class AckReceiverWindow {
      * @return Tuple<List<Message>,Long>: a tuple of the message list and the highest seqno removed
      */
     public Tuple<List<Message>,Long> removeMany(final int max) {
-        List<Message> list=new LinkedList<Message>(); // we remove msgs.size() messages *max*
-        Tuple<List<Message>,Long> retval=new Tuple<List<Message>,Long>(list, 0L);
+        List<Message> list=null; // we remove msgs.size() messages *max*
+        Tuple<List<Message>,Long> retval=null;
 
         int count=0;
         boolean looping=true;
@@ -149,6 +149,10 @@ public class AckReceiverWindow {
                 if(msg == null) {
                     looping=false;
                     break;
+                }
+                if(list == null) {
+                    list=new LinkedList<Message>(); // we remove msgs.size() messages *max*
+                    retval=new Tuple<List<Message>,Long>(list, 0L);
                 }
                 list.add(msg);
                 count++;
