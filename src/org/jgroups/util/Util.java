@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.255 2010/03/01 07:21:30 belaban Exp $
+ * @version $Id: Util.java,v 1.256 2010/03/01 09:56:31 belaban Exp $
  */
 public class Util {
 
@@ -346,84 +346,55 @@ public class Util {
     public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
         Object retval=null;
-        InputStream in=null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        byte b=(byte)in_stream.read();
+        byte type=buffer[offset];
 
-        try {
-            switch(b) {
-                case TYPE_NULL:
-                    return null;
-                case TYPE_STREAMABLE:
-                    in=new DataInputStream(in_stream);
-                    retval=readGenericStreamable((DataInputStream)in);
-                    break;
-                case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                    in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+
+        switch(type) {
+            case TYPE_NULL:
+                return null;
+            case TYPE_STREAMABLE:
+                ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
+                InputStream in=new DataInputStream(in_stream);
+                retval=readGenericStreamable((DataInputStream)in);
+                break;
+            case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
+                in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
+                in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+                try {
                     retval=((ObjectInputStream)in).readObject();
-                    break;
-                case TYPE_BOOLEAN:
-                    in=new DataInputStream(in_stream);
-                    retval=Boolean.valueOf(((DataInputStream)in).readBoolean());
-                    break;
-                case TYPE_BYTE:
-                    in=new DataInputStream(in_stream);
-                    retval=Byte.valueOf(((DataInputStream)in).readByte());
-                    break;
-                case TYPE_CHAR:
-                    in=new DataInputStream(in_stream);
-                    retval=Character.valueOf(((DataInputStream)in).readChar());
-                    break;
-                case TYPE_DOUBLE:
-                    in=new DataInputStream(in_stream);
-                    retval=Double.valueOf(((DataInputStream)in).readDouble());
-                    break;
-                case TYPE_FLOAT:
-                    in=new DataInputStream(in_stream);
-                    retval=Float.valueOf(((DataInputStream)in).readFloat());
-                    break;
-                case TYPE_INT:
-                    in=new DataInputStream(in_stream);
-                    retval=Integer.valueOf(((DataInputStream)in).readInt());
-                    break;
-                case TYPE_LONG:
-                    in=new DataInputStream(in_stream);
-                    retval=Long.valueOf(((DataInputStream)in).readLong());
-                    break;
-                case TYPE_SHORT:
-                    in=new DataInputStream(in_stream);
-                    retval=Short.valueOf(((DataInputStream)in).readShort());
-                    break;
-                case TYPE_STRING:
-                    in=new DataInputStream(in_stream);
-                    if(((DataInputStream)in).readBoolean()) { // large string
-                        ObjectInputStream ois=new ObjectInputStream(in);
-                        try {
-                            return ois.readObject();
-                        }
-                        finally {
-                            ois.close();
-                        }
-                    }
-                    else {
-                        retval=((DataInputStream)in).readUTF();
-                    }
-                    break;
-                case TYPE_BYTEARRAY:
-                    in=new DataInputStream(in_stream);
-                    int len=((DataInputStream)in).readInt();
-                    byte[] tmp=new byte[len];
-                    ((DataInputStream)in).readFully(tmp, 0, tmp.length);
-                    retval=tmp;
-                    break;
-                default:
-                    throw new IllegalArgumentException("type " + b + " is invalid");
-            }
-            return retval;
+                }
+                finally {
+                    Util.close(in);
+                }
+                break;
+            case TYPE_BOOLEAN:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).get() == 1;
+            case TYPE_BYTE:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).get();
+            case TYPE_CHAR:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getChar();
+            case TYPE_DOUBLE:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getDouble();
+            case TYPE_FLOAT:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getFloat();
+            case TYPE_INT:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getInt();
+            case TYPE_LONG:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getLong();
+            case TYPE_SHORT:
+                return ByteBuffer.wrap(buffer, offset + 1, length - 1).getShort();
+            case TYPE_STRING:
+                byte[] tmp=new byte[length -1];
+                System.arraycopy(buffer, offset +1, tmp, 0, length -1);
+                return new String(tmp);
+            case TYPE_BYTEARRAY:
+                tmp=new byte[length -1];
+                System.arraycopy(buffer, offset +1, tmp, 0, length -1);
+                return tmp;
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
         }
-        finally {
-            Util.close(in);
-        }
+        return retval;
     }
 
 
@@ -431,96 +402,71 @@ public class Util {
 
     /**
      * Serializes/Streams an object into a byte buffer.
-     * The object has to implement interface Serializable or Externalizable
-     * or Streamable.  Only Streamable objects are interoperable w/ jgroups-me
+     * The object has to implement interface Serializable or Externalizable or Streamable. 
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
-        byte[] result;
-        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        if(obj == null)
+            return ByteBuffer.allocate(Global.BYTE_SIZE).put(TYPE_NULL).array();
 
-        if(obj == null) {
-            out_stream.write(TYPE_NULL);
-            out_stream.flush();
+        if(obj instanceof Streamable) {
+            final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
+            final ExposedDataOutputStream out=new ExposedDataOutputStream(out_stream);
+            out_stream.write(TYPE_STREAMABLE);
+            writeGenericStreamable((Streamable)obj, out);
             return out_stream.toByteArray();
         }
 
-        OutputStream out=null;
-        Byte type;
-        try {
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                out_stream.write(TYPE_STREAMABLE);
-                out=new ExposedDataOutputStream(out_stream);
-                writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
-            }
-            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-                out_stream.write(type.byteValue());
-                out=new ExposedDataOutputStream(out_stream);
-                switch(type.byteValue()) {
-                    case TYPE_BOOLEAN:
-                        ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
-                        break;
-                    case TYPE_BYTE:
-                        ((DataOutputStream)out).writeByte(((Byte)obj).byteValue());
-                        break;
-                    case TYPE_CHAR:
-                        ((DataOutputStream)out).writeChar(((Character)obj).charValue());
-                        break;
-                    case TYPE_DOUBLE:
-                        ((DataOutputStream)out).writeDouble(((Double)obj).doubleValue());
-                        break;
-                    case TYPE_FLOAT:
-                        ((DataOutputStream)out).writeFloat(((Float)obj).floatValue());
-                        break;
-                    case TYPE_INT:
-                        ((DataOutputStream)out).writeInt(((Integer)obj).intValue());
-                        break;
-                    case TYPE_LONG:
-                        ((DataOutputStream)out).writeLong(((Long)obj).longValue());
-                        break;
-                    case TYPE_SHORT:
-                        ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
-                        break;
-                    case TYPE_STRING:
-                        String str=(String)obj;
-                        if(str.length() > Short.MAX_VALUE) {
-                            ((DataOutputStream)out).writeBoolean(true);
-                            ObjectOutputStream oos=new ObjectOutputStream(out);
-                            try {
-                                oos.writeObject(str);
-                            }
-                            finally {
-                                oos.close();
-                            }
-                        }
-                        else {
-                            ((DataOutputStream)out).writeBoolean(false);
-                            ((DataOutputStream)out).writeUTF(str);
-                        }
-                        break;
-                    case TYPE_BYTEARRAY:
-                        byte[] buf=(byte[])obj;
-                        ((DataOutputStream)out).writeInt(buf.length);
-                        out.write(buf, 0, buf.length);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("type " + type + " is invalid");
-                }
-            }
-            else { // will throw an exception if object is not serializable
-                out_stream.write(TYPE_SERIALIZABLE);
-                out=new ObjectOutputStream(out_stream);
-                ((ObjectOutputStream)out).writeObject(obj);
-            }
+        Byte type=PRIMITIVE_TYPES.get(obj.getClass());
+        if(type == null) { // will throw an exception if object is not serializable
+            final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
+            out_stream.write(TYPE_SERIALIZABLE);
+            ObjectOutputStream out=new ObjectOutputStream(out_stream);
+            out.writeObject(obj);
+            out.close();
+            return out_stream.toByteArray();
         }
-        finally {
-            Util.close(out);
+
+        switch(type.byteValue()) {
+            case TYPE_BOOLEAN:
+                return ByteBuffer.allocate(Global.BYTE_SIZE * 2).put(TYPE_BOOLEAN)
+                        .put(((Boolean)obj).booleanValue()? (byte)1 : (byte)0).array();
+            case TYPE_BYTE:
+                return ByteBuffer.allocate(Global.BYTE_SIZE *2).put(TYPE_BYTE).put(((Byte)obj).byteValue()).array();
+            case TYPE_CHAR:
+                return ByteBuffer.allocate(Global.BYTE_SIZE *3).put(TYPE_CHAR).putChar(((Character)obj).charValue()).array();
+            case TYPE_DOUBLE:
+                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE).put(TYPE_DOUBLE)
+                        .putDouble(((Double)obj).doubleValue()).array();
+            case TYPE_FLOAT:
+                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.FLOAT_SIZE).put(TYPE_FLOAT)
+                        .putFloat(((Float)obj).floatValue()).array();
+            case TYPE_INT:
+                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE).put(TYPE_INT)
+                        .putInt(((Integer)obj).intValue()).array();
+            case TYPE_LONG:
+                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(TYPE_LONG)
+                        .putLong(((Long)obj).longValue()).array();
+            case TYPE_SHORT:
+                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.SHORT_SIZE).put(TYPE_SHORT)
+                        .putShort(((Short)obj).shortValue()).array();
+            case TYPE_STRING:
+                String str=(String)obj;
+                byte[] buf=new byte[str.length()];
+                for(int i=0; i < buf.length; i++)
+                    buf[i]=(byte)str.charAt(i);
+                return ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_STRING).put(buf, 0, buf.length).array();
+            case TYPE_BYTEARRAY:
+                buf=(byte[])obj;
+                return ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_BYTEARRAY)
+                        .put(buf, 0, buf.length).array();
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
         }
-        result=out_stream.toByteArray();
-        return result;
+
     }
 
 
-     public static Buffer objectToBuffer(Object obj) throws Exception {
+   /* public static Buffer objectToBuffer(Object obj) throws Exception {
         final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
 
         if(obj == null) {
@@ -601,7 +547,7 @@ public class Util {
             Util.close(out);
         }
         return out_stream.getBuffer();
-    }
+    }*/
 
 
 
