@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.51 2010/03/01 07:21:29 belaban Exp $
+ * @version $Id: Global.java,v 1.52 2010/03/01 09:55:05 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -12,6 +12,7 @@ public class Global {
     public static final int INT_SIZE    = Integer.SIZE / 8; // 4
     public static final int LONG_SIZE   = Long.SIZE    / 8; // 8
     public static final int DOUBLE_SIZE = Double.SIZE  / 8; // 8;
+    public static final int FLOAT_SIZE  = Float.SIZE   / 8; // 4;
 
     public static final Object NULL=new Object();
 
