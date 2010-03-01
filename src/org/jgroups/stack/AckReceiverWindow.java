@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.46 2010/03/01 12:53:41 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.47 2010/03/01 15:12:58 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                   next_to_remove;
@@ -34,7 +34,7 @@ public class AckReceiverWindow {
     private final int                          segment_capacity;
     private long                               highest_segment_created=0;
 
-    static final Message                       TOMBSTONE=new Message(false) {
+    public static final Message                       TOMBSTONE=new Message(false) {
         public String toString() {
             return "tombstone";
         }
@@ -277,7 +277,7 @@ public class AckReceiverWindow {
             if(index < 0)
                 return null;
             Message retval=array.get(index);
-            if(retval != null && array.compareAndSet(index, retval, TOMBSTONE)) {
+            if(retval != null && retval != TOMBSTONE && array.compareAndSet(index, retval, TOMBSTONE)) {
                 num_tombstones.incrementAndGet();
                 return retval;
             }
@@ -307,10 +307,8 @@ public class AckReceiverWindow {
                 return -1;
 
             int index=(int)(seqno - start_index);
-            if(index < 0 || index >= capacity) {
-                // todo: replace with returning -1
+            if(index < 0 || index >= capacity)
                 throw new IndexOutOfBoundsException("index=" + index + ", start_index=" + start_index + ", seqno=" + seqno);
-            }
             return index;
         }
 
