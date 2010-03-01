@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class AckReceiverWindowStressTest {
-    static final int NUM_MSGS=10000000;
+    static final int NUM_MSGS=1000000;
     static final int NUM_THREADS=50;
     static final int SEGMENT_SIZE=50000;
 
@@ -62,7 +62,7 @@ public class AckReceiverWindowStressTest {
             else {
                 System.out.println("removed: " + removed_msgs.get());
                 Util.sleep(100);
-                Tuple<List<Message>,Long> tuple=win.removeMany(20000);
+                Tuple<List<Message>,Long> tuple=win.removeMany(segment_size);
                 List<Message> msgs=tuple.getVal1();
                 if(!msgs.isEmpty())
                     removed_msgs.addAndGet(msgs.size());
@@ -134,6 +134,7 @@ public class AckReceiverWindowStressTest {
     }
 
 
+    @Test(enabled=false)
     public static void main(String[] args) {
         int num_threads=50;
         int num_msgs=1000000;
