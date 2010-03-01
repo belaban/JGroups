@@ -1,33 +1,48 @@
-package org.jgroups.tests;
+package org.jgroups.protocols;
 
-import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.Address;
-import org.jgroups.protocols.UNICAST;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.annotations.Test;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
 
 
 /**
  * Tests time for N threads to deliver M messages to UNICAST
  * @author Bela Ban
- * @version $Id: UNICAST_StressTest.java,v 1.3 2010/02/25 14:36:28 belaban Exp $
+ * @version $Id: UNICAST_StressTest.java,v 1.1 2010/03/01 13:04:41 belaban Exp $
  */
+@Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST_StressTest {
+    static final int NUM_MSGS=1000000;
+    static final int NUM_THREADS=50;
+    static final int MAX_MSG_BATCH_SIZE=50000;
 
-    static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size) {
+    @Test
+    public static void stressTest() {
+        start(NUM_THREADS, NUM_MSGS, false, MAX_MSG_BATCH_SIZE);
+    }
+
+    @Test
+    public static void stressTestOOB() {
+        start(NUM_THREADS, NUM_MSGS, true, MAX_MSG_BATCH_SIZE);
+    }
+
+    private static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size) {
         final UNICAST unicast=new UNICAST();
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
@@ -125,14 +140,13 @@ public class UNICAST_StressTest {
         if(oob)
             Collections.sort(results);
 
-        if(results.size() != num_msgs)
-            System.err.println("expected " + num_msgs + ", but got " + results.size());
+        assert results.size() == num_msgs : "expected " + num_msgs + ", but got " + results.size();
 
         System.out.println("Checking results consistency");
         int i=1;
         for(Long num: results) {
             if(num.longValue() != i) {
-                System.err.println("expected " + i + " but got " + num);
+                assert i == num : "expected " + i + " but got " + num;
                 return;
             }
             i++;
@@ -140,7 +154,7 @@ public class UNICAST_StressTest {
         System.out.println("OK");
     }
 
-    static Message createMessage(Address dest, Address src, long seqno, boolean oob, boolean first) {
+    private static Message createMessage(Address dest, Address src, long seqno, boolean oob, boolean first) {
         Message msg=new Message(dest, src, "hello world");
         UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(seqno, (short)1, first);
         msg.putHeader("UNICAST", hdr);
@@ -187,8 +201,9 @@ public class UNICAST_StressTest {
             }
         }
     }
+    
 
-
+    @Test(enabled=false)
     public static void main(String[] args) {
         int num_threads=10;
         int num_msgs=1000000;
