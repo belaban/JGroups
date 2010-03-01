@@ -15,12 +15,12 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id: AckReceiverWindowStressTest.java,v 1.7 2010/02/26 16:13:43 belaban Exp $
+ * @version $Id: AckReceiverWindowStressTest.java,v 1.8 2010/03/01 12:29:32 belaban Exp $
  */
 public class AckReceiverWindowStressTest {
 
-    static void start(int num_threads, int num_msgs) {
-        final AckReceiverWindow win=new AckReceiverWindow(1);
+    static void start(int num_threads, int num_msgs, int segment_size) {
+        final AckReceiverWindow win=new AckReceiverWindow(1, segment_size);
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
         final AtomicInteger removed_msgs=new AtomicInteger(0);
@@ -126,6 +126,7 @@ public class AckReceiverWindowStressTest {
     public static void main(String[] args) {
         int num_threads=50;
         int num_msgs=1000000;
+        int segment_size=20000;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num_threads")) {
@@ -136,9 +137,13 @@ public class AckReceiverWindowStressTest {
                 num_msgs=Integer.parseInt(args[++i]);
                 continue;
             }
-            System.out.println("AckReceiverWindowStressTest [-num_msgs msgs] [-num_threads threads]");
+            if(args[i].equals("-segment_size")) {
+                segment_size=Integer.parseInt(args[++i]);
+                continue;
+            }
+            System.out.println("AckReceiverWindowStressTest [-num_msgs msgs] [-num_threads threads] [-segment_size <size>]");
             return;
         }
-        start(num_threads, num_msgs);
+        start(num_threads, num_msgs, segment_size);
     }
 }
