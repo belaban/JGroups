@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.util.Tuple;
 import org.jgroups.stack.AckReceiverWindow;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -17,7 +18,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.14 2010/03/01 15:13:39 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.15 2010/03/01 15:56:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -118,7 +119,6 @@ public class AckReceiverWindowTest {
 
 
 
-
     public static void testRemoveRegularMessages() {
         AckReceiverWindow win=new AckReceiverWindow(1);
         win.add(1, msg());
@@ -138,6 +138,27 @@ public class AckReceiverWindowTest {
 
         assert win.size() == 1;
     }
+
+
+    public static void testRemoveMany() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        Tuple<List<Message>, Long> tuple=win.removeMany(100);
+        assert tuple == null;
+
+        win.add(2, msg());
+        win.add(4, msg());
+        tuple=win.removeMany(100);
+        assert tuple == null;
+
+        win.add(3, msg());
+        win.add(1, msg());
+
+        tuple=win.removeMany(10);
+        List<Message> list=tuple.getVal1();
+        assert list.size() == 4;
+        assert tuple.getVal2() == 4;
+    }
+
 
     public static void testSmallerThanNextToRemove() {
         AckReceiverWindow win=new AckReceiverWindow(1);
@@ -176,7 +197,7 @@ public class AckReceiverWindowTest {
             adder.join();
 
         System.out.println("win = " + win);
-        assert win.size() == NUM -1;
+        assert win.size() == NUM;
     }
 
     @Test(invocationCount=10)
