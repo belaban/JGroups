@@ -17,7 +17,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.13 2010/02/26 11:03:56 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.14 2010/03/01 15:13:39 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -179,6 +179,7 @@ public class AckReceiverWindowTest {
         assert win.size() == NUM -1;
     }
 
+    @Test(invocationCount=10)
     public static void testConcurrentAddsAndRemoves() throws InterruptedException {
         AckReceiverWindow win=new AckReceiverWindow(1);
         final int NUM=100;
@@ -214,13 +215,38 @@ public class AckReceiverWindowTest {
         }
 
         System.out.println("total = " + total);
-        assert total == NUM - 1;
+        if(total != NUM) {
+            for(Remover remover: removers) {
+                System.out.println(remover + ": " + print(remover.getList()));
+            }
+        }
+        assert total == NUM;
     }
 
-
+    private static String print(List<Message> list) {
+        StringBuilder sb=new StringBuilder();
+        for(Message msg: list) {
+            if(msg == AckReceiverWindow.TOMBSTONE)
+                sb.append("T ");
+            else
+                sb.append(msg.getObject() + " ");
+        }
+        return sb.toString();
+    }
 
     private static Message msg() {
         return msg(false);
+    }
+
+    private static Message msg(long seqno) {
+        return msg(false, seqno);
+    }
+
+    private static Message msg(boolean oob, long seqno) {
+        Message retval=new Message(null, null, seqno);
+        if(oob)
+            retval.setFlag(Message.OOB);
+        return retval;
     }
 
     private static Message msg(boolean oob) {
@@ -252,10 +278,9 @@ public class AckReceiverWindowTest {
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println(Thread.currentThread() + " started");
-            for(long i=from; i < to; i++) {
+            for(long i=from; i <= to; i++) {
                 for(int j=0; j < duplicates; j++) {
-                    win.add(i, msg(true));
+                    win.add(i, msg(true, i));
                 }
             }
         }
@@ -283,20 +308,18 @@ public class AckReceiverWindowTest {
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println(Thread.currentThread() + " started");
 
             int cnt=5;
             while(true) {
                 Message msg=win.remove();
                 if(msg != null) {
                     list.add(msg);
-                    // Util.sleep(1);
                 }
                 else {
                     if(cnt-- <= 0)
                         break;
                     else
-                        Util.sleep(1);
+                        Util.sleep(100);
                 }
             }
             
