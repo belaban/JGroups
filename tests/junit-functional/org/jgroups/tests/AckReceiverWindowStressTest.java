@@ -2,8 +2,10 @@ package org.jgroups.tests;
 
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.jgroups.util.Tuple;
+import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,9 +19,19 @@ import java.util.List;
  * @author Bela Ban
  * @version $Id
  */
+@Test(groups=Global.FUNCTIONAL, sequential=true)
 public class AckReceiverWindowStressTest {
+    static final int NUM_MSGS=10000000;
+    static final int NUM_THREADS=50;
+    static final int SEGMENT_SIZE=50000;
 
-    static void start(int num_threads, int num_msgs, int segment_size) {
+    @Test
+    public static void stressTest() {
+        start(NUM_THREADS, NUM_MSGS, SEGMENT_SIZE);
+    }
+
+
+    private static void start(int num_threads, int num_msgs, int segment_size) {
         final AckReceiverWindow win=new AckReceiverWindow(1, segment_size);
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
@@ -61,9 +73,8 @@ public class AckReceiverWindowStressTest {
         double requests_sec=num_msgs / (time / 1000.0);
         System.out.println("\nTime: " + time + " ms, " + Util.format(requests_sec) + " requests / sec\n");
         System.out.println("Total removed messages: " + removed_msgs);
-        if(removed_msgs.get() != num_msgs) {
-            System.err.println("removed messages (" + removed_msgs.get() + ") != num_msgs (" + num_msgs + ")");
-        }
+        assert removed_msgs.get() == num_msgs :
+                "removed messages (" + removed_msgs.get() + ") != num_msgs (" + num_msgs + ")";
     }
 
 
