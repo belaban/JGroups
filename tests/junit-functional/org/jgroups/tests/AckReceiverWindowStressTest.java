@@ -63,6 +63,8 @@ public class AckReceiverWindowStressTest {
                 System.out.println("removed: " + removed_msgs.get());
                 Util.sleep(100);
                 Tuple<List<Message>,Long> tuple=win.removeMany(segment_size);
+                if(tuple == null)
+                    continue;
                 List<Message> msgs=tuple.getVal1();
                 if(!msgs.isEmpty())
                     removed_msgs.addAndGet(msgs.size());
