@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.44 2010/02/26 15:48:10 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.45 2010/03/01 07:16:58 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                   next_to_remove;
     private final AtomicBoolean                processing=new AtomicBoolean(false);
-    private final ConcurrentMap<Long,Segment>  segments=new ConcurrentHashMap<Long,Segment>();
+    private final ConcurrentMap<Long,Segment>  segments=new ConcurrentHashMap<Long,Segment>(64, 0.75F, 64);
     private volatile Segment                   current_segment=null;
     private final int                          segment_capacity;
     private long                               highest_segment_created=0;
