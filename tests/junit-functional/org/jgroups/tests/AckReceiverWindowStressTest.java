@@ -119,6 +119,8 @@ public class AckReceiverWindowStressTest {
                     try {
                         while(true) {
                             Tuple<List<Message>,Long> tuple=win.removeMany(20000);
+                            if(tuple == null)
+                                break;
                             List<Message> msgs=tuple.getVal1();
                             if(msgs.isEmpty())
                                 break;
