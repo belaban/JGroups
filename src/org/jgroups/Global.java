@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.50 2010/01/22 11:25:21 belaban Exp $
+ * @version $Id: Global.java,v 1.51 2010/03/01 07:21:29 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -25,7 +25,6 @@ public class Global {
     public static final String BIND_INTERFACE="jgroups.bind_interface";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY_OLD="ignore.bind.address";
-    public static final String MARSHALLING_COMPAT="jgroups.marshalling.compatible";
 
     public static final String TCPPING_INITIAL_HOSTS="jgroups.tcpping.initial_hosts";
 
