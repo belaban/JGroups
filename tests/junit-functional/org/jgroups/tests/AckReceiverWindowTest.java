@@ -18,7 +18,7 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.15 2010/03/01 15:56:58 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.16 2010/03/02 08:17:48 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {
@@ -157,6 +157,24 @@ public class AckReceiverWindowTest {
         List<Message> list=tuple.getVal1();
         assert list.size() == 4;
         assert tuple.getVal2() == 4;
+    }
+
+
+    public static void testRemoveMany2() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        for(int i=1; i <=50; i++)
+            win.add(i, msg());
+        System.out.println("win = " + win);
+        List<Message> list=win.removeManyAsList(25);
+
+        System.out.println("win = " + win);
+        assert list != null && list.size() == 25;
+        assert win.size() == 25;
+
+        list=win.removeManyAsList(30);
+        System.out.println("win = " + win);
+        assert list != null && list.size() == 25;
+        assert win.size() == 0;
     }
 
 
