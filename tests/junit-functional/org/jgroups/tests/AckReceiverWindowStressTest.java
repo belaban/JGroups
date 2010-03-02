@@ -62,11 +62,8 @@ public class AckReceiverWindowStressTest {
             else {
                 System.out.println("removed: " + removed_msgs.get());
                 Util.sleep(100);
-                Tuple<List<Message>,Long> tuple=win.removeMany(segment_size);
-                if(tuple == null)
-                    continue;
-                List<Message> msgs=tuple.getVal1();
-                if(!msgs.isEmpty())
+                List<Message> msgs=win.removeManyAsList(segment_size);
+                if(msgs != null && !msgs.isEmpty())
                     removed_msgs.addAndGet(msgs.size());
             }
         }
@@ -120,11 +117,8 @@ public class AckReceiverWindowStressTest {
                 if(processing.compareAndSet(false, true)) {
                     try {
                         while(true) {
-                            Tuple<List<Message>,Long> tuple=win.removeMany(20000);
-                            if(tuple == null)
-                                break;
-                            List<Message> msgs=tuple.getVal1();
-                            if(msgs.isEmpty())
+                            List<Message> msgs=win.removeManyAsList(20000);
+                            if(msgs == null || msgs.isEmpty())
                                 break;
                             removed_msgs.addAndGet(msgs.size());
                         }
