@@ -35,12 +35,18 @@ import java.io.IOException;
  * @author Bela Ban
  */
 public class ClassConfigurator {
-    public static final String MAGIC_NUMBER_FILE="jg-magic-map.xml";
+    public static final String MAGIC_NUMBER_FILE = "jg-magic-map.xml";
+    public static final String PROTOCOL_ID_FILE  = "jg-protocol-ids.xml";
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
+    private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
-    //this is where we store magic numbers
+    // this is where we store magic numbers; contains data from jg-magic-map.xml
     private static final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
     private static final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
+
+    /** Contains data read from jg-protocol-ids.xml */
+    private static final Map<Class,Short> protocol_ids=new ConcurrentHashMap<Class,Short>();
+
     protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
 
 
@@ -61,16 +67,20 @@ public class ClassConfigurator {
             // make sure we have a class for DocumentBuilderFactory
             Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
 
-            String mnfile=null;
+            String magic_number_file=null, protocol_id_file=null;
             try { // PropertyPermission not granted if running in an untrusted environment with JNLP
-                mnfile=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
+                magic_number_file=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
                                                null, null, false, MAGIC_NUMBER_FILE);
-                if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
+                protocol_id_file=Util.getProperty(new String[]{Global.PROTOCOL_ID_FILE, "org.jgroups.conf.protocolIDFile"},
+                                                  null, null, false, PROTOCOL_ID_FILE);
+                if(log.isDebugEnabled()) log.debug("Using " + magic_number_file + " as magic number file and " +
+                        protocol_id_file + " for protocol IDs");
             }
             catch (SecurityException ex){
             }
 
-            List<Tuple<Short,String>> mapping=readMagicNumberMapping(mnfile);
+            // Read jg-magic-map.xml
+            List<Tuple<Short,String>> mapping=readMappings(magic_number_file);
             for(Tuple<Short,String> tuple: mapping) {
                 short m=tuple.getVal1();
                 try {
@@ -81,6 +91,22 @@ public class ClassConfigurator {
                     
                     magicMap.put(m, clazz);
                     classMap.put(clazz, m);
+                }
+                catch(ClassNotFoundException cnf) {
+                    throw new ChannelException("failed loading class", cnf);
+                }
+            }
+
+            // Read jg-protocol-ids.xml
+            mapping=readMappings(protocol_id_file);
+            for(Tuple<Short,String> tuple: mapping) {
+                short m=tuple.getVal1();
+                try {
+                    Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+                    if(protocol_ids.containsKey(clazz))
+                        throw new ChannelException("ID " + m + " (" + clazz.getName() + ')' +
+                                " is already in map; please make sure that all protocol IDs are unique");
+                    protocol_ids.put(clazz, m);
                 }
                 catch(ClassNotFoundException cnf) {
                     throw new ChannelException("failed loading class", cnf);
@@ -113,6 +139,16 @@ public class ClassConfigurator {
         magicMap.put(magic, clazz);
         classMap.put(clazz, magic);
     }
+
+
+    public static void addProtocol(short id, Class protocol) {
+        if(id <= MIN_CUSTOM_PROTOCOL_ID)
+            throw new IllegalArgumentException("protocol ID (" + id + ") needs to be greater than " + MIN_CUSTOM_PROTOCOL_ID);
+        if(protocol_ids.containsKey(protocol))
+            throw new IllegalArgumentException("Protocol " + protocol + " is already present");
+        protocol_ids.put(protocol, id);
+    }
+
 
     /**
      * Returns a class for a magic number.
@@ -157,6 +193,10 @@ public class ClassConfigurator {
     }
 
 
+    public static short getProtocolId(Class protocol) {
+        return protocol_ids.get(protocol);
+    }
+
 
 
     public String toString() {
@@ -191,7 +231,7 @@ public class ClassConfigurator {
      *
      * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
-    protected static List<Tuple<Short,String>> readMagicNumberMapping(String name) throws Exception {
+    protected static List<Tuple<Short,String>> readMappings(String name) throws Exception {
         InputStream stream;
         try {
             stream=Util.getResourceAsStream(name, ClassConfigurator.class);
@@ -210,7 +250,7 @@ public class ClassConfigurator {
 
     protected static List<Tuple<Short,String>> parse(InputStream stream) throws Exception {
         DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
-        factory.setValidating(false); //for now
+        factory.setValidating(false); // for now
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(stream);
         NodeList class_list=document.getElementsByTagName("class");
@@ -240,8 +280,6 @@ public class ClassConfigurator {
             throw tmp;
         }
     }
-
-
 
 
 }
