@@ -36,7 +36,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.74 2009/12/11 13:19:31 belaban Exp $
+ * @version $Id: Protocol.java,v 1.75 2010/03/04 10:17:19 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -52,6 +52,10 @@ public abstract class Protocol {
     @Property(name="name",description="Give the protocol a different name if needed so we can have multiple " +
             "instances of it in the same stack",writable=false)
     protected String           name=getClass().getSimpleName();
+
+    @Property(description="Give the protocol a different ID if needed so we can have multiple " +
+            "instances of it in the same stack",writable=true)
+    protected short            id=0;
 
     protected final Log        log=LogFactory.getLog(this.getClass());
 
@@ -304,6 +308,10 @@ public abstract class Protocol {
     /** All protocol names have to be unique ! */
     public String getName() {
         return name;
+    }
+
+    public short getId() {
+        return id;
     }
 
     public Protocol getUpProtocol() {
