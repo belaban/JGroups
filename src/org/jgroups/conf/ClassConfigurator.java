@@ -1,4 +1,3 @@
-// $Id: ClassConfigurator.java,v 1.27 2009/10/20 12:59:05 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -8,12 +7,19 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.Global;
 import org.jgroups.util.Util;
+import org.jgroups.util.Tuple;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+import org.w3c.dom.NamedNodeMap;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 /**
  * This class will be replaced with the class that read info
@@ -27,9 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Filip Hanik
  * @author Bela Ban
- * @see MagicNumberReader
  */
 public class ClassConfigurator {
+    public static final String MAGIC_NUMBER_FILE="jg-magic-map.xml";
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
 
     //this is where we store magic numbers
@@ -53,43 +59,31 @@ public class ClassConfigurator {
     protected static void init() throws ChannelException {
         try {
             // make sure we have a class for DocumentBuilderFactory
-            // getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
             Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
 
-            MagicNumberReader reader=new MagicNumberReader();
-
-            // PropertyPermission not granted if running in an untrusted environment with JNLP.
-            try {
-                String mnfile=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
-                                               null, null, false, null);
-                if(mnfile != null) {
-                    if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
-                    reader.setFilename(mnfile);
-                }
+            String mnfile=null;
+            try { // PropertyPermission not granted if running in an untrusted environment with JNLP
+                mnfile=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
+                                               null, null, false, MAGIC_NUMBER_FILE);
+                if(log.isDebugEnabled()) log.debug("Using " + mnfile + " as magic number file");
             }
             catch (SecurityException ex){
             }
 
-            ClassMap[] mapping=reader.readMagicNumberMapping();
-            if(mapping != null) {
-                Short m;
-                for(int i=0; i < mapping.length; i++) {
-                    m=new Short(mapping[i].getMagicNumber());
-                    try {
-                        Class clazz=mapping[i].getClassForMap();
-                        if(magicMap.containsKey(m)) {
-                            throw new ChannelException("magic key " + m + " (" + clazz.getName() + ')' +
-                                                       " is already in map; please make sure that " +
-                                                       "all magic keys are unique");
-                        }
-                        else {
-                            magicMap.put(m, clazz);
-                            classMap.put(clazz, m);
-                        }
-                    }
-                    catch(ClassNotFoundException cnf) {
-                        throw new ChannelException("failed loading class", cnf);
-                    }
+            List<Tuple<Short,String>> mapping=readMagicNumberMapping(mnfile);
+            for(Tuple<Short,String> tuple: mapping) {
+                short m=tuple.getVal1();
+                try {
+                    Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+                    if(magicMap.containsKey(m))
+                        throw new ChannelException("key " + m + " (" + clazz.getName() + ')' +
+                                " is already in map; please make sure that all keys are unique");
+                    
+                    magicMap.put(m, clazz);
+                    classMap.put(clazz, m);
+                }
+                catch(ClassNotFoundException cnf) {
+                    throw new ChannelException("failed loading class", cnf);
                 }
             }
         }
@@ -102,18 +96,6 @@ public class ClassConfigurator {
     }
 
 
-//    public static ClassConfigurator getInstance(boolean init) throws ChannelException {
-//        if(instance == null) {
-//            instance=new ClassConfigurator();
-//            if(init)
-//                instance.init();
-//        }
-//        return instance;
-//    }
-//
-//    public static ClassConfigurator getInstance() throws ChannelException {
-//        return getInstance(false);
-//    }
 
     /**
      * Method to register a user-defined header with jg-magic-map at runtime
@@ -201,6 +183,64 @@ public class ClassConfigurator {
         }
         return sb.toString();
     }
+
+
+    /**
+     * try to read the magic number configuration file as a Resource form the classpath using getResourceAsStream
+     * if this fails this method tries to read the configuration file from mMagicNumberFile using a FileInputStream (not in classpath but somewhere else in the disk)
+     *
+     * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
+     */
+    protected static List<Tuple<Short,String>> readMagicNumberMapping(String name) throws Exception {
+        InputStream stream;
+        try {
+            stream=Util.getResourceAsStream(name, ClassConfigurator.class);
+            // try to load the map from file even if it is not a Resource in the class path
+            if(stream == null) {
+                if(log.isTraceEnabled())
+                    log.trace("Could not read " + name + " from the CLASSPATH, will try to read it from file");
+                stream=new FileInputStream(name);
+            }
+        }
+        catch(Exception x) {
+            throw new ChannelException(name + " not found. Please make sure it is on the classpath", x);
+        }
+        return parse(stream);
+    }
+
+    protected static List<Tuple<Short,String>> parse(InputStream stream) throws Exception {
+        DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+        factory.setValidating(false); //for now
+        DocumentBuilder builder=factory.newDocumentBuilder();
+        Document document=builder.parse(stream);
+        NodeList class_list=document.getElementsByTagName("class");
+        List<Tuple<Short,String>> list=new LinkedList<Tuple<Short,String>>();
+        for(int i=0; i < class_list.getLength(); i++) {
+            if(class_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
+                list.add(parseClassData(class_list.item(i)));
+            }
+        }
+        return list;
+    }
+
+    protected static Tuple<Short,String> parseClassData(Node protocol) throws java.io.IOException {
+        try {
+            protocol.normalize();
+            NamedNodeMap attrs=protocol.getAttributes();
+            String clazzname;
+            String magicnumber;
+
+            magicnumber=attrs.getNamedItem("id").getNodeValue();
+            clazzname=attrs.getNamedItem("name").getNodeValue();
+            return new Tuple<Short,String>(Short.valueOf(magicnumber), clazzname);
+        }
+        catch(Exception x) {
+            IOException tmp=new IOException();
+            tmp.initCause(x);
+            throw tmp;
+        }
+    }
+
 
 
 
