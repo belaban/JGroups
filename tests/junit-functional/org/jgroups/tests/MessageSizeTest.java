@@ -18,7 +18,7 @@ import java.io.DataOutputStream;
 /**
  * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.4 2010/02/24 10:10:27 belaban Exp $
+ * @version $Id: MessageSizeTest.java,v 1.5 2010/03/04 12:26:15 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {
@@ -27,8 +27,8 @@ public class MessageSizeTest {
 
     /**
      * Tests size of a multicast message.
-     * Current record: 103 bytes (Feb 2010)
-     * Prev: 166, 109
+     * Current record: 100 bytes (March 2010)
+     * Prev: 166, 109, 103
      * @throws Exception
      */
     public static void testMulticast() throws Exception {
@@ -40,13 +40,13 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 103;
+        assert len <= 100;
     }
 
     /**
      * Tests size of a unicast message.
-     * Current record: 121 (Feb 2010)
-     * Prev: 161, 127
+     * Current record: 118 (March 2010)
+     * Prev: 161, 127, 121
      * @throws Exception
      */
     public static void testUnicast() throws Exception {
@@ -59,7 +59,7 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 121;
+        assert len <= 118;
     }
 
 
