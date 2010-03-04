@@ -38,5 +38,7 @@
     <class id="35" name="org.jgroups.protocols.MERGE3"/>
     <class id="36" name="org.jgroups.protocols.MERGEFAST"/>
     <class id="37" name="org.jgroups.protocols.HTOTAL"/>
-    <class id="38" name="org.jgroups.blocks.RequestCorrelator"/>
+    <class id="38" name="org.jgroups.protocols.DISCARD"/>
+    <class id="39" name="org.jgroups.blocks.RequestCorrelator"/>
+    <class id="40" name="org.jgroups.mux.MuxChannel"/>
 </protocol-ids>
