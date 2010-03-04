@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.52 2010/03/01 09:55:05 belaban Exp $
+ * @version $Id: Global.java,v 1.53 2010/03/04 11:59:01 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -38,6 +38,7 @@ public class Global {
     public static final String MPING_IP_TTL="jgroups.mping.ip_ttl";
 
     public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
+    public static final String PROTOCOL_ID_FILE="jgroups.conf.protocol_id_file";
     public static final String RESOLVE_DNS="jgroups.resolve_dns";
     public static final String PRINT_UUIDS="jgroups.print_uuids";
     public static final String UUID_CACHE_MAX_ELEMENTS="jgroups.uuid_cache.max_elements";
