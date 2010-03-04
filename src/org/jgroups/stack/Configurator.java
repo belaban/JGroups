@@ -5,25 +5,27 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack.ProtocolStackFactory;
+import org.jgroups.util.StackType;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
-import org.jgroups.util.StackType;
 
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.*;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -35,7 +37,7 @@ import java.util.regex.Pattern;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.77 2010/02/12 14:53:34 belaban Exp $
+ * @version $Id: Configurator.java,v 1.78 2010/03/04 12:38:54 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -393,6 +395,15 @@ public class Configurator implements ProtocolStackFactory {
                 }
             }
             names.addElement(name);
+        }
+
+        // check for unique IDs
+        Set<Short> ids=new HashSet<Short>();
+        for(Protocol protocol: protocols) {
+            short id=protocol.getId();
+            if(id > 0 && ids.add(id) == false)
+                throw new Exception("Protocol ID " + id + " (name=" + protocol.getName() +
+                        ") is duplicate; protocol IDs have to be unique");
         }
 
 
@@ -1262,6 +1273,14 @@ public class Configurator implements ProtocolStackFactory {
                     }
                 }
 
+                // set the protocol ID, unless already set
+                if(retval.getId() == 0) {
+                    short new_id=ClassConfigurator.getProtocolId(clazz);
+                    if(new_id > 0) {
+                        Field id_field=Util.getField(clazz, "id");
+                        setField(id_field, retval, new_id);
+                    }
+                }
 
                 if(!properties.isEmpty()) {
                     throw new IllegalArgumentException("the following properties in " + protocol_name
