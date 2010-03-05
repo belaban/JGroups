@@ -8,9 +8,14 @@ import java.util.Map;
 
 /**
  * Open addressing based implementation of a hashmap (not supporting the Map interface though) for message
- * headers. The keys are strings and the values Headers, and they're stored in an array in the format
- * key-1 | header-1 | key-2 | header-2. The array is populated from left to right, so any null slots can terminate
- * an interation, or signal empty slots.
+ * headers. The keys are shorts (IDs) and the values Headers, and they're stored in 2 arrays: an ID array and a headers
+ * array. The indices of the IDs array corespond with the headers array, e.g.
+ * <pre>
+ * IDs:      id-1  | id-2  | id-3  | ... | id-n |
+ * Headers:  hdr-1 | hdr-2 | hdr-3 | ... | hdr-n |
+ * </pre>
+ *
+ * The arrays are populated from left to right, and any 0 slots in 'ids' can terminate an interation, or signal empty slots.
  * <br/>
  * It is assumed that we only have a few headers, 3-4 on average. Note that getting a header for a given key and
  * putting a new key/header are operations with O(n) cost, so this implementation is <em>not</em> recommended for
@@ -18,48 +23,55 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.15 2010/02/10 17:17:45 belaban Exp $
+ * @version $Id: Headers.java,v 1.16 2010/03/05 08:50:12 belaban Exp $
  */
 public class Headers {
-    /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
-    private Object[] data;
+    private short[]  ids;
+    private Header[] hdrs;
 
     /** Add space for 3 new elements when resizing */
-    private static final int RESIZE_INCR=6;
+    private static final int RESIZE_INCR=3;
 
-    public Headers(int initial_capacity) {
-        data=new Object[initial_capacity << 1];
+    public Headers(int capacity) {
+        ids=new short[capacity];
+        hdrs=new Header[capacity];
     }
 
-    public Headers(Headers hdrs) {
-        data=new Object[hdrs.data.length];
-        System.arraycopy(hdrs.data, 0, this.data, 0, hdrs.data.length);
+    public Headers(Headers other) {
+        this(other.ids.length);
+        System.arraycopy(other.ids, 0, this.ids, 0, other.ids.length);
+        System.arraycopy(other.hdrs, 0, this.hdrs, 0, other.hdrs.length);
     }
 
-    public Object[] getRawData() {
-        return data;
+    public short[] getRawIDs() {
+        return ids;
+    }
+
+    public Header[] getRawHeaders() {
+        return hdrs;
     }
 
     /**
-     * Returns the header associated with key
-     * @param key
+     * Returns the header associated with an ID
+     * @param id The ID
      * @return
      */
-    public Header getHeader(String key) {
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] == null)
+    public Header getHeader(short id) {
+        for(int i=0; i < ids.length; i++) {
+            short current_id=ids[i];
+            if(current_id == 0)
                 return null;
-            if(data[i].equals(key))
-                return (Header)data[i+1];
+            if(current_id == id)
+                return hdrs[i];
         }
         return null;
     }
 
-    public Map<String,Header> getHeaders() {
-        Map<String,Header> retval=new HashMap<String,Header>(data.length / 2);
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null)
-                retval.put((String)data[i], (Header)data[i+1]);
+    public Map<Short,Header> getHeaders() {
+        Map<Short,Header> retval=new HashMap<Short,Header>(ids.length);
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0)
+                retval.put(ids[i], hdrs[i]);
             else
                 break;
         }
@@ -69,13 +81,13 @@ public class Headers {
     public String printHeaders() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null) {
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0) {
                 if(first)
                     first=false;
                 else
                     sb.append(", ");
-                sb.append(data[i]).append(": ").append(data[i+1]);
+                sb.append(ids[i]).append(": ").append(hdrs[i]);
             }
             else
                 break;
@@ -85,8 +97,8 @@ public class Headers {
 
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
-    public void putHeader(String key, Header hdr) {
-        _putHeader(key, hdr, 0, true);
+    public void putHeader(short id, Header hdr) {
+        _putHeader(id, hdr, 0, true);
     }
 
 
@@ -94,27 +106,27 @@ public class Headers {
 
     /**
      * Puts a header given a key into the map, only if the key doesn't exist yet
-     * @param key
+     * @param id
      * @param hdr
-     * @return the previous value associated with the specified key, or
-     *         <tt>null</tt> if there was no mapping for the key.
+     * @return the previous value associated with the specified id, or
+     *         <tt>null</tt> if there was no mapping for the id.
      *         (A <tt>null</tt> return can also indicate that the map
-     *         previously associated <tt>null</tt> with the key,
+     *         previously associated <tt>null</tt> with the id,
      *         if the implementation supports null values.)
      */
-    public Header putHeaderIfAbsent(String key, Header hdr) {
-        return _putHeader(key, hdr, 0, false);
+    public Header putHeaderIfAbsent(short id, Header hdr) {
+        return _putHeader(id, hdr, 0, false);
     }
 
     /**
      *
-     * @param key
-     * @return the header assoaicted with key
+     * @param id
+     * @return the header associated with key
      * @deprecated Use getHeader() instead. The issue with removing a header is described in
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
-    public Header removeHeader(String key) {
-        return getHeader(key);
+    public Header removeHeader(short id) {
+        return getHeader(id);
     }
 
     public Headers copy() {
@@ -123,11 +135,10 @@ public class Headers {
 
     public int marshalledSize() {
         int retval=0;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null) {
-                retval+=((String)data[i]).length() +2;
-                retval+=(Global.SHORT_SIZE); // 2 for magic number
-                retval+=((Header)data[i+1]).size();
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0) {
+                retval+=Global.SHORT_SIZE *2;    // for protocol ID and magic number
+                retval+=hdrs[i].size();
             }
             else
                 break;
@@ -137,8 +148,8 @@ public class Headers {
 
     public int size() {
         int retval=0;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null)
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0)
                 retval++;
             else
                 break;
@@ -147,14 +158,14 @@ public class Headers {
     }
 
     public int capacity() {
-        return data.length / 2;
+        return ids.length;
     }
 
     public String printObjectHeaders() {
         StringBuilder sb=new StringBuilder();
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null)
-                sb.append(data[i]).append(": ").append(data[i+1]).append('\n');
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0)
+                sb.append(ids[i]).append(": ").append(hdrs[i]).append('\n');
             else
                 break;
         }
@@ -170,34 +181,40 @@ public class Headers {
      * Increases the capacity of the array and copies the contents of the old into the new array
      */
     private void resize() {
-        int new_size=data.length + RESIZE_INCR;
-        Object[] new_data=new Object[new_size];
-        System.arraycopy(data, 0, new_data, 0, data.length);
-        data=new_data;
+        int new_capacity=ids.length + RESIZE_INCR;
+
+        short[] new_ids=new short[new_capacity];
+        Header[] new_hdrs=new Header[new_capacity];
+
+        System.arraycopy(ids, 0, new_ids, 0, ids.length);
+        System.arraycopy(hdrs, 0, new_hdrs, 0, hdrs.length);
+
+        ids=new_ids;
+        hdrs=new_hdrs;
     }
 
 
-    private Header _putHeader(String key, Header hdr, int start_index, boolean replace_if_present) {
+    private Header _putHeader(short id, Header hdr, int start_index, boolean replace_if_present) {
         int i=start_index;
-        while(i < data.length) {
-            if(data[i] == null) {
-                data[i]=key;
-                data[i+1]=hdr;
+        while(i < ids.length) {
+            if(ids[i] == 0) {
+                ids[i]=id;
+                hdrs[i]=hdr;
                 return null;
             }
-            if(data[i].equals(key)) {
-                Header retval=(Header)data[i+1];
+            if(ids[i] == id) {
+                Header retval=hdrs[i];
                 if(replace_if_present) {
-                    data[i+1]=hdr;
+                    hdrs[i]=hdr;
                 }
                 return retval;
             }
-            i+=2;
-            if(i >= data.length) {
+            i++;
+            if(i >= ids.length) {
                 resize();
             }
         }
-        throw new IllegalStateException("unable to add element " + key + ", index=" + i); // we should never come here
+        throw new IllegalStateException("unable to add element " + id + ", index=" + i); // we should never come here
     }
 
 
