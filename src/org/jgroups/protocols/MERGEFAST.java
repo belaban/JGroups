@@ -28,7 +28,7 @@ public class MERGEFAST extends Protocol {
                     Message msg=(Message)evt.getArg();
                     Address dest=msg.getDest();
                     if(dest == null || dest.isMulticastAddress()) {
-                        msg.putHeader(getName(), new MergefastHeader(view));
+                        msg.putHeader(this.id, new MergefastHeader(view));
                     }
                 }
                 break;
@@ -50,7 +50,7 @@ public class MERGEFAST extends Protocol {
                 if(is_coord == false) // only handle message if we are coordinator
                     break;
                 Message msg=(Message)evt.getArg();
-                MergefastHeader hdr=(MergefastHeader)msg.getHeader(getName());
+                MergefastHeader hdr=(MergefastHeader)msg.getHeader(this.id);
                 up_prot.up(evt);
                 if(hdr != null && view != null) {
                     if(!Util.sameViewId(view.getViewId(), hdr.view.getViewId())) {

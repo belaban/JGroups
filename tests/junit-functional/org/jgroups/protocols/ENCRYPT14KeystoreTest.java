@@ -8,6 +8,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
 
@@ -16,7 +17,6 @@ import java.io.*;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * @author xenephon
@@ -24,6 +24,7 @@ import java.util.Properties;
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class ENCRYPT14KeystoreTest {
 
+    static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(ENCRYPT.class);
 
     public static void testInitWrongKeystoreProperties() {        
         ENCRYPT encrypt=new ENCRYPT();
@@ -38,8 +39,6 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testInitKeystoreProperties() throws Exception {
-
-        //javax.
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
@@ -49,7 +48,6 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageDownEncode() throws Exception {
-      
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
@@ -81,8 +79,6 @@ public class ENCRYPT14KeystoreTest {
 
 
     public static void testMessageUpDecode() throws Exception {
-      
-
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
@@ -108,7 +104,7 @@ public class ENCRYPT14KeystoreTest {
         String symVersion=new String(digest.digest(), "UTF-8");
 
         Message msg=new Message(null, null, encodedBytes);
-        msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
+        msg.putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
         Event event=new Event(Event.MSG, msg);
         encrypt.up(event);
         Message rcvdMsg=(Message)((Event)observer.getUpMessages().get("message0")).getArg();
@@ -119,15 +115,12 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpWrongKey() throws Exception {
-        // initialise the encryption       
-
-        //javax.
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
         // use a second instance so we know we are not accidentally using internal key
         
-        ENCRYPT encrypt2=new ENCRYPT();       
+        ENCRYPT encrypt2=new ENCRYPT();
 
         encrypt.keyStoreName = "defaultStore2.keystore";
         encrypt2.init();
@@ -148,7 +141,7 @@ public class ENCRYPT14KeystoreTest {
         String symVersion=new String(digest.digest());
 
         Message msg=new Message(null, null, encodedBytes);
-        msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
+        msg.putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
         Event event=new Event(Event.MSG, msg);
         encrypt.up(event);
         assert observer.getUpMessages().isEmpty();
@@ -156,8 +149,6 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpNoEncryptHeader() throws Exception {
-       
-        //javax.
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
@@ -184,8 +175,6 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testEventUpNoMessage() throws Exception {
-     
-        //javax.
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
@@ -202,7 +191,6 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpNoBuffer() throws Exception {
-    
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();

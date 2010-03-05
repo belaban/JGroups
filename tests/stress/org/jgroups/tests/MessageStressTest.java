@@ -1,19 +1,19 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.pbcast.NakAckHeader;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageStressTest.java,v 1.5 2010/02/24 10:10:28 belaban Exp $
+ * @version $Id: MessageStressTest.java,v 1.6 2010/03/05 09:06:02 belaban Exp $
  */
 public class MessageStressTest {
     public static final int NUM=1000 * 1000;
-    public static final String UDP="UDP";
-    public static final String NAKACK="NAKACK";
-    public static final String UNICAST_STR="UNICAST";
+    public static final short UDP_ID=100;
+    public static final short NAKACK_ID=101;
+    public static final short UNICAST_ID=102;
     int cnt=NUM / 10;
     
 
@@ -25,12 +25,12 @@ public class MessageStressTest {
             //if(i % cnt == 0)
               //  System.out.println(i);
             msg=new Message(); // creates 'headers' hashmap
-            msg.putHeader(NAKACK, NakAckHeader.createMessageHeader((long)i));
-            msg.putHeader(UNICAST_STR, UNICAST.UnicastHeader.createAckHeader(i));
-            msg.putHeader(UDP, new TpHeader("demo"));
-            msg.getHeader(UDP);
-            msg.getHeader(NAKACK);
-            msg.getHeader(UNICAST_STR);
+            msg.putHeader(NAKACK_ID, NakAckHeader.createMessageHeader((long)i));
+            msg.putHeader(UNICAST_ID, UNICAST.UnicastHeader.createAckHeader(i));
+            msg.putHeader(UDP_ID, new TpHeader("demo"));
+            msg.getHeader(UDP_ID);
+            msg.getHeader(NAKACK_ID);
+            msg.getHeader(UNICAST_ID);
             msg.size();
         }
         long total=System.nanoTime() - start;

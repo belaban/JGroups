@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.29 2010/02/24 10:10:27 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.30 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -669,16 +669,16 @@ public class SizeTest {
     public static void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, false, "HelloWorld", null);
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, false, (short)1000, null);
         _testSize(hdr);
 
         java.util.List<Address> l=new LinkedList<Address>();
         l.add(new IpAddress(1111));
         l.add(new IpAddress(2222));
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", l);
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, l);
         _testSize(hdr);
 
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", null);
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, null);
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -696,11 +696,11 @@ public class SizeTest {
 
         Assert.assertEquals(322649, hdr.id);
         assert hdr.rsp_expected;
-        Assert.assertEquals("bla", hdr.corrName);
+        Assert.assertEquals((short)356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
 
-        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, "bla", Util.createRandomAddress());
+        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, Util.createRandomAddress());
 
         output=new ByteArrayOutputStream();
         out=new DataOutputStream(output);
@@ -718,7 +718,7 @@ public class SizeTest {
 
         Assert.assertEquals(322649, hdr.id);
         assert hdr.rsp_expected;
-        Assert.assertEquals("bla", hdr.corrName);
+        Assert.assertEquals(356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
     }
 

@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.50 2010/02/10 17:37:28 belaban Exp $
+ * @version $Id: FRAG.java,v 1.51 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -147,7 +147,7 @@ public class FRAG extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                FragHeader hdr=(FragHeader)msg.getHeader(name);
+                FragHeader hdr=(FragHeader)msg.getHeader(this.id);
                 if(hdr != null) { // needs to be defragmented
                     unfragment(msg, hdr); // Unfragment and possibly pass up
                     return null;
@@ -225,7 +225,7 @@ public class FRAG extends Protocol {
             for(int i=0; i < num_frags; i++) {
                 Message frag_msg=new Message(dest, src, fragments[i]);
                 FragHeader hdr=new FragHeader(id, i, num_frags);
-                frag_msg.putHeader(name, hdr);
+                frag_msg.putHeader(this.id, hdr);
                 Event evt=new Event(Event.MSG, frag_msg);
                 down_prot.down(evt);
             }

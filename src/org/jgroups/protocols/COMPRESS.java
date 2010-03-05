@@ -21,7 +21,7 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.24 2009/09/06 13:51:08 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.25 2010/03/05 09:04:54 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
 
@@ -97,7 +97,7 @@ public class COMPRESS extends Protocol {
                         byte[] new_payload=new byte[compressed_size];
                         System.arraycopy(compressed_payload, 0, new_payload, 0, compressed_size);
                         msg.setBuffer(new_payload);
-                        msg.putHeader(name, new CompressHeader(length));
+                        msg.putHeader(this.id, new CompressHeader(length));
                         if(log.isTraceEnabled())
                             log.trace("compressed payload from " + length + " bytes to " + compressed_size + " bytes");
                     }
@@ -128,7 +128,7 @@ public class COMPRESS extends Protocol {
     public Object up(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            CompressHeader hdr=(CompressHeader)msg.getHeader(name);
+            CompressHeader hdr=(CompressHeader)msg.getHeader(this.id);
             if(hdr != null) {
                 byte[] compressed_payload=msg.getRawBuffer();
                 if(compressed_payload != null && compressed_payload.length > 0) {

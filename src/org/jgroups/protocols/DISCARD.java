@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.36 2009/12/11 12:58:12 belaban Exp $
+// $Id: DISCARD.java,v 1.37 2010/03/05 09:04:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -177,7 +177,7 @@ public class DISCARD extends Protocol {
                 return null;
             }
 
-            DiscardHeader dh = (DiscardHeader) msg.getHeader(getName());
+            DiscardHeader dh = (DiscardHeader) msg.getHeader(this.id);
 			if (dh != null) {
 				ignoredMembers.clear();
 				ignoredMembers.addAll(dh.dropMessages);

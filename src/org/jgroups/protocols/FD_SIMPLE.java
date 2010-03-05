@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.28 2009/09/06 13:51:07 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -83,14 +83,14 @@ public class FD_SIMPLE extends Protocol {
                 resetCounter(sender);
                 counter_reset=true;
 
-                hdr=(FdHeader)msg.getHeader(name);
+                hdr=(FdHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
 
                 switch(hdr.type) {
                     case FdHeader.ARE_YOU_ALIVE:                    // are-you-alive request, send i-am-alive response
                         rsp=new Message(sender);
-                        rsp.putHeader(name, new FdHeader(FdHeader.I_AM_ALIVE));
+                        rsp.putHeader(this.id, new FdHeader(FdHeader.I_AM_ALIVE));
                         down_prot.down(new Event(Event.MSG, rsp));
                         return null; // don't pass up further
 
@@ -327,7 +327,7 @@ public class FD_SIMPLE extends Protocol {
 
             promise.reset();
             msg=new Message(dest);
-            msg.putHeader(name, new FdHeader(FdHeader.ARE_YOU_ALIVE));
+            msg.putHeader(id, new FdHeader(FdHeader.ARE_YOU_ALIVE));
             down_prot.down(new Event(Event.MSG, msg));
 
             promise.getResult(timeout);

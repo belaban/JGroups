@@ -17,7 +17,7 @@ import java.util.*;
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
  * accordingly.
  * @author Bela Ban
- * @version $Id: CoordGmsImpl.java,v 1.126 2009/09/28 07:16:55 belaban Exp $
+ * @version $Id: CoordGmsImpl.java,v 1.127 2010/03/05 09:04:35 belaban Exp $
  */
 public class CoordGmsImpl extends ServerGmsImpl {
     private final Long                MAX_SUSPEND_TIMEOUT=new Long(30000);
@@ -257,7 +257,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             Message msg=new Message(address, null, null); // send an ack to the leaving member
             msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
-            msg.putHeader(gms.getName(), hdr);
+            msg.putHeader(gms.getId(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }       
     }

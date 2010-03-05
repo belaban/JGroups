@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.297 2010/03/03 07:48:19 belaban Exp $
+ * @version $Id: TP.java,v 1.298 2010/03/05 09:01:48 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -868,8 +868,8 @@ public abstract class TP extends Protocol {
         Message msg=(Message)evt.getArg();
         if(header != null) {
             // added patch by Roland Kurmann (March 20 2003)
-            // msg.putHeader(name, new TpHeader(channel_name));
-            msg.putHeaderIfAbsent(name, header);
+            // msg.putHeader(this.id, new TpHeader(channel_name));
+            msg.putHeaderIfAbsent(this.id, header);
         }
 
         if(!isSingleton())
@@ -946,7 +946,7 @@ public abstract class TP extends Protocol {
 
 
     private void passMessageUp(Message msg, boolean perform_cluster_name_matching, boolean multicast, boolean discard_own_mcast) {
-        TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
+        TpHeader hdr=(TpHeader)msg.getHeader(this.id); // replaced removeHeader() with getHeader()
         if(hdr == null) {
             if(log.isErrorEnabled())
                 log.error(new StringBuilder("message does not have a transport header, msg is ").append(msg).
@@ -2039,19 +2039,19 @@ public abstract class TP extends Protocol {
      * view
      */
     public static class ProtocolAdapter extends Protocol implements ProbeHandler {
-        String cluster_name;
-        final String transport_name;
-        TpHeader header;
-        final Set<Address> members=new CopyOnWriteArraySet<Address>();
-        final ThreadFactory factory;
-        Address local_addr;
+        String               cluster_name;
+        final short          transport_id;
+        TpHeader             header;
+        final Set<Address>   members=new CopyOnWriteArraySet<Address>();
+        final ThreadFactory  factory;
+        Address              local_addr;
 
         static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
-        public ProtocolAdapter(String cluster_name, Address local_addr, String transport_name, Protocol up, Protocol down, String pattern) {
+        public ProtocolAdapter(String cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
             this.cluster_name=cluster_name;
             this.local_addr=local_addr;
-            this.transport_name=transport_name;
+            this.transport_id=transport_id;
             this.up_prot=up;
             this.down_prot=down;
             this.header=new TpHeader(cluster_name);
@@ -2083,9 +2083,9 @@ public abstract class TP extends Protocol {
             return (local_addr instanceof UUID)? ((UUID)local_addr).toStringLong() : null;
         }
 
-        @ManagedAttribute(description="Name of the transport")
-        public String getTransportName() {
-            return transport_name;
+        @ManagedAttribute(description="ID of the transport")
+        public short getTransportName() {
+            return transport_id;
         }
 
         public Set<Address> getMembers() {
@@ -2112,7 +2112,7 @@ public abstract class TP extends Protocol {
             switch(evt.getType()) {
                 case Event.MSG:
                     Message msg=(Message)evt.getArg();
-                    msg.putHeader(transport_name, header);
+                    msg.putHeader(transport_id, header);
                     if(msg.getSrc() == null)
                         msg.setSrc(local_addr);
                     break;
@@ -2150,7 +2150,7 @@ public abstract class TP extends Protocol {
         }
 
         public String toString() {
-            return cluster_name + " (" + transport_name + ")";
+            return cluster_name + " (" + transport_id + ")";
         }
 
         public Map<String, String> handleProbe(String... keys) {
@@ -2158,7 +2158,7 @@ public abstract class TP extends Protocol {
             retval.put("cluster", cluster_name);
             retval.put("local_addr", local_addr != null? local_addr.toString() : null);
             retval.put("local_addr (UUID)", local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null);
-            retval.put("transport_name", transport_name);
+            retval.put("transport_id", Short.toString(transport_id));
             return retval;
         }
 

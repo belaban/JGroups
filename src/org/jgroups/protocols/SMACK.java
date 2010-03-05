@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.34 2009/09/06 13:51:08 belaban Exp $
+ * @version $Id: SMACK.java,v 1.35 2010/03/05 09:04:54 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -104,7 +104,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 Message msg=(Message)evt.getArg(), tmp_msg;
                 if(msg == null) break;
                 sender=msg.getSrc();
-                SmackHeader hdr=(SmackHeader)msg.getHeader(name);
+                SmackHeader hdr=(SmackHeader)msg.getHeader(this.id);
                 if(hdr == null) // is probably a unicast message
                     break;
                 switch(hdr.type) {
@@ -122,7 +122,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         boolean added=win.add(hdr.seqno, msg);
 
                         Message ack_msg=new Message(sender);
-                        ack_msg.putHeader(name, new SmackHeader(SmackHeader.ACK, hdr.seqno));
+                        ack_msg.putHeader(this.id, new SmackHeader(SmackHeader.ACK, hdr.seqno));
                         down_prot.down(new Event(Event.MSG, ack_msg));
 
                         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
@@ -153,7 +153,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         if(log.isInfoEnabled()) log.info("received join announcement by " + msg.getSrc());
                         if(!containsMember(sender)) {
                             Message join_rsp=new Message(sender);
-                            join_rsp.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
+                            join_rsp.putHeader(this.id, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
                             down_prot.down(new Event(Event.MSG, join_rsp));
                         }
                         addMember(sender);
@@ -182,7 +182,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
             case Event.DISCONNECT:
                 leave_msg=new Message();
-                leave_msg.putHeader(name, new SmackHeader(SmackHeader.LEAVE_ANNOUNCEMENT, -1));
+                leave_msg.putHeader(this.id, new SmackHeader(SmackHeader.LEAVE_ANNOUNCEMENT, -1));
                 down_prot.down(new Event(Event.MSG, leave_msg));
                 Util.sleep(100);
                 sender_win.stop();
@@ -194,7 +194,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
                 // send join announcement
                 Message join_msg=new Message();
-                join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
+                join_msg.putHeader(this.id, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
                 down_prot.down(new Event(Event.MSG, join_msg));
                 return ret;
 
@@ -207,7 +207,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                     lock.lock();
                     try {
                         long msg_id=seqno;
-                        msg.putHeader(name, new SmackHeader(SmackHeader.MCAST, msg_id));
+                        msg.putHeader(this.id, new SmackHeader(SmackHeader.MCAST, msg_id));
                         sender_win.add(msg_id, msg, new Vector<Address>(members));
                         if(log.isTraceEnabled()) log.trace("sending mcast #" + msg_id);
                         seqno++;

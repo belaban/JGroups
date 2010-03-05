@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.113 2010/01/27 09:19:25 belaban Exp $
+ * @version $Id: FC.java,v 1.114 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -444,7 +444,7 @@ public class FC extends Protocol {
                 Message msg=(Message)evt.getArg();
                 if(msg.isFlagSet(Message.NO_FC))
                     break;
-                FcHeader hdr=(FcHeader)msg.getHeader(name);
+                FcHeader hdr=(FcHeader)msg.getHeader(this.id);
                 if(hdr != null) {
                     switch(hdr.type) {
                         case FcHeader.REPLENISH:
@@ -813,7 +813,7 @@ public class FC extends Protocol {
             number=credit;
         Message msg=new Message(dest, null, number);
         msg.setFlag(Message.OOB);
-        msg.putHeader(name, REPLENISH_HDR);
+        msg.putHeader(this.id, REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
@@ -828,7 +828,7 @@ public class FC extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
         Message msg=new Message(dest, null, credits_left);
-        msg.putHeader(name, CREDIT_REQUEST_HDR);
+        msg.putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }

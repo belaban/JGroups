@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.ENCRYPT;
 import org.jgroups.conf.ClassConfigurator;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -24,7 +25,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.15 2008/08/08 17:07:12 vlada Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.16 2010/03/05 09:05:48 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,"broken"},sequential=true)
 public class EncryptMessageOrderTestCase {
@@ -36,6 +37,8 @@ public class EncryptMessageOrderTestCase {
     public static int SLEEP_TIME=1;
 
     String groupName = "ENCRYPT_ORDER_TEST";
+
+    static final short ID=100;
 
     boolean orderCounterFailure = false;
 
@@ -145,7 +148,7 @@ public class EncryptMessageOrderTestCase {
                         Long travelTime=new Long(System.currentTimeMillis() - ((Long)message).longValue());
 
                         try {
-                            Assert.assertEquals(counter, ((EncryptOrderTestHeader)jgMessage.getHeader("EncryptOrderTest")).seqno);
+                            Assert.assertEquals(counter, ((EncryptOrderTestHeader)jgMessage.getHeader(ID)).seqno);
                         	counter++;
                         } catch (Exception e){
                         	e.printStackTrace();
@@ -179,7 +182,7 @@ public class EncryptMessageOrderTestCase {
             for(int i=0; i < MESSAGE_NUMBER; i++) {
                 Long message=new Long(System.currentTimeMillis());
                 Message jgMessage=new Message();
-                jgMessage.putHeader("EncryptOrderTest", new EncryptOrderTestHeader(i));
+                jgMessage.putHeader(ID, new EncryptOrderTestHeader(i));
                 jgMessage.setObject(message);
                 sender.send(jgMessage);
 

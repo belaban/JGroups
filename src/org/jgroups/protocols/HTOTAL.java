@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.12 2009/09/06 13:51:07 belaban Exp $
+// $Id: HTOTAL.java,v 1.13 2010/03/05 09:04:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -20,7 +20,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.12 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.13 2010/03/05 09:04:54 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -71,7 +71,7 @@ public class HTOTAL extends Protocol {
                 break;
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                HTotalHeader hdr=(HTotalHeader)msg.getHeader(getName());
+                HTotalHeader hdr=(HTotalHeader)msg.getHeader(this.id);
 
                 if(hdr == null)
                     break;  // probably a unicast message, just pass it up
@@ -96,11 +96,11 @@ public class HTOTAL extends Protocol {
     }
 
     private void forwardTo(Address destination, Message msg) {
-        HTotalHeader hdr=(HTotalHeader)msg.getHeader(getName());
+        HTotalHeader hdr=(HTotalHeader)msg.getHeader(this.id);
 
         if(hdr == null) {
             hdr=new HTotalHeader(msg.getDest(), msg.getSrc());
-            msg.putHeader(getName(), hdr);
+            msg.putHeader(this.id, hdr);
         }
         msg.setDest(destination);
         if(log.isTraceEnabled())

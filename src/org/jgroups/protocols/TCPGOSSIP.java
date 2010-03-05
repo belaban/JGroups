@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.50 2010/02/26 18:10:10 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.51 2010/03/05 09:04:54 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -201,7 +201,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             msg.setFlag(Message.OOB);
             PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
             hdr.return_view_only = return_views_only;
-            msg.putHeader(name, hdr);
+            msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);
             down_prot.down(new Event(Event.MSG, msg));

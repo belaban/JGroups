@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.8 2009/11/25 10:25:05 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.9 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
@@ -41,7 +41,8 @@ public class BARRIERTest {
         s.setView(v);
         s.addMember(a1);
         bottom_prot=new PING();
-        Protocol[] stack=new Protocol[]{new VIEW_SYNC(), barrier_prot, bottom_prot};
+        VIEW_SYNC view_sync=new VIEW_SYNC();
+        Protocol[] stack=new Protocol[]{view_sync, barrier_prot, bottom_prot};
         s.setProtocolStack(stack);
         s.start();
     }

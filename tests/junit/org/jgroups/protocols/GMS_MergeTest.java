@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.21 2009/10/02 08:09:12 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.22 2010/03/05 09:05:18 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -31,6 +32,8 @@ public class GMS_MergeTest extends ChannelTestBase {
             ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
 
     static final String flush_props=simple_props + ":pbcast.FLUSH";
+
+    static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
 
 
@@ -87,7 +90,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
             MergeId new_merge_id=MergeId.create(c1.getAddress());
             hdr.setMergeId(new_merge_id);
-            merge_request.putHeader(GMS.class.getSimpleName(), hdr);
+            merge_request.putHeader(GMS_ID, hdr);
             GMS gms=(GMS)c1.getProtocolStack().findProtocol(GMS.class);
             gms.setMergeTimeout(2000);
             MergeId merge_id=gms.getMergeId();

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.33 2009/12/15 12:49:26 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.34 2010/03/05 09:04:54 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -86,12 +86,12 @@ public class SEQUENCER extends Protocol {
                     long next_seqno=seqno.getAndIncrement();
                     if(is_coord) {
                         SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);
-                        msg.putHeader(name, hdr);
+                        msg.putHeader(this.id, hdr);
                         broadcast(msg, false); // don't copy, just use the message passed as argument
                     }
                     else {
                         // SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, next_seqno);
-                        // msg.putHeader(name, hdr);
+                        // msg.putHeader(this.id, hdr);
                         forwardToCoord(msg, next_seqno);
                     }
                     return null; // don't pass down
@@ -119,7 +119,7 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                hdr=(SequencerHeader)msg.getHeader(name);
+                hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
 
@@ -223,7 +223,7 @@ public class SEQUENCER extends Protocol {
 
             Message forward_msg=new Message(coord, null, val);
             SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, key);
-            forward_msg.putHeader(name, hdr);
+            forward_msg.putHeader(this.id, hdr);
 
             if (log.isTraceEnabled()) {
                 log.trace("resending msg " + local_addr + "::" + key + " to coord (" + coord + ")");
@@ -246,7 +246,7 @@ public class SEQUENCER extends Protocol {
             }
             Message forward_msg=new Message(coord, null, marshalled_msg);
             SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, seqno);
-            forward_msg.putHeader(name, hdr);
+            forward_msg.putHeader(this.id, hdr);
             down_prot.down(new Event(Event.MSG, forward_msg));
             forwarded_msgs++;
         }
@@ -257,7 +257,7 @@ public class SEQUENCER extends Protocol {
 
     private void broadcast(final Message msg, boolean copy) {
         Message bcast_msg=null;
-        final SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
+        final SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
 
         if(!copy) {
             bcast_msg=msg; // no need to add a header, message already has one
@@ -265,7 +265,7 @@ public class SEQUENCER extends Protocol {
         else {
             bcast_msg=new Message(null, local_addr, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, hdr.getOriginalSender(), hdr.getSeqno());
-            bcast_msg.putHeader(name, new_hdr);
+            bcast_msg.putHeader(this.id, new_hdr);
         }
 
         if(log.isTraceEnabled())
@@ -281,7 +281,7 @@ public class SEQUENCER extends Protocol {
      */
     private void unwrapAndDeliver(final Message msg) {
         try {
-            SequencerHeader hdr=(SequencerHeader)msg.getHeader(name);
+            SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
             Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             long msg_seqno=hdr.getSeqno();
             if(!canDeliver(msg_to_deliver.getSrc(), msg_seqno))
