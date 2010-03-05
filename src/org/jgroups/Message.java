@@ -5,10 +5,7 @@ package org.jgroups;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.Headers;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.HashSet;
@@ -25,7 +22,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.109 2010/02/23 14:11:00 belaban Exp $
+ * @version $Id: Message.java,v 1.110 2010/03/05 08:52:16 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -246,7 +243,7 @@ public class Message implements Streamable {
 
     /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
      * modify the returned map will cause a runtime exception */
-    public Map<String,Header> getHeaders() {
+    public Map<Short,Header> getHeaders() {
         return headers.getHeaders();
     }
 
@@ -360,21 +357,25 @@ public class Message implements Streamable {
 
     /*---------------------- Used by protocol layers ----------------------*/
 
-    /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
-    public void putHeader(String key, Header hdr) {
-        headers.putHeader(key, hdr);
+    /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
+    public void putHeader(short id, Header hdr) {
+        if(id <= 0)
+            throw new IllegalArgumentException("An ID of " + id + " is invalid");
+        headers.putHeader(id, hdr);
     }
 
     /**
      * Puts a header given a key into the map, only if the key doesn't exist yet
-     * @param key
+     * @param id
      * @param hdr
      * @return the previous value associated with the specified key, or <tt>null</tt> if there was no mapping for the key.
      *         (A <tt>null</tt> return can also indicate that the map previously associated <tt>null</tt> with the key,
      *         if the implementation supports null values.)
      */
-    public Header putHeaderIfAbsent(String key, Header hdr) {
-        return headers.putHeaderIfAbsent(key, hdr);
+    public Header putHeaderIfAbsent(short id, Header hdr) {
+        if(id <= 0)
+            throw new IllegalArgumentException("An ID of " + id + " is invalid");
+        return headers.putHeaderIfAbsent(id, hdr);
     }
 
     /**
@@ -384,12 +385,14 @@ public class Message implements Streamable {
      * @deprecated Use getHeader() instead. The issue with removing a header is described in
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
-    public Header removeHeader(String key) {
-        return getHeader(key);
+    public Header removeHeader(short id) {
+        return getHeader(id);
     }
 
-    public Header getHeader(String key) {
-        return headers.getHeader(key);
+    public Header getHeader(short id) {
+        if(id <= 0)
+            throw new IllegalArgumentException("An ID of " + id + " is invalid");
+        return headers.getHeader(id);
     }
     /*---------------------------------------------------------------------*/
 
@@ -527,11 +530,12 @@ public class Message implements Streamable {
         // 6. headers
         int size=headers.size();
         out.writeShort(size);
-        final Object[] data=headers.getRawData();
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null) {
-                out.writeUTF((String)data[i]);
-                writeHeader((Header)data[i+1], out);
+        final short[]  ids=headers.getRawIDs();
+        final Header[] hdrs=headers.getRawHeaders();
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0) {
+                out.writeShort(ids[i]);
+                writeHeader(hdrs[i], out);
             }
         }
     }
@@ -573,11 +577,12 @@ public class Message implements Streamable {
         // 6. headers
         int size=headers.size();
         out.writeShort(size);
-        final Object[] data=headers.getRawData();
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null) {
-                out.writeUTF((String)data[i]);
-                writeHeader((Header)data[i+1], out);
+        final short[]  ids=headers.getRawIDs();
+        final Header[] hdrs=headers.getRawHeaders();
+        for(int i=0; i < ids.length; i++) {
+            if(ids[i] > 0) {
+                out.writeShort(ids[i]);
+                writeHeader(hdrs[i], out);
             }
         }
     }
@@ -610,13 +615,15 @@ public class Message implements Streamable {
         // 6. headers
         int len=in.readShort();
         headers=createHeaders(len);
-        Object[] data=headers.getRawData();
-        int index=0; Header hdr; String hdr_name;
+
+        short[]  ids=headers.getRawIDs();
+        Header[] hdrs=headers.getRawHeaders();
+
         for(int i=0; i < len; i++) {
-            hdr_name=in.readUTF();
-            data[index++]=hdr_name;
-            hdr=readHeader(in);
-            data[index++]=hdr;
+            short id=in.readShort();
+            Header hdr=readHeader(in);
+            ids[i]=id;
+            hdrs[i]=hdr;
         }
     }
 
