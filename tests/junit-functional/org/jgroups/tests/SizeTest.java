@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.30 2010/03/05 09:05:28 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.31 2010/03/05 10:26:21 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -700,7 +700,7 @@ public class SizeTest {
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
 
-        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, Util.createRandomAddress());
+        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356);
 
         output=new ByteArrayOutputStream();
         out=new DataOutputStream(output);

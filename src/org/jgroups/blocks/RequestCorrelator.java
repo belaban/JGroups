@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.60 2010/03/05 09:04:15 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.61 2010/03/05 10:26:06 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -291,7 +291,7 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), this.id, target);
+        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), this.id);
         msg.putHeader(this.id, hdr);
 
         if(coll != null)
@@ -456,13 +456,7 @@ public class RequestCorrelator {
             }
         }
         else if(hdr instanceof SingleDestinationHeader) {
-            Address target=((SingleDestinationHeader)hdr).target;
-            if(target != null && local_addr != null && !target.equals(local_addr)) {
-                if(log.isTraceEnabled())
-                    log.trace("discarded request from " + msg.getSrc() + " as the target " + target +
-                            " doesn't match our local address (" + local_addr + ")");
-                return true; // don't pass this message further up
-            }
+            ;
         }
         else {
             log.error("header is not known: " + hdr.getClass());
@@ -617,7 +611,7 @@ public class RequestCorrelator {
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
-        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, this.id, rsp.getDest());
+        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, this.id);
         rsp.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
@@ -734,44 +728,30 @@ public class RequestCorrelator {
 
 
     public static final class SingleDestinationHeader extends Header {
-        public Address target;
         private static final long serialVersionUID=-7662054209190400349L;
 
         public SingleDestinationHeader() {
         }
 
-        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Address target) {
+        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id) {
             super(type, id, rsp_expected, corr_id);
-            this.target=target;
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             super.writeExternal(out);
-            out.writeObject(target);
         }
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             super.readExternal(in);
-            target=(Address)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             super.writeTo(out);
-            Util.writeAddress(target, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             super.readFrom(in);
-            target=Util.readAddress(in);
-        }
-
-        public int size() {
-            return super.size() + Util.size(target);
-        }
-
-        public String toString() {
-            return super.toString() + ", target=" + target;
         }
     }
 
