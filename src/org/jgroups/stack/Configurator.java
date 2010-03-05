@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.78 2010/03/04 12:38:54 belaban Exp $
+ * @version $Id: Configurator.java,v 1.79 2010/03/05 08:49:19 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -1270,15 +1270,6 @@ public class Configurator implements ProtocolStackFactory {
                     for(Object obj: additional_objects) {
                         resolveAndAssignFields(obj, properties);
                         resolveAndInvokePropertyMethods(obj, properties);
-                    }
-                }
-
-                // set the protocol ID, unless already set
-                if(retval.getId() == 0) {
-                    short new_id=ClassConfigurator.getProtocolId(clazz);
-                    if(new_id > 0) {
-                        Field id_field=Util.getField(clazz, "id");
-                        setField(id_field, retval, new_id);
                     }
                 }
 
