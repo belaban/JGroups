@@ -5,12 +5,16 @@ package org.jgroups;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.Headers;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.HashSet;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -22,7 +26,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.110 2010/03/05 08:52:16 belaban Exp $
+ * @version $Id: Message.java,v 1.111 2010/03/05 13:22:40 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -46,7 +50,6 @@ public class Message implements Streamable {
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    static final Set<Class>    nonStreamableHeaders=new HashSet<Class>();
 
 
     static final byte DEST_SET         =  1;
@@ -696,60 +699,20 @@ public class Message implements Streamable {
 
     private static void writeHeader(Header hdr, DataOutputStream out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
-        // write the magic number or the class name
         out.writeShort(magic_number);
-        if(magic_number == -1) {
-            String classname=hdr.getClass().getName();
-            out.writeUTF(classname);
-            if(log.isWarnEnabled())
-                log.warn("magic number for " + classname + " not found, make sure you add your header to " +
-                        "jg-magic-map.xml, or register it programmatically with the ClassConfigurator");
-        }
-
-        // write the contents
-        if(hdr instanceof Streamable) {
-            ((Streamable)hdr).writeTo(out);
-        }
-        else {
-            ObjectOutputStream oos=null;
-            try {
-                oos=new ObjectOutputStream(out);
-                hdr.writeExternal(oos);
-                if(!nonStreamableHeaders.contains(hdr.getClass())) {
-                    nonStreamableHeaders.add(hdr.getClass());
-                    if(log.isTraceEnabled())
-                        log.trace("encountered non-Streamable header: " + hdr.getClass());
-                }
-            }
-            finally {
-                Util.close(oos);
-            }
-        }
+        hdr.writeTo(out);
     }
 
 
     private static Header readHeader(DataInputStream in) throws IOException {
         try {
             short magic_number=in.readShort();
-            Class clazz;
-            if(magic_number != -1) {
-                clazz=ClassConfigurator.get(magic_number);
-                if(clazz == null)
-                    throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
-            }
-            else {
-                String classname=in.readUTF();
-                clazz=ClassConfigurator.get(classname);
-            }
+            Class clazz=ClassConfigurator.get(magic_number);
+            if(clazz == null)
+                throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
 
             Header hdr=(Header)clazz.newInstance();
-            if(hdr instanceof Streamable) {
-               ((Streamable)hdr).readFrom(in);
-            }
-            else {
-                ObjectInputStream ois=new ObjectInputStream(in);
-                hdr.readExternal(ois);
-            }
+            hdr.readFrom(in);
             return hdr;
         }
         catch(Exception ex) {
