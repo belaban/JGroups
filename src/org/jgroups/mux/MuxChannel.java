@@ -1,6 +1,7 @@
 package org.jgroups.mux;
 
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.ProtocolStack;
 
@@ -27,7 +28,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.56 2009/06/17 16:20:10 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.57 2010/03/05 08:59:12 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -37,7 +38,7 @@ public class MuxChannel extends JChannel {
     /*
      * Header identifier
      */
-    private static final String name="MUX";
+    private static final short ID=ClassConfigurator.getProtocolId(MuxChannel.class);
 
     /*
      * MuxChannel service ID
@@ -344,7 +345,7 @@ public class MuxChannel extends JChannel {
     }
 
     public void send(Message msg) throws ChannelNotConnectedException,ChannelClosedException {
-        msg.putHeader(name, hdr);
+        msg.putHeader(ID, hdr);
         mux.getChannel().send(msg);
         if(stats) {
             sent_msgs++;
@@ -360,7 +361,7 @@ public class MuxChannel extends JChannel {
     public void down(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            msg.putHeader(name, hdr);
+            msg.putHeader(ID, hdr);
         }
         mux.getChannel().down(evt);
     }
@@ -368,7 +369,7 @@ public class MuxChannel extends JChannel {
     public Object downcall(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            msg.putHeader(name, hdr);
+            msg.putHeader(ID, hdr);
         }
         return mux.getChannel().downcall(evt);
     }

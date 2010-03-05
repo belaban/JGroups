@@ -4,6 +4,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.112 2009/10/14 09:41:23 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.113 2010/03/05 08:59:12 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -46,7 +47,7 @@ public class Multiplexer implements UpHandler {
     private static final Log log=LogFactory.getLog(Multiplexer.class);
     private static final String SEPARATOR="::";
     private static final short SEPARATOR_LEN=(short)SEPARATOR.length();
-    private static final String NAME="MUX";
+    private static final short ID=ClassConfigurator.getProtocolId(Multiplexer.class);
 
     /**
      * Map<String,MuxChannel>. Maintains the mapping between service IDs and
@@ -290,7 +291,7 @@ public class Multiplexer implements UpHandler {
         switch(evt.getType()) {
             case Event.MSG:
                 final Message msg=(Message)evt.getArg();
-                final MuxHeader hdr=(MuxHeader)msg.getHeader(NAME);
+                final MuxHeader hdr=(MuxHeader)msg.getHeader(ID);
                 if(hdr == null) {
                     log.error("MuxHeader not present - discarding message " + msg);
                     return null;
@@ -620,13 +621,14 @@ public class Multiplexer implements UpHandler {
         }
 
         Message service_msg=new Message();
-        service_msg.putHeader(NAME, new MuxHeader(new ServiceInfo(type, service, host, payload)));
+        service_msg.putHeader(ID, new MuxHeader(new ServiceInfo(type, service, host, payload)));
 
         if(oob)
             service_msg.setFlag(Message.OOB);
 
         if(channel.flushSupported())
-            service_msg.putHeader("FLUSH", new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
+            service_msg.putHeader(ClassConfigurator.getProtocolId(FLUSH.class),
+                                  new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
 
         if(synchronous) {
             //for synchronous invocation we need to collect acks
@@ -814,7 +816,7 @@ public class Multiplexer implements UpHandler {
 
         ServiceInfo si=new ServiceInfo(ServiceInfo.ACK, info.service, info.host, null);
         MuxHeader hdr=new MuxHeader(si);
-        ack.putHeader(NAME, hdr);
+        ack.putHeader(ID, hdr);
 
         if(channel.isConnected())
             channel.send(ack);
