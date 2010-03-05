@@ -2,7 +2,6 @@
 
 <magic-number-class-mapping>
     <class id="1" name="org.jgroups.stack.IpAddress"/>
-    <class id="2" name="org.jgroups.protocols.CAUSAL$CausalHeader"/>
     <class id="3" name="org.jgroups.protocols.FD$FdHeader"/>
     <class id="6" name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
     <class id="7" name="org.jgroups.protocols.FragHeader"/>
