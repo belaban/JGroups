@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.93 2010/02/26 18:10:10 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.94 2010/03/05 09:04:54 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -389,7 +389,7 @@ public class TUNNEL extends TP {
     protected void send(Message msg, Address dest, boolean multicast) throws Exception {
 
         // we don't currently support message bundling in TUNNEL
-        TpHeader hdr=(TpHeader)msg.getHeader(getName());
+        TpHeader hdr=(TpHeader)msg.getHeader(this.id);
         if(hdr == null)
             throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
         String group=hdr.channel_name;

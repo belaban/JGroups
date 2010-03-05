@@ -8,11 +8,12 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.util.Util;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
-import org.testng.annotations.Test;
+import org.jgroups.util.Util;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -20,7 +21,6 @@ import java.security.MessageDigest;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Vector;
 
 /**
@@ -28,6 +28,8 @@ import java.util.Vector;
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class ENCRYPTAsymmetricTest {
+
+    static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(ENCRYPT.class);
 
     @BeforeClass
     public static void initProvider() {
@@ -81,25 +83,6 @@ public class ENCRYPTAsymmetricTest {
 
     }
 
-   /* public static void XtestInitRSABlockAsymProperties() throws Exception {
-        Properties props=new Properties();
-        props.put("asym_algorithm", "RSA/ECB/OAEPPadding");
-        ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
-        encrypt.init();
-
-        // test the default asymetric key
-        Util.assertEquals("RSA/ECB/OAEPPadding", encrypt.getAsymAlgorithm());
-        Util.assertEquals(512, encrypt.getAsymInit());
-        Util.assertEquals("RSA", encrypt.getKpair().getPublic().getAlgorithm());
-        //Strangely this returns differently from the default provider for RSA which is also BC!
-        Util.assertEquals("X509", encrypt.getKpair().getPublic().getFormat());
-        Util.assertNotNull(encrypt.getKpair().getPublic().getEncoded());
-
-        //test the resulting ciphers
-        Util.assertNotNull(encrypt.getAsymCipher());
-
-    }*/
 
 
     @Test(expectedExceptions=Exception.class)
@@ -153,8 +136,7 @@ public class ENCRYPTAsymmetricTest {
         encrypt.keyServer=false;
         Message msg=new Message();
         msg.setBuffer(cipher.doFinal("hello".getBytes()));
-        msg.putHeader(EncryptHeader.KEY, new EncryptHeader(
-                EncryptHeader.ENCRYPT, symVersion));
+        msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
 
         Event evt=new Event(Event.MSG, msg);
 
@@ -177,8 +159,7 @@ public class ENCRYPTAsymmetricTest {
         // send another encrypted message
         Message msg2=new Message();
         msg2.setBuffer(cipher.doFinal("hello2".getBytes()));
-        msg2.putHeader(EncryptHeader.KEY, new EncryptHeader(
-                EncryptHeader.ENCRYPT, symVersion));
+        msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
 
         // we should have three messages now in our observer
         // that are decrypted
@@ -242,8 +223,7 @@ public class ENCRYPTAsymmetricTest {
         Cipher cipher=server.getSymEncodingCipher();
         Message msg=new Message();
         msg.setBuffer(cipher.doFinal("hello".getBytes()));
-        msg.putHeader(EncryptHeader.KEY, new EncryptHeader(
-                EncryptHeader.ENCRYPT, symVersion));
+        msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
 
         Event evt=new Event(Event.MSG, msg);
 
@@ -262,7 +242,7 @@ public class ENCRYPTAsymmetricTest {
 
         Event sent=(Event)peerObserver.getDownMessages().get("message0");
 
-        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
         // send this event to server
@@ -271,7 +251,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=(Event)serverObserver.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(server.getDesKey());
@@ -284,8 +264,7 @@ public class ENCRYPTAsymmetricTest {
         // send another encrypted message to peer to test queue
         Message msg2=new Message();
         msg2.setBuffer(cipher.doFinal("hello2".getBytes()));
-        msg2.putHeader(EncryptHeader.KEY, new EncryptHeader(
-                EncryptHeader.ENCRYPT, symVersion));
+        msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, symVersion));
 
         Event evt2=new Event(Event.MSG, msg2);
 
@@ -383,7 +362,7 @@ public class ENCRYPTAsymmetricTest {
         Event sent=(Event)peerObserver.getDownMessages().get("message0");
 
         // ensure type and that request contains peers pub key
-        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
         //assume that server is no longer available and peer2 is new server
@@ -404,7 +383,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=(Event)peer2Observer.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(peer2.getDesKey());

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.86 2009/09/06 13:51:12 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.87 2010/03/05 09:04:35 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -110,7 +110,7 @@ public class STATE_TRANSFER extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                StateHeader hdr=(StateHeader)msg.getHeader(getName());
+                StateHeader hdr=(StateHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
 
@@ -182,7 +182,7 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 else {
                     Message state_req=new Message(target, null, null);
-                    state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ,
+                    state_req.putHeader(this.id, new StateHeader(StateHeader.STATE_REQ,
                                                               local_addr,
                                                               System.currentTimeMillis(),
                                                               null,
@@ -280,7 +280,7 @@ public class STATE_TRANSFER extends Protocol {
                                                     0,
                                                     digest,
                                                     id);
-                    state_rsp.putHeader(getName(), hdr);
+                    state_rsp.putHeader(this.id, hdr);
                     responses.add(state_rsp);
                 }
                 state_requesters.remove(id);

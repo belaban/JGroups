@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.36 2009/12/11 13:11:31 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.37 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -79,7 +80,9 @@ public class VIEW_SYNC extends Protocol {
 
     private final Lock view_task_lock=new ReentrantLock();
 
-    private TimeScheduler timer=null;    
+    private TimeScheduler timer=null;
+
+    private static final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
 
     
@@ -122,7 +125,7 @@ public class VIEW_SYNC extends Protocol {
         Message msg=new Message(null);
         msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
-        msg.putHeader(name, hdr);
+        msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, msg));
         num_view_requests_sent++;
         last_view_request_sent=System.currentTimeMillis();
@@ -147,7 +150,7 @@ public class VIEW_SYNC extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                hdr=(ViewSyncHeader)msg.getHeader(name);
+                hdr=(ViewSyncHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
                 Address sender=msg.getSrc();
@@ -213,7 +216,7 @@ public class VIEW_SYNC extends Protocol {
             Message view_change=new Message(local_addr, local_addr, null);
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
-            view_change.putHeader(GMS.class.getSimpleName(), hdr);
+            view_change.putHeader(gms_id, hdr);
             up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
         } else if (rc == 0) {
@@ -249,7 +252,7 @@ public class VIEW_SYNC extends Protocol {
         Message msg=new Message(null); // send to the group
         msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC, tmp);
-        msg.putHeader(name, hdr);
+        msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, msg));
         num_views_sent++;
     }

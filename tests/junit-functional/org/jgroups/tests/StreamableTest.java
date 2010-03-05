@@ -3,9 +3,8 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.PingData;
-import org.jgroups.protocols.PingHeader;
-import org.jgroups.protocols.TpHeader;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.*;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -20,6 +19,9 @@ import java.util.Vector;
 
 @Test(groups=Global.FUNCTIONAL)
 public class StreamableTest {
+
+    static final short PING_ID=100;
+    static final short UDP_ID=101;
 
     public static void testStreamable() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
@@ -111,9 +113,9 @@ public class StreamableTest {
         Address src=UUID.randomUUID();
         Message msg=new Message(dest, src, "Hello world".getBytes());
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), true));
-        msg.putHeader("ping-header", hdr);
+        msg.putHeader(PING_ID, hdr);
         TpHeader udp_hdr=new TpHeader("bla");
-        msg.putHeader("udp-header", udp_hdr);
+        msg.putHeader(UDP_ID, udp_hdr);
         stream(msg);
     }
 
@@ -126,9 +128,9 @@ public class StreamableTest {
         src.setAdditionalData("foobar".getBytes());
         Message msg=new Message(dest, src, "Hello world".getBytes());
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), false));
-        msg.putHeader("ping-header", hdr);
+        msg.putHeader(PING_ID, hdr);
         TpHeader udp_hdr=new TpHeader("bla");
-        msg.putHeader("udp-header", udp_hdr);
+        msg.putHeader(UDP_ID, udp_hdr);
         stream(msg);
     }
 

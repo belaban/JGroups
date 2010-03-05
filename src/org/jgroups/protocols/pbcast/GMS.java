@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.198 2009/12/15 12:30:46 belaban Exp $
+ * @version $Id: GMS.java,v 1.199 2010/03/05 09:04:35 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -448,7 +448,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         Message view_change_msg=new Message(); // bcast to all members
         GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
-        view_change_msg.putHeader(name, hdr);
+        view_change_msg.putHeader(this.id, hdr);
 
         List<Address> ackMembers = new ArrayList<Address>(new_view.getMembers());
         if(newMembers != null && !newMembers.isEmpty()) {
@@ -507,7 +507,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);        
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
-        m.putHeader(getName(), hdr);        
+        m.putHeader(this.id, hdr);
         getDownProtocol().down(new Event(Event.MSG, m));        
     }
 
@@ -761,7 +761,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                GmsHeader hdr=(GmsHeader)msg.getHeader(name);
+                GmsHeader hdr=(GmsHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
                 switch(hdr.type) {
@@ -855,7 +855,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                                 rsp_hdr.my_digest=retval;
                                 Message get_digest_rsp=new Message(msg.getSrc(), null, null);
                                 get_digest_rsp.setFlag(Message.OOB);
-                                get_digest_rsp.putHeader(name, rsp_hdr);
+                                get_digest_rsp.putHeader(this.id, rsp_hdr);
                                 down_prot.down(new Event(Event.MSG, get_digest_rsp));
                             }
                         }
@@ -978,7 +978,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         Message view_ack=new Message(dest, null, null);
         view_ack.setFlag(Message.OOB);
         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK);
-        view_ack.putHeader(name, tmphdr);
+        view_ack.putHeader(this.id, tmphdr);
         down_prot.down(new Event(Event.MSG, view_ack));
     }
 
@@ -1230,7 +1230,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.198 2009/12/15 12:30:46 belaban Exp $
+     * @version $Id: GMS.java,v 1.199 2010/03/05 09:04:35 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

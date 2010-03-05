@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.28 2009/10/20 14:52:18 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
  */
 @Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -70,7 +70,7 @@ public class MERGE3 extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                CoordAnnouncement hdr=(CoordAnnouncement)msg.getHeader(getName());
+                CoordAnnouncement hdr=(CoordAnnouncement)msg.getHeader(this.id);
                 if(hdr != null) {
                     if(is_coord) {
                         ViewId other=hdr.view.getViewId();
@@ -155,7 +155,7 @@ public class MERGE3 extends Protocol {
     void sendView() {
         Message view_announcement=new Message(); // multicast to all
         CoordAnnouncement hdr=new CoordAnnouncement(view);
-        view_announcement.putHeader(getName(), hdr);
+        view_announcement.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, view_announcement));
     }
 

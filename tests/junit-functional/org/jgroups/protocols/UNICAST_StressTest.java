@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -24,13 +25,15 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests time for N threads to deliver M messages to UNICAST
  * @author Bela Ban
- * @version $Id: UNICAST_StressTest.java,v 1.1 2010/03/01 13:04:41 belaban Exp $
+ * @version $Id: UNICAST_StressTest.java,v 1.2 2010/03/05 09:05:37 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST_StressTest {
     static final int NUM_MSGS=1000000;
     static final int NUM_THREADS=50;
     static final int MAX_MSG_BATCH_SIZE=50000;
+
+    static final short UNICAST_ID=ClassConfigurator.getProtocolId(UNICAST.class);
 
     @Test
     public static void stressTest() {
@@ -59,7 +62,7 @@ public class UNICAST_StressTest {
 //                System.out.println("stats:\n" + unicast.dumpStats());
 //            }
 //        });
-        
+
         unicast.setDownProtocol(new Protocol() {
             public Object down(Event evt) {
                 return null;
@@ -70,7 +73,7 @@ public class UNICAST_StressTest {
             public Object up(Event evt) {
                 if(evt.getType() == Event.MSG) {
                     delivered_msgs.incrementAndGet();
-                    UNICAST.UnicastHeader hdr=(UNICAST.UnicastHeader)((Message)evt.getArg()).getHeader("UNICAST");
+                    UNICAST.UnicastHeader hdr=(UNICAST.UnicastHeader)((Message)evt.getArg()).getHeader(UNICAST_ID);
                     if(hdr != null)
                         delivered_msg_list.add(hdr.getSeqno());
 
@@ -157,7 +160,7 @@ public class UNICAST_StressTest {
     private static Message createMessage(Address dest, Address src, long seqno, boolean oob, boolean first) {
         Message msg=new Message(dest, src, "hello world");
         UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(seqno, (short)1, first);
-        msg.putHeader("UNICAST", hdr);
+        msg.putHeader(UNICAST_ID, hdr);
         if(oob)
             msg.setFlag(Message.OOB);
         return msg;

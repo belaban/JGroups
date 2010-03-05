@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.protocols.pbcast.NAKACK;
@@ -22,13 +23,13 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.4 2010/02/23 17:26:46 belaban Exp $
+ * @version $Id: NAKACK_Delivery_Test.java,v 1.5 2010/03/05 09:05:37 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
     private NAKACK nak;
     private Address c1, c2;
-    static final String NAME="NAKACK";
+    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK.class);
     MyReceiver receiver=new MyReceiver();
     Executor pool;
     final static int NUM_MSGS=50;
@@ -40,16 +41,19 @@ public class NAKACK_Delivery_Test {
         UUID.add((UUID)c1, "C1"); UUID.add((UUID)c2, "C2");
         nak=new NAKACK();
 
-        nak.setDownProtocol(new TP() {
+        TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public String getName() {return "blo";}
             public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
             public TimeScheduler getTimer() {return new TimeScheduler(1);}
-        });
+        };
+
+        transport.setId((short)100);
+
+        nak.setDownProtocol(transport);
 
         receiver.init(c1, c2);
         nak.setUpProtocol(receiver);
@@ -152,7 +156,7 @@ public class NAKACK_Delivery_Test {
         if(oob)
             msg.setFlag(Message.OOB);
         if(seqno != -1)
-            msg.putHeader(NAME, NakAckHeader.createMessageHeader(seqno));
+            msg.putHeader(NAKACK_ID, NakAckHeader.createMessageHeader(seqno));
         return msg;
     }
 

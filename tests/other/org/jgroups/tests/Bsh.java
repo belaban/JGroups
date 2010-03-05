@@ -1,4 +1,4 @@
-// $Id: Bsh.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
+// $Id: Bsh.java,v 1.9 2010/03/05 09:05:55 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -6,6 +6,7 @@ package org.jgroups.tests;
 
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.BSH;
 import org.jgroups.stack.IpAddress;
 
@@ -90,19 +91,19 @@ public class Bsh {
             if(line.startsWith("destroyInterpreter")) {
                 msg=new Message(addr, null, line.getBytes());
                 hdr=new BSH.BshHeader(BSH.BshHeader.REQ);
-                msg.putHeader("BSH", hdr);
+                msg.putHeader(ClassConfigurator.getProtocolId(BSH.class), hdr);
                 sendAndReceive(msg, 1000);
                 continue;
             }
 
             msg=new Message(addr, null, line.getBytes());
             hdr=new BSH.BshHeader(BSH.BshHeader.REQ);
-            msg.putHeader("BSH", hdr);
+            msg.putHeader(ClassConfigurator.getProtocolId(BSH.class), hdr);
             sendAndReceive(msg, timeout);
         }
     }
 
-    Object print(Object obj) {
+    static Object print(Object obj) {
         if(obj == null)
             return null;
 

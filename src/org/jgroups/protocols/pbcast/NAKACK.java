@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.252 2010/02/23 17:26:48 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.253 2010/03/05 09:04:35 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -647,7 +647,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         case Event.MSG:
             Message msg=(Message)evt.getArg();
-            NakAckHeader hdr=(NakAckHeader)msg.getHeader(name);
+            NakAckHeader hdr=(NakAckHeader)msg.getHeader(this.id);
             if(hdr == null)
                 break;  // pass up (e.g. unicast msg)
 
@@ -740,7 +740,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
-                msg.putHeader(name, NakAckHeader.createMessageHeader(msg_id));
+                msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
                 if(win.add(msg_id, msg) && !msg.isFlagSet(Message.OOB))
                     undelivered_msgs.incrementAndGet();
                 seqno=msg_id;
@@ -1032,7 +1032,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(msg.isFlagSet(Message.OOB)) // set OOB for the wrapping message if the wrapped message is OOB, too
                 xmit_msg.setFlag(Message.OOB);
 
-            xmit_msg.putHeader(name, NakAckHeader.createXmitResponseHeader());
+            xmit_msg.putHeader(this.id, NakAckHeader.createXmitResponseHeader());
             down_prot.down(new Event(Event.MSG, xmit_msg));
         }
         catch(IOException ex) {
@@ -1453,7 +1453,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         retransmit_msg.setFlag(Message.OOB);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
-        retransmit_msg.putHeader(name, hdr);
+        retransmit_msg.putHeader(this.id, hdr);
 
         ConcurrentMap<Long,Long> tmp=xmit_stats.get(sender);
         if(tmp == null) {

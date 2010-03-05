@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.113 2009/12/11 13:01:40 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.114 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -178,7 +178,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.MSG:
                 Message msg=(Message) evt.getArg();
-                FdHeader hdr=(FdHeader)msg.getHeader(name);
+                FdHeader hdr=(FdHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;  // message did not originate from FD_SOCK layer, just pass up
 
@@ -245,7 +245,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                         hdr=new FdHeader(FdHeader.GET_CACHE_RSP,new HashMap<Address,IpAddress>(cache));
                         msg=new Message(sender, null, null);
                         msg.setFlag(Message.OOB);
-                        msg.putHeader(name, hdr);
+                        msg.putHeader(this.id, hdr);
                         down_prot.down(new Event(Event.MSG, msg));
                         break;
 
@@ -591,7 +591,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr=new FdHeader(FdHeader.GET_CACHE);
                 msg=new Message(coord, null, null);
                 msg.setFlag(Message.OOB);
-                msg.putHeader(name, hdr);
+                msg.putHeader(this.id, hdr);
                 down_prot.down(new Event(Event.MSG, msg));
                 result=get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
@@ -629,7 +629,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbrs.add(suspected_mbr);
         suspect_msg=new Message();
         suspect_msg.setFlag(Message.OOB);
-        suspect_msg.putHeader(name, hdr);
+        suspect_msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
 
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
@@ -654,7 +654,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         FdHeader hdr=new FdHeader(FdHeader.I_HAVE_SOCK);
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
-        msg.putHeader(name, hdr);
+        msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, msg));
     }
 
@@ -683,7 +683,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         ping_addr_req.setFlag(Message.OOB);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
-        ping_addr_req.putHeader(name, hdr);
+        ping_addr_req.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, ping_addr_req));        
         ret=ping_addr_promise.getResult(500);
         if(ret != null) {
@@ -697,7 +697,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         ping_addr_req.setFlag(Message.OOB);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
-        ping_addr_req.putHeader(name, hdr);
+        ping_addr_req.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, ping_addr_req));
         ret=ping_addr_promise.getResult(500);
         return ret;
@@ -1159,7 +1159,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.setFlag(Message.OOB);
-            suspect_msg.putHeader(name, hdr);
+            suspect_msg.putHeader(id, hdr);
             down_prot.down(new Event(Event.MSG, suspect_msg));
             if(log.isTraceEnabled()) log.trace("task done");
         }

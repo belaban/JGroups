@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.42 2009/10/20 15:10:06 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.43 2010/03/05 09:04:54 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
@@ -94,7 +94,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                VerifyHeader hdr=(VerifyHeader)msg.getHeader(name);
+                VerifyHeader hdr=(VerifyHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
                 switch(hdr.type) {
@@ -107,7 +107,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                             for(int i=0; i < num_msgs; i++) {
                                 rsp=new Message(hdr.from, null, null);
                                 rsp.setFlag(Message.OOB);
-                                rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                                rsp.putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                                 down_prot.down(new Event(Event.MSG, rsp));
                             }
                         }
@@ -199,7 +199,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(mbr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
+            msg.putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
             down_prot.down(new Event(Event.MSG, msg));
         }               
     }

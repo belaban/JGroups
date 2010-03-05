@@ -6,7 +6,9 @@ import org.testng.annotations.AfterMethod;
 import org.jgroups.Global;
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.NakReceiverWindow;
@@ -26,12 +28,14 @@ import java.util.Collections;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.6 2010/02/23 17:26:45 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.7 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
     final static int NUM_THREADS=200;
     final static int NUM_MSGS=5000;
+
+    static final short NAKACK_ID=100;
 
     final Address self=Util.createRandomAddress();
     final Address sender=Util.createRandomAddress();
@@ -192,7 +196,7 @@ public class NakReceiverWindowTest2 {
         protected void add(long seqno) {
             NakAckHeader hdr=NakAckHeader.createMessageHeader(seqno);
             Message msg=new Message(null, sender, "hello");
-            msg.putHeader("NAKAC", hdr);
+            msg.putHeader(NAKACK_ID, hdr);
             boolean added=win.add(seqno, msg);
 
             if(added) {

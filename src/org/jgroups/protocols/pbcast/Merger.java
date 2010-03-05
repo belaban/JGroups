@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.4 2009/11/19 12:59:18 belaban Exp $
+ * @version $Id: Merger.java,v 1.5 2010/03/05 09:04:35 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -169,7 +169,7 @@ public class Merger {
             Message ack=new Message(data.getSender(), null, null);
             ack.setFlag(Message.OOB);
             GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
-            ack.putHeader(gms.getName(), ack_hdr);
+            ack.putHeader(gms.getId(), ack_hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, ack));
         }
         cancelMerge(merge_id);
@@ -204,7 +204,7 @@ public class Merger {
         hdr.merge_id=merge_id;
         hdr.view=view;
         hdr.my_digest=digest;
-        msg.putHeader(gms.getName(), hdr);
+        msg.putHeader(gms.getId(), hdr);
         if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending merge response=" + hdr);
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
@@ -241,7 +241,7 @@ public class Merger {
             hdr.view=view;
             hdr.my_digest=digest;
             hdr.merge_id=merge_id;
-            msg.putHeader(gms.getName(), hdr);
+            msg.putHeader(gms.getId(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
 
@@ -267,7 +267,7 @@ public class Merger {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;
-        msg.putHeader(gms.getName(), hdr);
+        msg.putHeader(gms.getId(), hdr);
         if(log.isDebugEnabled()) log.debug("merge response=" + hdr);
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
@@ -281,7 +281,7 @@ public class Merger {
             // msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
             hdr.merge_id=merge_id;
-            msg.putHeader(gms.getName(), hdr);
+            msg.putHeader(gms.getId(), hdr);
             if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending cancel merge to " + coord);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
@@ -301,7 +301,7 @@ public class Merger {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.GET_DIGEST_REQ);
         Message get_digest_req=new Message();
         get_digest_req.setFlag(Message.OOB);
-        get_digest_req.putHeader(gms.getName(), hdr);
+        get_digest_req.putHeader(gms.getId(), hdr);
 
         long max_wait_time=gms.merge_timeout > 0? gms.merge_timeout / 2 : 2000L;
         digest_collector.reset(current_mbrs);
@@ -336,7 +336,7 @@ public class Merger {
         Message msg=new Message();
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_DIGEST);
         hdr.my_digest=digest;
-        msg.putHeader(gms.getName(), hdr);
+        msg.putHeader(gms.getId(), hdr);
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
@@ -565,7 +565,7 @@ public class Merger {
                 GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ, mbrs);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=new_merge_id;
-                msg.putHeader(gms.getName(), hdr);
+                msg.putHeader(gms.getId(), hdr);
                 gms.getDownProtocol().down(new Event(Event.MSG, msg));
             }
 

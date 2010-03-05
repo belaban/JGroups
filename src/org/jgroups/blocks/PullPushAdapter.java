@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.28 2009/06/17 16:20:07 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.29 2010/03/05 09:04:15 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,6 +6,7 @@ package org.jgroups.blocks;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
     protected Thread          receiver_thread=null;
     protected final HashMap   listeners=new HashMap(); // keys=identifier (Serializable), values=MessageListeners
     protected final Log       log=LogFactory.getLog(getClass());
-    static final String       PULL_HEADER="PULL_HEADER";
+    static final short        PULL_HEADER_ID=ClassConfigurator.getProtocolId(PullPushAdapter.class);
 
 
     public PullPushAdapter(Transport transport) {
@@ -125,7 +126,7 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
         if(identifier == null)
             transport.send(msg);
         else {
-            msg.putHeader(PULL_HEADER, new PullHeader(identifier));
+            msg.putHeader(PULL_HEADER_ID, new PullHeader(identifier));
             transport.send(msg);
         }
     }
@@ -329,7 +330,7 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
      * listener
      */
     protected void handleMessage(Message msg) {
-        PullHeader hdr=(PullHeader)msg.getHeader(PULL_HEADER);
+        PullHeader hdr=(PullHeader)msg.getHeader(PULL_HEADER_ID);
         Serializable identifier;
         MessageListener l;
 

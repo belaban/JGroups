@@ -216,7 +216,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
             case Event.MSG :
                 Message msg = (Message) evt.getArg();
-                StateHeader hdr = (StateHeader) msg.getHeader(getName());
+                StateHeader hdr = (StateHeader) msg.getHeader(this.id);
                 if (hdr != null) {
                     switch (hdr.type) {
                         case StateHeader.STATE_REQ :
@@ -298,7 +298,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 } else {
                     Message state_req = new Message(target, null, null);
-                    state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ,
+                    state_req.putHeader(this.id, new StateHeader(StateHeader.STATE_REQ,
                             local_addr, info.state_id));
                     if (log.isDebugEnabled())
                         log.debug("GET_STATE: asking " + target
@@ -364,7 +364,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         StateHeader hdr = new StateHeader(StateHeader.STATE_RSP, local_addr, use_default_transport
                 ? null
                 : spawner.getServerSocketAddress(), digest, id);
-        state_rsp.putHeader(getName(), hdr);
+        state_rsp.putHeader(this.id, hdr);
 
         if (log.isDebugEnabled())
             log.debug("Responding to state requester " + state_rsp.getDest() + " with address "
@@ -776,7 +776,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             Message m = null;
             try {
                 m = stateQueue.take();
-                StateHeader hdr = (StateHeader) m.getHeader(getName());
+                StateHeader hdr = (StateHeader) m.getHeader(id);
                 if (hdr.type == StateHeader.STATE_PART) {
                     return readAndTransferPayload(m, b, off, len);
                 }
@@ -855,7 +855,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
         private void sendMessage(byte[] b, int off, int len) throws IOException {
             Message m = new Message(stateRequester);
-            m.putHeader(getName(), new StateHeader(StateHeader.STATE_PART, local_addr, state_id));
+            m.putHeader(id, new StateHeader(StateHeader.STATE_PART, local_addr, state_id));
             m.setBuffer(b, off, len);
             bytesWrittenCounter += (len - off);
             if (Thread.interrupted()) {

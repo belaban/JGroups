@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.52 2009/12/11 13:02:28 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.53 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -164,7 +164,7 @@ public class FRAG2 extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                FragHeader hdr=(FragHeader)msg.getHeader(name);
+                FragHeader hdr=(FragHeader)msg.getHeader(this.id);
                 if(hdr != null) { // needs to be defragmented
                     unfragment(msg, hdr); // Unfragment and possibly pass up
                     return null;
@@ -249,7 +249,7 @@ public class FRAG2 extends Protocol {
                 Message frag_msg=msg.copy(false); // don't copy the buffer, only src, dest and headers. But do copy the headers
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
                 FragHeader hdr=new FragHeader(id, i, num_frags);
-                frag_msg.putHeader(name, hdr);
+                frag_msg.putHeader(this.id, hdr);
                 down_prot.down(new Event(Event.MSG, frag_msg));
             }
         }

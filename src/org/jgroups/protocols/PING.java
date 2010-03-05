@@ -19,7 +19,7 @@ import java.util.List;
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
  * response.
  * @author Bela Ban
- * @version $Id: PING.java,v 1.62 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: PING.java,v 1.63 2010/03/05 09:04:54 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "port_range", "socket_conn_timeout",
         "socket_read_timeout", "discovery_timeout"})
@@ -51,7 +51,7 @@ public class PING extends Discovery {
         hdr.return_view_only=return_views_only;
         Message msg=new Message(null);  // mcast msg
         msg.setFlag(Message.OOB);
-        msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !
+        msg.putHeader(this.id, hdr); // needs to be getName(), so we might get "MPING" !
         sendMcastDiscoveryRequest(msg);
     }
 
@@ -59,7 +59,7 @@ public class PING extends Discovery {
     public Object up(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            PingHeader hdr=(PingHeader)msg.getHeader(getName());
+            PingHeader hdr=(PingHeader)msg.getHeader(this.id);
             if(hdr != null && hdr.type == PingHeader.GET_MBRS_REQ && msg.getSrc().equals(local_addr)) {
                 discovery_reception.setResult(true);
             }

@@ -36,7 +36,7 @@ import java.util.Set;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.58 2009/12/11 13:10:09 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.59 2010/03/05 09:04:54 belaban Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -124,7 +124,7 @@ public class TCPPING extends Discovery {
                 continue;
             final Message msg=new Message(addr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(getName(), hdr);
+            msg.putHeader(this.id, hdr);
             if(log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
             timer.execute(new Runnable() {

@@ -253,7 +253,7 @@ public class FLUSH extends Protocol {
                 Address dest = msg.getDest();
                 if (dest == null || dest.isMulticastAddress()) {
                     // mcasts
-                    FlushHeader fh = (FlushHeader) msg.getHeader(getName());
+                    FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
                     if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
                         return down_prot.down(evt);
                     } else {
@@ -344,7 +344,7 @@ public class FLUSH extends Protocol {
         switch (evt.getType()) {
             case Event.MSG:
                 Message msg = (Message) evt.getArg();
-                final FlushHeader fh = (FlushHeader) msg.getHeader(getName());
+                final FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
                 if (fh != null) {
                     switch (fh.type) {
                         case FlushHeader.FLUSH_BYPASS:
@@ -531,7 +531,7 @@ public class FLUSH extends Protocol {
 
         Message reconcileOk = new Message(requester);
         reconcileOk.setFlag(Message.OOB);
-        reconcileOk.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
+        reconcileOk.putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
         down_prot.down(new Event(Event.MSG, reconcileOk));
     }
 
@@ -548,7 +548,7 @@ public class FLUSH extends Protocol {
             FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_NOT_COMPLETED, fh.viewID,
                             fh.flushParticipants);
             Message response = new Message(flushRequester);
-            response.putHeader(getName(), fhr);
+            response.putHeader(this.id, fhr);
             down_prot.down(new Event(Event.MSG, response));
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_NOT_COMPLETED to " + flushRequester);
@@ -558,7 +558,7 @@ public class FLUSH extends Protocol {
     private void rejectFlush(Collection<? extends Address> participants, long viewId) {
         for (Address flushMember : participants) {
             Message reject = new Message(flushMember, localAddress, null);
-            reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
+            reject.putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
             down_prot.down(new Event(Event.MSG, reject));
         }
     }
@@ -662,7 +662,7 @@ public class FLUSH extends Protocol {
             participantsInFlush.retainAll(currentView.getMembers());
 
             msg = new Message(null, localAddress, null);
-            msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
+            msg.putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
                             participantsInFlush));
         }
         if (participantsInFlush.isEmpty()) {
@@ -689,7 +689,7 @@ public class FLUSH extends Protocol {
             // we have to FIFO order two subsequent flushes
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received RESUME, sending STOP_FLUSH to all");
-            msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
+            msg.putHeader(this.id, new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
             down_prot.down(new Event(Event.MSG, msg));
         } else {
             for (Address address : members) {
@@ -698,7 +698,7 @@ public class FLUSH extends Protocol {
                 // we have to FIFO order two subsequent flushes
                 if (log.isDebugEnabled())
                     log.debug(localAddress + ": received RESUME, sending STOP_FLUSH to " + address);
-                msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
+                msg.putHeader(this.id, new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
                 down_prot.down(new Event(Event.MSG, msg));
             }
         }
@@ -743,7 +743,7 @@ public class FLUSH extends Protocol {
             fhr.addDigest(digest);
 
             Message msg = new Message(flushStarter);
-            msg.putHeader(getName(), fhr);
+            msg.putHeader(this.id, fhr);
             down_prot.down(new Event(Event.MSG, msg));
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_COMPLETED to " + flushStarter);
@@ -776,7 +776,7 @@ public class FLUSH extends Protocol {
                 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(),flushMembers);
                 reconcileOks.clear();
                 fh.addDigest(d);
-                msg.putHeader(getName(), fh);
+                msg.putHeader(this.id, fh);
 
                 if (log.isDebugEnabled())
                     log.debug(localAddress
@@ -884,7 +884,7 @@ public class FLUSH extends Protocol {
             Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
             FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID);
             fh.addDigest(digest);
-            m.putHeader(getName(), fh);
+            m.putHeader(this.id, fh);
             down_prot.down(new Event(Event.MSG, m));
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": sent FLUSH_COMPLETED message to " + flushCoordinator);

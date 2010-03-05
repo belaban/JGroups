@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Property;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.auth.X509Token;
@@ -27,6 +28,8 @@ public class AUTH extends Protocol {
      * used on the coordinator to authentication joining member requests against
      */
     private AuthToken auth_plugin=null;
+
+    private static final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
     
     public AUTH() {
@@ -76,7 +79,7 @@ public class AUTH extends Protocol {
         //need to specify the error message on the JoinRsp object once it's been changed
 
         GMS.GmsHeader gmsHeader = new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, joinRes);
-        msg.putHeader(GMS.class.getSimpleName(), gmsHeader);
+        msg.putHeader(gms_id, gmsHeader);
 
         if(log.isDebugEnabled()){
             log.debug("GMSHeader created for failure JOIN_RSP");
@@ -103,8 +106,8 @@ public class AUTH extends Protocol {
             //we found a join message - now try and get the AUTH Header
             Message msg = (Message)evt.getArg();
 
-            if((msg.getHeader(getName()) != null) && (msg.getHeader(getName()) instanceof AuthHeader)){
-                AuthHeader authHeader = (AuthHeader)msg.getHeader(getName());
+            if((msg.getHeader(this.id) != null) && (msg.getHeader(this.id) instanceof AuthHeader)){
+                AuthHeader authHeader = (AuthHeader)msg.getHeader(this.id);
 
                 if(authHeader != null){
                     //Now we have the AUTH Header we need to validate it
@@ -172,7 +175,7 @@ public class AUTH extends Protocol {
             Message msg = (Message)evt.getArg();
             AuthHeader authHeader = new AuthHeader();
             authHeader.setToken(this.auth_plugin);
-            msg.putHeader(getName(), authHeader);
+            msg.putHeader(this.id, authHeader);
 
             if(log.isDebugEnabled()){
                 log.debug("AUTH passing down event");
@@ -198,7 +201,7 @@ public class AUTH extends Protocol {
         switch(evt.getType()){
           case Event.MSG:
                 msg = (Message)evt.getArg();
-                Object obj = msg.getHeader("GMS");
+                Object obj = msg.getHeader(gms_id);
                 if(obj == null || !(obj instanceof GMS.GmsHeader)){
                     return null;
                 }

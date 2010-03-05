@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.24 2009/10/14 09:41:57 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.25 2010/03/05 09:05:48 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {

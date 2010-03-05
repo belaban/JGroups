@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.56 2009/09/20 15:05:49 belaban Exp $
+// $Id: ENCRYPT.java,v 1.57 2010/03/05 09:04:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -518,7 +518,7 @@ public class ENCRYPT extends Protocol {
             return;
         }
 
-        EncryptHeader hdr=(EncryptHeader)msg.getHeader(EncryptHeader.KEY);
+        EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 
         // try and get the encryption header
         if(hdr == null) {
@@ -697,7 +697,7 @@ public class ENCRYPT extends Protocol {
      * @throws Exception
      */
     private Message decryptMessage(Cipher cipher, Message msg) throws Exception {
-        EncryptHeader hdr=(EncryptHeader)msg.getHeader(EncryptHeader.KEY);
+        EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
         if(!hdr.getVersion().equals(getSymVersion())) {
             log.warn("attempting to use stored cipher as message does not uses current encryption version ");
             cipher=keyMap.get(hdr.getVersion());
@@ -767,73 +767,25 @@ public class ENCRYPT extends Protocol {
 
         newMsg=new Message(source, local_addr, encryptedKey);
 
-        newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.SECRETKEY,
-                                                              getSymVersion()));
+        newMsg.putHeader(this.id, new EncryptHeader(EncryptHeader.SECRETKEY, getSymVersion()));
 
         if(log.isDebugEnabled())
             log.debug(" Sending version " + getSymVersion() + " encoded key to client");
         passItDown(new Event(Event.MSG, newMsg));
     }
 
-    /**
-     * @param msg
-     * @return
-     */
-    //	private PublicKey handleKeyRequest(Message msg)
-    //	{
-    //		Message newMsg;
-    //		if (log.isDebugEnabled())
-    //			log.debug("Request for key recieved");
-    //
-    //		//SW log the clients encoded public key so we can
-    //		// see if they match
-    //		if (log.isDebugEnabled())
-    //			log.debug("Got peer's encoded public key:"
-    //					+ formatArray(msg.getBuffer()));
-    //
-    //		PublicKey pubKey = generatePubKey(msg.getBuffer());
-    //
-    //		//SW log the clients resulting public key so we can
-    //		// see if it is created correctly
-    //		if (log.isDebugEnabled())
-    //			log.debug("Generated requestors public key" + pubKey);
-    //
-    //		/*
-    //		 * SW why do we send this as the client does not use it ? - although we
-    //		 * could make use to provide some authentication later on rahter than
-    //		 * just encryption send server's publicKey
-    //		 */
-    //		newMsg = new Message(msg.getSrc(), local_addr, Kpair.getPublic()
-    //				.getEncoded());
-    //
-    //		//SW Log out our public key in encoded format so we
-    //		// can match with the client debugging to
-    //		// see if they match
-    //		if (log.isInfoEnabled())
-    //			log.debug("encoded key is "
-    //					+ formatArray(Kpair.getPublic().getEncoded()));
-    //
-    //
-    //		newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(
-    //				EncryptHeader.SERVER_PUBKEY, getSymVersion()));
-    //
-    //
-    //		down_prot.down(new Event(Event.MSG, newMsg));
-    //		return pubKey;
-    //	}
+
 
     /**
      * @return Message
      */
-
     private Message sendKeyRequest() {
 
         // send client's public key to server and request
         // server's public key
         Message newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
 
-        newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(EncryptHeader.KEY_REQUEST,
-                                                              getSymVersion()));
+        newMsg.putHeader(this.id, new EncryptHeader(EncryptHeader.KEY_REQUEST, getSymVersion()));
         passItDown(new Event(Event.MSG, newMsg));
         return newMsg;
     }
@@ -945,13 +897,13 @@ public class ENCRYPT extends Protocol {
             Message tmp=msg.copy(false); // we need to preserve headers which may already be present
             tmp.setBuffer(encrypted_msg);
             tmp.setSrc(local_addr);
-            tmp.putHeader(EncryptHeader.KEY, hdr);
+            tmp.putHeader(this.id, hdr);
             passItDown(new Event(Event.MSG, tmp));
             return;
         }
 
         // put our encrypt header on the message
-        msg.putHeader(EncryptHeader.KEY, hdr);
+        msg.putHeader(this.id, hdr);
 
         // copy neeeded because same message (object) may be retransmitted -> no double encryption
         Message msgEncrypted=msg.copy(false);
@@ -1181,9 +1133,6 @@ public class ENCRYPT extends Protocol {
         public static final short SERVER_PUBKEY=2;
         public static final short SECRETKEY=3;
         public static final short SECRETKEY_READY=4;
-
-        // adding key for Message object purpose
-        static final String KEY="encrypt";
 
         String version;
 

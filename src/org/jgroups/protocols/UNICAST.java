@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.162 2010/03/02 08:22:31 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.163 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -270,7 +270,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
                 // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
                 // transport level, we will not have the header on retransmit ! (bela Aug 22 2006)
-                hdr=(UnicastHeader)msg.getHeader(name);
+                hdr=(UnicastHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
                 src=msg.getSrc();
@@ -337,7 +337,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     seqno=entry.sent_msgs_seqno;
                     send_conn_id=entry.send_conn_id;
                     hdr=UnicastHeader.createDataHeader(seqno, send_conn_id, seqno == DEFAULT_FIRST_SEQNO);
-                    msg.putHeader(getName(), hdr);
+                    msg.putHeader(this.id, hdr);
 
                     // AckSenderWindow.add() is costly as it calls Retransmitter.add() which calls TimeScheduler.schedule(),
                     // which adds the scheduled task to a DelayQueue, which does costly tree rebalancing.
@@ -657,10 +657,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // the headers and therefore we'd modify the original message in the sender retransmission window
         // (https://jira.jboss.org/jira/browse/JGRP-965)
         Message copy=rsp.copy();
-        UnicastHeader hdr=(UnicastHeader)copy.getHeader(name);
+        UnicastHeader hdr=(UnicastHeader)copy.getHeader(this.id);
         UnicastHeader newhdr=hdr.copy();
         newhdr.first=true;
-        copy.putHeader(name, newhdr);
+        copy.putHeader(this.id, newhdr);
         down_prot.down(new Event(Event.MSG, copy));
     }
 
@@ -675,7 +675,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // https://jira.jboss.org/jira/browse/JGRP-1125; will be reverted in 2.10
         // ack.setFlag(Message.OOB);
 
-        ack.putHeader(name, UnicastHeader.createAckHeader(seqno));
+        ack.putHeader(this.id, UnicastHeader.createAckHeader(seqno));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
                     append(": #").append(seqno).append(')'));
@@ -705,7 +705,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         Message msg=new Message(dest);
         msg.setFlag(Message.OOB);
         UnicastHeader hdr=UnicastHeader.createSendFirstSeqnoHeader();
-        msg.putHeader(name, hdr);
+        msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())
             log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + ")");
         down_prot.down(new Event(Event.MSG, msg));

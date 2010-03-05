@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.70 2009/12/11 12:58:38 belaban Exp $
+ * @version $Id: Discovery.java,v 1.71 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -272,7 +272,7 @@ public abstract class Discovery extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                PingHeader hdr=(PingHeader)msg.getHeader(getName());
+                PingHeader hdr=(PingHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     return up_prot.up(evt);
 
@@ -466,7 +466,7 @@ public abstract class Discovery extends Protocol {
         Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
         PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
-        rsp_msg.putHeader(getName(), rsp_hdr);
+        rsp_msg.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
         down_prot.down(new Event(Event.MSG, rsp_msg));

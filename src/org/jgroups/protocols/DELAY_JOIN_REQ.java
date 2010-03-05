@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.protocols.pbcast.GMS;
@@ -13,13 +14,15 @@ import java.util.Date;
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.5 2009/09/06 13:51:07 belaban Exp $
+ * @version $Id: DELAY_JOIN_REQ.java,v 1.6 2010/03/05 09:04:54 belaban Exp $
  */
 @Unsupported
 public class DELAY_JOIN_REQ extends Protocol {
     
     @Property
     private long delay=4000;
+
+    private static final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
     public long getDelay() {
         return delay;
@@ -33,7 +36,7 @@ public class DELAY_JOIN_REQ extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                final GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader("GMS");
+                final GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(gms_id);
                 if(hdr != null) {
                     switch(hdr.getType()) {
                         case GMS.GmsHeader.JOIN_REQ:

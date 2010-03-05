@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.16 2009/05/13 13:06:58 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.17 2010/03/05 09:05:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,20 +9,31 @@ package org.jgroups.tests;
  */
 
 import org.jgroups.Message;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.Buffer;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.*;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
-import java.io.*;
 
 
 public class MessageSerializationTest {
     static final Log log=LogFactory.getLog(MessageSerializationTest.class);
+
+    static final short UDP_ID=100;
+    static final short PING_ID=101;
+    static final short FD_SOCK_ID=102;
+    static final short VERIFY_SUSPECT_ID=103;
+    static final short STABLE_ID=104;
+    static final short NAKACK_ID=105;
+    static final short UNICAST_ID=106;
+    static final short FRAG_ID=107;
+    static final short GMS_ID=108;
 
     public MessageSerializationTest() {
     }
@@ -77,16 +88,16 @@ public class MessageSerializationTest {
     /**
      * Adds some dummy headers to the message
      */
-    static void addHeaders(Message msg) {
-        msg.putHeader("UDP", new TpHeader("MyGroup"));
-        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "x"));
-        msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
-        msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
-        msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
-        msg.putHeader("NAKACK", new org.jgroups.protocols.pbcast.NakAckHeader());
-        msg.putHeader("UNICAST", new UNICAST.UnicastHeader());
-        msg.putHeader("FRAG", new FragHeader());
-        msg.putHeader("GMS", new org.jgroups.protocols.pbcast.GMS.GmsHeader());
+     static void addHeaders(Message msg) {
+        msg.putHeader(UDP_ID, new TpHeader("MyGroup"));
+        msg.putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster"));
+        msg.putHeader(FD_SOCK_ID, new FD_SOCK.FdHeader());
+        msg.putHeader(VERIFY_SUSPECT_ID, new VERIFY_SUSPECT.VerifyHeader());
+        msg.putHeader(STABLE_ID, new org.jgroups.protocols.pbcast.STABLE.StableHeader());
+        msg.putHeader(NAKACK_ID, new org.jgroups.protocols.pbcast.NakAckHeader());
+        msg.putHeader(UNICAST_ID, new UNICAST.UnicastHeader());
+        msg.putHeader(FRAG_ID, new FragHeader());
+        msg.putHeader(GMS_ID, new org.jgroups.protocols.pbcast.GMS.GmsHeader());
     }
 
 

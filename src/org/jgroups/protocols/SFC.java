@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.28 2009/12/11 13:08:23 belaban Exp $
+ * @version $Id: SFC.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -264,7 +264,7 @@ public class SFC extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                Header hdr=(Header)msg.getHeader(name);
+                Header hdr=(Header)msg.getHeader(this.id);
                 Address sender=msg.getSrc();
                 if(hdr != null) {
                     switch(hdr.type) {
@@ -507,7 +507,7 @@ public class SFC extends Protocol {
         Message credit_req=new Message();
         // credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
         byte type=urgent? Header.URGENT_CREDIT_REQUEST : Header.CREDIT_REQUEST;
-        credit_req.putHeader(name, new Header(type));
+        credit_req.putHeader(this.id, new Header(type));
         num_credit_requests_sent++;
         down_prot.down(new Event(Event.MSG, credit_req));
     }
@@ -516,7 +516,7 @@ public class SFC extends Protocol {
         Message credit_rsp=new Message(dest);
         credit_rsp.setFlag(Message.OOB);
         Header hdr=new Header(Header.REPLENISH);
-        credit_rsp.putHeader(name, hdr);
+        credit_rsp.putHeader(this.id, hdr);
         if(log.isTraceEnabled())
             log.trace("sending credit response to " + dest);
         num_replenishments_sent++;

@@ -3,9 +3,13 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
+import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.PING;
 import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.Range;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -14,10 +18,14 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.14 2010/02/23 17:26:45 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.15 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
+
+    static final short UDP_ID=101;
+    static final short PING_ID=102;
+    static final short NAKACK_ID=103;
 
 
     public static void testFlags() {
@@ -361,11 +369,11 @@ public class MessageTest {
 
     private static void addHeaders(Message msg) {       
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
-        msg.putHeader("TP", tp_hdr);
+        msg.putHeader(UDP_ID, tp_hdr);
         PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster");
-        msg.putHeader("PING", ping_hdr);
+        msg.putHeader(PING_ID, ping_hdr);
         NakAckHeader nak_hdr=NakAckHeader.createXmitRequestHeader(100, 104, null);
-        msg.putHeader("NAKACK", nak_hdr);
+        msg.putHeader(NAKACK_ID, nak_hdr);
     }
 
 

@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.31 2009/12/11 13:01:40 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.32 2010/03/05 09:04:54 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -152,7 +152,7 @@ public class FD_ALL extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                hdr=(Header)msg.getHeader(getName());
+                hdr=(Header)msg.getHeader(this.id);
                 if(msg_counts_as_heartbeat)
                     update(msg.getSrc()); // update when data is received too ? maybe a bit costly
                 if(hdr == null)
@@ -299,7 +299,7 @@ public class FD_ALL extends Protocol {
         Message suspect_msg=new Message();
         suspect_msg.setFlag(Message.OOB);
         Header hdr=new Header(Header.SUSPECT, mbr);
-        suspect_msg.putHeader(getName(), hdr);
+        suspect_msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
         num_suspect_events++;
         suspect_history.add(mbr);
@@ -378,7 +378,7 @@ public class FD_ALL extends Protocol {
             Message heartbeat=new Message(); // send to all
             heartbeat.setFlag(Message.OOB);
             Header hdr=new Header(Header.HEARTBEAT);
-            heartbeat.putHeader(getName(), hdr);
+            heartbeat.putHeader(id, hdr);
             down_prot.down(new Event(Event.MSG, heartbeat));
             if(log.isTraceEnabled())
               log.trace(local_addr + " sent heartbeat to cluster");

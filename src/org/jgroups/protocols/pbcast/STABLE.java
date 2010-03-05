@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.103 2009/12/11 13:07:37 belaban Exp $
+ * @version $Id: STABLE.java,v 1.104 2010/03/05 09:04:35 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -230,7 +230,7 @@ public class STABLE extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            hdr=(StableHeader)msg.getHeader(name);
+            hdr=(StableHeader)msg.getHeader(this.id);
             if(hdr == null) {
                 handleRegularMessage(msg);
                 return up_prot.up(evt);
@@ -640,7 +640,7 @@ public class STABLE extends Protocol {
             final Message msg=new Message(); // mcast message
             msg.setFlag(Message.OOB);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
-            msg.putHeader(name, hdr);
+            msg.putHeader(this.id, hdr);
 
             Runnable r=new Runnable() {
                 public void run() {
@@ -851,7 +851,7 @@ public class STABLE extends Protocol {
                 msg=new Message();
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
-                msg.putHeader(name, hdr);
+                msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
                 " (copy=" + stability_digest.hashCode() + ")");
                 num_stability_msgs_sent++;

@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.19 2008/03/31 06:15:22 vlada Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.20 2010/03/05 09:05:55 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -29,6 +29,16 @@ public class MessageSerializationTest2 {
     DataInputStream dis;
     int msgs_read=0;
     List<Message> l2=new LinkedList<Message>();
+
+    static final short UDP_ID=100;
+    static final short PING_ID=101;
+    static final short FD_SOCK_ID=102;
+    static final short VERIFY_SUSPECT_ID=103;
+    static final short STABLE_ID=104;
+    static final short NAKACK_ID=105;
+    static final short UNICAST_ID=106;
+    static final short FRAG_ID=107;
+    static final short GMS_ID=108;
 
 
 
@@ -64,15 +74,15 @@ public class MessageSerializationTest2 {
 
 
      static void addHeaders(Message msg) {
-        msg.putHeader("UDP", new TpHeader("MyGroup"));
-        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
-        msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
-        msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
-        msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
-        msg.putHeader("NAKACK", new org.jgroups.protocols.pbcast.NakAckHeader());
-        msg.putHeader("UNICAST", new UNICAST.UnicastHeader());
-        msg.putHeader("FRAG", new FragHeader());
-        msg.putHeader("GMS", new org.jgroups.protocols.pbcast.GMS.GmsHeader());
+        msg.putHeader(UDP_ID, new TpHeader("MyGroup"));
+        msg.putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster"));
+        msg.putHeader(FD_SOCK_ID, new FD_SOCK.FdHeader());
+        msg.putHeader(VERIFY_SUSPECT_ID, new VERIFY_SUSPECT.VerifyHeader());
+        msg.putHeader(STABLE_ID, new org.jgroups.protocols.pbcast.STABLE.StableHeader());
+        msg.putHeader(NAKACK_ID, new org.jgroups.protocols.pbcast.NakAckHeader());
+        msg.putHeader(UNICAST_ID, new UNICAST.UnicastHeader());
+        msg.putHeader(FRAG_ID, new FragHeader());
+        msg.putHeader(GMS_ID, new org.jgroups.protocols.pbcast.GMS.GmsHeader());
     }
 
     private static void printDiffs(List<Long> l_ser, List<Long> l_stream) {

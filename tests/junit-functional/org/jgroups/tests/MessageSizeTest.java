@@ -5,10 +5,13 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.Address;
 import org.jgroups.Version;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -18,11 +21,16 @@ import java.io.DataOutputStream;
 /**
  * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.5 2010/03/04 12:26:15 belaban Exp $
+ * @version $Id: MessageSizeTest.java,v 1.6 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {
     private static final byte MULTICAST=2;
+
+    private static final short UDP_ID=100;
+    private static final short UNICAST_ID=101;
+    private static final short NAKACK_ID=102;
+
 
 
     /**
@@ -84,9 +92,9 @@ public class MessageSizeTest {
 
     static Message createMessage(Address dest, Address src) {
         Message msg=new Message(dest, src, "hello world");
-        msg.putHeader("NAKACK", NakAckHeader.createMessageHeader(322649));
-        msg.putHeader("UNICAST", UNICAST.UnicastHeader.createDataHeader(465784, (short)23323, true));
-        msg.putHeader("UDP", new TpHeader("DrawDemo"));
+        msg.putHeader(NAKACK_ID, NakAckHeader.createMessageHeader(322649));
+        msg.putHeader(UNICAST_ID, UNICAST.UnicastHeader.createDataHeader(465784, (short)23323, true));
+        msg.putHeader(UDP_ID, new TpHeader("DrawDemo"));
         return msg;
     }
 

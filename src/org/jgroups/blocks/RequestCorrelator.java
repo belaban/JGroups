@@ -1,10 +1,11 @@
-// $Id: RequestCorrelator.java,v 1.59 2010/01/27 09:21:34 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.60 2010/03/05 09:04:15 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
@@ -50,7 +51,7 @@ public class RequestCorrelator {
     protected RpcDispatcher.Marshaller2 marshaller=null;
 
     /** makes the instance unique (together with IDs) */
-    protected String name=null;
+    protected short id=ClassConfigurator.getProtocolId(this.getClass());
 
     /** The address of this group member */
     protected Address local_addr=null;
@@ -77,18 +78,25 @@ public class RequestCorrelator {
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
      */
+    @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler) {
-        this.name       = name;
         this.transport  = transport;
         request_handler = handler;
         start();
     }
 
-
+    @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler, Address local_addr) {
-        this.name       = name;
         this.transport  = transport;
         this.local_addr=local_addr;
+        request_handler = handler;
+        start();
+    }
+
+    public RequestCorrelator(short id, Object transport, RequestHandler handler, Address local_addr) {
+        this.id         = id;
+        this.transport  = transport;
+        this.local_addr = local_addr;
         request_handler = handler;
         start();
     }
@@ -117,7 +125,6 @@ public class RequestCorrelator {
     @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection) {
-        this.name               = name;
         this.transport          = transport;
         request_handler         = handler;
         start();
@@ -126,7 +133,6 @@ public class RequestCorrelator {
     @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
-        this.name                  = name;
         this.transport             = transport;
         request_handler            = handler;
         start();
@@ -135,7 +141,6 @@ public class RequestCorrelator {
     @Deprecated
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, Address local_addr) {
-        this.name               = name;
         this.transport          = transport;
         this.local_addr         = local_addr;
         request_handler         = handler;
@@ -145,7 +150,6 @@ public class RequestCorrelator {
     @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler,
                              boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
-        this.name                  = name;
         this.transport             = transport;
         this.local_addr            = local_addr;
         request_handler            = handler;
@@ -155,7 +159,6 @@ public class RequestCorrelator {
     @Deprecated
     public RequestCorrelator(String name, Object transport, RequestHandler handler,
                              Address local_addr, boolean concurrent_processing) {
-        this.name                  = name;
         this.transport             = transport;
         this.local_addr            = local_addr;
         request_handler            = handler;
@@ -236,8 +239,8 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new MultiDestinationHeader(Header.REQ, id, (coll != null), name, dest_mbrs);
-        msg.putHeader(name, hdr);
+        Header hdr=new MultiDestinationHeader(Header.REQ, id, (coll != null), this.id, dest_mbrs);
+        msg.putHeader(this.id, hdr);
 
         if(coll != null)
             addEntry(hdr.id, coll);
@@ -288,8 +291,8 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), name, target);
-        msg.putHeader(name, hdr);
+        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), this.id, target);
+        msg.putHeader(this.id, hdr);
 
         if(coll != null)
             addEntry(hdr.id, coll);
@@ -427,14 +430,14 @@ public class RequestCorrelator {
         // ii. Check whether the message was sent by a request correlator with
         // the same name (there may be multiple request correlators in the same
         // protocol stack...)
-        Header hdr=(Header)msg.getHeader(name);
+        Header hdr=(Header)msg.getHeader(this.id);
         if(hdr == null)
             return false;
 
-        if(hdr.corrName == null || !hdr.corrName.equals(name)) {
+        if(hdr.corrId != this.id) {
             if(log.isTraceEnabled()) {
-                log.trace(new StringBuilder("name of request correlator header (").append(hdr.corrName).
-                          append(") is different from ours (").append(name).append("). Msg not accepted, passed up"));
+                log.trace(new StringBuilder("id of request correlator header (").append(hdr.corrId).
+                          append(") is different from ours (").append(this.id).append("). Msg not accepted, passed up"));
             }
             return false;
         }
@@ -509,7 +512,7 @@ public class RequestCorrelator {
                 break;
 
             default:
-                msg.getHeader(name);
+                msg.getHeader(this.id);
                 if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
                 break;
         }
@@ -614,8 +617,8 @@ public class RequestCorrelator {
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
-        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, name, rsp.getDest());
-        rsp.putHeader(name, rsp_hdr);
+        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, this.id, rsp.getDest());
+        rsp.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
 
@@ -656,8 +659,8 @@ public class RequestCorrelator {
         /** msg is synchronous if true */
         public boolean rsp_expected;
 
-        /** The unique name of the associated <tt>RequestCorrelator</tt> */
-        public String corrName;
+        /** The unique ID of the associated <tt>RequestCorrelator</tt> */
+        public short corrId;
 
 
 
@@ -671,20 +674,20 @@ public class RequestCorrelator {
          * @param id id of this header relative to ids of other requests
          * originating from the same correlator
          * @param rsp_expected whether it's a sync or async request
-         * @param name the name of the <tt>RequestCorrelator</tt> from which
+         * @param corr_id The ID of the <tt>RequestCorrelator</tt> from which
          */
-        public Header(byte type, long id, boolean rsp_expected, String name) {
+        public Header(byte type, long id, boolean rsp_expected, short corr_id) {
             this.type         = type;
             this.id           = id;
             this.rsp_expected = rsp_expected;
-            this.corrName     = name;
+            this.corrId       = corr_id;
         }
 
         /**
          */
         public String toString() {
             StringBuilder ret=new StringBuilder();
-            ret.append("name=" + corrName + ", type=");
+            ret.append("id=" + corrId + ", type=");
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
             ret.append(", rsp_expected=" + rsp_expected);
@@ -696,13 +699,7 @@ public class RequestCorrelator {
             out.writeByte(type);
             out.writeLong(id);
             out.writeBoolean(rsp_expected);
-            if(corrName != null) {
-                out.writeBoolean(true);
-                out.writeUTF(corrName);
-            }
-            else {
-                out.writeBoolean(false);
-            }
+            out.writeShort(corrId);
         }
 
 
@@ -710,44 +707,28 @@ public class RequestCorrelator {
             type         = in.readByte();
             id           = in.readLong();
             rsp_expected = in.readBoolean();
-            if(in.readBoolean())
-                corrName         = in.readUTF();
+            corrId       = in.readShort();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             out.writeLong(id);
             out.writeBoolean(rsp_expected);
-
-            if(corrName != null) {
-                out.writeBoolean(true);
-                out.writeUTF(corrName);
-            }
-            else {
-                out.writeBoolean(false);
-            }
+            out.writeShort(corrId);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            boolean present;
             type=in.readByte();
             id=in.readLong();
             rsp_expected=in.readBoolean();
-
-            present=in.readBoolean();
-            if(present)
-                corrName=in.readUTF();
+            corrId=in.readShort();
         }
 
         public int size() {
-            int retval=Global.BYTE_SIZE // type
-                    + Global.LONG_SIZE // id
-                    + Global.BYTE_SIZE; // rsp_expected
-
-            retval+=Global.BYTE_SIZE; // presence for corrName
-            if(corrName != null)
-                retval+=corrName.length() +2; // UTF
-            return retval;
+            return Global.BYTE_SIZE  // type
+                    + Global.LONG_SIZE   // id
+                    + Global.BYTE_SIZE   // rsp_expected
+                    + Global.SHORT_SIZE; // corrId
         }
     }
 
@@ -759,8 +740,8 @@ public class RequestCorrelator {
         public SingleDestinationHeader() {
         }
 
-        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, String name, Address target) {
-            super(type, id, rsp_expected, name);
+        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Address target) {
+            super(type, id, rsp_expected, corr_id);
             this.target=target;
         }
 
@@ -802,8 +783,8 @@ public class RequestCorrelator {
         public MultiDestinationHeader() {
         }
 
-        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, String name, Collection<Address> dest_mbrs) {
-            super(type, id, rsp_expected, name);
+        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Collection<Address> dest_mbrs) {
+            super(type, id, rsp_expected, corr_id);
             this.dest_mbrs=dest_mbrs;
         }
 
