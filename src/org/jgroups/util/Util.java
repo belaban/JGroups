@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.256 2010/03/01 09:56:31 belaban Exp $
+ * @version $Id: Util.java,v 1.257 2010/03/05 08:59:56 belaban Exp $
  */
 public class Util {
 
@@ -1472,9 +1472,9 @@ public class Util {
                     if(type == Event.MSG) {
                         s+="[";
                         Message m=(Message)event.getArg();
-                        Map<String,Header> headers=new HashMap<String,Header>(m.getHeaders());
-                        for(Map.Entry<String,Header> entry: headers.entrySet()) {
-                            String headerKey=entry.getKey();
+                        Map<Short,Header> headers=new HashMap<Short,Header>(m.getHeaders());
+                        for(Map.Entry<Short,Header> entry: headers.entrySet()) {
+                            short id=entry.getKey();
                             Header value=entry.getValue();
                             String headerToString=null;
                             if(value instanceof FD.FdHeader) {
@@ -1482,7 +1482,7 @@ public class Util {
                             }
                             else
                                 if(value instanceof PingHeader) {
-                                    headerToString=headerKey + "-";
+                                    headerToString=ClassConfigurator.getProtocol(id) + "-";
                                     if(((PingHeader)value).type == PingHeader.GET_MBRS_REQ) {
                                         headerToString+="GMREQ";
                                     }
@@ -1495,7 +1495,7 @@ public class Util {
                                         }
                                 }
                                 else {
-                                    headerToString=headerKey + "-" + (value == null ? "null" : value.toString());
+                                    headerToString=ClassConfigurator.getProtocol(id) + "-" + (value == null ? "null" : value.toString());
                                 }
                             s+=headerToString;
                             s+=" ";

@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 import org.jgroups.Header;
+import org.jgroups.conf.ClassConfigurator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +24,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.16 2010/03/05 08:50:12 belaban Exp $
+ * @version $Id: Headers.java,v 1.17 2010/03/05 08:58:25 belaban Exp $
  */
 public class Headers {
     private short[]  ids;
@@ -87,7 +88,9 @@ public class Headers {
                     first=false;
                 else
                     sb.append(", ");
-                sb.append(ids[i]).append(": ").append(hdrs[i]);
+                Class clazz=ClassConfigurator.getProtocol(ids[i]);
+                String name=clazz != null? clazz.getSimpleName() : Short.toString(ids[i]);
+                sb.append(name).append(": ").append(hdrs[i]);
             }
             else
                 break;
