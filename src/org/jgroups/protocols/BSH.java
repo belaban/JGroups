@@ -1,24 +1,20 @@
-// $Id: BSH.java,v 1.22 2010/03/05 09:04:54 belaban Exp $
+// $Id: BSH.java,v 1.23 2010/03/05 11:55:34 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import bsh.EvalError;
 import bsh.Interpreter;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-
-
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -32,181 +28,107 @@ import java.io.Serializable;
  * @author Bela Ban
  */
 @Experimental
-public class BSH extends Protocol {
-    Interpreter interpreter=null;
+public class BSH extends Protocol implements Runnable {
+    protected Interpreter interpreter=null;
+    protected ServerSocket srv_sock;
+    protected Thread acceptor;
+    protected final List<Socket> sockets=new ArrayList<Socket>();
+
+
+    @Property(description="Port on which the interpreter should listen for requests. 0 is an ephemeral port")
+    int bind_port=0;
+
 
     public BSH() {
     }
 
+    public void start() throws Exception {
+        srv_sock=Util.createServerSocket(bind_port);
+        log.info("Server socket listening at " + srv_sock.getLocalSocketAddress());
+        acceptor=new Thread(this);
+        acceptor.start();
+    }
 
     public void stop() {
-        if(interpreter != null)
-            destroyInterpreter();
+        Util.close(srv_sock);
+
+        if(acceptor != null && acceptor.isAlive())
+            acceptor.interrupt();
+
+        Util.sleep(500);
+        if(!sockets.isEmpty()) {
+            for(Socket sock: sockets)
+                Util.close(sock);
+        }
     }
 
 
-    public Object up(Event evt) {
-        Header  h;
-        Message msg;
-        int     type;
+    public void run() {
+        while(srv_sock != null && !srv_sock.isClosed()) {
+            try {
+                final Socket sock=srv_sock.accept();
+                sockets.add(sock);
 
-        if(evt.getType() == Event.MSG) {
-            msg=(Message)evt.getArg();
-            h=msg.getHeader(this.id);
-            if(h instanceof BshHeader) {
-                type=((BshHeader)h).type;
-                switch(type) {
-                    case BshHeader.REQ:
-                        handleRequest(msg.getSrc(), msg.getBuffer());
-                        return null;
-                    case BshHeader.RSP:
-                        msg.putHeader(this.id, h);
-                        up_prot.up(evt);
-                        return null;
-                    case BshHeader.DESTROY_INTERPRETER:
-                        destroyInterpreter();
-                        return null;
-                    default:
-                        if(log.isErrorEnabled()) log.error("header type was not REQ as expected (was " + type + ')');
-                        return null;
-                }
+                createInterpreter();
+
+                new Thread() {
+                    public void run() {
+                        try {
+                            InputStream input=sock.getInputStream();
+                            OutputStream out=sock.getOutputStream();
+                            BufferedReader reader=new BufferedReader(new InputStreamReader(input));
+
+                            while(!sock.isClosed()) {
+                                String line=reader.readLine();
+                                if(line == null || line.length() == 0)
+                                    continue;
+                                try {
+                                    Object retval=interpreter.eval(line);
+                                    if(retval != null) {
+                                        String rsp=retval.toString();
+                                        byte[] buf=rsp.getBytes();
+                                        out.write(buf, 0, buf.length);
+                                        out.flush();
+                                    }
+                                    if(log.isTraceEnabled()) {
+                                        log.trace(line);
+                                        if(retval != null)
+                                            log.trace(retval);
+                                    }
+                                }
+                                catch(EvalError evalError) {
+                                    evalError.printStackTrace();
+                                }
+                            }
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
+                        finally {
+                            Util.close(sock);
+                            sockets.remove(sock);
+                        }
+                    }
+                }.start();
+            }
+            catch(IOException e) {
             }
         }
-        return up_prot.up(evt);
     }
 
 
-    void handleRequest(Address sender, byte[] buf) {
-        Object retval;
-        String code;
-
-
-        if(buf == null) {
-            if(log.isErrorEnabled()) log.error("buffer was null");
-            return;
-        }
-
-        code=new String(buf);
-
+    synchronized void createInterpreter() {
         // create interpreter just-in-time
         if(interpreter == null) {
             interpreter=new Interpreter();
-
-                if(log.isInfoEnabled()) log.info("beanshell interpreter was created");
             try {
                 interpreter.set("bsh_prot", this);
-
-                    if(log.isInfoEnabled()) log.info("set \"bsh_prot\" to " + this);
             }
-            catch(EvalError err) {
-                if(log.isErrorEnabled()) log.error("failed setting \"bsh_prot\": " + err);
+            catch(EvalError evalError) {
             }
-
-        }
-
-        try {
-            retval=interpreter.eval(code);
-
-                if(log.isInfoEnabled()) log.info("eval: \"" + code +
-                                                  "\", retval=" + retval);
-        }
-        catch(EvalError ex) {
-            if(log.isErrorEnabled()) log.error("error is " + Util.getStackTrace(ex));
-            retval=ex;
-        }
-
-        if(sender != null) {
-            Message rsp=new Message(sender, null, null);
-
-            // serialize the object if serializable, otherwise just send string
-            // representation
-            if(retval != null) {
-                if(retval instanceof Serializable)
-                    rsp.setObject((Serializable)retval);
-                else
-                    rsp.setObject(retval.toString());
-            }
-
-
-                if(log.isInfoEnabled()) log.info("sending back response " +
-                                                  retval + " to " + rsp.getDest());
-            rsp.putHeader(this.id, new BshHeader(BshHeader.RSP));
-            down_prot.down(new Event(Event.MSG, rsp));
         }
     }
 
 
-/* --------------------------- Callbacks ---------------------------- */
-//    public Object eval(String code) throws Exception {
-//        Object retval=null;
-//        try {
-//            retval=interpreter.eval(code);
-//
-//                if(log.isInfoEnabled()) log.info("BSH.eval()", "eval: \"" + code +
-//                           "\", retval=" + retval);
-//            if(retval != null && !(retval instanceof Serializable)) {
-//                if(log.isErrorEnabled()) log.error("BSH.eval", "return value " + retval +
-//                                        " is not serializable, cannot be sent back " +
-//                                        "(returning null)");
-//                return null;
-//            }
-//            return retval;
-//        }
-//        catch(EvalError ex) {
-//            if(log.isErrorEnabled()) log.error("BSH.eval()", "error is " + Util.getStackTrace(ex));
-//            return ex;
-//        }
-//    }
-//
-    public void destroyInterpreter() {
-        interpreter=null; // allow it to be garbage collected
-
-            if(log.isInfoEnabled()) log.info("beanshell interpreter was destroyed");
-    }
-    /* ------------------------ End of Callbacks ------------------------ */
-
-
-    public static class BshHeader extends Header {
-        public static final int REQ=1;
-        public static final int RSP=2;
-        public static final int DESTROY_INTERPRETER=3;
-        int type=REQ;
-
-
-        public BshHeader() {
-        }
-
-        public BshHeader(int type) {
-            this.type=type;
-        }
-
-        public int size() {
-            return 10;
-        }
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            if(type == REQ)
-                sb.append("REQ");
-            else
-                if(type == RSP)
-                    sb.append("RSP");
-                else
-                    if(type == DESTROY_INTERPRETER)
-                        sb.append("DESTROY_INTERPRETER");
-                    else
-                        sb.append("<unknown type>");
-            return sb.toString();
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
-        }
-
-    }
 
 }
