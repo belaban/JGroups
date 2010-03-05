@@ -4,6 +4,7 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Event;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -36,7 +37,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.75 2010/03/04 10:17:19 belaban Exp $
+ * @version $Id: Protocol.java,v 1.76 2010/03/05 08:47:33 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -55,7 +56,7 @@ public abstract class Protocol {
 
     @Property(description="Give the protocol a different ID if needed so we can have multiple " +
             "instances of it in the same stack",writable=true)
-    protected short            id=0;
+    protected short            id=ClassConfigurator.getProtocolId(getClass());
 
     protected final Log        log=LogFactory.getLog(this.getClass());
 
@@ -312,6 +313,10 @@ public abstract class Protocol {
 
     public short getId() {
         return id;
+    }
+
+    public void setId(short id) {
+        this.id=id;
     }
 
     public Protocol getUpProtocol() {
