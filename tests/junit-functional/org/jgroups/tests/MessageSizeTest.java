@@ -21,7 +21,7 @@ import java.io.DataOutputStream;
 /**
  * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.6 2010/03/05 09:05:28 belaban Exp $
+ * @version $Id: MessageSizeTest.java,v 1.7 2010/03/05 10:08:06 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {
@@ -32,11 +32,14 @@ public class MessageSizeTest {
     private static final short NAKACK_ID=102;
 
 
+    private static final int MCAST_MAX_SIZE=84;
+    private static final int UNICAST_MAX_SIZE=102;
+
 
     /**
      * Tests size of a multicast message.
-     * Current record: 100 bytes (March 2010)
-     * Prev: 166, 109, 103
+     * Current record: 84 bytes (March 2010)
+     * Prev: 166, 109, 103, 84
      * @throws Exception
      */
     public static void testMulticast() throws Exception {
@@ -48,13 +51,18 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 100;
+        assert len <= MCAST_MAX_SIZE;
+        if(len < MCAST_MAX_SIZE) {
+            double percentage=compute(len, MCAST_MAX_SIZE);
+            System.out.println("multicast message (" + len + " bytes) is " + Util.format(percentage) +
+                    "% smaller than previous max size (" + MCAST_MAX_SIZE + " bytes)");
+        }
     }
 
     /**
      * Tests size of a unicast message.
-     * Current record: 118 (March 2010)
-     * Prev: 161, 127, 121
+     * Current record: 102 (March 2010)
+     * Prev: 161, 127, 121, 102
      * @throws Exception
      */
     public static void testUnicast() throws Exception {
@@ -67,9 +75,21 @@ public class MessageSizeTest {
         int len=buf.getLength();
         System.out.println("len = " + len);
 
-        assert len <= 118;
+        assert len <= UNICAST_MAX_SIZE;
+        if(len < UNICAST_MAX_SIZE) {
+            double percentage=compute(len, UNICAST_MAX_SIZE);
+            System.out.println("multicast message (" + len + " bytes) is " + Util.format(percentage) +
+                    "% smaller than previous max size (" + UNICAST_MAX_SIZE + " bytes)");
+        }
     }
 
+
+    private static double compute(int new_length, int old_length) {
+        if(new_length >= old_length)
+            return 0.0;
+
+        return 100.0* (1.0 - (new_length / (double)old_length));
+    }
 
     private static Buffer marshal(Message msg) throws Exception {
         ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
