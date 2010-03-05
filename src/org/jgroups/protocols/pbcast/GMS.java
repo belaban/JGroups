@@ -2,11 +2,11 @@ package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.logging.Log;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.protocols.pbcast.GmsImpl.Request;
+import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.199 2010/03/05 09:04:35 belaban Exp $
+ * @version $Id: GMS.java,v 1.200 2010/03/05 13:23:21 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -986,7 +986,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
 
-    public static class GmsHeader extends Header implements Streamable {
+    public static class GmsHeader extends Header {
         public static final byte JOIN_REQ=1;
         public static final byte JOIN_RSP=2;
         public static final byte LEAVE_REQ=3;
@@ -1013,7 +1013,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
         MergeId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
         boolean merge_rejected=false; // used when type=MERGE_RSP
-        private static final long serialVersionUID=2369798797842183276L;
 
 
         public GmsHeader() {
@@ -1230,7 +1229,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.199 2010/03/05 09:04:35 belaban Exp $
+     * @version $Id: GMS.java,v 1.200 2010/03/05 13:23:21 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

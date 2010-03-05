@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Header;
-import org.jgroups.util.Streamable;
 
 import java.io.*;
 
@@ -11,9 +10,9 @@ import java.io.*;
 /**
  * Generic transport header, used by TP.
  * @author Bela Ban
- * @version $Id: TpHeader.java,v 1.4 2007/05/01 10:55:10 belaban Exp $
+ * @version $Id: TpHeader.java,v 1.5 2010/03/05 13:24:02 belaban Exp $
  */
-public class TpHeader extends Header implements Streamable {
+public class TpHeader extends Header {
     public String channel_name=null;
     int size=0;
 

@@ -5,7 +5,9 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
@@ -34,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.80 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FD.java,v 1.81 2010/03/05 13:23:09 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -337,7 +339,7 @@ public class FD extends Protocol {
 
 
 
-    public static class FdHeader extends Header implements Streamable {
+    public static class FdHeader extends Header {
         public static final byte HEARTBEAT=0;
         public static final byte HEARTBEAT_ACK=1;
         public static final byte SUSPECT=2;
@@ -346,7 +348,6 @@ public class FD extends Protocol {
         byte    type=HEARTBEAT;
         Collection<Address> mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
-        private static final long serialVersionUID=-6387039473828820899L;
 
 
         public FdHeader() {

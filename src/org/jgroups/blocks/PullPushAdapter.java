@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.29 2010/03/05 09:04:15 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.30 2010/03/05 13:23:47 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -9,10 +9,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -458,6 +455,24 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             identifier=(Serializable)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            try {
+                Util.objectToStream(identifier, out);
+            }
+            catch(Exception e) {
+                throw new IOException(e);
+            }
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            try {
+                identifier=(Serializable)Util.objectFromStream(in);
+            }
+            catch(Exception e) {
+                throw new IOException(e);
+            }
         }
     }
 

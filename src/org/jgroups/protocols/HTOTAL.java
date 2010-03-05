@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.13 2010/03/05 09:04:54 belaban Exp $
+// $Id: HTOTAL.java,v 1.14 2010/03/05 13:23:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,11 +6,9 @@ import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Properties;
 import java.util.Vector;
 
 
@@ -20,7 +18,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.13 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.14 2010/03/05 13:23:18 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -139,7 +137,7 @@ public class HTOTAL extends Protocol {
     }
 
 
-    public static class HTotalHeader extends Header implements Streamable {
+    public static class HTotalHeader extends Header {
         Address dest, src;
 
         public HTotalHeader() {

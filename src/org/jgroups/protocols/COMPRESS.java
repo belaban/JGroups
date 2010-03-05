@@ -6,11 +6,10 @@ import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -21,7 +20,7 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.25 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.26 2010/03/05 13:22:58 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
 
@@ -173,7 +172,7 @@ public class COMPRESS extends Protocol {
 
 
 
-    public static class CompressHeader extends Header implements Streamable {
+    public static class CompressHeader extends Header {
         int original_size=0;
 
         public CompressHeader() {

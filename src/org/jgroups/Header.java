@@ -1,15 +1,15 @@
-// $Id: Header.java,v 1.10 2007/05/01 10:55:19 belaban Exp $
+// $Id: Header.java,v 1.11 2010/03/05 13:21:39 belaban Exp $
 
 package org.jgroups;
 
-import java.io.Externalizable;
+import org.jgroups.util.Streamable;
 
 
 /**
  Abstract base class for all headers to be added to a Message.
  @author Bela Ban
  */
-public abstract class Header implements Externalizable {
+public abstract class Header implements Streamable {
     public static final int HDR_OVERHEAD=100; // estimated size of a header (used to estimate the size of the entire msg)
 
 
@@ -29,13 +29,6 @@ public abstract class Header implements Externalizable {
         return HDR_OVERHEAD;
     }
 
-//    public void writeTo(DataOutputStream out) throws IOException {
-//        ;
-//    }
-//
-//    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-//        ;
-//    }
 
 
     public String toString() {

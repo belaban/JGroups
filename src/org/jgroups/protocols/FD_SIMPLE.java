@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.30 2010/03/05 13:23:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,7 +8,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 
 import java.io.*;
@@ -29,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -249,14 +248,13 @@ public class FD_SIMPLE extends Protocol {
 
 
 
-    public static class FdHeader extends Header implements Streamable {
+    public static class FdHeader extends Header {
         static final byte ARE_YOU_ALIVE=1;  // sent periodically to a random member
         static final byte I_AM_ALIVE=2;     // response to above message
 
-
         byte type=ARE_YOU_ALIVE;
-        private static final long serialVersionUID=4021056597004641352L;
 
+        
         public FdHeader() {
         } // used for externalization
 

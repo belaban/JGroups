@@ -11,7 +11,6 @@ import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StaticInterval;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -50,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.35 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: SMACK.java,v 1.36 2010/03/05 13:23:49 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -249,7 +248,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
 
 
-    public static class SmackHeader extends Header implements Streamable {
+    public static class SmackHeader extends Header {
         public static final byte MCAST=1;
         public static final byte ACK=2;
         public static final byte JOIN_ANNOUNCEMENT=3;
@@ -257,7 +256,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
         byte type=0;
         long seqno=-1;
-        private static final long serialVersionUID=7605481696520929774L;
 
         public SmackHeader() {
         }

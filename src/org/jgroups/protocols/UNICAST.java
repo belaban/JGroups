@@ -7,7 +7,10 @@ import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StaticInterval;
-import org.jgroups.util.*;
+import org.jgroups.util.AgeOutCache;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
@@ -35,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.163 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.164 2010/03/05 13:24:02 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -720,7 +723,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * | SEND_FIRST_SEQNO |
      * </pre>
      */
-    public static class UnicastHeader extends Header implements Streamable {
+    public static class UnicastHeader extends Header {
         public static final byte DATA             = 0;
         public static final byte ACK              = 1;
         public static final byte SEND_FIRST_SEQNO = 2;
@@ -729,8 +732,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         long    seqno;    // DATA and ACK
         short   conn_id;  // DATA
         boolean first;    // DATA
-
-        private static final long serialVersionUID=-8983745221189309298L;
 
 
         public UnicastHeader() {} // used for externalization

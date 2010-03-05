@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
-import org.jgroups.util.Streamable;
 
 import java.io.*;
 import java.util.*;
@@ -20,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: SFC.java,v 1.30 2010/03/05 13:23:49 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -525,7 +524,7 @@ public class SFC extends Protocol {
 
 
 
-    public static class Header extends org.jgroups.Header implements Streamable {
+    public static class Header extends org.jgroups.Header {
         public static final byte CREDIT_REQUEST = 1; // the sender of the message is the requester
         public static final byte REPLENISH      = 2; // the sender of the message is the creditor
         public static final byte URGENT_CREDIT_REQUEST = 3;

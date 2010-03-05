@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -33,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.114 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FC.java,v 1.115 2010/03/05 13:23:09 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -892,12 +891,11 @@ public class FC extends Protocol {
     }
 
 
-    public static class FcHeader extends Header implements Streamable {
+    public static class FcHeader extends Header {
         public static final byte REPLENISH=1;
         public static final byte CREDIT_REQUEST=2; // the sender of the message is the requester
 
         byte type=REPLENISH;
-        private static final long serialVersionUID=8226510881574318828L;
 
         public FcHeader() {
 

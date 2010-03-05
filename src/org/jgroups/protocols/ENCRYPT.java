@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.57 2010/03/05 09:04:54 belaban Exp $
+// $Id: ENCRYPT.java,v 1.58 2010/03/05 13:22:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import javax.crypto.*;
@@ -19,8 +18,8 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.Vector;
+import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -1126,7 +1125,7 @@ public class ENCRYPT extends Protocol {
         this.keyServerAddr=keyServerAddr;
     }
 
-    public static class EncryptHeader extends org.jgroups.Header implements Streamable {
+    public static class EncryptHeader extends org.jgroups.Header {
         short type;
         public static final short ENCRYPT=0;
         public static final short KEY_REQUEST=1;
@@ -1135,9 +1134,7 @@ public class ENCRYPT extends Protocol {
         public static final short SECRETKEY_READY=4;
 
         String version;
-
         boolean encrypt_entire_msg=false;
-        private static final long serialVersionUID=-776547091297455976L;
 
         public EncryptHeader() {}
 

@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Range;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -14,9 +13,9 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: NakAckHeader.java,v 1.23 2010/02/23 17:26:48 belaban Exp $
+ * @version $Id: NakAckHeader.java,v 1.24 2010/03/05 13:23:32 belaban Exp $
  */
-public class NakAckHeader extends Header implements Streamable {
+public class NakAckHeader extends Header {
     public static final byte MSG=1;       // regular msg
     public static final byte XMIT_REQ=2;  // retransmit request
     public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
@@ -25,7 +24,6 @@ public class NakAckHeader extends Header implements Streamable {
     long  seqno=-1;        // seqno of regular message (MSG)
     Range range=null;      // range of msgs to be retransmitted (XMIT_REQ)
     Address sender;        // the original sender of the message (for XMIT_REQ)
-    private static final long serialVersionUID=-4305600151593420827L;
 
 
     public NakAckHeader() {

@@ -2,14 +2,12 @@ package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
@@ -37,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.104 2010/03/05 09:04:35 belaban Exp $
+ * @version $Id: STABLE.java,v 1.105 2010/03/05 13:23:48 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -698,7 +696,7 @@ public class STABLE extends Protocol {
 
 
 
-    public static class StableHeader extends Header implements Streamable {
+    public static class StableHeader extends Header {
         public static final int STABLE_GOSSIP=1;
         public static final int STABILITY=2;
 

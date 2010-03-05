@@ -8,7 +8,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.SeqnoTable;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -19,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.34 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.35 2010/03/05 13:23:49 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -339,11 +338,10 @@ public class SEQUENCER extends Protocol {
 
 
 
-    public static class SequencerHeader extends Header implements Streamable {
+    public static class SequencerHeader extends Header {
         private static final byte FORWARD       = 1;
         private static final byte BCAST         = 2;
         private static final byte WRAPPED_BCAST = 3;
-        private static final long serialVersionUID=6181860771697205253L;
 
         byte    type=-1;
         /** the original sender's address and a seqno */

@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Header;
 import org.jgroups.auth.AuthToken;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -10,9 +9,8 @@ import java.io.*;
  * AuthHeader is a holder object for the token that is passed from the joiner to the coordinator
  * @author Chris Mills
  */
-public class AuthHeader extends Header implements Streamable{
+public class AuthHeader extends Header {
     private AuthToken token=null;
-    private static final long serialVersionUID=9084313338045023807L;
 
     public AuthHeader(){
     }

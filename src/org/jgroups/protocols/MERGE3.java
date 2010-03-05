@@ -10,10 +10,11 @@ import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.Future;
 
 
@@ -33,7 +34,7 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.29 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.30 2010/03/05 13:23:31 belaban Exp $
  */
 @Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -174,9 +175,8 @@ public class MERGE3 extends Protocol {
 
 
 
-    public static class CoordAnnouncement extends Header implements Streamable {
+    public static class CoordAnnouncement extends Header {
         private View view;
-        private static final long serialVersionUID=-7117394462953444971L;
 
         public CoordAnnouncement() {
         }

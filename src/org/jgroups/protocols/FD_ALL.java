@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -25,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.32 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.33 2010/03/05 13:23:09 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -306,13 +305,12 @@ public class FD_ALL extends Protocol {
     }
 
 
-    public static class Header extends org.jgroups.Header implements Streamable {
+    public static class Header extends org.jgroups.Header {
         public static final byte HEARTBEAT  = 0;
         public static final byte SUSPECT    = 1;
 
         byte    type=Header.HEARTBEAT;
         Address suspected_mbr=null;
-        private static final long serialVersionUID=-7990140921380154212L;
 
 
         /** used for externalization */
