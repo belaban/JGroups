@@ -1,15 +1,14 @@
-// $Id: RequestCorrelator.java,v 1.61 2010/03/05 10:26:06 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.62 2010/03/05 13:23:47 belaban Exp $
 
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -640,7 +639,7 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static abstract class Header extends org.jgroups.Header implements Streamable {
+    public static abstract class Header extends org.jgroups.Header {
         public static final byte REQ = 0;
         public static final byte RSP = 1;
 
@@ -728,7 +727,6 @@ public class RequestCorrelator {
 
 
     public static final class SingleDestinationHeader extends Header {
-        private static final long serialVersionUID=-7662054209190400349L;
 
         public SingleDestinationHeader() {
         }
@@ -736,29 +734,12 @@ public class RequestCorrelator {
         public SingleDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id) {
             super(type, id, rsp_expected, corr_id);
         }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            super.writeTo(out);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            super.readFrom(in);
-        }
     }
+    
 
     public static final class MultiDestinationHeader extends Header {
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
         public java.util.Collection<? extends Address> dest_mbrs;
-        private static final long serialVersionUID=-2636993059660054696L;
 
         public MultiDestinationHeader() {
         }

@@ -1,16 +1,15 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Header;
 import org.jgroups.Global;
-import org.jgroups.util.Streamable;
+import org.jgroups.Header;
 
 import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: FragHeader.java,v 1.3 2007/05/01 10:55:10 belaban Exp $
+ * @version $Id: FragHeader.java,v 1.4 2010/03/05 13:23:18 belaban Exp $
  */
-public class FragHeader extends Header implements Streamable {
+public class FragHeader extends Header {
     public long id=0;
     public int  frag_id=0;
     public int  num_frags=0;

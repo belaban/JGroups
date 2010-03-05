@@ -7,9 +7,8 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.87 2010/03/05 09:04:35 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.88 2010/03/05 13:24:03 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -435,7 +434,7 @@ public class STATE_TRANSFER extends Protocol {
      * be stored in the header itself, but in the message's buffer.
      *
      */
-    public static class StateHeader extends Header implements Streamable {
+    public static class StateHeader extends Header {
         public static final byte STATE_REQ=1;
         public static final byte STATE_RSP=2;
 
@@ -444,7 +443,6 @@ public class STATE_TRANSFER extends Protocol {
         Address sender; // sender of state STATE_REQ or STATE_RSP
         Digest my_digest=null; // digest of sender (if type is STATE_RSP)
         String state_id=null; // for partial state transfer
-        private static final long serialVersionUID=4457830093491204405L;
 
         public StateHeader() { // for externalization
         }

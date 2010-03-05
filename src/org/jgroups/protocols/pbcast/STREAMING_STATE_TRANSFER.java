@@ -1,30 +1,24 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.ShutdownRejectedExecutionHandler;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
+import org.jgroups.util.Util;
 
 import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -879,7 +873,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
     }
 
-    public static class StateHeader extends Header implements Streamable {
+    public static class StateHeader extends Header {
         public static final byte STATE_REQ = 1;
 
         public static final byte STATE_RSP = 2;

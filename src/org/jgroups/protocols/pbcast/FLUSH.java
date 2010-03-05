@@ -1,16 +1,10 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -891,7 +885,7 @@ public class FLUSH extends Protocol {
         }
     }
 
-    public static class FlushHeader extends Header implements Streamable {
+    public static class FlushHeader extends Header {
         public static final byte START_FLUSH = 0;
 
         public static final byte STOP_FLUSH = 2;
@@ -915,7 +909,6 @@ public class FLUSH extends Protocol {
         Collection<Address> flushParticipants;
 
         Digest digest = null;
-        private static final long serialVersionUID = -6248843990215637687L;
 
         public FlushHeader() {
             this(START_FLUSH, 0);

@@ -1,23 +1,22 @@
-// $Id: DISCARD.java,v 1.37 2010/03/05 09:04:54 belaban Exp $
+// $Id: DISCARD.java,v 1.38 2010/03/05 13:22:58 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.*;
-import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 
 /**
@@ -305,10 +304,8 @@ public class DISCARD extends Protocol {
         return m;
     }
     
-    public static class DiscardHeader extends Header implements Streamable {
-
+    public static class DiscardHeader extends Header {
 		private final Set<Address> dropMessages;
-        private static final long serialVersionUID=-2149735838082082084L;
 
         public DiscardHeader() {
 			this.dropMessages= new HashSet<Address>();

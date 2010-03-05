@@ -1,13 +1,14 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
 
 /**
  * The coordinator attaches a small header with its view to each (or every nth) message. If another coordinator <em>in
@@ -77,9 +78,8 @@ public class MERGEFAST extends Protocol {
     
 
 
-    public static class MergefastHeader extends Header implements Streamable {
+    public static class MergefastHeader extends Header {
         private View view=null;
-        private static final long serialVersionUID=-1017265470273262787L;
 
         public MergefastHeader() {
         }

@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.ENCRYPT;
 import org.jgroups.conf.ClassConfigurator;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -9,9 +8,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -25,7 +22,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.16 2010/03/05 09:05:48 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.17 2010/03/05 13:22:57 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,"broken"},sequential=true)
 public class EncryptMessageOrderTestCase {
@@ -285,39 +282,48 @@ public class EncryptMessageOrderTestCase {
     }
     
     public static class EncryptOrderTestHeader extends Header{
-      long seqno = -1; // either reg. NAK_ACK_MSG or first_seqno in retransmissions
-        private static final long serialVersionUID=-7995117434876250849L;
+        long seqno = -1; // either reg. NAK_ACK_MSG or first_seqno in retransmissions
 
         public EncryptOrderTestHeader() {
-      }
+        }
 
-      public EncryptOrderTestHeader(long seqno){
-         this.seqno = seqno;
-      }
+        public EncryptOrderTestHeader(long seqno){
+            this.seqno = seqno;
+        }
 
-      public int size(){
-         return 512;
-      }
+        public int size(){
+            return Global.LONG_SIZE;
+        }
 
-      public void writeExternal(ObjectOutput out) throws IOException{
-         out.writeLong(seqno);
-      }
+        public void writeExternal(ObjectOutput out) throws IOException{
+            out.writeLong(seqno);
+        }
 
-      public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
-         seqno = in.readLong();
-      }
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
+            seqno = in.readLong();
+        }
 
-      public EncryptOrderTestHeader copy(){
-          return new EncryptOrderTestHeader(seqno);
-      }
 
-      public String toString(){
-         StringBuilder ret = new StringBuilder();
-         ret.append("[ENCRYPT_ORDER_TEST: seqno=" + seqno);
-         ret.append(']');
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(seqno);
+        }
 
-         return ret.toString();
-      }
-   }
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            seqno=in.readLong();
+        }
+
+        public EncryptOrderTestHeader copy(){
+            return new EncryptOrderTestHeader(seqno);
+        }
+
+        public String toString(){
+            StringBuilder ret = new StringBuilder();
+            ret.append("[ENCRYPT_ORDER_TEST: seqno=" + seqno);
+            ret.append(']');
+
+            return ret.toString();
+        }
+
+    }
 
 }

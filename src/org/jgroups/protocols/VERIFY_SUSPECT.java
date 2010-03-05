@@ -6,7 +6,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -20,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.43 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.44 2010/03/05 13:24:02 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
@@ -282,7 +281,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
 
-    public static class VerifyHeader extends Header implements Streamable {
+    public static class VerifyHeader extends Header {
         static final short ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
         static final short I_AM_NOT_DEAD=2;  // 'from' is suspected member
 

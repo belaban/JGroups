@@ -2,15 +2,10 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -29,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.37 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.38 2010/03/05 13:24:02 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -302,7 +297,7 @@ public class VIEW_SYNC extends Protocol {
 
 
 
-    public static class ViewSyncHeader extends Header implements Streamable {
+    public static class ViewSyncHeader extends Header {
         public static final int VIEW_SYNC     = 1; // contains a view
         public static final int VIEW_SYNC_REQ = 2; // request to all members to send their views
 

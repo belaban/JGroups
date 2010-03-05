@@ -2,7 +2,6 @@ package org.jgroups.mux;
 
 import org.jgroups.Global;
 import org.jgroups.Header;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -10,14 +9,13 @@ import java.io.*;
 /**
  * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.8 2008/01/22 11:45:53 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.9 2010/03/05 13:23:33 belaban Exp $
  */
-public class MuxHeader extends Header implements Streamable {
+public class MuxHeader extends Header {
     String      id=null;
 
     /** Used for service state communication between Multiplexers */
     ServiceInfo info;
-    private static final long serialVersionUID=9197570523315316128L;
 
     public MuxHeader() {
     }

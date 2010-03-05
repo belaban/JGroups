@@ -5,15 +5,13 @@ import org.jgroups.Header;
 import org.jgroups.util.Headers;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.Map;
 
 /**
  * Tests the functionality of the Headers class
  * @author Bela Ban
- * @version $Id: HeadersTest.java,v 1.5 2010/03/05 08:50:11 belaban Exp $
+ * @version $Id: HeadersTest.java,v 1.6 2010/03/05 13:23:19 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class HeadersTest {
@@ -165,7 +163,6 @@ public class HeadersTest {
 
 
     public static class MyHeader extends Header {
-        private static final long serialVersionUID=-7164974484154022976L;
 
         public MyHeader() {
         }
@@ -178,6 +175,12 @@ public class HeadersTest {
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         }
     }
 }

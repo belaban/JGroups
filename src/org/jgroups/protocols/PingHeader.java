@@ -1,9 +1,8 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Header;
 import org.jgroups.Global;
-import org.jgroups.util.Streamable;
+import org.jgroups.Header;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -11,9 +10,9 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: PingHeader.java,v 1.14 2009/08/28 07:17:53 belaban Exp $
+ * @version $Id: PingHeader.java,v 1.15 2010/03/05 13:23:31 belaban Exp $
  */
-public class PingHeader extends Header implements Streamable {
+public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;   // arg = null
     public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, coord_addr)
 
@@ -22,8 +21,8 @@ public class PingHeader extends Header implements Streamable {
     public String cluster_name=null;
     // when set (with a GET_MBRS_REQ), we don't need the address mappings, but only the view
     public boolean return_view_only=false;
-    private static final long serialVersionUID=3054979699998282428L;
 
+    
     public PingHeader() {
     } // for externalization
 
