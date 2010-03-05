@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <protocol-ids>
-    <class id="1" name="org.jgroups.protocols.CAUSAL"/>
     <class id="2" name="org.jgroups.protocols.FD"/>
     <class id="3" name="org.jgroups.protocols.FD_SOCK"/>
     <class id="4" name="org.jgroups.protocols.FRAG"/>
@@ -33,12 +32,17 @@
     <class id="30" name="org.jgroups.protocols.SFC"/>
     <class id="31" name="org.jgroups.protocols.pbcast.FLUSH"/>
     <class id="32" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER"/>
-    <class id="33" name="org.jgroups.blocks.PullPushAdapter"/>
-    <class id="34" name="org.jgroups.protocols.AUTH"/>
-    <class id="35" name="org.jgroups.protocols.MERGE3"/>
-    <class id="36" name="org.jgroups.protocols.MERGEFAST"/>
-    <class id="37" name="org.jgroups.protocols.HTOTAL"/>
-    <class id="38" name="org.jgroups.protocols.DISCARD"/>
-    <class id="39" name="org.jgroups.blocks.RequestCorrelator"/>
-    <class id="40" name="org.jgroups.mux.MuxChannel"/>
+    <class id="33" name="org.jgroups.protocols.AUTH"/>
+    <class id="34" name="org.jgroups.protocols.MERGE3"/>
+    <class id="35" name="org.jgroups.protocols.MERGEFAST"/>
+    <class id="36" name="org.jgroups.protocols.HTOTAL"/>
+    <class id="37" name="org.jgroups.protocols.DISCARD"/>
+    <class id="38" name="org.jgroups.protocols.LOOPBACK"/>
+    <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
+
+
+    <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
+    <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>
+    <class id="202" name="org.jgroups.mux.MuxChannel"/>
+    <class id="203" name="org.jgroups.mux.Multiplexer"/>
 </protocol-ids>
