@@ -46,6 +46,7 @@ public class ClassConfigurator {
 
     /** Contains data read from jg-protocol-ids.xml */
     private static final Map<Class,Short> protocol_ids=new ConcurrentHashMap<Class,Short>();
+    private static final Map<Short,Class> protocol_names=new ConcurrentHashMap<Short,Class>();
 
     protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
 
@@ -87,7 +88,7 @@ public class ClassConfigurator {
                     Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
                     if(magicMap.containsKey(m))
                         throw new ChannelException("key " + m + " (" + clazz.getName() + ')' +
-                                " is already in map; please make sure that all keys are unique");
+                                " is already in magic map; please make sure that all keys are unique");
                     
                     magicMap.put(m, clazz);
                     classMap.put(clazz, m);
@@ -105,8 +106,9 @@ public class ClassConfigurator {
                     Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
                     if(protocol_ids.containsKey(clazz))
                         throw new ChannelException("ID " + m + " (" + clazz.getName() + ')' +
-                                " is already in map; please make sure that all protocol IDs are unique");
+                                " is already in protocol-ID map; please make sure that all protocol IDs are unique");
                     protocol_ids.put(clazz, m);
+                    protocol_names.put(m, clazz);
                 }
                 catch(ClassNotFoundException cnf) {
                     throw new ChannelException("failed loading class", cnf);
@@ -200,6 +202,10 @@ public class ClassConfigurator {
         return 0;
     }
 
+
+    public static Class getProtocol(short id) {
+        return protocol_names.get(id);
+    }
 
 
     public String toString() {
