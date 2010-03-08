@@ -13,7 +13,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: NakAckHeader.java,v 1.24 2010/03/05 13:23:32 belaban Exp $
+ * @version $Id: NakAckHeader.java,v 1.25 2010/03/08 07:59:39 belaban Exp $
  */
 public class NakAckHeader extends Header {
     public static final byte MSG=1;       // regular msg
@@ -77,30 +77,6 @@ public class NakAckHeader extends Header {
         return sender;
     }
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(type);
-        out.writeLong(seqno);
-        if(range != null) {
-            out.writeBoolean(true);  // wasn't here before, bad bug !
-            range.writeExternal(out);
-        }
-        else
-            out.writeBoolean(false);
-        out.writeObject(sender);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean read_range;
-        type=in.readByte();
-        seqno=in.readLong();
-        read_range=in.readBoolean();
-        if(read_range) {
-            range=new Range();
-            range.readExternal(in);
-        }
-        sender=(Address)in.readObject();
-    }
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeByte(type);
