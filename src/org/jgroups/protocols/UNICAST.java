@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.164 2010/03/05 13:24:02 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.165 2010/03/08 08:00:02 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -797,21 +797,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return new UnicastHeader(type, seqno, conn_id, first);
         }
 
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeLong(seqno);
-            out.writeShort(conn_id);
-            out.writeBoolean(first);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            seqno=in.readLong();
-            conn_id=in.readShort();
-            first=in.readBoolean();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
