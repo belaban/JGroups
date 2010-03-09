@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.53 2009/12/02 13:40:51 belaban Exp $
+// $Id: Channel.java,v 1.54 2010/03/09 15:54:04 belaban Exp $
 
 package org.jgroups;
 
@@ -213,6 +213,12 @@ public abstract class Channel implements Transport {
      */
     abstract public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException,
                                                                                  ChannelClosedException;
+
+    abstract public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException,
+                                                                           ChannelClosedException;
+
+    abstract public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException,
+                                                                           ChannelClosedException;
 
 
     /**
