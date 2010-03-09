@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.68 2009/11/16 08:59:31 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.69 2010/03/09 16:29:18 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -61,6 +61,9 @@ public class GossipRouter {
     public static final byte SUSPECT=11;
     public static final byte PING=12;
     public static final byte CLOSE=13;
+    public static final byte CONNECT_OK=14;
+    public static final byte CONNECT_FAIL=15;
+    
 
     public static final int PORT=12001;
 
@@ -615,29 +618,7 @@ public class GossipRouter {
                     switch(command) {
 
                         case GossipRouter.CONNECT:
-                            String logical_name=request.getLogicalName();
-                            if(logical_name != null && addr instanceof org.jgroups.util.UUID)
-                                org.jgroups.util.UUID.add((org.jgroups.util.UUID)addr, logical_name);
-                            
-                            // group name, logical address, logical name, physical addresses (could be null)
-                            logical_addrs.add(addr); // allows us to remove the entries for this connection on socket close
-
-                            map=routingTable.get(group);
-                            if(map == null) {
-                                map=new ConcurrentHashMap<Address,ConnectionHandler>();
-                                routingTable.put(group, map); // no concurrent requests on the same connection
-                            }
-                            map.put(addr, this);
-
-                            Set<PhysicalAddress> physical_addrs;
-                            if(request.getPhysicalAddresses() != null) {
-                                physical_addrs=address_mappings.get(addr);
-                                if(physical_addrs == null) {
-                                    physical_addrs=new HashSet<PhysicalAddress>();
-                                    address_mappings.put(addr, physical_addrs);
-                                }
-                                physical_addrs.addAll(request.getPhysicalAddresses());
-                            }
+                            handleConnect(request, addr, group);
                             break;
 
                         case GossipRouter.PING:
@@ -661,6 +642,7 @@ public class GossipRouter {
                             break;
 
                         case GossipRouter.GOSSIP_GET:
+                            Set<PhysicalAddress> physical_addrs;
                             List<PingData> mbrs=new ArrayList<PingData>();
                             map=routingTable.get(group);
                             if(map != null) {
@@ -702,6 +684,45 @@ public class GossipRouter {
                             log.warn("Exception in ConnectionHandler thread", ex);
                     }
                     break;
+                }
+            }
+        }
+
+        private void handleConnect(GossipData request, Address addr, String group) {
+            try {
+                ConcurrentMap<Address, ConnectionHandler> map;
+                String logical_name = request.getLogicalName();
+                if (logical_name != null && addr instanceof org.jgroups.util.UUID)
+                    org.jgroups.util.UUID.add((org.jgroups.util.UUID) addr, logical_name);
+
+                // group name, logical address, logical name, physical addresses (could be null)
+                logical_addrs.add(addr); // allows us to remove the entries for this connection on
+                                         // socket close
+
+                map = routingTable.get(group);
+                if (map == null) {
+                    map = new ConcurrentHashMap<Address, ConnectionHandler>();
+                    routingTable.put(group, map); // no concurrent requests on the same connection
+                }
+                map.put(addr, this);
+
+                Set<PhysicalAddress> physical_addrs;
+                if (request.getPhysicalAddresses() != null) {
+                    physical_addrs = address_mappings.get(addr);
+                    if (physical_addrs == null) {
+                        physical_addrs = new HashSet<PhysicalAddress>();
+                        address_mappings.put(addr, physical_addrs);
+                    }
+                    physical_addrs.addAll(request.getPhysicalAddresses());
+                }
+                output.writeByte(CONNECT_OK);
+                output.flush();
+            } catch (Exception e) {
+                try {
+                    output.writeByte(CONNECT_FAIL);
+                    output.flush();
+                } catch (IOException e1) {
+                    //ignored
                 }
             }
         }
