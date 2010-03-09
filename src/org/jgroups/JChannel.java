@@ -78,7 +78,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.235 2009/11/10 10:12:07 belaban Exp $
+ * @version $Id: JChannel.java,v 1.236 2010/03/09 15:54:17 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -737,6 +737,13 @@ public class JChannel extends Channel {
         send(new Message(dst, src, obj));
     }
 
+    public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException, ChannelClosedException {
+        send(new Message(dst, src, buf));
+    }
+
+    public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException, ChannelClosedException {
+        send(new Message(dst, src, buf, offset, length));
+    }
 
     /**
      * Blocking receive method.
