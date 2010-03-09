@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.69 2010/03/09 16:29:18 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.70 2010/03/09 17:04:13 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -688,9 +688,9 @@ public class GossipRouter {
             }
         }
 
-        private void handleConnect(GossipData request, Address addr, String group) {
-            try {
-                ConcurrentMap<Address, ConnectionHandler> map;
+        private void handleConnect(GossipData request, Address addr, String group) throws Exception {
+            ConcurrentMap<Address, ConnectionHandler> map = null;
+            try {               
                 String logical_name = request.getLogicalName();
                 if (logical_name != null && addr instanceof org.jgroups.util.UUID)
                     org.jgroups.util.UUID.add((org.jgroups.util.UUID) addr, logical_name);
@@ -718,12 +718,14 @@ public class GossipRouter {
                 output.writeByte(CONNECT_OK);
                 output.flush();
             } catch (Exception e) {
+                removeEntry(group, addr);
                 try {
                     output.writeByte(CONNECT_FAIL);
                     output.flush();
                 } catch (IOException e1) {
                     //ignored
                 }
+                throw new Exception("Unsuccessful connection setup handshake");
             }
         }
 
