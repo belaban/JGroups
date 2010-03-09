@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.56 2010/02/26 18:10:13 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.57 2010/03/09 16:29:18 vlada Exp $
  */
 public class RouterStub {
 
@@ -120,6 +120,13 @@ public class RouterStub {
         GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
         request.writeTo(output);
         output.flush();
+        byte result = input.readByte();
+        if(result == GossipRouter.CONNECT_OK) {
+            connectionStateChanged(ConnectionStatus.CONNECTED);   
+        } else {
+            connectionStateChanged(ConnectionStatus.DISCONNECTED);
+            throw new Exception("Connect failed received from GR " + getGossipRouterAddress());
+        }
     }
 
     public synchronized void doConnect() throws Exception {
@@ -131,8 +138,7 @@ public class RouterStub {
                 sock.setSoLinger(true, 2);
                 Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
-                input=new DataInputStream(sock.getInputStream());
-                connectionStateChanged(ConnectionStatus.CONNECTED);
+                input=new DataInputStream(sock.getInputStream());                
             }
             catch(Exception e) {                
                 Util.close(sock);
