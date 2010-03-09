@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Reliable unicast layer. Implemented with negative acks.
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.1 2010/03/09 11:34:25 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.2 2010/03/09 13:00:07 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -425,6 +426,11 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         NakReceiverWindow win=entry != null? entry.sent_msgs : null;
         if(win == null)
             return;
+
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(mbr).
+                    append(": ").append(low).append("-").append(high).append(')'));
+
         win.stable(low);
         long win_high=win.getHighestReceived();
         if(win_high > high) {
@@ -441,12 +447,21 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             if(win != null) {
                 long low=win.getHighestDelivered();
                 long high=win.getHighestReceived();
-                Message stable_msg=new Message(dest, null, null);
-                Unicast2Header hdr=Unicast2Header.createStableHeader(low, high);
-                stable_msg.putHeader(this.id, hdr);
-                down_prot.down(new Event(Event.MSG, stable_msg));
+                sendStableMessage(dest, low, high);
             }
         }
+    }
+
+    protected void sendStableMessage(Address dest, long low, long high) {
+        Message stable_msg=new Message(dest, null, null);
+        Unicast2Header hdr=Unicast2Header.createStableHeader(low, high);
+        stable_msg.putHeader(this.id, hdr);
+        if(log.isTraceEnabled()) {
+            StringBuilder sb=new StringBuilder();
+            sb.append(local_addr).append(" --> STABLE(").append(dest).append(": ").append(low).append("-").append(high).append(")");
+            log.trace(sb.toString());
+        }
+        down_prot.down(new Event(Event.MSG, stable_msg));
     }
 
 
@@ -587,6 +602,21 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
+        if(added && max_bytes > 0) {
+            int bytes=entry.received_bytes.addAndGet(msg.getLength());
+            if(bytes >= max_bytes) {
+                entry.received_bytes_lock.lock();
+                try {
+                    entry.received_bytes.set(0);
+                }
+                finally {
+                    entry.received_bytes_lock.unlock();
+                }
+
+                sendStableMessage(sender, win.getHighestDelivered(), win.getHighestReceived());
+            }
+        }
+
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
         if(msg.isFlagSet(Message.OOB) && added) {
@@ -603,7 +633,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             return;
         }
 
-        // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+        // try to remove (from the AckReceiverWindow) as many messages as possible and pass them up
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
         // this is all the more important once we have a concurrent stack (http://jira.jboss.com/jira/browse/JGRP-181),
@@ -898,6 +928,9 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private static final class ReceiverEntry {
         private final NakReceiverWindow  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         private final long               recv_conn_id;
+        final AtomicInteger              received_bytes=new AtomicInteger(0);
+        final Lock                       received_bytes_lock=new ReentrantLock();
+
 
 
         public ReceiverEntry(NakReceiverWindow received_msgs, long recv_conn_id) {
@@ -908,6 +941,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         void reset() {
             if(received_msgs != null)
                 received_msgs.reset();
+            received_bytes.set(0);
         }
 
 
