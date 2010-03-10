@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.70 2010/03/09 17:04:13 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.71 2010/03/10 22:13:56 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -383,6 +383,9 @@ public class GossipRouter {
                 if(sock_read_timeout > 0)
                     sock.setSoTimeout((int)sock_read_timeout);
 
+                if(log.isDebugEnabled())
+                    log.debug("Accepted connection, socket is " + sock);
+                
                 ConnectionHandler ch=new ConnectionHandler(sock);
                 getDefaultThreadPoolThreadFactory().newThread(ch).start();
             }
@@ -437,14 +440,25 @@ public class GossipRouter {
         ConcurrentMap<Address, ConnectionHandler> map;
         if(group != null) {
             map=routingTable.get(group);
-            if(map != null && map.remove(addr) != null && map.isEmpty())
-                routingTable.remove(group);
+            if(map != null && map.remove(addr) != null) {
+                if(log.isTraceEnabled())
+                    log.trace("Removed " +addr + " from group " + group);
+                
+                if(map.isEmpty()) {
+                    routingTable.remove(group);
+                    if(log.isTraceEnabled())
+                        log.trace("Removed group " + group);   
+                }                
+            }
         }
         else {
             for(Map.Entry<String,ConcurrentMap<Address,ConnectionHandler>> entry: routingTable.entrySet()) {
                 map=entry.getValue();
-                if(map != null && map.remove(addr) != null && map.isEmpty())
+                if(map != null && map.remove(addr) != null && map.isEmpty()) {
                     routingTable.remove(entry.getKey());
+                    if(log.isTraceEnabled())
+                        log.trace("Removed " + entry.getKey() + " from group " + group);
+                }
             }
         }
 
@@ -577,6 +591,9 @@ public class GossipRouter {
 
         void close() {
             if(active.compareAndSet(true, false)) {
+                if(log.isDebugEnabled())
+                    log.debug("Closing connection handler " + this.toString());
+                
                 Util.close(input);
                 Util.close(output);
                 Util.close(sock);
@@ -615,6 +632,9 @@ public class GossipRouter {
                     known_groups.add(group);
                     ConcurrentMap<Address,ConnectionHandler> map;
 
+                    if(log.isTraceEnabled())
+                        log.trace("Received " + request + " on socket " + sock);
+                    
                     switch(command) {
 
                         case GossipRouter.CONNECT:
@@ -717,6 +737,10 @@ public class GossipRouter {
                 }
                 output.writeByte(CONNECT_OK);
                 output.flush();
+                
+                if(log.isTraceEnabled())
+                    log.trace("Connection established, added  " +addr + " to group "+ group);
+                
             } catch (Exception e) {
                 removeEntry(group, addr);
                 try {
