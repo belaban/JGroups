@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.74 2010/01/20 06:24:30 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.75 2010/03/11 13:43:38 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -273,7 +273,7 @@ public class NakReceiverWindow {
                 }
             }
 
-            // Case #4: we received a seqno higher than expected: add NULL_MSG values for missing messages, add to Retransmitter
+            // Case #4: we received a seqno higher than expected: add to Retransmitter
             if(seqno > next_to_add) {
                 xmit_table.put(seqno, msg);
                 retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
@@ -442,7 +442,7 @@ public class NakReceiverWindow {
         try {
             if(seqno > highest_delivered) {
                 if(log.isWarnEnabled())
-                    log.warn("seqno " + seqno + " is > highest_delivered " + highest_delivered + "; ignoring stability message");
+                    log.warn("seqno " + seqno + " is > highest_delivered (" + highest_delivered + ";) ignoring stability message");
                 return;
             }
 
