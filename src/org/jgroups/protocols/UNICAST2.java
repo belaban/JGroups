@@ -3,10 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.Retransmitter;
-import org.jgroups.stack.StaticInterval;
+import org.jgroups.stack.*;
 import org.jgroups.util.AgeOutCache;
 import org.jgroups.util.TimeScheduler;
 
@@ -27,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Reliable unicast layer. Implemented with negative acks.
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.2 2010/03/09 13:00:07 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.3 2010/03/11 14:19:07 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -69,9 +66,6 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
 
     private boolean started=false;
-
-    // didn't make this 'connected' in case we need to send early acks which may race to the socket
-    private volatile boolean disconnected=false;
 
     private short last_conn_id=0;
 
@@ -345,7 +339,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     // why this was reverted !
 
                     // entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
-                    entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                    entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                     entry.sent_msgs_seqno++;
                 }
                 finally {
@@ -401,40 +395,36 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
-
-            case Event.CONNECT:
-                disconnected=false;
-                break;
-
-            case Event.DISCONNECT:
-                disconnected=true;
-                break;
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
     }
 
     /**
-     * Purge all messages in window for mbr, which are <= low. Check if the window's highest received message is
-     * > high: if true, retransmit all messages from high - win.high to mbr
-     * @param mbr
-     * @param low
-     * @param high
+     * Purge all messages in window for local_addr, which are <= low. Check if the window's highest received message is
+     * > high: if true, retransmit all messages from high - win.high to sender
+     * @param sender
+     * @param highest_delivered
+     * @param highest_seen
      */
-    protected void stable(Address mbr, long low, long high) {
-        SenderEntry entry=send_table.get(mbr);
-        NakReceiverWindow win=entry != null? entry.sent_msgs : null;
+    protected void stable(Address sender, long highest_delivered, long highest_seen) {
+        SenderEntry entry=send_table.get(sender);
+        AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null)
             return;
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(mbr).
-                    append(": ").append(low).append("-").append(high).append(')'));
+            log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(sender).
+                    append(": ").append(highest_delivered).append("-").append(highest_seen).append(')'));
 
-        win.stable(low);
-        long win_high=win.getHighestReceived();
-        if(win_high > high) {
-            retransmit(high, win_high, mbr);
+        win.ack(highest_delivered);
+        long win_high=win.getHighest();
+        if(win_high > highest_seen) {
+            for(long seqno=highest_seen; seqno <= win_high; seqno++) {
+                Message msg=win.get(seqno); // destination is still the same (the member which sent the STABLE message)
+                if(msg != null)
+                    down_prot.down(new Event(Event.MSG, msg));
+            }
         }
     }
 
@@ -686,10 +676,21 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
         SenderEntry entry=send_table.get(sender);
-        NakReceiverWindow win=entry != null? entry.sent_msgs : null;
+        AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win != null) {
             for(long i=low; i <= high; i++) {
                 Message msg=win.get(i);
+                if(msg == null) {
+                    if(log.isWarnEnabled() && !local_addr.equals(sender)) {
+                        StringBuilder sb=new StringBuilder();
+                        sb.append("(requester=").append(sender).append(", local_addr=").append(this.local_addr);
+                        sb.append(") message ").append(sender).append("::").append(i);
+                        sb.append(" not found in retransmission table of ").append(sender).append(":\n").append(win);
+                        log.warn(sb.toString());
+                    }
+                    continue;
+                }
+                
                 down_prot.down(new Event(Event.MSG, msg));
                 num_xmits++;
             }
@@ -705,13 +706,13 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         if(log.isTraceEnabled())
             log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + ")");
         SenderEntry entry=send_table.get(sender);
-        NakReceiverWindow win=entry != null? entry.sent_msgs : null;
+        AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null) {
             if(log.isErrorEnabled())
                 log.error(local_addr + ": sender window for " + sender + " not found");
             return;
         }
-        Message rsp=win.get(win.getLowestSeen());
+        Message rsp=win.getLowestMessage();
         if(rsp == null)
             return;
 
@@ -890,7 +891,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
     private static final class SenderEntry {
         // stores (and retransmits) msgs sent by us to a certain peer
-        final NakReceiverWindow sent_msgs;
+        final AckSenderWindow   sent_msgs;
         long                    sent_msgs_seqno=DEFAULT_FIRST_SEQNO;   // seqno for msgs sent by us
         final short             send_conn_id;
         final Lock              lock=new ReentrantLock();
@@ -898,8 +899,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         public SenderEntry(short send_conn_id, Retransmitter.RetransmitCommand cmd, long[] timeout,
                            TimeScheduler timer, Address local_addr) {
             this.send_conn_id=send_conn_id;
-            sent_msgs=new NakReceiverWindow(local_addr, cmd, sent_msgs_seqno-1, sent_msgs_seqno-1, timer);
-            sent_msgs.setRetransmitTimeouts(new StaticInterval(timeout));
+            sent_msgs=new AckSenderWindow();
         }
 
         public void lock() {
