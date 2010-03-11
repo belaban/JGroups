@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.253 2010/03/05 09:04:35 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.254 2010/03/11 15:42:10 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -58,6 +58,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="Garbage collection lag")
     private int gc_lag=20; // number of msgs garbage collection lags behind
 
+    @Property(description="Max number of messages to be removed from a NakReceiverWindow. This property might " +
+            "get removed anytime, so don't use it !")
+    private int max_msg_batch_size=20000;
+    
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
      * lost a message, the sender only retransmits once
@@ -846,7 +850,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             while(true) {
                 // we're removing a msg and set processing to false (if null) *atomically* (wrt to add())
-                List<Message> msgs=win.removeMany(processing);
+                List<Message> msgs=win.removeMany(processing, max_msg_batch_size);
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
                     return;
