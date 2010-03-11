@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.75 2010/03/11 13:43:38 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.76 2010/03/11 15:41:55 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -342,7 +342,16 @@ public class NakReceiverWindow {
      * @return List<Message> A list of messages, or null if no available messages were found
      */
     public List<Message> removeMany(final AtomicBoolean processing) {
+        return removeMany(processing, 0);
+    }
+
+    /**
+     * Removes as many messages as possible
+     * @return List<Message> A list of messages, or null if no available messages were found
+     */
+    public List<Message> removeMany(final AtomicBoolean processing, int max_results) {
         List<Message> retval=null;
+        int num_results=0;
 
         lock.writeLock().lock();
         try {
@@ -361,7 +370,8 @@ public class NakReceiverWindow {
                     if(retval == null)
                         retval=new LinkedList<Message>();
                     retval.add(msg);
-                    continue;
+                    if(max_results <= 0 || ++num_results < max_results)
+                        continue;
                 }
 
                 // message has not yet been received (gap in the message sequence stream)
