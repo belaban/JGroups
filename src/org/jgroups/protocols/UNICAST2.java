@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Reliable unicast layer. Implemented with negative acks.
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.3 2010/03/11 14:19:07 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.4 2010/03/11 15:42:28 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -42,7 +42,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private int max_msg_batch_size=50000;
 
     @Property(description="Max number of bytes before a stability message is sent to the sender")
-    protected long max_bytes;
+    protected long max_bytes=10000000;
 
     @Property(description="Max number of milliseconds before a stability message is sent to the sender(s)")
     protected long stable_interval=20000L;
@@ -633,7 +633,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         // order in which they were sent by their senders
         try {
             while(true) {
-                List<Message> msgs=win.removeMany(processing);
+                List<Message> msgs=win.removeMany(processing, max_msg_batch_size);
                 if(msgs == null || msgs.isEmpty())
                     return;
 
