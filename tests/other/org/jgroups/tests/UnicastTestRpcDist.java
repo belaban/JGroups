@@ -332,7 +332,10 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             System.out.println(mbr + ": " + result);
         }
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
-        System.out.println("\nAverage of " + f.format(total_reqs_sec) + " requests / sec");
+        double throughput=total_reqs_sec * msg_size;
+        double ms_per_req=total_time / (double)total_reqs;
+        System.out.println("\nAverage of " + f.format(total_reqs_sec) + " requests / sec (" +
+                Util.printBytes(throughput) + " / sec), " + f.format(ms_per_req) + " ms /request");
         System.out.println("\n\n");
     }
     
