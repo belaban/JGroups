@@ -22,10 +22,18 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Reliable unicast layer. Implemented with negative acks.
+ * Reliable unicast layer. Implemented with negative acks. Every sender keeps its messages in an AckSenderWindow. A
+ * receiver stores incoming messages in a NakReceiverWindow, and asks the sender for retransmission if a gap is
+ * detected. Every now and then (stable_interval), a timer task sends a STABLE message to all senders, including the
+ * highest received and delivered seqnos. A sender purges messages lower than highest delivered and asks the STABLE
+ * sender for messages it might have missed (smaller than highest received). A STABLE message can also be sent when
+ * a receiver has received more than max_bytes from a given sender.<p/>
+ * The advantage of this protocol over {@link org.jgroups.protocols.UNICAST} is that it doesn't send acks for every
+ * message. Instead, it sends 'acks' after receiving max_bytes and/ or periodically (stable_interval).
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.4 2010/03/11 15:42:28 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.5 2010/03/11 16:18:24 belaban Exp $
  */
+@Experimental @Unsupported
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
 public class UNICAST2 extends Protocol implements Retransmitter.RetransmitCommand, AgeOutCache.Handler<Address> {
@@ -308,7 +316,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
                 SenderEntry entry=send_table.get(dst);
                 if(entry == null) {
-                    entry=new SenderEntry(getNewConnectionId(), this, timeout, timer, local_addr);
+                    entry=new SenderEntry(getNewConnectionId());
                     SenderEntry existing=send_table.putIfAbsent(dst, entry);
                     if(existing != null)
                         entry=existing;
@@ -896,8 +904,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         final short             send_conn_id;
         final Lock              lock=new ReentrantLock();
 
-        public SenderEntry(short send_conn_id, Retransmitter.RetransmitCommand cmd, long[] timeout,
-                           TimeScheduler timer, Address local_addr) {
+        public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
             sent_msgs=new AckSenderWindow();
         }
