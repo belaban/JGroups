@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.39 2010/01/11 08:14:20 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.40 2010/03/11 14:29:42 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,6 +28,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     private Interval                          interval=new StaticInterval(400,800,1200,1600);
     private final Retransmitter               retransmitter;
     private long                              lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
+    private long                              highest=0;
 
 
     public interface RetransmitCommand {
@@ -55,18 +56,34 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
         retransmitter.setRetransmitTimeouts(interval);
     }
 
+    /**
+     * Creates an instance <em>without</em> retransmitter
+     */
+    public AckSenderWindow() {
+        retransmitter=null;
+    }
+
 
     /** Only to be used for testing purposes */
     public synchronized long getLowest() {
         return lowest;
     }
 
+    public long getHighest() {
+        return highest;
+    }
+
     public void reset() {
         msgs.clear();
-        retransmitter.reset();
+        if(retransmitter != null)
+            retransmitter.reset();
         lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO;
     }
 
+
+    public Message get(long seqno) {
+        return msgs.get(seqno);
+    }
 
     /**
      * Adds a new message to the retransmission table. The message will be retransmitted (based on timeouts passed into
@@ -74,15 +91,19 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      */
     public void add(long seqno, Message msg) {
         msgs.putIfAbsent(seqno, msg);
-        retransmitter.add(seqno, seqno);
+        if(retransmitter != null)
+            retransmitter.add(seqno, seqno);
+        highest=Math.max(highest, seqno);
     }
 
     public void addToMessages(long seqno, Message msg) {
         msgs.putIfAbsent(seqno, msg);
+        highest=Math.max(highest, seqno);
     }
 
     public void addToRetransmitter(long seqno, Message msg) {
-        retransmitter.add(seqno, seqno);
+        if(retransmitter != null)
+            retransmitter.add(seqno, seqno);
     }
 
 
@@ -95,13 +116,12 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
             if(seqno < lowest) return; // not really needed, but we can avoid the max() call altogether...
             prev_lowest=lowest;
             lowest=Math.max(lowest, seqno +1);
-        }
-
-        for(long i=prev_lowest; i <= seqno; i++) {
-            msgs.remove(i);
-            retransmitter.remove(i);
-        }
+        }        
+        removeRange(prev_lowest, seqno);
     }
+
+
+
 
     /** Returns the message with the lowest seqno */
     public synchronized Message getLowestMessage() {
@@ -115,7 +135,10 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ");
+        sb.append(msgs.size()).append(" msgs");
+        if(retransmitter != null)
+            sb.append(" (").append(retransmitter.size()).append(" to retransmit)");
+        sb.append(":\n");
         TreeSet<Long> keys=new TreeSet<Long>(msgs.keySet());
         if(!keys.isEmpty())
             sb.append(keys.first()).append(" - ").append(keys.last());
@@ -127,8 +150,11 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public String printDetails() {
         StringBuilder sb=new StringBuilder();
-        sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ").
-                append(new TreeSet<Long>(msgs.keySet()));
+        sb.append(msgs.size()).append(" msgs");
+        if(retransmitter != null)
+            sb.append(" (").append(retransmitter.size()).append(" to retransmit)");
+        sb.append(":\n");
+        sb.append(new TreeSet<Long>(msgs.keySet()));
         return sb.toString();
     }
 
@@ -146,5 +172,12 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
     /* ----------------------------- End of Retransmitter.RetransmitCommand interface ---------------- */
 
-
+    private void removeRange(long from, long to) {
+        for(long i=from; i <= to; i++) {
+            msgs.remove(i);
+            if(retransmitter != null)
+                retransmitter.remove(i);
+        }
     }
+
+}
