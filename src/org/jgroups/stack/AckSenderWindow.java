@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.40 2010/03/11 14:29:42 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.41 2010/03/12 09:07:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -121,8 +121,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
 
-
-
     /** Returns the message with the lowest seqno */
     public synchronized Message getLowestMessage() {
         return msgs.get(lowest);
@@ -135,15 +133,18 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(msgs.size()).append(" msgs");
+        int num_msgs=msgs.size();
+        sb.append(num_msgs).append(" msgs");
         if(retransmitter != null)
             sb.append(" (").append(retransmitter.size()).append(" to retransmit)");
-        sb.append(":\n");
-        TreeSet<Long> keys=new TreeSet<Long>(msgs.keySet());
-        if(!keys.isEmpty())
-            sb.append(keys.first()).append(" - ").append(keys.last());
-        else
-            sb.append("[]");
+        if(num_msgs > 0) {
+            sb.append(": ");
+            TreeSet<Long> keys=new TreeSet<Long>(msgs.keySet());
+            if(!keys.isEmpty())
+                sb.append(keys.first()).append(" - ").append(keys.last());
+            else
+                sb.append("[]");
+        }
         return sb.toString();
     }
 
