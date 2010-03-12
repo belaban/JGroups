@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.98 2010/03/05 08:59:43 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.99 2010/03/12 14:42:38 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -617,6 +617,20 @@ public class ProtocolStack extends Protocol implements Transport {
                 return tmp;
             }
             tmp=tmp.getDownProtocol();
+        }
+        return null;
+    }
+
+    /**
+     * Finds the first protocol of a list and returns it. Returns null if no protocol can be found
+     * @param clazz
+     * @return
+     */
+    public Protocol findProtocol(Class<?> ... classes) {
+        for(Class<?> clazz: classes) {
+            Protocol prot=findProtocol(clazz);
+            if(prot != null)
+                return prot;
         }
         return null;
     }
