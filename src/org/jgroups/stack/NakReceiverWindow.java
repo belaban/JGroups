@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.76 2010/03/11 15:41:55 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.77 2010/03/12 16:20:11 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -345,11 +345,18 @@ public class NakReceiverWindow {
         return removeMany(processing, 0);
     }
 
+
+    public List<Message> removeMany(final AtomicBoolean processing, int max_results) {
+        return removeMany(processing, false, max_results);
+    }
+
     /**
      * Removes as many messages as possible
+     * @param discard_own_msgs Removes messages from xmit_table even if we sent it
+     * @param max_results Max number of messages to remove in one batch
      * @return List<Message> A list of messages, or null if no available messages were found
      */
-    public List<Message> removeMany(final AtomicBoolean processing, int max_results) {
+    public List<Message> removeMany(final AtomicBoolean processing, boolean discard_own_msgs, int max_results) {
         List<Message> retval=null;
         int num_results=0;
 
@@ -362,7 +369,7 @@ public class NakReceiverWindow {
                 if(msg != null) { // message exists and is ready for delivery
                     if(discard_delivered_msgs) {
                         Address sender=msg.getSrc();
-                        if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                        if(discard_own_msgs || !local_addr.equals(sender)) { // don't remove if we sent the message !
                             xmit_table.remove(next_to_remove);
                         }
                     }
