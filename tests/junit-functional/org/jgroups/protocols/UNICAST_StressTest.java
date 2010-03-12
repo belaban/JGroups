@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests time for N threads to deliver M messages to UNICAST
  * @author Bela Ban
- * @version $Id: UNICAST_StressTest.java,v 1.2 2010/03/05 09:05:37 belaban Exp $
+ * @version $Id: UNICAST_StressTest.java,v 1.3 2010/03/12 15:34:29 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST_StressTest {
@@ -231,7 +231,7 @@ public class UNICAST_StressTest {
                 continue;
             }
             System.out.println("UNICAST_StressTest [-num_msgs msgs] [-num_threads threads] " +
-                    "[-oob <true | false>] + [-max <batch size>]");
+                    "[-oob <true | false>] [-max <batch size>]");
             return;
         }
         start(num_threads, num_msgs, oob, max);
