@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
@@ -22,7 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.26 2010/03/05 09:05:48 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.27 2010/03/12 15:43:45 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -72,7 +73,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
 
         Address dest=c2.getAddress();
         Message m1=new Message(dest, null, 1);
@@ -97,7 +98,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
 
         Address dest=c2.getAddress();
         Message m1=new Message(dest, null, 1);
