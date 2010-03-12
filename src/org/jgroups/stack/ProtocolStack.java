@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.99 2010/03/12 14:42:38 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.100 2010/03/12 15:20:13 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -503,7 +503,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    private void insertProtocolInStack(Protocol prot, Protocol neighbor, int position) {
+    public void insertProtocolInStack(Protocol prot, Protocol neighbor, int position) {
      // connect to the protocol layer below and above
         if(position == ProtocolStack.BELOW) {
             prot.setUpProtocol(neighbor);
@@ -538,6 +538,18 @@ public class ProtocolStack extends Protocol implements Transport {
         if(neighbor == null)
             throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
 
+        insertProtocolInStack(prot, neighbor,  position);
+    }
+
+
+    public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> ... neighbor_prots) throws Exception {
+        if(neighbor_prots == null) throw new IllegalArgumentException("Configurator.insertProtocol(): neighbor_prots is null");
+        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
+            throw new IllegalArgumentException("position has to be ABOVE or BELOW");
+
+        Protocol neighbor=findProtocol(neighbor_prots);
+        if(neighbor == null)
+            throw new IllegalArgumentException("protocol \"" + neighbor_prots.toString() + "\" not found in " + stack.printProtocolSpec(false));
         insertProtocolInStack(prot, neighbor,  position);
     }
 

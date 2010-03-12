@@ -8,7 +8,9 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -21,7 +23,7 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.11 2009/06/22 10:33:22 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.12 2010/03/12 15:16:59 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
@@ -58,7 +60,10 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         c2.setReceiver(receiver);
 
         // the first channel will discard the unicast messages with seqno #3 two times, the let them pass down
-        c1.getProtocolStack().insertProtocol(prot1, ProtocolStack.BELOW, UNICAST.class);
+        ProtocolStack stack=c1.getProtocolStack();
+        Protocol neighbor=stack.findProtocol(UNICAST.class, UNICAST2.class);
+        System.out.println("Found unicast protocol " + neighbor.getClass().getSimpleName());
+        stack.insertProtocolInStack(prot1, neighbor, ProtocolStack.BELOW);
 
         c1.connect("UNICAST_OOB_Test");
         c2.connect("UNICAST_OOB_Test");
