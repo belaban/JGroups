@@ -2,10 +2,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -59,6 +61,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
+
+    private static final Class<?>[] unicast_protocols=new Class<?>[]{UNICAST.class, UNICAST2.class};
 
     static NumberFormat f;
 
@@ -292,22 +296,31 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
     }
 
-    private void printConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        System.out.println("connections:\n" + unicast.printConnections());
+   private void printConnections() {
+        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        if(prot instanceof UNICAST)
+            System.out.println("connections:\n" + ((UNICAST)prot).printConnections());
+        else if(prot instanceof UNICAST2)
+            System.out.println("connections:\n" + ((UNICAST2)prot).printConnections());
     }
 
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-            unicast.removeConnection(member);
+            Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+            if(prot instanceof UNICAST)
+                ((UNICAST)prot).removeConnection(member);
+            else if(prot instanceof UNICAST2)
+                ((UNICAST2)prot).removeConnection(member);
         }
     }
 
     private void removeAllConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        unicast.removeAllConnections();
+        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        if(prot instanceof UNICAST)
+            ((UNICAST)prot).removeAllConnections();
+        else if(prot instanceof UNICAST2)
+            ((UNICAST2)prot).removeAllConnections();
     }
 
 
@@ -334,8 +347,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * msg_size;
         double ms_per_req=total_time / (double)total_reqs;
+        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
         System.out.println("\nAverage of " + f.format(total_reqs_sec) + " requests / sec (" +
-                Util.printBytes(throughput) + " / sec), " + f.format(ms_per_req) + " ms /request");
+                Util.printBytes(throughput) + " / sec), " + f.format(ms_per_req) + " ms /request (prot=" + prot.getName() + ")");
         System.out.println("\n\n");
     }
     
