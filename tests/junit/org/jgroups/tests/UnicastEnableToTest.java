@@ -1,7 +1,9 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.jgroups.util.AgeOutCache;
@@ -16,7 +18,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.12 2009/04/29 13:36:31 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.13 2010/03/12 16:02:33 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
@@ -28,8 +30,14 @@ public class UnicastEnableToTest extends ChannelTestBase {
     protected void setUp() throws Exception {
         c1=createChannel(true);
         c1.connect(GROUP);
-        UNICAST ucast=(UNICAST)c1.getProtocolStack().findProtocol(UNICAST.class);
-        cache=ucast != null? ucast.getAgeOutCache() : null;
+        Protocol prot=c1.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        if(prot instanceof UNICAST)
+            cache=((UNICAST)prot).getAgeOutCache();
+        else if(prot instanceof UNICAST2)
+            cache=((UNICAST2)prot).getAgeOutCache();
+        else
+            throw new Exception("Neither UNICAST nor UNICAST2 are present in the stack");
+        
         if(cache != null)
             cache.setTimeout(1000);
     }
