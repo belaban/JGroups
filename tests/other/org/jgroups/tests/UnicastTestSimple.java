@@ -2,6 +2,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
@@ -14,10 +15,12 @@ import java.util.Vector;
 
 
 /**
- * Tests the UNICAST by sending unicast messages between a sender and a receiver
+ * Tests {@link org.jgroups.protocols.UNICAST or {@link org.jgroups.tests.UNICAST2_ConnectionTests
+ * by sending unicast messages between a sender and a receiver. Which of the unicast protocols is tested depends on
+ * the stack config passed to the program
  *
  * @author Bela Ban
- * @version $Id: UnicastTestSimple.java,v 1.2 2010/03/12 07:20:00 belaban Exp $
+ * @version $Id: UnicastTestSimple.java,v 1.3 2010/03/12 14:48:32 belaban Exp $
  */
 public class UnicastTestSimple extends ReceiverAdapter {
     private JChannel channel;
@@ -84,21 +87,30 @@ public class UnicastTestSimple extends ReceiverAdapter {
     }
 
     private void printConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        System.out.println("connections:\n" + unicast.printConnections());
+        Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        if(prot instanceof UNICAST)
+            System.out.println(((UNICAST)prot).printConnections());
+        else if(prot instanceof UNICAST2)
+            System.out.println(((UNICAST2)prot).printConnections());
     }
 
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-            unicast.removeConnection(member);
+            Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+            if(prot instanceof UNICAST)
+                ((UNICAST)prot).removeConnection(member);
+            else if(prot instanceof UNICAST2)
+                ((UNICAST2)prot).removeConnection(member);
         }
     }
 
     private void removeAllConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        unicast.removeAllConnections();
+        Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        if(prot instanceof UNICAST)
+            ((UNICAST)prot).removeAllConnections();
+        else if(prot instanceof UNICAST2)
+            ((UNICAST2)prot).removeAllConnections();
     }
 
 
