@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests time for N threads to deliver M messages to UNICAST2
  * @author Bela Ban
- * @version $Id: UNICAST2_StressTest.java,v 1.2 2010/03/12 15:34:29 belaban Exp $
+ * @version $Id: UNICAST2_StressTest.java,v 1.3 2010/03/12 15:41:18 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST2_StressTest {
@@ -64,7 +64,8 @@ public class UNICAST2_StressTest {
 //            }
 //        });
 
-        unicast.setTimer(new TimeScheduler(5));
+        TimeScheduler timer=new TimeScheduler(10);
+        unicast.setTimer(timer);
 
         unicast.setDownProtocol(new Protocol() {
             public Object down(Event evt) {
@@ -141,6 +142,13 @@ public class UNICAST2_StressTest {
         if(delivered_msg_list.size() < 100)
             System.out.println("Elements: " + delivered_msg_list);
 
+        unicast.stop();
+        try {
+            timer.stop();
+        }
+        catch(InterruptedException e) {
+        }
+
         List<Long> results=new ArrayList<Long>(delivered_msg_list);
 
         if(oob)
@@ -188,6 +196,7 @@ public class UNICAST2_StressTest {
             this.oob=oob;
             this.dest=dest;
             this.sender=sender;
+            setName("Adder");
         }
 
 

@@ -2,9 +2,11 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -46,6 +48,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private static final Method START;
     private static final Method RECEIVE;
     private static final Method[] METHODS=new Method[2];
+
+    private static final Class<?>[] unicast_protocols=new Class<?>[]{UNICAST.class, UNICAST2.class};
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
 
@@ -218,21 +222,30 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
     private void printConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        System.out.println("connections:\n" + unicast.printConnections());
+        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        if(prot instanceof UNICAST)
+            System.out.println("connections:\n" + ((UNICAST)prot).printConnections());
+        else if(prot instanceof UNICAST2)
+            System.out.println("connections:\n" + ((UNICAST2)prot).printConnections());
     }
 
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-            unicast.removeConnection(member);
+            Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+            if(prot instanceof UNICAST)
+                ((UNICAST)prot).removeConnection(member);
+            else if(prot instanceof UNICAST2)
+                ((UNICAST2)prot).removeConnection(member);
         }
     }
 
     private void removeAllConnections() {
-        UNICAST unicast=(UNICAST)channel.getProtocolStack().findProtocol(UNICAST.class);
-        unicast.removeAllConnections();
+        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        if(prot instanceof UNICAST)
+            ((UNICAST)prot).removeAllConnections();
+        else if(prot instanceof UNICAST2)
+            ((UNICAST2)prot).removeAllConnections();
     }
 
 
@@ -261,9 +274,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
         if(oob) options.setFlags(Message.OOB);
 
         if(anycasting)
-            disp.callRemoteMethods(anycast_mbrs, new MethodCall((short)0, new Object[]{num_msgs}), options);
+            disp.callRemoteMethods(anycast_mbrs, new MethodCall((short)0, num_msgs), options);
         else
-            disp.callRemoteMethod(destination, new MethodCall((short)0, new Object[]{num_msgs}), options);
+            disp.callRemoteMethod(destination, new MethodCall((short)0, num_msgs), options);
         options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
 
         Invoker[] invokers=new Invoker[num_threads];
@@ -463,13 +476,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
             switch(type) {
                 case 0:
                     int arg=buf.getInt();
-                    return new MethodCall((short)0, new Object[]{arg});
+                    return new MethodCall((short)0, arg);
                 case 1:
                     Long longarg=buf.getLong();
                     int len=buf.getInt();
                     byte[] arg2=new byte[len];
                     buf.get(arg2, 0, arg2.length);
-                    return new MethodCall((short)1, new Object[]{longarg, arg2});
+                    return new MethodCall((short)1, longarg, arg2);
                 default:
                     throw new IllegalStateException("type " + type + " not known");
             }
