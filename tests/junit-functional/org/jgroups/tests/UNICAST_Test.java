@@ -5,11 +5,13 @@ import org.jgroups.*;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.DataProvider;
 
 import java.nio.ByteBuffer;
 import java.util.Vector;
@@ -37,26 +39,36 @@ public class UNICAST_Test {
             simulator.stop();
     }
 
-
-    public void testReceptionOfAllMessages() throws Throwable {
-        UNICAST unicast=new UNICAST();
-        unicast.setTimeout(new long[] {500,1000,2000,3000});
-        Protocol[] stack=new Protocol[]{unicast};
+    @Test(dataProvider="configProvider")
+    public void testReceptionOfAllMessages(Protocol prot) throws Throwable {
+        System.out.println("prot=" + prot.getClass().getSimpleName());
+        Protocol[] stack=new Protocol[]{prot};
         createStack(stack);
         _testReceptionOfAllMessages();
     }
 
 
-    public void testReceptionOfAllMessagesWithDISCARD() throws Throwable {
-        UNICAST unicast=new UNICAST();
-        unicast.setTimeout(new long[] {500,1000,2000,3000});
-
+    @Test(dataProvider="configProvider")
+    public void testReceptionOfAllMessagesWithDISCARD(Protocol prot) throws Throwable {
+        System.out.println("prot=" + prot.getClass().getSimpleName());
         DISCARD discard=new DISCARD();
         discard.setDownDiscardRate(0.1); // discard all down message with 10% probability
 
-        Protocol[] stack=new Protocol[]{unicast,discard};
+        Protocol[] stack=new Protocol[]{prot, discard};
         createStack(stack);
         _testReceptionOfAllMessages();
+    }
+
+    @DataProvider
+    public static Object[][] configProvider() {
+        Object[][] retval=new Object[][] {
+                {new UNICAST()},
+                {new UNICAST2()}
+        };
+
+        ((UNICAST)retval[0][0]).setTimeout(new long[]{500,1000,2000,3000});
+        ((UNICAST2)retval[1][0]).setTimeout(new long[]{500,1000,2000,3000});
+        return retval;
     }
 
 
