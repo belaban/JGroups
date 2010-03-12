@@ -2,9 +2,11 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,15 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests for contention on UNICAST, measured by the number of retransmissions in UNICAST 
  * @author Bela Ban
- * @version $Id: UNICAST_ContentionTest.java,v 1.2 2009/09/18 10:10:29 belaban Exp $
+ * @version $Id: UNICAST_ContentionTest.java,v 1.3 2010/03/12 15:09:41 belaban Exp $
  */
-@Test(groups=Global.STACK_INDEPENDENT)
+@Test(groups=Global.STACK_INDEPENDENT, sequential=true)
 public class UNICAST_ContentionTest {
     JChannel c1, c2;
-    static final String props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
+    static final String unicast_props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
             "thread_pool.rejection_policy=discard;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
             "oob_thread_pool.rejection_policy=discard;enable_bundling=true)"+
             ":UNICAST(timeout=300,600,1200)";
+    static final String unicast2_props=unicast_props.replace("UNICAST", "UNICAST2");
     static final int NUM_THREADS=200;
     static final int NUM_MSGS=100;
     static final int SIZE=1000; // default size of a message in bytes
@@ -30,10 +33,10 @@ public class UNICAST_ContentionTest {
         Util.close(c2, c1);
     }
 
-
-    public static void testSimpleMessageReception() throws Exception {
-        JChannel c1=new JChannel(props);
-        JChannel c2=new JChannel(props);
+    @Test(dataProvider="provider")
+    public void testSimpleMessageReception(String props) throws Exception {
+        c1=new JChannel(props);
+        c2=new JChannel(props);
         MyReceiver r1=new MyReceiver("c1"), r2=new MyReceiver("c2");
         c1.setReceiver(r1);
         c2.setReceiver(r2);
@@ -67,10 +70,11 @@ public class UNICAST_ContentionTest {
      * Multiple threads (NUM_THREADS) send messages (NUM_MSGS)
      * @throws Exception
      */
-    public static void testMessageReceptionUnderHighLoad() throws Exception {
+    @Test(dataProvider="provider")
+    public void testMessageReceptionUnderHighLoad(String props) throws Exception {
         CountDownLatch latch=new CountDownLatch(1);
-        JChannel c1=new JChannel(props);
-        JChannel c2=new JChannel(props);
+        c1=new JChannel(props);
+        c2=new JChannel(props);
         MyReceiver r1=new MyReceiver("c1"), r2=new MyReceiver("c2");
         c1.setReceiver(r1);
         c2.setReceiver(r2);
@@ -107,12 +111,22 @@ public class UNICAST_ContentionTest {
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
     }
 
-
+    @DataProvider
+    public static Object[][] provider() {
+        return new Object[][] {
+                {unicast_props},
+                {unicast2_props}
+        };
+    }
 
 
     private static long getNumberOfRetransmissions(JChannel ch) {
-        UNICAST unicast=(UNICAST)ch.getProtocolStack().findProtocol(UNICAST.class);
-        return unicast.getNumberOfRetransmissions();
+        Protocol prot=ch.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        if(prot instanceof UNICAST)
+            return ((UNICAST)prot).getNumberOfRetransmissions();
+        if(prot instanceof UNICAST2)
+            return ((UNICAST2)prot).getNumberOfRetransmissions();
+        return -1;
     }
 
 
