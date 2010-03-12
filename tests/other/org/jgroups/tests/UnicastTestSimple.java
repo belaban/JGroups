@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -16,7 +17,7 @@ import java.util.Vector;
  * Tests the UNICAST by sending unicast messages between a sender and a receiver
  *
  * @author Bela Ban
- * @version $Id: UnicastTestSimple.java,v 1.1 2010/03/12 07:10:06 belaban Exp $
+ * @version $Id: UnicastTestSimple.java,v 1.2 2010/03/12 07:20:00 belaban Exp $
  */
 public class UnicastTestSimple extends ReceiverAdapter {
     private JChannel channel;
@@ -109,9 +110,11 @@ public class UnicastTestSimple extends ReceiverAdapter {
         }
 
 
-        Message msg=new Message(destination, null, "hello-" + val);
+        String str="hello-" + val;
+        Message msg=new Message(destination, null, str);
         if(oob)
             msg.setFlag(Message.OOB);
+        System.out.println("sending " + str + " to " + destination);
         channel.send(msg);
     }
 

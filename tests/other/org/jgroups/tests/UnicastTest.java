@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.18 2010/01/11 11:21:18 belaban Exp $
+// $Id: UnicastTest.java,v 1.19 2010/03/12 07:20:59 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -31,11 +31,13 @@ public class UnicastTest extends ReceiverAdapter {
 
 
 
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep) throws Exception {
+    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, String name) throws Exception {
         this.sleep_time=sleep_time;
         this.exit_on_end=exit_on_end;
         this.busy_sleep=busy_sleep;
         channel=new JChannel(props);
+        if(name != null)
+            channel.setName(name);
         channel.connect(groupname);
         channel.setReceiver(receiver);
 
@@ -134,13 +136,10 @@ public class UnicastTest extends ReceiverAdapter {
                 ") to " + destination + ": oob=" + oob + ", " + num_threads + " sender thread(s)");
         byte[] buf=Util.objectToByteBuffer(new StartData(num_msgs));
         Message msg=new Message(destination, null, buf);
-
         channel.send(msg);
-        Util.sleep(500);
-
 
         long print=num_msgs / 10;
-        int msgs_per_sender=(int)(num_msgs / num_threads);
+        int msgs_per_sender=num_msgs / num_threads;
         Sender[] senders=new Sender[num_threads];
         for(int i=0; i < senders.length; i++)
             senders[i]=new Sender(msgs_per_sender, msg_size, destination, (int)print);
@@ -213,6 +212,7 @@ public class UnicastTest extends ReceiverAdapter {
         boolean exit_on_end=false;
         boolean busy_sleep=false;
         String props=null;
+        String name=null;
 
 
         for(int i=0; i < args.length; i++) {
@@ -232,6 +232,10 @@ public class UnicastTest extends ReceiverAdapter {
                 busy_sleep=true;
                 continue;
             }
+            if("-name".equals(args[i])) {
+                name=args[++i];
+                continue;
+            }
             help();
             return;
         }
@@ -239,7 +243,7 @@ public class UnicastTest extends ReceiverAdapter {
 
         try {
             UnicastTest test=new UnicastTest();
-            test.init(props, sleep_time, exit_on_end, busy_sleep);
+            test.init(props, sleep_time, exit_on_end, busy_sleep, name);
             test.eventLoop();
         }
         catch(Exception ex) {
@@ -249,7 +253,7 @@ public class UnicastTest extends ReceiverAdapter {
 
     static void help() {
         System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep]");
+                           "[-exit_on_end] [-busy-sleep] [-name name]");
     }
 
 
@@ -331,7 +335,7 @@ public class UnicastTest extends ReceiverAdapter {
                     Message msg=new Message(destination, null, buf);
                     if(oob)
                         msg.setFlag(Message.OOB);
-                    if(i % print == 0)
+                    if(i > 0 && print > 0 && i % print == 0)
                         System.out.println("-- sent " + i);
                     channel.send(msg);
                     if(sleep_time > 0)
