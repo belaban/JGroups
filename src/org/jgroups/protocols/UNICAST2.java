@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The advantage of this protocol over {@link org.jgroups.protocols.UNICAST} is that it doesn't send acks for every
  * message. Instead, it sends 'acks' after receiving max_bytes and/ or periodically (stable_interval).
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.5 2010/03/11 16:18:24 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.6 2010/03/12 09:13:17 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Reliable unicast layer")
@@ -108,8 +108,18 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     @ManagedOperation
     public String printConnections() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        if(!send_table.isEmpty()) {
+            sb.append("send connections:\n");
+            for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        }
+
+        if(!recv_table.isEmpty()) {
+            sb.append("\nreceive connections:\n");
+            for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
         }
         return sb.toString();
     }
@@ -507,8 +517,12 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             entry.reset();
 
         ReceiverEntry entry2=recv_table.remove(mbr);
-        if(entry2 != null)
+        if(entry2 != null) {
+            NakReceiverWindow win=entry2.received_msgs;
+            if(win != null)
+                sendStableMessage(mbr, win.getHighestDelivered(), win.getHighestReceived());
             entry2.reset();
+        }
     }
 
     /**
@@ -520,6 +534,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             entry.reset();
         send_table.clear();
 
+        sendStableMessages();
         for(ReceiverEntry entry2: recv_table.values())
             entry2.reset();
         recv_table.clear();
@@ -732,6 +747,16 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         Unicast2Header newhdr=hdr.copy();
         newhdr.first=true;
         copy.putHeader(this.id, newhdr);
+
+        if(log.isTraceEnabled()) {
+            StringBuilder sb=new StringBuilder();
+            sb.append(local_addr).append(" --> DATA(").append(copy.getDest()).append(": #").append(newhdr.seqno).
+                    append(", conn_id=").append(newhdr.conn_id);
+            if(newhdr.first) sb.append(", first");
+            sb.append(')');
+            log.trace(sb);
+        }
+
         down_prot.down(new Event(Event.MSG, copy));
     }
 
@@ -926,8 +951,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
-                sb.append("sent_msgs=").append(sent_msgs).append('\n');
-            sb.append("send_conn_id=" + send_conn_id + "\n");
+                sb.append(sent_msgs).append(", ");
+            sb.append("send_conn_id=" + send_conn_id);
             return sb.toString();
         }
     }
@@ -955,8 +980,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(received_msgs != null)
-                sb.append("received_msgs=").append(received_msgs).append('\n');
-            sb.append("recv_conn_id=" + recv_conn_id + "\n");
+                sb.append(received_msgs).append(", ");
+            sb.append("recv_conn_id=" + recv_conn_id);
             return sb.toString();
         }
     }
