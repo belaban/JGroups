@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.165 2010/03/08 08:00:02 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.166 2010/03/12 09:07:44 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -115,11 +115,23 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute
     public String getMembers() {return members != null? members.toString() : "[]";}
+
+
     @ManagedOperation
     public String printConnections() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        if(!send_table.isEmpty()) {
+            sb.append("\nsend connections:\n");
+            for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        }
+
+        if(!recv_table.isEmpty()) {
+            sb.append("\nreceive connections:\n");
+            for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
         }
         return sb.toString();
     }
@@ -664,6 +676,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         UnicastHeader newhdr=hdr.copy();
         newhdr.first=true;
         copy.putHeader(this.id, newhdr);
+
+        if(log.isTraceEnabled()) {
+            StringBuilder sb=new StringBuilder();
+            sb.append(local_addr).append(" --> DATA(").append(copy.getDest()).append(": #").append(newhdr.seqno).
+                    append(", conn_id=").append(newhdr.conn_id);
+            if(newhdr.first) sb.append(", first");
+            sb.append(')');
+            log.trace(sb);
+        }
+        
         down_prot.down(new Event(Event.MSG, copy));
     }
 
@@ -863,8 +885,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
-                sb.append("sent_msgs=").append(sent_msgs).append('\n');
-            sb.append("send_conn_id=" + send_conn_id + "\n");
+                sb.append(sent_msgs).append(", ");
+            sb.append("send_conn_id=" + send_conn_id);
             return sb.toString();
         }
     }
@@ -888,8 +910,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(received_msgs != null)
-                sb.append("received_msgs=").append(received_msgs).append('\n');
-            sb.append("recv_conn_id=" + recv_conn_id + "\n");
+                sb.append(received_msgs).append(", ");
+            sb.append("recv_conn_id=" + recv_conn_id);
             return sb.toString();
         }
     }
