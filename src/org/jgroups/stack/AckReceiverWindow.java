@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.49 2010/03/02 08:16:52 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.50 2010/03/12 09:07:01 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                   next_to_remove;
@@ -187,7 +187,7 @@ public class AckReceiverWindow {
         int size=size();
         sb.append(size + " messages");
         if(size <= 100)
-            sb.append(" in " + segments.size() + " segments: ").append(printMessages());
+            sb.append(" in " + segments.size() + " segments");
         return sb.toString();
     }
 
