@@ -21,11 +21,11 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.57 2010/03/09 16:29:18 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.58 2010/03/13 06:33:47 vlada Exp $
  */
 public class RouterStub {
 
-    public static enum ConnectionStatus {INITIAL, DISCONNECTED, CONNECTED};
+    public static enum ConnectionStatus {INITIAL, CONNECTION_BROKEN, CONNECTION_ESTABLISHED, CONNECTED,DISCONNECTED};
 
     private final String router_host; // name of the router host
 
@@ -41,7 +41,7 @@ public class RouterStub {
 
     private static final Log log=LogFactory.getLog(RouterStub.class);
 
-    private ConnectionListener conn_listener;
+    private final ConnectionListener conn_listener;
 
     private final InetAddress bind_addr;
 
@@ -63,14 +63,19 @@ public class RouterStub {
      * @param routerPort The router's port
      * @throws SocketException
      */
-    public RouterStub(String routerHost, int routerPort, InetAddress bindAddress) {
+    public RouterStub(String routerHost, int routerPort, InetAddress bindAddress, ConnectionListener l) {
         router_host=routerHost != null? routerHost : "localhost";
         router_port=routerPort;
         bind_addr=bindAddress;
+        conn_listener=l;        
     }
     
     public synchronized void setReceiver(StubReceiver receiver) {
         this.receiver = receiver;
+    }
+    
+    public synchronized StubReceiver  getReceiver() {
+        return receiver;
     }
     
     public synchronized void interrupt() {
@@ -99,15 +104,11 @@ public class RouterStub {
     }
 
     public boolean isConnected() {
-        return connectionState == ConnectionStatus.CONNECTED;
+        return !(connectionState == ConnectionStatus.CONNECTION_BROKEN || connectionState == ConnectionStatus.INITIAL);
     }
 
     public ConnectionStatus getConnectionStatus() {
         return connectionState;
-    }
-
-    public void setConnectionListener(ConnectionListener conn_listener) {
-        this.conn_listener=conn_listener;
     }
 
 
@@ -139,12 +140,13 @@ public class RouterStub {
                 Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
                 input=new DataInputStream(sock.getInputStream());                
+                connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);
             }
             catch(Exception e) {                
                 Util.close(sock);
                 Util.close(input);
                 Util.close(output);
-                connectionStateChanged(ConnectionStatus.DISCONNECTED);
+                connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
                 throw new Exception("Could not connect to " + getGossipRouterAddress() , e);
             }
         }
@@ -161,7 +163,7 @@ public class RouterStub {
             output.flush();
         }
         catch(IOException e) {
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
+            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
         }
     }
 
@@ -173,6 +175,8 @@ public class RouterStub {
             output.flush();
         }
         catch(Exception e) {
+        } finally {
+            connectionStateChanged(ConnectionStatus.DISCONNECTED);
         }
     }
 
@@ -220,7 +224,7 @@ public class RouterStub {
             }
         }       
         catch(Exception e) {           
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
+            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
             throw new Exception("Connection to " + getGossipRouterAddress() + " broken. Could not send GOSSIP_GET request", e);
         }
         return retval;
@@ -246,7 +250,7 @@ public class RouterStub {
             request.writeTo(output);
             output.flush();
         } catch (Exception e) {
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
+            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
             throw new Exception("Connection to " + getGossipRouterAddress()
                             + " broken. Could not send message to " + dest, e);
         }

@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.94 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.95 2010/03/13 06:33:45 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -160,24 +160,17 @@ public class TUNNEL extends TP {
         if (log.isDebugEnabled()) {
             log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         }
-                        
+        
+        sock = new DatagramSocket(0, bind_addr);
+
+        for (InetSocketAddress gr : gossip_router_hosts) {
+           RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,new StubConnectionListener());           
+           stubs.add(stub);
+        }     
+        // loopback turned on is mandatory
+        loopback = true;
     }
-
-    public void start() throws Exception {
-      // loopback turned on is mandatory
-      loopback = true;
-
-      sock = new DatagramSocket(0, bind_addr);
-
-      super.start();
-
-      for (InetSocketAddress gr : gossip_router_hosts) {
-         RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr);
-         stub.setConnectionListener(new StubConnectionListener(stub));
-         stubs.add(stub);
-      }
-   }
-
+    
     public void destroy() {        
         for (RouterStub stub : stubs) {
             stopReconnecting(stub);
@@ -291,35 +284,31 @@ public class TUNNEL extends TP {
       }
    }
 
-   private class StubConnectionListener implements RouterStub.ConnectionListener {
+    private class StubConnectionListener implements RouterStub.ConnectionListener {
 
-      private volatile RouterStub.ConnectionStatus currentState = RouterStub.ConnectionStatus.INITIAL;
-      private final RouterStub stub;
-
-      public StubConnectionListener(RouterStub stub) {
-         super();
-         this.stub = stub;
-      }
-
-      public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
-         if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
-             stub.interrupt();
-             stub.destroy();
-             startReconnecting(stub);
-         }
-         else if (currentState != RouterStub.ConnectionStatus.CONNECTED
-                 && newState == RouterStub.ConnectionStatus.CONNECTED) {
-             stopReconnecting(stub);             
-             StubReceiver stubReceiver = new StubReceiver(stub.getInputStream());
-             stub.setReceiver(stubReceiver);
-             Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
-             stubReceiver.setThread(t);
-             t.setDaemon(true);
-             t.start();
-         }
-          currentState = newState;
-      }
-   }
+        public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
+            if (newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
+                stub.interrupt();
+                stub.destroy();
+                startReconnecting(stub);
+            }
+            else if (newState == RouterStub.ConnectionStatus.CONNECTED) {
+                stopReconnecting(stub);
+                StubReceiver stubReceiver = new StubReceiver(stub.getInputStream());
+                stub.setReceiver(stubReceiver);
+                Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
+                stubReceiver.setThread(t);
+                t.setDaemon(true);
+                t.start();
+            } else if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
+                //wait for disconnect ack;
+                try {
+                    stub.getReceiver().getThread().join(getReconnectInterval());
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+    }
 
     public class StubReceiver implements Runnable {
 
@@ -339,11 +328,14 @@ public class TUNNEL extends TP {
         }
 
         public void run() {
+            mainloop:
             while (!Thread.currentThread().isInterrupted()) {
                 try {                                        
                     GossipData msg = new GossipData();
                     msg.readFrom(input);
                     switch (msg.getType()) {
+                        case GossipRouter.DISCONNECT_OK:                            
+                            break mainloop;
                         case GossipRouter.MESSAGE:
                             byte[] data = msg.getBuffer();
                             receive(null/* src will be read from data */, data, 0, data.length);
@@ -468,7 +460,7 @@ public class TUNNEL extends TP {
                int length) throws Exception {
          boolean sent = false;
           if(stubs.size() > 1)
-              Collections.shuffle(stubs); // todo: why is this needed ?
+              Collections.shuffle(stubs); 
          for (RouterStub stub : stubs) {
             try {
                stub.sendToMember(group, dest, data, offset, length);

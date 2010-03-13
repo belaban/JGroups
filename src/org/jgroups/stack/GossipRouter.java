@@ -49,20 +49,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.71 2010/03/10 22:13:56 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.72 2010/03/13 06:33:47 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
     public static final byte CONNECT=1;    // CONNECT(group, addr) --> local address
     public static final byte DISCONNECT=2; // DISCONNECT(group, addr)
     public static final byte GOSSIP_GET=4; // GET(group) --> List<addr> (members)
-    public static final byte SHUTDOWN=9;
     public static final byte MESSAGE=10;
     public static final byte SUSPECT=11;
     public static final byte PING=12;
     public static final byte CLOSE=13;
     public static final byte CONNECT_OK=14;
-    public static final byte CONNECT_FAIL=15;
+    public static final byte OP_FAIL=15;  
+    public static final byte DISCONNECT_OK=16;
+    
     
 
     public static final int PORT=12001;
@@ -213,15 +214,27 @@ public class GossipRouter {
     }
 
     public static String type2String(int type) {
-        switch(type) {
-            case CONNECT:     return "CONNECT";
-            case DISCONNECT:  return "DISCONNECT";
-            case GOSSIP_GET:  return "GOSSIP_GET";
-            case SHUTDOWN:    return "SHUTDOWN";
-            case MESSAGE:     return "MESSAGE";
-            case SUSPECT:     return "SUSPECT";
-            case PING:        return "PING";
-            case CLOSE:       return "CLOSE";
+        switch (type) {
+            case CONNECT:
+                return "CONNECT";
+            case DISCONNECT:
+                return "DISCONNECT";
+            case GOSSIP_GET:
+                return "GOSSIP_GET";
+            case MESSAGE:
+                return "MESSAGE";
+            case SUSPECT:
+                return "SUSPECT";
+            case PING:
+                return "PING";
+            case CLOSE:
+                return "CLOSE";
+            case CONNECT_OK:
+                return "CONNECT_OK";
+            case DISCONNECT_OK:
+                return "DISCONNECT_OK";
+            case OP_FAIL:
+                return "OP_FAIL";
             default:
                 return "unknown (" + type + ")";
         }
@@ -680,7 +693,13 @@ public class GossipRouter {
                             break;
 
                         case GossipRouter.DISCONNECT:
-                            removeEntry(request.getGroup(), request.getAddress());
+                            try {
+                                removeEntry(group, addr);
+                                sendData(new GossipData(DISCONNECT_OK));
+                            }
+                            catch(Exception e) {
+                                sendData(new GossipData(OP_FAIL));
+                            }
                             break;
                             
                         case GossipRouter.CLOSE:
@@ -735,21 +754,33 @@ public class GossipRouter {
                     }
                     physical_addrs.addAll(request.getPhysicalAddresses());
                 }
-                output.writeByte(CONNECT_OK);
-                output.flush();
+                sendStatus(CONNECT_OK);
                 
                 if(log.isTraceEnabled())
                     log.trace("Connection established, added  " +addr + " to group "+ group);
                 
             } catch (Exception e) {
                 removeEntry(group, addr);
-                try {
-                    output.writeByte(CONNECT_FAIL);
-                    output.flush();
-                } catch (IOException e1) {
-                    //ignored
-                }
+                sendStatus(OP_FAIL);
                 throw new Exception("Unsuccessful connection setup handshake");
+            }
+        }
+             
+        private void sendStatus(byte status) {
+            try {                
+                output.writeByte(status);
+                output.flush();                
+            } catch (IOException e1) {
+                //ignored
+            }
+        }
+        
+        private void sendData(GossipData data) {
+            try {                
+                data.writeTo(output);
+                output.flush();                
+            } catch (IOException e1) {
+                //ignored
             }
         }
 
