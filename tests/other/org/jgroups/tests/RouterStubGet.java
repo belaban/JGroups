@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: RouterStubGet.java,v 1.1 2009/08/10 12:29:18 belaban Exp $
+ * @version $Id: RouterStubGet.java,v 1.2 2010/03/13 06:33:48 vlada Exp $
  */
 public class RouterStubGet {
     public static void main(String[] args) throws Exception {
@@ -32,7 +32,7 @@ public class RouterStubGet {
             return;
         }
 
-        RouterStub stub=new RouterStub(host, port, null);
+        RouterStub stub=new RouterStub(host, port, null,null);
         stub.doConnect();
         List<PingData> responses=stub.getMembers(cluster_name);
         for(PingData data: responses)

@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.51 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.52 2010/03/13 06:33:45 vlada Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -121,8 +121,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             stubs.clear();
 
             for (InetSocketAddress host : initial_hosts) {
-                RouterStub stub = new RouterStub(host.getHostName(), host.getPort(), null);
-                stub.setConnectionListener(this);
+                RouterStub stub = new RouterStub(host.getHostName(), host.getPort(), null,this);                
                 stubs.add(stub);
             }
             connect(group_addr, local_addr);
@@ -145,11 +144,19 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
     public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus state) {
         if(log.isDebugEnabled())
             log.debug("connection changed to " + state);
-        if(state == RouterStub.ConnectionStatus.CONNECTED)
+        if(state == RouterStub.ConnectionStatus.CONNECTION_ESTABLISHED) {
             stopReconnector();
-        else {
+        }
+        else if (state == RouterStub.ConnectionStatus.CONNECTION_BROKEN){            
             stub.destroy();
             startReconnector();
+        }
+        else if (state == RouterStub.ConnectionStatus.DISCONNECTED) {
+            //wait for disconnect ack;
+            try {
+                stub.getReceiver().getThread().join(reconnect_interval);
+            } catch (InterruptedException e) {
+            }
         }
     }
 
