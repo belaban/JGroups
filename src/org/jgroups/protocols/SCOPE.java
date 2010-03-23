@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.1 2010/03/23 08:24:23 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.2 2010/03/23 15:11:20 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -113,7 +113,6 @@ public class SCOPE extends Protocol {
                     return null;
 
                 // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-
                 try {
                     while(true) {
                         List<Message> msgs=win.removeManyAsList(max_msg_batch_size);
@@ -146,7 +145,7 @@ public class SCOPE extends Protocol {
     }
 
     private void handleView(View view) {
-
+        
     }
 
 
@@ -155,19 +154,95 @@ public class SCOPE extends Protocol {
         public static final byte MSG    = 1;
         public static final byte EXPIRE = 2;
 
-        byte type;
-        short scope=0;  // starts with 1
-        long seqno=0;   // starts with 1
+        byte  type;
+        short scope=0;   // starts with 1
+        long  seqno=0;   // starts with 1
 
-        
+        public static ScopeHeader createMessageHeader(short scope, long seqno) {
+            return new ScopeHeader(MSG, scope, seqno);
+        }
+
+        public static ScopeHeader createExpireHeader(short scope) {
+            return new ScopeHeader(EXPIRE, scope, 0);
+        }
+
+        public ScopeHeader() {
+            
+        }
+
+        private ScopeHeader(byte type, short scope, long seqno) {
+            this.type=type;
+            this.scope=scope;
+            this.seqno=seqno;
+        }
+
+        public short getScope() {
+            return scope;
+        }
+
+        public long getSeqno() {
+            return seqno;
+        }
+
         public int size() {
-            return Global.BYTE_SIZE + Global.SHORT_SIZE + Global.LONG_SIZE;
+            switch(type) {
+                case MSG:     return Global.BYTE_SIZE + Global.SHORT_SIZE + Global.LONG_SIZE;
+                case EXPIRE:  return Global.BYTE_SIZE + Global.SHORT_SIZE;
+                default:      throw new IllegalStateException("type has to be MSG or EXPIRE");
+            }
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type);
+            switch(type) {
+                case MSG:
+                    out.writeShort(scope);
+                    out.writeLong(seqno);
+                    break;
+                case EXPIRE:
+                    out.writeShort(scope);
+                    break;
+                default:
+                    throw new IllegalStateException("type has to be MSG or EXPIRE");
+            }
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=in.readByte();
+            switch(type) {
+                case MSG:
+                    scope=in.readShort();
+                    seqno=in.readLong();
+                    break;
+                case EXPIRE:
+                    scope=in.readShort();
+                    break;
+                default:
+                    throw new IllegalStateException("type has to be MSG or EXPIRE");
+            }
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder(typeToString(type));
+            switch(type) {
+                case MSG:
+                    sb.append(": scope=").append(scope).append(", seqno=").append(seqno);
+                    break;
+                case EXPIRE:
+                    sb.append(": scope=").append(scope);
+                    break;
+                default:
+                    sb.append("n/a");
+            }
+            return sb.toString();
+        }
+
+        public static String typeToString(byte type) {
+            switch(type) {
+                case MSG: return "MSG";
+                case EXPIRE: return "EXPIRE";
+                default: return "n/a";
+            }
         }
     }
 }

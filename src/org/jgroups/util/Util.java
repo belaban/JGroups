@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.257 2010/03/05 08:59:56 belaban Exp $
+ * @version $Id: Util.java,v 1.258 2010/03/23 15:11:29 belaban Exp $
  */
 public class Util {
 
@@ -219,6 +219,20 @@ public class Util {
     }
 
 
+    public static void setScope(Message msg, short scope) {
+        SCOPE.ScopeHeader hdr=SCOPE.ScopeHeader.createMessageHeader(scope, 0);
+        msg.putHeader(Global.SCOPE_ID, hdr);
+        msg.setFlag(Message.SCOPED);
+    }
+
+    public static short getScope(Message msg) {
+        SCOPE.ScopeHeader hdr=(SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
+        return hdr != null? hdr.getScope() : 0;
+    }
+
+    public static SCOPE.ScopeHeader getScopeHeader(Message msg) {
+        return (SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
+    }
    
 
 
