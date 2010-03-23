@@ -26,7 +26,7 @@ import java.util.Map;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.111 2010/03/05 13:22:40 belaban Exp $
+ * @version $Id: Message.java,v 1.112 2010/03/23 08:25:07 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -63,6 +63,7 @@ public class Message implements Streamable {
     public static final byte LOOPBACK          =  1 << 1; // if message was sent to self
     public static final byte DONT_BUNDLE       =  1 << 2; // don't bundle message at the transport
     public static final byte NO_FC             =  1 << 3; // bypass flow control
+    public static final byte SCOPED            =  1 << 4; // when a message has a scope 
 
 
     // =========================== Transient flags ==============================
@@ -686,6 +687,13 @@ public class Message implements Streamable {
             else
                 first=false;
             sb.append("NO_FC");
+        }
+        if(isFlagSet(flags, SCOPED)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("SCOPED");
         }
         if(isFlagSet(flags, OOB_DELIVERED)) {
             if(!first)

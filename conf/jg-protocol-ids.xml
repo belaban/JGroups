@@ -46,4 +46,7 @@
     <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>
     <class id="202" name="org.jgroups.mux.MuxChannel"/>
     <class id="203" name="org.jgroups.mux.Multiplexer"/>
+
+    <!-- Reserved IDs -->
+    <class id="512" name="org.jgroups.protocols.SCOPE"/>
 </protocol-ids>

@@ -1,10 +1,13 @@
 package org.jgroups;
 
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.SCOPE;
+
 /**
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.53 2010/03/04 11:59:01 belaban Exp $
+ * @version $Id: Global.java,v 1.54 2010/03/23 08:24:51 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -15,6 +18,9 @@ public class Global {
     public static final int FLOAT_SIZE  = Float.SIZE   / 8; // 4;
 
     public static final Object NULL=new Object();
+    public static final Address NULL_ADDR=null;
+
+    public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
 
     public static final String IPv4="java.net.preferIPv4Stack";
     public static final String IPv6="java.net.preferIPv6Addresses";
@@ -80,36 +86,41 @@ public class Global {
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
 
+    
+
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
-	boolean result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Boolean.parseBoolean(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        boolean result = defaultValue;
+        try{
+            String tmp = System.getProperty(property);
+            if(tmp != null)
+                result = Boolean.parseBoolean(tmp);
+        }
+        catch(Throwable t) {
+        }
+        return result;
     }
 
     public static long getPropertyAsLong(String property, long defaultValue) {
-	long result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Long.parseLong(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        long result = defaultValue;
+        try{
+            String tmp = System.getProperty(property);
+            if(tmp != null)
+                result = Long.parseLong(tmp);
+        }
+        catch(Throwable t){
+        }
+        return result;
     }
 
     public static int getPropertyAsInteger(String property, int defaultValue) {
-	int result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Integer.parseInt(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        int result = defaultValue;
+        try{
+            String tmp = System.getProperty(property);
+            if(tmp != null)
+                result = Integer.parseInt(tmp);
+        }
+        catch(Throwable t){
+        }
+        return result;
     }
 }
