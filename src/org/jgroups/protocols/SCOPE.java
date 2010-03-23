@@ -8,7 +8,7 @@ import org.jgroups.stack.Protocol;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.2 2010/03/23 15:11:20 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.3 2010/03/23 16:09:53 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -145,7 +145,30 @@ public class SCOPE extends Protocol {
     }
 
     private void handleView(View view) {
-        
+        Vector<Address> members=view.getMembers();
+
+        // Remove all non members from seqno_table
+        Set<Address> keys=new HashSet<Address>(seqno_table.keySet());
+        keys.removeAll(members);
+        for(Address key: keys) {
+            seqno_table.remove(key);
+            if(log.isTraceEnabled())
+                log.trace("removed " + key + " from seqno_table");
+        }
+
+        // Remove all non members from receiver_table
+        keys=new HashSet<Address>(receiver_table.keySet());
+        keys.removeAll(members);
+        for(Address key: keys) {
+            ConcurrentMap<Short,AckReceiverWindow> val=receiver_table.remove(key);
+            if(val != null) {
+                Collection<AckReceiverWindow> values=val.values();
+                for(AckReceiverWindow win: values)
+                    win.reset();
+            }
+            if(log.isTraceEnabled())
+                log.trace("removed " + key + " from receiver_table");
+        }
     }
 
 
