@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.31 2010/03/05 10:26:21 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.32 2010/03/25 16:08:21 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -669,16 +669,10 @@ public class SizeTest {
     public static void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, false, (short)1000, null);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 322649, false, (short)1000);
         _testSize(hdr);
 
-        java.util.List<Address> l=new LinkedList<Address>();
-        l.add(new IpAddress(1111));
-        l.add(new IpAddress(2222));
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, l);
-        _testSize(hdr);
-
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356, null);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, (short)356);
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -691,7 +685,7 @@ public class SizeTest {
         ByteArrayInputStream input=new ByteArrayInputStream(buf);
         DataInputStream in=new DataInputStream(input);
 
-        hdr=new RequestCorrelator.MultiDestinationHeader();
+        hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
         Assert.assertEquals(322649, hdr.id);
@@ -700,7 +694,7 @@ public class SizeTest {
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
 
-        hdr=new RequestCorrelator.SingleDestinationHeader(RequestCorrelator.Header.RSP, 322649, true, (short)356);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, (short)356);
 
         output=new ByteArrayOutputStream();
         out=new DataOutputStream(output);
@@ -713,7 +707,7 @@ public class SizeTest {
         input=new ByteArrayInputStream(buf);
         in=new DataInputStream(input);
 
-        hdr=new RequestCorrelator.SingleDestinationHeader();
+        hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
         Assert.assertEquals(322649, hdr.id);
