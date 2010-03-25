@@ -1,25 +1,22 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.stack.AckReceiverWindow;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.4 2010/03/25 10:32:41 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.5 2010/03/25 17:03:30 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -27,26 +24,19 @@ public class SCOPE extends Protocol {
             "get removed anytime, so don't use it !")
     private int max_msg_batch_size=50000;
 
-    /** Used to grab the seqno for a message to be sent down the stack */
-    protected final ConcurrentMap<Address,ConcurrentMap<Short, AtomicLong>> seqno_table
-            =new ConcurrentHashMap<Address,ConcurrentMap<Short,AtomicLong>>();
-
     /** Used to find the correct AckReceiverWindow on message reception and deliver it in the right order */
-    protected final ConcurrentMap<Address,ConcurrentMap<Short,AckReceiverWindow>> receiver_table
-            =new ConcurrentHashMap<Address,ConcurrentMap<Short,AckReceiverWindow>>();
+    protected final ConcurrentMap<Address,ConcurrentMap<Short,MessageQueue>> receiver_table
+            =new ConcurrentHashMap<Address,ConcurrentMap<Short,MessageQueue>>();
 
-    @ManagedAttribute(description="Number of scopes in seqno_table")
-    public int getNumberOfSenderScopes() {
-        int retval=0;
-        for(ConcurrentMap<Short,AtomicLong> map: seqno_table.values())
-            retval+=map.keySet().size();
-        return retval;
-    }
+
+    protected final Executor thread_pool
+            =new ThreadPoolExecutor(2, 10, 5000, TimeUnit.MILLISECONDS, new SynchronousQueue()); // todo: replace with custom config'ed pool
+
 
     @ManagedAttribute(description="Number of scopes in receiver_table")
     public int getNumberOfReceiverScopes() {
         int retval=0;
-        for(ConcurrentMap<Short,AckReceiverWindow> map: receiver_table.values())
+        for(ConcurrentMap<Short,MessageQueue> map: receiver_table.values())
             retval+=map.keySet().size();
         return retval;
     }
@@ -54,45 +44,10 @@ public class SCOPE extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.SCOPED)) {
-
-                    ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
-                    if(hdr == null)
-                        throw new IllegalStateException("message doesn't have a ScopeHeader attached");
-
-                    // 1. Make the message OOB, so it will get delivered concurrently on the receiver side
-                    msg.setFlag(Message.OOB);
-
-                    // 2. Add a header with a scope and a scope-seqno
-                    Address dest=msg.getDest();
-                    if(dest == null)
-                        dest=Global.NULL_ADDR;
-                    ConcurrentMap<Short,AtomicLong> val=seqno_table.get(dest);
-                    if(val == null) {
-                        val=new ConcurrentHashMap<Short,AtomicLong>();
-                        ConcurrentMap<Short,AtomicLong> tmp=seqno_table.putIfAbsent(dest,val);
-                        if(tmp != null)
-                            val=tmp;
-                    }
-
-                    AtomicLong seqno_generator=val.get(hdr.scope);
-                    if(seqno_generator == null) {
-                        seqno_generator=new AtomicLong(0);
-                        AtomicLong old=val.putIfAbsent(hdr.scope, seqno_generator);
-                        if(old != null)
-                            seqno_generator=old;
-                    }
-                    hdr.seqno=seqno_generator.incrementAndGet();
-                }
-                break;
-
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
         }
-
         return down_prot.down(evt);
     }
 
@@ -102,53 +57,54 @@ public class SCOPE extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(!msg.isFlagSet(Message.SCOPED))
+
+                // we don't handle unscoped or OOB messages
+                if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.OOB))
                     break;
                 
                 ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
                 if(hdr == null)
                     throw new IllegalStateException("message doesn't have a ScopeHeader attached");
                 Address sender=msg.getSrc();
-                ConcurrentMap<Short,AckReceiverWindow> val=receiver_table.get(sender);
+                ConcurrentMap<Short,MessageQueue> val=receiver_table.get(sender);
                 if(val == null) {
-                    val=new ConcurrentHashMap<Short,AckReceiverWindow>();
-                    ConcurrentMap<Short, AckReceiverWindow> tmp=receiver_table.putIfAbsent(sender, val);
+                    val=new ConcurrentHashMap<Short,MessageQueue>();
+                    ConcurrentMap<Short, MessageQueue> tmp=receiver_table.putIfAbsent(sender, val);
                     if(tmp != null)
                         val=tmp;
                 }
-                AckReceiverWindow win=val.get(hdr.scope);
-                if(win == null) {
-                    win=new AckReceiverWindow(Global.DEFAULT_FIRST_UNICAST_SEQNO);
-                    AckReceiverWindow old=val.putIfAbsent(hdr.scope, win);
+                MessageQueue queue=val.get(hdr.scope);
+                if(queue == null) {
+                    queue=new MessageQueue();
+                    MessageQueue old=val.putIfAbsent(hdr.scope, queue);
                     if(old != null)
-                        win=old;
+                        queue=old;
                 }
-                win.add(hdr.seqno, msg);
+                queue.add(msg);
 
-                AtomicBoolean processing=win.getProcessing();
-                if(!processing.compareAndSet(false, true))
+                // System.out.println("queue for " + hdr.scope + ": " + queue);
+
+                if(!queue.acquire())
                     return null;
 
-                // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-                try {
-                    while(true) {
-                        List<Message> msgs=win.removeManyAsList(max_msg_batch_size);
-                        if(msgs == null || msgs.isEmpty())
-                            break;
+                QueueThread thread=new QueueThread(queue);
+                thread_pool.execute(thread);
 
-                        for(Message m: msgs) {
-                            try {
-                                up_prot.up(new Event(Event.MSG, m));
-                            }
-                            catch(Throwable t) {
-                                log.error("couldn't deliver message " + m, t);
-                            }
+                // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+                /*try {
+                    Message msg_to_deliver;
+                    while((msg_to_deliver=queue.remove()) != null) {
+                        try {
+                            up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                        }
+                        catch(Throwable t) {
+                            log.error("couldn't deliver message " + msg_to_deliver, t);
                         }
                     }
                 }
                 finally {
-                    processing.set(false);
-                }
+                    queue.release();
+                }*/
 
                 return null;
 
@@ -158,35 +114,75 @@ public class SCOPE extends Protocol {
                 break;
         }
 
-        return super.up(evt);
+        return up_prot.up(evt);
     }
 
     private void handleView(View view) {
         Vector<Address> members=view.getMembers();
 
-        // Remove all non members from seqno_table
-        Set<Address> keys=new HashSet<Address>(seqno_table.keySet());
-        keys.removeAll(members);
-        for(Address key: keys) {
-            if(key != Global.NULL_ADDR) {
-                seqno_table.remove(key);
-                if(log.isTraceEnabled())
-                    log.trace("removed " + key + " from seqno_table");
-            }
-        }
-
         // Remove all non members from receiver_table
-        keys=new HashSet<Address>(receiver_table.keySet());
+        Set<Address> keys=new HashSet<Address>(receiver_table.keySet());
         keys.removeAll(members);
         for(Address key: keys) {
-            ConcurrentMap<Short,AckReceiverWindow> val=receiver_table.remove(key);
+            ConcurrentMap<Short,MessageQueue> val=receiver_table.remove(key);
             if(val != null) {
-                Collection<AckReceiverWindow> values=val.values();
-                for(AckReceiverWindow win: values)
-                    win.reset();
+                Collection<MessageQueue> values=val.values();
+                for(MessageQueue queue: values)
+                    queue.clear();
             }
             if(log.isTraceEnabled())
                 log.trace("removed " + key + " from receiver_table");
+        }
+    }
+
+    protected static class MessageQueue {
+        private final Queue<Message> queue=new ConcurrentLinkedQueue<Message>();
+        private final AtomicBoolean  processing=new AtomicBoolean(false);
+
+        public void add(Message msg) {
+            queue.add(msg);
+        }
+
+        public Message remove() {
+            return queue.poll();
+        }
+
+        public void clear() {
+            queue.clear();
+        }
+
+        public boolean acquire() {
+            return processing.compareAndSet(false, true);
+        }
+
+        public boolean release() {
+            return processing.compareAndSet(true, false);
+        }
+    }
+
+    protected class QueueThread implements Runnable {
+        protected final MessageQueue queue;
+
+        public QueueThread(MessageQueue queue) {
+            this.queue=queue;
+        }
+
+        public void run() {
+            // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+            try {
+                Message msg_to_deliver;
+                while((msg_to_deliver=queue.remove()) != null) {
+                    try {
+                        up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                    }
+                    catch(Throwable t) {
+                        log.error("couldn't deliver message " + msg_to_deliver, t);
+                    }
+                }
+            }
+            finally {
+                queue.release();
+            }
         }
     }
 
@@ -198,39 +194,35 @@ public class SCOPE extends Protocol {
 
         byte  type;
         short scope=0;   // starts with 1
-        long  seqno=0;   // starts with 1
 
-        public static ScopeHeader createMessageHeader(short scope, long seqno) {
-            return new ScopeHeader(MSG, scope, seqno);
+        public static ScopeHeader createMessageHeader(short scope) {
+            return new ScopeHeader(MSG, scope);
         }
 
         public static ScopeHeader createExpireHeader(short scope) {
-            return new ScopeHeader(EXPIRE, scope, 0);
+            return new ScopeHeader(EXPIRE, scope);
         }
 
         public ScopeHeader() {
             
         }
 
-        private ScopeHeader(byte type, short scope, long seqno) {
+        private ScopeHeader(byte type, short scope) {
             this.type=type;
             this.scope=scope;
-            this.seqno=seqno;
         }
 
         public short getScope() {
             return scope;
         }
 
-        public long getSeqno() {
-            return seqno;
-        }
-
         public int size() {
             switch(type) {
-                case MSG:     return Global.BYTE_SIZE + Global.SHORT_SIZE + Global.LONG_SIZE;
-                case EXPIRE:  return Global.BYTE_SIZE + Global.SHORT_SIZE;
-                default:      throw new IllegalStateException("type has to be MSG or EXPIRE");
+                case MSG:
+                case EXPIRE:
+                    return Global.BYTE_SIZE + Global.SHORT_SIZE;
+                default:
+                    throw new IllegalStateException("type has to be MSG or EXPIRE");
             }
         }
 
@@ -239,7 +231,6 @@ public class SCOPE extends Protocol {
             switch(type) {
                 case MSG:
                     out.writeShort(scope);
-                    out.writeLong(seqno);
                     break;
                 case EXPIRE:
                     out.writeShort(scope);
@@ -254,7 +245,6 @@ public class SCOPE extends Protocol {
             switch(type) {
                 case MSG:
                     scope=in.readShort();
-                    seqno=in.readLong();
                     break;
                 case EXPIRE:
                     scope=in.readShort();
@@ -268,8 +258,6 @@ public class SCOPE extends Protocol {
             StringBuilder sb=new StringBuilder(typeToString(type));
             switch(type) {
                 case MSG:
-                    sb.append(": scope=").append(scope).append(", seqno=").append(seqno);
-                    break;
                 case EXPIRE:
                     sb.append(": scope=").append(scope);
                     break;
@@ -281,9 +269,9 @@ public class SCOPE extends Protocol {
 
         public static String typeToString(byte type) {
             switch(type) {
-                case MSG: return "MSG";
+                case MSG:    return "MSG";
                 case EXPIRE: return "EXPIRE";
-                default: return "n/a";
+                default:     return "n/a";
             }
         }
     }
