@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.63 2010/03/25 10:34:23 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.64 2010/03/25 16:08:03 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -245,7 +245,7 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new MultiDestinationHeader(Header.REQ, id, (coll != null), this.id, dest_mbrs);
+        Header hdr=new Header(Header.REQ, id, (coll != null), this.id);
         msg.putHeader(this.id, hdr);
 
         if(coll != null)
@@ -297,7 +297,7 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new SingleDestinationHeader(Header.REQ, id, (coll != null), this.id);
+        Header hdr=new Header(Header.REQ, id, (coll != null), this.id);
         msg.putHeader(this.id, hdr);
 
         if(coll != null)
@@ -448,28 +448,6 @@ public class RequestCorrelator {
             return false;
         }
 
-        if(hdr instanceof MultiDestinationHeader) {
-            // If the header contains a destination list, and we are not part of it, then we discard the
-            // request (was addressed to other members)
-            java.util.Collection dests=((MultiDestinationHeader)hdr).dest_mbrs;
-            if(dests != null && local_addr != null && !dests.contains(local_addr)) {
-                if(log.isTraceEnabled()) {
-                    log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
-                            append(" as we are not part of destination list (local_addr=").
-                            append(local_addr).append(", hdr=").append(hdr).append(')'));
-                }
-                return true; // don't pass this message further up
-            }
-        }
-        else if(hdr instanceof SingleDestinationHeader) {
-            ;
-        }
-        else {
-            log.error("header is not known: " + hdr.getClass());
-            return true; // don't pass this message further up
-        }
-
-
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -618,7 +596,7 @@ public class RequestCorrelator {
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
-        rsp_hdr=new SingleDestinationHeader(Header.RSP, hdr.id, false, this.id);
+        rsp_hdr=new Header(Header.RSP, hdr.id, false, this.id);
         rsp.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
@@ -650,7 +628,7 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static abstract class Header extends org.jgroups.Header {
+    public static class Header extends org.jgroups.Header {
         public static final byte REQ = 0;
         public static final byte RSP = 1;
 
@@ -736,63 +714,6 @@ public class RequestCorrelator {
         }
     }
 
-
-    public static final class SingleDestinationHeader extends Header {
-
-        public SingleDestinationHeader() {
-        }
-
-        public SingleDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id) {
-            super(type, id, rsp_expected, corr_id);
-        }
-    }
-    
-
-    public static final class MultiDestinationHeader extends Header {
-        /** Contains a list of members who should receive the request (others will drop). Ignored if null */
-        public java.util.Collection<? extends Address> dest_mbrs;
-
-        public MultiDestinationHeader() {
-        }
-
-        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Collection<Address> dest_mbrs) {
-            super(type, id, rsp_expected, corr_id);
-            this.dest_mbrs=dest_mbrs;
-        }
-
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-            out.writeObject(dest_mbrs);
-        }
-
-        @SuppressWarnings("unchecked")
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-            dest_mbrs=(java.util.List<Address>)in.readObject();
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            super.writeTo(out);
-            Util.writeAddresses(dest_mbrs, out);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            super.readFrom(in);
-            dest_mbrs=Util.readAddresses(in, LinkedList.class);
-        }
-
-        public int size() {
-            return (int)(super.size() + Util.size(dest_mbrs));
-        }
-
-        public String toString() {
-            String str=super.toString();
-            if(dest_mbrs != null)
-                str=str+ ", dest_mbrs=" + dest_mbrs;
-            return str;
-        }
-    }
 
 
 
