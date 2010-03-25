@@ -72,13 +72,6 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
         performTest(true, 3, true);
     }
 
-    public void test2InstancesMcastExcludeSelf() throws Exception {
-        performTest(false, 2, true);
-    }
-
-    public void test3InstancesMcastExcludeSelf() throws Exception {
-        performTest(false, 3, true);
-    }
 
 
     /**
