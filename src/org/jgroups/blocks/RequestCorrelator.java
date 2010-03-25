@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.62 2010/03/05 13:23:47 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.63 2010/03/25 10:34:23 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -94,6 +94,13 @@ public class RequestCorrelator {
 
     public RequestCorrelator(short id, Object transport, RequestHandler handler, Address local_addr) {
         this.id         = id;
+        this.transport  = transport;
+        this.local_addr = local_addr;
+        request_handler = handler;
+        start();
+    }
+
+    public RequestCorrelator(Object transport, RequestHandler handler, Address local_addr) {
         this.transport  = transport;
         this.local_addr = local_addr;
         request_handler = handler;
@@ -601,6 +608,7 @@ public class RequestCorrelator {
         }
 
         rsp=req.makeReply();
+        prepareResponse(rsp);
         rsp.setFlag(Message.OOB);
         rsp.setFlag(Message.DONT_BUNDLE);
         if(req.isFlagSet(Message.NO_FC))
@@ -629,6 +637,9 @@ public class RequestCorrelator {
         }
     }
 
+    protected void prepareResponse(Message rsp) {
+        ;
+    }
 
     // .......................................................................
 

@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
 
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.3 2010/03/23 16:09:53 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.4 2010/03/25 10:32:41 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -33,6 +34,22 @@ public class SCOPE extends Protocol {
     /** Used to find the correct AckReceiverWindow on message reception and deliver it in the right order */
     protected final ConcurrentMap<Address,ConcurrentMap<Short,AckReceiverWindow>> receiver_table
             =new ConcurrentHashMap<Address,ConcurrentMap<Short,AckReceiverWindow>>();
+
+    @ManagedAttribute(description="Number of scopes in seqno_table")
+    public int getNumberOfSenderScopes() {
+        int retval=0;
+        for(ConcurrentMap<Short,AtomicLong> map: seqno_table.values())
+            retval+=map.keySet().size();
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of scopes in receiver_table")
+    public int getNumberOfReceiverScopes() {
+        int retval=0;
+        for(ConcurrentMap<Short,AckReceiverWindow> map: receiver_table.values())
+            retval+=map.keySet().size();
+        return retval;
+    }
 
 
     public Object down(Event evt) {
@@ -101,7 +118,7 @@ public class SCOPE extends Protocol {
                 }
                 AckReceiverWindow win=val.get(hdr.scope);
                 if(win == null) {
-                    win=new AckReceiverWindow(1);
+                    win=new AckReceiverWindow(Global.DEFAULT_FIRST_UNICAST_SEQNO);
                     AckReceiverWindow old=val.putIfAbsent(hdr.scope, win);
                     if(old != null)
                         win=old;
@@ -151,9 +168,11 @@ public class SCOPE extends Protocol {
         Set<Address> keys=new HashSet<Address>(seqno_table.keySet());
         keys.removeAll(members);
         for(Address key: keys) {
-            seqno_table.remove(key);
-            if(log.isTraceEnabled())
-                log.trace("removed " + key + " from seqno_table");
+            if(key != Global.NULL_ADDR) {
+                seqno_table.remove(key);
+                if(log.isTraceEnabled())
+                    log.trace("removed " + key + " from seqno_table");
+            }
         }
 
         // Remove all non members from receiver_table

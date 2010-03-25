@@ -33,7 +33,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.100 2010/01/18 13:47:10 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.101 2010/03/25 10:33:57 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -224,6 +224,12 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
+
+    public UpHandler getProtocolAdapter() {
+        return prot_adapter;
+    }
+
+
     /** Returns a copy of members */
     protected Collection getMembers() {
         synchronized(members) {
@@ -261,15 +267,13 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    public final void start() {
+    public void start() {
         if(corr == null) {
             if(transport_adapter != null) {
-                corr=new RequestCorrelator("MsgDisp", transport_adapter,
-                                           this, local_addr);
+                corr=createRequestCorrelator(transport_adapter, this, local_addr);
             }
             else {
-                corr=new RequestCorrelator("MsgDisp", prot_adapter,
-                                           this, local_addr);
+                corr=createRequestCorrelator(prot_adapter, this, local_addr);
             }
         }
         correlatorStarted();
@@ -285,6 +289,10 @@ public class MessageDispatcher implements RequestHandler {
             TP transport=channel.getProtocolStack().getTransport();
             hardware_multicast_supported=transport.supportsMulticasting();
         }
+    }
+
+    protected RequestCorrelator createRequestCorrelator(Object transport, RequestHandler handler, Address local_addr) {
+        return new RequestCorrelator(transport, handler, local_addr);
     }
 
     protected void correlatorStarted() {

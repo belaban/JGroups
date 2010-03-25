@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.47 2010/01/17 12:11:54 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.48 2010/03/25 10:33:22 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -270,29 +270,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         msg.setFlag(options.getFlags());
 
-        //RspList retval=null;
-        //if(dests == null)
         RspList retval=super.castMessage(dests, msg, options);
-        /*else {
-            retval=new RspList();
-            for(Address dest: dests) {
-                Message copy=msg.copy(true);
-                copy.setDest(dest);
-                Rsp rsp=new Rsp(dest);
-                try {
-                    Object obj=super.sendMessage(copy, options);
-                    rsp.setValue(obj);
-                    rsp.setReceived(true);
-                }
-                catch(SuspectedException e) {
-                    rsp.setSuspected(true);
-                }
-                catch(TimeoutException e) {
-                }
-                retval.put(dest, rsp);
-            }
-        }*/
-
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
@@ -340,7 +318,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
-        msg.setFlag(options.getFlags());
+        
         NotifyingFuture<RspList>  retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
