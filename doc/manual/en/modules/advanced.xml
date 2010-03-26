@@ -985,6 +985,52 @@
             </para>
         </section>
 
+        <section id="Scopes">
+            <title>Scopes: concurrent message delivery for messages from the same sender</title>
+            <para>
+                In the previous paragraph, we showed how the concurrent stack delivers messages from different senders
+                concurrently. But all (non-OOB) messages from the same sender P are delivered in the order in which
+                P sent them. However, this is not good enough for certain types of applications.
+            </para>
+            <para>
+                Consider the case of an application which replicates HTTP sessions. If we have sessions X, Y and Z, then
+                updates to these sessions are delivered in the order in which there were performed, e.g. X1, X2, X3,
+                Y1, Z1, Z2, Z3, Y2, Y3, X4. This means that update Y1 has to wait until updates X1-3 have been delivered.
+                If these updates take some time, e.g. spent in lock acquisition or deserialization, then all subsequent
+                messages are delayed by the sum of the times taken by the messages ahead of them in the delivery order.
+            </para>
+            <para>
+                However, in most cases, updates to different web sessions should be completely unrelated, so they could
+                be delivered concurrently. For instance, a modification to session X should not have any effect on
+                session Y, therefore updates to X, Y and Z can be delivered concurrently.
+            </para>
+            <para>
+                One solution to this is out-of-band (OOB) messages (see next paragraph). However, OOB messages do not
+                guarantee ordering, so updates X1-3 could be delivered as X1, X3, X2. If this is not wanted, but
+                messages pertaining to a given web session should all be delivered concurrently between sessions, but
+                ordered <emphasis>within</emphasis> a given session, then we can resort to <emphasis>scoped messages</emphasis>.
+            </para>
+            <para>
+                Scoped messages apply only to <emphasis>regular</emphasis> (non-OOB) messages, and are delivered
+                concurrently between scopes, but ordered within a given scope. For example, if we used the sessions above
+                (e.g. the jsessionid) as scopes, then the delivery could be as follows ('->' means sequential, '||' means concurrent):
+                <screen>
+                    X1 -> X2 -> X3 -> X4 || Y1 -> Y2 -> Y3 || Z1 -> Z2 -> Z3
+                </screen>
+                This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
+                a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
+                X2, which is deliverd before X3 and so on.
+            </para>
+            <para>
+                Taking the above example, using scoped messages, update Y1 does <emphasis>not</emphasis> have to wait for
+                updates X1-3 to complete, but is processed immediately.
+            </para>
+            <para>
+                Scopes are implemented in a separate protocol called <xref linkend="SCOPE">SCOPE</xref>. This protocol
+                has to be placed somewhere above ordreing protocols like UNICAST or NAKACK (or SEQUENCER for that matter).
+            </para>
+        </section>
+
         <section>
             <title>Out-of-band messages</title>
             <para>
