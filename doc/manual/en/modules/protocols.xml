@@ -844,7 +844,7 @@
 
         <section>
             <title>COMPRESS</title>
-
+            ${COMPRESS}
             <para></para>
         </section>
 
@@ -907,6 +907,44 @@
             
             ${FLUSH}			
 
+        </section>
+
+        <section id="SCOPE">
+            <title>SCOPE</title>
+            <para>
+                As discussed in <xref linkend="Scopes">Scopes</xref>, the SCOPE protocol is used to deliver updates
+                to different scopes concurrently. It has to be placed somewhere above UNICAST and NAKACK.
+            </para>
+
+            <para>
+                SCOPE has a separate thread pool. The reason why the default thread pool from the transport wasn't used
+                is that the default thread pool has a different purpose. For example, it can use a queue to which all
+                incoming messages are added, which would defy the purpose of concurrent delivery in SCOPE. As a matter
+                of fact, using a queue would most likely delay messages get sent up into SCOPE !
+            </para>
+            <para>
+                Also, the default pool's rejection policy might not be "run", so the SCOPE implementation would have
+                to catch rejection exceptions and engage in a retry protocol, which is complex and wastes resources.
+            </para>
+
+            <para>
+                The configuration of the thread pool is shown below. If you expect <emphasis>concurrent</emphasis>
+                messages to N <emphasis>different</emphasis> scopes, then the max pool size would ideally be set
+                to N. However, in most cases, this is not necessary as (a) the messages might not be to different
+                scopes or (b) not all N scopes might get messages at the same time. So even if the max pool size is a
+                bit smaller, the cost of this is slight delays, in the sense that a message for scope Y might wait until
+                the thread processing message for scope X is available.
+            </para>
+
+            <para>
+                To remove unused scopes, an expiry policy is provided: expiration_time is the number of milliseconds
+                after which an idle scope is removed. An idle scope is a scope which hasn't seen any messages for
+                expiration_time milliseconds. The expiration_interval value defines the number of milliseconds at
+                which the expiry task runs. Setting both values to 0 disables expiration; it would then have to be
+                done manually (see <xref linkend="Scopes"/> for details).
+            </para>
+
+            ${SCOPE}
         </section>
     </section>
 

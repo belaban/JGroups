@@ -1026,9 +1026,28 @@
                 updates X1-3 to complete, but is processed immediately.
             </para>
             <para>
-                Scopes are implemented in a separate protocol called <xref linkend="SCOPE">SCOPE</xref>. This protocol
-                has to be placed somewhere above ordreing protocols like UNICAST or NAKACK (or SEQUENCER for that matter).
+                To set the scope of a message, use method Message.setScope(short).
             </para>
+            <para>
+                Scopes are implemented in a separate protocol called <xref linkend="SCOPE"/>. This protocol
+                has to be placed somewhere above ordering protocols like UNICAST or NAKACK (or SEQUENCER for that matter).
+            </para>
+
+            <note>
+                <title>Uniqueness of scopes</title>
+                <para>
+                    Note that scopes should be <emphasis>as unique as possible</emphasis>. Compare this to hashing: the fewer collisions
+                    there are, the better the concurrency will be. So, if for example, two web sessions pick the same
+                    scope, then updates to those sessions will be delivered in the order in which they were sent, and
+                    not concurrently. While this doesn't cause erraneous behavior, it defies the purpose of SCOPE.
+                </para>
+                <para>
+                    Also note that, if multicast and unicast messages have the same scope, they will be delivered
+                    in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
+                    to B with scope 25, then A's multicasts and unicasts will be delivered in order at B ! Again,
+                    this is correct, but since multicasts and unicasts are unrelated, might slow down things !
+                </para>
+            </note>
         </section>
 
         <section>
