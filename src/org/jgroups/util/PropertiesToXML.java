@@ -48,7 +48,7 @@ import org.w3c.dom.Element;
  * <p/>
  * There are 1 arg: the input file
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.8 2009/12/11 13:18:10 belaban Exp $
+ * @version $Id: PropertiesToXML.java,v 1.9 2010/03/26 16:15:14 belaban Exp $
  * 
  */
 public class PropertiesToXML {
@@ -119,7 +119,8 @@ public class PropertiesToXML {
         boolean isConcreteClass=(clazz.getModifiers() & Modifier.ABSTRACT) == 0;
         boolean isExperimental=clazz.isAnnotationPresent(Experimental.class);
         boolean isUnsupported=clazz.isAnnotationPresent(Unsupported.class);
-        if(isConcreteClass && !isExperimental && !isUnsupported) {
+        //if(isConcreteClass && !isExperimental && !isUnsupported) {
+        if(isConcreteClass && !isUnsupported) {
             Class<?> protocol=clazz;
             Document xmldoc=null;
             DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();

@@ -3,10 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 
 import java.io.DataInputStream;
@@ -21,10 +18,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.13 2010/03/26 16:00:49 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.14 2010/03/26 16:15:23 belaban Exp $
  * @since 2.10
  */
 @Experimental
+@MBean(description="Implementation of scopes (concurrent delivery of messages from the same sender)")
 public class SCOPE extends Protocol {
 
     protected int thread_pool_min_threads=2;
@@ -63,8 +61,9 @@ public class SCOPE extends Protocol {
 
     protected TimeScheduler timer;
 
-    
 
+    public SCOPE() {
+    }
 
     @ManagedAttribute(description="Number of scopes in queues")
     public int getNumberOfReceiverScopes() {
