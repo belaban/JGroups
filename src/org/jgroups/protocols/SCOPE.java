@@ -6,6 +6,7 @@ import org.jgroups.util.ThreadFactory;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 
 import java.io.DataInputStream;
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.10 2010/03/26 12:30:33 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.11 2010/03/26 13:49:19 belaban Exp $
+ * @since 2.10
  */
 public class SCOPE extends Protocol {
 
@@ -99,9 +101,33 @@ public class SCOPE extends Protocol {
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
 
-    @ManagedOperation(description="Removes all queues and scopes")
+    @Experimental
+    @ManagedOperation(description="Removes all queues and scopes - only used for testing, might get removed any time !")
     public void removeAllQueues() {
         queues.clear();
+    }
+
+    /**
+     * Multicasts an EXPIRE message to all members, and - on reception - each member removes the scope locally
+     * @param scope
+     */
+    @ManagedOperation(description="Expires the given scope around the cluster")
+    public void expire(short scope) {
+        ScopeHeader hdr=ScopeHeader.createExpireHeader(scope);
+        Message expiry_msg=new Message();
+        expiry_msg.putHeader(Global.SCOPE_ID, hdr);
+        expiry_msg.setFlag(Message.SCOPED);
+        down_prot.down(new Event(Event.MSG, expiry_msg));
+    }
+
+    public void removeScope(Address member, short scope) {
+        if(member == null) return;
+        ConcurrentMap<Short, MessageQueue> val=queues.get(member);
+        if(val != null) {
+            MessageQueue queue=val.remove(scope);
+            if(queue != null)
+                queue.clear();
+        }
     }
 
     @ManagedOperation(description="Dumps all scopes associated with members")
@@ -178,6 +204,11 @@ public class SCOPE extends Protocol {
                 ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
                 if(hdr == null)
                     throw new IllegalStateException("message doesn't have a ScopeHeader attached");
+
+                if(hdr.type == ScopeHeader.EXPIRE) {
+                    removeScope(msg.getSrc(), hdr.scope);
+                    return null;
+                }
 
                 MessageQueue queue=getOrCreateQueue(msg.getSrc(), hdr.scope);
                 queue.add(msg);
