@@ -5,6 +5,7 @@ import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 
 import java.io.DataInputStream;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.7 2010/03/26 09:15:01 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.8 2010/03/26 09:45:45 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -34,7 +35,7 @@ public class SCOPE extends Protocol {
 
 
     /** Used to find the correct AckReceiverWindow on message reception and deliver it in the right order */
-    protected final ConcurrentMap<Address,ConcurrentMap<Short,MessageQueue>> receiver_table
+    protected final ConcurrentMap<Address,ConcurrentMap<Short,MessageQueue>> queues
             =new ConcurrentHashMap<Address,ConcurrentMap<Short,MessageQueue>>();
 
 
@@ -49,13 +50,25 @@ public class SCOPE extends Protocol {
     protected ThreadFactory thread_factory;
 
 
-    @ManagedAttribute(description="Number of scopes in receiver_table")
+    @ManagedAttribute(description="Number of scopes in queues")
     public int getNumberOfReceiverScopes() {
         int retval=0;
-        for(ConcurrentMap<Short,MessageQueue> map: receiver_table.values())
+        for(ConcurrentMap<Short,MessageQueue> map: queues.values())
             retval+=map.keySet().size();
         return retval;
     }
+
+    @ManagedAttribute(description="Total number of messages in all queues")
+    public int getNumberOfMessages() {
+        int retval=0;
+        for(ConcurrentMap<Short,MessageQueue> map: queues.values()) {
+            for(MessageQueue queue: map.values())
+                retval+=queue.size();
+        }
+
+        return retval;
+    }
+
 
     @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
     public void setThreadPoolMinThreads(int size) {
@@ -86,6 +99,20 @@ public class SCOPE extends Protocol {
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
 
+    @ManagedOperation(description="Removes all queues and scopes")
+    public void removeAllQueues() {
+        queues.clear();
+    }
+
+    @ManagedOperation(description="Dumps all scopes associated with members")
+    public String dumpScopes() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,ConcurrentMap<Short,MessageQueue>> entry: queues.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(new TreeSet<Short>(entry.getValue().keySet())).append("\n");
+        }
+        return sb.toString();
+    }
+
 
     public void init() throws Exception {
         super.init();
@@ -103,7 +130,7 @@ public class SCOPE extends Protocol {
     public void stop() {
         super.stop();
         shutdownThreadPool(thread_pool);
-        for(ConcurrentMap<Short,MessageQueue> map: receiver_table.values()) {
+        for(ConcurrentMap<Short,MessageQueue> map: queues.values()) {
             for(MessageQueue queue: map.values())
                 queue.release(); // to prevent a thread killed on shutdown() from holding on to the lock
         }
@@ -165,10 +192,10 @@ public class SCOPE extends Protocol {
 
 
     protected MessageQueue getOrCreateQueue(Address sender, short scope) {
-        ConcurrentMap<Short,MessageQueue> val=receiver_table.get(sender);
+        ConcurrentMap<Short,MessageQueue> val=queues.get(sender);
         if(val == null) {
             val=new ConcurrentHashMap<Short,MessageQueue>();
-            ConcurrentMap<Short, MessageQueue> tmp=receiver_table.putIfAbsent(sender, val);
+            ConcurrentMap<Short, MessageQueue> tmp=queues.putIfAbsent(sender, val);
             if(tmp != null)
                 val=tmp;
         }
@@ -187,7 +214,7 @@ public class SCOPE extends Protocol {
                                                       final org.jgroups.util.ThreadFactory factory) {
 
         ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
-                                                                    TimeUnit.MILLISECONDS, new SynchronousQueue());
+                                                                    TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
         pool.setThreadFactory(factory);
         pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         return pool;
@@ -222,18 +249,21 @@ public class SCOPE extends Protocol {
         Vector<Address> members=view.getMembers();
 
         // Remove all non members from receiver_table
-        Set<Address> keys=new HashSet<Address>(receiver_table.keySet());
+        Set<Address> keys=new HashSet<Address>(queues.keySet());
         keys.removeAll(members);
-        for(Address key: keys) {
-            ConcurrentMap<Short,MessageQueue> val=receiver_table.remove(key);
-            if(val != null) {
-                Collection<MessageQueue> values=val.values();
-                for(MessageQueue queue: values)
-                    queue.clear();
-            }
-            if(log.isTraceEnabled())
-                log.trace("removed " + key + " from receiver_table");
+        for(Address key: keys)
+            clearQueue(key);
+    }
+
+    public void clearQueue(Address member) {
+        ConcurrentMap<Short,MessageQueue> val=queues.remove(member);
+        if(val != null) {
+            Collection<MessageQueue> values=val.values();
+            for(MessageQueue queue: values)
+                queue.clear();
         }
+        if(log.isTraceEnabled())
+            log.trace("removed " + member + " from receiver_table");
     }
 
 
@@ -241,6 +271,14 @@ public class SCOPE extends Protocol {
     protected static class MessageQueue {
         private final Queue<Message> queue=new ConcurrentLinkedQueue<Message>();
         private final AtomicBoolean  processing=new AtomicBoolean(false);
+
+        public boolean acquire() {
+            return processing.compareAndSet(false, true);
+        }
+
+        public boolean release() {
+            return processing.compareAndSet(true, false);
+        }
 
         public void add(Message msg) {
             queue.add(msg);
@@ -254,15 +292,12 @@ public class SCOPE extends Protocol {
             queue.clear();
         }
 
-        public boolean acquire() {
-            return processing.compareAndSet(false, true);
-        }
-
-        public boolean release() {
-            return processing.compareAndSet(true, false);
+        public int size() {
+            return queue.size();
         }
     }
 
+    
     protected class QueueThread implements Runnable {
         protected final MessageQueue queue;
 
