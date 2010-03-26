@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.6 2010/03/26 08:54:03 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.7 2010/03/26 09:15:01 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
@@ -103,6 +103,10 @@ public class SCOPE extends Protocol {
     public void stop() {
         super.stop();
         shutdownThreadPool(thread_pool);
+        for(ConcurrentMap<Short,MessageQueue> map: receiver_table.values()) {
+            for(MessageQueue queue: map.values())
+                queue.release(); // to prevent a thread killed on shutdown() from holding on to the lock
+        }
     }
 
     public Object down(Event evt) {
@@ -140,24 +144,9 @@ public class SCOPE extends Protocol {
                 ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
                 if(hdr == null)
                     throw new IllegalStateException("message doesn't have a ScopeHeader attached");
-                Address sender=msg.getSrc();
-                ConcurrentMap<Short,MessageQueue> val=receiver_table.get(sender);
-                if(val == null) {
-                    val=new ConcurrentHashMap<Short,MessageQueue>();
-                    ConcurrentMap<Short, MessageQueue> tmp=receiver_table.putIfAbsent(sender, val);
-                    if(tmp != null)
-                        val=tmp;
-                }
-                MessageQueue queue=val.get(hdr.scope);
-                if(queue == null) {
-                    queue=new MessageQueue();
-                    MessageQueue old=val.putIfAbsent(hdr.scope, queue);
-                    if(old != null)
-                        queue=old;
-                }
-                queue.add(msg);
 
-                // System.out.println("queue for " + hdr.scope + ": " + queue);
+                MessageQueue queue=getOrCreateQueue(msg.getSrc(), hdr.scope);
+                queue.add(msg);
 
                 if(!queue.acquire())
                     return null;
@@ -172,6 +161,26 @@ public class SCOPE extends Protocol {
         }
 
         return up_prot.up(evt);
+    }
+
+
+    protected MessageQueue getOrCreateQueue(Address sender, short scope) {
+        ConcurrentMap<Short,MessageQueue> val=receiver_table.get(sender);
+        if(val == null) {
+            val=new ConcurrentHashMap<Short,MessageQueue>();
+            ConcurrentMap<Short, MessageQueue> tmp=receiver_table.putIfAbsent(sender, val);
+            if(tmp != null)
+                val=tmp;
+        }
+        MessageQueue queue=val.get(scope);
+        if(queue == null) {
+            queue=new MessageQueue();
+            MessageQueue old=val.putIfAbsent(scope, queue);
+            if(old != null)
+                queue=old;
+        }
+
+        return queue;
     }
 
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
@@ -262,7 +271,7 @@ public class SCOPE extends Protocol {
         }
 
         public void run() {
-            // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
+            // try to remove as many messages as possible from the queue and pass them up
             try {
                 Message msg_to_deliver;
                 while((msg_to_deliver=queue.remove()) != null) {
@@ -298,7 +307,6 @@ public class SCOPE extends Protocol {
         }
 
         public ScopeHeader() {
-            
         }
 
         private ScopeHeader(byte type, short scope) {
@@ -324,8 +332,6 @@ public class SCOPE extends Protocol {
             out.writeByte(type);
             switch(type) {
                 case MSG:
-                    out.writeShort(scope);
-                    break;
                 case EXPIRE:
                     out.writeShort(scope);
                     break;
@@ -338,8 +344,6 @@ public class SCOPE extends Protocol {
             type=in.readByte();
             switch(type) {
                 case MSG:
-                    scope=in.readShort();
-                    break;
                 case EXPIRE:
                     scope=in.readShort();
                     break;
