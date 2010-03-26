@@ -21,9 +21,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.12 2010/03/26 14:43:17 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.13 2010/03/26 16:00:49 belaban Exp $
  * @since 2.10
  */
+@Experimental
 public class SCOPE extends Protocol {
 
     protected int thread_pool_min_threads=2;
