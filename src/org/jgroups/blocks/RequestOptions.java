@@ -5,7 +5,7 @@ import org.jgroups.util.Util;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.7 2010/01/21 13:31:56 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.8 2010/03/26 12:47:39 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
@@ -19,6 +19,9 @@ public class RequestOptions {
 
     /** Allows for filtering of responses */
     private RspFilter rsp_filter;
+
+    /** The scope of a message, allows for concurrent delivery of messages from the same sender */
+    private short     scope;
 
     /** The flags set in the message in which a request is sent */
     private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
@@ -75,6 +78,15 @@ public class RequestOptions {
         return this;
     }
 
+    public short getScope() {
+        return scope;
+    }
+
+    public RequestOptions setScope(short scope) {
+        this.scope=scope;
+        return this;
+    }
+
     public RspFilter getRspFilter() {
         return rsp_filter;
     }
@@ -106,6 +118,8 @@ public class RequestOptions {
         if(use_anycasting)
             sb.append(", anycasting=true");
         sb.append(", flags=" + Message.flagsToString(flags));
+        if(scope > 0)
+            sb.append(", scope=" + scope);
         return sb.toString();
     }
 }
