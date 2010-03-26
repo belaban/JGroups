@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.48 2010/03/25 10:33:22 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.49 2010/03/26 12:48:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -269,6 +269,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((byte[])buf);
 
         msg.setFlag(options.getFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
 
         RspList retval=super.castMessage(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
@@ -318,6 +320,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
         
         NotifyingFuture<RspList>  retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
@@ -373,6 +377,9 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
+
         Object retval=super.sendMessage(msg, options);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
         if(retval instanceof Throwable)
@@ -403,6 +410,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
         msg.setFlag(options.getFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
         return super.sendMessageWithFuture(msg, options);
     }
 
