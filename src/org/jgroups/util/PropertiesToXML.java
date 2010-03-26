@@ -48,7 +48,7 @@ import org.w3c.dom.Element;
  * <p/>
  * There are 1 arg: the input file
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.9 2010/03/26 16:15:14 belaban Exp $
+ * @version $Id: PropertiesToXML.java,v 1.10 2010/03/26 16:20:51 belaban Exp $
  * 
  */
 public class PropertiesToXML {
@@ -127,7 +127,7 @@ public class PropertiesToXML {
             DocumentBuilder builder=factory.newDocumentBuilder();
             DOMImplementation impl=builder.getDOMImplementation();
             xmldoc=impl.createDocument(null, "table", null);
-            Element tbody=createXMLTree(xmldoc);                       
+            Element tbody=createXMLTree(xmldoc, isExperimental);
             Map<String,String> nameToDescription = new TreeMap<String,String>();
             
             //iterate fields
@@ -223,11 +223,14 @@ public class PropertiesToXML {
 	}
     
     
-    private static Element createXMLTree(Document xmldoc) throws ParserConfigurationException {
+    private static Element createXMLTree(Document xmldoc, boolean experimental) throws ParserConfigurationException {
 
         Element root=xmldoc.getDocumentElement();
         Element title=xmldoc.createElement("title");
-        title.setTextContent("Properties");
+        if(experimental)
+            title.setTextContent("Properties (experimental)");
+        else
+            title.setTextContent("Properties");
         root.appendChild(title);
 
         Element tgroup=xmldoc.createElement("tgroup");
