@@ -1,6 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -9,6 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,21 +19,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.5 2010/03/25 17:03:30 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.6 2010/03/26 08:54:03 belaban Exp $
  */
 public class SCOPE extends Protocol {
 
-    @Property(description="Max number of messages to be removed from the AckReceiverWindow. This property might " +
-            "get removed anytime, so don't use it !")
-    private int max_msg_batch_size=50000;
+    protected int thread_pool_min_threads=2;
+
+    protected int thread_pool_max_threads=10;
+
+    protected long thread_pool_keep_alive_time=30000;
+
+    @Property(description="Thread naming pattern for threads in this channel. Default is cl")
+    protected String thread_naming_pattern="cl";
+
 
     /** Used to find the correct AckReceiverWindow on message reception and deliver it in the right order */
     protected final ConcurrentMap<Address,ConcurrentMap<Short,MessageQueue>> receiver_table
             =new ConcurrentHashMap<Address,ConcurrentMap<Short,MessageQueue>>();
 
 
-    protected final Executor thread_pool
-            =new ThreadPoolExecutor(2, 10, 5000, TimeUnit.MILLISECONDS, new SynchronousQueue()); // todo: replace with custom config'ed pool
+    protected String cluster_name;
+
+    protected Address local_addr;
+
+    protected Executor thread_pool;
+
+    protected ThreadGroup thread_group;
+    
+    protected ThreadFactory thread_factory;
 
 
     @ManagedAttribute(description="Number of scopes in receiver_table")
@@ -41,11 +57,70 @@ public class SCOPE extends Protocol {
         return retval;
     }
 
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
+    public void setThreadPoolMinThreads(int size) {
+        thread_pool_min_threads=size;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
+    }
+
+    public int getThreadPoolMinThreads() {return thread_pool_min_threads;}
+
+
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the regular thread pool")
+    public void setThreadPoolMaxThreads(int size) {
+        thread_pool_max_threads=size;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
+    }
+
+    public int getThreadPoolMaxThreads() {return thread_pool_max_threads;}
+
+
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
+    public void setThreadPoolKeepAliveTime(long time) {
+        thread_pool_keep_alive_time=time;
+        if(thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+    }
+
+    public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
+
+
+    public void init() throws Exception {
+        super.init();
+        thread_group=new ThreadGroup(getTransport().getPoolThreadGroup(), "SCOPE Threads");
+        thread_factory=new DefaultThreadFactory(thread_group, "SCOPE", false, true);
+        setInAllThreadFactories(cluster_name, local_addr, thread_naming_pattern);
+    }
+
+    public void start() throws Exception {
+        super.start();
+        thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads,
+                                     thread_pool_keep_alive_time, thread_factory);
+    }
+
+    public void stop() {
+        super.stop();
+        shutdownThreadPool(thread_pool);
+    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
+                break;
+
+            case Event.CONNECT:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                cluster_name=(String)evt.getArg();
+                setInAllThreadFactories(cluster_name, local_addr, thread_naming_pattern);
                 break;
         }
         return down_prot.down(evt);
@@ -89,25 +164,7 @@ public class SCOPE extends Protocol {
 
                 QueueThread thread=new QueueThread(queue);
                 thread_pool.execute(thread);
-
-                // try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
-                /*try {
-                    Message msg_to_deliver;
-                    while((msg_to_deliver=queue.remove()) != null) {
-                        try {
-                            up_prot.up(new Event(Event.MSG, msg_to_deliver));
-                        }
-                        catch(Throwable t) {
-                            log.error("couldn't deliver message " + msg_to_deliver, t);
-                        }
-                    }
-                }
-                finally {
-                    queue.release();
-                }*/
-
                 return null;
-
             
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
@@ -115,6 +172,41 @@ public class SCOPE extends Protocol {
         }
 
         return up_prot.up(evt);
+    }
+
+    protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
+                                                      final org.jgroups.util.ThreadFactory factory) {
+
+        ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
+                                                                    TimeUnit.MILLISECONDS, new SynchronousQueue());
+        pool.setThreadFactory(factory);
+        pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        return pool;
+    }
+
+    protected static void shutdownThreadPool(Executor thread_pool) {
+        if(thread_pool instanceof ExecutorService) {
+            ExecutorService service=(ExecutorService)thread_pool;
+            service.shutdownNow();
+            try {
+                service.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
+            }
+            catch(InterruptedException e) {
+            }
+        }
+    }
+
+    private void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
+        ThreadFactory[] factories= {thread_factory};
+
+        for(ThreadFactory factory:factories) {
+            if(pattern != null)
+                factory.setPattern(pattern);
+            if(cluster_name != null)
+                factory.setClusterName(cluster_name);
+            if(local_address != null)
+                factory.setAddress(local_address.toString());
+        }
     }
 
     private void handleView(View view) {
@@ -134,6 +226,8 @@ public class SCOPE extends Protocol {
                 log.trace("removed " + key + " from receiver_table");
         }
     }
+
+
 
     protected static class MessageQueue {
         private final Queue<Message> queue=new ConcurrentLinkedQueue<Message>();
