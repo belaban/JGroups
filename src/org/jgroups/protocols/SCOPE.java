@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.11 2010/03/26 13:49:19 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.12 2010/03/26 14:43:17 belaban Exp $
  * @since 2.10
  */
 public class SCOPE extends Protocol {
@@ -34,6 +34,15 @@ public class SCOPE extends Protocol {
 
     @Property(description="Thread naming pattern for threads in this channel. Default is cl")
     protected String thread_naming_pattern="cl";
+
+    @Property(description="Time in milliseconds after which an expired scope will get removed. An expired scope is one " +
+            "to which no messages have been added in max_expiration_time milliseconds. 0 never expires scopes")
+    protected long expiration_time=30000;
+
+    @Property(description="Interval in milliseconds at which the expiry task tries to remove expired scopes")
+    protected long expiration_interval=60000;
+
+    protected Future<?> expiry_task=null;
 
 
     /** Used to find the correct AckReceiverWindow on message reception and deliver it in the right order */
@@ -50,6 +59,10 @@ public class SCOPE extends Protocol {
     protected ThreadGroup thread_group;
     
     protected ThreadFactory thread_factory;
+
+    protected TimeScheduler timer;
+
+    
 
 
     @ManagedAttribute(description="Number of scopes in queues")
@@ -149,19 +162,28 @@ public class SCOPE extends Protocol {
 
     public void init() throws Exception {
         super.init();
+        timer=getTransport().getTimer();
         thread_group=new ThreadGroup(getTransport().getPoolThreadGroup(), "SCOPE Threads");
         thread_factory=new DefaultThreadFactory(thread_group, "SCOPE", false, true);
         setInAllThreadFactories(cluster_name, local_addr, thread_naming_pattern);
+
+        // sanity check for expiration
+        if((expiration_interval > 0 && expiration_time <= 0) || (expiration_interval <= 0 && expiration_time > 0))
+            throw new IllegalArgumentException("expiration_interval (" + expiration_interval + ") and expiration_time (" +
+                    expiration_time + ") don't match");
     }
 
     public void start() throws Exception {
         super.start();
         thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads,
                                      thread_pool_keep_alive_time, thread_factory);
+        if(expiration_interval > 0 && expiration_time > 0)
+            startExpiryTask();
     }
 
     public void stop() {
         super.stop();
+        stopExpiryTask();
         shutdownThreadPool(thread_pool);
         for(ConcurrentMap<Short,MessageQueue> map: queues.values()) {
             for(MessageQueue queue: map.values())
@@ -248,6 +270,19 @@ public class SCOPE extends Protocol {
         return queue;
     }
 
+
+    protected synchronized void startExpiryTask() {
+        if(expiry_task == null || expiry_task.isDone())
+            expiry_task=timer.scheduleWithFixedDelay(new ExpiryTask(), expiration_interval, expiration_interval, TimeUnit.MILLISECONDS);
+    }
+
+    protected synchronized void stopExpiryTask() {
+        if(expiry_task != null) {
+            expiry_task.cancel(true);
+            expiry_task=null;
+        }
+    }
+
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
                                                       final org.jgroups.util.ThreadFactory factory) {
 
@@ -309,13 +344,17 @@ public class SCOPE extends Protocol {
     protected static class MessageQueue {
         private final Queue<Message> queue=new ConcurrentLinkedQueue<Message>();
         private final AtomicBoolean  processing=new AtomicBoolean(false);
+        private long                 last_update=System.currentTimeMillis();
 
         public boolean acquire() {
             return processing.compareAndSet(false, true);
         }
 
         public boolean release() {
-            return processing.compareAndSet(true, false);
+            boolean result=processing.compareAndSet(true, false);
+            if(result)
+                last_update=System.currentTimeMillis();
+            return result;
         }
 
         public void add(Message msg) {
@@ -332,6 +371,10 @@ public class SCOPE extends Protocol {
 
         public int size() {
             return queue.size();
+        }
+
+        public long getLastUpdate() {
+            return last_update;
         }
     }
 
@@ -390,6 +433,27 @@ public class SCOPE extends Protocol {
         }
     }
 
+
+    protected class ExpiryTask implements Runnable {
+
+        public void run() {
+            long current_time=System.currentTimeMillis();
+            for(Map.Entry<Address,ConcurrentMap<Short,MessageQueue>> entry: queues.entrySet()) {
+                ConcurrentMap<Short,MessageQueue> map=entry.getValue();
+                for(Iterator<Map.Entry<Short,MessageQueue>> it=map.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Short,MessageQueue> entry2=it.next();
+                    Short scope=entry2.getKey();
+                    MessageQueue queue=entry2.getValue();
+                    long diff=current_time - queue.getLastUpdate();
+                    if(diff >= expiration_time && queue.size() == 0) {
+                        it.remove();
+                        if(log.isTraceEnabled())
+                            log.trace("expired scope " + entry.getKey() + "::" + scope + " (" + diff + " ms old)");
+                    }
+                }
+            }
+        }
+    }
 
 
     public static class ScopeHeader extends Header {
