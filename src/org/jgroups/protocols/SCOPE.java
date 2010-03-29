@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Implements https://jira.jboss.org/jira/browse/JGRP-822, which allows for concurrent delivery of messages from the
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
- * @version $Id: SCOPE.java,v 1.14 2010/03/26 16:15:23 belaban Exp $
+ * @version $Id: SCOPE.java,v 1.15 2010/03/29 06:03:08 belaban Exp $
  * @since 2.10
  */
 @Experimental
@@ -437,6 +437,15 @@ public class SCOPE extends Protocol {
     protected class ExpiryTask implements Runnable {
 
         public void run() {
+            try {
+                _run();
+            }
+            catch(Throwable t) {
+                log.error("failed expiring old scopes", t);
+            }
+        }
+
+        protected void _run() {
             long current_time=System.currentTimeMillis();
             for(Map.Entry<Address,ConcurrentMap<Short,MessageQueue>> entry: queues.entrySet()) {
                 ConcurrentMap<Short,MessageQueue> map=entry.getValue();
