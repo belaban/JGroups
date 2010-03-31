@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.299 2010/03/26 08:53:54 belaban Exp $
+ * @version $Id: TP.java,v 1.300 2010/03/31 11:15:20 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -102,6 +102,12 @@ public abstract class TP extends Protocol {
     @Property
     @Deprecated
     int marshaller_pool_size=0;
+
+    @Property(description="Max number of elements in the logical address cache before eviction starts")
+    protected int logical_addr_cache_max_size=20;
+
+    @Property(description="Time (in ms) after which entries in the logical address cache marked as removable are removed")
+    protected long logical_addr_cache_expiration=120000;
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
@@ -422,7 +428,10 @@ public abstract class TP extends Protocol {
      * <br/>
      * The keys are logical addresses, the values physical addresses
      */
-    protected final LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(20,120000);
+    protected final LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache
+            =new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
+
+    Future<?> logical_addr_cache_reaper=null;
 
     private static final LazyRemovalCache.Printable<Address,PhysicalAddress> print_function=new LazyRemovalCache.Printable<Address,PhysicalAddress>() {
         public java.lang.String print(final Address logical_addr, final PhysicalAddress physical_addr) {
@@ -667,6 +676,10 @@ public abstract class TP extends Protocol {
         return logical_addr_cache.printCache(print_function);
     }
 
+    @ManagedOperation(description="Evicts elements in the logical address cache which have expired")
+    public void evictLogicalAddressCache() {
+        logical_addr_cache.removeMarkedElements(); 
+    }
 
     /**
      * Send to all members in the group. UDP would use an IP multicast message, whereas TCP would send N
@@ -757,11 +770,27 @@ public abstract class TP extends Protocol {
             m.put("bind_addr", bind_addr);
             up(new Event(Event.CONFIG, m));
         }
+
+        if(logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone()) {
+            if(logical_addr_cache_expiration <= 0)
+                throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
+            logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    logical_addr_cache.removeMarkedElements();
+                }
+            }, logical_addr_cache_expiration, logical_addr_cache_expiration, TimeUnit.MILLISECONDS);
+        }
     }
 
 
     public void destroy() {
         super.destroy();
+
+        if(logical_addr_cache_reaper != null) {
+            logical_addr_cache_reaper.cancel(false);
+            logical_addr_cache_reaper=null;
+        }
+
         if(timer != null) {
             try {
                 timer.stop();
@@ -1006,7 +1035,7 @@ public abstract class TP extends Protocol {
             if((oob_flag & OOB) == OOB) {
                 num_oob_msgs_received++;
                 dispatchToThreadPool(oob_thread_pool, sender, data, offset, length);
-            }
+                }
             else {
                 num_incoming_msgs_received++;
                 dispatchToThreadPool(thread_pool, sender, data, offset, length);
@@ -1166,7 +1195,7 @@ public abstract class TP extends Protocol {
         }
 
         dos.writeBoolean(false); // terminating presence - no more messages will follow
-    }
+        }
 
 
 
