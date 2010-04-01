@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.10.4.2 2008/01/22 10:01:20 belaban Exp $
+// $Id: PingRsp.java,v 1.10.4.3 2010/04/01 11:37:32 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,8 +40,6 @@ public class PingRsp implements Serializable, Streamable {
         int retval=0;
         if(own_addr != null)
             retval+=own_addr.hashCode();
-        if(coord_addr != null)
-            retval+=coord_addr.hashCode();
         if(retval == 0)
             retval=super.hashCode();
         return retval;
