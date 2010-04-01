@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.71 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: Discovery.java,v 1.72 2010/04/01 11:32:09 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -512,7 +512,7 @@ public abstract class Discovery extends Protocol {
 
     protected static class Responses {
         final Promise<JoinRsp>  promise;
-        final Set<PingData>     ping_rsps=new HashSet<PingData>();
+        final List<PingData>    ping_rsps=new ArrayList<PingData>();
         final int               num_expected_rsps;
         final int               num_expected_srv_rsps;
         final boolean           break_on_coord_rsp;
@@ -535,8 +535,21 @@ public abstract class Discovery extends Protocol {
             try {
                 if(overwrite)
                     ping_rsps.remove(rsp);
-                if(ping_rsps.add(rsp)) { // only signal if the response was added
+
+                // https://jira.jboss.org/jira/browse/JGRP-1179
+                int index=ping_rsps.indexOf(rsp);
+                if(index == -1) {
+                    ping_rsps.add(rsp);
                     promise.getCond().signalAll();
+                }
+                else if(rsp.isCoord()) {
+                    PingData pr=ping_rsps.get(index);
+
+                    // Check if the already existing element is not server
+                    if(!pr.isCoord()) {
+                        ping_rsps.set(index, rsp);
+                        promise.getCond().signalAll();
+                    }
                 }
             }
             finally {
