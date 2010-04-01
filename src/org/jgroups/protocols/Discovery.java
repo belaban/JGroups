@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.9 2009/09/29 04:39:36 belaban Exp $
+ * @version $Id: Discovery.java,v 1.32.2.10 2010/04/01 11:40:21 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -449,10 +449,22 @@ public abstract class Discovery extends Protocol {
                 return;
             promise.getLock().lock();
             try {
-                if(!ping_rsps.contains(rsp)) {
+                // https://jira.jboss.org/jira/browse/JGRP-1179
+                int index=ping_rsps.indexOf(rsp);
+                if(index == -1) {
                     ping_rsps.add(rsp);
-                        promise.getCond().signalAll();
+                    promise.getCond().signalAll();
                 }
+                else if(rsp.isCoord()) {
+                    PingRsp pr=ping_rsps.get(index);
+
+                    // Check if the already existing element is not server
+                    if(!pr.isCoord()) {
+                        ping_rsps.set(index, rsp);
+                        promise.getCond().signalAll();
+                    }
+                }
+
             }
             finally {
                 promise.getLock().unlock();
