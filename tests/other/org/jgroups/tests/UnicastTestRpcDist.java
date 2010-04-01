@@ -450,7 +450,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                 flags=Util.setFlag(flags, Message.NO_FC);
             }
             get_options.setFlags(flags);
+            // get_options.setScope((short)Util.random(Short.MAX_VALUE));
             put_options.setFlags(flags);
+            // put_options.setScope((short)Util.random(Short.MAX_VALUE));
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
