@@ -5,6 +5,8 @@ import org.jgroups.JChannelFactory;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
@@ -16,7 +18,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: JmxConfigurator.java,v 1.17 2009/10/20 13:05:20 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.18 2010/04/05 15:24:56 vlada Exp $
  */
 public class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
@@ -117,11 +119,43 @@ public class JmxConfigurator {
         internalUnregister(obj, server, name);
     }
 
+    @Deprecated
     public DynamicMBean asDynamicMBean(JChannel ch) {
         return new ResourceDMBean(ch);
     }
 
+    @Deprecated
     public DynamicMBean asDynamicMBean(Protocol p) {
+        return new ResourceDMBean(p);
+    }
+    
+    
+    
+    /**
+     * Wrap JChannel with DynamicMBean interface. All annotated attributes and methods will be
+     * exposed through DynamicMBean API.
+     * 
+     * @see ManagedAttribute
+     * @see ManagedOperation
+     * 
+     * @param ch channel to be wrapped
+     * @return Channel ch wrapped as a DynamicBean 
+     */
+    public static DynamicMBean wrap(JChannel ch) {
+        return new ResourceDMBean(ch);
+    }
+
+    /**
+     * Wrap Protocol with DynamicMBean interface. All annotated attributes and methods will be
+     * exposed through DynamicMBean API.
+     * 
+     * @see ManagedAttribute
+     * @see ManagedOperation
+     * 
+     * @param p protocol to be wrapped
+     * @return Protocol p as a DynamicMBean
+     */
+    public static DynamicMBean wrap(Protocol p) {
         return new ResourceDMBean(p);
     }
 
