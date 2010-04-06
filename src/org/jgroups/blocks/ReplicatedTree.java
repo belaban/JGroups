@@ -1,15 +1,13 @@
-// $Id: ReplicatedTree.java,v 1.21 2009/06/17 16:29:00 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.22 2010/04/06 07:56:24 belaban Exp $
 
 package org.jgroups.blocks;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -26,17 +24,14 @@ import java.util.*;
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
 @Unsupported
-public class ReplicatedTree implements Runnable, MessageListener, MembershipListener {
+public class ReplicatedTree extends ReceiverAdapter {
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
-    final Vector listeners=new Vector();
-    final Queue request_queue=new Queue();
-    Thread request_handler=null;
+    final Vector<ReplicatedTreeListener> listeners=new Vector<ReplicatedTreeListener>();
     JChannel channel=null;
-    PullPushAdapter adapter=null;
     String groupname="ReplicatedTree-Group";
-    final Vector members=new Vector();
+    final Vector<Address> members=new Vector<Address>();
     long state_fetch_timeout=10000;
     boolean jmx=false;
 
@@ -47,20 +42,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      instance rather than sending a message to all replicas and only then invoking the method.
      Useful for testing */
     boolean remote_calls=true;
-    String props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=5000):" +
-            "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;" +
-            "print_local_addr=true):" +
-            "pbcast.STATE_TRANSFER";
-    // "PERF(details=true)";
+    String props="udp.xml";
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
@@ -90,6 +72,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             this.props=props;
         this.state_fetch_timeout=state_fetch_timeout;
         channel=new JChannel(this.props);
+        channel.setReceiver(this);
         channel.connect(this.groupname);
         start();
     }
@@ -102,7 +85,9 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         this.jmx=jmx;
         this.state_fetch_timeout=state_fetch_timeout;
         channel=new JChannel(this.props);
+        channel.setReceiver(this);
         channel.connect(this.groupname);
+
         if(jmx) {
             MBeanServer server=Util.getMBeanServer();
             if(server == null)
@@ -121,6 +106,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      */
     public ReplicatedTree(JChannel channel) throws Exception {
         this.channel=channel;
+        channel.setReceiver(this);
         start();
     }
 
@@ -137,7 +123,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         return channel != null? channel.getAddress() : null;
     }
 
-    public Vector getMembers() {
+    public Vector<Address> getMembers() {
         return members;
     }
 
@@ -168,15 +154,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
 
     public final void start() throws Exception {
-        if(request_handler == null) {
-            request_handler=new Thread(this, "ReplicatedTree.RequestHandler thread");
-            request_handler.setDaemon(true);
-            request_handler.start();
-        }
-        adapter=new PullPushAdapter(channel, this, this);
-        adapter.setListener(this);
         boolean rc=channel.getState(null, state_fetch_timeout);
-
         if(log.isInfoEnabled()) {
             if(rc)
                 log.info("state was retrieved successfully");
@@ -187,20 +165,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
 
     public void stop() {
-        if(request_handler != null && request_handler.isAlive()) {
-            request_queue.close(true);
-            request_handler=null;
-        }
-
-        request_handler=null;
-        if(channel != null) {
-            channel.close();
-        }
-        if(adapter != null) {
-            adapter.stop();
-            adapter=null;
-        }
-        channel=null;
+        Util.close(channel);
     }
 
 
@@ -394,7 +359,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      * @param fqn The fully qualified name of the node
      * @return HashMap The data hashmap for the given node
      */
-    HashMap get(String fqn) {
+    Map<String,Object> get(String fqn) {
         Node n=findNode(fqn);
 
         if(n == null) return null;
@@ -571,10 +536,25 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             return;
         try {
             req=(Request)msg.getObject();
-            request_queue.add(req);
-        }
-        catch(QueueClosedException queue_closed_ex) {
-            if(log.isErrorEnabled()) log.error("request queue is null");
+
+            String fqn=req.fqn;
+            switch(req.type) {
+                case Request.PUT:
+                    if(req.key != null && req.value != null)
+                        _put(fqn, req.key, req.value);
+                    else
+                        _put(fqn, req.data);
+                    break;
+                case Request.REMOVE:
+                    if(req.key != null)
+                        _remove(fqn, req.key);
+                    else
+                        _remove(fqn);
+                    break;
+                default:
+                    if(log.isErrorEnabled()) log.error("type " + req.type + " unknown");
+                    break;
+            }
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) log.error("failed unmarshalling request: " + ex);
@@ -621,11 +601,10 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
     /*----------------------- MembershipListener ------------------------*/
 
     public void viewAccepted(View new_view) {
-        Vector new_mbrs=new_view.getMembers();
+        Vector<Address> new_mbrs=new_view.getMembers();
 
         // todo: if MergeView, fetch and reconcile state from coordinator
-        // actually maybe this is best left up to the application ? we just notify them and let
-        // the appl handle it ?
+        // actually maybe this is best left up to the application ? we just notify them and let the appl handle it ?
 
         if(new_mbrs != null) {
             notifyViewChange(new_view);
@@ -638,57 +617,9 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         send_message=members.size() > 1;
     }
 
-
-    /** Called when a member is suspected */
-    public void suspect(Address suspected_mbr) {
-        ;
-    }
-
-
-    /** Block sending and receiving of messages until viewAccepted() is called */
-    public void block() {
-    }
-
     /*------------------- End of MembershipListener ----------------------*/
 
 
-
-    /** Request handler thread */
-    public void run() {
-        Request req;
-        String fqn=null;
-
-        while(request_handler != null) {
-            try {
-                req=(Request)request_queue.remove(0);
-                fqn=req.fqn;
-                switch(req.type) {
-                    case Request.PUT:
-                        if(req.key != null && req.value != null)
-                            _put(fqn, req.key, req.value);
-                        else
-                            _put(fqn, req.data);
-                        break;
-                    case Request.REMOVE:
-                        if(req.key != null)
-                            _remove(fqn, req.key);
-                        else
-                            _remove(fqn);
-                        break;
-                    default:
-                        if(log.isErrorEnabled()) log.error("type " + req.type + " unknown");
-                        break;
-                }
-            }
-            catch(QueueClosedException queue_closed_ex) {
-                request_handler=null;
-                break;
-            }
-            catch(Throwable other_ex) {
-                if(log.isWarnEnabled()) log.warn("exception processing request: " + other_ex);
-            }
-        }
-    }
 
 
     /**
@@ -752,22 +683,22 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
     void notifyNodeAdded(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            ((ReplicatedTreeListener)listeners.elementAt(i)).nodeAdded(fqn);
+            listeners.elementAt(i).nodeAdded(fqn);
     }
 
     void notifyNodeRemoved(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            ((ReplicatedTreeListener)listeners.elementAt(i)).nodeRemoved(fqn);
+            listeners.elementAt(i).nodeRemoved(fqn);
     }
 
     void notifyNodeModified(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            ((ReplicatedTreeListener)listeners.elementAt(i)).nodeModified(fqn);
+            listeners.elementAt(i).nodeModified(fqn);
     }
 
     void notifyViewChange(View v) {
         for(int i=0; i < listeners.size(); i++)
-            ((ReplicatedTreeListener)listeners.elementAt(i)).viewChange(v);
+            listeners.elementAt(i).viewChange(v);
     }
 
     /** Generates NodeAdded notifications for all nodes of the tree. This is called whenever the tree is
@@ -791,41 +722,40 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         String name=null;     // relative name (e.g. "Security")
         String fqn=null;      // fully qualified name (e.g. "/federations/fed1/servers/Security")
         Node parent=null;   // parent node
-        TreeMap children=null; // keys: child name, value: Node
-        HashMap data=null;     // data for current node
+        TreeMap<String,Node> children=null; // keys: child name, value: Node
+        Map<String,Object> data=null;     // data for current node
         private static final long serialVersionUID = -3077676554440038890L;
-        // Address       creator=null;  // member that created this node (needed ?)
 
 
-        private Node(String child_name, String fqn, Node parent, HashMap data) {
+        private Node(String child_name, String fqn, Node parent, Map<String,Object> data) {
             name=child_name;
             this.fqn=fqn;
             this.parent=parent;
-            if(data != null) this.data=(HashMap)data.clone();
+            if(data != null) this.data=(HashMap<String,Object>)((HashMap)data).clone();
         }
 
         private Node(String child_name, String fqn, Node parent, String key, Object value) {
             name=child_name;
             this.fqn=fqn;
             this.parent=parent;
-            if(data == null) data=new HashMap();
+            if(data == null) data=new HashMap<String,Object>();
             data.put(key, value);
         }
 
         void setData(Map data) {
             if(data == null) return;
             if(this.data == null)
-                this.data=new HashMap();
+                this.data=new HashMap<String,Object>();
             this.data.putAll(data);
         }
 
         void setData(String key, Object value) {
             if(this.data == null)
-                this.data=new HashMap();
+                this.data=new HashMap<String,Object>();
             this.data.put(key, value);
         }
 
-        HashMap getData() {
+        Map<String,Object> getData() {
             return data;
         }
 
@@ -835,17 +765,16 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
 
         boolean childExists(String child_name) {
-            if(child_name == null) return false;
-            return children != null && children.containsKey(child_name);
+            return child_name != null && children != null && children.containsKey(child_name);
         }
 
 
-        Node createChild(String child_name, String fqn, Node parent, HashMap data) {
+        Node createChild(String child_name, String fqn, Node parent, HashMap<String,Object> data) {
             Node child=null;
 
             if(child_name == null) return null;
-            if(children == null) children=new TreeMap();
-            child=(Node)children.get(child_name);
+            if(children == null) children=new TreeMap<String,Node>();
+            child=children.get(child_name);
             if(child != null)
                 child.setData(data);
             else {
@@ -859,7 +788,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             Node child=null;
 
             if(child_name == null) return null;
-            if(children == null) children=new TreeMap();
+            if(children == null) children=new TreeMap<String,Node>();
             child=(Node)children.get(child_name);
             if(child != null)
                 child.setData(key, value);
@@ -875,7 +804,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             return child_name == null? null : children == null? null : (Node)children.get(child_name);
         }
 
-        Map getChildren() {
+        Map<String,Node> getChildren() {
             return children;
         }
 
@@ -903,7 +832,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         void print(StringBuilder sb, int indent) {
             printIndent(sb, indent);
             sb.append(SEPARATOR).append(name);
-            if(children != null && children.size() > 0) {
+            if(children != null && !children.isEmpty()) {
                 Collection values=children.values();
                 for(Iterator it=values.iterator(); it.hasNext();) {
                     sb.append('\n');
@@ -912,7 +841,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             }
         }
 
-        void printIndent(StringBuilder sb, int indent) {
+        static void printIndent(StringBuilder sb, int indent) {
             if(sb != null) {
                 for(int i=0; i < indent; i++)
                     sb.append(' ');
