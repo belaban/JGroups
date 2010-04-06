@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**  You start the test by running this class.
  * @author Bela Ban (belaban@yahoo.com)
@@ -56,7 +57,7 @@ public class Test implements Receiver {
 
     Log             log=LogFactory.getLog(getClass());
 
-    boolean         all_received=false;
+    final AtomicBoolean all_received=new AtomicBoolean(false);
     boolean         final_results_received=false;
 
     /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
@@ -346,7 +347,7 @@ public class Test implements Receiver {
         boolean do_sleep=false;
 
         synchronized(this) {
-            if(all_received)
+            if(all_received.get())
                 return;
             if(start == 0) {
                 start=last_interval=System.currentTimeMillis();
@@ -359,7 +360,7 @@ public class Test implements Receiver {
                 if(stop == 0) {
                     stop=System.currentTimeMillis();
                 }
-                all_received=true;
+                all_received.set(true);
             }
 
             if(num_msgs_received % log_interval == 0) {
@@ -402,12 +403,10 @@ public class Test implements Receiver {
             Util.sleep(processing_delay);
         }
 
-        synchronized(this) {
-            if(all_received) {
-                if(!this.sender)
-                    dumpSenders();
-                publisher.start();
-            }
+        if(all_received.get()) {
+            if(!this.sender)
+                dumpSenders();
+            publisher.start();
         }
     }
 
@@ -451,9 +450,6 @@ public class Test implements Receiver {
         }
     }
 
-    boolean allReceived() {
-        return all_received;
-    }
 
     boolean receivedFinalResults() {
         return final_results_received;
@@ -920,27 +916,27 @@ public class Test implements Receiver {
     private class ResultsPublisher implements Runnable {
         static final long interval=1000;
         boolean running=true;
-        volatile Thread t;
+        volatile Thread thread;
 
         void start() {
-            if(t == null) {
-                t=new Thread(this, "ResultsPublisher");
-                t.setDaemon(true);
-                t.start();
+            if(thread == null) {
+                thread=new Thread(this, "ResultsPublisher");
+                thread.setDaemon(true);
+                thread.start();
             }
         }
 
         void stop() {
-            if(t != null && t.isAlive()) {
-                Thread tmp=t;
-                t=null;
+            if(thread != null && thread.isAlive()) {
+                Thread tmp=thread;
+                thread=null;
                 if(tmp != null)
                     tmp.interrupt();
             }
         }
 
         public void run() {
-            while(t != null) {
+            while(thread != null) {
                 sendResults();
                 Util.sleep(interval);
             }
