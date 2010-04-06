@@ -346,9 +346,10 @@ public class Test implements Receiver {
         MemberInfo info=null;
         boolean do_sleep=false;
 
+        if(all_received.get())
+            return;
+
         synchronized(this) {
-            if(all_received.get())
-                return;
             if(start == 0) {
                 start=last_interval=System.currentTimeMillis();
             }
