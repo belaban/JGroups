@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.302 2010/04/06 14:04:06 belaban Exp $
+ * @version $Id: TP.java,v 1.303 2010/04/06 15:13:13 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1195,7 +1195,7 @@ public abstract class TP extends Protocol {
         }
 
         dos.writeBoolean(false); // terminating presence - no more messages will follow
-        }
+    }
 
 
 
@@ -1608,6 +1608,8 @@ public abstract class TP extends Protocol {
 
         /** Run with lock acquired */
         private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
+            if(dest == null)
+                dest=Global.NULL_ADDR;
             if(msgs.isEmpty())
                 last_bundle_time=System.currentTimeMillis();
             List<Message> tmp=msgs.get(dest);
@@ -1651,6 +1653,8 @@ public abstract class TP extends Protocol {
                 if(list.isEmpty())
                     continue;
                 dst=entry.getKey();
+                if(dst == Global.NULL_ADDR)
+                    dst=null;
                 Address src_addr=list.get(0).getSrc();
                 multicast=dst == null || dst.isMulticastAddress();
                 try {
@@ -1784,7 +1788,7 @@ public abstract class TP extends Protocol {
 
                     if(msg != null) {
                         count+=size;
-                        addMessage(msg, msg.getDest());
+                        addMessage(msg);
                     }
                 }
                 catch(Throwable t) {
@@ -1801,7 +1805,10 @@ public abstract class TP extends Protocol {
 
 
         /** Run with lock acquired */
-        private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
+        private void addMessage(Message msg) { // no sync needed, always called with lock held
+            Address dest=msg.getDest();
+            if(dest == null)
+                dest=Global.NULL_ADDR; // faster in HashMap.put() than null as key !
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
@@ -1841,6 +1848,8 @@ public abstract class TP extends Protocol {
                     continue;
 
                 dst=entry.getKey();
+                if(dst == Global.NULL_ADDR)
+                    dst=null;
                 Address src_addr=list.get(0).getSrc();
 
                 multicast=dst == null || dst.isMulticastAddress();
