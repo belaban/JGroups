@@ -13,7 +13,7 @@ import java.util.Collection;
  * Copied from java.util.UUID, but unneeded fields from the latter have been removed. UUIDs needs to
  * have a small memory footprint.
  * @author Bela Ban
- * @version $Id: UUID.java,v 1.3 2009/09/21 09:57:23 belaban Exp $
+ * @version $Id: UUID.java,v 1.4 2010/04/07 07:09:09 belaban Exp $
  */
 public class UUID implements Address, Streamable, Comparable<Address> {
     private long   mostSigBits;
@@ -245,8 +245,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
         if (!(obj instanceof UUID))
             return false;
         UUID id = (UUID)obj;
-        return (mostSigBits == id.mostSigBits &&
-                leastSigBits == id.leastSigBits);
+        return this == id || (mostSigBits == id.mostSigBits && leastSigBits == id.leastSigBits);
     }
 
 
@@ -259,6 +258,8 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      */
     public int compareTo(Address other) {
         UUID val=(UUID)other;
+        if(this == val)
+            return 0;
         return (this.mostSigBits < val.mostSigBits ? -1 :
                 (this.mostSigBits > val.mostSigBits ? 1 :
                         (this.leastSigBits < val.leastSigBits ? -1 :
