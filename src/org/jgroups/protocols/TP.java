@@ -2,11 +2,11 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.303 2010/04/06 15:13:13 belaban Exp $
+ * @version $Id: TP.java,v 1.304 2010/04/07 10:59:30 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -979,7 +979,7 @@ public abstract class TP extends Protocol {
 
 
     private void passMessageUp(Message msg, boolean perform_cluster_name_matching, boolean multicast, boolean discard_own_mcast) {
-        TpHeader hdr=(TpHeader)msg.getHeader(this.id); // replaced removeHeader() with getHeader()
+        TpHeader hdr=(TpHeader)msg.getHeader(this.id);
         if(hdr == null) {
             if(log.isErrorEnabled())
                 log.error(new StringBuilder("message does not have a transport header, msg is ").append(msg).
@@ -1031,7 +1031,6 @@ public abstract class TP extends Protocol {
             // determine whether OOB or not by looking at first byte of 'data'
             byte oob_flag=data[Global.SHORT_SIZE]; // we need to skip the first 2 bytes (version)
 
-
             if((oob_flag & OOB) == OOB) {
                 num_oob_msgs_received++;
                 dispatchToThreadPool(oob_thread_pool, sender, data, offset, length);
@@ -1073,7 +1072,7 @@ public abstract class TP extends Protocol {
                 ; // don't bundle unicast msgs if enable_unicast_bundling is off (http://jira.jboss.com/jira/browse/JGRP-429)
             }
             else {
-                bundler.send(msg, dest);
+                bundler.send(msg);
                 return;
             }
         }
@@ -1161,7 +1160,7 @@ public abstract class TP extends Protocol {
      * Write a lits of messages with the same destination and *mostly* the same src addresses. The message list is
      * marshalled as follows:
      * <pre>
-     * List: * | version | flags | dest | src | Message*] |
+     * List: * | version | flags | dest | src | [Message*] |
      *
      * Message:  | presence | leading | flags | [src] | length | [buffer] | size | [Headers*] |
      *
@@ -1174,13 +1173,13 @@ public abstract class TP extends Protocol {
      * @throws Exception
      */
     private static void writeMessageList(Address dest, Address src,
-                                          List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
+                                         List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
         dos.writeShort(Version.version);
 
         byte flags=LIST;
         if(multicast)
             flags+=MULTICAST;
-        
+
         dos.writeByte(flags);
 
         Util.writeAddress(dest, dos);
@@ -1557,15 +1556,15 @@ public abstract class TP extends Protocol {
     protected interface Bundler {
         void start();
         void stop();
-        void send(Message msg, Address dest) throws Exception;
+        void send(Message msg) throws Exception;
     }
 
 
 
     private class DefaultBundler implements Bundler {
     	static final int 		   		   MIN_NUMBER_OF_BUNDLING_TASKS=2;
-        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-        final Map<Address,List<Message>>   msgs=new HashMap<Address,List<Message>>(36);
+        /** Keys are destinations, values are lists of Messages */
+        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
         @GuardedBy("lock")
         long                               count=0;    // current number of bytes accumulated
         int                                num_msgs=0;
@@ -1581,7 +1580,7 @@ public abstract class TP extends Protocol {
         public void stop() {
         }
 
-        public void send(Message msg, Address dest) throws Exception {
+        public void send(Message msg) throws Exception {
             long length=msg.size();
             boolean do_schedule=false;
             checkLength(length);
@@ -1591,7 +1590,7 @@ public abstract class TP extends Protocol {
                 if(count + length >= max_bundle_size) {
                     sendBundledMessages(msgs);
                 }
-                addMessage(msg, dest);
+                addMessage(msg);
                 count+=length;
                 if(num_bundling_tasks < MIN_NUMBER_OF_BUNDLING_TASKS) {
                     num_bundling_tasks++;
@@ -1607,9 +1606,19 @@ public abstract class TP extends Protocol {
         }
 
         /** Run with lock acquired */
-        private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
-            if(dest == null)
-                dest=Global.NULL_ADDR;
+        private void addMessage(Message msg) {
+            Address dst=msg.getDest();
+            String cluster_name;
+
+            if(!isSingleton())
+                cluster_name=TP.this.channel_name;
+            else {
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                cluster_name=hdr.channel_name;
+            }
+
+            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+
             if(msgs.isEmpty())
                 last_bundle_time=System.currentTimeMillis();
             List<Message> tmp=msgs.get(dest);
@@ -1627,10 +1636,7 @@ public abstract class TP extends Protocol {
          * This method may be called by timer and bundler concurrently
          * @param msgs
          */
-        private void sendBundledMessages(final Map<Address,List<Message>> msgs) {
-            boolean   multicast;
-            Address   dst;
-
+        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
             if(log.isTraceEnabled()) {
                 long stop=System.currentTimeMillis();
                 double percentage=100.0 / max_bundle_size * count;
@@ -1648,21 +1654,21 @@ public abstract class TP extends Protocol {
             ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream((int)(count + 50));
             ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
 
-            for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
+            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
                 List<Message> list=entry.getValue();
                 if(list.isEmpty())
                     continue;
-                dst=entry.getKey();
-                if(dst == Global.NULL_ADDR)
-                    dst=null;
+                SingletonAddress dst=entry.getKey();
+                Address dest=dst.getAddress();
                 Address src_addr=list.get(0).getSrc();
-                multicast=dst == null || dst.isMulticastAddress();
+
+                boolean multicast=dest == null || dest.isMulticastAddress();
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
-                    writeMessageList(dst, src_addr, list, bundler_dos, multicast); // flushes output stream when done
+                    writeMessageList(dest, src_addr, list, bundler_dos, multicast); // flushes output stream when done
                     Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                    doSend(buffer, dst, multicast);
+                    doSend(buffer, dest, multicast);
                 }
                 catch(Throwable e) {
                     if(log.isErrorEnabled()) log.error("exception sending bundled msgs", e);
@@ -1711,8 +1717,8 @@ public abstract class TP extends Protocol {
         volatile Thread                    bundler_thread;
         final Log                          log=LogFactory.getLog(getClass());
 
-        /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-        final Map<Address,List<Message>>   msgs=new HashMap<Address,List<Message>>(36);
+        /** Keys are destinations, values are lists of Messages */
+        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
         long                               count=0;    // current number of bytes accumulated
         int                                num_msgs=0;
         long                               next_bundle_time;
@@ -1743,7 +1749,7 @@ public abstract class TP extends Protocol {
                 bundler_thread.interrupt();
         }
 
-        public void send(Message msg, Address dest) throws Exception {
+        public void send(Message msg) throws Exception {
             long length=msg.size();
             checkLength(length);
             buffer.put(msg);
@@ -1804,11 +1810,19 @@ public abstract class TP extends Protocol {
         }
 
 
-        /** Run with lock acquired */
-        private void addMessage(Message msg) { // no sync needed, always called with lock held
-            Address dest=msg.getDest();
-            if(dest == null)
-                dest=Global.NULL_ADDR; // faster in HashMap.put() than null as key !
+        private void addMessage(Message msg) {
+            Address dst=msg.getDest();
+            String cluster_name;
+
+            if(!isSingleton())
+                cluster_name=TP.this.channel_name;
+            else {
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                cluster_name=hdr.channel_name;
+            }
+
+            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+            
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
@@ -1825,9 +1839,8 @@ public abstract class TP extends Protocol {
          * This method may be called by timer and bundler concurrently
          * @param msgs
          */
-        private void sendBundledMessages(final Map<Address,List<Message>> msgs) {
+        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
             boolean   multicast;
-            Address   dst;
 
             if(log.isTraceEnabled()) {
                 double percentage=100.0 / max_bundle_size * count;
@@ -1842,23 +1855,22 @@ public abstract class TP extends Protocol {
             ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream((int)(count + 50));
             ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
 
-            for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
+            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
                 List<Message> list=entry.getValue();
                 if(list.isEmpty())
                     continue;
 
-                dst=entry.getKey();
-                if(dst == Global.NULL_ADDR)
-                    dst=null;
+                SingletonAddress dst=entry.getKey();
+                Address dest=dst.getAddress();
                 Address src_addr=list.get(0).getSrc();
 
-                multicast=dst == null || dst.isMulticastAddress();
+                multicast=dest == null || dest.isMulticastAddress();
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
-                    writeMessageList(dst, src_addr, list, bundler_dos, multicast); // flushes output stream when done
+                    writeMessageList(dest, src_addr, list, bundler_dos, multicast); // flushes output stream when done
                     Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                    doSend(buf, dst, multicast);
+                    doSend(buf, dest, multicast);
                 }
                 catch(Throwable e) {
                     if(log.isErrorEnabled()) log.error("exception sending bundled msgs", e);
