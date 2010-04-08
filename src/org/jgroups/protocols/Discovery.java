@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.10 2010/04/01 11:40:21 belaban Exp $
+ * @version $Id: Discovery.java,v 1.32.2.11 2010/04/08 09:35:33 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -407,10 +407,10 @@ public abstract class Discovery extends Protocol {
                             sendGetMembersRequest(promise);
                         }
                         catch(InterruptedIOException ie) {
-                            if(log.isWarnEnabled()){
-                                log.warn("Discovery request interrupted");
-                            }
-                            Thread.currentThread().interrupt();
+                            ;
+                        }
+                        catch(InterruptedException ex) {
+                            ;
                         }
                         catch(Throwable ex) {
                             if(log.isErrorEnabled())
