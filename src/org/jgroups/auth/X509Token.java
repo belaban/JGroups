@@ -194,6 +194,8 @@ public class X509Token extends AuthToken {
                         this.cert_alias, new KeyStore.PasswordProtection(this.cert_password));
         this.certPrivateKey = privateKey.getPrivateKey();
 
+        this.valueSet=true;
+
         if (log.isDebugEnabled()) {
             log.debug("certPrivateKey = " + this.certPrivateKey.toString());
         }
