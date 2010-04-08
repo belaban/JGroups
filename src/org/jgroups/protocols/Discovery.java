@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.72 2010/04/01 11:32:09 belaban Exp $
+ * @version $Id: Discovery.java,v 1.73 2010/04/08 09:36:24 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -487,10 +487,10 @@ public abstract class Discovery extends Protocol {
                             sendGetMembersRequest(cluster_name, promise, return_views_only);
                         }
                         catch(InterruptedIOException ie) {
-                            if(log.isWarnEnabled()){
-                                log.warn("Discovery request for cluster " + cluster_name + " interrupted");
-                            }
-                            Thread.currentThread().interrupt();
+                            ;
+                        }
+                        catch(InterruptedException ex) {
+                            ;
                         }
                         catch(Throwable ex) {
                             if(log.isErrorEnabled())
