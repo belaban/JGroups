@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.54 2010/03/09 15:54:04 belaban Exp $
+// $Id: Channel.java,v 1.55 2010/04/12 11:20:37 belaban Exp $
 
 package org.jgroups;
 
@@ -376,6 +376,9 @@ public abstract class Channel implements Transport {
         this.up_handler=up_handler;
     }
 
+    public UpHandler getUpHandler() {
+        return up_handler;
+    }
 
     /**
      Allows to be notified when a channel event such as connect, disconnect or close occurs.
