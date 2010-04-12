@@ -1,20 +1,17 @@
 package org.jgroups.conf;
 
+import org.jgroups.Global;
 import org.jgroups.View;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.Inet6Address;
-import java.net.SocketException;
-import java.util.List;
-import java.util.Enumeration;
+import java.net.*;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -26,7 +23,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.17 2009/12/10 13:03:19 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.18 2010/04/12 10:18:49 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -154,8 +151,18 @@ public class PropertyConverters {
 
 
     public static class Default implements PropertyConverter {
-        private static final Log log=LogFactory.getLog(Default.class);
+        static final String prefix;
 
+        static {
+            String tmp="FF0e::";
+            try {
+                tmp=System.getProperty(Global.IPV6_MCAST_PREFIX);
+            }
+            catch(Throwable t) {
+                tmp="FF0e::";
+            }
+            prefix=tmp != null? tmp : "FF0e::";
+        }
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
             if(propertyValue == null)
@@ -179,6 +186,14 @@ public class PropertyConverters {
                 return Float.parseFloat(propertyValue);
             } else if(InetAddress.class.equals(propertyFieldType)) {
                 InetAddress retval=InetAddress.getByName(propertyValue);
+
+                if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
+                    String tmp=prefix + propertyValue;
+                    retval=InetAddress.getByName(tmp);
+                    return retval;
+                }
+
+
                 if(check_scope && retval instanceof Inet6Address && retval.isLinkLocalAddress()) {
                     // check scope
                     Inet6Address addr=(Inet6Address)retval;

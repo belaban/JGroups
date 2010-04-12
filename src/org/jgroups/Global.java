@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.55 2010/03/23 15:11:02 belaban Exp $
+ * @version $Id: Global.java,v 1.56 2010/04/12 10:18:32 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -50,6 +50,8 @@ public class Global {
     public static final String PRINT_UUIDS="jgroups.print_uuids";
     public static final String UUID_CACHE_MAX_ELEMENTS="jgroups.uuid_cache.max_elements";
     public static final String UUID_CACHE_MAX_AGE="jgroups.uuid_cache.max_age";
+
+    public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
 
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
 
