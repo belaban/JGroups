@@ -33,7 +33,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.101 2010/03/25 10:33:57 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.102 2010/04/13 17:57:10 ferraro Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -352,7 +352,9 @@ public class MessageDispatcher implements RequestHandler {
         local_addr=channel.getAddress();
         if(prot_adapter == null)
             prot_adapter=new ProtocolAdapter();
-        channel.setUpHandler(prot_adapter);
+        if (channel.getUpHandler() == null) {
+            channel.setUpHandler(prot_adapter);
+        }
     }
 
     @Deprecated
