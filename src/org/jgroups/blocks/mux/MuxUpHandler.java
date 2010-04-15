@@ -6,21 +6,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.UpHandler;
-import org.jgroups.conf.ClassConfigurator;
 
 /**
  * Allows up handler multiplexing.
  * 
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxUpHandler.java,v 1.1 2010/04/13 17:57:07 ferraro Exp $
+ * @version $Id: MuxUpHandler.java,v 1.2 2010/04/15 20:05:22 ferraro Exp $
  */
 public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
 
-    static {
-        ClassConfigurator.add(MuxHeader.ID, MuxHeader.class);
-    }
-    
     private final Map<Short, UpHandler> handlers = new ConcurrentHashMap<Short, UpHandler>();
     private final UpHandler defaultHandler;
     
@@ -66,7 +61,7 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
         switch (evt.getType()) {
             case Event.MSG: {
                 Message msg = (Message) evt.getArg();
-                MuxHeader hdr = (MuxHeader) msg.getHeader(MuxHeader.ID);
+                MuxHeader hdr = (MuxHeader) msg.getHeader(MuxRequestCorrelator.MUX_ID);
                 if (hdr != null) {
                     short id = hdr.getId();
                     UpHandler handler = handlers.get(id);
