@@ -11,12 +11,10 @@ import org.jgroups.Header;
  * Header that identifies the target handler for multiplexed dispatches.
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxHeader.java,v 1.1 2010/04/13 17:57:06 ferraro Exp $
+ * @version $Id: MuxHeader.java,v 1.2 2010/04/15 20:05:22 ferraro Exp $
  */
 public class MuxHeader extends Header {
 
-    public static final short ID=1500;
-    
     private short id;
 
     public MuxHeader() {
@@ -42,6 +40,6 @@ public class MuxHeader extends Header {
     
     @Override
     public void readFrom(DataInputStream in) throws IOException {
-	id = in.readShort();
+        id = in.readShort();
     }
 }

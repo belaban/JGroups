@@ -42,4 +42,5 @@
     <class id="71" name="org.jgroups.blocks.RequestCorrelator$Header"/>
     <class id="73" name="org.jgroups.protocols.UNICAST2$Unicast2Header"/>
     <class id="74" name="org.jgroups.protocols.SCOPE$ScopeHeader"/>
+    <class id="75" name="org.jgroups.blocks.mux.MuxHeader"/>
 </magic-number-class-mapping>
