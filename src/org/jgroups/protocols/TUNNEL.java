@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.95 2010/03/13 06:33:45 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.96 2010/04/19 15:47:16 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -144,6 +144,12 @@ public class TUNNEL extends TP {
 
         if (timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
+      
+        // Postpone TUNNEL and shared transport until 3.0 timeframe
+        // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
+        if (isSingleton()) {
+            throw new Exception("TUNNEL and shared transport mode are not supported!");
+        }
 
         if ((router_host == null || router_port == 0) && gossip_router_hosts.isEmpty()) {
             throw new Exception("either router_host and router_port have to be set or a list of gossip routers");
@@ -197,6 +203,7 @@ public class TUNNEL extends TP {
              if(!isSingleton()) {
                  local = local_addr;                 
              } else {
+                 // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport   
                  ProtocolAdapter adapter = ProtocolAdapter.thread_local.get();
                  local = adapter.local_addr;
              }
@@ -211,6 +218,7 @@ public class TUNNEL extends TP {
                  local = local_addr;        
                  group = channel_name;
              } else {
+                 // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
                  ProtocolAdapter adapter = ProtocolAdapter.thread_local.get();
                  local = adapter.local_addr;
                  group = adapter.cluster_name;
