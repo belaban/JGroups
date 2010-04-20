@@ -13,7 +13,6 @@ import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -36,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.96 2010/04/19 15:47:16 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.97 2010/04/20 20:12:47 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -249,6 +248,7 @@ public class TUNNEL extends TP {
                               log.info("Reconnected " + stub);
                           }
                       }
+                      // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
                       else {
                           for(Protocol p: up_prots.values()) {
                               if(p instanceof ProtocolAdapter) {
@@ -302,7 +302,7 @@ public class TUNNEL extends TP {
             }
             else if (newState == RouterStub.ConnectionStatus.CONNECTED) {
                 stopReconnecting(stub);
-                StubReceiver stubReceiver = new StubReceiver(stub.getInputStream());
+                StubReceiver stubReceiver = new StubReceiver(stub);
                 stub.setReceiver(stubReceiver);
                 Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
                 stubReceiver.setThread(t);
@@ -320,11 +320,11 @@ public class TUNNEL extends TP {
 
     public class StubReceiver implements Runnable {
 
-        private Thread runner;
-        private final DataInputStream input;
-        
-        public StubReceiver(DataInputStream input) {
-            this.input = input;
+        private Thread runner;        
+        private final RouterStub stub;
+       
+        public StubReceiver(RouterStub stub) {
+            this.stub = stub;          
         }
 
         public synchronized void setThread(Thread t) {
@@ -336,6 +336,7 @@ public class TUNNEL extends TP {
         }
 
         public void run() {
+            final DataInputStream input = stub.getInputStream();
             mainloop:
             while (!Thread.currentThread().isInterrupted()) {
                 try {                                        
@@ -362,21 +363,12 @@ public class TUNNEL extends TP {
                             }
                             break;
                     }
-                } catch (SocketTimeoutException ste) {
-                    // do nothing - blocking read timeout caused it
-                    continue;
-                } catch (SocketException se) {
-                    break;
-                } catch (IOException ioe) {
-                    /*
-                     * This is normal course of operation Thread should not die
-                     */
-                    continue;
-                } catch (Exception e) {
-                    if (log.isWarnEnabled())
-                        log.warn("failure in TUNNEL receiver thread", e);
-                    break;
-                }
+                }catch (Exception ioe) {     
+                    if(stub.isConnected())
+                        continue mainloop;
+                    else 
+                        break;
+                } 
             }
         }
 
