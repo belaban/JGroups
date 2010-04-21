@@ -40,6 +40,7 @@
     <class id="69" name="org.jgroups.protocols.MERGE3$CoordAnnouncement"/>
     <class id="70" name="org.jgroups.protocols.MERGEFAST$MergefastHeader"/>
     <class id="71" name="org.jgroups.blocks.RequestCorrelator$Header"/>
+    <class id="72" name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
     <class id="73" name="org.jgroups.protocols.UNICAST2$Unicast2Header"/>
     <class id="74" name="org.jgroups.protocols.SCOPE$ScopeHeader"/>
     <class id="75" name="org.jgroups.blocks.mux.MuxHeader"/>
