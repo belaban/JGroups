@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.64 2010/03/25 16:08:03 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.65 2010/04/21 10:53:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -218,7 +218,7 @@ public class RequestCorrelator {
     }
 
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
-        sendRequest(id, dest_mbrs, msg, coll, false);
+        sendRequest(id, dest_mbrs, msg, coll, new RequestOptions().setAnycasting(false));
     }
 
     /**
@@ -235,7 +235,7 @@ public class RequestCorrelator {
      * <code>receiveResponse()</code> and <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
+    public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
@@ -245,14 +245,17 @@ public class RequestCorrelator {
         // ii.  If a reply is expected (coll != null), add a coresponding entry in the pending requests table
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
-        Header hdr=new Header(Header.REQ, id, (coll != null), this.id);
+        Header hdr=options.hasExclusionList()?
+                new MultiDestinationHeader(Header.REQ, id, (coll != null), this.id, options.getExclusionList())
+                : new Header(Header.REQ, id, (coll != null), this.id);
+
         msg.putHeader(this.id, hdr);
 
         if(coll != null)
             addEntry(hdr.id, coll);
 
         if(transport instanceof Protocol) {
-            if(use_anycasting) {
+            if(options.getAnycasting()) {
                 for(Address mbr: dest_mbrs) {
                     Message copy=msg.copy(true);
                     copy.setDest(mbr);
@@ -264,7 +267,7 @@ public class RequestCorrelator {
             }
         }
         else if(transport instanceof Transport) {
-            if(use_anycasting) {
+            if(options.getAnycasting()) {
                 for(Address mbr: dest_mbrs) {
                     Message copy=msg.copy(true);
                     copy.setDest(mbr);
@@ -448,6 +451,19 @@ public class RequestCorrelator {
             return false;
         }
 
+        if(hdr instanceof MultiDestinationHeader) {
+            // If the header contains an exclusion list, and we are part of it, then we discard the
+            // request (was addressed to other members)
+            java.util.Collection exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
+            if(exclusion_list != null && local_addr != null && exclusion_list.contains(local_addr)) {
+                if(log.isTraceEnabled()) {
+                    log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
+                            append(" as we are in the exclusion list (local_addr=").
+                            append(local_addr).append(", hdr=").append(hdr).append(')'));
+                }
+                return true; // don't pass this message further up
+            }
+        }
 
         // [Header.REQ]:
         // i. If there is no request handler, discard
@@ -633,16 +649,16 @@ public class RequestCorrelator {
         public static final byte RSP = 1;
 
         /** Type of header: request or reply */
-        public byte type;
+        public byte    type;
         /**
          * The id of this request to distinguish among other requests from the same <tt>RequestCorrelator</tt> */
-        public long id;
+        public long    id;
 
         /** msg is synchronous if true */
         public boolean rsp_expected;
 
         /** The unique ID of the associated <tt>RequestCorrelator</tt> */
-        public short corrId;
+        public short   corrId;
 
 
 
@@ -714,6 +730,53 @@ public class RequestCorrelator {
         }
     }
 
+
+
+    public static final class MultiDestinationHeader extends Header {
+        /** Contains a list of members who should not receive the request (others will drop). Ignored if null */
+        public java.util.Collection<? extends Address> exclusion_list;
+
+        public MultiDestinationHeader() {
+        }
+
+        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Collection<Address> exclusion_list) {
+            super(type, id, rsp_expected, corr_id);
+            this.exclusion_list=exclusion_list;
+        }
+
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(exclusion_list);
+        }
+
+        @SuppressWarnings("unchecked")
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            exclusion_list=(java.util.List<Address>)in.readObject();
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            super.writeTo(out);
+            Util.writeAddresses(exclusion_list, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            exclusion_list=Util.readAddresses(in, LinkedList.class);
+        }
+
+        public int size() {
+            return (int)(super.size() + Util.size(exclusion_list));
+        }
+
+        public String toString() {
+            String str=super.toString();
+            if(exclusion_list != null)
+                str=str+ ", exclusion_list=" + exclusion_list;
+            return str;
+        }
+    }
 
 
 
