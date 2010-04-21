@@ -16,7 +16,7 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: GroupRequestTest.java,v 1.12 2010/01/18 14:32:24 belaban Exp $
+ * @version $Id: GroupRequestTest.java,v 1.13 2010/04/21 09:02:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
@@ -81,7 +81,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_FIRST, 0, 3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_FIRST, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -115,7 +115,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -175,7 +175,7 @@ public class GroupRequestTest {
         MyDelayedTransport tp = new MyDelayedTransport(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest req=new GroupRequest(new Message(), tp, dests, Request.GET_ALL, timeout, dests.size());
+        GroupRequest req=new GroupRequest(new Message(), tp, dests, new RequestOptions(Request.GET_ALL, timeout));
         tp.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
@@ -190,7 +190,7 @@ public class GroupRequestTest {
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -203,7 +203,7 @@ public class GroupRequestTest {
     private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -223,7 +223,7 @@ public class GroupRequestTest {
                                         new View(Util.createRandomAddress(), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -240,7 +240,7 @@ public class GroupRequestTest {
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(Util.createRandomAddress(), 322649, new_dests)};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, Request.GET_ALL, 0, 2);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
 
         transport.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
