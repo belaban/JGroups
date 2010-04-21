@@ -7,26 +7,25 @@ import org.jgroups.View;
 import org.jgroups.Address;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.*;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.List;
 import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnitTest.java,v 1.1 2010/04/21 07:52:00 belaban Exp $
+ * @version $Id: RpcDispatcherUnitTest.java,v 1.2 2010/04/21 10:51:41 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherUnitTest extends ChannelTestBase {
     private RpcDispatcher d1, d2, d3;
     private JChannel      c1, c2, c3;
     private ServerObject  o1, o2, o3;
+    private Address       a1, a2, a3;
     private List<Address> members;
 
 
-    @BeforeMethod
+    @BeforeClass
     protected void setUp() throws Exception {
         o1=new ServerObject();
         o2=new ServerObject();
@@ -52,10 +51,20 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         View view=c3.getView();
         assert view.size() == 3 : "view=" + view;
 
-        members=Arrays.asList(c1.getAddress(), c2.getAddress(), c3.getAddress());
+        a1=c1.getAddress();
+        a2=c2.getAddress();
+        a3=c3.getAddress();
+        members=Arrays.asList(a1, a2, a3);
     }
 
-    @AfterMethod
+    @BeforeMethod
+    protected void reset() {
+        o1.reset();
+        o2.reset();
+        o3.reset();
+    }
+
+    @AfterClass
     protected void tearDown() throws Exception {
         d3.stop();
         d2.stop();
@@ -79,12 +88,47 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     }
 
 
+    /** Invoke a method on all but myself */
+    public void testInvocationWithExclusionOfSelf() {
+        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a1);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a2) && rsps.containsKey(a3);
+        assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
+    }
+
+    public void testInvocationWithExclusionOfTwo() {
+        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a2, a3);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 1;
+        assert rsps.containsKey(a1);
+        assert o1.wasCalled() && !o2.wasCalled() && !o3.wasCalled();
+    }
+
+    public void testInvocationOnEmptyTargetSet() {
+        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a1, a2, a3);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.isEmpty();
+        assert !o1.wasCalled() && !o2.wasCalled() && !o3.wasCalled();
+    }
+
+
 
     private static class ServerObject {
         boolean called=false;
 
         public boolean wasCalled() {
             return called;
+        }
+
+        public void reset() {
+            called=false;
         }
 
         public boolean foo() {
