@@ -47,15 +47,13 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.51 2010/01/18 14:35:57 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.52 2010/04/21 09:01:47 belaban Exp $
  */
 public class GroupRequest extends Request {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")
     private final Map<Address,Rsp> requests;
-
-    @Deprecated protected final int expected_mbrs;
 
     protected boolean use_anycasting;
 
@@ -65,70 +63,31 @@ public class GroupRequest extends Request {
 
 
     
-    /**
+     /**
      * @param msg The message to be sent
      * @param corr The request correlator to be used. A request correlator sends requests tagged with a unique ID and
      *             notifies the sender when matching responses are received. The reason <code>GroupRequest</code> uses
      *             it instead of a <code>Transport</code> is that multiple requests/responses might be sent/received concurrently
      * @param targets The targets, which are supposed to receive the message. Any receiver not in this set will
      *                discard the message. Targets are always a subset of the current membership
-     * @param rsp_mode How many responses are expected. Can be
-     *                <ol>
-     *                <li><code>GET_ALL</code>: wait for all responses from non-suspected members. A suspicion service
-     *                might warn us when a member from which a response is pending has crashed, so it can be excluded
-     *                from the responses. If no suspicion service is available, a timeout can be used (a value of 0
-     *                means wait forever). <em>If a timeout of 0 is used, no suspicion service is available and a member
-     *                from which we expect a response has crashed, this methods blocks forever !</em>.
-     *                <li><code>GET_FIRST</code>: wait for the first available response.
-     *                <li><code>GET_MAJORITY</code>: wait for the majority of all responses. The majority is
-     *                re-computed when a member is suspected.
-     *                <li><code>GET_ABS_MAJORITY</code>: wait for the majority of <em>all</em> members. This includes
-     *                failed members, so it may block if no timeout is specified.
-     *                <li><code>GET_N</CODE>: wait for N members. Return if n is >= membership+suspects.
-     *                <li><code>GET_NONE</code>: don't wait for any response. Essentially send an asynchronous
-     *                message to the group members.
-     *                </ol>
+     * @param options The request options to be used for this call
      */
-    public GroupRequest(Message msg, RequestCorrelator corr, Vector<Address> targets, int rsp_mode) {
-        this(msg, corr, targets, rsp_mode, 0, 0);
-    }
-
-
-    /**
-     @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     (e.g. if a suspicion service is available; timeouts are not needed).
-     */
-    public GroupRequest(Message m, RequestCorrelator corr, Collection<Address> mbrs, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, corr, null, null, rsp_mode, timeout);
-        this.expected_mbrs=expected_mbrs;
-        int size=mbrs.size();
+    public GroupRequest(Message msg, RequestCorrelator corr, Collection<Address> targets, RequestOptions options) {
+        super(msg, corr, null, options);
+        int size=targets.size();
         requests=new HashMap<Address,Rsp>(size);
-        setTargets(mbrs);
+        setTargets(targets);
     }
 
-    public GroupRequest(Message m, RequestCorrelator corr, Address target, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, corr, null, null, rsp_mode, timeout);
-        this.expected_mbrs=expected_mbrs;
+    public GroupRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
+        super(m, corr, null, options);
         requests=new HashMap<Address,Rsp>(1);
         setTarget(target);
     }
 
 
-    public GroupRequest(Message m, Transport transport, Vector<Address> members, int rsp_mode) {
-        this(m,transport,members,rsp_mode,0,0);
-    }
-
-
-    /**
-     * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     *                       (e.g. if a suspicion service is available; timeouts are not needed).
-     */
-    public GroupRequest(Message m, Transport transport, Collection<Address> mbrs, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, null, transport, null, rsp_mode, timeout);
-        this.expected_mbrs=expected_mbrs;
+    public GroupRequest(Message m, Transport transport, Collection<Address> mbrs, RequestOptions options) {
+        super(m, null, transport, options);
         int size=mbrs.size();
         requests=new HashMap<Address,Rsp>(size);
         setTargets(mbrs);
@@ -162,6 +121,7 @@ public class GroupRequest extends Request {
         if(rsp == null)
             return;
 
+        RspFilter rsp_filter=options.getRspFilter();
         boolean responseReceived=false;
         if(!rsp.wasReceived()) {
             if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender)))
@@ -343,7 +303,7 @@ public class GroupRequest extends Request {
     private void sendRequest(final Collection<Address> targetMembers, long requestId,boolean use_anycasting) throws Exception {
         try {
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, use_anycasting);
             }
             else {
                 if(use_anycasting) {                                                          
@@ -373,7 +333,7 @@ public class GroupRequest extends Request {
 
         final int num_total=requests.size();
 
-        switch(rsp_mode) {
+        switch(options.getMode()) {
             case GET_FIRST:
                 if(num_received > 0)
                     return true;
@@ -394,11 +354,11 @@ public class GroupRequest extends Request {
                     return true;
                 break;
             case GET_N:
-                return num_received >= expected_mbrs || num_received + num_not_received < expected_mbrs && num_received + num_suspected >= expected_mbrs;
+                return true;
             case GET_NONE:
                 return true;
             default :
-                if(log.isErrorEnabled()) log.error("rsp_mode " + rsp_mode + " unknown !");
+                if(log.isErrorEnabled()) log.error("rsp_mode " + options.getMode() + " unknown !");
                 break;
         }
         return false;
