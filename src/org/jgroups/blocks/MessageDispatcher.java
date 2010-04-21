@@ -33,7 +33,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.102 2010/04/13 17:57:10 ferraro Exp $
+ * @version $Id: MessageDispatcher.java,v 1.103 2010/04/21 09:02:46 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -470,7 +470,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        GroupRequest req=new GroupRequest(msg, corr, real_dests, options.getMode(), options.getTimeout(), 0);
+        GroupRequest req=new GroupRequest(msg, corr, real_dests, options);
         req.setResponseFilter(options.getRspFilter());
         req.setBlockForResults(block_for_results);
 
@@ -514,7 +514,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, opts.getMode(), opts.getTimeout());
+        UnicastRequest req=new UnicastRequest(msg, corr, dest, opts);
         try {
             req.execute();
         }
@@ -546,7 +546,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, options.getMode(), options.getTimeout());
+        UnicastRequest req=new UnicastRequest(msg, corr, dest, options);
         req.setBlockForResults(false);
         try {
             req.execute();
