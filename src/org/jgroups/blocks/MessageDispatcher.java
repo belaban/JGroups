@@ -33,7 +33,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.103 2010/04/21 09:02:46 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.104 2010/04/21 10:55:26 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -460,6 +460,11 @@ public class MessageDispatcher implements RequestHandler {
             }
         }
 
+        if(options != null && options.hasExclusionList()) {
+            Collection<Address> exclusion_list=options.getExclusionList();
+            real_dests.removeAll(exclusion_list);
+        }
+
         // don't even send the message if the destination list is empty
         if(log.isTraceEnabled())
             log.trace("real_dests=" + real_dests);
@@ -471,13 +476,11 @@ public class MessageDispatcher implements RequestHandler {
         }
 
         GroupRequest req=new GroupRequest(msg, corr, real_dests, options);
-        req.setResponseFilter(options.getRspFilter());
+        if(options != null) {
+            req.setResponseFilter(options.getRspFilter());
+            req.setAnycasting(options.getAnycasting());
+        }
         req.setBlockForResults(block_for_results);
-
-        // we override anycasting and always send a multicast if the transport supports IP multicasting
-        // boolean use_anycasting=options.getAnycasting() && !hardware_multicast_supported;
-        // req.setAnycasting(use_anycasting);
-        req.setAnycasting(options.getAnycasting());
 
         try {
             req.execute();
