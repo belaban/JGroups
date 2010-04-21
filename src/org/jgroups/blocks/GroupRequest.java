@@ -47,15 +47,13 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.52 2010/04/21 09:01:47 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.53 2010/04/21 10:55:46 belaban Exp $
  */
 public class GroupRequest extends Request {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")
     private final Map<Address,Rsp> requests;
-
-    protected boolean use_anycasting;
 
     @GuardedBy("lock")
     int num_received, num_not_received, num_suspected;
@@ -96,16 +94,16 @@ public class GroupRequest extends Request {
 
 
     public boolean getAnycasting() {
-        return use_anycasting;
+        return options.getAnycasting();
     }
 
     public void setAnycasting(boolean anycasting) {
-        this.use_anycasting=anycasting;
+        options.setAnycasting(anycasting);
     }
 
 
     public void sendRequest() throws Exception {
-        sendRequest(requests.keySet(), req_id, use_anycasting);
+        sendRequest(requests.keySet(), req_id);
     }
 
     /* ---------------------- Interface RspCollector -------------------------- */
@@ -300,13 +298,13 @@ public class GroupRequest extends Request {
     }
 
 
-    private void sendRequest(final Collection<Address> targetMembers, long requestId,boolean use_anycasting) throws Exception {
+    private void sendRequest(final Collection<Address> targetMembers, long requestId) throws Exception {
         try {
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, use_anycasting);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
             }
             else {
-                if(use_anycasting) {                                                          
+                if(options.getAnycasting()) {                                                          
                     for(Address mbr: targetMembers) {
                         Message copy=request_msg.copy(true);
                         copy.setDest(mbr);
