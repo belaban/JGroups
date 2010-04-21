@@ -7,13 +7,14 @@ import org.jgroups.Message;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RspCollector;
+import org.jgroups.blocks.RequestOptions;
 import org.jgroups.conf.ClassConfigurator;
 
 /**
  * A request correlator that adds a mux header to incoming and outgoing messages.
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxRequestCorrelator.java,v 1.2 2010/04/15 20:05:22 ferraro Exp $
+ * @version $Id: MuxRequestCorrelator.java,v 1.3 2010/04/21 10:54:07 belaban Exp $
  */
 public class MuxRequestCorrelator extends RequestCorrelator {
 
@@ -26,9 +27,9 @@ public class MuxRequestCorrelator extends RequestCorrelator {
     }
 
     @Override
-    public void sendRequest(long requestId, Collection<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
+    public void sendRequest(long requestId, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
         msg.putHeader(MUX_ID, header);
-        super.sendRequest(requestId, dest_mbrs, msg, coll, use_anycasting);
+        super.sendRequest(requestId, dest_mbrs, msg, coll, options);
     }
 
     @Override
