@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
  * MultiRequest is currently not used
  *
  * @author Bela Ban
- * @version $Id: MultiRequest.java,v 1.1 2010/01/18 14:29:50 belaban Exp $
+ * @version $Id: MultiRequest.java,v 1.2 2010/04/21 09:01:13 belaban Exp $
  * @since 2.9
  */
 public class MultiRequest extends Request {
@@ -38,6 +38,7 @@ public class MultiRequest extends Request {
     int num_received, num_not_received, num_suspected;
 
 
+
     /**
      * @param m
      *                The message to be sent
@@ -48,74 +49,34 @@ public class MultiRequest extends Request {
      *                <code>GroupRequest</code> uses it instead of a
      *                <code>Transport</code> is that multiple
      *                requests/responses might be sent/received concurrently.
-     * @param members
+     * @param mbrs
      *                The initial membership. This value reflects the membership
      *                to which the request is sent (and from which potential
      *                responses are expected). Is reset by reset().
-     * @param rsp_mode
-     *                How many responses are expected. Can be
-     *                <ol>
-     *                <li><code>GET_ALL</code>: wait for all responses from
-     *                non-suspected members. A suspicion service might warn us
-     *                when a member from which a response is outstanding has
-     *                crashed, so it can be excluded from the responses. If no
-     *                suspicion service is available, a timeout can be used (a
-     *                value of 0 means wait forever). <em>If a timeout of
-     *                0 is used, no suspicion service is available and a member from which we
-     *                expect a response has crashed, this methods blocks forever !</em>.
-     *                <li><code>GET_FIRST</code>: wait for the first
-     *                available response.
-     *                <li><code>GET_MAJORITY</code>: wait for the majority
-     *                of all responses. The majority is re-computed when a
-     *                member is suspected.
-     *                <li><code>GET_ABS_MAJORITY</code>: wait for the
-     *                majority of <em>all</em> members. This includes failed
-     *                members, so it may block if no timeout is specified.
-     *                <li><code>GET_N</CODE>: wait for N members. Return if
-     *                n is >= membership+suspects.
-     *                <li><code>GET_NONE</code>: don't wait for any
-     *                response. Essentially send an asynchronous message to the
-     *                group members.
-     *                </ol>
+     * @param options The options to be passed to the request
      */
-    public MultiRequest(Message m, RequestCorrelator corr, Vector<Address> members, int rsp_mode) {
-        this(m,corr,members,rsp_mode,0,0);
-    }
-
-
-    /**
-     @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     (e.g. if a suspicion service is available; timeouts are not needed).
-     */
-    public MultiRequest(Message m, RequestCorrelator corr, Collection<Address> mbrs, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, corr, null, null, rsp_mode, timeout);
+    public MultiRequest(Message m, RequestCorrelator corr, Collection<Address> mbrs, RequestOptions options, int expected_mbrs) {
+        super(m, corr, null, options);
         this.expected_mbrs=expected_mbrs;
         responses=new Rsp[mbrs.size()];
         setTargets(mbrs);
     }
 
-    public MultiRequest(Message m, RequestCorrelator corr, Address target, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, corr, null, null, rsp_mode, timeout);
+    public MultiRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options, int expected_mbrs) {
+        super(m, corr, null, options);
         this.expected_mbrs=expected_mbrs;
         responses=new Rsp[1];
         setTarget(target);
     }
 
 
-    public MultiRequest(Message m, Transport transport, Vector<Address> members, int rsp_mode) {
-        this(m,transport,members,rsp_mode,0,0);
-    }
-
 
     /**
      * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      *                       (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public MultiRequest(Message m, Transport transport, Collection<Address> mbrs, int rsp_mode,
-                        long timeout, int expected_mbrs) {
-        super(m, null, transport, null, rsp_mode, timeout);
+    public MultiRequest(Message m, Transport transport, Collection<Address> mbrs, RequestOptions options, int expected_mbrs) {
+        super(m, null, transport, options);
         this.expected_mbrs=expected_mbrs;
         responses=new Rsp[1];
         setTargets(mbrs);
@@ -174,6 +135,7 @@ public class MultiRequest extends Request {
         if(rsp == null)
             return;
 
+        RspFilter rsp_filter=options.getRspFilter();
         boolean responseReceived=false;
         if(!rsp.wasReceived()) {
             if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender)))
@@ -355,7 +317,7 @@ public class MultiRequest extends Request {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, use_anycasting);
             }
             else {
                 if(use_anycasting) {
@@ -385,7 +347,7 @@ public class MultiRequest extends Request {
 
         final int num_total=responses.length;
 
-        switch(rsp_mode) {
+        switch(options.getMode()) {
             case GET_FIRST:
                 if(num_received > 0)
                     return true;
@@ -413,7 +375,7 @@ public class MultiRequest extends Request {
             case GET_NONE:
                 return true;
             default :
-                if(log.isErrorEnabled()) log.error("rsp_mode " + rsp_mode + " unknown !");
+                if(log.isErrorEnabled()) log.error("rsp_mode " + options.getMode() + " unknown !");
                 break;
         }
         return false;

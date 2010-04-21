@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.6 2010/01/17 12:10:40 belaban Exp $
+ * @version $Id: UnicastRequest.java,v 1.7 2010/04/21 08:58:16 belaban Exp $
  */
 public class UnicastRequest<T> extends Request {
     protected final Rsp<T>     result;
@@ -30,8 +30,8 @@ public class UnicastRequest<T> extends Request {
      @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public UnicastRequest(Message m, RequestCorrelator corr, Address target, int rsp_mode, long timeout) {
-        super(m, corr, null, null, rsp_mode, timeout);
+    public UnicastRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
+        super(m, corr, null, options);
         this.target=target;
         result=new Rsp(target);
     }
@@ -41,8 +41,8 @@ public class UnicastRequest<T> extends Request {
      * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      *                       (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public UnicastRequest(Message m, Transport transport, Address target, int rsp_mode, long timeout) {
-        super(m, null, transport, null, rsp_mode, timeout);
+    public UnicastRequest(Message m, Transport transport, Address target, RequestOptions options) {
+        super(m, null, transport, options);
         this.target=target;
         result=new Rsp(target);
     }
@@ -52,7 +52,7 @@ public class UnicastRequest<T> extends Request {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendUnicastRequest(req_id, target, request_msg, rsp_mode == GET_NONE? null : this);
+                corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == GET_NONE? null : this);
             }
             else {
                 transport.send(request_msg);
@@ -73,6 +73,8 @@ public class UnicastRequest<T> extends Request {
      * <code>execute()</code> returns.
      */
     public void receiveResponse(Object response_value, Address sender) {
+        RspFilter rsp_filter=options.getRspFilter();
+
         lock.lock();
         try {
             if(done)
@@ -195,7 +197,7 @@ public class UnicastRequest<T> extends Request {
 
     @GuardedBy("lock")
     protected boolean responsesComplete() {
-        return done || rsp_mode == GET_NONE || result.wasReceived() || result.wasSuspected();
+        return done || options.getMode() == GET_NONE || result.wasReceived() || result.wasSuspected();
     }
 
 

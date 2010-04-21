@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.5 2010/01/18 14:34:13 belaban Exp $
+ * @version $Id: Request.java,v 1.6 2010/04/21 08:57:59 belaban Exp $
  */
 public abstract class Request implements RspCollector, Command, NotifyingFuture {
     /** return only first response */
@@ -46,46 +46,46 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     public static final int GET_NONE=6;
 
 
-    protected static final Log log=LogFactory.getLog(Request.class);
+    protected static final Log        log=LogFactory.getLog(Request.class);
 
     /** To generate unique request IDs (see getRequestId()) */
     protected static final AtomicLong REQUEST_ID=new AtomicLong(1);
 
-    protected final Lock lock=new ReentrantLock();
+    protected final Lock              lock=new ReentrantLock();
 
     /** Is set as soon as the request has received all required responses */
-    protected final Condition completed=lock.newCondition();
+    protected final Condition         completed=lock.newCondition();
 
     protected final  Message          request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
     protected final Transport         transport;    // Transport (one of them has to be non-null)
 
-    protected RspFilter               rsp_filter;
+    protected final RequestOptions    options;
 
-    protected final int               rsp_mode;
     protected volatile boolean        done;
     protected boolean                 block_for_results=true;
-    protected final long              timeout;
     protected final long              req_id; // request ID for this request
 
     protected volatile FutureListener listener;
 
 
     
-
+    @Deprecated
     public Request(Message request, RequestCorrelator corr, Transport transport, RspFilter filter, int mode, long timeout) {
+        this(request, corr, transport, new RequestOptions(mode, timeout, false, filter));
+    }
+
+    public Request(Message request, RequestCorrelator corr, Transport transport, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
         this.transport=transport;
-        this.rsp_filter=filter;
-        this.rsp_mode=mode;
-        this.timeout=timeout;
+        this.options=options;
         this.req_id=getRequestId();
     }
 
 
     public void setResponseFilter(RspFilter filter) {
-        rsp_filter=filter;
+        options.setRspFilter(filter);
     }
 
     public boolean getBlockForResults() {
@@ -110,12 +110,12 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
         }
 
         sendRequest();
-        if(!block_for_results || rsp_mode == GET_NONE)
+        if(!block_for_results || options.getMode() == GET_NONE)
             return true;
 
         lock.lock();
         try {
-            return responsesComplete(timeout);
+            return responsesComplete(options.getTimeout());
         }
         finally {
             done=true;
@@ -179,7 +179,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
         ret.append(super.toString());
-        ret.append("req_id=").append(req_id).append(", mode=" + modeToString(rsp_mode));
+        ret.append("req_id=").append(req_id).append(", mode=" + modeToString(options.getMode()));
         return ret.toString();
     }
 
