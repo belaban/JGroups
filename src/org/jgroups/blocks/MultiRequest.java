@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
  * MultiRequest is currently not used
  *
  * @author Bela Ban
- * @version $Id: MultiRequest.java,v 1.2 2010/04/21 09:01:13 belaban Exp $
+ * @version $Id: MultiRequest.java,v 1.3 2010/04/21 10:54:21 belaban Exp $
  * @since 2.9
  */
 public class MultiRequest extends Request {
@@ -31,8 +31,6 @@ public class MultiRequest extends Request {
     private final Rsp[] responses;
 
     protected final int expected_mbrs;
-
-    protected boolean use_anycasting;
 
     @GuardedBy("lock")
     int num_received, num_not_received, num_suspected;
@@ -96,11 +94,11 @@ public class MultiRequest extends Request {
     }
 
     public boolean getAnycasting() {
-        return use_anycasting;
+        return options.getAnycasting();
     }
 
     public void setAnycasting(boolean anycasting) {
-        this.use_anycasting=anycasting;
+        options.setAnycasting(anycasting);
     }
 
 
@@ -111,7 +109,7 @@ public class MultiRequest extends Request {
         for(Rsp rsp: responses)
             targets.add(rsp.getSender());
 
-        sendRequest(targets, req_id, use_anycasting);
+        sendRequest(targets, req_id, options);
     }
 
     Rsp findResponse(Address target) {
@@ -313,14 +311,14 @@ public class MultiRequest extends Request {
 
 
 
-    private void sendRequest(List<Address> targetMembers, long requestId,boolean use_anycasting) throws Exception {
+    private void sendRequest(List<Address> targetMembers, long requestId, RequestOptions options) throws Exception {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, use_anycasting);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
             }
             else {
-                if(use_anycasting) {
+                if(options.getAnycasting()) {
                     for(Address mbr: targetMembers) {
                         Message copy=request_msg.copy(true);
                         copy.setDest(mbr);
