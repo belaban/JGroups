@@ -1,11 +1,14 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Message;
+import org.jgroups.Address;
 import org.jgroups.util.Util;
+
+import java.util.*;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.8 2010/03/26 12:47:39 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.9 2010/04/21 10:51:20 belaban Exp $
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
@@ -25,6 +28,9 @@ public class RequestOptions {
 
     /** The flags set in the message in which a request is sent */
     private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
+
+    /** A list of members which should be excluded from a call */
+    private Set<Address> exclusion_list;
 
 
     public static final RequestOptions SYNC=new RequestOptions(Request.GET_ALL, 5000);
@@ -110,6 +116,25 @@ public class RequestOptions {
         return this;
     }
 
+    public boolean hasExclusionList() {
+        return exclusion_list != null && !exclusion_list.isEmpty();
+    }
+
+    public Collection<Address> getExclusionList() {
+        if(exclusion_list == null)
+            return exclusion_list;
+        else
+            return Collections.unmodifiableCollection(exclusion_list);
+    }
+
+    public RequestOptions setExclusionList(Address ... mbrs) {
+        if(exclusion_list == null)
+            exclusion_list=new HashSet<Address>();
+        else
+            exclusion_list.clear();
+        exclusion_list.addAll(Arrays.asList(mbrs));
+        return this;
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -120,6 +145,8 @@ public class RequestOptions {
         sb.append(", flags=" + Message.flagsToString(flags));
         if(scope > 0)
             sb.append(", scope=" + scope);
+        if(exclusion_list != null)
+            sb.append(", exclusion list: " + Util.print(exclusion_list));
         return sb.toString();
     }
 }
