@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentMap;
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
  * an elements is marked as removable, but later reinserted, the mark is removed.
  * @author Bela Ban
- * @version $Id: LazyRemovalCache.java,v 1.4 2010/03/31 11:22:16 belaban Exp $
+ * @version $Id: LazyRemovalCache.java,v 1.5 2010/04/22 06:25:28 belaban Exp $
  */
 public class LazyRemovalCache<K,V> {
     private final ConcurrentMap<K,Entry<V>> map=new ConcurrentHashMap<K,Entry<V>>();
@@ -127,6 +127,14 @@ public class LazyRemovalCache<K,V> {
                 }
             }
         }
+
+        // now make sure that all elements in keys have removable=false
+        for(K key: keys) {
+            Entry<V> val=map.get(key);
+            if(val != null && val.removable)
+                val.removable=false;
+        }
+
         checkMaxSizeExceeded();
     }
 
