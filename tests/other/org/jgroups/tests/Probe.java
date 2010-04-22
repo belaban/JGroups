@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -60,7 +60,7 @@ public class Probe {
             }
             catch(Throwable t) {
                 System.out.println("\n");
-                return;
+                break;
             }
 
             byte[] data=rsp.getData();
@@ -69,14 +69,15 @@ public class Probe {
                 continue;
             }
 
+            count++;
             if(matches(response, match)) {
                 matched++;
-                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes):\n" + response);
+                System.out.println("\n#" + count + " (" + rsp.getLength() + " bytes):\n" + response);
             }
             else
                 not_matched++;
         }
-        System.out.println("\nTotal responses=" + count + ", " + matched + " matches, " + not_matched + " non-matches");
+        System.out.println("\n" + count + " responses (" + matched + " matches, " + not_matched + " non matches)");
     }
 
     private boolean checkDuplicateResponse(String response) {
@@ -171,8 +172,11 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-ipv6] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] " +
-                "[-match <pattern>] QUERY\n" +
-                "(QUERY is a whitespace separate list of keys)");
+                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
+                "[key[=value]]*\n\n" +
+                "Examples:\n" +
+                "probe.sh keys // dumps all keys\n" +
+                "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
+                "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n");
     }
 }
