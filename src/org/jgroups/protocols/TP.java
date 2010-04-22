@@ -13,6 +13,7 @@ import org.jgroups.util.ThreadFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.DataOutputStream;
+import java.io.InterruptedIOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.40 2010/02/08 07:18:12 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.41 2010/04/22 14:01:36 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1183,6 +1184,9 @@ public abstract class TP extends Protocol {
 
         try {
             send(msg, dest, multicast);
+        }
+        catch(InterruptedIOException iex) {
+            ;
         }
         catch(InterruptedException interruptedEx) {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
