@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.11.4.3 $
+ * @version $Revision: 1.11.4.4 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -60,7 +60,7 @@ public class Probe {
             }
             catch(Throwable t) {
                 System.out.println("\n");
-                return;
+                break;
             }
 
             byte[] data=rsp.getData();
@@ -69,14 +69,15 @@ public class Probe {
                 continue;
             }
 
+            count++;
             if(matches(response, match)) {
                 matched++;
-                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes):\n" + response);
+                System.out.println("\n#" + count + " (" + rsp.getLength() + " bytes):\n" + response);
             }
             else
                 not_matched++;
         }
-        System.out.println("\nTotal responses=" + count + ", " + matched + " matches, " + not_matched + " non-matches");
+        System.out.println("\n" + count + " responses (" + matched + " matches, " + not_matched + " non matches)");
     }
 
     private boolean checkDuplicateResponse(String response) {
@@ -108,12 +109,14 @@ public class Probe {
         InetAddress  addr=null, bind_addr=null;
         int          port=0;
         int          ttl=32;
-        long         timeout=1000;
+        long         timeout=500;
         final String DEFAULT_DIAG_ADDR="224.0.75.75";
+        final String DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
         final int    DEFAULT_DIAG_PORT=7500;
         List<String> query=new ArrayList<String>();
         String       match=null;
         boolean      weed_out_duplicates=false;
+        boolean      ipv6=false;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -145,6 +148,10 @@ public class Probe {
                     weed_out_duplicates=true;
                     continue;
                 }
+                if("-ipv6".equals(args[i])) {
+                    ipv6=true;
+                    continue;
+                }
                 if("-help".equals(args[i]) || "-h".equals(args[i])) {
                     help();
                     return;
@@ -153,7 +160,7 @@ public class Probe {
             }
             Probe p=new Probe();
             if(addr == null)
-                addr=InetAddress.getByName(DEFAULT_DIAG_ADDR);
+                addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
             p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates);
@@ -164,9 +171,12 @@ public class Probe {
     }
 
     static void help() {
-        System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] " +
-                "[-match <pattern>] QUERY\n" +
-                "(QUERY is a whitespace separate list of keys)");
+        System.out.println("Probe [-help] [-addr <addr>] [-ipv6] [-bind_addr <addr>] " +
+                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
+                "[key[=value]]*\n\n" +
+                "Examples:\n" +
+                "probe.sh keys // dumps all keys\n" +
+                "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
+                "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n");
     }
 }
