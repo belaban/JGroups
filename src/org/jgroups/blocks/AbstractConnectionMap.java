@@ -153,12 +153,12 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
             for(Iterator<Entry<Address,V>> i = conns.entrySet().iterator();i.hasNext();) {
                 Entry<Address,V> e = i.next();
                 Util.close(e.getValue());          
-            }           
+            }
+            clear();
         }
         finally {
             lock.unlock();
-        }   
-        clear();
+        }           
         conn_listeners.clear();
     }
 

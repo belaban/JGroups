@@ -413,20 +413,16 @@ public class TCPConnectionMap{
          * @param offset
          * @param length
          */
-        private void send(byte[] data, int offset, int length) throws Exception{
-            if(isSenderUsed()) {
-                try {
-                    // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
-                    byte[] tmp=new byte[length];
-                    System.arraycopy(data, offset, tmp, 0, length);
-                    sender.getQueue().put(tmp);
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+        private void send(byte[] data, int offset, int length) throws Exception {
+            if (isSenderUsed()) {
+                // we need to copy the byte[] buffer here because the original buffer might get
+                // changed meanwhile
+                byte[] tmp = new byte[length];
+                System.arraycopy(data, offset, tmp, 0, length);
+                sender.addToQueue(tmp);
+            } else {
+                _send(data, offset, length, true);
             }
-            else
-                _send(data, offset, length, true);           
         }
 
         /**
@@ -578,9 +574,12 @@ public class TCPConnectionMap{
                 this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
                 this.send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);
             }
-
-            public BlockingQueue<byte[]> getQueue() {
-                return send_queue;
+            
+            public void addToQueue(byte[] data) throws Exception{
+                if(isOpenAndRunning())
+                    send_queue.add(data);
+                else 
+                    throw new Exception("Sender has been either stopped or underlying connection is broken");
             }
 
             public void start() {
@@ -594,9 +593,13 @@ public class TCPConnectionMap{
                     runner.interrupt();
                 }
             }
+            
+            public boolean isOpenAndRunning() {
+                return sending.get() && isOpen();
+            }
 
             public void run() {
-                while(!Thread.currentThread().isInterrupted() && isOpen()) {
+                while(isOpenAndRunning()) {
                     byte[] data=null;
                     try {
                         data=send_queue.take();
