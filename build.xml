@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.247 2010/04/21 10:57:05 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.248 2010/04/23 06:51:47 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -117,14 +117,13 @@
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
             depends="compile,
-                jgroups-all.jar,
-                jgroups-core.jar,
+                jgroups.jar,
     			jgroups-sources.jar">
     </target>
 
 
-    <target name="jgroups-all.jar"
-            description="Creates the jgroups-all.jar (includes everything)" depends="compile,create-schema">
+    <target name="jgroups.jar"
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile,create-schema">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
