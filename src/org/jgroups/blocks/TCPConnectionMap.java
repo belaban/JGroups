@@ -579,7 +579,7 @@ public class TCPConnectionMap{
                 if(isOpenAndRunning())
                     send_queue.add(data);
                 else 
-                    throw new Exception("Sender has been either stopped or underlying connection is broken");
+                    throw new Exception("Sender running=" + sending.get() +", underlying connection open= " + isOpen());
             }
 
             public void start() {
