@@ -6,7 +6,7 @@
 # the next step
 
 # Author: Bela Ban
-# version: $Id: release_to_nexus.sh,v 1.3 2010/04/23 07:41:50 belaban Exp $
+# version: $Id: release_to_nexus.sh,v 1.4 2010/04/23 14:15:40 belaban Exp $
 
 
 DIST=../dist
@@ -19,7 +19,7 @@ REPO=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/
 
 
 echo "Deploying $JAR to $REPO"
-echo mvn deploy:deploy-file -Dfile=$JAR -Durl=$REPO -DpomFile=$POM -DserverId=jboss-releases-repository
+mvn deploy:deploy-file -Dfile=$JAR -Durl=$REPO -DpomFile=$POM -DserverId=jboss-releases-repository
 
 
 echo "Deploying $SRC_JAR to $REPO"
