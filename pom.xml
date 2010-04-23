@@ -7,6 +7,16 @@
     <name>JGroups</name>
     <version>2.10.0.Beta1</version>
     <url>http://www.jgroups.org</url>
+
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Releases Repository</name>
+            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <repositories>
         <repository>
             <id>jboss</id>
