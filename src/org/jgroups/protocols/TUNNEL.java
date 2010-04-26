@@ -35,28 +35,31 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.97 2010/04/20 20:12:47 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.98 2010/04/26 08:50:33 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
 
-   /*
+    /*
     * ----------------------------------------- Properties
     * --------------------------------------------------
     */
 
-   @Deprecated
-   @Property(name = "router_host", deprecatedMessage = "router_host is deprecated. Specify target GRs using gossip_router_hosts", description = "Router host address")
-   private String router_host = null;
+    @Deprecated
+    @Property(name = "router_host", deprecatedMessage = "router_host is deprecated. Specify target GRs using gossip_router_hosts", description = "Router host address")
+    private String router_host = null;
 
-   @Deprecated
-   @Property(name = "router_port", deprecatedMessage = "router_port is deprecated. Specify target GRs using gossip_router_hosts", description = "Router port")
-   private int router_port = 0;
+    @Deprecated
+    @Property(name = "router_port", deprecatedMessage = "router_port is deprecated. Specify target GRs using gossip_router_hosts", description = "Router port")
+    private int router_port = 0;
 
-   @Property(description = "Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
-   private long reconnect_interval = 5000;
+    @Property(description = "Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
+    private long reconnect_interval = 5000;
 
-   /*
+    @Property(description="Should TCP no delay flag be turned on")
+    boolean tcp_nodelay=false;
+
+    /*
     * --------------------------------------------- Fields
     * ------------------------------------------------------
     */
@@ -169,7 +172,8 @@ public class TUNNEL extends TP {
         sock = new DatagramSocket(0, bind_addr);
 
         for (InetSocketAddress gr : gossip_router_hosts) {
-           RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,new StubConnectionListener());           
+           RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,new StubConnectionListener());
+           stub.setTcpNoDelay(tcp_nodelay);
            stubs.add(stub);
         }     
         // loopback turned on is mandatory
