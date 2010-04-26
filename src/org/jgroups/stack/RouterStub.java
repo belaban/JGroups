@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.58 2010/03/13 06:33:47 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.59 2010/04/26 08:50:53 belaban Exp $
  */
 public class RouterStub {
 
@@ -50,6 +50,8 @@ public class RouterStub {
 
     private int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
     // forever, or until the sock is closed)
+
+    private boolean tcp_nodelay=true;
     
     private StubReceiver receiver;
 
@@ -77,7 +79,15 @@ public class RouterStub {
     public synchronized StubReceiver  getReceiver() {
         return receiver;
     }
-    
+
+    public boolean isTcpNoDelay() {
+        return tcp_nodelay;
+    }
+
+    public void setTcpNoDelay(boolean tcp_nodelay) {
+        this.tcp_nodelay=tcp_nodelay;
+    }
+
     public synchronized void interrupt() {
         if(receiver != null) {
             Thread thread = receiver.getThread();
@@ -137,6 +147,7 @@ public class RouterStub {
                 sock.bind(new InetSocketAddress(bind_addr, 0));
                 sock.setSoTimeout(sock_read_timeout);
                 sock.setSoLinger(true, 2);
+                sock.setTcpNoDelay(tcp_nodelay);
                 Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
                 input=new DataInputStream(sock.getInputStream());                
