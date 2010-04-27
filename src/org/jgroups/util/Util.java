@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.259 2010/03/25 17:03:20 belaban Exp $
+ * @version $Id: Util.java,v 1.260 2010/04/27 09:27:32 belaban Exp $
  */
 public class Util {
 
@@ -83,6 +83,8 @@ public class Util {
     private static Method NETWORK_INTERFACE_IS_LOOPBACK=null;
 
 
+    private static SocketFactory socket_factory=new DefaultSocketFactory();
+
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
@@ -121,6 +123,14 @@ public class Util {
         }
     }
 
+    public static SocketFactory getSocketFactory() {
+        return socket_factory;
+    }
+
+    public static synchronized void setSocketFactory(SocketFactory factory) {
+        if(factory != null)
+            socket_factory=factory;
+    }
 
 
     public static void assertTrue(boolean condition) {
