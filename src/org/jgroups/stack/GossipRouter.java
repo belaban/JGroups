@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.72 2010/03/13 06:33:47 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.73 2010/04/27 17:53:05 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -605,7 +605,7 @@ public class GossipRouter {
         void close() {
             if(active.compareAndSet(true, false)) {
                 if(log.isDebugEnabled())
-                    log.debug("Closing connection handler " + this.toString());
+                    log.debug(this + " is being closed");
                 
                 Util.close(input);
                 Util.close(output);
@@ -619,6 +619,8 @@ public class GossipRouter {
         public void run() {
             if(active.compareAndSet(false, true)) {
                 try {
+                    if(log.isDebugEnabled())
+                        log.debug(this + " entering receive loop");
                     readLoop();
                 }
                 finally {
@@ -646,7 +648,7 @@ public class GossipRouter {
                     ConcurrentMap<Address,ConnectionHandler> map;
 
                     if(log.isTraceEnabled())
-                        log.trace("Received " + request + " on socket " + sock);
+                        log.trace(this + " received " + request);
                     
                     switch(command) {
 
@@ -661,7 +663,7 @@ public class GossipRouter {
                         case GossipRouter.MESSAGE:
                             if(request.buffer == null || request.buffer.length == 0) {
                                 if(log.isWarnEnabled())
-                                    log.warn("received null message");
+                                    log.warn(this +" received null message");
                                 break;
                             }
 
@@ -670,7 +672,7 @@ public class GossipRouter {
                             }
                             catch(Exception e) {
                                 if(log.isErrorEnabled())
-                                    log.error("failed routing request to " + addr, e);
+                                    log.error(this +" failed in routing request to " + addr, e);
                             }
                             break;
 
@@ -690,12 +692,16 @@ public class GossipRouter {
                             for(PingData data: mbrs)
                                 data.writeTo(output);
                             output.flush();
+                            if(log.isDebugEnabled())
+                                log.debug(this + " responded to GOSSIP_GET with " + mbrs);
                             break;
 
                         case GossipRouter.DISCONNECT:
                             try {
                                 removeEntry(group, addr);
                                 sendData(new GossipData(DISCONNECT_OK));
+                                if(log.isDebugEnabled())
+                                    log.debug(this + " disconnect completed");
                             }
                             catch(Exception e) {
                                 sendData(new GossipData(OP_FAIL));
@@ -710,6 +716,8 @@ public class GossipRouter {
                             notifyAbnormalConnectionTear(this, new EOFException("Connection broken"));
                             break;
                     }
+                    if(log.isTraceEnabled())
+                        log.trace(this + " processed  " + request);
                 }
                 catch(SocketTimeoutException ste) {
                 }                
@@ -728,8 +736,11 @@ public class GossipRouter {
         }
 
         private void handleConnect(GossipData request, Address addr, String group) throws Exception {
-            ConcurrentMap<Address, ConnectionHandler> map = null;
+            ConcurrentMap<Address, ConnectionHandler> map = null;                       
             try {               
+                
+                checkExistingConnection(addr,group);
+                
                 String logical_name = request.getLogicalName();
                 if (logical_name != null && addr instanceof org.jgroups.util.UUID)
                     org.jgroups.util.UUID.add((org.jgroups.util.UUID) addr, logical_name);
@@ -756,14 +767,49 @@ public class GossipRouter {
                 }
                 sendStatus(CONNECT_OK);
                 
-                if(log.isTraceEnabled())
-                    log.trace("Connection established, added  " +addr + " to group "+ group);
+                if(log.isDebugEnabled())
+                    log.debug(this + " connection handshake completed, added " +addr + " to group "+ group);
                 
             } catch (Exception e) {
                 removeEntry(group, addr);
                 sendStatus(OP_FAIL);
-                throw new Exception("Unsuccessful connection setup handshake");
+                throw new Exception("Unsuccessful connection setup handshake for " + this);
             }
+        }
+        
+        private boolean checkExistingConnection(Address addr, String group) throws Exception {
+            boolean isOldExists = false;
+            if (address_mappings.containsKey(addr)) {
+                ConcurrentMap<Address, ConnectionHandler> map = null;
+                ConnectionHandler oldConnectionH = null;
+                if (group != null) {
+                    map = routingTable.get(group);
+                    if (map != null) {
+                        oldConnectionH = map.get(addr);
+                    }
+                } else {
+                    for (Map.Entry<String, ConcurrentMap<Address, ConnectionHandler>> entry : routingTable
+                                    .entrySet()) {
+                        map = entry.getValue();
+                        if (map != null) {
+                            oldConnectionH = map.get(addr);
+                        }
+                    }
+                }
+                if (oldConnectionH != null) {
+                    isOldExists = true;
+                    if (log.isDebugEnabled()) {
+                        log.debug("Found old connection[" + oldConnectionH + "] for addr[" + addr
+                                        + "]. Closing old connection ...");
+                    }
+                    oldConnectionH.close();
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("No old connection for addr[" + addr + "] exists");
+                    }
+                }
+            } 
+            return isOldExists;
         }
              
         private void sendStatus(byte status) {
@@ -786,9 +832,10 @@ public class GossipRouter {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append("peer: " + sock.getInetAddress());
+            sb.append("ConnectionHandler[peer: " + sock.getInetAddress());
             if(!logical_addrs.isEmpty())
                 sb.append(", logical_addrs: " + Util.printListWithDelimiter(logical_addrs, ", "));
+            sb.append("]");
             return sb.toString();
         }
     }
