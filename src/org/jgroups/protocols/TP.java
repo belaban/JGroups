@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.307 2010/04/22 14:01:59 belaban Exp $
+ * @version $Id: TP.java,v 1.308 2010/04/27 14:25:16 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -1984,9 +1984,9 @@ public abstract class TP extends Protocol {
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
             if(can_bind_to_mcast_addr)
-                diag_sock=Util.createMulticastSocket(diagnostics_addr, diagnostics_port, log);
+                diag_sock=Util.createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
             else
-                diag_sock=new MulticastSocket(diagnostics_port);
+                diag_sock=Util.getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
             
             List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
@@ -2000,7 +2000,7 @@ public abstract class TP extends Protocol {
 
         void stop() {
             if(diag_sock != null)
-                diag_sock.close();
+                Util.getSocketFactory().close(diag_sock);
             handlers.clear();
             if(thread != null){
                 try{

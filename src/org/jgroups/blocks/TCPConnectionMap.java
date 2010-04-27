@@ -49,17 +49,19 @@ public class TCPConnectionMap{
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile boolean use_send_queues=false;    
 
-    public TCPConnectionMap(ThreadFactory f,
+    public TCPConnectionMap(String service_name,
+                            ThreadFactory f,
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
                             int srv_port,
                             int max_port
                             ) throws Exception {
-        this(f,r,bind_addr,external_addr,srv_port,max_port,0,0);
+        this(service_name, f,r,bind_addr,external_addr,srv_port,max_port,0,0);
     }
 
-    public TCPConnectionMap(ThreadFactory f,
+    public TCPConnectionMap(String service_name,
+                            ThreadFactory f,
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
@@ -72,7 +74,7 @@ public class TCPConnectionMap{
         this.receiver=r;
         this.bind_addr=bind_addr;               
         this.conn_expire_time = conn_expire_time;
-        this.srv_sock=createServerSocket(srv_port, max_port);      
+        this.srv_sock=createServerSocket(service_name, srv_port, max_port);
 
         if(external_addr != null)
             local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
@@ -145,7 +147,11 @@ public class TCPConnectionMap{
 
     public void stop() {
         if(running.compareAndSet(true, false)) {
-            Util.close(srv_sock);
+            try {
+                Util.getSocketFactory().close(srv_sock);
+            }
+            catch(IOException e) {
+            }
             Util.interruptAndWaitToDie(acceptor);
             mapper.stop();
         }
@@ -155,16 +161,16 @@ public class TCPConnectionMap{
      * Finds first available port starting at start_port and returns server
      * socket. Will not bind to port >end_port. Sets srv_port
      */
-    protected ServerSocket createServerSocket(int start_port, int end_port) throws Exception {
+    protected ServerSocket createServerSocket(String service_name, int start_port, int end_port) throws Exception {
         ServerSocket ret=null;
 
         while(true) {
             try {
                 if(bind_addr == null)
-                    ret=new ServerSocket(start_port);
+                    ret=Util.getSocketFactory().createServerSocket(service_name, start_port);
                 else {
                     // changed (bela Sept 7 2007): we accept connections on all NICs
-                    ret=new ServerSocket(start_port, 20, bind_addr);
+                    ret=Util.getSocketFactory().createServerSocket(service_name, start_port, 20, bind_addr);
                 }
             }
             catch(BindException bind_ex) {

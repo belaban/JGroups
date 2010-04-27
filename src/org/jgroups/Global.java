@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.56 2010/04/12 10:18:32 belaban Exp $
+ * @version $Id: Global.java,v 1.57 2010/04/27 14:25:14 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -86,10 +86,19 @@ public class Global {
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";
     public static final String INITIAL_TCP_PORT="INITIAL_TCP_PORT";
 
+    public static final String UDP_MCAST_SOCK="jgroups.udp.mcast_sock";
+    public static final String UDP_UCAST_SOCK="jgroups.udp.unicast_sock";
+    public static final String TCP_SRV_SOCK="jgroups.tcp.srv_sock";
+    public static final String TUNNEL_UCAST_SOCK="jgroups.tunnel.ucast_sock";
+    public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
+    public static final String TP_DIAG_MCAST_SOCK="jgroups.tp.diag.mcast_sock";
+    public static final String STREAMING_STATE_TRANSFER_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
+    public static final String FD_SOCK_SRV_SOCK="jgroups.fd_sock.srv_sock";
+    public static final String BSH_SRV_SOCK="jgroups.bsh.srv_sock";
+
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
 
-    
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
         boolean result = defaultValue;

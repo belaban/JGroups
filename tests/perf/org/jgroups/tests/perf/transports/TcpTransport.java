@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.21 2008/09/11 17:43:12 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.22 2010/04/27 14:25:15 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -69,7 +69,7 @@ public class TcpTransport implements Transport {
 
 
     public void start() throws Exception {
-        srv_sock=Util.createServerSocket(bind_addr, start_port);
+        srv_sock=Util.createServerSocket("jgroups.tests.perf.TcpTransport.srv_sock", bind_addr, start_port);
         local_addr=new IpAddress(srv_sock.getInetAddress(), srv_sock.getLocalPort());
         System.out.println("-- local address is " + local_addr);
         ct.init();

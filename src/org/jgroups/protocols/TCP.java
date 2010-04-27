@@ -1,9 +1,10 @@
-// $Id: TCP.java,v 1.59 2009/09/06 13:51:07 belaban Exp $
+// $Id: TCP.java,v 1.60 2010/04/27 14:25:16 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.Global;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.TCPConnectionMap;
@@ -112,21 +113,22 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
      *         different version of ConnectionTable.
      */
     protected TCPConnectionMap createConnectionTable(long reaperInterval,
-                                                                        long connExpireTime,
-                                                                        InetAddress bindAddress,
-                                                                        InetAddress externalAddress,
-                                                                        int startPort,
-                                                                        int endPort
-                                                                        ) throws Exception {
+                                                     long connExpireTime,
+                                                     InetAddress bindAddress,
+                                                     InetAddress externalAddress,
+                                                     int startPort,
+                                                     int endPort
+    ) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {
-            cTable=new TCPConnectionMap(getThreadFactory(),
-                                                              this,
-                                                              bindAddress,
-                                                              externalAddress,
-                                                              startPort,
-                                                              endPort
-                                                              );
+            cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK,
+                                        getThreadFactory(),
+                                        this,
+                                        bindAddress,
+                                        externalAddress,
+                                        startPort,
+                                        endPort
+            );
         }
         else {
             if(reaperInterval == 0) {
@@ -139,15 +141,16 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                 if(log.isWarnEnabled())
                     log.warn("conn_expire_time was 0, set it to " + connExpireTime);
             }
-            cTable=new TCPConnectionMap(getThreadFactory(),
-                                                              this,
-                                                              bindAddress,
-                                                              externalAddress,
-                                                              startPort,
-                                                              endPort,
-                                                              reaperInterval,
-                                                              connExpireTime
-                                                              );
+            cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK, 
+                                        getThreadFactory(),
+                                        this,
+                                        bindAddress,
+                                        externalAddress,
+                                        startPort,
+                                        endPort,
+                                        reaperInterval,
+                                        connExpireTime
+            );
         }
 
         return cTable;

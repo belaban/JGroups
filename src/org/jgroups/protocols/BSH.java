@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.23 2010/03/05 11:55:34 belaban Exp $
+// $Id: BSH.java,v 1.24 2010/04/27 14:25:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,6 +9,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.jgroups.Global;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -43,7 +44,7 @@ public class BSH extends Protocol implements Runnable {
     }
 
     public void start() throws Exception {
-        srv_sock=Util.createServerSocket(bind_port);
+        srv_sock=Util.createServerSocket(Global.BSH_SRV_SOCK, bind_port);
         log.info("Server socket listening at " + srv_sock.getLocalSocketAddress());
         acceptor=new Thread(this);
         acceptor.start();
