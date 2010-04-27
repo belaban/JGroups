@@ -182,7 +182,7 @@ public abstract class BasicConnectionTable {
             try {
                 ServerSocket tmp=srv_sock;
                 srv_sock=null;
-                tmp.close();
+                Util.getSocketFactory().close(tmp);
                 if(acceptor != null)
                     Util.interruptAndWaitToDie(acceptor);
             }

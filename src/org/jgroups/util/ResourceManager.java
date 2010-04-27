@@ -14,7 +14,7 @@ import java.util.StringTokenizer;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.7 2009/10/28 16:10:01 belaban Exp $
+ * @version $Id: ResourceManager.java,v 1.8 2010/04/27 14:25:13 belaban Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;
@@ -57,16 +57,15 @@ public class ResourceManager {
 		return rep.nextAddress();
 	}
 
-	public static synchronized short getNextMulticastPort(InetAddress bind_addr)
-			throws Exception {
+	public static synchronized short getNextMulticastPort(InetAddress bind_addr) throws Exception {
 		short port = mcast_port++;
 		try {
-			DatagramSocket sock = Util.createDatagramSocket(bind_addr, port);
+			DatagramSocket sock = Util.createDatagramSocket("jgroups.temp.resourcemgr.mcast_sock", bind_addr, port);
 			port = (short) sock.getLocalPort();
-			sock.close();
-			ServerSocket srv_sock = Util.createServerSocket(bind_addr, port);
+			Util.getSocketFactory().close(sock);
+			ServerSocket srv_sock = Util.createServerSocket("jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
 			port = (short) srv_sock.getLocalPort();
-			srv_sock.close();
+			Util.getSocketFactory().close(srv_sock);
 			return port;
 		} finally {
 			mcast_port = (short) (port + 1);
@@ -79,11 +78,11 @@ public class ResourceManager {
 		List<Short> retval = new ArrayList<Short>(num_requested_ports);
 
 		for (int i = 0; i < num_requested_ports; i++) {
-			ServerSocket sock = Util.createServerSocket(bind_addr, port);
+			ServerSocket sock = Util.createServerSocket("jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
 			port = (short) sock.getLocalPort();
 			retval.add(port);
 			tcp_port = ++port;
-			sock.close();
+			Util.getSocketFactory().close(sock);
 		}
 		return retval;
 	}

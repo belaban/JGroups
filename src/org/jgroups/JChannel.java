@@ -23,6 +23,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.net.ServerSocket;
+import java.net.DatagramSocket;
+import java.net.MulticastSocket;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.236 2010/03/09 15:54:17 belaban Exp $
+ * @version $Id: JChannel.java,v 1.237 2010/04/27 14:25:14 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -2078,6 +2081,9 @@ public class JChannel extends Channel {
                     Map<String, Object> tmp_info=getInfo();
                     map.put("info", tmp_info != null? Util.mapToString(tmp_info) : "null");
                 }
+                if(key.equals("socks")) {
+                    map.put("socks", getOpenSockets());
+                }
                 if(key.startsWith("invoke") || key.startsWith("op")) {
                     int index=key.indexOf("=");
                     if(index != -1) {
@@ -2103,7 +2109,32 @@ public class JChannel extends Channel {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"jmx", "info", "invoke", "op"};
+            return new String[]{"jmx", "info", "invoke", "op", "socks"};
+        }
+
+        String getOpenSockets() {
+            Map<Object, String> socks=Util.getSocketFactory().getSockets();
+            StringBuilder sb=new StringBuilder();
+            if(socks != null) {
+                for(Map.Entry<Object,String> entry: socks.entrySet()) {
+                    Object key=entry.getKey();
+                    if(key instanceof ServerSocket) {
+                        ServerSocket tmp=(ServerSocket)key;
+                        sb.append(tmp.getInetAddress()).append(":").append(tmp.getLocalPort())
+                                .append(" ").append(entry.getValue()).append(" [tcp]");
+                    }
+                    else if(key instanceof DatagramSocket) {
+                        DatagramSocket sock=(DatagramSocket)key;
+                        sb.append(sock.getLocalAddress()).append(":").append(sock.getLocalPort())
+                                .append(" ").append(entry.getValue()).append(" [udp]");
+                    }
+                    else {
+                        sb.append(key).append(" ").append(entry.getValue());
+                    }
+                    sb.append("\n");
+                }
+            }
+            return sb.toString();
         }
 
         /**

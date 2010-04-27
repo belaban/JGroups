@@ -1,10 +1,7 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
@@ -35,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.98 2010/04/26 08:50:33 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.99 2010/04/27 14:25:16 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -169,7 +166,7 @@ public class TUNNEL extends TP {
             log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         }
         
-        sock = new DatagramSocket(0, bind_addr);
+        sock = Util.getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, 0, bind_addr);
 
         for (InetSocketAddress gr : gossip_router_hosts) {
            RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,new StubConnectionListener());
