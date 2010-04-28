@@ -33,7 +33,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.104 2010/04/21 10:55:26 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.105 2010/04/28 14:54:29 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -742,9 +742,6 @@ public class MessageDispatcher implements RequestHandler {
 
         public Object down(Event evt) {
             if(channel != null) {
-                // Reverted, revisit in 2.9 (https://jira.jboss.org/jira/browse/JGRP-1082)
-                // if(!channel.isOpen() || !channel.isConnected())
-                //    throw new RuntimeException("channel is closed or not connected");
                 return channel.downcall(evt);
             }
             else
