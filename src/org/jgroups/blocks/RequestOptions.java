@@ -8,7 +8,8 @@ import java.util.*;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.9 2010/04/21 10:51:20 belaban Exp $
+ * @version $Id: RequestOptions.java,v 1.10 2010/04/30 07:50:36 belaban Exp $
+ * @since 2.10
  */
 public class RequestOptions {
     /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
