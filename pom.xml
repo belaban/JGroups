@@ -19,17 +19,21 @@
 
     <repositories>
         <repository>
-            <id>jboss</id>
-            <name>JBoss Inc. Repository</name>
-            <url>http://repository.jboss.com/maven2/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
+            <id>jboss-public-repository-group</id>
+            <name>JBoss Public Maven Repository Group</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+            <layout>default</layout>
             <releases>
                 <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
             </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </snapshots>
         </repository>
     </repositories>
+
     <dependencies>
         <dependency>
             <groupId>bsh</groupId>
