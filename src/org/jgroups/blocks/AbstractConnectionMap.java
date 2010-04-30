@@ -89,6 +89,22 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         }
     }
 
+    public String printConnections() {
+        StringBuilder sb=new StringBuilder();
+
+        lock.lock();
+        try {
+            for(Map.Entry<Address,V> entry: conns.entrySet()) {
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+
+        return sb.toString();
+    }
+
     public ThreadFactory getThreadFactory() {
         return factory;
     }

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.60 2010/04/27 14:25:16 belaban Exp $
+// $Id: TCP.java,v 1.61 2010/04/30 10:38:37 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -43,7 +43,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
 
     @ManagedOperation
     public String printConnections() {
-        return ct.toString();
+        return ct.printConnections();
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
