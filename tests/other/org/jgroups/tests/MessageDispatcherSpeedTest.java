@@ -12,7 +12,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageDispatcherSpeedTest.java,v 1.1 2005/07/22 10:30:21 belaban Exp $
+ * @version $Id: MessageDispatcherSpeedTest.java,v 1.2 2010/04/30 07:03:35 belaban Exp $
  */
 public class MessageDispatcherSpeedTest implements MembershipListener, RequestHandler {
     Channel             channel;
@@ -143,7 +143,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
     }
 
     static void help() {
-        System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] [-server] [-num <number of calls>]");
+        System.out.println("MessageDispatcherSpeedTest [-help] [-props <props>] [-server] [-num <number of calls>]");
     }
 
 
