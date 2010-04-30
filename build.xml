@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.49 2010/04/01 11:39:49 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.50 2010/04/30 12:11:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -110,37 +110,22 @@
 
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
-            depends="compile,
-                jgroups-all.jar,
-                jgroups-core.jar,
-    			jgroups-sources.jar">
+            depends="jgroups.jar, jgroups-sources.jar">
     </target>
 
 
-    <target name="jgroups-all.jar"
-            description="Creates the jgroups-all.jar (includes everything)">
-        <jar destfile="${dist.dir}/jgroups-all.jar"
-             basedir="${compile.dir}"
-             manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-        </jar>
+     <target name="jgroups.jar"
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile">
+    	<mkdir dir="${dist.dir}"/>
+    <jar destfile="${dist.dir}/jgroups-${version}.jar"
+         basedir="${compile.dir}"
+         manifest="${conf.dir}/manifest.mf"
+         includes="org/jgroups/**">
+        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+    </jar>
     </target>
 
-    <target name="jgroups-core.jar"
-            description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile">
-        <mkdir dir="${dist.dir}"/>
-        <jar jarfile="${dist.dir}/jgroups-core.jar"
-             basedir="${compile.dir}"
-             manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-        </jar>
-    </target>
+
 
     <target name="jgroups-sources.jar"
             description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
@@ -191,7 +176,7 @@
                 <include name="licenses/*"/>
             </fileset>
             <fileset dir="${dist.dir}">
-                <include name="jgroups-all*.jar"/>
+                <include name="jgroups-${version}*.jar"/>
             </fileset>
             <fileset dir="${conf.dir}">
                 <include name="config.txt"/>
@@ -213,14 +198,14 @@
 
     <target name="gossiprouter-service"
             description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
-            depends="jgroups-core.jar">
+            depends="jgroups.jar">
         <mkdir dir="${dist.dir}/gossiptemp"/>
         <copy file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
 
         <jar destfile="${dist.dir}/gossiprouter-service.sar">
             <metainf dir="${dist.dir}/gossiptemp" includes="jboss-service.xml"/>
             <metainf dir="${conf.dir}" includes="gossiprouter-xmbean.xml"/>
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
+            <fileset dir="${dist.dir}" includes="jgroups-${version}*.jar"/>
             <fileset dir="${lib.dir}" includes="commons-logging*.jar,log4j*.jar"/>
             <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
         </jar>
@@ -228,10 +213,10 @@
     </target>
 
 
-    <target name="jgroups-service" depends="jgroups-core.jar"
+    <target name="jgroups-service" depends="jgroups.jar"
             description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
         <jar jarfile="${dist.dir}/jgroups-service.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
+            <fileset dir="${dist.dir}" includes="jgroups-${version}*.jar"/>
             <fileset dir="${lib.dir}" includes="commons-logging*.jar,log4j*.jar"/>
             <metainf dir="${conf.dir}" includes="jboss-service.xml"/>
             <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
