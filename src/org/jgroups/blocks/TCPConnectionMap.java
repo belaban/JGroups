@@ -1,10 +1,6 @@
 package org.jgroups.blocks;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -24,6 +20,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -319,7 +316,11 @@ public class TCPConnectionMap{
     
     public int getNumConnections() {
         return mapper.getNumConnections();
-     }
+    }
+
+    public String printConnections() {
+        return mapper.printConnections();
+    }
     
     public void retainAll(Collection<Address> members) {
         mapper.retainAll(members);
@@ -552,8 +553,26 @@ public class TCPConnectionMap{
                 while(!Thread.currentThread().isInterrupted() && isOpen()) {
                     try {                    
                         int len=in.readInt();
+
+                        // read the version first, to prevent reading from non JGroups service
+                        // (https://jira.jboss.org/jira/browse/JGRP-1119)
+                        int ch1 = in.read();
+                        int ch2 = in.read();
+                        if ((ch1 | ch2) < 0)
+                            throw new EOFException();
+                        short version=(short)((ch1 << 8) + (ch2 << 0));
+                        if(!Version.isBinaryCompatible(version)) {
+                            log.error("Version " + Version.print(version) + " received from " + sock.getRemoteSocketAddress() +
+                                    " is not compatible from our version (" + Version.string_version +
+                                    "); dropping message and closing connection");
+                            break;
+                        }
+
                         byte[] buf=new byte[len];
-                        in.readFully(buf, 0, len);
+                        buf[0]=(byte)ch1;
+                        buf[1]=(byte)ch2;
+
+                        in.readFully(buf, Global.SHORT_SIZE, len - Global.SHORT_SIZE);
                         updateLastAccessed();
                         receiver.receive(peer_addr, buf, 0, len);
                     }
