@@ -8,14 +8,14 @@ import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
 import java.lang.reflect.Method;
-
-
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
 
 
 /**
- * Interactive test for measuring group RPCs using different invocation techniques.
+ * Test for measuring performance of group RPCs.
  * @author Bela Ban
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
     Channel             channel;
@@ -24,11 +24,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
     boolean             server=false; // role is client by default
     boolean             jmx=false;
     int                 num=1000;
-    int                 mode=OLD;
-    static final int    OLD=1;
-    static final int    METHOD=2;
-    static final int    TYPES=3;
-    static final int    ID=5;
+    int                 num_threads=1;
     static final long   TIMEOUT=10000;
     static final Class  LONG_CLASS=long.class;
     static final String LONG=long.class.getName();
@@ -37,15 +33,17 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
     final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
     final String[]      EMPTY_STRING_ARRAY=new String[]{};
     private long        sleep=0;
-    private boolean     async;
+    private boolean     async, oob;
 
 
-    public RpcDispatcherSpeedTest(String props, boolean server, boolean async, int num, int mode, boolean jmx, long sleep) throws NoSuchMethodException {
+    public RpcDispatcherSpeedTest(String props, boolean server, boolean async, boolean oob, int num, int num_threads,
+                                  boolean jmx, long sleep) throws NoSuchMethodException {
         this.props=props;
         this.server=server;
         this.async=async;
+        this.oob=oob;
         this.num=num;
-        this.mode=mode;
+        this.num_threads=num_threads;
         this.jmx=jmx;
         this.sleep=sleep;
         initMethods();
@@ -93,7 +91,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
                 }
             }
             else {
-                invokeRpcs(num, mode, async);
+                invokeRpcs(num, num_threads, async, oob);
             }
         }
         catch(Throwable t) {
@@ -106,77 +104,86 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
     }
 
 
-    void invokeRpcs(int num, int mode, boolean async) throws Exception {
-        long    start, stop;
-        int     show=num/10;
+    void invokeRpcs(int num, int num_threads, boolean async, boolean oob) throws Exception {
+        long    start;
+        int     show=num / 10;
+
         Method measure_method=getClass().getMethod("measure", EMPTY_CLASS_ARRAY);
         MethodCall measure_method_call=new MethodCall(measure_method, EMPTY_OBJECT_ARRAY);
 
         if(show <=0)
             show=1;
         int request_type=async ? Request.GET_NONE : Request.GET_ALL;
-        start=System.currentTimeMillis();
-        switch(mode) {
-        case OLD:
-            System.out.println("-- invoking " + num + " methods using mode=OLD");
-            for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null,
-                                       "measure",
-                                       EMPTY_OBJECT_ARRAY,
-                                       EMPTY_CLASS_ARRAY,
-                                       request_type, TIMEOUT);
-                if(i % show == 0)
-                    System.out.println(i);
-            }
-            break;
 
-        case METHOD:
-            System.out.println("-- invoking " + num + " methods using mode=METHOD");
-            for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, measure_method_call, request_type, TIMEOUT);
-                if(i % show == 0)
-                    System.out.println(i);
-            }
-            break;
 
-        case TYPES:
-            System.out.println("-- invoking " + num + " methods using mode=TYPES");
-            for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, "measure",
-                                       EMPTY_OBJECT_ARRAY,
-                                       EMPTY_CLASS_ARRAY,
-                                       request_type,
-                                       TIMEOUT);
-                if(i % show == 0)
-                    System.out.println(i);
-            }
-            break;
+        measure_method_call=new MethodCall((short)0);
+        RequestOptions opts=new RequestOptions(request_type, TIMEOUT,
+                                               false, null, Message.DONT_BUNDLE);
+        opts.setFlags(Message.NO_FC);
+        if(oob)
+            opts.setFlags(Message.OOB);
 
-        case ID:
-            System.out.println("-- invoking " + num + " methods using mode=ID");
-            measure_method_call=new MethodCall((short)0);
-            RequestOptions opts=new RequestOptions(request_type, TIMEOUT,
-                                                   false, null, Message.DONT_BUNDLE);
-            opts.setFlags(Message.NO_FC);
-            for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, measure_method_call, opts);
-                if(i % show == 0)
-                    System.out.println(i);
-            }
-            break;
-        default:
-            break;
+        final AtomicInteger sent=new AtomicInteger(0);
+        final CountDownLatch latch=new CountDownLatch(1);
+        final Publisher[] senders=new Publisher[num_threads];
+        for(int i=0; i < senders.length; i++) {
+            senders[i]=new Publisher(measure_method_call, sent, num, opts, disp, latch);
+            senders[i].start();
         }
-        stop=System.currentTimeMillis();
+
+        start=System.currentTimeMillis();
+        latch.countDown();
+
+        for(Publisher sender: senders)
+            sender.join();
+
+        long stop=System.currentTimeMillis();
         printStats(stop-start, num);
     }
 
+
+    static class Publisher extends Thread {
+        final MethodCall call;
+        final RequestOptions options;
+        final AtomicInteger sent;
+        final int num_msgs_to_send;
+        final RpcDispatcher disp;
+        final CountDownLatch latch;
+        final int print;
+
+        public Publisher(MethodCall call, AtomicInteger sent, final int num, RequestOptions options, RpcDispatcher disp, CountDownLatch latch) {
+            this.call=call;
+            this.sent=sent;
+            this.num_msgs_to_send=num;
+            this.options=options;
+            this.disp=disp;
+            this.latch=latch;
+            print = num_msgs_to_send / 10;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+            while(true) {
+                int tmp=sent.incrementAndGet();
+                if(tmp > num_msgs_to_send)
+                    break;
+                disp.callRemoteMethods(null, call, options);
+                if(tmp > 0 && tmp % print == 0)
+                    System.out.println(tmp);
+            }
+        }
+    }
 
 
     static void printStats(long total_time, int num) {
         double throughput=((double)num)/((double)total_time/1000.0);
         System.out.println("time for " + num + " remote calls was " +
-                           total_time + ", avg=" + (total_time / (double)num) +
+                           total_time + "ms, avg=" + (total_time / (double)num) +
                            "ms/invocation, " + (long)throughput + " calls/sec");
     }
 
@@ -191,10 +198,11 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
         String                 props=null;
         boolean                server=false, jmx=false;
         int                    num=1000;
+        int                    num_threads=1;
         long                   sleep=0;
         RpcDispatcherSpeedTest test;
-        int                    mode=ID;
         boolean                async=false;
+        boolean                oob=false;
 
 
         for(int i=0; i < args.length; i++) {
@@ -222,22 +230,12 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
                 sleep=Long.parseLong(args[++i]);
                 continue;
             }
-            if("-mode".equals(args[i])) {
-                String m=args[++i].toLowerCase().trim();
-                if("old".equals(m))
-                    mode=OLD;
-                else if("method".equals(m))
-                    mode=METHOD;
-                else if("types".equals(m))
-                    mode=TYPES;
-                else if("ID".equals(m) || "id".equals(m)) {
-                    mode=ID;
-                }
-                else {
-                    System.err.println("mode " + m + " is invalid");
-                    help();
-                    return;
-                }
+            if("-num_threads".equals(args[i])) {
+                num_threads=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-oob".equals(args[i])) {
+                oob=true;
                 continue;
             }
             help();
@@ -246,7 +244,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
 
 
         try {
-            test=new RpcDispatcherSpeedTest(props, server, async, num, mode, jmx, sleep);
+            test=new RpcDispatcherSpeedTest(props, server, async, oob, num, num_threads, jmx, sleep);
             test.start();
         }
         catch(Exception e) {
@@ -256,7 +254,6 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
 
     static void help() {
         System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] " +
-                           "[-server] [-async] [-num <number of calls>] [-mode <mode>] [-jmx] [-sleep <ms>]");
-        System.out.println("mode can be either 'old', 'method', 'types' or 'id'");
+                           "[-server] [-async] [-num <number of calls>] [-jmx] [-sleep <ms>]");
     }
 }
