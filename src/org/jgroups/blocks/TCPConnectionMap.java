@@ -705,20 +705,19 @@ public class TCPConnectionMap{
             TCPConnection conn = null;
             getLock().lock();
             try {
-                if (hasOpenConnection(dest)) {
-                    conn = conns.get(dest);
-                } else {
-                    try {
-                        conn = new TCPConnection(dest);
-                        conn.start(getThreadFactory());
-                        addConnection(dest, conn);
-                        if (log.isTraceEnabled())
-                            log.trace("created socket to " + dest);
-                    }
-                    catch(Exception ex) {
-                        if(log.isTraceEnabled())
-                            log.trace("failed creating connection to " + dest);
-                    }
+                conn=conns.get(dest);
+                if(conn != null && conn.isOpen())
+                    return conn;
+                try {
+                    conn = new TCPConnection(dest);
+                    conn.start(getThreadFactory());
+                    addConnection(dest, conn);
+                    if (log.isTraceEnabled())
+                        log.trace("created socket to " + dest);
+                }
+                catch(Exception ex) {
+                    if(log.isTraceEnabled())
+                        log.trace("failed creating connection to " + dest);
                 }
             } finally {
                 getLock().unlock();
