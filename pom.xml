@@ -9,10 +9,39 @@
    <name>JGroups</name>
    <version>2.6.15.GA</version>
    <url>http://www.jgroups.org</url>
-   <build>
-      <sourceDirectory>src</sourceDirectory>
-      <testSourceDirectory>tests</testSourceDirectory>
-      <testResources>
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Releases Repository</name>
+            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>jboss-public-repository-group</id>
+            <name>JBoss Public Maven Repository Group</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
+
+    
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>tests</testSourceDirectory>
+        <testResources>
          <testResource>
             <directory>conf</directory>
             <includes>
@@ -39,16 +68,10 @@
          </plugin>
       </plugins>
    </build>
-   <repositories>
-      <repository>
-         <id>jboss</id>
-         <name>JBoss Inc. Repository</name>
-         <url>http://repository.jboss.com/maven2/</url>
-         <snapshots>
-            <enabled>true</enabled>
-         </snapshots>
-      </repository>
-   </repositories>
+
+
+
+
    <dependencies>
       <dependency>
          <groupId>ant</groupId>
