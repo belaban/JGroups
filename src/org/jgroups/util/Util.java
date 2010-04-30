@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.261 2010/04/27 14:25:13 belaban Exp $
+ * @version $Id: Util.java,v 1.262 2010/04/30 09:53:48 belaban Exp $
  */
 public class Util {
 
@@ -2542,7 +2542,7 @@ public class Util {
             String host=t.substring(0, t.indexOf('['));
             host=host.trim();
             int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-            for(int i=port;i < port + port_range;i++) {
+            for(int i=port;i <= port + port_range;i++) {
                 addr=new IpAddress(host, i);
                 retval.add(addr);
             }
