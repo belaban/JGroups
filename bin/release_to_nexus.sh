@@ -6,7 +6,7 @@
 # the next step
 
 # Author: Bela Ban
-# version: $Id: release_to_nexus.sh,v 1.5 2010/04/24 10:10:52 belaban Exp $
+# version: $Id: release_to_nexus.sh,v 1.6 2010/04/30 12:29:51 belaban Exp $
 
 
 DIST=../dist
@@ -15,7 +15,7 @@ POM=../pom.xml
 JAR=`find $DIST -name "jgroups-*.jar" | grep -v source`
 SRC_JAR=`find $DIST -name "jgroups-*.jar" | grep source`
 
-REPO=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/
+REPO=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2
 
 
 echo "Deploying $JAR to $REPO"
