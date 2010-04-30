@@ -658,7 +658,7 @@ public abstract class BasicConnectionTable {
                }               
                catch(IOException io_ex) {
                    //this is very common occurrence, hence log under trace level
-                   if(log.isTraceEnabled()) log.trace("Excption while read blocked for data from peer ", io_ex);
+                   if(log.isTraceEnabled()) log.trace("Exception while read blocked for data from peer ", io_ex);
                    notifyConnectionClosed(peer_addr);
                    break;
                }
