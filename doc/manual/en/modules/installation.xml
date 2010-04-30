@@ -245,7 +245,7 @@
             [mac] /Users/bela/JGroups$ java org.jgroups.Version
 
             Version:      2.8.0.GA
-            CVS:          $Id: installation.xml,v 1.9 2010/02/11 10:51:45 belaban Exp $
+            CVS:          $Id: installation.xml,v 1.10 2010/04/30 14:27:39 vlada Exp $
         </screen>
 
     </section>
@@ -475,5 +475,23 @@
         </itemizedlist>
 
     </section>
-
+    <section> <title>Supported classes</title>
+    <para>JGroups project has been around since 2001. Over this time, some of the JGroups classes 
+    have been used in experimental phases and have never been matured enough to be used in today's production 
+    releases. However, they were not removed since some people used them in their products.  </para>
+    
+    <para>The following tables list unsupported and experimental classes. These classes are not actively maintained, and 
+    we will not work to resolve potential issues you might find. Their final faith is not yet determined; they 
+    might even be removed altogether in the next major release. Weight your risks if you decide to use them anyway.</para>
+    <section>
+            <title>Experimental</title>          
+			${Experimental}           
+            <para></para>
+    </section>
+    <section>
+            <title>Unsupported</title>          
+			${Unsupported}           
+            <para></para>
+    </section>
+    </section>       
 </chapter>

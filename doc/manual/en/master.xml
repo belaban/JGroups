@@ -4,7 +4,7 @@
         <!ENTITY overview     SYSTEM "modules/overview.xml">
         <!ENTITY blocks       SYSTEM "modules/blocks.xml">
         <!ENTITY protocols    SYSTEM "modules/protocols.xml.tmp">
-        <!ENTITY installation SYSTEM "modules/installation.xml">
+        <!ENTITY installation SYSTEM "modules/installation.xml.tmp">
         <!ENTITY api          SYSTEM "modules/api.xml">
         <!ENTITY advanced     SYSTEM "modules/advanced.xml">
         <!ENTITY writing      SYSTEM "modules/writing.xml">
@@ -14,8 +14,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2009/12/02 11:47:18 $</pubdate>
-        <releaseinfo>$Revision: 1.14 $</releaseinfo>
+        <pubdate>$Date: 2010/04/30 14:27:36 $</pubdate>
+        <releaseinfo>$Revision: 1.15 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
