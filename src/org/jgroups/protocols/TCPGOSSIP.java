@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.53 2010/05/04 12:17:19 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.54 2010/05/04 13:22:40 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
@@ -170,15 +170,20 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             if (log.isErrorEnabled())
                 log.error("cluster_name is null, cannot get membership");
             return;
-        }                
+        }
 
         if (log.isTraceEnabled())
             log.trace("fetching members from GossipRouter(s)");
 
         final List<PingData> responses = new LinkedList<PingData>();
         for (RouterStub stub : stubs) {
-            List<PingData> rsps = stub.getMembers(group_addr);
-            responses.addAll(rsps);
+            try {
+                List<PingData> rsps = stub.getMembers(group_addr);
+                responses.addAll(rsps);
+            }
+            catch(Throwable t) {
+                log.warn("failed fetching members from " + stub.getGossipRouterAddress() + ": " +  t);
+            }
         }
 
         final Set<Address> initial_mbrs = new HashSet<Address>();
@@ -281,7 +286,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
-                log.error("failed connecting to " + stub.getGossipRouterAddress() + ": " +  e);
+                log.error("failed connecting to " + stub.getGossipRouterAddress(), e);
                 num_faulty_conns++;
             }
         }
