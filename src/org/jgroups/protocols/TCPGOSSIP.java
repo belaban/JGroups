@@ -1,6 +1,14 @@
 
 package org.jgroups.protocols;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -8,14 +16,10 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.stack.RouterStubManager;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
-
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -31,10 +35,10 @@ import java.util.concurrent.TimeUnit;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.54 2010/05/04 13:22:40 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.55 2010/05/04 19:31:01 vlada Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
-public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListener {
+public class TCPGOSSIP extends Discovery {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -64,14 +68,12 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 
     
     List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
-    final List<RouterStub>  stubs=new ArrayList<RouterStub>();
-    Future<?> reconnect_future=null;
-    Future<?> connection_checker=null;
-    protected volatile boolean running=true;
+    
+    private volatile RouterStubManager stubManager;
 
     public void init() throws Exception {
         super.init();
-        
+        stubManager = RouterStubManager.emptyGossipClientStubManager(this);
         if(timeout <= sock_conn_timeout)
             throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout ("
                     + sock_conn_timeout + ")");
@@ -85,25 +87,15 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
 
     public void start() throws Exception {
         super.start();
-        running=true;
     }
 
     public void stop() {
-        super.stop();
-        running = false;
-        for (RouterStub stub : stubs) {
-            try {
-                stub.disconnect(group_addr, local_addr);
-            } catch (Exception e) {
-            }
-        }
-        stopReconnector();
+        super.stop();       
+        stubManager.disconnectStubs();
     }
 
     public void destroy() {
-        for (RouterStub stub : stubs) {
-            stub.destroy();
-        }
+        stubManager.destroyStubs();
         super.destroy();
     }
 
@@ -113,58 +105,23 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
                 log.error("group_addr or local_addr is null, cannot register with GossipRouter(s)");
         } else {
             if (log.isTraceEnabled())
-                log.trace("registering " + local_addr + " under " + group_addr
-                                + " with GossipRouter");
-            for (RouterStub stub : stubs)
-                // if there are any stubs, destroy them
-                stub.destroy();
-            stubs.clear();
-
+                log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
+            
+            stubManager.destroyStubs();
+            stubManager = new RouterStubManager(this, group_addr, local_addr, reconnect_interval);
             for (InetSocketAddress host : initial_hosts) {
-                RouterStub stub = new RouterStub(host.getHostName(), host.getPort(), null,this);                
-                stubs.add(stub);
+                stubManager.createStub(host.getHostName(), host.getPort(), null);                                
             }
-            connect(group_addr, local_addr);
-            startConnectionChecker();
+            connect(group_addr, local_addr);            
         }
     }
 
 
     public void handleDisconnect() {
-        for (RouterStub stub : stubs) {
-            try {
-                stub.disconnect(group_addr, local_addr);
-                stub.destroy();
-            } catch (Exception e) {
-            }
-        }
-        stopConnectionChecker();
+        stubManager.disconnectStubs();
     }
 
-    public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus state) {
-        if(log.isDebugEnabled())
-            log.debug("connection changed to " + state);
-        if(state == RouterStub.ConnectionStatus.CONNECTION_ESTABLISHED) {
-            stopReconnector();
-        }
-        else if (state == RouterStub.ConnectionStatus.CONNECTION_BROKEN){            
-            stub.destroy();
-            startReconnector();
-        }
-        else if (state == RouterStub.ConnectionStatus.DISCONNECTED) {
-            //wait for disconnect ack;
-            try {
-                TUNNEL.StubReceiver receiver=stub != null? stub.getReceiver() : null;
-                if(receiver != null) {
-                    Thread thread=receiver.getThread();
-                    if(thread != null)
-                        thread.join(reconnect_interval);
-                }
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
+    @SuppressWarnings("unchecked")
     public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception {
         if (group_addr == null) {
             if (log.isErrorEnabled())
@@ -176,7 +133,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             log.trace("fetching members from GossipRouter(s)");
 
         final List<PingData> responses = new LinkedList<PingData>();
-        for (RouterStub stub : stubs) {
+        for (RouterStub stub : stubManager.getStubs()) {
             try {
                 List<PingData> rsps = stub.getMembers(group_addr);
                 responses.addAll(rsps);
@@ -220,52 +177,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             hdr.return_view_only = return_views_only;
             msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
-                log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);
+                log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);            
             down_prot.down(new Event(Event.MSG, msg));
-        }
-    }
-
-    synchronized void startReconnector() {
-        if(running && (reconnect_future == null || reconnect_future.isDone())) {
-            if(log.isDebugEnabled())
-                log.debug("starting reconnector");
-            reconnect_future=timer.scheduleWithFixedDelay(new Runnable() {
-                public void run() {
-                    connect(group_addr, local_addr);
-                }
-            }, 0, reconnect_interval, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    synchronized void stopReconnector() {
-        if(reconnect_future != null) {
-            reconnect_future.cancel(false);
-            reconnect_future=null;
-            if(log.isDebugEnabled())
-                log.debug("stopping reconnector");
-        }
-    }
-
-    synchronized void startConnectionChecker() {
-        if(running && (connection_checker == null || connection_checker.isDone())) {
-            if(log.isDebugEnabled())
-                log.debug("starting connection checker");
-            connection_checker=timer.scheduleWithFixedDelay(new Runnable() {
-                public void run() {
-                    for(RouterStub stub: stubs) {
-                        stub.checkConnection();
-                    }
-                }
-            }, 0, reconnect_interval, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    synchronized void stopConnectionChecker() {
-        if(connection_checker != null) {
-            connection_checker.cancel(false);
-            connection_checker=null;
-            if(log.isDebugEnabled())
-                log.debug("stopping connection checker");
         }
     }
 
@@ -277,8 +190,8 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
         if(physical_addr != null)
             physical_addrs.add(physical_addr);
 
-        int num_faulty_conns=0;
-        for (RouterStub stub : stubs) {
+      
+        for (RouterStub stub : stubManager.getStubs()) {
             try {
                 if(log.isTraceEnabled())
                     log.trace("trying to connect to " + stub.getGossipRouterAddress());
@@ -286,12 +199,10 @@ public class TCPGOSSIP extends Discovery implements RouterStub.ConnectionListene
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
-                log.error("failed connecting to " + stub.getGossipRouterAddress(), e);
-                num_faulty_conns++;
+                log.error("failed connecting to " + stub.getGossipRouterAddress(), e); 
+                stubManager.startReconnecting(stub);
             }
-        }
-        if(num_faulty_conns == 0)
-            stopReconnector();
+        }     
     }
 }
 

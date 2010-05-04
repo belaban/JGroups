@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.60 2010/05/04 13:20:52 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.61 2010/05/04 19:31:03 vlada Exp $
  */
 public class RouterStub {
 
@@ -93,6 +93,14 @@ public class RouterStub {
             Thread thread = receiver.getThread();
             if(thread != null)
                 thread.interrupt();
+        }
+    }
+    
+    public synchronized void join(long wait) throws InterruptedException {
+        if(receiver != null) {
+            Thread thread = receiver.getThread();
+            if(thread != null)
+                thread.join(wait);
         }
     }
 

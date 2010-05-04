@@ -1,21 +1,32 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.*;
-import org.jgroups.util.*;
-import org.jgroups.util.UUID;
-
 import java.io.DataInputStream;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
+import org.jgroups.stack.GossipData;
+import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.RouterStubManager;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.RouterStub;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ExposedDataOutputStream;
+import org.jgroups.util.Util;
 
 /**
  * Replacement for UDP. Instead of sending packets via UDP, a TCP connection is opened to a Router
@@ -32,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.99 2010/04/27 14:25:16 belaban Exp $
+ * @version $Id: TUNNEL.java,v 1.100 2010/05/04 19:31:01 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -63,18 +74,11 @@ public class TUNNEL extends TP {
 
    private final List<InetSocketAddress> gossip_router_hosts = new ArrayList<InetSocketAddress>();
 
-   private final List<RouterStub> stubs = new ArrayList<RouterStub>();
-
    private TUNNELPolicy tunnel_policy = new DefaultTUNNELPolicy();
 
    private DatagramSocket sock;
-
-   /** time to wait in ms between reconnect attempts */
-
-   @GuardedBy("reconnectorLock")
-   private final Map<InetSocketAddress, Future<?>> reconnectFutures = new HashMap<InetSocketAddress, Future<?>>();
-
-   private final Lock reconnectorLock = new ReentrantLock();
+   
+   private volatile RouterStubManager stubManager;
 
    public TUNNEL() {
    }
@@ -166,29 +170,20 @@ public class TUNNEL extends TP {
             log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         }
         
+        stubManager = RouterStubManager.emptyGossipClientStubManager(this);
         sock = Util.getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, 0, bind_addr);
-
-        for (InetSocketAddress gr : gossip_router_hosts) {
-           RouterStub stub = new RouterStub(gr.getHostName(), gr.getPort(), bind_addr,new StubConnectionListener());
-           stub.setTcpNoDelay(tcp_nodelay);
-           stubs.add(stub);
-        }     
+        
         // loopback turned on is mandatory
         loopback = true;
     }
     
     public void destroy() {        
-        for (RouterStub stub : stubs) {
-            stopReconnecting(stub);
-            stub.destroy();
-        }
+        stubManager.destroyStubs();
         super.destroy();
     }
 
    private void disconnectStub(String group, Address addr) {
-      for (RouterStub stub : stubs) {         
-         stub.disconnect(group,addr);
-      }
+      stubManager.disconnectStubs();
    }
 
    public Object handleDownEvent(Event evt) {
@@ -207,9 +202,16 @@ public class TUNNEL extends TP {
                  ProtocolAdapter adapter = ProtocolAdapter.thread_local.get();
                  local = adapter.local_addr;
              }
+             
+             stubManager = new TUNNELStubManager(this,group,local,getReconnectInterval());
+             for (InetSocketAddress gr : gossip_router_hosts) {
+                 RouterStub stub = stubManager.createStub(gr.getHostName(), gr.getPort(), bind_addr);
+                 stub.setTcpNoDelay(tcp_nodelay);           
+              }  
              PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
              List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
              String logical_name=org.jgroups.util.UUID.get(local);
+             List<RouterStub> stubs = stubManager.getStubs();
              tunnel_policy.connect(stubs, group, local, logical_name, physical_addrs);
             break;
 
@@ -228,94 +230,22 @@ public class TUNNEL extends TP {
       }
       return retEvent;
    }
+    private class TUNNELStubManager extends RouterStubManager {
 
-   private void startReconnecting(final RouterStub stub) {
-      reconnectorLock.lock();
-      try {
-         Future<?> reconnectorFuture = reconnectFutures.get(stub.getGossipRouterAddress());
-         if (reconnectorFuture == null || reconnectorFuture.isDone()) {
-            final Runnable reconnector = new Runnable() {
-               public void run() {
-                  try {
-                      if (log.isInfoEnabled()) {
-                          log.info("Reconnecting " + stub);
-                      }
-
-                      if(!isSingleton()){
-                          PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-                          List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
-                          stub.connect(channel_name, local_addr, UUID.get(local_addr), physical_addrs);
-                          if (log.isInfoEnabled()) {
-                              log.info("Reconnected " + stub);
-                          }
-                      }
-                      // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
-                      else {
-                          for(Protocol p: up_prots.values()) {
-                              if(p instanceof ProtocolAdapter) {
-                                  Address local=((ProtocolAdapter)p).local_addr;
-                                  String cluster_name=((ProtocolAdapter)p).cluster_name;
-                                  PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
-                                  List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
-                                  stub.connect(cluster_name, local, UUID.get(local), physical_addrs);
-                                  if (log.isInfoEnabled()) {
-                                      log.info("Reconnected " + stub);
-                                  }
-                              }
-                          }
-                      }
-                  } catch(Throwable ex) {
-                     if (log.isWarnEnabled())
-                         log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress() + ": " + ex);
-                  }
-               }
-            };
-            reconnectorFuture = timer.scheduleWithFixedDelay(reconnector, 0, reconnect_interval,
-                     TimeUnit.MILLISECONDS);
-            reconnectFutures.put(stub.getGossipRouterAddress(), reconnectorFuture);
-         }
-      } finally {
-         reconnectorLock.unlock();
-      }
-   }
-
-   private void stopReconnecting(final RouterStub stub) {
-      reconnectorLock.lock();
-      InetSocketAddress address = stub.getGossipRouterAddress();
-      try {
-         Future<?> reconnectorFuture = reconnectFutures.get(address);
-         if (reconnectorFuture != null) {
-            reconnectorFuture.cancel(true);
-            reconnectFutures.remove(address);
-         }
-      } finally {
-         reconnectorLock.unlock();
-      }
-   }
-
-    private class StubConnectionListener implements RouterStub.ConnectionListener {
+        TUNNELStubManager(Protocol owner, String channelName, Address logicalAddress, long interval) {            
+            super(owner, channelName, logicalAddress, interval);
+        }
 
         public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
-            if (newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
-                stub.interrupt();
-                stub.destroy();
-                startReconnecting(stub);
-            }
-            else if (newState == RouterStub.ConnectionStatus.CONNECTED) {
-                stopReconnecting(stub);
+            super.connectionStatusChange(stub, newState);
+            if (newState == RouterStub.ConnectionStatus.CONNECTED) {               
                 StubReceiver stubReceiver = new StubReceiver(stub);
                 stub.setReceiver(stubReceiver);
                 Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
                 stubReceiver.setThread(t);
                 t.setDaemon(true);
                 t.start();
-            } else if (newState == RouterStub.ConnectionStatus.DISCONNECTED) {
-                //wait for disconnect ack;
-                try {
-                    stub.getReceiver().getThread().join(getReconnectInterval());
-                } catch (InterruptedException e) {
-                }
-            }
+            } 
         }
     }
 
@@ -397,6 +327,7 @@ public class TUNNEL extends TP {
             num_msgs_sent++;
             num_bytes_sent+=buf.getLength();
         }
+        List<RouterStub> stubs = stubManager.getStubs();
         if(multicast) {
             tunnel_policy.sendToAllMembers(stubs, group, buf.getBuf(), buf.getOffset(), buf.getLength());
         }
@@ -415,6 +346,7 @@ public class TUNNEL extends TP {
    }
 
    public String getInfo() {
+       List<RouterStub> stubs = stubManager.getStubs();
       if (stubs.isEmpty())
          return stubs.toString();
       else
@@ -457,8 +389,7 @@ public class TUNNEL extends TP {
             throw new Exception("None of the available stubs " + stubs + " accepted a multicast message");
       }
 
-      public void sendToSingleMember(List<RouterStub> stubs, String group, Address dest, byte[] data, int offset,
-               int length) throws Exception {
+      public void sendToSingleMember(List<RouterStub> stubs, String group, Address dest, byte[] data, int offset, int length) throws Exception {
          boolean sent = false;
           if(stubs.size() > 1)
               Collections.shuffle(stubs); 
@@ -487,8 +418,8 @@ public class TUNNEL extends TP {
                }
                catch (Exception e) {
                    if (log.isWarnEnabled())
-                       log.warn("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
-                   startReconnecting(stub);
+                       log.warn("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress(),e);
+                   stubManager.startReconnecting(stub);
                }
            }
        }
