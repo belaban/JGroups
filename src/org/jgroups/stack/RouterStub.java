@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.59 2010/04/26 08:50:53 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.60 2010/05/04 13:20:52 belaban Exp $
  */
 public class RouterStub {
 
@@ -218,7 +218,7 @@ public class RouterStub {
         List<PingData> retval=new ArrayList<PingData>();
         try {
 
-            if(!isConnected() || input == null) throw new IOException ("Connection broken");
+            if(!isConnected() || input == null) throw new Exception ("not connected");
             // we might get a spurious SUSPECT message from the router, just ignore it
             if(input.available() > 0) // fixes https://jira.jboss.org/jira/browse/JGRP-1151
                 input.skipBytes(input.available());
