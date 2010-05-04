@@ -23,12 +23,11 @@ package org.jgroups.stack;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -59,7 +58,7 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
 
     public RouterStubManager(Protocol owner, String channelName, Address logicalAddress, long interval) {
         this.owner = owner;
-        this.stubs = Collections.synchronizedList(new ArrayList<RouterStub>());        
+        this.stubs = new CopyOnWriteArrayList<RouterStub>();             
         this.log = LogFactory.getLog(owner.getClass());     
         this.timer = owner.getTransport().getTimer();
         this.channelName = channelName;
