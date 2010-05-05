@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.79 2010/03/05 08:49:19 belaban Exp $
+ * @version $Id: Configurator.java,v 1.80 2010/05/05 12:41:17 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -1015,6 +1015,10 @@ public class Configurator implements ProtocolStackFactory {
 
         for(String system_property_name: system_property_names) {
             if(system_property_name != null && system_property_name.length() > 0) {
+                if(system_property_name.equals(Global.BIND_ADDR) || system_property_name.equals(Global.BIND_ADDR_OLD))
+                    if(Util.isBindAddressPropertyIgnored())
+                        continue;
+                
                 try {
                     retval=System.getProperty(system_property_name);
                     if(retval != null)
