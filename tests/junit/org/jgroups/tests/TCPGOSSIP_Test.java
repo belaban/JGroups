@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
  * 
  * @author Vladimir Blagojevic
  * 
- * @version $Id: TCPGOSSIP_Test.java,v 1.1 2010/05/05 15:11:37 vlada Exp $
+ * @version $Id: TCPGOSSIP_Test.java,v 1.2 2010/05/05 15:17:18 vlada Exp $
  **/
 @Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER }, sequential = true)
 public class TCPGOSSIP_Test extends ChannelTestBase {
@@ -95,12 +95,43 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
 
             // kill router
             gossipRouter.stop();
-            Util.sleep(1000);
+            
 
             // cannot discover others since GR is down
             third = new JChannel(props);
             third.connect("testConnectThreeChannelsWithGRDown");
-            Util.sleep(2000);
+           
+
+            // restart and....
+            gossipRouter.start();
+            Util.blockUntilViewsReceived(60000, 500, coordinator, channel, third);
+
+            // confirm they found each other
+            View view = channel.getView();
+            assert channel.getView().size() == 3;
+            assert third.getView().size() == 3;
+            assert view.containsMember(channel.getLocalAddress());
+            assert view.containsMember(coordinator.getLocalAddress());
+        } finally {
+            Util.close(third);
+        }
+    }
+
+    public void testConnectThreeChannelsWithGRAlreadyDown() throws Exception {
+        JChannel third = null;
+        try {
+            coordinator = new JChannel(props);
+            channel = new JChannel(props);
+            
+            // kill router
+            gossipRouter.stop();
+            
+            // cannot discover others since GR is down
+            coordinator.connect("testConnectThreeChannelsWithGRAlreadyDown");          
+            channel.connect("testConnectThreeChannelsWithGRAlreadyDown");
+
+            third = new JChannel(props);
+            third.connect("testConnectThreeChannelsWithGRAlreadyDown");
 
             // restart and....
             gossipRouter.start();
