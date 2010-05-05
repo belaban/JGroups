@@ -35,7 +35,7 @@ import org.jgroups.util.Tuple;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.55 2010/05/04 19:31:01 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.56 2010/05/05 04:59:46 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -199,7 +199,7 @@ public class TCPGOSSIP extends Discovery {
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
-                log.error("failed connecting to " + stub.getGossipRouterAddress(), e); 
+                    log.error("failed connecting to " + stub.getGossipRouterAddress() + ": " + e); 
                 stubManager.startReconnecting(stub);
             }
         }     

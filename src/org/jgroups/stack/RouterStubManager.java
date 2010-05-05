@@ -120,8 +120,7 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
 
                         } catch (Throwable ex) {
                             if (log.isWarnEnabled())
-                                log.warn("failed reconnecting stub to GR at "
-                                                + stub.getGossipRouterAddress(),ex);
+                                log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress() + ": " + ex);
                         }
                     }
                 };
