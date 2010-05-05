@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.55 2010/04/12 11:20:37 belaban Exp $
+// $Id: Channel.java,v 1.56 2010/05/05 04:46:43 belaban Exp $
 
 package org.jgroups;
 
@@ -337,6 +337,15 @@ public abstract class Channel implements Transport {
      * @return The logical name or null (if not set)
      */
     abstract public String getName();
+
+    /**
+     * Returns the logical name of a given member. The lookup is from the local cache of logical address
+     * / logical name mappings and no remote communication is performed.
+     * @param member
+     * @return
+     */
+    abstract public String getName(Address member);
+
 
     /**
      * Sets the logical name for the channel. The name will stay associated with this channel for the channel's
