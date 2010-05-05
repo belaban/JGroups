@@ -81,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.237 2010/04/27 14:25:14 belaban Exp $
+ * @version $Id: JChannel.java,v 1.238 2010/05/05 04:46:43 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -864,6 +864,10 @@ public class JChannel extends Channel {
 
     public String getName() {
         return name;
+    }
+
+    public String getName(Address member) {
+        return member != null? UUID.get(member) : null;
     }
 
     /**
