@@ -105,8 +105,8 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                 final Runnable reconnector = new Runnable() {
                     public void run() {
                         try {
-                            if (log.isInfoEnabled()) {
-                                log.info("Reconnecting " + stub);
+                            if (log.isTraceEnabled()) {
+                                log.trace("Reconnecting " + stub);
                             }
 
                             String logical_name = org.jgroups.util.UUID.get(logicalAddress);
@@ -114,8 +114,8 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                                             Event.GET_PHYSICAL_ADDRESS, logicalAddress));
                             List<PhysicalAddress> physical_addrs = Arrays.asList(physical_addr);
                             stub.connect(channelName, logicalAddress, logical_name, physical_addrs);
-                            if (log.isInfoEnabled()) {
-                                log.info("Reconnected " + stub);
+                            if (log.isTraceEnabled()) {
+                                log.trace("Reconnected " + stub);
                             }
 
                         } catch (Throwable ex) {
