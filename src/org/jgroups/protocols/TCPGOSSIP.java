@@ -2,12 +2,7 @@
 package org.jgroups.protocols;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -20,6 +15,7 @@ import org.jgroups.stack.RouterStubManager;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
+import org.jgroups.util.UUID;
 
 
 /**
@@ -35,7 +31,7 @@ import org.jgroups.util.Tuple;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.57 2010/05/06 14:52:44 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.58 2010/05/06 15:22:50 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -170,10 +166,13 @@ public class TCPGOSSIP extends Discovery {
         if (log.isTraceEnabled())
             log.trace("consolidated mbrs from GossipRouter(s) are " + initial_mbrs);
 
+        PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
+
         for (Address mbr_addr : initial_mbrs) {
             Message msg = new Message(mbr_addr);
             msg.setFlag(Message.OOB);
-            PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
+            PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
             hdr.return_view_only = return_views_only;
             msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
