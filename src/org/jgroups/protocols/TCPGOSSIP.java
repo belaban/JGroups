@@ -35,7 +35,7 @@ import org.jgroups.util.Tuple;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.56 2010/05/05 04:59:46 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.57 2010/05/06 14:52:44 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -177,7 +177,7 @@ public class TCPGOSSIP extends Discovery {
             hdr.return_view_only = return_views_only;
             msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
-                log.trace("[FIND_INITIAL_MBRS] sending PING request to " + mbr_addr);            
+                log.trace("[FIND_INITIAL_MBRS] sending GET_MBRS_REQ request to " + mbr_addr);            
             down_prot.down(new Event(Event.MSG, msg));
         }
     }
