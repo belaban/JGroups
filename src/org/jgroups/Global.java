@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.57 2010/04/27 14:25:14 belaban Exp $
+ * @version $Id: Global.java,v 1.58 2010/05/07 09:19:40 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -26,7 +26,11 @@ public class Global {
     public static final String IPv4="java.net.preferIPv4Stack";
     public static final String IPv6="java.net.preferIPv6Addresses";
 
+    public static final String GLOBAL_ADDRESS="GLOBAL";
+    public static final String SITE_LOCAL_ADDRESS="SITE_LOCAL";
+    public static final String LINK_LOCAL_ADDRESS="LINK_LOCAL";
     public static final String NON_LOOPBACK_ADDRESS="NON_LOOPBACK_ADDRESS";
+
 
     public static final String BIND_ADDR="jgroups.bind_addr";
     public static final String BIND_ADDR_OLD="bind.address";

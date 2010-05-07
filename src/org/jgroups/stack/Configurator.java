@@ -5,7 +5,6 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -37,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.80 2010/05/05 12:41:17 belaban Exp $
+ * @version $Id: Configurator.java,v 1.81 2010/05/07 09:17:03 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -113,11 +112,6 @@ public class Configurator implements ProtocolStackFactory {
             }
         }
 
-        if(ip_version == StackType.Unknown) {
-            ip_version=StackType.IPv6;
-            log.info("found neither an IPv4 nor an IPv6 stack, and no addresses were found to pick a stack, " +
-                    "defaulting to IPv" + ip_version);
-        }
 
         // process default values
         setDefaultValues(protocol_configs, protocols, ip_version) ;
@@ -600,7 +594,7 @@ public class Configurator implements ProtocolStackFactory {
      */
     public static void setDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols,
                                         StackType ip_version) throws Exception {
-        InetAddress default_ip_address=Util.getFirstNonLoopbackAddress(ip_version);
+        InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
             log.warn("unable to find an address other than loopback for IP version " + ip_version);
             default_ip_address=Util.getLocalhost(ip_version);
