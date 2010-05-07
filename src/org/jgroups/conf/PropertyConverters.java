@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.18 2010/04/12 10:18:49 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.19 2010/05/07 09:19:21 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -185,7 +185,22 @@ public class PropertyConverters {
             } else if (Float.TYPE.equals(propertyFieldType)) {
                 return Float.parseFloat(propertyValue);
             } else if(InetAddress.class.equals(propertyFieldType)) {
-                InetAddress retval=InetAddress.getByName(propertyValue);
+
+                InetAddress retval=null;
+                if(propertyValue.equalsIgnoreCase(Global.GLOBAL_ADDRESS)) {
+                    retval=Util.getGlobalAddress();
+                }
+                else if(propertyValue.equalsIgnoreCase(Global.SITE_LOCAL_ADDRESS)) {
+                    retval=Util.getSiteLocalAddress();
+                }
+                else if(propertyValue.equalsIgnoreCase(Global.LINK_LOCAL_ADDRESS)) {
+                    retval=Util.getLinkLocalAddress();
+                }
+                else if(propertyValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS)) {
+                    Util.getAddress(Util.AddressScope.NON_LOOPBACK);
+                }
+                else
+                    retval=InetAddress.getByName(propertyValue);
 
                 if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
                     String tmp=prefix + propertyValue;

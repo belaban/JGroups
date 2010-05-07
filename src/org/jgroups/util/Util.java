@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.262 2010/04/30 09:53:48 belaban Exp $
+ * @version $Id: Util.java,v 1.263 2010/05/07 09:16:37 belaban Exp $
  */
 public class Util {
 
@@ -79,8 +79,9 @@ public class Util {
         return GLOBAL_GROUP;
     }
 
-    private static Method NETWORK_INTERFACE_IS_UP=null;
-    private static Method NETWORK_INTERFACE_IS_LOOPBACK=null;
+    public static enum AddressScope {GLOBAL, SITE_LOCAL, LINK_LOCAL, NON_LOOPBACK};
+
+    private static StackType ip_stack_type=_getIpStackType();
 
 
     private static SocketFactory socket_factory=new DefaultSocketFactory();
@@ -110,17 +111,8 @@ public class Util {
         PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
         PRIMITIVE_TYPES.put(byte[].class, new Byte(TYPE_BYTEARRAY));
 
-        try {
-            NETWORK_INTERFACE_IS_UP=NetworkInterface.class.getMethod("isUp");
-        }
-        catch(Throwable e) {
-        }
-
-        try {
-            NETWORK_INTERFACE_IS_LOOPBACK=NetworkInterface.class.getMethod("isLoopback");
-        }
-        catch(Throwable e) {
-        }
+        if(ip_stack_type == StackType.Unknown)
+            ip_stack_type=StackType.IPv6;
     }
 
     public static SocketFactory getSocketFactory() {
@@ -2958,10 +2950,6 @@ public class Util {
      * @throws SocketException
      */
     public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
-    	return getBindAddress(props, StackType.IPv4);
-    }
-    
-    public static InetAddress getBindAddress(Properties props, StackType ip_version) throws UnknownHostException, SocketException {
 
     	// determine the desired values for bind_addr_str and bind_interface_str
     	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
@@ -2971,7 +2959,9 @@ public class Util {
     			ignore_systemprops, null);
     	
     	InetAddress bind_addr=null;
-    	NetworkInterface bind_intf=null ;
+    	NetworkInterface bind_intf=null;
+
+        StackType ip_version=Util.getIpStackType();
 
     	// 1. if bind_addr_str specified, get bind_addr and check version
     	if(bind_addr_str != null) {
@@ -3026,17 +3016,16 @@ public class Util {
     	}
     	// 4. if only interface is specified, get first non-loopback address on that interface, 
     	else if (bind_intf != null) {
-            bind_addr = getFirstNonLoopbackAddress(bind_intf, ip_version) ;
+            bind_addr = getAddress(bind_intf, AddressScope.NON_LOOPBACK) ;
     	}
     	// 5. if neither bind address nor bind interface is specified, get the first non-loopback
     	// address on any interface
     	else if (bind_addr == null) {
-    		bind_addr = getFirstNonLoopbackAddress(ip_version) ;
+    		bind_addr = getNonLoopbackAddress() ;
     	}
 
     	// if we reach here, if bind_addr == null, we have tried to obtain a bind_addr but were not successful
     	// in such a case, using a loopback address of the correct version is our only option
-
     	boolean localhost = false;
     	if (bind_addr == null) {
     		bind_addr = getLocalhost(ip_version);
@@ -3122,7 +3111,7 @@ public class Util {
     	}
     	// 4. if only interface is specified, get first non-loopback address on that interface, 
     	else {
-    		bind_addr = getFirstNonLoopbackAddress(bind_intf, ip_version) ;
+    		bind_addr = getAddress(bind_intf, AddressScope.NON_LOOPBACK) ;
     	}
 
 
@@ -3185,56 +3174,14 @@ public class Util {
     }
 
 
-    public static int getJavaVersion() {
-        String version=System.getProperty("java.version");
-        int retval=0;
-        if(version != null) {
-            if(version.startsWith("1.2"))
-                return 12;
-            if(version.startsWith("1.3"))
-                return 13;
-            if(version.startsWith("1.4"))
-                return 14;
-            if(version.startsWith("1.5"))
-                return 15;
-            if(version.startsWith("5"))
-                return 15;
-            if(version.startsWith("1.6"))
-                return 16;
-            if(version.startsWith("6"))
-                return 16;
-        }
-        return retval;
-    }
-
     public static <T> Vector<T> unmodifiableVector(Vector<? extends T> v) {
         if(v == null) return null;
         return new UnmodifiableVector(v);
     }
 
-    public static String memStats(boolean gc) {
-        StringBuilder sb=new StringBuilder();
-        Runtime rt=Runtime.getRuntime();
-        if(gc)
-            rt.gc();
-        long free_mem, total_mem, used_mem;
-        free_mem=rt.freeMemory();
-        total_mem=rt.totalMemory();
-        used_mem=total_mem - free_mem;
-        sb.append("Free mem: ").append(free_mem).append("\nUsed mem: ").append(used_mem);
-        sb.append("\nTotal mem: ").append(total_mem);
-        return sb.toString();
-    }
+    
 
     /** IP related utilities */
-
-    public static InetAddress getIPv4Localhost() throws UnknownHostException {
-    	return getLocalhost(StackType.IPv4) ;
-    }
-
-    public static InetAddress getIPv6Localhost() throws UnknownHostException {
-    	return getLocalhost(StackType.IPv6) ;
-    }
 
     public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
     	if (ip_version == StackType.IPv4)
@@ -3243,79 +3190,100 @@ public class Util {
     		return InetAddress.getByName("::1") ;
     }
 
- 
+
+    /**
+     * Tries to find a global (public) IP address on the interface(s)
+     * @return
+     */
+    public static InetAddress getGlobalAddress() throws SocketException {
+        return getAddress(AddressScope.GLOBAL);
+    }
+
+
+    /**
+     * Tries to find a site-local address on the interface(s). Example: 192.168.x.x or 10.x.x.x
+     * @return
+     */
+    public static InetAddress getSiteLocalAddress() throws SocketException {
+        return getAddress(AddressScope.SITE_LOCAL);
+    }
+
+
+    /**
+     * Tries to find a lonk-local address on the interface(s)
+     * @return
+     */
+    public static InetAddress getLinkLocalAddress() throws SocketException {
+        return getAddress(AddressScope.LINK_LOCAL);
+    }
+
 
     /**
      * Returns the first non-loopback address on any interface on the current host.
-     *
-     * @param ip_version Constraint on IP version of address to be returned, 4 or 6
      */
-    public static InetAddress getFirstNonLoopbackAddress(StackType ip_version) throws SocketException {
-    	InetAddress address = null ;
-
-    	Enumeration intfs = NetworkInterface.getNetworkInterfaces();
-    	while(intfs.hasMoreElements()) {
-    		NetworkInterface intf=(NetworkInterface)intfs.nextElement();
-            // if(!intf.isUp() || intf.isLoopback())
-            if(Util.isDownOrLoopback(intf))
-                continue;
-    		address = getFirstNonLoopbackAddress(intf, ip_version) ;
-    		if (address != null) {
-    			return address ;
-    		}
-    	}
-    	return null ;
+    public static InetAddress getNonLoopbackAddress() throws SocketException {
+        return getAddress(AddressScope.NON_LOOPBACK);
     }
 
 
-    public static boolean isDownOrLoopback(NetworkInterface intf) {
-        boolean is_up=true, is_loopback=false;
 
-        if(NETWORK_INTERFACE_IS_UP != null) {
-            try {
-                Boolean retval=(Boolean)NETWORK_INTERFACE_IS_UP.invoke(intf);
-                if(retval != null)
-                    is_up=retval.booleanValue();
-            }
-            catch(Throwable t) {
-            }
-        }
+    /**
+     * Returns the first address on any interface of the current host, which satisfies scope
+     */
+    public static InetAddress getAddress(AddressScope scope) throws SocketException {
+        InetAddress address=null ;
 
-
-        if(NETWORK_INTERFACE_IS_LOOPBACK != null) {
-            try {
-                Boolean retval=(Boolean)NETWORK_INTERFACE_IS_LOOPBACK.invoke(intf);
-                if(retval != null)
-                    is_loopback=retval.booleanValue();
-            }
-            catch(Throwable t) {
+        Enumeration intfs=NetworkInterface.getNetworkInterfaces();
+        while(intfs.hasMoreElements()) {
+            NetworkInterface intf=(NetworkInterface)intfs.nextElement();
+            if(intf.isUp()) {
+                address=getAddress(intf, scope) ;
+                if(address != null)
+                    return address;
             }
         }
-
-        return !is_up || is_loopback; 
+        return null ;
     }
 
 
     /**
-     * Returns the first non-loopback address on the given interface on the current host.
+     * Returns the first address on the given interface on the current host, which satisfies scope
      *
      * @param intf the interface to be checked
-     * @param ip_version Constraint on IP version of address to be returned, 4 or 6
-     */    
-    public static InetAddress getFirstNonLoopbackAddress(NetworkInterface intf, StackType ip_version) throws SocketException {
-    	if (intf == null) 
-    		throw new IllegalArgumentException("Network interface pointer is null") ; 
+     */
+    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope) throws SocketException {
+        StackType ip_version=Util.getIpStackType();
+        for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
+            InetAddress addr=(InetAddress)addresses.nextElement();
+            boolean match;
+            switch(scope) {
+                case GLOBAL:
+                    match=!addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
+                    break;
+                case SITE_LOCAL:
+                    match=addr.isSiteLocalAddress();
+                    break;
+                case LINK_LOCAL:
+                    match=addr.isLinkLocalAddress();
+                    break;
+                case NON_LOOPBACK:
+                    match=!addr.isLoopbackAddress();
+                    break;
+                default:
+                    throw new IllegalArgumentException("scope " + scope + " is unknown");
+            }
 
-    	for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
-    		InetAddress address=(InetAddress)addresses.nextElement();
-    		if(!address.isLoopbackAddress()) {
-    			if ((address instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                        (address instanceof Inet6Address && ip_version == StackType.IPv6))
-    				return address;
-    		}
-    	}
-    	return null ;
+            if(match) {
+                if((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
+                        (addr instanceof Inet6Address && ip_version == StackType.IPv6))
+                    return addr;
+            }
+        }
+        return null ;
     }
+
+    
+
 
     /**
      * A function to check if an interface supports an IP version (i.e has addresses 
@@ -3324,7 +3292,7 @@ public class Util {
      * @param intf
      * @return
      */
-    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws SocketException,UnknownHostException {
+    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws SocketException, UnknownHostException {
         boolean supportsVersion = false ;
         if (intf != null) {
             // get all the InetAddresses defined on the interface
@@ -3347,16 +3315,20 @@ public class Util {
         return supportsVersion ;
     }         
         
+    public static StackType getIpStackType() {
+       return ip_stack_type;
+    }
+
     /**
      * Tries to determine the type of IP stack from the available interfaces and their addresses and from the
      * system properties (java.net.preferIPv4Stack and java.net.preferIPv6Addresses)
      * @return StackType.IPv4 for an IPv4 only stack, StackYTypeIPv6 for an IPv6 only stack, and StackType.Unknown
      * if the type cannot be detected
      */
-    public static StackType getIpStackType() {
+    private static StackType _getIpStackType() {
         boolean isIPv4StackAvailable = isStackAvailable(true) ;
     	boolean isIPv6StackAvailable = isStackAvailable(false) ;
-    	
+
 		// if only IPv4 stack available
 		if (isIPv4StackAvailable && !isIPv6StackAvailable) {
 			return StackType.IPv4;
