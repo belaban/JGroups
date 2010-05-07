@@ -23,7 +23,7 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.14 2009/10/20 14:51:51 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.15 2010/05/07 09:17:20 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {
@@ -31,7 +31,9 @@ public class FD_ICMP extends FD {
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface intf=null;
 
-    @Property(name="bind_addr", description="The NIC on which the ServerSocket should listen on", 
+    @Property(name="bind_addr",
+              description="The NIC on which the ServerSocket should listen on. " +
+                      "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK", 
               systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr=null ;
