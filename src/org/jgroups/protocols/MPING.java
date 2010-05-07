@@ -20,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.56 2010/04/27 14:25:16 belaban Exp $
+ * @version $Id: MPING.java,v 1.57 2010/05/07 09:17:40 belaban Exp $
  */
 @DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
@@ -35,7 +35,9 @@ public class MPING extends PING implements Runnable {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Property(description="Bind address for multicast socket", systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+    @Property(description="Bind address for multicast socket. " +
+            "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
+              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null;
     

@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.308 2010/04/27 14:25:16 belaban Exp $
+ * @version $Id: TP.java,v 1.309 2010/05/07 09:18:07 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -74,9 +74,11 @@ public abstract class TP extends Protocol {
 
 
 
-    @Property(name="bind_addr", description="The bind address which should be used by this transport",
-    		defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
-            systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},writable=false)
+    @Property(name="bind_addr",
+              description="The bind address which should be used by this transport. The following special values " +
+                      "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
+              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
+              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},writable=false)
     protected InetAddress bind_addr=null;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
