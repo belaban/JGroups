@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.263 2010/05/07 09:16:37 belaban Exp $
+ * @version $Id: Util.java,v 1.264 2010/05/10 11:21:27 belaban Exp $
  */
 public class Util {
 
@@ -79,7 +79,7 @@ public class Util {
         return GLOBAL_GROUP;
     }
 
-    public static enum AddressScope {GLOBAL, SITE_LOCAL, LINK_LOCAL, NON_LOOPBACK};
+    public static enum AddressScope {GLOBAL, SITE_LOCAL, LINK_LOCAL, LOOPBACK, NON_LOOPBACK};
 
     private static StackType ip_stack_type=_getIpStackType();
 
@@ -3191,32 +3191,6 @@ public class Util {
     }
 
 
-    /**
-     * Tries to find a global (public) IP address on the interface(s)
-     * @return
-     */
-    public static InetAddress getGlobalAddress() throws SocketException {
-        return getAddress(AddressScope.GLOBAL);
-    }
-
-
-    /**
-     * Tries to find a site-local address on the interface(s). Example: 192.168.x.x or 10.x.x.x
-     * @return
-     */
-    public static InetAddress getSiteLocalAddress() throws SocketException {
-        return getAddress(AddressScope.SITE_LOCAL);
-    }
-
-
-    /**
-     * Tries to find a lonk-local address on the interface(s)
-     * @return
-     */
-    public static InetAddress getLinkLocalAddress() throws SocketException {
-        return getAddress(AddressScope.LINK_LOCAL);
-    }
-
 
     /**
      * Returns the first non-loopback address on any interface on the current host.
@@ -3265,6 +3239,9 @@ public class Util {
                     break;
                 case LINK_LOCAL:
                     match=addr.isLinkLocalAddress();
+                    break;
+                case LOOPBACK:
+                    match=addr.isLoopbackAddress();
                     break;
                 case NON_LOOPBACK:
                     match=!addr.isLoopbackAddress();
