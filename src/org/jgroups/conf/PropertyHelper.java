@@ -86,7 +86,7 @@ import java.util.Map;
 			}
 			catch(Exception e) {
 				throw new Exception("Conversion of " + propertyName + " in " + name + 
-						" with original property value " + prop  + " failed. Exception is " +e, e);
+						" with original property value " + prop  + " failed", e);
 			}
 			return converted ;
     	}

@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.81 2010/05/07 09:17:03 belaban Exp $
+ * @version $Id: Configurator.java,v 1.82 2010/05/10 11:23:05 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -942,7 +942,7 @@ public class Configurator implements ProtocolStackFactory {
     				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
     				throw new Exception("Property assignment of " + propertyName + " in "
     						+ name + " with original property value " + propertyValue + " and converted to " + converted 
-    						+ " could not be assigned. Exception is " +e, e);
+    						+ " could not be assigned", e);
     			}
     		}
 
