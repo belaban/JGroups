@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.19 2010/05/07 09:19:21 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.20 2010/05/10 11:22:51 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -187,18 +187,15 @@ public class PropertyConverters {
             } else if(InetAddress.class.equals(propertyFieldType)) {
 
                 InetAddress retval=null;
-                if(propertyValue.equalsIgnoreCase(Global.GLOBAL_ADDRESS)) {
-                    retval=Util.getGlobalAddress();
+                Util.AddressScope addr_scope=null;
+                try {
+                    addr_scope=Util.AddressScope.valueOf(propertyValue.toUpperCase());
                 }
-                else if(propertyValue.equalsIgnoreCase(Global.SITE_LOCAL_ADDRESS)) {
-                    retval=Util.getSiteLocalAddress();
+                catch(Throwable ex) {
                 }
-                else if(propertyValue.equalsIgnoreCase(Global.LINK_LOCAL_ADDRESS)) {
-                    retval=Util.getLinkLocalAddress();
-                }
-                else if(propertyValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS)) {
-                    Util.getAddress(Util.AddressScope.NON_LOOPBACK);
-                }
+
+                if(addr_scope != null)
+                    retval=Util.getAddress(addr_scope);
                 else
                     retval=InetAddress.getByName(propertyValue);
 
@@ -217,16 +214,8 @@ public class PropertyConverters {
                         // fix scope
                         Inet6Address ret=getScopedInetAddress(addr);
                         if(ret != null) {
-                            //if(log.isWarnEnabled())
-                              //  log.warn("added scope-id to link-local IPv6 address " + ret + ", but you should change " +
-                                //        propertyName + " to include a scope-id");
                             retval=ret;
                         }
-                        /*else {
-                            if(log.isWarnEnabled())
-                                log.warn("detected link-local IPv6 address " + addr +
-                                        " without a scope-id (e.g. %3 or %eth1), this might cause problems");
-                        }*/
                     }
                 }
                 return retval;
