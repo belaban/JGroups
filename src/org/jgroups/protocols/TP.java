@@ -47,12 +47,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.309 2010/05/07 09:18:07 belaban Exp $
+ * @version $Id: TP.java,v 1.310 2010/05/10 11:22:14 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
         "use_concurrent_stack", "prevent_port_reuse", "persistent_ports", "pm_expiry_time", "persistent_ports_file",
-        "start_port", "end_port"})
+        "start_port", "end_port", "use_local_host"})
 public abstract class TP extends Protocol {
 
     private static final byte LIST=1; // we have a list of messages rather than a single message when set
@@ -86,9 +86,6 @@ public abstract class TP extends Protocol {
             exposeAsManagedAttribute=false)
     protected String bind_interface_str=null;
     
-    @Property(description="Ignores all bind address parameters and  let's the OS return the local host address")
-    protected boolean use_local_host=false;
-
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
     protected boolean receive_on_all_interfaces=false;
 
@@ -352,9 +349,6 @@ public abstract class TP extends Protocol {
      * members contains *all* members from all channels sitting on the shared transport */
     protected final Set<Address> members=new CopyOnWriteArraySet<Address>();
 
-    protected final ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(new byte[] { '0' });
-    protected final DataInputStream dis=new DataInputStream(in_stream);
-
     protected ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
@@ -363,13 +357,8 @@ public abstract class TP extends Protocol {
     //http://jira.jboss.org/jira/browse/JGRP-849
     protected final ReentrantLock connectLock = new ReentrantLock();
     
-    /* Set to true if we are using IPv4 IP addresses, false otherwise */
-    protected boolean assumeIPv4 = false ;
 
-    /**
-     *
-================================== OOB thread pool ========================
-     */
+    // ================================== OOB thread pool ========================
     protected Executor oob_thread_pool;
 
     /** Factory which is used by oob_thread_pool */
@@ -379,10 +368,7 @@ public abstract class TP extends Protocol {
     protected BlockingQueue<Runnable> oob_thread_pool_queue=null;
 
 
-    /**
-     *
-================================== Regular thread pool =======================
-     */
+    // ================================== Regular thread pool ======================
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
     protected Executor thread_pool;
@@ -393,18 +379,12 @@ public abstract class TP extends Protocol {
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     protected BlockingQueue<Runnable> thread_pool_queue=null;
 
-    /**
-     *
-================================== Timer thread pool  =========================
-     */
+    // ================================== Timer thread pool  =========================
     protected TimeScheduler timer=null;
 
     protected ThreadFactory timer_thread_factory;
 
-    /**
-     *
-=================================Default thread factory ========================
-     */
+    // ================================Default thread factory ========================
     /** Used by all threads created by JGroups outside of the thread pools */
     protected ThreadFactory global_thread_factory=null;
 
