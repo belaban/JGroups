@@ -81,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.238 2010/05/05 04:46:43 belaban Exp $
+ * @version $Id: JChannel.java,v 1.239 2010/05/27 15:38:38 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -942,42 +942,25 @@ public class JChannel extends Channel {
 
         switch(option) {
             case VIEW:
-                if(log.isWarnEnabled())
-                    log.warn("option VIEW has been deprecated (it is always true now); this option is ignored");
-                break;
             case SUSPECT:
-                if(log.isWarnEnabled())
-                    log.warn("option SUSPECT has been deprecated (it is always true now); this option is ignored");
+            case GET_STATE_EVENTS:
+            case AUTO_RECONNECT:
+            case AUTO_GETSTATE:
                 break;
             case BLOCK:
                 if(value instanceof Boolean)
                     receive_blocks=((Boolean)value).booleanValue();
                 else
-                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                        " (" + value + "): value has to be Boolean");
-                break;
-
-            case GET_STATE_EVENTS:
-                if(log.isWarnEnabled())
-                    log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
+                            " (" + value + "): value has to be Boolean");
                 break;
 
             case LOCAL:
                 if(value instanceof Boolean)
                     receive_local_msgs=((Boolean)value).booleanValue();
                 else
-                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                        " (" + value + "): value has to be Boolean");
-                break;
-
-            case AUTO_RECONNECT:
-                if(log.isWarnEnabled())
-                    log.warn("Option AUTO_RECONNECT has been deprecated and is ignored");
-                break;
-
-            case AUTO_GETSTATE:
-                if(log.isWarnEnabled())
-                    log.warn("Option AUTO_GETSTATE has been deprecated and is ignored");
+                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
+                            " (" + value + "): value has to be Boolean");
                 break;
 
             default:
