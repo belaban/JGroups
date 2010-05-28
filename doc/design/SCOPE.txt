@@ -6,13 +6,14 @@ Implementation of the SCOPE protocol
 Author: Bela Ban
 Version: $Id
 
-Scopes allow for concurrent message delivery of messages sent by the same sender, without having to resort to OOB.
+Scopes allow for concurrent delivery of messages sent by the same sender, without having to resort to OOB.
 
 The implementation is done by a protocol called SCOPE, which has to be somewhere above NAKACK and UNICAST.
 
 Scopes do apply to both multicast and unicast messages.
 
-A message is tagged as scoped by calling Message.setAScope(short). This will add a SCOPE.ScopeHeader to the message.
+A message is tagged as scoped by calling Message.setScope(short). This will add a SCOPE.ScopeHeader to the message. A
+scope is always a short, so we can have ca 32'000 scopes.
 
 The scope can be set *per message*. It should be more or less unique, but doesn't need to be.
 
@@ -22,10 +23,9 @@ SCOPE resides above NAKACK and UNICAST, all multicast and unicast messages are g
 
 Messages without a scope header are passed up the stack.
 
-When a scope message is received by SCOPE, it is examined for a scope header. If none is present, the message is passed
-up.
+When a message is received by SCOPE, it is examined for a scope header. If none is present, the message is passed up.
 
-When a scope header is present, we grab the scope (a short) and fetch the associated queue (MessageQueue). If no queue
+When a scope header is present, we grab the scope and fetch the associated queue (MessageQueue). If no queue
 exists yet, one will be created.
 
 The message is then added to the end of the queue.
@@ -35,3 +35,8 @@ the queue. The thread (QueueThread) will then continually remove messages from t
 up the stack.
 
 When no messages are available, the thread is terminated and is placed back to the thread pool.
+
+The thread pool is configurable (min and max threads, plus idle time).
+
+Unused scopes are periodically removed by the ExiryTask, which is run every expiration_interval milliseconds and
+removes scopes which have been idle for more than expiration_time milliseconds. 
