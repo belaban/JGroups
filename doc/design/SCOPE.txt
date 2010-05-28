@@ -1,0 +1,18 @@
+
+
+Implementation of the SCOPE protocol
+====================================
+
+Author: Bela Ban
+Version: $Id
+
+Scopes allow for concurrent message delivery of messages sent by the same sender, without having to resort to
+OOB.
+
+A message is tagged as scoped by calling Message.setAScope(short). This will add a SCOPE.ScopeHeader to the message.
+
+The scope can be set *per message*. It should be more or less unique, but doesn't need to be.
+
+All messages with the same scope are delivered in the order in which they were received by the SCOPE protocol. Messages
+without scope header are passed up the stack.
+
