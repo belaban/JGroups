@@ -3,12 +3,14 @@ package org.jgroups.protocols;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.RouterStubManager;
@@ -31,7 +33,7 @@ import org.jgroups.util.UUID;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.58 2010/05/06 15:22:50 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.59 2010/05/28 21:08:22 vlada Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -49,11 +51,11 @@ public class TCPGOSSIP extends Discovery {
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
     		converter=PropertyConverters.InitialHosts2.class)
-    public void setInitialHosts(List<InetSocketAddress> initial_hosts) {
-        if(initial_hosts == null || initial_hosts.isEmpty())
+    public void setInitialHosts(List<InetSocketAddress> hosts) {
+        if(hosts == null || hosts.isEmpty())
             throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
 
-    	this.initial_hosts = initial_hosts ;
+        initial_hosts.addAll(hosts) ;
     }
 
     public List<InetSocketAddress> getInitialHosts() {
@@ -63,7 +65,8 @@ public class TCPGOSSIP extends Discovery {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    List<InetSocketAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
+    // (list of IpAddresses) hosts to be contacted for the initial membership
+    private final List<InetSocketAddress> initial_hosts = new CopyOnWriteArrayList<InetSocketAddress>();
     
     private volatile RouterStubManager stubManager;
 
@@ -106,9 +109,9 @@ public class TCPGOSSIP extends Discovery {
             stubManager.destroyStubs();
             stubManager = new RouterStubManager(this, group_addr, local_addr, reconnect_interval);
             for (InetSocketAddress host : initial_hosts) {
-                stubManager.createStub(host.getHostName(), host.getPort(), null);                                
+                stubManager.createAndRegisterStub(host.getHostName(), host.getPort(), null);                                
             }
-            connect(group_addr, local_addr);            
+            connectAllStubs(group_addr, local_addr);            
         }
     }
 
@@ -181,8 +184,29 @@ public class TCPGOSSIP extends Discovery {
         }
     }
 
+    @ManagedOperation
+    public void addInitialHost(String hostname, int port) {
+        //if there is such a stub already, remove and destroy it
+        removeInitialHost(hostname, port);
+        
+        //now re-add it
+        InetSocketAddress isa = new InetSocketAddress(hostname, port);
+        initial_hosts.add(isa);
+        RouterStub s = new RouterStub(isa.getHostName(), isa.getPort(),null,stubManager);        
+        connect(s, group_addr, local_addr);
+        stubManager.registerStub(s);
+    }
 
-    protected void connect(String group, Address logical_addr) {
+    @ManagedOperation
+    public boolean removeInitialHost(String hostname, int port) {
+        InetSocketAddress isa = new InetSocketAddress(hostname, port);
+        stubManager.stopReconnecting(isa);
+        stubManager.unregisterAndDestroyStub(isa);
+        return initial_hosts.remove(isa);        
+    }
+
+
+    protected void connectAllStubs(String group, Address logical_addr) {
         String logical_name=org.jgroups.util.UUID.get(logical_addr);
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=physical_addr != null? new ArrayList<PhysicalAddress>() : null;
@@ -202,6 +226,24 @@ public class TCPGOSSIP extends Discovery {
                 stubManager.startReconnecting(stub);
             }
         }     
+    }
+    
+    protected void connect(RouterStub stub, String group, Address logical_addr) {
+        String logical_name = org.jgroups.util.UUID.get(logical_addr);
+        PhysicalAddress physical_addr = (PhysicalAddress) down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+        List<PhysicalAddress> physical_addrs = physical_addr != null ? new ArrayList<PhysicalAddress>(): null;
+        if (physical_addr != null)
+            physical_addrs.add(physical_addr);
+
+        try {
+            if (log.isTraceEnabled())
+                log.trace("trying to connect to " + stub.getGossipRouterAddress());
+            stub.connect(group, logical_addr, logical_name, physical_addrs);
+        } catch (Exception e) {
+            if (log.isErrorEnabled())
+                log.error("failed connecting to " + stub.getGossipRouterAddress() + ": " + e);
+            stubManager.startReconnecting(stub);
+        }
     }
 }
 

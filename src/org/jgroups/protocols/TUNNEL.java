@@ -43,7 +43,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.100 2010/05/04 19:31:01 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.101 2010/05/28 21:08:22 vlada Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -205,7 +205,7 @@ public class TUNNEL extends TP {
              
              stubManager = new TUNNELStubManager(this,group,local,getReconnectInterval());
              for (InetSocketAddress gr : gossip_router_hosts) {
-                 RouterStub stub = stubManager.createStub(gr.getHostName(), gr.getPort(), bind_addr);
+                 RouterStub stub = stubManager.createAndRegisterStub(gr.getHostName(), gr.getPort(), bind_addr);
                  stub.setTcpNoDelay(tcp_nodelay);           
               }  
              PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
