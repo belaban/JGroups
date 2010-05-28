@@ -74,10 +74,41 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
         return stubs;
     }
     
-    public RouterStub createStub(String routerHost, int routerPort, InetAddress bindAddress) {
+    public RouterStub createAndRegisterStub(String routerHost, int routerPort, InetAddress bindAddress) {
         RouterStub s = new RouterStub(routerHost,routerPort,bindAddress,this);
+        unregisterAndDestroyStub(s.getGossipRouterAddress());       
         stubs.add(s);   
         return s;
+    }
+    
+    public void registerStub(RouterStub s) {        
+        unregisterAndDestroyStub(s.getGossipRouterAddress());        
+        stubs.add(s);           
+    }
+    
+    public boolean unregisterStub(final RouterStub s) {
+        return stubs.remove(s);
+    }
+    
+    public RouterStub unregisterStub(final InetSocketAddress address) {
+        if(address == null) 
+            throw new IllegalArgumentException("Cannot remove null address");
+        for (RouterStub s : stubs) {
+            if (s.getGossipRouterAddress().equals(address)) {
+                stubs.remove(address);
+                return s;
+            }
+        }
+        return null;
+    }
+    
+    public boolean unregisterAndDestroyStub(final InetSocketAddress address) {
+        RouterStub unregisteredStub = unregisterStub(address);
+        if(unregisteredStub !=null) {
+            unregisteredStub.destroy();
+            return true;
+        }
+        return false;
     }
     
     public void disconnectStubs() {
@@ -133,18 +164,21 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
     }
 
     public void stopReconnecting(final RouterStub stub) {
-        reconnectorLock.lock();
-        InetSocketAddress address = stub.getGossipRouterAddress();
-        try {
-            Future<?> reconnectorFuture = reconnectFutures.get(address);
-            if (reconnectorFuture != null) {
-                reconnectorFuture.cancel(true);
-                reconnectFutures.remove(address);
-            }
-        } finally {
-            reconnectorLock.unlock();
-        }
+        stopReconnecting(stub.getGossipRouterAddress());
     }
+    
+    public void stopReconnecting(final InetSocketAddress address) {
+       reconnectorLock.lock();      
+       try {
+           Future<?> reconnectorFuture = reconnectFutures.get(address);
+           if (reconnectorFuture != null) {
+               reconnectorFuture.cancel(true);
+               reconnectFutures.remove(address);
+           }
+       } finally {
+           reconnectorLock.unlock();
+       }
+   }
 
     public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
         if (newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
