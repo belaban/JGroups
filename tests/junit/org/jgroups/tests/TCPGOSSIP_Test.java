@@ -3,7 +3,9 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.protocols.TCPGOSSIP;
 import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -16,7 +18,7 @@ import org.testng.annotations.Test;
  * 
  * @author Vladimir Blagojevic
  * 
- * @version $Id: TCPGOSSIP_Test.java,v 1.3 2010/05/05 15:31:29 belaban Exp $
+ * @version $Id: TCPGOSSIP_Test.java,v 1.4 2010/05/31 15:48:33 vlada Exp $
  **/
 @Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER }, sequential = true)
 public class TCPGOSSIP_Test extends ChannelTestBase {
@@ -27,6 +29,12 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
 
     @BeforeClass
     void startRouter() throws Exception {
+        String bind_addr = getRouterBindAddress();
+        gossipRouter = new GossipRouter(12001, bind_addr);
+        gossipRouter.start();
+    }
+
+    private String getRouterBindAddress() {
         String bind_addr = Util.getProperty(Global.BIND_ADDR);
         if (bind_addr == null) {
             StackType type = Util.getIpStackType();
@@ -35,8 +43,7 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
             else
                 bind_addr = "127.0.0.1";
         }
-        gossipRouter = new GossipRouter(12001, bind_addr);
-        gossipRouter.start();
+        return bind_addr;
     }
 
     @AfterClass(alwaysRun = true)
@@ -60,6 +67,23 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect(GROUP);
+        View view = channel.getView();
+        assert view.size() == 2;
+        assert view.containsMember(channel.getAddress());
+        assert view.containsMember(coordinator.getAddress());
+    }
+    
+    public void testAddInitialHosts() throws Exception {
+        coordinator = new JChannel(props);
+        channel = new JChannel(props);
+        coordinator.connect(GROUP);
+        channel.connect(GROUP);
+        TCPGOSSIP p = (TCPGOSSIP) channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
+        String bind_addr = getRouterBindAddress();
+        assert p.removeInitialHost(bind_addr, 12001);
+        p.addInitialHost(bind_addr, 12001);
+               
+       
         View view = channel.getView();
         assert view.size() == 2;
         assert view.containsMember(channel.getAddress());
