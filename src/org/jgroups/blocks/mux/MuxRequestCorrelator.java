@@ -14,7 +14,8 @@ import org.jgroups.conf.ClassConfigurator;
  * A request correlator that adds a mux header to incoming and outgoing messages.
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxRequestCorrelator.java,v 1.3 2010/04/21 10:54:07 belaban Exp $
+ * @author Brian Stansberry
+ * @version $Id: MuxRequestCorrelator.java,v 1.4 2010/06/06 14:44:14 bstansberry Exp $
  */
 public class MuxRequestCorrelator extends RequestCorrelator {
 
@@ -30,6 +31,12 @@ public class MuxRequestCorrelator extends RequestCorrelator {
     public void sendRequest(long requestId, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
         msg.putHeader(MUX_ID, header);
         super.sendRequest(requestId, dest_mbrs, msg, coll, options);
+    }
+
+    @Override
+    public void sendUnicastRequest(long id, Address target, Message msg, RspCollector coll) throws Exception {
+        msg.putHeader(MUX_ID, header);
+        super.sendUnicastRequest(id, target, msg, coll);
     }
 
     @Override

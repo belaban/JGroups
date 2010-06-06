@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Paul Ferraro
- * @version $Id: MuxMessageDispatcherTest.java,v 1.1 2010/04/13 17:57:09 ferraro Exp $
+ * @version $Id: MuxMessageDispatcherTest.java,v 1.2 2010/06/06 14:44:13 bstansberry Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxMessageDispatcherTest extends ChannelTestBase {
@@ -59,13 +59,13 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
             channels[i].close();
             dispatchers[i].stop();
             
-            for (int j = 0; j < muxDispatchers[i].length; ++i) {
+            for (int j = 0; j < muxDispatchers[i].length; ++j) {
                 muxDispatchers[i][j].stop();
             }
         }
     }
 
-    public void test() throws Exception {
+    public void testCastMessage() throws Exception {
 
         Message message = new Message();
         
@@ -138,6 +138,60 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
         verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
+    }
+
+    public void testSendMessage() throws Throwable {
+
+        final Address address = channels[1].getAddress();
+        Message message = new Message(address);
+        
+        // Validate normal dispatchers
+        Object response = dispatchers[0].sendMessage(message, RequestOptions.SYNC);
+
+        Assert.assertEquals(response, "dispatcher[1]");
+
+        // Validate muxed dispatchers
+        for (int j = 0; j < muxDispatchers[0].length; ++j) {
+            
+            response = muxDispatchers[0][j].sendMessage(message, RequestOptions.SYNC);
+
+            Assert.assertEquals(response, "muxDispatcher[1][" + j + "]");
+        }
+        
+        // Filter testing is disabled for now pending filter improvements in JGroups 3
+        
+//        // Validate muxed rpc dispatchers w/filter
+//        
+//        RspFilter filter = new RspFilter() {
+//
+//            @Override
+//            public boolean isAcceptable(Object response, Address sender) {
+//                return !sender.equals(address);
+//            }
+//
+//            @Override
+//            public boolean needMoreResponses() {
+//                return true;
+//            }
+//        };
+//        
+//        response = muxDispatchers[0][0].callRemoteMethod(address, method, RequestOptions.SYNC.setRspFilter(filter));
+//
+//        Assert.assertNull(address);
+//        
+//        // Validate stopped mux dispatcher response is auto-filtered
+//        muxDispatchers[1][0].stop();
+//        
+//        response = muxDispatchers[0][0].callRemoteMethod(address, method, RequestOptions.SYNC.setRspFilter(null));
+//
+//        Assert.assertNull(address);
+//        
+//        // Validate restarted mux dispatcher functions normally
+//        muxDispatchers[1][0].start();
+//        
+//        response = muxDispatchers[0][0].callRemoteMethod(address, method, RequestOptions.SYNC.setRspFilter(null));
+//
+//        Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
 
     private void verifyResponse(Map<Address, Rsp> responses, Channel channel, Object expected) {
