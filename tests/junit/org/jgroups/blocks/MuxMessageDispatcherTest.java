@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Paul Ferraro
- * @version $Id: MuxMessageDispatcherTest.java,v 1.2 2010/06/06 14:44:13 bstansberry Exp $
+ * @version $Id: MuxMessageDispatcherTest.java,v 1.3 2010/06/07 06:57:07 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxMessageDispatcherTest extends ChannelTestBase {
@@ -96,12 +96,10 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         
         RspFilter filter = new RspFilter() {
 
-            @Override
             public boolean isAcceptable(Object response, Address sender) {
                 return !sender.equals(address);
             }
 
-            @Override
             public boolean needMoreResponses() {
                 return true;
             }
@@ -194,7 +192,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
 //        Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
 
-    private void verifyResponse(Map<Address, Rsp> responses, Channel channel, Object expected) {
+    private static void verifyResponse(Map<Address, Rsp> responses, Channel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
         String address = channel.getAddress().toString();
         Assert.assertNotNull(response, address);
