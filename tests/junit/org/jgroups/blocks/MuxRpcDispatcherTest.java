@@ -1,14 +1,9 @@
 package org.jgroups.blocks;
 
-import java.util.Map;
-
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.RequestOptions;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.mux.MuxRpcDispatcher;
 import org.jgroups.blocks.mux.MuxUpHandler;
 import org.jgroups.tests.ChannelTestBase;
@@ -19,9 +14,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 /**
  * @author Paul Ferraro
- * @version $Id: MuxRpcDispatcherTest.java,v 1.2 2010/06/06 14:44:13 bstansberry Exp $
+ * @version $Id: MuxRpcDispatcherTest.java,v 1.3 2010/06/07 07:12:39 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxRpcDispatcherTest extends ChannelTestBase {
@@ -98,12 +95,10 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         
         RspFilter filter = new RspFilter() {
 
-            @Override
             public boolean isAcceptable(Object response, Address sender) {
                 return !sender.equals(address);
             }
 
-            @Override
             public boolean needMoreResponses() {
                 return true;
             }
