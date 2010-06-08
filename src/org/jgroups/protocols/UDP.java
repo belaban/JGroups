@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123.2.8 2009/05/18 16:13:40 galderz Exp $
+ * @version $Id: UDP.java,v 1.123.2.9 2010/06/08 18:37:13 dereed Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -520,7 +520,10 @@ public class UDP extends TP implements Runnable {
                 }
             }
             else {
-                mcast_send_sock=new MulticastSocket();
+                if(bind_addr != null)
+                    mcast_send_sock=new MulticastSocket(new InetSocketAddress(bind_addr, 0));
+                else
+                    mcast_send_sock=new MulticastSocket();
                 mcast_send_sock.setTimeToLive(ip_ttl);
                 if(bind_addr != null)
                     mcast_send_sock.setInterface(bind_addr);
