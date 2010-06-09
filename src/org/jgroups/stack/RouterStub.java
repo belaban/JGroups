@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.61 2010/05/04 19:31:03 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.62 2010/06/09 14:22:00 belaban Exp $
  */
 public class RouterStub {
 
@@ -156,6 +156,7 @@ public class RouterStub {
                 sock.setSoTimeout(sock_read_timeout);
                 sock.setSoLinger(true, 2);
                 sock.setTcpNoDelay(tcp_nodelay);
+                sock.setKeepAlive(true);
                 Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
                 input=new DataInputStream(sock.getInputStream());                
