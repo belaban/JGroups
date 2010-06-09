@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.73 2010/04/27 17:53:05 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.74 2010/06/09 14:10:56 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -287,17 +287,23 @@ public class GossipRouter {
     @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
         if(running.compareAndSet(true, false)){
-            Util.close(srvSock);                
+            Util.close(srvSock);
+            clear();
+            if(log.isInfoEnabled())
+                log.info("router stopped");            
+        }
+    }
+
+    @ManagedOperation(description="Closes all connections and clears routing table (leave the server socket open)")
+    public void clear() {
+        if(running.get()) {
             for(ConcurrentMap<Address,ConnectionHandler> map: routingTable.values()) {
                 for(ConnectionHandler ce: map.values())
                     ce.close();
             }
             routingTable.clear();
-    
-            if(log.isInfoEnabled())
-                log.info("router stopped");            
         }
-    }    
+    }
 
     public void destroy() {
     }
@@ -645,7 +651,7 @@ public class GossipRouter {
                     addr=request.getAddress();
                     group=request.getGroup();
                     known_groups.add(group);
-                    ConcurrentMap<Address,ConnectionHandler> map;
+
 
                     if(log.isTraceEnabled())
                         log.trace(this + " received " + request);
@@ -679,7 +685,7 @@ public class GossipRouter {
                         case GossipRouter.GOSSIP_GET:
                             Set<PhysicalAddress> physical_addrs;
                             List<PingData> mbrs=new ArrayList<PingData>();
-                            map=routingTable.get(group);
+                            ConcurrentMap<Address,ConnectionHandler> map=routingTable.get(group);
                             if(map != null) {
                                 for(Address logical_addr: map.keySet()) {
                                     physical_addrs=address_mappings.get(logical_addr);
