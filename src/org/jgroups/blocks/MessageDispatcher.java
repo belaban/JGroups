@@ -2,6 +2,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
+import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
@@ -33,7 +34,7 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.105 2010/04/28 14:54:29 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.106 2010/06/09 03:24:52 bstansberry Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -64,7 +65,7 @@ public class MessageDispatcher implements RequestHandler {
         setMessageListener(l);
         setMembershipListener(l2);
         if(channel != null) {
-            channel.setUpHandler(prot_adapter);
+            installUpHandler(prot_adapter, true);
         }
         start();
     }
@@ -79,7 +80,7 @@ public class MessageDispatcher implements RequestHandler {
         setMessageListener(l);
         setMembershipListener(l2);
         if(channel != null) {
-            channel.setUpHandler(prot_adapter);
+            installUpHandler(prot_adapter, true);
         }
         start();
     }
@@ -95,7 +96,7 @@ public class MessageDispatcher implements RequestHandler {
         setMessageListener(l);
         setMembershipListener(l2);
         if(channel != null) {
-            channel.setUpHandler(prot_adapter);
+            installUpHandler(prot_adapter, true);
         }
         start();
     }
@@ -352,9 +353,50 @@ public class MessageDispatcher implements RequestHandler {
         local_addr=channel.getAddress();
         if(prot_adapter == null)
             prot_adapter=new ProtocolAdapter();
-        if (channel.getUpHandler() == null) {
-            channel.setUpHandler(prot_adapter);
-        }
+        // Don't force installing the UpHandler so subclasses can use this
+        // method and still integrate with a MuxUpHandler
+        installUpHandler(prot_adapter, false);
+    }
+    
+    /**
+     * Sets the given UpHandler as the UpHandler for the channel, or, if the
+     * channel already has a Muxer installed as it's UpHandler, sets the given
+     * handler as the Muxer's {@link Muxer#setDefaultHandler(Object) default handler}.
+     * If the relevant handler is already installed, the <code>canReplace</code>
+     * controls whether this method replaces it (after logging a WARN) or simply
+     * leaves <code>handler</code> uninstalled.
+     * <p>
+     * Passing <code>false</code> as the <code>canReplace</code> value allows
+     * callers to use this method to install defaults without concern about
+     * inadvertently overriding
+     * 
+     * @param handler the UpHandler to install
+     * @param canReplace <code>true</code> if an existing Channel upHandler or 
+     *              Muxer default upHandler can be replaced; <code>false</code>
+     *              if this method shouldn't install
+     */
+    protected void installUpHandler(UpHandler handler, boolean canReplace)
+    {
+       UpHandler existing = channel.getUpHandler();
+       if (existing == null) {
+           channel.setUpHandler(handler);
+       }
+       else if (existing instanceof Muxer<?>) {
+           @SuppressWarnings("unchecked")
+           Muxer<UpHandler> mux = (Muxer<UpHandler>) existing;
+           if (mux.getDefaultHandler() == null) {
+               mux.setDefaultHandler(handler);
+           }
+           else if (canReplace) {
+               log.warn("Channel Muxer already has a default up handler installed (" +
+                     mux.getDefaultHandler() + ") but now it is being overridden"); 
+               mux.setDefaultHandler(handler);
+           }
+       }
+       else if (canReplace) {
+           log.warn("Channel already has an up handler installed (" + existing + ") but now it is being overridden");
+           channel.setUpHandler(handler);
+       }
     }
 
     @Deprecated

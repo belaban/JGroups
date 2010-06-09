@@ -2,22 +2,28 @@ package org.jgroups.blocks.mux;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.UpHandler;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 /**
  * Allows up handler multiplexing.
  * 
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxUpHandler.java,v 1.2 2010/04/15 20:05:22 ferraro Exp $
+ * @version $Id: MuxUpHandler.java,v 1.3 2010/06/09 03:24:51 bstansberry Exp $
  */
 public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
 
+    protected final Log log=LogFactory.getLog(getClass());
     private final Map<Short, UpHandler> handlers = new ConcurrentHashMap<Short, UpHandler>();
-    private final UpHandler defaultHandler;
+    private volatile UpHandler defaultHandler;
+    private volatile Event lastFlushEvent;
+    private final Object flushMutex = new Object();
     
     /**
      * Creates a multiplexing up handler, with no default handler.
@@ -40,9 +46,25 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
      */
     @Override
     public void add(short id, UpHandler handler) {
-        handlers.put(id, handler);
+        synchronized (flushMutex)
+        {          
+            if (lastFlushEvent != null)
+            {
+                handler.up(lastFlushEvent);
+            }
+            handlers.put(id, handler);
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     * @see org.jgroups.blocks.mux.Muxer#get(short)
+     */
+    @Override
+    public UpHandler get(short id) {
+        return handlers.get(id);
+    }
+    
     /**
      * {@inheritDoc}
      * @see org.jgroups.blocks.mux.Muxer#remove(short)
@@ -52,7 +74,17 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
         handlers.remove(id);
     }
 
-    /**
+    @Override
+    public UpHandler getDefaultHandler() {
+        return defaultHandler;
+    }
+
+    @Override
+    public void setDefaultHandler(UpHandler handler) {
+        this.defaultHandler = handler;      
+    }
+
+   /**
      * {@inheritDoc}
      * @see org.jgroups.UpHandler#up(org.jgroups.Event)
      */
@@ -69,14 +101,65 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
                 }
                 break;
             }
-            case Event.VIEW_CHANGE: {
-                for (UpHandler handler: handlers.values()) {
-                    handler.up(evt);
+            case Event.GET_APPLSTATE:
+            case Event.GET_STATE_OK: 
+            case Event.STATE_TRANSFER_OUTPUTSTREAM: 
+            case Event.STATE_TRANSFER_INPUTSTREAM: {
+                AtomicReference<Object> wrapper = handleStateTransferEvent(evt);
+                if (wrapper != null)
+                {
+                   return wrapper.get();
                 }
                 break;
+            } 
+            case Event.BLOCK: 
+            case Event.UNBLOCK: {
+               synchronized (flushMutex)
+               {
+                  this.lastFlushEvent = evt;
+                  passToAllHandlers(evt);
+                  break;
+               }
             }
+            case Event.VIEW_CHANGE:
+            case Event.SET_LOCAL_ADDRESS: 
+            case Event.SUSPECT:  {
+               passToAllHandlers(evt);
+               break;
+           }
+           default: {
+                passToAllHandlers(evt);
+                break;
+           }
         }
         
         return (defaultHandler != null) ? defaultHandler.up(evt) : null;
+    }
+
+    /**
+      * Extension point for subclasses called by up() when an event
+      * related to state transfer is received, allowing the subclass
+      * to override the default behavior of passing the event to the
+      * default up handler.
+      *
+      * @return an AtomicReference containing the return value for the event 
+      *         if the event was handled and no further processing
+      *         should be done in up(), or <code>null</code> if up() needs to 
+      *         handle the event. If the event was handled but the return value 
+      *         is <code>null</code>, an AtomicReference initialized to 
+      *         <code>null</code> should be returned. This default 
+      *         implementation always returns <code>null</code>
+      */
+    protected AtomicReference<Object> handleStateTransferEvent(Event evt) {
+         return null;
+    } 
+    
+    
+
+    private void passToAllHandlers(Event evt)
+    {
+       for (UpHandler handler: handlers.values()) {
+            handler.up(evt);
+        }
     }
 }
