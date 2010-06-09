@@ -30,18 +30,18 @@ import org.jgroups.blocks.RspFilter;
  * c.connect(...);<br/>
  * </code>
  * @author Paul Ferraro
- * @version $Id: MuxMessageDispatcher.java,v 1.1 2010/04/13 17:57:07 ferraro Exp $
+ * @version $Id: MuxMessageDispatcher.java,v 1.2 2010/06/09 02:50:38 bstansberry Exp $
  */
 public class MuxMessageDispatcher extends MessageDispatcher {
 
-    private final short id;
+    private final short scope_id;
     
-    public MuxMessageDispatcher(short id) {
-        this.id = id;
+    public MuxMessageDispatcher(short scopeId) {
+        this.scope_id = scopeId;
     }
 
-    public MuxMessageDispatcher(short id, Channel channel, MessageListener messageListener, MembershipListener membershipListener, RequestHandler handler) {
-        this(id);
+    public MuxMessageDispatcher(short scopeId, Channel channel, MessageListener messageListener, MembershipListener membershipListener, RequestHandler handler) {
+        this(scopeId);
         
         setMessageListener(messageListener);
         setMembershipListener(membershipListener);
@@ -60,7 +60,7 @@ public class MuxMessageDispatcher extends MessageDispatcher {
         // We can't set the scope of the request correlator here
         // since this method is called from start() triggered in the
         // MessageDispatcher constructor, when this.scope is not yet defined
-        return new MuxRequestCorrelator(id, transport, handler, localAddr);
+        return new MuxRequestCorrelator(scope_id, transport, handler, localAddr);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class MuxMessageDispatcher extends MessageDispatcher {
         super.start();
         Muxer<UpHandler> muxer = this.getMuxer();
         if (muxer != null) {
-            muxer.add(id, this.getProtocolAdapter());
+            muxer.add(scope_id, this.getProtocolAdapter());
         }
    }
 
@@ -76,7 +76,7 @@ public class MuxMessageDispatcher extends MessageDispatcher {
     public void stop() {
         Muxer<UpHandler> muxer = this.getMuxer();
         if (muxer != null) {
-            muxer.remove(id);
+            muxer.remove(scope_id);
         }
         super.stop();
     }
