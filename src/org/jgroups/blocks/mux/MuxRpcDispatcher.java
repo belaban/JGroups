@@ -31,19 +31,19 @@ import org.jgroups.blocks.RspFilter;
  * </code>
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxRpcDispatcher.java,v 1.1 2010/04/13 17:57:07 ferraro Exp $
+ * @version $Id: MuxRpcDispatcher.java,v 1.2 2010/06/09 02:50:38 bstansberry Exp $
  */
 public class MuxRpcDispatcher extends RpcDispatcher {
 
-    private final short id;
+    private final short scope_id;
     
-    public MuxRpcDispatcher(short id) {
+    public MuxRpcDispatcher(short scopeId) {
         super();
-        this.id = id;
+        this.scope_id = scopeId;
     }
 
-    public MuxRpcDispatcher(short id, Channel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject) {
-        this(id);
+    public MuxRpcDispatcher(short scopeId, Channel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject) {
+        this(scopeId);
         
         setMessageListener(messageListener);
         setMembershipListener(membershipListener);
@@ -63,7 +63,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         // We can't set the scope of the request correlator here
         // since this method is called from start() triggered in the
         // MessageDispatcher constructor, when this.scope is not yet defined
-        return new MuxRequestCorrelator(id, transport, handler, localAddr);
+        return new MuxRequestCorrelator(scope_id, transport, handler, localAddr);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         super.start();
         Muxer<UpHandler> muxer = this.getMuxer();
         if (muxer != null) {
-            muxer.add(id, this.getProtocolAdapter());
+            muxer.add(scope_id, this.getProtocolAdapter());
         }
     }
 
@@ -79,7 +79,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
     public void stop() {
         Muxer<UpHandler> muxer = this.getMuxer();
         if (muxer != null) {
-            muxer.remove(id);
+            muxer.remove(scope_id);
         }
         super.stop();
     }
