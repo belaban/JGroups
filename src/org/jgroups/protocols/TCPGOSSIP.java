@@ -33,7 +33,7 @@ import org.jgroups.util.UUID;
  * FIND_INITIAL_MBRS_OK event up the stack.
  * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.59 2010/05/28 21:08:22 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.60 2010/06/10 07:29:34 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
@@ -162,8 +162,8 @@ public class TCPGOSSIP extends Discovery {
         }
 
         if (initial_mbrs.isEmpty()) {
-            if (log.isErrorEnabled())
-                log.error("[FIND_INITIAL_MBRS]: found no members");
+            if (log.isTraceEnabled())
+                log.trace("[FIND_INITIAL_MBRS]: found no members");
             return;
         }
         if (log.isTraceEnabled())
