@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.81 2010/03/05 13:23:09 belaban Exp $
+ * @version $Id: FD.java,v 1.82 2010/06/10 07:00:43 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -164,12 +164,17 @@ public class FD extends Protocol {
         return retval;
     }
 
+
+    protected Monitor createMonitor() {
+        return new Monitor();
+    }
+
     /** Requires lock to held by caller */
     @GuardedBy("lock")
     private void startMonitor() {
         if(monitor_future == null || monitor_future.isDone()) {
             last_ack=System.currentTimeMillis();  // start from scratch
-            monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS);
+            monitor_future=timer.scheduleWithFixedDelay(createMonitor(), timeout, timeout, TimeUnit.MILLISECONDS);
             num_tries=0;
         }
     }
