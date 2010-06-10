@@ -23,7 +23,7 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.15 2010/05/07 09:17:20 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.16 2010/06/10 07:02:25 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {
@@ -56,10 +56,7 @@ public class FD_ICMP extends FD {
 
         try {
             Class<?> is_reacheable_class=Util.loadClass("java.net.InetAddress", this.getClass());
-            is_reacheable=is_reacheable_class.getMethod("isReachable",
-                                                        new Class[] { NetworkInterface.class,
-                                                                     int.class,
-                                                                     int.class });
+            is_reacheable=is_reacheable_class.getMethod("isReachable", NetworkInterface.class, int.class, int.class);
         }
         catch(ClassNotFoundException e) {
             // should never happen since we require JDK 1.5
