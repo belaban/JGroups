@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.5 2010/03/05 09:04:35 belaban Exp $
+ * @version $Id: Merger.java,v 1.6 2010/06/11 05:41:32 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -80,7 +80,7 @@ public class Merger {
 
 
 
-       /**
+    /**
      * Get the view and digest and send back both (MergeData) in the form of a MERGE_RSP to the sender.
      * If a merge is already in progress, send back a MergeData with the merge_rejected field set to true.
      * @param sender The address of the merge leader
@@ -108,7 +108,14 @@ public class Merger {
                     members.add(mbr);
             }
         }
-        View view=new View(gms.view_id.copy(), new Vector<Address>(members));
+
+        ViewId tmp_vid=gms.view_id != null? gms.view_id.copy() : null;
+        if(tmp_vid == null) {
+            log.warn("view ID is null; cannot return merge response");
+            sendMergeRejectedResponse(sender, merge_id);
+            return;
+        }
+        View view=new View(tmp_vid, new Vector<Address>(members));
 
         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
         //[JGRP-770] - Concurrent startup of many channels doesn't stabilize
