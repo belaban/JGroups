@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.77 2010/03/12 16:20:11 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.78 2010/06/14 08:10:51 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -61,6 +61,7 @@ public class NakReceiverWindow {
 
     Address local_addr=null;
 
+    private volatile boolean running=true;
 
     /** Lowest seqno, modified on stable(). On stable(), we purge msgs [low digest.highest_delivered] */
     @GuardedBy("lock")
@@ -242,6 +243,9 @@ public class NakReceiverWindow {
 
         lock.writeLock().lock();
         try {
+            if(!running)
+                return false;
+
             next_to_add=highest_received +1;
             old_next=next_to_add;
 
@@ -484,13 +488,19 @@ public class NakReceiverWindow {
 
 
     /**
-     * Reset the retransmitter and the nak window<br>
+     * Destroys the NakReceiverWindow. After this method returns, no new messages can be added and a new
+     * NakReceiverWindow should be used instead. Note that messages can still be <em>removed</em> though.
      */
-    public void reset() {
+    public void destroy() {
         lock.writeLock().lock();
         try {
+            running=false;
             retransmitter.reset();
-            _reset();
+            xmit_table.clear();
+            low=0;
+            highest_delivered=0; // next (=first) to deliver will be 1
+            highest_received=0;
+            highest_stability_seqno=0;
         }
         finally {
             lock.writeLock().unlock();
@@ -585,7 +595,7 @@ public class NakReceiverWindow {
      * Prints xmit_table. Requires read lock to be present
      * @return String
      */
-    String printMessages() {
+    protected String printMessages() {
         StringBuilder sb=new StringBuilder();
         sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
         if(xmit_table != null && !xmit_table.isEmpty()) {
@@ -621,21 +631,6 @@ public class NakReceiverWindow {
 
 
 
-
-
-    /**
-     * Reset the Nak window. Should be called from within a writeLock() context.
-     * <p>
-     * i. Delete all received entries<br>
-     * ii. Reset all indices<br>
-     */
-    private void _reset() {
-        xmit_table.clear();
-        low=0;
-        highest_delivered=0; // next (=first) to deliver will be 1
-        highest_received=0;
-        highest_stability_seqno=0;
-    }
     /* --------------------------- End of Private Methods ----------------------------------- */
 
 
