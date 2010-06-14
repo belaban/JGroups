@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.254 2010/03/11 15:42:10 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.255 2010/06/14 08:11:19 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -212,7 +212,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
     private volatile boolean leaving=false;
-    private volatile boolean started=false;
+    private volatile boolean running=false;
     private TimeScheduler timer=null;
 
     private final Lock rebroadcast_lock=new ReentrantLock();
@@ -518,7 +518,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
-        started=true;
+        running=true;
         leaving=false;
 
         if(xmit_time_stats != null) {
@@ -538,7 +538,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     public void stop() {
-        started=false;
+        running=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
     }
 
@@ -725,9 +725,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
 
-        if(!started) {
+        if(!running) {
             if(log.isTraceEnabled())
-                log.trace("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
+                log.trace("[" + local_addr + "] discarded message as we're not in the 'running' state, message: " + msg);
             return;
         }
 
@@ -1176,7 +1176,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(local_addr != null && local_addr.equals(member))
                     continue;
                 NakReceiverWindow win=xmit_table.remove(member);
-                win.reset();
+                win.destroy();
                 if(log.isDebugEnabled())
                     log.debug("removed " + member + " from xmit_table (not member anymore)");
             }
@@ -1241,7 +1241,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
-                win.reset(); // stops retransmission
+                win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
             }
             win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
@@ -1286,7 +1286,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         || win.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
                     continue;
 
-                win.reset(); // stops retransmission
+                win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
             }
             win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
@@ -1571,7 +1571,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         for(NakReceiverWindow win: xmit_table.values()) {
-            win.reset();
+            win.destroy();
         }
         xmit_table.clear();
         undelivered_msgs.set(0);

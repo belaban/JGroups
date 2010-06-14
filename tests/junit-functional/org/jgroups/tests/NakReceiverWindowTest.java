@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.13 2010/01/20 06:24:47 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.14 2010/06/14 08:11:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -395,7 +395,7 @@ public class NakReceiverWindowTest {
         win.add(3, new Message());
         win.add(4, new Message());
         while((win.remove()) != null) ;
-        win.reset();
+        win.destroy();
         check(win, 0, 0, 0);
     }
 

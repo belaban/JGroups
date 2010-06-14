@@ -6,13 +6,10 @@ import org.testng.annotations.AfterMethod;
 import org.jgroups.Global;
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.Retransmitter;
 
 import java.util.concurrent.CyclicBarrier;
@@ -28,7 +25,7 @@ import java.util.Collections;
 /**
  * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.7 2010/03/05 09:05:28 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.8 2010/06/14 08:11:26 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
@@ -53,7 +50,7 @@ public class NakReceiverWindowTest2 {
 
     @AfterMethod
     void cleanup() {
-        win.reset();
+        win.destroy();
     }
 
 
