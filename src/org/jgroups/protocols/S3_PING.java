@@ -33,7 +33,7 @@ import java.util.*;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.2 2009/08/05 10:35:28 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.3 2010/06/14 09:36:00 belaban Exp $
  */
 @Experimental @Unsupported
 public class S3_PING extends FILE_PING {
@@ -62,10 +62,15 @@ public class S3_PING extends FILE_PING {
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                for(Entry entry : keys) {
+                Set<Entry> copy;
+                synchronized(keys) {
+                    copy=new HashSet<Entry>(keys);
+                    keys.clear();
+                }
+
+                for(Entry entry : copy) {
                     remove(entry.cluster, entry.data);
                 }
-                keys.clear();
             }
         });
     }
@@ -73,10 +78,12 @@ public class S3_PING extends FILE_PING {
     public void stop() {
         if(group_addr != null && local_addr != null) {
             // remove from keys:
-            for(Iterator<Entry> it=keys.iterator(); it.hasNext();) {
-                Entry entry=it.next();
-                if(group_addr.equals(entry.cluster) && local_addr.equals(entry.data.getAddress())) {
-                    it.remove();
+            synchronized(keys) {
+                for(Iterator<Entry> it=keys.iterator(); it.hasNext();) {
+                    Entry entry=it.next();
+                    if(group_addr.equals(entry.cluster) && local_addr.equals(entry.data.getAddress())) {
+                        it.remove();
+                    }
                 }
             }
 
@@ -135,7 +142,9 @@ public class S3_PING extends FILE_PING {
             String response=conn.put(location, key, val, headers).connection.getResponseMessage();
             if(log.isTraceEnabled())
                 log.trace("response: " + response);
-            keys.add(new Entry(clustername, data));
+            synchronized(keys) {
+                keys.add(new Entry(clustername, data));
+            }
         }
         catch(Exception e) {
             log.error("failed marshalling " + data + " to buffer", e);
