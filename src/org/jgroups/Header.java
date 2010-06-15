@@ -1,4 +1,4 @@
-// $Id: Header.java,v 1.11 2010/03/05 13:21:39 belaban Exp $
+// $Id: Header.java,v 1.12 2010/06/15 06:43:54 belaban Exp $
 
 package org.jgroups;
 
@@ -6,15 +6,12 @@ import org.jgroups.util.Streamable;
 
 
 /**
- Abstract base class for all headers to be added to a Message.
- @author Bela Ban
+ * Abstract base class for all headers to be added to a Message.
+ * @author Bela Ban
  */
 public abstract class Header implements Streamable {
-    public static final int HDR_OVERHEAD=100; // estimated size of a header (used to estimate the size of the entire msg)
-
 
     public Header() {
-
     }
 
 
@@ -25,9 +22,7 @@ public abstract class Header implements Streamable {
      * or not to fragment the message. Fragmentation itself will be accurate, because the entire message will actually
      * be serialized into a byte buffer, so we can determine the exact size.
      */
-    public int size() {
-        return HDR_OVERHEAD;
-    }
+    public abstract int size();
 
 
 
