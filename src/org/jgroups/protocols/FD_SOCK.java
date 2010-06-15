@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.118 2010/06/15 06:44:35 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.119 2010/06/15 10:10:40 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -518,7 +518,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     void startServerSocket() {
-        srv_sock=Util.createServerSocket(Global.FD_SOCK_SRV_SOCK, bind_addr, start_port); // grab a random unused port above 10000
+        srv_sock=Util.createServerSocket(getSocketFactory(),
+                                         Global.FD_SOCK_SRV_SOCK, bind_addr, start_port); // grab a random unused port above 10000
         srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         if(srv_sock_handler != null) {
             srv_sock_handler.start(); // won't start if already running            
@@ -940,7 +941,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         final void stop(boolean graceful) {
             if(acceptor != null && acceptor.isAlive()) {
                 try {
-                    Util.getSocketFactory().close(srv_sock); // this will terminate thread, peer will receive SocketException (socket close)
+                    // this will terminate thread, peer will receive SocketException (socket close)
+                    getSocketFactory().close(srv_sock);
                 }
                 catch(Exception ex) {
                 }

@@ -14,12 +14,13 @@ import java.util.StringTokenizer;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.8 2010/04/27 14:25:13 belaban Exp $
+ * @version $Id: ResourceManager.java,v 1.9 2010/06/15 10:10:38 belaban Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;
 	private static short mcast_port;
 	private static short tcp_port;
+    private static SocketFactory socket_factory=new DefaultSocketFactory();
 
 	static {
 
@@ -60,12 +61,12 @@ public class ResourceManager {
 	public static synchronized short getNextMulticastPort(InetAddress bind_addr) throws Exception {
 		short port = mcast_port++;
 		try {
-			DatagramSocket sock = Util.createDatagramSocket("jgroups.temp.resourcemgr.mcast_sock", bind_addr, port);
+			DatagramSocket sock = Util.createDatagramSocket(socket_factory, "jgroups.temp.resourcemgr.mcast_sock", bind_addr, port);
 			port = (short) sock.getLocalPort();
-			Util.getSocketFactory().close(sock);
-			ServerSocket srv_sock = Util.createServerSocket("jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
+			socket_factory.close(sock);
+			ServerSocket srv_sock = Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
 			port = (short) srv_sock.getLocalPort();
-			Util.getSocketFactory().close(srv_sock);
+			socket_factory.close(srv_sock);
 			return port;
 		} finally {
 			mcast_port = (short) (port + 1);
@@ -78,11 +79,11 @@ public class ResourceManager {
 		List<Short> retval = new ArrayList<Short>(num_requested_ports);
 
 		for (int i = 0; i < num_requested_ports; i++) {
-			ServerSocket sock = Util.createServerSocket("jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
+			ServerSocket sock = Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
 			port = (short) sock.getLocalPort();
 			retval.add(port);
 			tcp_port = ++port;
-			Util.getSocketFactory().close(sock);
+			socket_factory.close(sock);
 		}
 		return retval;
 	}

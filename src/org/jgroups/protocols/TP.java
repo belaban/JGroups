@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.310 2010/05/10 11:22:14 belaban Exp $
+ * @version $Id: TP.java,v 1.311 2010/06/15 10:10:40 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -384,9 +384,12 @@ public abstract class TP extends Protocol {
 
     protected ThreadFactory timer_thread_factory;
 
-    // ================================Default thread factory ========================
+    // ================================ Default thread factory ========================
     /** Used by all threads created by JGroups outside of the thread pools */
     protected ThreadFactory global_thread_factory=null;
+
+    // ================================= Default SocketFactory ========================
+    protected SocketFactory socket_factory=new DefaultSocketFactory();
 
     private Bundler bundler=null;
 
@@ -533,6 +536,14 @@ public abstract class TP extends Protocol {
         global_thread_factory=factory;
     }
 
+    public SocketFactory getSocketFactory() {
+        return socket_factory;
+    }
+
+    public void setSocketFactory(SocketFactory factory) {
+        if(factory != null)
+            socket_factory=factory;
+    }
 
     /**
      * Names the current thread. Valid values are "pcl":
@@ -1966,9 +1977,10 @@ public abstract class TP extends Protocol {
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
             if(can_bind_to_mcast_addr)
-                diag_sock=Util.createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
+                diag_sock=Util.createMulticastSocket(getSocketFactory(),
+                                                     Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
             else
-                diag_sock=Util.getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
+                diag_sock=getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
             
             List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
@@ -1982,7 +1994,7 @@ public abstract class TP extends Protocol {
 
         void stop() {
             if(diag_sock != null)
-                Util.getSocketFactory().close(diag_sock);
+                getSocketFactory().close(diag_sock);
             handlers.clear();
             if(thread != null){
                 try{
@@ -2080,12 +2092,13 @@ public abstract class TP extends Protocol {
      * view
      */
     public static class ProtocolAdapter extends Protocol implements ProbeHandler {
-        String               cluster_name;
-        final short          transport_id;
-        TpHeader             header;
-        final Set<Address>   members=new CopyOnWriteArraySet<Address>();
-        final ThreadFactory  factory;
-        Address              local_addr;
+        String                  cluster_name;
+        final short             transport_id;
+        TpHeader                header;
+        final Set<Address>      members=new CopyOnWriteArraySet<Address>();
+        final ThreadFactory     factory;
+        protected SocketFactory socket_factory=new DefaultSocketFactory();
+        Address                 local_addr;
 
         // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
         static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
@@ -2136,6 +2149,15 @@ public abstract class TP extends Protocol {
 
         public ThreadFactory getThreadFactory() {
             return factory;
+        }
+
+        public SocketFactory getSocketFactory() {
+            return socket_factory;
+        }
+
+        public void setSocketFactory(SocketFactory factory) {
+            if(factory != null)
+                socket_factory=factory;
         }
 
         public void start() throws Exception {

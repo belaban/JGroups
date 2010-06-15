@@ -12,6 +12,7 @@ import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -37,7 +38,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.76 2010/03/05 08:47:33 belaban Exp $
+ * @version $Id: Protocol.java,v 1.77 2010/06/15 10:10:44 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -150,6 +151,23 @@ public abstract class Protocol {
         return down_prot != null? down_prot.getThreadFactory(): null;
     }
 
+    /**
+     * Returns the SocketFactory associated with this protocol, if overridden in a subclass, or passes the call down
+     * @return SocketFactory
+     */
+    public SocketFactory getSocketFactory() {
+        return down_prot != null? down_prot.getSocketFactory() : null;
+    }
+
+    /**
+     * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.TP})
+     * or {@link org.jgroups.protocols.TP.ProtocolAdapter}
+     * @param factory
+     */
+    public void setSocketFactory(SocketFactory factory) {
+        if(down_prot != null)
+            down_prot.setSocketFactory(factory);
+    }
 
     /** @deprecated up_thread was removed
      * @return false by default

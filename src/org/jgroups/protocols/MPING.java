@@ -20,7 +20,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.57 2010/05/07 09:17:40 belaban Exp $
+ * @version $Id: MPING.java,v 1.58 2010/06/15 10:10:40 belaban Exp $
  */
 @DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
@@ -184,9 +184,9 @@ public class MPING extends PING implements Runnable {
 
     public void start() throws Exception {
         if(can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
-            mcast_sock=Util.createMulticastSocket(Global.MPING_MCAST_SOCK, mcast_addr, mcast_port, log);
+            mcast_sock=Util.createMulticastSocket(getSocketFactory(), Global.MPING_MCAST_SOCK, mcast_addr, mcast_port, log);
         else
-            mcast_sock=Util.getSocketFactory().createMulticastSocket(Global.MPING_MCAST_SOCK, mcast_port);
+            mcast_sock=getSocketFactory().createMulticastSocket(Global.MPING_MCAST_SOCK, mcast_port);
         
         mcast_sock.setTimeToLive(ip_ttl);
 

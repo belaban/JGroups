@@ -347,7 +347,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         // setup socket plumbing if needed
         if (spawner == null && !use_default_transport) {
             spawner = new StateProviderThreadSpawner(setupThreadPool(),
-                                                     Util.createServerSocket(Global.STREAMING_STATE_TRANSFER_SERVER_SOCK,
+                                                     Util.createServerSocket(getSocketFactory(),
+                                                                             Global.STREAMING_STATE_TRANSFER_SERVER_SOCK,
                                                                              bind_addr, bind_port));
             Thread t = getThreadFactory().newThread(spawner, "STREAMING_STATE_TRANSFER server socket acceptor");
             t.start();
@@ -601,7 +602,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         public void stop() {
             running = false;
             try {
-                Util.getSocketFactory().close(serverSocket);
+                getSocketFactory().close(serverSocket);
             } catch (Exception ignored) {
             } finally {
                 if (log.isDebugEnabled())

@@ -6,9 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -52,7 +50,7 @@ public abstract class BasicConnectionTable {
     volatile ServerSocket srv_sock=null;
     boolean               tcp_nodelay=false;
     int                   linger=-1;
-
+    protected SocketFactory socket_factory=new DefaultSocketFactory();
 
    /**
     * The address which will be broadcast to the group (the externally visible address which this host should
@@ -66,6 +64,8 @@ public abstract class BasicConnectionTable {
     static AtomicInteger conn_creations=new AtomicInteger(0);
 
     final static long   MAX_JOIN_TIMEOUT=Global.THREAD_SHUTDOWN_WAIT_TIME;
+
+
 
     protected BasicConnectionTable() {        
         factory = new DefaultThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionTable"),"Connection Table", false);
@@ -154,6 +154,14 @@ public abstract class BasicConnectionTable {
         return factory;
     }
 
+    public SocketFactory getSocketFactory() {
+        return socket_factory;
+    }
+
+    public void setSocketFactory(SocketFactory socket_factory) {
+        this.socket_factory=socket_factory;
+    }
+
     public boolean getUseSendQueues() {return use_send_queues;}
 
     public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
@@ -182,7 +190,7 @@ public abstract class BasicConnectionTable {
             try {
                 ServerSocket tmp=srv_sock;
                 srv_sock=null;
-                Util.getSocketFactory().close(tmp);
+                socket_factory.close(tmp);
                 if(acceptor != null)
                     Util.interruptAndWaitToDie(acceptor);
             }

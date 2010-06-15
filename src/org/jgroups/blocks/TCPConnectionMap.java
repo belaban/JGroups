@@ -1,29 +1,23 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Address;
+import org.jgroups.Version;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
+
 import java.io.*;
-import java.net.BindException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.Version;
-import org.jgroups.Global;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
 
 public class TCPConnectionMap{
 
@@ -42,9 +36,10 @@ public class TCPConnectionMap{
     private boolean tcp_nodelay=false;
     private int linger=-1;    
     private final Thread acceptor;
-
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile boolean use_send_queues=false;    
+    private volatile boolean use_send_queues=false;
+    protected SocketFactory socket_factory=new DefaultSocketFactory();
+
 
     public TCPConnectionMap(String service_name,
                             ThreadFactory f,
@@ -85,6 +80,14 @@ public class TCPConnectionMap{
     
     public Address getLocalAddress() {       
         return local_addr;
+    }
+
+    public SocketFactory getSocketFactory() {
+        return socket_factory;
+    }
+
+    public void setSocketFactory(SocketFactory socket_factory) {
+        this.socket_factory=socket_factory;
     }
 
     /**
@@ -145,7 +148,7 @@ public class TCPConnectionMap{
     public void stop() {
         if(running.compareAndSet(true, false)) {
             try {
-                Util.getSocketFactory().close(srv_sock);
+                getSocketFactory().close(srv_sock);
             }
             catch(IOException e) {
             }
@@ -164,10 +167,10 @@ public class TCPConnectionMap{
         while(true) {
             try {
                 if(bind_addr == null)
-                    ret=Util.getSocketFactory().createServerSocket(service_name, start_port);
+                    ret=socket_factory.createServerSocket(service_name, start_port);
                 else {
                     // changed (bela Sept 7 2007): we accept connections on all NICs
-                    ret=Util.getSocketFactory().createServerSocket(service_name, start_port, 20, bind_addr);
+                    ret=socket_factory.createServerSocket(service_name, start_port, 20, bind_addr);
                 }
             }
             catch(BindException bind_ex) {
