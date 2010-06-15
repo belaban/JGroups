@@ -10,7 +10,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: PingHeader.java,v 1.15 2010/03/05 13:23:31 belaban Exp $
+ * @version $Id: PingHeader.java,v 1.16 2010/06/15 06:44:35 belaban Exp $
  */
 public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;   // arg = null
@@ -24,7 +24,7 @@ public class PingHeader extends Header {
 
     
     public PingHeader() {
-    } // for externalization
+    }
 
     public PingHeader(byte type, String cluster_name) {
         this.type=type;
@@ -74,21 +74,6 @@ public class PingHeader extends Header {
         }
     }
 
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(type);
-        out.writeBoolean(return_view_only);
-        out.writeObject(arg);
-        out.writeObject(cluster_name);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        type=in.readByte();
-        return_view_only=in.readBoolean();
-        arg=(PingData)in.readObject();
-        cluster_name=(String)in.readObject();
-    }
 
     public void writeTo(DataOutputStream outstream) throws IOException {
         outstream.writeByte(type);

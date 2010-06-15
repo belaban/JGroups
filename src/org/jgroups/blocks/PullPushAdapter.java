@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.30 2010/03/05 13:23:47 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.31 2010/06/15 06:44:39 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -426,7 +426,6 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
         Serializable identifier=null;
 
         public PullHeader() {
-            ; // used by externalization
         }
 
         public PullHeader(Serializable identifier) {
@@ -447,14 +446,6 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
 
         public String toString() {
             return "PullHeader";
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(identifier);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            identifier=(Serializable)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

@@ -973,23 +973,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(sender);
-            out.writeLong(id);
-            out.writeByte(type);
-            out.writeObject(my_digest);
-            out.writeObject(bind_addr);
-            out.writeUTF(state_id);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            sender = (Address) in.readObject();
-            id = in.readLong();
-            type = in.readByte();
-            my_digest = (Digest) in.readObject();
-            bind_addr = (IpAddress) in.readObject();
-            state_id = in.readUTF();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);

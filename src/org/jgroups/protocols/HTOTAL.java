@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.14 2010/03/05 13:23:18 belaban Exp $
+// $Id: HTOTAL.java,v 1.15 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.14 2010/03/05 13:23:18 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.15 2010/06/15 06:44:35 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -148,16 +148,6 @@ public class HTOTAL extends Protocol {
             this.src=src;
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(dest);
-            out.writeObject(src);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            dest=(Address)in.readObject();
-            src=(Address)in.readObject();
-        }
-
         public void writeTo(DataOutputStream out) throws IOException {
             Util.writeAddress(dest, out);
             Util.writeAddress(src, out);
@@ -166,6 +156,10 @@ public class HTOTAL extends Protocol {
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             dest=Util.readAddress(in);
             src=Util.readAddress(in);
+        }
+
+        public int size() {
+            return Util.size(dest) + Util.size(src);
         }
 
         public String toString() {

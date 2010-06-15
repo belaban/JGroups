@@ -9,7 +9,7 @@ import java.io.*;
 /**
  * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.9 2010/03/05 13:23:33 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.10 2010/06/15 06:44:36 belaban Exp $
  */
 public class MuxHeader extends Header {
     String      id=null;
@@ -32,15 +32,6 @@ public class MuxHeader extends Header {
         return id;
     }
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(id);
-        out.writeObject(info);
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id=in.readUTF();
-        info=(ServiceInfo)in.readObject();
-    }
 
 
     public int size() {

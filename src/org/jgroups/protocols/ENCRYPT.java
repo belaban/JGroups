@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.58 2010/03/05 13:22:58 belaban Exp $
+// $Id: ENCRYPT.java,v 1.59 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1149,15 +1149,6 @@ public class ENCRYPT extends Protocol {
             this.version=version;
         }
 
-        public void writeExternal(java.io.ObjectOutput out) throws IOException {
-            out.writeShort(type);
-            out.writeObject(version);
-        }
-
-        public void readExternal(java.io.ObjectInput in) throws IOException,ClassNotFoundException {
-            type=in.readShort();
-            version=(String)in.readObject();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeShort(type);

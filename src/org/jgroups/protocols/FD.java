@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * is reduced.
  *
  * @author Bela Ban
- * @version $Id: FD.java,v 1.82 2010/06/10 07:00:43 belaban Exp $
+ * @version $Id: FD.java,v 1.83 2010/06/15 06:44:35 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -356,7 +356,7 @@ public class FD extends Protocol {
 
 
         public FdHeader() {
-        } // used for externalization
+        }
 
         public FdHeader(byte type) {
             this.type=type;
@@ -382,34 +382,6 @@ public class FD extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            if(mbrs == null)
-                out.writeBoolean(false);
-            else {
-                out.writeBoolean(true);
-                out.writeInt(mbrs.size());
-                for(Address addr: mbrs) {
-                    out.writeObject(addr);
-                }
-            }
-            out.writeObject(from);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            boolean mbrs_not_null=in.readBoolean();
-            if(mbrs_not_null) {
-                int len=in.readInt();
-                mbrs=new Vector<Address>(11);
-                for(int i=0; i < len; i++) {
-                    Address addr=(Address)in.readObject();
-                    mbrs.add(addr);
-                }
-            }
-            from=(Address)in.readObject();
-        }
-
 
         public int size() {
             int retval=Global.BYTE_SIZE; // type
@@ -424,7 +396,6 @@ public class FD extends Protocol {
             Util.writeAddresses(mbrs, out);
             Util.writeAddress(from, out);
         }
-
 
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {

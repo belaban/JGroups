@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.105 2010/03/05 13:23:48 belaban Exp $
+ * @version $Id: STABLE.java,v 1.106 2010/06/15 06:44:38 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -705,7 +705,7 @@ public class STABLE extends Protocol {
         Digest stableDigest=null; // changed by Bela April 4 2004
 
         public StableHeader() {
-        } // used for externalizable
+        }
 
 
         public StableHeader(int type, Digest digest) {
@@ -734,27 +734,6 @@ public class STABLE extends Protocol {
             return sb.toString();
         }
 
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
-            if(stableDigest == null) {
-                out.writeBoolean(false);
-                return;
-            }
-            out.writeBoolean(true);
-            stableDigest.writeExternal(out);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
-            boolean digest_not_null=in.readBoolean();
-            if(digest_not_null) {
-                stableDigest=new Digest();
-                stableDigest.readExternal(in);
-            }
-        }
-
         public int size() {
             int retval=Global.INT_SIZE + Global.BYTE_SIZE; // type + presence for digest
             if(stableDigest != null)
@@ -771,8 +750,6 @@ public class STABLE extends Protocol {
             type=in.readInt();
             stableDigest=(Digest)Util.readStreamable(Digest.class, in);
         }
-
-
     }
 
 

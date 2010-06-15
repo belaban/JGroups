@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.33 2010/03/05 13:23:09 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.34 2010/06/15 06:44:35 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -313,7 +313,6 @@ public class FD_ALL extends Protocol {
         Address suspected_mbr=null;
 
 
-        /** used for externalization */
         public Header() {
         }
 
@@ -338,15 +337,6 @@ public class FD_ALL extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeObject(suspected_mbr);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            suspected_mbr=(Address)in.readObject();
-        }
 
         public int size() {
             int retval=Global.BYTE_SIZE; // type

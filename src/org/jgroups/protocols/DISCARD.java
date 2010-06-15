@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.38 2010/03/05 13:22:58 belaban Exp $
+// $Id: DISCARD.java,v 1.39 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -338,17 +338,10 @@ public class DISCARD extends Protocol {
 
 		}
 
-        @SuppressWarnings("unchecked")
-		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-			Set<Address> tmp = (Set<Address>) in.readObject();
-			dropMessages.clear();
-			dropMessages.addAll(tmp);
-		}
-
-		public void writeExternal(ObjectOutput out) throws IOException {
-			out.writeObject(dropMessages);
-		}
-	}
+        public int size() {
+            return (int)Util.size(dropMessages);
+        }
+    }
 
 
     private class DiscardDialog extends JFrame implements ActionListener {

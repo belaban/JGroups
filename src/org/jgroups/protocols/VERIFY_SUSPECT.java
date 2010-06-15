@@ -19,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.45 2010/05/07 09:17:55 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.46 2010/06/15 06:44:35 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
@@ -314,16 +314,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeShort(type);
-            out.writeObject(from);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readShort();
-            from=(Address)in.readObject();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeShort(type);
@@ -335,6 +325,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             from=Util.readAddress(in);
         }
 
+        public int size() {
+            return Global.SHORT_SIZE + Util.size(from);
+        }
     }
 
 

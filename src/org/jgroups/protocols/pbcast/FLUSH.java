@@ -969,20 +969,6 @@ public class FLUSH extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeLong(viewID);
-            out.writeObject(flushParticipants);
-            out.writeObject(digest);
-        }
-
-        @SuppressWarnings("unchecked")
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type = in.readByte();
-            viewID = in.readLong();
-            flushParticipants = (Collection<Address>) in.readObject();
-            digest = (Digest) in.readObject();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
