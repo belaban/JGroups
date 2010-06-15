@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.88 2010/03/05 13:24:03 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.89 2010/06/15 06:44:38 belaban Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 @DeprecatedProperty(names= { "use_flush", "flush_timeout" })
@@ -516,28 +516,6 @@ public class STATE_TRANSFER extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(sender);
-            out.writeLong(id);
-            out.writeByte(type);
-            out.writeObject(my_digest);
-            if(state_id == null) {
-                out.writeBoolean(false);
-            }
-            else {
-                out.writeBoolean(true);
-                out.writeUTF(state_id);
-            }
-        }
-
-        public void readExternal(ObjectInput in) throws IOException,ClassNotFoundException {
-            sender=(Address)in.readObject();
-            id=in.readLong();
-            type=in.readByte();
-            my_digest=(Digest)in.readObject();
-            if(in.readBoolean())
-                state_id=in.readUTF();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
@@ -547,9 +525,7 @@ public class STATE_TRANSFER extends Protocol {
             Util.writeString(state_id, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException,
-                                                IllegalAccessException,
-                                                InstantiationException {
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             id=in.readLong();
             sender=Util.readAddress(in);

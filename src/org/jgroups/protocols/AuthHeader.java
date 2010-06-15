@@ -30,13 +30,6 @@ public class AuthHeader extends Header {
         return this.token;
     }
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.token = (AuthToken)in.readObject();
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(this.token);
-    }
 
     public void writeTo(DataOutputStream out) throws IOException {
         Util.writeAuthToken(this.token, out);

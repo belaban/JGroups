@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.65 2010/04/21 10:53:49 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.66 2010/06/15 06:44:39 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -693,21 +693,6 @@ public class RequestCorrelator {
         }
 
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeLong(id);
-            out.writeBoolean(rsp_expected);
-            out.writeShort(corrId);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type         = in.readByte();
-            id           = in.readLong();
-            rsp_expected = in.readBoolean();
-            corrId       = in.readShort();
-        }
-
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             out.writeLong(id);
@@ -744,17 +729,6 @@ public class RequestCorrelator {
             this.exclusion_list=exclusion_list;
         }
 
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-            out.writeObject(exclusion_list);
-        }
-
-        @SuppressWarnings("unchecked")
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-            exclusion_list=(java.util.List<Address>)in.readObject();
-        }
 
         public void writeTo(DataOutputStream out) throws IOException {
             super.writeTo(out);

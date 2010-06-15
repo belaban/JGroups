@@ -22,7 +22,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.17 2010/03/05 13:22:57 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.18 2010/06/15 06:44:34 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,"broken"},sequential=true)
 public class EncryptMessageOrderTestCase {
@@ -294,15 +294,6 @@ public class EncryptMessageOrderTestCase {
         public int size(){
             return Global.LONG_SIZE;
         }
-
-        public void writeExternal(ObjectOutput out) throws IOException{
-            out.writeLong(seqno);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
-            seqno = in.readLong();
-        }
-
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeLong(seqno);

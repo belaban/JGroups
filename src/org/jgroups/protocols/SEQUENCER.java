@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.35 2010/03/05 13:23:49 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.36 2010/06/15 06:44:35 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -381,16 +381,7 @@ public class SEQUENCER extends Protocol {
             }
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeObject(tag);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            tag=(ViewId)in.readObject();
-        }
-
+  
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             Util.writeStreamable(tag, out);

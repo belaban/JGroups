@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * just below GMS.
  * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.38 2010/03/05 13:24:02 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.39 2010/06/15 06:44:35 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -337,27 +337,6 @@ public class VIEW_SYNC extends Protocol {
             if(view != null)
                 sb.append(", view= ").append(view);
             return sb.toString();
-        }
-
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(type);
-            if(view == null) {
-                out.writeBoolean(false);
-                return;
-            }
-            out.writeBoolean(true);
-            view.writeExternal(out);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readInt();
-            boolean available=in.readBoolean();
-            if(available) {
-                view=new View();
-                view.readExternal(in);
-            }
         }
 
         public int size() {

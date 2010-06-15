@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Tests the functionality of the Headers class
  * @author Bela Ban
- * @version $Id: HeadersTest.java,v 1.6 2010/03/05 13:23:19 belaban Exp $
+ * @version $Id: HeadersTest.java,v 1.7 2010/06/15 06:44:41 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class HeadersTest {
@@ -171,16 +171,14 @@ public class HeadersTest {
             return "MyHeader";
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        }
-
         public void writeTo(DataOutputStream out) throws IOException {
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        }
+
+        public int size() {
+            return 0;
         }
     }
 }

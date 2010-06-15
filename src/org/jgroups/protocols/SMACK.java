@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.36 2010/03/05 13:23:49 belaban Exp $
+ * @version $Id: SMACK.java,v 1.37 2010/06/15 06:44:35 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -263,18 +263,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
         public SmackHeader(byte type, long seqno) {
             this.type=type;
             this.seqno=seqno;
-        }
-
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeLong(seqno);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            seqno=in.readLong();
         }
 
         public int size() {

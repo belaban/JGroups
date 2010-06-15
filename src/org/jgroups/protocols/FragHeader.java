@@ -7,7 +7,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: FragHeader.java,v 1.4 2010/03/05 13:23:18 belaban Exp $
+ * @version $Id: FragHeader.java,v 1.5 2010/06/15 06:44:35 belaban Exp $
  */
 public class FragHeader extends Header {
     public long id=0;
@@ -26,19 +26,6 @@ public class FragHeader extends Header {
 
     public String toString() {
         return "[id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(id);
-        out.writeInt(frag_id);
-        out.writeInt(num_frags);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id=in.readLong();
-        frag_id=in.readInt();
-        num_frags=in.readInt();
     }
 
 

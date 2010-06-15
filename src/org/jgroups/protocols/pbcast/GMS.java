@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.200 2010/03/05 13:23:21 belaban Exp $
+ * @version $Id: GMS.java,v 1.201 2010/06/15 06:44:38 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -1132,32 +1132,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-            out.writeObject(view);
-            out.writeObject(mbr);
-            out.writeObject(mbrs);
-            out.writeObject(join_rsp);
-            out.writeObject(my_digest);
-            out.writeObject(merge_id);
-            out.writeBoolean(merge_rejected);
-            out.writeBoolean(useFlushIfPresent);
-        }
-
-        @SuppressWarnings("unchecked")
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-            view=(View)in.readObject();
-            mbr=(Address)in.readObject();
-            mbrs=(Collection<Address>)in.readObject();
-            join_rsp=(JoinRsp)in.readObject();
-            my_digest=(Digest)in.readObject();
-            merge_id=(MergeId)in.readObject();
-            merge_rejected=in.readBoolean();
-            useFlushIfPresent=in.readBoolean();
-        }
-
-
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             boolean isMergeView=view != null && view instanceof MergeView;
@@ -1229,7 +1203,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.200 2010/03/05 13:23:21 belaban Exp $
+     * @version $Id: GMS.java,v 1.201 2010/06/15 06:44:38 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;

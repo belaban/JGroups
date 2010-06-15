@@ -88,14 +88,6 @@ public class MERGEFAST extends Protocol {
             this.view=view;
         }
 
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(view);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            view=(View)in.readObject();
-        }
-
         public void writeTo(DataOutputStream out) throws IOException {
             Util.writeView(view, out);
         }

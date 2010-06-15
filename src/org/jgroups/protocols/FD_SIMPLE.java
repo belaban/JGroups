@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.30 2010/03/05 13:23:09 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.31 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -274,15 +274,6 @@ public class FD_SIMPLE extends Protocol {
             }
         }
 
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-        }
-
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
-        }
 
         public int size() {
             return Global.BYTE_SIZE;

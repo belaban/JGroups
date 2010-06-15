@@ -10,7 +10,7 @@ import java.io.*;
 /**
  * Generic transport header, used by TP.
  * @author Bela Ban
- * @version $Id: TpHeader.java,v 1.5 2010/03/05 13:24:02 belaban Exp $
+ * @version $Id: TpHeader.java,v 1.6 2010/06/15 06:44:35 belaban Exp $
  */
 public class TpHeader extends Header {
     public String channel_name=null;
@@ -29,20 +29,9 @@ public class TpHeader extends Header {
         return "[channel_name=" + channel_name + ']';
     }
 
-
     public int size() {
         return size;
     }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(channel_name);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        channel_name=in.readUTF();
-    }
-
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeUTF(channel_name);

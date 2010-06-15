@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.115 2010/03/05 13:23:09 belaban Exp $
+ * @version $Id: FC.java,v 1.116 2010/06/15 06:44:35 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -907,14 +907,6 @@ public class FC extends Protocol {
 
         public int size() {
             return Global.BYTE_SIZE;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

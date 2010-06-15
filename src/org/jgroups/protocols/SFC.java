@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.30 2010/03/05 13:23:49 belaban Exp $
+ * @version $Id: SFC.java,v 1.31 2010/06/15 06:44:35 belaban Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -532,7 +532,6 @@ public class SFC extends Protocol {
         byte  type=CREDIT_REQUEST;
 
         public Header() {
-
         }
 
         public Header(byte type) {
@@ -541,14 +540,6 @@ public class SFC extends Protocol {
 
         public int size() {
             return Global.BYTE_SIZE;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(type);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            type=in.readByte();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

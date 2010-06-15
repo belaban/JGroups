@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
  *
  * Provides: sends MERGE event with list of different views up the stack<br>
  * @author Bela Ban, Oct 16 2001
- * @version $Id: MERGE3.java,v 1.30 2010/03/05 13:23:31 belaban Exp $
+ * @version $Id: MERGE3.java,v 1.31 2010/06/15 06:44:35 belaban Exp $
  */
 @Experimental @Unsupported
 @DeprecatedProperty(names={"use_separate_thread"})
@@ -183,14 +183,6 @@ public class MERGE3 extends Protocol {
 
         public CoordAnnouncement(View view) {
             this.view=view;
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            view=(View)in.readObject();
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(view);
         }
 
         public void writeTo(DataOutputStream out) throws IOException {

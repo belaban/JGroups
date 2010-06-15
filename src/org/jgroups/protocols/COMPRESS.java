@@ -20,7 +20,7 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.26 2010/03/05 13:22:58 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.27 2010/06/15 06:44:35 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
 
@@ -183,17 +183,8 @@ public class COMPRESS extends Protocol {
             original_size=s;
         }
 
-
         public int size() {
             return Global.INT_SIZE;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(original_size);
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            original_size=in.readInt();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
