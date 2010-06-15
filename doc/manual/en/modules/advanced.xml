@@ -1199,8 +1199,61 @@
             will shun everybody else (a real shun fest :-)). This is clearly not desirable, so in this case shunning
             should be turned off:
             <screen>
-            &lt;FD timeout="2000" max_tries="3" shun="false"/&gt; ... &lt;pbcast.GMS join_timeout="3000" shun="false"/&gt;
+                &lt;FD timeout="2000" max_tries="3" shun="false"/&gt;
+                ...
+                &lt;pbcast.GMS join_timeout="3000" shun="false"/&gt;
             </screen>
+        </section>
+        <section>
+            <title>Using a custom socket factory</title>
+            <para>
+                JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP) or
+                TP.ProtocolAdapter (in a shared transport). The factory has methods to create sockets (Socket,
+                ServerSocket, DatagramSocket and MulticastSocket)
+                <footnote>
+                    <para>
+                        Currently, SocketFactory does not support creation of NIO sockets / channels.
+                    </para>
+                </footnote>,
+                closen sockets and list all open sockets. Every socket creation method has a service name, which could
+                be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
+                file) and create the correct socket.
+            </para>
+            <para>
+                To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
+                the code below creates a SocketFactory implementation and sets it in the transport:
+            </para>
+            <screen>
+                JChannel ch;
+                MySocketFactory factory; // e.g. extends DefaultSocketFactory
+                ch=new JChannel("config.xml");
+                ch.setSocketFactory(new MySocketFactory());
+                ch.connect("demo");
+            </screen>
+
+            <para>
+                If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
+                one in the TP.ProtocolAdapter:
+            </para>
+            <screen>
+                JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
+
+                TP transport=c1.getProtocolStack().getTransport();
+                transport.setSocketFactory(new MySocketFactory("transport"));
+
+                c1.setSocketFactory(new MySocketFactory("first-cluster"));
+                c2.setSocketFactory(new MySocketFactory("second-cluster"));
+
+                c1.connect("first-cluster");
+                c2.connect("second-cluster");
+            </screen>
+
+            <para>
+                First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
+                set one SocketFactory per channel that resides on the shared transport. When JChannel.connect() is
+                called, the SocketFactory will be set in TP.ProtocolAdapter.
+            </para>
+
         </section>
     </section>
 
