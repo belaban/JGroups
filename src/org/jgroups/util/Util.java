@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.264 2010/05/10 11:21:27 belaban Exp $
+ * @version $Id: Util.java,v 1.265 2010/06/15 10:10:38 belaban Exp $
  */
 public class Util {
 
@@ -84,8 +84,6 @@ public class Util {
     private static StackType ip_stack_type=_getIpStackType();
 
 
-    private static SocketFactory socket_factory=new DefaultSocketFactory();
-
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
@@ -113,15 +111,6 @@ public class Util {
 
         if(ip_stack_type == StackType.Unknown)
             ip_stack_type=StackType.IPv6;
-    }
-
-    public static SocketFactory getSocketFactory() {
-        return socket_factory;
-    }
-
-    public static synchronized void setSocketFactory(SocketFactory factory) {
-        if(factory != null)
-            socket_factory=factory;
     }
 
 
@@ -2834,12 +2823,12 @@ public class Util {
 
 
     /** Finds first available port starting at start_port and returns server socket */
-    public static ServerSocket createServerSocket(String service_name, int start_port) {
+    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, int start_port) {
         ServerSocket ret=null;
 
         while(true) {
             try {
-                ret=getSocketFactory().createServerSocket(service_name, start_port);
+                ret=factory.createServerSocket(service_name, start_port);
             }
             catch(BindException bind_ex) {
                 start_port++;
@@ -2852,12 +2841,12 @@ public class Util {
         return ret;
     }
 
-    public static ServerSocket createServerSocket(String service_name, InetAddress bind_addr, int start_port) {
+    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
         ServerSocket ret=null;
 
         while(true) {
             try {
-                ret=getSocketFactory().createServerSocket(service_name, start_port, 50, bind_addr);
+                ret=factory.createServerSocket(service_name, start_port, 50, bind_addr);
             }
             catch(BindException bind_ex) {
                 start_port++;
@@ -2879,17 +2868,17 @@ public class Util {
      * @param port The port which the socket should use. If 0, a random port will be used. If > 0, but port is already
      *             in use, it will be incremented until an unused port is found, or until MAX_PORT is reached.
      */
-    public static DatagramSocket createDatagramSocket(String service_name, InetAddress addr, int port) throws Exception {
+    public static DatagramSocket createDatagramSocket(SocketFactory factory, String service_name, InetAddress addr, int port) throws Exception {
         DatagramSocket sock=null;
 
         if(addr == null) {
             if(port == 0) {
-                return getSocketFactory().createDatagramSocket(service_name);
+                return factory.createDatagramSocket(service_name);
             }
             else {
                 while(port < MAX_PORT) {
                     try {
-                        return getSocketFactory().createDatagramSocket(service_name, port);
+                        return factory.createDatagramSocket(service_name, port);
                     }
                     catch(BindException bind_ex) { // port already used
                         port++;
@@ -2901,7 +2890,7 @@ public class Util {
             if(port == 0) port=1024;
             while(port < MAX_PORT) {
                 try {
-                    return getSocketFactory().createDatagramSocket(service_name, port, addr);
+                    return factory.createDatagramSocket(service_name, port, addr);
                 }
                 catch(BindException bind_ex) { // port already used
                     port++;
@@ -2913,7 +2902,7 @@ public class Util {
 
 
 
-    public static MulticastSocket createMulticastSocket(String service_name, InetAddress mcast_addr, int port, Log log) throws IOException {
+    public static MulticastSocket createMulticastSocket(SocketFactory factory, String service_name, InetAddress mcast_addr, int port, Log log) throws IOException {
         if(mcast_addr != null && !mcast_addr.isMulticastAddress())
             throw new IllegalArgumentException("mcast_addr (" + mcast_addr + ") is not a valid multicast address");
 
@@ -2921,7 +2910,7 @@ public class Util {
         MulticastSocket retval=null;
 
         try {
-            retval=getSocketFactory().createMulticastSocket(service_name, saddr);
+            retval=factory.createMulticastSocket(service_name, saddr);
         }
         catch(IOException ex) {
             if(log != null && log.isWarnEnabled()) {
@@ -2937,7 +2926,7 @@ public class Util {
             }
         }
         if(retval == null)
-            retval=getSocketFactory().createMulticastSocket(service_name, port);
+            retval=factory.createMulticastSocket(service_name, port);
         return retval;
     }
 

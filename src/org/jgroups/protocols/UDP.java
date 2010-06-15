@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.214 2010/04/27 14:25:16 belaban Exp $
+ * @version $Id: UDP.java,v 1.215 2010/06/15 10:10:40 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -344,9 +344,9 @@ public class UDP extends TP {
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
             if(can_bind_to_mcast_addr)
-                mcast_sock=Util.createMulticastSocket(Global.UDP_MCAST_SOCK, mcast_group_addr, mcast_port, log);
+                mcast_sock=Util.createMulticastSocket(getSocketFactory(), Global.UDP_MCAST_SOCK, mcast_group_addr, mcast_port, log);
             else
-                mcast_sock=Util.getSocketFactory().createMulticastSocket(Global.UDP_MCAST_SOCK, mcast_port);
+                mcast_sock=getSocketFactory().createMulticastSocket(Global.UDP_MCAST_SOCK, mcast_port);
 
             if(disable_loopback)
                 mcast_sock.setLoopbackMode(disable_loopback);
@@ -441,7 +441,7 @@ public class UDP extends TP {
         int localPort=0;
         while(true) {
             try {
-                tmp=Util.getSocketFactory().createDatagramSocket(Global.UDP_UCAST_SOCK, localPort, bind_addr);//new DatagramSocket(localPort, bind_addr); // first time localPort is 0
+                tmp=getSocketFactory().createDatagramSocket(Global.UDP_UCAST_SOCK, localPort, bind_addr);
             }
             catch(SocketException socket_ex) {
                 // Vladimir May 30th 2007
@@ -470,7 +470,7 @@ public class UDP extends TP {
         int rcv_port=bind_port, max_port=bind_port + port_range;
         while(rcv_port <= max_port) {
             try {
-                tmp=Util.getSocketFactory().createDatagramSocket(Global.UDP_UCAST_SOCK, rcv_port, bind_addr); // new DatagramSocket(rcv_port, bind_addr);
+                tmp=getSocketFactory().createDatagramSocket(Global.UDP_UCAST_SOCK, rcv_port, bind_addr);
                 return tmp;
             }
             catch(SocketException bind_ex) {	// Cannot listen on this port
@@ -558,7 +558,7 @@ public class UDP extends TP {
                 if(mcast_addr != null) {
                     mcast_sock.leaveGroup(mcast_addr.getIpAddress());
                 }
-                Util.getSocketFactory().close(mcast_sock); // this will cause the mcast receiver thread to break out of its loop
+                getSocketFactory().close(mcast_sock); // this will cause the mcast receiver thread to break out of its loop
                 mcast_sock=null;
                 if(log.isDebugEnabled()) log.debug("multicast socket closed");
             }
@@ -570,7 +570,7 @@ public class UDP extends TP {
 
 
     private void closeUnicastSocket() {
-        Util.getSocketFactory().close(sock);
+        getSocketFactory().close(sock);
     }
 
 

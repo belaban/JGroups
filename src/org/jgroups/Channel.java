@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.56 2010/05/05 04:46:43 belaban Exp $
+// $Id: Channel.java,v 1.57 2010/06/15 10:10:42 belaban Exp $
 
 package org.jgroups;
 
@@ -6,7 +6,10 @@ package org.jgroups;
 import org.jgroups.logging.Log;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.SocketFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -65,12 +68,27 @@ public abstract class Channel implements Transport {
     protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
+    protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
 
     protected abstract Log getLog();
 
 
     public abstract ProtocolStack getProtocolStack();
+
+    public SocketFactory getSocketFactory() {
+        return socket_factory;
+    }
+
+    public void setSocketFactory(SocketFactory factory) {
+        socket_factory=factory;
+        if(isConnected()) {
+            ProtocolStack stack=getProtocolStack();
+            Protocol prot=stack != null? stack.getTopProtocol() : null;
+            if(prot != null)
+                prot.setSocketFactory(factory);
+        }
+    }
 
     /**
      Connects the channel to a group. The client is now able to receive group

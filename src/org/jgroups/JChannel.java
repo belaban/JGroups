@@ -81,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.239 2010/05/27 15:38:38 belaban Exp $
+ * @version $Id: JChannel.java,v 1.240 2010/06/15 10:10:42 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1760,6 +1760,11 @@ public class JChannel extends Channel {
             throw new ChannelException("failed to start protocol stack", e);
         }
 
+        if(socket_factory != null) {
+            prot_stack.getTopProtocol().setSocketFactory(socket_factory);
+        }
+        
+
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
         Vector<Address> t=new Vector<Address>(1);
         t.addElement(local_addr);
@@ -2100,7 +2105,14 @@ public class JChannel extends Channel {
         }
 
         String getOpenSockets() {
-            Map<Object, String> socks=Util.getSocketFactory().getSockets();
+            Map<Object, String> socks=getSocketFactory().getSockets();
+            TP transport=getProtocolStack().getTransport();
+            if(transport != null && transport.isSingleton()) {
+                Map<Object,String> tmp=transport.getSocketFactory().getSockets();
+                if(tmp != null)
+                    socks.putAll(tmp);
+            }
+
             StringBuilder sb=new StringBuilder();
             if(socks != null) {
                 for(Map.Entry<Object,String> entry: socks.entrySet()) {

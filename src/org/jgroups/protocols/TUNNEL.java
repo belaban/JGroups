@@ -43,7 +43,7 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.101 2010/05/28 21:08:22 vlada Exp $
+ * @version $Id: TUNNEL.java,v 1.102 2010/06/15 10:10:40 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {
@@ -171,7 +171,7 @@ public class TUNNEL extends TP {
         }
         
         stubManager = RouterStubManager.emptyGossipClientStubManager(this);
-        sock = Util.getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, 0, bind_addr);
+        sock = getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, 0, bind_addr);
         
         // loopback turned on is mandatory
         loopback = true;

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.61 2010/04/30 10:38:37 belaban Exp $
+// $Id: TCP.java,v 1.62 2010/06/15 10:10:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,6 +8,7 @@ import org.jgroups.Global;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.TCPConnectionMap;
+import org.jgroups.util.SocketFactory;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -46,6 +47,12 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
         return ct.printConnections();
     }
 
+    public void setSocketFactory(SocketFactory factory) {
+        super.setSocketFactory(factory);
+        if(ct != null)
+            ct.setSocketFactory(factory);
+    }
+
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         ct.send(dest, data, offset, length);
     }
@@ -69,6 +76,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
         ct.setSocketConnectionTimeout(sock_conn_timeout);
         ct.setTcpNodelay(tcp_nodelay);
         ct.setLinger(linger);
+        ct.setSocketFactory(getSocketFactory());
 
         // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
         super.start();

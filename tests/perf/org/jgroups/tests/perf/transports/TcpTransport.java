@@ -4,6 +4,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
 import org.jgroups.tests.perf.Configuration;
+import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.Util;
 import org.jgroups.Address;
 
@@ -14,7 +15,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.22 2010/04/27 14:25:15 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.23 2010/06/15 10:10:39 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -69,7 +70,8 @@ public class TcpTransport implements Transport {
 
 
     public void start() throws Exception {
-        srv_sock=Util.createServerSocket("jgroups.tests.perf.TcpTransport.srv_sock", bind_addr, start_port);
+        srv_sock=Util.createServerSocket(new DefaultSocketFactory(),
+                                         "jgroups.tests.perf.TcpTransport.srv_sock", bind_addr, start_port);
         local_addr=new IpAddress(srv_sock.getInetAddress(), srv_sock.getLocalPort());
         System.out.println("-- local address is " + local_addr);
         ct.init();
