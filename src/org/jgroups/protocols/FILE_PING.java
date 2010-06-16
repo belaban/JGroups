@@ -3,13 +3,14 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -18,7 +19,7 @@ import java.util.Properties;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.7 2009/09/29 04:36:30 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.8 2010/06/16 14:27:32 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     protected static final String name="FILE_PING";
@@ -30,10 +31,14 @@ public class FILE_PING extends Discovery {
     // location of the shared directory used for discovery"
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
+    /** Interval (in milliseconds) at which the own address is written to the file system. 0 disables it */
+    protected long interval=60000;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected File root_dir=null;
     protected FilenameFilter filter;
+    private ScheduledFuture<?> writer_future;
 
 
     public String getName() {
@@ -42,16 +47,22 @@ public class FILE_PING extends Discovery {
 
 
     public boolean setProperties(Properties props) {
-           String str;
+        String str;
 
-           str=props.getProperty("location");
-           if(str != null) {
-               location=str;
-               props.remove("location");
-           }
+        str=props.getProperty("location");
+        if(str != null) {
+            location=str;
+            props.remove("location");
+        }
 
-           return super.setProperties(props);
-       }
+        str=props.getProperty("interval");
+        if(str != null) {
+            interval=Long.parseLong(str);
+            props.remove("interval");
+        }
+
+        return super.setProperties(props);
+    }
 
 
 
@@ -75,6 +86,19 @@ public class FILE_PING extends Discovery {
         };
     }
 
+    public void start() throws Exception {
+        super.start();
+        if(interval > 0)
+            writer_future=timer.scheduleWithFixedDelay(new WriterTask(), interval, interval, TimeUnit.MILLISECONDS);
+    }
+
+    public void stop() {
+        if(writer_future != null) {
+            writer_future.cancel(false);
+            writer_future=null;
+        }
+        super.stop();
+    }
 
     public void sendGetMembersRequest(Promise promise) throws Exception{
         String cluster_name=group_addr;
@@ -117,6 +141,45 @@ public class FILE_PING extends Discovery {
     }
 
 
+    public Object down(Event evt) {
+        Object retval=super.down(evt);
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleView((View)evt.getArg());
+        return retval;
+    }
+
+    // remove all files which are not from the current members
+    protected void handleView(View view) {
+        Collection<Address> mbrs=view.getMembers();
+        boolean is_coordinator=!mbrs.isEmpty() && mbrs.iterator().next().equals(local_addr);
+        if(is_coordinator) {
+            List<Address> addrs=readAll(group_addr);
+            for(Address addr: addrs) {
+                if(addr != null && !mbrs.contains(addr)) {
+                    remove(group_addr, addr);
+                }
+            }
+        }
+    }
+
+    protected void remove(String clustername, Address addr) {
+        if(clustername == null || addr == null)
+            return;
+
+        File dir=new File(root_dir, clustername);
+        if(!dir.exists())
+            return;
+
+        try {
+            File file=new File(dir, addr.toString() + SUFFIX);
+            if(log.isTraceEnabled())
+                log.trace("removing " + file);
+            file.delete();
+        }
+        catch(Throwable e) {
+            log.error("failure removing data", e);
+        }
+    }
 
     /**
      * Reads all information from the given directory under clustername
@@ -169,6 +232,13 @@ public class FILE_PING extends Discovery {
         }
         finally {
             Util.close(out);
+        }
+    }
+
+
+    protected class WriterTask implements Runnable {
+        public void run() {
+            writeToFile(local_addr, group_addr);
         }
     }
 
