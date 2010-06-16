@@ -15,19 +15,19 @@ import org.jgroups.annotations.Immutable;
  * Z = 0-63 for micro versions
  *
  * @author Bela Ban
- * @version $Id: Version.java,v 1.59.2.30 2010/04/30 12:15:07 belaban Exp $
+ * @version $Id: Version.java,v 1.59.2.31 2010/06/16 14:01:32 belaban Exp $
  * Holds version information for JGroups.
  */
 @Immutable
 public class Version {
     public static final short major = 2;
     public static final short minor = 6;
-    public static final short micro = 15;
-    public static final String description="2.6.15.GA";
+    public static final short micro = 16;
+    public static final String description="2.6.16.GA";
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
-    public static final String cvs="$Id: Version.java,v 1.59.2.30 2010/04/30 12:15:07 belaban Exp $";
+    public static final String cvs="$Id: Version.java,v 1.59.2.31 2010/06/16 14:01:32 belaban Exp $";
 
     private static final int MAJOR_SHIFT = 11;
     private static final int MINOR_SHIFT = 6;
