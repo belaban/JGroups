@@ -33,7 +33,7 @@ import java.util.*;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.3 2010/06/14 09:36:00 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.4 2010/06/16 06:35:00 belaban Exp $
  */
 @Experimental @Unsupported
 public class S3_PING extends FILE_PING {
@@ -292,7 +292,15 @@ public class S3_PING extends FILE_PING {
         public boolean checkBucketExists(String bucket) throws IOException {
             HttpURLConnection response=makeRequest("HEAD", bucket, "", null, null);
             int httpCode=response.getResponseCode();
-            return httpCode >= 200 && httpCode < 300;
+
+            if(httpCode >= 200 && httpCode < 300)
+                return true;
+            if(httpCode == HttpURLConnection.HTTP_NOT_FOUND) // bucket doesn't exist
+                return false;
+            throw new IOException("bucket '" + bucket + "' could not be accessed (rsp=" +
+                    httpCode + " (" + response.getResponseMessage() + "). Maybe the bucket is owned by somebody else or " +
+                    "the authentication failed");
+
         }
 
         /**
