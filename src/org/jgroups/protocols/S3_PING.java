@@ -31,7 +31,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.1.2.4 2009/08/05 10:14:32 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.1.2.5 2010/06/16 14:37:38 belaban Exp $
  */
 public class S3_PING extends FILE_PING {
 
@@ -41,7 +41,6 @@ public class S3_PING extends FILE_PING {
 
     protected AWSAuthConnection conn=null;
 
-    protected final Set<Entry> keys=new HashSet<Entry>();
 
 
     public boolean setProperties(Properties props) {
@@ -74,27 +73,11 @@ public class S3_PING extends FILE_PING {
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                for(Entry entry : keys) {
-                    remove(entry.cluster, entry.addr);
+                remove(group_addr, local_addr);
                 }
-                keys.clear();
-            }
         });
     }
 
-    public void stop() {
-        if(group_addr != null && local_addr != null) {
-            // remove from keys:
-            for(Iterator<Entry> it=keys.iterator(); it.hasNext();) {
-                Entry entry=it.next();
-                if(group_addr.equals(entry.cluster) && local_addr.equals(entry.addr)) {
-                    it.remove();
-                }
-            }
-            remove(group_addr, local_addr);
-        }
-        super.stop();
-    }
 
 
     protected List<Address> readAll(String clustername) {
@@ -141,10 +124,7 @@ public class S3_PING extends FILE_PING {
             headers.put("Content-Type", Arrays.asList("text/plain"));
             byte[] buf=Util.objectToByteBuffer(addr);
             S3Object val=new S3Object(buf, null);
-            String response=conn.put(location, key, val, headers).connection.getResponseMessage();
-            if(log.isTraceEnabled())
-                log.trace("response: " + response);
-            keys.add(new Entry(clustername, addr));
+            conn.put(location, key, val, headers).connection.getResponseMessage();
         }
         catch(Exception e) {
             log.error("failed marshalling address " + addr + " to buffer", e);
@@ -159,25 +139,17 @@ public class S3_PING extends FILE_PING {
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
-            String response=conn.delete(location, key, headers).connection.getResponseMessage();
+            conn.delete(location, key, headers).connection.getResponseMessage();
             if(log.isTraceEnabled())
-                log.trace("response: " + response);
+                log.trace("removing " + location + "/" + key);
         }
         catch(Exception e) {
-            log.error("failed marshalling address " + addr + " to buffer", e);
+            log.error("failure removing data", e);
         }
     }
 
 
-    private static class Entry {
-        final String cluster;
-        final Address addr;
 
-        Entry(String cluster, Address addr) {
-            this.cluster=cluster;
-            this.addr=addr;
-        }
-    }
 
 
     /**
@@ -291,7 +263,15 @@ public class S3_PING extends FILE_PING {
         public boolean checkBucketExists(String bucket) throws IOException {
             HttpURLConnection response=makeRequest("HEAD", bucket, "", null, null);
             int httpCode=response.getResponseCode();
-            return httpCode >= 200 && httpCode < 300;
+
+            if(httpCode >= 200 && httpCode < 300)
+                return true;
+            if(httpCode == HttpURLConnection.HTTP_NOT_FOUND) // bucket doesn't exist
+                return false;
+            throw new IOException("bucket '" + bucket + "' could not be accessed (rsp=" +
+                    httpCode + " (" + response.getResponseMessage() + "). Maybe the bucket is owned by somebody else or " +
+                    "the authentication failed");
+
         }
 
         /**
