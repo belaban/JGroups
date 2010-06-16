@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.74 2010/06/09 14:10:56 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.75 2010/06/16 17:43:37 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -73,6 +73,9 @@ public class GossipRouter {
 
     @ManagedAttribute(description="address to which the GossipRouter should bind", writable=true, name="bindAddress")
     private String bindAddressString;
+    
+    @ManagedAttribute(description="time (in msecs) until gossip entry expires", writable=true)
+    private long expiryTime=0;
 
     // Maintains associations between groups and their members
     private final ConcurrentMap<String, ConcurrentMap<Address, ConnectionHandler>> routingTable=new ConcurrentHashMap<String, ConcurrentMap<Address, ConnectionHandler>>();
@@ -102,6 +105,8 @@ public class GossipRouter {
     protected List<ConnectionTearListener> connectionTearListeners=new CopyOnWriteArrayList<ConnectionTearListener>();
 
     protected ThreadFactory default_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "gossip-handlers", true, true);
+    
+    protected Timer timer=null;
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -118,14 +123,19 @@ public class GossipRouter {
     }
 
     public GossipRouter(int port, String bindAddressString) {
-        this.port=port;
-        this.bindAddressString=bindAddressString;
-        connectionTearListeners.add(new FailureDetectionListener());
+        this(port,bindAddressString,false,0);
     }
 
     public GossipRouter(int port, String bindAddressString, boolean jmx) {
-        this(port, bindAddressString);
-        this.jmx=jmx;
+        this(port, bindAddressString,jmx,0);    
+    }
+    
+    public GossipRouter(int port, String bindAddressString, boolean jmx, long expiryTime) {
+        this.port = port;
+        this.bindAddressString = bindAddressString;
+        this.jmx = jmx;
+        this.expiryTime = expiryTime;
+        this.connectionTearListeners.add(new FailureDetectionListener());
     }
 
     public void setPort(int port) {
@@ -152,14 +162,12 @@ public class GossipRouter {
         this.backlog=backlog;
     }
 
-    @Deprecated
     public void setExpiryTime(long expiryTime) {
-
+        this.expiryTime = expiryTime;
     }
 
-    @Deprecated
-    public static long getExpiryTime() {
-        return 0;
+    public long getExpiryTime() {
+        return expiryTime;
     }
 
     @Deprecated
@@ -276,6 +284,16 @@ public class GossipRouter {
                     mainLoop();
                 }
             }, "GossipRouter").start();
+            
+            long expiryTime = getExpiryTime();
+            if (expiryTime > 0) {
+                timer = new Timer(true);
+                timer.schedule(new TimerTask() {
+                    public void run() {
+                        sweep();
+                    }
+                }, expiryTime, expiryTime);
+            }            
         } else {
             throw new Exception("Router already started.");
         }
@@ -416,6 +434,33 @@ public class GossipRouter {
                 }
             }
         }
+    }
+    
+    /**
+     * Removes expired gossip entries (entries older than EXPIRY_TIME msec).
+     * @since 2.2.1
+     */
+    private void sweep() {
+        long diff, currentTime = System.currentTimeMillis();       
+        List <ConnectionHandler> victims = new ArrayList<ConnectionHandler>();
+        for (Iterator<Entry<String, ConcurrentMap<Address, ConnectionHandler>>> it = routingTable.entrySet().iterator(); it.hasNext();) {
+            Map<Address, ConnectionHandler> map = it.next().getValue();            
+            if (map == null || map.isEmpty()) {
+                it.remove();
+                continue;
+            }
+            for (Iterator<Entry<Address, ConnectionHandler>> it2 = map.entrySet().iterator(); it2.hasNext();) {
+                ConnectionHandler ch = it2.next().getValue();                
+                diff = currentTime - ch.timestamp;
+                if (diff > expiryTime) {                    
+                    victims.add(ch);                                                           
+                }
+            }
+        }
+
+        for (ConnectionHandler v : victims) {
+            v.close();
+        }        
     }
     
     private void route(Address dest, String group, byte[] msg) {
@@ -601,6 +646,7 @@ public class GossipRouter {
         private final DataInputStream input;
         private final List<Address> logical_addrs=new ArrayList<Address>();
         Set<String> known_groups = new HashSet<String>();
+        private long timestamp;
 
         public ConnectionHandler(Socket sock) throws IOException {
             this.sock=sock;
@@ -652,7 +698,7 @@ public class GossipRouter {
                     group=request.getGroup();
                     known_groups.add(group);
 
-
+                    timestamp = System.currentTimeMillis();
                     if(log.isTraceEnabled())
                         log.trace(this + " received " + request);
                     

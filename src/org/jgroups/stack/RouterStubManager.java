@@ -44,7 +44,7 @@ import org.jgroups.util.TimeScheduler;
 public class RouterStubManager implements RouterStub.ConnectionListener {
 
     @GuardedBy("reconnectorLock")
-    private final Map<InetSocketAddress, Future<?>> reconnectFutures = new HashMap<InetSocketAddress, Future<?>>();
+    private final Map<InetSocketAddress, Future<?>> futures = new HashMap<InetSocketAddress, Future<?>>();
     private final Lock reconnectorLock = new ReentrantLock();    
     private final List<RouterStub> stubs;
     
@@ -131,54 +131,65 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
     public void startReconnecting(final RouterStub stub) {
         reconnectorLock.lock();
         try {
-            Future<?> reconnectorFuture = reconnectFutures.get(stub.getGossipRouterAddress());
-            if (reconnectorFuture == null || reconnectorFuture.isDone()) {
-                final Runnable reconnector = new Runnable() {
-                    public void run() {
-                        try {
-                            if (log.isTraceEnabled()) {
-                                log.trace("Reconnecting " + stub);
-                            }
-
-                            String logical_name = org.jgroups.util.UUID.get(logicalAddress);
-                            PhysicalAddress physical_addr = (PhysicalAddress) owner.down(new Event(
-                                            Event.GET_PHYSICAL_ADDRESS, logicalAddress));
-                            List<PhysicalAddress> physical_addrs = Arrays.asList(physical_addr);
-                            stub.connect(channelName, logicalAddress, logical_name, physical_addrs);
-                            if (log.isTraceEnabled()) {
-                                log.trace("Reconnected " + stub);
-                            }
-
-                        } catch (Throwable ex) {
-                            if (log.isWarnEnabled())
-                                log.warn("failed reconnecting stub to GR at " + stub.getGossipRouterAddress() + ": " + ex);
-                        }
-                    }
-                };
-                reconnectorFuture = timer.scheduleWithFixedDelay(reconnector, 0, interval,TimeUnit.MILLISECONDS);
-                reconnectFutures.put(stub.getGossipRouterAddress(), reconnectorFuture);
+            InetSocketAddress routerAddress = stub.getGossipRouterAddress();
+            Future<?> f = futures.get(routerAddress);
+            if (f != null) {
+                f.cancel(true);
+                futures.remove(routerAddress);
             }
+
+            final Runnable reconnector = new Runnable() {
+                public void run() {
+                    try {
+                        if (log.isTraceEnabled()) log.trace("Reconnecting " + stub);                        
+                        String logical_name = org.jgroups.util.UUID.get(logicalAddress);
+                        PhysicalAddress physical_addr = (PhysicalAddress) owner.down(new Event(
+                                        Event.GET_PHYSICAL_ADDRESS, logicalAddress));
+                        List<PhysicalAddress> physical_addrs = Arrays.asList(physical_addr);
+                        stub.connect(channelName, logicalAddress, logical_name, physical_addrs);
+                        if (log.isTraceEnabled()) log.trace("Reconnected " + stub);                        
+                    } catch (Throwable ex) {
+                        if (log.isWarnEnabled())
+                            log.warn("failed reconnecting stub to GR at "+ stub.getGossipRouterAddress() + ": " + ex);
+                    }
+                }
+            };
+            f = timer.scheduleWithFixedDelay(reconnector, 0, interval, TimeUnit.MILLISECONDS);
+            futures.put(stub.getGossipRouterAddress(), f);
         } finally {
             reconnectorLock.unlock();
         }
     }
 
     public void stopReconnecting(final RouterStub stub) {
-        stopReconnecting(stub.getGossipRouterAddress());
+        reconnectorLock.lock();
+        try {
+            InetSocketAddress routerAddress = stub.getGossipRouterAddress();
+            Future<?> f = futures.get(stub.getGossipRouterAddress());
+            if (f != null) {
+                f.cancel(true);
+                futures.remove(routerAddress);
+            }
+
+            final Runnable pinger = new Runnable() {
+                public void run() {
+                    try {
+                        if(log.isTraceEnabled()) log.trace("Pinging " + stub);                        
+                        stub.checkConnection();
+                        if(log.isTraceEnabled()) log.trace("Pinged " + stub);                        
+                    } catch (Throwable ex) {
+                        if (log.isWarnEnabled())
+                            log.warn("failed pinging stub, GR at " + stub.getGossipRouterAddress()+ ": " + ex);
+                    }
+                }
+            };
+            f = timer.scheduleWithFixedDelay(pinger, 0, interval, TimeUnit.MILLISECONDS);
+            futures.put(stub.getGossipRouterAddress(), f);
+        } finally {
+            reconnectorLock.unlock();
+        }
     }
-    
-    public void stopReconnecting(final InetSocketAddress address) {
-       reconnectorLock.lock();      
-       try {
-           Future<?> reconnectorFuture = reconnectFutures.get(address);
-           if (reconnectorFuture != null) {
-               reconnectorFuture.cancel(true);
-               reconnectFutures.remove(address);
-           }
-       } finally {
-           reconnectorLock.unlock();
-       }
-   }
+   
 
     public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
         if (newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
