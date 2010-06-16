@@ -22,7 +22,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.15 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.16 2010/06/16 08:48:32 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -155,7 +155,8 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        File file=new File(dir, local_addr.toString() + SUFFIX);
+        String filename=local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : local_addr.toString();
+        File file=new File(dir, filename + SUFFIX);
         file.deleteOnExit();
 
         try {
