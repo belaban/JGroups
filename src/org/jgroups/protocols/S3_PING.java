@@ -1,9 +1,10 @@
 package org.jgroups.protocols;
 
-import org.jgroups.util.*;
-import org.jgroups.annotations.Property;
+import org.jgroups.Address;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -17,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import static java.lang.String.valueOf;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -27,14 +27,15 @@ import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.UUID;
+
+import static java.lang.String.valueOf;
 
 
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.5 2010/06/16 08:48:32 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.6 2010/06/16 11:21:38 belaban Exp $
  */
 @Experimental @Unsupported
 public class S3_PING extends FILE_PING {
@@ -46,8 +47,6 @@ public class S3_PING extends FILE_PING {
     protected String secret_access_key=null;
 
     protected AWSAuthConnection conn=null;
-
-    protected final Set<Entry> keys=new HashSet<Entry>();
 
 
   
@@ -63,36 +62,11 @@ public class S3_PING extends FILE_PING {
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                Set<Entry> copy;
-                synchronized(keys) {
-                    copy=new HashSet<Entry>(keys);
-                    keys.clear();
-                }
-
-                for(Entry entry : copy) {
-                    remove(entry.cluster, entry.data);
-                }
+                remove(group_addr, local_addr);
             }
         });
     }
 
-    public void stop() {
-        if(group_addr != null && local_addr != null) {
-            // remove from keys:
-            synchronized(keys) {
-                for(Iterator<Entry> it=keys.iterator(); it.hasNext();) {
-                    Entry entry=it.next();
-                    if(group_addr.equals(entry.cluster) && local_addr.equals(entry.data.getAddress())) {
-                        it.remove();
-                    }
-                }
-            }
-
-            PingData data=new PingData(local_addr, null, false, org.jgroups.util.UUID.get(local_addr), null);
-            remove(group_addr, data);
-        }
-        super.stop();
-    }
 
 
     protected List<PingData> readAll(String clustername) {
@@ -140,12 +114,7 @@ public class S3_PING extends FILE_PING {
             headers.put("Content-Type", Arrays.asList("text/plain"));
             byte[] buf=Util.objectToByteBuffer(data);
             S3Object val=new S3Object(buf, null);
-            String response=conn.put(location, key, val, headers).connection.getResponseMessage();
-            if(log.isTraceEnabled())
-                log.trace("response: " + response);
-            synchronized(keys) {
-                keys.add(new Entry(clustername, data));
-            }
+            conn.put(location, key, val, headers).connection.getResponseMessage();
         }
         catch(Exception e) {
             log.error("failed marshalling " + data + " to buffer", e);
@@ -153,33 +122,27 @@ public class S3_PING extends FILE_PING {
     }
 
 
-    protected void remove(String clustername, PingData data) {
-        if(clustername == null || data == null)
+    protected void remove(String clustername, Address addr) {
+        if(clustername == null || addr == null)
             return;
-        String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
+        String filename=addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
         String key=clustername + "/" + filename;
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
-            String response=conn.delete(location, key, headers).connection.getResponseMessage();
+            conn.delete(location, key, headers).connection.getResponseMessage();
             if(log.isTraceEnabled())
-                log.trace("response: " + response);
+                log.trace("removing " + location + "/" + key);
         }
         catch(Exception e) {
-            log.error("failed marshalling " + data + " to buffer", e);
+            log.error("failure removing data", e);
         }
     }
 
 
-    private static class Entry {
-        final String cluster;
-        final PingData data;
 
-        Entry(String cluster, PingData data) {
-            this.cluster=cluster;
-            this.data=data;
-        }
-    }
+
+    
 
 
     /**

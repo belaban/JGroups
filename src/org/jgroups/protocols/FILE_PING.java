@@ -1,8 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.util.UUID;
@@ -10,10 +8,9 @@ import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Collection;
+import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -22,7 +19,7 @@ import java.util.Collection;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.16 2010/06/16 08:48:32 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.17 2010/06/16 11:21:38 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -34,10 +31,14 @@ public class FILE_PING extends Discovery {
     @Property(description="The absolute path of the shared file")
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
+    @Property(description="Interval (in milliseconds) at which the own address is written to the file system. 0 disables it.")
+    protected long interval=60000;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected File root_dir=null;
     protected FilenameFilter filter;
+    private ScheduledFuture<?> writer_future;
 
 
     public void init() throws Exception {
@@ -58,9 +59,23 @@ public class FILE_PING extends Discovery {
                 return name.endsWith(SUFFIX);
             }
         };
+
+
     }
 
+    public void start() throws Exception {
+        super.start();
+        if(interval > 0)
+            writer_future=timer.scheduleWithFixedDelay(new WriterTask(), interval, interval, TimeUnit.MILLISECONDS);
+    }
 
+    public void stop() {
+        if(writer_future != null) {
+            writer_future.cancel(false);
+            writer_future=null;
+        }
+        super.stop();
+    }
 
     public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         List<PingData> existing_mbrs=readAll(cluster_name);
@@ -112,6 +127,47 @@ public class FILE_PING extends Discovery {
     }
 
 
+    public Object down(Event evt) {
+        Object retval=super.down(evt);
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleView((View)evt.getArg());
+        return retval;
+    }
+
+    // remove all files which are not from the current members
+    protected void handleView(View view) {
+        Collection<Address> mbrs=view.getMembers();
+        boolean is_coordinator=!mbrs.isEmpty() && mbrs.iterator().next().equals(local_addr);
+        if(is_coordinator) {
+            List<PingData> data=readAll(group_addr);
+            for(PingData entry: data) {
+                Address addr=entry.getAddress();
+                if(addr != null && !mbrs.contains(addr)) {
+                    remove(group_addr, addr);
+                }
+            }
+        }
+    }
+
+    protected void remove(String clustername, Address addr) {
+        if(clustername == null || addr == null)
+            return;
+
+        File dir=new File(root_dir, clustername);
+        if(!dir.exists())
+            return;
+
+        try {
+            String filename=addr instanceof UUID? ((UUID)addr).toStringLong() : addr.toString();
+            File file=new File(dir, filename + SUFFIX);
+            if(log.isTraceEnabled())
+                log.trace("removing " + file);
+            file.delete();
+        }
+        catch(Throwable e) {
+            log.error("failure removing data", e);
+        }
+    }
 
     /**
      * Reads all information from the given directory under clustername
@@ -167,6 +223,16 @@ public class FILE_PING extends Discovery {
         }
         finally {
             Util.close(out);
+        }
+    }
+
+
+    protected class WriterTask implements Runnable {
+        public void run() {
+            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
+            PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
+            writeToFile(data, group_addr);
         }
     }
 
