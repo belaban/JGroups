@@ -1,6 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
@@ -27,13 +27,14 @@ import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.UUID;
 
 
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.4 2010/06/16 06:35:00 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.5 2010/06/16 08:48:32 belaban Exp $
  */
 @Experimental @Unsupported
 public class S3_PING extends FILE_PING {
@@ -132,8 +133,8 @@ public class S3_PING extends FILE_PING {
     protected void writeToFile(PingData data, String clustername) {
         if(clustername == null || data == null)
             return;
-        Object suffix=data.getLogicalName() != null? data.getLogicalName() : data.getAddress();
-        String key=clustername + "/" + (suffix != null? suffix.toString() : UUID.randomUUID().toString());
+        String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
+        String key=clustername + "/" + filename;
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
@@ -155,8 +156,8 @@ public class S3_PING extends FILE_PING {
     protected void remove(String clustername, PingData data) {
         if(clustername == null || data == null)
             return;
-        Object suffix=data.getLogicalName() != null? data.getLogicalName() : data.getAddress();
-        String key=clustername + "/" + (suffix != null? suffix.toString() : "");
+        String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
+        String key=clustername + "/" + filename;
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
