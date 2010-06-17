@@ -35,7 +35,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.6 2010/06/16 11:21:38 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.7 2010/06/17 05:41:10 belaban Exp $
  */
 @Experimental @Unsupported
 public class S3_PING extends FILE_PING {
@@ -1595,7 +1595,7 @@ public class S3_PING extends FILE_PING {
             // don't allow names that look like 127.0.0.1
             final String IPv4_REGEX="^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$";
             // dns sub-name restrictions
-            final String BUCKET_NAME_REGEX="^[a-z0-9]([a-z0-9\\-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9\\-]*[a-z0-9])?)*$";
+            final String BUCKET_NAME_REGEX="^[a-z0-9]([a-z0-9\\-\\_]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9\\-\\_]*[a-z0-9])?)*$";
 
             // If there wasn't a location-constraint, then the current actual
             // restriction is just that no 'part' of the name (i.e. sequence
