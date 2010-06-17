@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.215 2010/06/15 10:10:40 belaban Exp $
+ * @version $Id: UDP.java,v 1.216 2010/06/17 15:04:15 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -667,7 +667,7 @@ public class UDP extends TP {
 
 
         public void run() {
-            final byte           receive_buf[]=new byte[65535];
+            final byte           receive_buf[]=new byte[66000]; // to be on the safe side (IPv6 == 65575 bytes, IPv4 = 65535)
             final DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
 
             while(thread != null && Thread.currentThread().equals(thread)) {
