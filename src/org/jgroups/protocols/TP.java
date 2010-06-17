@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.311 2010/06/15 10:10:40 belaban Exp $
+ * @version $Id: TP.java,v 1.312 2010/06/17 20:18:11 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -414,8 +414,7 @@ public abstract class TP extends Protocol {
      * <br/>
      * The keys are logical addresses, the values physical addresses
      */
-    protected final LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache
-            =new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
+    protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache=null;
 
     Future<?> logical_addr_cache_reaper=null;
 
@@ -765,6 +764,8 @@ public abstract class TP extends Protocol {
             up(new Event(Event.CONFIG, m));
         }
 
+        logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
+        
         if(logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone()) {
             if(logical_addr_cache_expiration <= 0)
                 throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
