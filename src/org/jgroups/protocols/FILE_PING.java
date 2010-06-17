@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.5.2.8 2010/06/16 14:27:32 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.5.2.9 2010/06/17 14:57:42 belaban Exp $
  */
 public class FILE_PING extends Discovery {
     protected static final String name="FILE_PING";
@@ -68,22 +68,7 @@ public class FILE_PING extends Discovery {
 
     public void init() throws Exception {
         super.init();
-        root_dir=new File(location);
-        if(root_dir.exists()) {
-            if(!root_dir.isDirectory())
-                throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
-        }
-        else {
-            root_dir.mkdirs();
-        }
-        if(!root_dir.exists())
-            throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
-
-        filter=new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(SUFFIX);
-            }
-        };
+        createRootDir();
     }
 
     public void start() throws Exception {
@@ -146,6 +131,25 @@ public class FILE_PING extends Discovery {
         if(evt.getType() == Event.VIEW_CHANGE)
             handleView((View)evt.getArg());
         return retval;
+    }
+
+    protected void createRootDir() {
+        root_dir=new File(location);
+        if(root_dir.exists()) {
+            if(!root_dir.isDirectory())
+                throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
+        }
+        else {
+            root_dir.mkdirs();
+        }
+        if(!root_dir.exists())
+            throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
+
+        filter=new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.endsWith(SUFFIX);
+            }
+        };
     }
 
     // remove all files which are not from the current members
