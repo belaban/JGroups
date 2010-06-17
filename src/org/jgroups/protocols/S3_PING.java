@@ -31,13 +31,16 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.1.2.6 2010/06/17 05:40:38 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.1.2.7 2010/06/17 07:15:19 belaban Exp $
  */
 public class S3_PING extends FILE_PING {
 
     protected String access_key=null;
 
     protected String secret_access_key=null;
+
+    // When non-null, we set location to prefix-UUID
+    protected String prefix=null;
 
     protected AWSAuthConnection conn=null;
 
@@ -57,6 +60,11 @@ public class S3_PING extends FILE_PING {
             secret_access_key=str;
             props.remove("secret_access_key");
         }
+        str=props.getProperty("prefix");
+        if(str != null) {
+            prefix=str;
+            props.remove("prefix");
+        }
 
         if(access_key == null || secret_access_key == null)
             throw new IllegalArgumentException("access_key and secret_access_key must be non-null");
@@ -67,6 +75,27 @@ public class S3_PING extends FILE_PING {
     public void init() throws Exception {
         super.init();
         conn=new AWSAuthConnection(access_key, secret_access_key);
+
+        if(prefix != null && prefix.length() > 0) {
+            ListAllMyBucketsResponse bucket_list=conn.listAllMyBuckets(null);
+            List buckets=bucket_list.entries;
+            if(buckets != null) {
+                boolean found=false;
+                for(Object tmp: buckets) {
+                    if(tmp instanceof Bucket) {
+                        Bucket bucket=(Bucket)tmp;
+                        if(bucket.name.startsWith(prefix)) {
+                            location=bucket.name;
+                            found=true;
+                        }
+                    }
+                }
+                if(!found) {
+                    location=prefix + "-" + java.util.UUID.randomUUID().toString();
+                }
+            }
+        }
+
         if(!conn.checkBucketExists(location)) {
             conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
         }
