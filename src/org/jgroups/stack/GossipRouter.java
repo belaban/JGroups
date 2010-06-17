@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.75 2010/06/16 17:43:37 vlada Exp $
+ * @version $Id: GossipRouter.java,v 1.76 2010/06/17 09:20:45 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -897,6 +897,7 @@ public class GossipRouter {
         int backlog=0;
         long soLinger=-1;
         long soTimeout=-1;
+        long expiry_time=0;
 
         GossipRouter router=null;
         String bind_addr=null;
@@ -917,7 +918,7 @@ public class GossipRouter {
                 continue;
             }
             if("-expiry".equals(arg)) {
-                System.err.println("-expiry has been deprecated and will be ignored");
+                expiry_time=Long.parseLong(args[++i]);
                 continue;
             }
             if("-jmx".equals(arg)) {
@@ -961,6 +962,9 @@ public class GossipRouter {
             if(soLinger >= 0)
                 router.setLingerTimeout(soLinger);
 
+            if(expiry_time > 0)
+                router.setExpiryTime(expiry_time);
+
             router.start();
         }
         catch(Exception e) {
@@ -990,6 +994,9 @@ public class GossipRouter {
         System.out.println("                            means don't set SO_TIMEOUT. Must be greater than");
         System.out.println("                            or equal to zero or the default of 3000 will be");
         System.out.println("                            used.");
+        System.out.println();
+        System.out.println("    -expiry <msecs>       - Time for closing idle connections. 0");
+        System.out.println("                            means don't expire.");
         System.out.println();
     }
 }
