@@ -31,7 +31,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.1.2.7 2010/06/17 07:15:19 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.1.2.8 2010/06/17 14:57:42 belaban Exp $
  */
 public class S3_PING extends FILE_PING {
 
@@ -107,7 +107,9 @@ public class S3_PING extends FILE_PING {
         });
     }
 
-
+    protected void createRootDir() {
+        ; // don't create root dir (don't remove !)
+    }
 
     protected List<Address> readAll(String clustername) {
         if(clustername == null)
