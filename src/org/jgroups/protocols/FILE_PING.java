@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.17 2010/06/16 11:21:38 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.18 2010/06/17 14:53:09 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -43,24 +43,7 @@ public class FILE_PING extends Discovery {
 
     public void init() throws Exception {
         super.init();
-        root_dir=new File(location);
-        if(root_dir.exists()) {
-            if(!root_dir.isDirectory())
-                throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
-        }
-        else {
-            root_dir.mkdirs();
-        }
-        if(!root_dir.exists())
-            throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
-
-        filter=new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(SUFFIX);
-            }
-        };
-
-
+        createRootFilesystem();
     }
 
     public void start() throws Exception {
@@ -132,6 +115,25 @@ public class FILE_PING extends Discovery {
         if(evt.getType() == Event.VIEW_CHANGE)
             handleView((View)evt.getArg());
         return retval;
+    }
+
+    protected void createRootFilesystem() {
+        root_dir=new File(location);
+        if(root_dir.exists()) {
+            if(!root_dir.isDirectory())
+                throw new IllegalArgumentException("location " + root_dir.getPath() + " is not a directory");
+        }
+        else {
+            root_dir.mkdirs();
+        }
+        if(!root_dir.exists())
+            throw new IllegalArgumentException("location " + root_dir.getPath() + " could not be accessed");
+
+        filter=new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.endsWith(SUFFIX);
+            }
+        };
     }
 
     // remove all files which are not from the current members
