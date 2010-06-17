@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.17 2009/05/18 16:18:21 galderz Exp $
+ * @version $Id: UDP.java,v 1.156.2.18 2010/06/17 15:05:46 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -246,7 +246,7 @@ public class UDP extends TP implements Runnable {
 
     public void run() {
         DatagramPacket  packet;
-        byte            receive_buf[]=new byte[65535];
+        byte            receive_buf[]=new byte[66000]; // to be on the safe side (IPv6 = 65575, IPv5 = 65535 bytes)
         int             offset, len, sender_port;
         byte[]          data;
         InetAddress     sender_addr;
@@ -930,7 +930,7 @@ public class UDP extends TP implements Runnable {
 
         public void run() {
             DatagramPacket  packet;
-            byte            receive_buf[]=new byte[65535];
+            byte            receive_buf[]=new byte[66000]; // to be on the safe side (IPv6 = 65575, IPv5 = 65535 bytes)
             int             offset, len;
             byte[]          data;
             InetAddress     sender_addr;
