@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.25 2010/06/15 10:10:40 belaban Exp $
+// $Id: BSH.java,v 1.26 2010/06/18 12:01:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,7 @@ import bsh.EvalError;
 import bsh.Interpreter;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.Global;
@@ -28,7 +29,7 @@ import java.util.List;
  * Time: 1:57:07 PM
  * @author Bela Ban
  */
-@Experimental
+@Experimental @Unsupported
 public class BSH extends Protocol implements Runnable {
     protected Interpreter interpreter=null;
     protected ServerSocket srv_sock;
