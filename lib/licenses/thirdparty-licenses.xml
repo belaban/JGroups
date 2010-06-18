@@ -48,20 +48,6 @@
             description='Annotations of JCIP'>
         <jar name='none (part of src tree: org.jgroups.annotations)' />
     </module>
-    <module name='JMS'
-            licenseType='bcl'
-            version='1.02b'
-            projectHome='http://java.sun.com/products/jms'
-            description='JMS interfaces. Used by the JMS protocol (runtime)'>
-        <jar name='jms.jar' />
-    </module>
-    <module name='junit'
-            licenseType='cpl-1.0'
-            version='3.8.1'
-            projectHome='http://www.junit.org/index.htm'
-            description='Java unit testing framework (testing time)'>
-        <jar name='junit.jar' />
-    </module>
     <module name='log4j'
         licenseType='apache-2.0'
         version='1.2.14'
@@ -75,7 +61,7 @@
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
         <jar name='testng.jar' />
-	</module>
+    </module>
     <module name='apache-xalan'
             licenseType='apache-2.0'
             version='2.4.D1'
