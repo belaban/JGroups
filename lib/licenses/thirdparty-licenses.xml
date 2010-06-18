@@ -48,6 +48,13 @@
             description='Annotations of JCIP'>
         <jar name='none (part of src tree: org.jgroups.annotations)' />
     </module>
+    <module name='junit'
+            licenseType='cpl-1.0'
+            version='3.8.1'
+            projectHome='http://www.junit.org/index.htm'
+            description='Java unit testing framework (testing time)'>
+        <jar name='junit.jar' />
+    </module>
     <module name='log4j'
         licenseType='apache-2.0'
         version='1.2.14'
