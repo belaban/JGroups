@@ -536,9 +536,13 @@ public class TCPConnectionMap{
         private class ConnectionPeerReceiver implements Runnable {
             private Thread recv;
             private final AtomicBoolean receiving = new AtomicBoolean(false);
+
+
             public ConnectionPeerReceiver(ThreadFactory f) {
                 recv = f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");                
             }
+
+
             public void start() {
                 if(receiving.compareAndSet(false, true)) {
                     recv.start();
@@ -615,7 +619,7 @@ public class TCPConnectionMap{
                         data=send_queue.take();
                     }
                     catch(InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        // Thread.currentThread().interrupt();
                         break;
                     }
 
@@ -664,12 +668,7 @@ public class TCPConnectionMap{
         }      
 
         public boolean isExpired(long now) {
-            if(getConnectionExpiryTimeout() > 0) {
-                return now - last_access >= getConnectionExpiryTimeout();
-            }
-            else {
-                return false;
-            }
+            return getConnectionExpiryTimeout() > 0 && now - last_access >= getConnectionExpiryTimeout();
         }
 
         public boolean isOpen() {
