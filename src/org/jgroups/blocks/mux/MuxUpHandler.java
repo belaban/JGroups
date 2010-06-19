@@ -2,20 +2,20 @@ package org.jgroups.blocks.mux;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.UpHandler;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.ImmutableReference;
 
 /**
  * Allows up handler multiplexing.
  * 
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxUpHandler.java,v 1.3 2010/06/09 03:24:51 bstansberry Exp $
+ * @version $Id: MuxUpHandler.java,v 1.4 2010/06/19 02:24:48 bstansberry Exp $
  */
 public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
 
@@ -105,7 +105,7 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
             case Event.GET_STATE_OK: 
             case Event.STATE_TRANSFER_OUTPUTSTREAM: 
             case Event.STATE_TRANSFER_INPUTSTREAM: {
-                AtomicReference<Object> wrapper = handleStateTransferEvent(evt);
+                ImmutableReference<Object> wrapper = handleStateTransferEvent(evt);
                 if (wrapper != null)
                 {
                    return wrapper.get();
@@ -150,7 +150,7 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
       *         <code>null</code> should be returned. This default 
       *         implementation always returns <code>null</code>
       */
-    protected AtomicReference<Object> handleStateTransferEvent(Event evt) {
+    protected ImmutableReference<Object> handleStateTransferEvent(Event evt) {
          return null;
     } 
     
