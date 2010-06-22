@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.43 2009/05/13 13:06:54 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.44 2010/06/22 13:16:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -1005,7 +1005,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          return sock_ch;
       }
 
-      void closeSocket()
+      synchronized void closeSocket()
       {
 
          if (sock_ch != null)
