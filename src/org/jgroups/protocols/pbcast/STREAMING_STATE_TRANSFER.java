@@ -722,8 +722,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
         }
 
-        public void write(byte[] b, int off, int len) throws IOException {
-            super.write(b, off, len);
+        public void write(byte[] b, int off, int len) throws IOException {            
+            //Thanks Kornelius Elstner            
+            //https://jira.jboss.org/browse/JGRP-1223
+            out.write(b, off, len);
             bytesWrittenCounter += len;
         }
 
