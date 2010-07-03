@@ -554,27 +554,38 @@ public class TCPConnectionMap{
                     recv.interrupt();
                 }
             }
+            
+            public boolean isRunning() {
+                return receiving.get();
+            }
+            
+            public boolean canRun() {
+                return isRunning() && isConnected();
+            }
 
             public void run() {
-
-                while(!Thread.currentThread().isInterrupted() && isOpen()) {
-                    try {                    
-                        int len=in.readInt();
-                        byte[] buf=new byte[len];
-                        in.readFully(buf, 0, len);
-                        updateLastAccessed();
-                        receiver.receive(peer_addr, buf, 0, len);
-                    }
-                    catch(OutOfMemoryError mem_ex) {
-                        break; // continue;
-                    }
-                    catch(IOException io_ex) {
-                        break;
-                    }
-                    catch(Throwable e) {
+                try {
+                    while(!Thread.currentThread().isInterrupted() && canRun()) {
+                        try {                    
+                            int len=in.readInt();
+                            byte[] buf=new byte[len];
+                            in.readFully(buf, 0, len);
+                            updateLastAccessed();
+                            receiver.receive(peer_addr, buf, 0, len);
+                        }
+                        catch(OutOfMemoryError mem_ex) {
+                            break; // continue;
+                        }
+                        catch(IOException io_ex) {
+                            break;
+                        }
+                        catch(Throwable e) {
+                        }
                     }
                 }
-                Util.close(TCPConnection.this);                 
+                finally{
+                    Util.close(TCPConnection.this);
+                }
             }
         }
         
@@ -590,10 +601,12 @@ public class TCPConnectionMap{
             }
             
             public void addToQueue(byte[] data) throws Exception{
-                if(isOpenAndRunning())
+                if(canRun())
                     send_queue.add(data);
                 else 
-                    throw new Exception("Sender running=" + sending.get() +", underlying connection open= " + isOpen());
+                    throw new Exception("Queue closed since sender thread has died, running="
+                                    + sending.get() + ", underlying connection open= "
+                                    + isConnected());
             }
 
             public void start() {
@@ -608,31 +621,40 @@ public class TCPConnectionMap{
                 }
             }
             
-            public boolean isOpenAndRunning() {
-                return sending.get() && isOpen();
+            public boolean isRunning() {
+                return sending.get();
+            }
+            
+            public boolean canRun() {
+                return isRunning() && isConnected();
             }
 
             public void run() {
-                while(isOpenAndRunning()) {
-                    byte[] data=null;
-                    try {
-                        data=send_queue.take();
-                    }
-                    catch(InterruptedException e) {
-                        // Thread.currentThread().interrupt();
-                        break;
-                    }
-
-                    if(data != null) {                        
+                try {
+                    while(!Thread.currentThread().isInterrupted() && canRun()) {
+                        byte[] data=null;
                         try {
-                            _send(data, 0, data.length, false);
+                            data=send_queue.take();
                         }
-                        catch(Throwable ignored) {
+                        catch(InterruptedException e) {
+                            // Thread.currentThread().interrupt();
+                            break;
                         }
-                    }
+    
+                        if(data != null) {                        
+                            try {
+                                _send(data, 0, data.length, false);
+                            }
+                            catch(Throwable ignored) {
+                            }
+                        }
+                    }    
                 }
+                finally {
+                    Util.close(TCPConnection.this);    
+                }                
                 if(log.isTraceEnabled())
-                    log.trace("ConnectionTable.Connection.Sender thread terminated");
+                    log.trace("TCPConnection.Sender thread terminated at " + local_addr);
             }        
         }
 
@@ -670,9 +692,15 @@ public class TCPConnectionMap{
         public boolean isExpired(long now) {
             return getConnectionExpiryTimeout() > 0 && now - last_access >= getConnectionExpiryTimeout();
         }
+        
+        public boolean isConnected() {
+            return !sock.isClosed() && sock.isConnected();
+        }
 
         public boolean isOpen() {
-            return !sock.isClosed() && sock.isConnected();
+            return isConnected()
+                            && (isSenderUsed() ? sender.isRunning() : true)
+                            && (connectionPeerReceiver != null && connectionPeerReceiver.isRunning());
         }
 
         public void close() throws IOException {
