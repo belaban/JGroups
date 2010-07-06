@@ -17,7 +17,7 @@ public class JDKLogImpl implements Log {
     }
 
     public JDKLogImpl(Class category) {
-        logger=Logger.getLogger(category.toString());
+        logger=Logger.getLogger(category.getName()); // fix for https://jira.jboss.org/browse/JGRP-1224
     }
 
     public boolean isTraceEnabled() {
