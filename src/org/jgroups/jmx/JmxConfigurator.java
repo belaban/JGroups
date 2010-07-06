@@ -18,7 +18,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: JmxConfigurator.java,v 1.18 2010/04/05 15:24:56 vlada Exp $
+ * @version $Id: JmxConfigurator.java,v 1.19 2010/07/06 08:05:51 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
@@ -47,7 +47,9 @@ public class JmxConfigurator {
             ProtocolStack stack = channel.getProtocolStack();
             Vector<Protocol> protocols = stack.getProtocols();
             for (Protocol p : protocols) {
-                register(p, server, getProtocolRegistrationName(cluster_name, domain, p));
+                if (p.getClass().isAnnotationPresent(MBean.class)) {
+                         register(p, server, getProtocolRegistrationName(cluster_name, domain, p));
+                }
             }
         }
         register(channel, server, getChannelRegistrationName(channel, domain, cluster_name));
@@ -80,7 +82,12 @@ public class JmxConfigurator {
             server.unregisterMBean(new ObjectName(name));
     }
 
-    public static void unregisterChannel(JChannel c, MBeanServer server, String clusterName)
+    public static void unregisterChannel(JChannel c, MBeanServer server, String clusterName) throws Exception {
+        unregisterChannel(c, server, "jgroups", clusterName);
+    }
+
+
+    public static void unregisterChannel(JChannel c, MBeanServer server, String domain, String clusterName)
                     throws Exception {
 
         ProtocolStack stack = c.getProtocolStack();
@@ -88,7 +95,7 @@ public class JmxConfigurator {
         for (Protocol p : protocols) {
             if (p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
-                    unregister(p, server, getProtocolRegistrationName(clusterName, "jgroups", p));
+                    unregister(p, server, getProtocolRegistrationName(clusterName, domain, p));
                 } catch (MBeanRegistrationException e) {
                     if (log.isWarnEnabled()) {
                         log.warn("MBean unregistration failed " + e);
@@ -96,7 +103,7 @@ public class JmxConfigurator {
                 }
             }
         }
-        unregister(c, server, getChannelRegistrationName(clusterName));
+        unregister(c, server, getChannelRegistrationName(c, domain, clusterName));
     }
 
     public static void registerChannelFactory(JChannelFactory factory, MBeanServer server,
