@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.22 2010/03/05 09:05:18 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.23 2010/07/07 09:40:09 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
-            "pbcast.NAKACK(gc_lag=0;log_discard_msgs=false;log_not_found_msgs=false)" +
+            "pbcast.NAKACK(use_mcast_xmit=false;gc_lag=0;log_discard_msgs=false;log_not_found_msgs=false)" +
             ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
 
     static final String flush_props=simple_props + ":pbcast.FLUSH";
@@ -75,6 +75,14 @@ public class GMS_MergeTest extends ChannelTestBase {
 
     public static void testMergeAsymmetricPartitionsWithFlush() throws Exception {
         _testMergeAsymmetricPartitions(flush_props, "testMergeAsymmetricPartitionsWithFlush");
+    }
+
+    public static void testMergeAsymmetricPartitions2() throws Exception {
+        _testMergeAsymmetricPartitions2(simple_props, "testMergeAsymmetricPartitions2");
+    }
+
+    public static void testMergeAsymmetricPartitionsWithFlush2() throws Exception {
+        _testMergeAsymmetricPartitions2(flush_props, "testMergeAsymmetricPartitionsWithFlush2");
     }
     
     
@@ -357,6 +365,86 @@ public class GMS_MergeTest extends ChannelTestBase {
              close(channels);
          }
      }
+
+
+/**
+     * Tests the merge of the following partitions:
+     * <ul>
+     * <li>A: {A,B}
+     * <li>B: {B}
+     * </ol>
+     * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
+     * @throws Exception
+     */
+    static void _testMergeAsymmetricPartitions2(String props, String cluster_name) throws Exception {
+        JChannel[] channels=null;
+        MyReceiver[] receivers;
+        final int NUM=10;
+         try {
+             // use simple IDs for UUIDs, so sorting on merge will NOT change the view order
+             channels=create(props, true, cluster_name, "A", "B");
+             receivers=new MyReceiver[channels.length];
+             for(int i=0; i < channels.length; i++) {
+                 receivers[i]=new MyReceiver(channels[i].getName());
+                 channels[i].setReceiver(receivers[i]);
+             }
+
+             JChannel a=findChannel("A", channels), b=findChannel("B", channels);
+             print(channels);
+             View view=channels[channels.length -1].getView();
+             assert view.size() == channels.length : "view is " + view;
+
+             System.out.println("sending " + NUM + " msgs:");
+             for(int i=0; i < NUM; i++)
+                 for(JChannel ch: channels)
+                     ch.send(null, null, "Number #" + i + " from " + ch.getAddress());
+
+             waitForNumMessages(NUM * channels.length, 10000, 1000, receivers);
+             checkMessages(NUM * channels.length, receivers);
+
+             System.out.println("\ncreating partitions: ");
+             applyView(channels, "B", "B"); // B has view {B}
+
+             print(channels);
+             checkViews(channels, "A", "A", "B"); // A: {A,B}
+             checkViews(channels, "B", "B");      // B: {B}
+
+             for(MyReceiver receiver: receivers)
+                 receiver.clear();
+
+             Digest da=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             Digest db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db);
+
+             long end_time=System.currentTimeMillis() + 12000;
+             do {
+                 System.out.println("\n==== injecting merge event ====");
+                 injectMergeEvent(channels, a.getAddress(), "A", "B");
+                  injectMergeEvent(channels, b.getAddress(), "A", "B");
+                 Util.sleep(3000);
+                 if(allChannelsHaveView(channels, a.getView()))
+                     break;
+             }
+             while(end_time > System.currentTimeMillis());
+
+            /* long end_time=System.currentTimeMillis() + 12000;
+             do {
+                 if(allChannelsHaveView(channels, a.getView()))
+                     break;
+                 Util.sleep(3000);
+             }
+             while(end_time > System.currentTimeMillis());*/
+
+             System.out.println("\n");
+             print(channels);
+             assertAllChannelsHaveView(channels, a.getView());
+         }
+         finally {
+             close(channels);
+         }
+     }
+
+
 
     /**
      * First name is the channel name, the rest is the view to be applied
