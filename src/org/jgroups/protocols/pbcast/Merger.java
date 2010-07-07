@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.6 2010/06/11 05:41:32 belaban Exp $
+ * @version $Id: Merger.java,v 1.7 2010/07/07 09:38:17 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -201,6 +201,29 @@ public class Merger {
         digest_collector.add(sender, digest);
     }
 
+
+    /**
+     * Removes all members from a given view which don't have us in their view
+     * (https://jira.jboss.org/browse/JGRP-1061)
+     * @param map A map of members and their associated views
+     */
+    public static void sanitize(Map<Address,Collection<Address>> map) {
+        if(map == null)
+            return;
+        for(Map.Entry<Address,Collection<Address>> entry: map.entrySet()) {
+            Address key=entry.getKey();
+            Collection<Address> members=entry.getValue();
+            for(Iterator<Address> it=members.iterator(); it.hasNext();) {
+                Address val=it.next();
+                if(val.equals(key)) // we can always talk to ourself !
+                    continue;
+                Collection<Address> tmp_mbrs=map.get(val);
+                if(tmp_mbrs != null && !tmp_mbrs.contains(key)) {
+                    it.remove();
+                }
+            }
+        }
+    }
 
 
     /** Send back a response containing view and digest to sender */
@@ -475,6 +498,10 @@ public class Merger {
                 merge_participants.removeAll(coordinators);
                 for(Address merge_participant: merge_participants)
                     coords.putIfAbsent(merge_participant, Arrays.asList(merge_participant));
+
+                // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
+                // https://jira.jboss.org/browse/JGRP-1061
+                sanitize(coords);
 
                 thread=gms.getThreadFactory().newThread(this, "MergeTask");
                 thread.setDaemon(true);
