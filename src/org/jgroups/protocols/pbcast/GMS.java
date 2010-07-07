@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.201 2010/06/15 06:44:38 belaban Exp $
+ * @version $Id: GMS.java,v 1.202 2010/07/07 09:37:23 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
@@ -103,7 +103,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
     @Property(converter=PropertyConverters.FlushInvoker.class,name="flush_invoker_class")
-    private Class<Callable<Boolean>> flushInvokerClass;
+    protected Class<Callable<Boolean>> flushInvokerClass;
     
     private GmsImpl impl=null;
     private final Object impl_mutex=new Object(); // synchronizes event entry into impl
@@ -690,52 +690,50 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(final View new_view) {
-        if(flushInvokerClass == null){
-	        Callable<Boolean> invoker = new Callable<Boolean>(){
-				public Boolean call() throws Exception {
-					int maxAttempts =4;
-					long randomFloor=1000L;
-					long randomCeiling=5000L;
-					
-					boolean successfulFlush=true;
-			        boolean validView=new_view != null && new_view.size() > 0;
-			        if(validView && flushProtocolInStack) {
-			        	
-			        	int attemptCount = 0;
-			            while(attemptCount < maxAttempts){
-			            	successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
-			            	if(successfulFlush)
-			            		break;
-			            	Util.sleepRandom(randomFloor,randomCeiling);
-			            	attemptCount++;
-			            }
-			            
-			            if(successfulFlush) {
-			                if(log.isTraceEnabled())
-			                    log.trace(local_addr + ": successful GMS flush by coordinator");
-			            }
-			            else {
-                            if(log.isWarnEnabled())
-                                log.warn(local_addr + ": GMS flush by coordinator failed");
-			            }
-			        }
-			        return successfulFlush;
-				}
-	        };
-	        try {
-				return invoker.call();
-			} catch (Exception e) {
-				return false;
-			}
+    boolean startFlush(View view) {
+        return _startFlush(view, 4, 1000L, 5000L);
+    }
+
+    boolean startFlush(View view, int maxAttempts, long floor, long ceiling) {
+        return _startFlush(view, maxAttempts, floor, ceiling);
+    }
+
+    protected boolean _startFlush(final View new_view, int maxAttempts, long randomFloor, long randomCeiling) {
+        if(flushInvokerClass != null) {
+            try {
+                Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
+                return invoker.call();
+            } catch (Throwable e) {
+                return false;
+            }
         }
-        else{
-        	try {
-				Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
-				return invoker.call();
-			} catch (Exception e) {
-				return false;
-			}
+
+        try {
+            boolean successfulFlush=true;
+            boolean validView=new_view != null && new_view.size() > 0;
+            if(validView && flushProtocolInStack) {
+
+                int attemptCount = 0;
+                while(attemptCount < maxAttempts){
+                    successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+                    if(successfulFlush)
+                        break;
+                    Util.sleepRandom(randomFloor,randomCeiling);
+                    attemptCount++;
+                }
+
+                if(successfulFlush) {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": successful GMS flush by coordinator");
+                }
+                else {
+                    if(log.isWarnEnabled())
+                        log.warn(local_addr + ": GMS flush by coordinator failed");
+                }
+            }
+            return successfulFlush;
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -1203,7 +1201,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.201 2010/06/15 06:44:38 belaban Exp $
+     * @version $Id: GMS.java,v 1.202 2010/07/07 09:37:23 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                     thread;
