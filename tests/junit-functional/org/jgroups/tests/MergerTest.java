@@ -10,11 +10,11 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: MergerTest.java,v 1.1 2010/07/07 09:38:51 belaban Exp $
+ * @version $Id: MergerTest.java,v 1.2 2010/07/07 09:43:11 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class MergerTest {
-    private final Address a=Util.createRandomAddress("A"),
+    private final static Address a=Util.createRandomAddress("A"),
             b=Util.createRandomAddress("B"),
             c=Util.createRandomAddress("C"),
             d=Util.createRandomAddress("D"),
@@ -89,6 +89,33 @@ public class MergerTest {
         assert map.get(a).size() == 1;
         assert map.get(b).size() == 1;
     }
+
+
+     /**
+      * A: AB
+      * B: BC
+      * C: CD
+      * D: DE
+      */
+     public void testOverlappingMerge3() {
+         Map<Address, Collection<Address>> map=new HashMap<Address,Collection<Address>>();
+         map.put(a, makeList(a,b));
+         map.put(b, makeList(b,c));
+         map.put(c, makeList(c,d));
+         map.put(d, makeList(d,e));
+         System.out.println("map = " + map);
+
+         assert map.size() == 4;
+         Merger.sanitize(map);
+         System.out.println("map after sanitization: " + map);
+
+         assert map.size() == 4;
+         assert map.get(a).size() == 1;
+         assert map.get(b).size() == 1;
+         assert map.get(c).size() == 1;
+         assert map.get(d).size() == 2;
+     }
+
 
     private static <T> Collection<T> makeList(T ... elements) {
         return new ArrayList<T>(Arrays.asList(elements));
