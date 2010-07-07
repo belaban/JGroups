@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.265 2010/06/15 10:10:38 belaban Exp $
+ * @version $Id: Util.java,v 1.266 2010/07/07 09:36:25 belaban Exp $
  */
 public class Util {
 
@@ -2039,7 +2039,7 @@ public class Util {
 
     /**
      * Determines the members which take part in a merge. The resulting list consists of all merge coordinators
-     * and members outside a merge partition, e.g. for views A={B,A,C}, B={B,C} and C={B,C}, the merge coordinator
+     * plus members outside a merge partition, e.g. for views A={B,A,C}, B={B,C} and C={B,C}, the merge coordinator
      * is B, but the merge participants are B and A.
      * @param map
      * @return
@@ -2114,8 +2114,11 @@ public class Util {
 
 
     public static Address createRandomAddress() {
+        return createRandomAddress(generateLocalName());
+    }
+
+    public static Address createRandomAddress(String name) {
         UUID retval=UUID.randomUUID();
-        String name=generateLocalName();
         UUID.add(retval, name);
         return retval;
     }
