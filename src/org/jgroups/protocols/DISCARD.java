@@ -1,13 +1,10 @@
-// $Id: DISCARD.java,v 1.39 2010/06/15 06:44:35 belaban Exp $
+// $Id: DISCARD.java,v 1.40 2010/07/08 10:03:54 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.Event;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -25,6 +22,7 @@ import java.util.*;
  * all messages (not very useful).
  */
 @Unsupported
+@MBean(description="Discards messages")
 public class DISCARD extends Protocol {
     @Property
     double up=0.0;    // probability of dropping up   msgs
