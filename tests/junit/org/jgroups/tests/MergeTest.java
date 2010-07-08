@@ -1,8 +1,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.MERGEFAST;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -12,7 +16,7 @@ import java.util.*;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.40 2009/09/26 05:37:17 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.41 2010/07/08 08:20:37 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -75,9 +79,14 @@ public class MergeTest extends ChannelTestBase {
                 tmp=createChannel(ch);
             }
             tmp.setName(members[i]);
-            NAKACK nakack=(NAKACK)tmp.getProtocolStack().findProtocol(NAKACK.class);
+            ProtocolStack stack=tmp.getProtocolStack();
+
+            NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
             if(nakack != null)
                 nakack.setLogDiscardMessages(false);
+
+            stack.removeProtocol(MERGE2.class, MERGE3.class, MERGEFAST.class);
+
             tmp.connect(cluster_name);
             retval[i]=tmp;
         }
