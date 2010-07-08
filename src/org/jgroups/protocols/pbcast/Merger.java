@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.7 2010/07/07 09:38:17 belaban Exp $
+ * @version $Id: Merger.java,v 1.8 2010/07/08 11:52:35 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -204,23 +204,41 @@ public class Merger {
 
     /**
      * Removes all members from a given view which don't have us in their view
-     * (https://jira.jboss.org/browse/JGRP-1061)
+     * (https://jira.jboss.org/browse/JGRP-1061). Example:
+     * <pre>
+     * A: AB
+     * B: AB
+     * C: ABC
+     * </pre>
+     * becomes
+     * <pre>
+     * A: AB
+     * B: AB
+     * C: C // A and B don't have C in their views
+     * </pre>
      * @param map A map of members and their associated views
      */
-    public static void sanitize(Map<Address,Collection<Address>> map) {
+    public static void sanitizeViews(Map<Address,View> map) {
         if(map == null)
             return;
-        for(Map.Entry<Address,Collection<Address>> entry: map.entrySet()) {
+        for(Map.Entry<Address,View> entry: map.entrySet()) {
             Address key=entry.getKey();
-            Collection<Address> members=entry.getValue();
+            Collection<Address> members=new ArrayList<Address>(entry.getValue().getMembers());
+            boolean modified=false;
             for(Iterator<Address> it=members.iterator(); it.hasNext();) {
                 Address val=it.next();
                 if(val.equals(key)) // we can always talk to ourself !
                     continue;
-                Collection<Address> tmp_mbrs=map.get(val);
+                View view=map.get(val);
+                final Collection<Address> tmp_mbrs=view != null? view.getMembers() : null;
                 if(tmp_mbrs != null && !tmp_mbrs.contains(key)) {
                     it.remove();
+                    modified=true;
                 }
+            }
+            if(modified) {
+                View old_view=entry.getValue();
+                entry.setValue(new View(old_view.getVid(), members));
             }
         }
     }
@@ -484,6 +502,10 @@ public class Merger {
             if(thread == null || thread.isAlive()) {
                 this.coords.clear();
 
+                // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
+                // https://jira.jboss.org/browse/JGRP-1061
+                sanitizeViews(views);
+                
                 // Add all different coordinators of the views into the hashmap and sets their members:
                 Collection<Address> coordinators=Util.determineMergeCoords(views);
                 for(Address coord: coordinators) {
@@ -496,12 +518,11 @@ public class Merger {
                 // membership list consists only of themselves
                 Collection<Address> merge_participants=Util.determineMergeParticipants(views);
                 merge_participants.removeAll(coordinators);
-                for(Address merge_participant: merge_participants)
-                    coords.putIfAbsent(merge_participant, Arrays.asList(merge_participant));
-
-                // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
-                // https://jira.jboss.org/browse/JGRP-1061
-                sanitize(coords);
+                for(Address merge_participant: merge_participants) {
+                    Collection<Address> tmp=new ArrayList<Address>();
+                    tmp.add(merge_participant);
+                    coords.putIfAbsent(merge_participant, tmp);
+                }
 
                 thread=gms.getThreadFactory().newThread(this, "MergeTask");
                 thread.setDaemon(true);
