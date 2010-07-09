@@ -259,7 +259,7 @@ public abstract class BasicConnectionTable {
            entry=it.next();
            key=entry.getKey();
            val=entry.getValue();
-           ret.append("key: " + key + ": " + val + '\n');
+           ret.append(key + ": " + val + '\n');
        }
        ret.append('\n');
        return ret.toString();
