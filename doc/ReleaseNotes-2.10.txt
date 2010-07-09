@@ -1,0 +1,75 @@
+
+
+Release Notes JGroups 2.10
+==========================
+
+
+Version: $Id: ReleaseNotes-2.10.txt,v 1.1 2010/07/09 14:12:39 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.10 is API-backwards compatible with previous versions (down to 2.2.7).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+New features
+============
+
+
+
+Unsupported or experimental classes are now listed
+--------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-253]
+
+All classes with an @Experimental or @Unsupported annotation are now listed in the manual at
+http://www.jgroups.org/manual/html/ch02.html, chapter 2.13.
+
+
+
+
+
+
+
+
+
+
+Optimizations
+=============
+
+
+bla
+-------
+[https://jira.jboss.org/jira/browse/JGRP-XXX]
+
+
+
+
+
+Bug fixes
+=========
+
+bla
+-----------------
+[https://jira.jboss.org/jira/browse/JGRP-XXX]
+
+On disconnect / reconnect, TCPGOSSIP could have a leak.
+
+
+
+
+Manual
+======
+
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Toronto, Canada
+
+July 2010
+
