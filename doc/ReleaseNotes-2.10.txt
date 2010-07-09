@@ -4,7 +4,7 @@ Release Notes JGroups 2.10
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.10.txt,v 1.2 2010/07/09 14:26:57 belaban Exp $
+Version: $Id: ReleaseNotes-2.10.txt,v 1.3 2010/07/09 14:54:38 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.10 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -52,6 +52,54 @@ See http://www.jgroups.org/manual/html/user-advanced.html#Scopes for details.
 
 
 
+UNICAST2: experimental version of UNICAST based on negative acks
+----------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1140]
+
+By not sending acks for received messages, we can cut down on the number of acks. UNICAST2 is ca 20-30% faster than
+UNICAST as a result. Needs more testing though, currently UNICAST2 is experimental.
+
+
+
+Certain IPv4 addresses should be allowed in an IPv6 stack
+---------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1152]
+
+They will be converted into IPv6 mapped IPv4 addresses. This relaxes the (too restrictive) IP address conformance
+testing somewhat, and allows for more configurations to actually start the stack and not fail with an exception.
+
+
+
+Multiple components using the same channel
+------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1177]
+
+This is a new light weight version of the (old and dreaded !) Multiplexer, which allows for sharing of channels between
+components, such as for example HAPartition and Infinispan.
+
+*** Only to be used by experts ! ***
+
+
+
+
+MERGE2: fast merge
+------------------
+[https://jira.jboss.org/browse/JGRP-1191]
+
+Fast merge in case where we receive messages from a member which is not part of our group, but has the same
+group name.
+
+
+
+RpcDispatcher / MessageDispatcher: add exclusion list
+-----------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1192]
+
+If an RPC needs to be sent to all nodes in a cluster except one node (e.g. the sender itself), then we can simply
+exclude the sender. This is done using RequestOptions.setExclusionList(Address ... excluded_mbrs). This is simpler
+than having to create the full list, and remove the sender.
+
+
 
 
 
@@ -75,16 +123,34 @@ scheme.
 
 
 
+UNICAST: only the highest message is ack'ed
+-------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1131]
+
+This reduces the number of acks to be sent
+
+
+
+
+AckReceiverWindow: make non-blocking
+------------------------------------
+[https://jira.jboss.org/browse/JGRP-1132]
+
+This made UNICAST faster, too.
+
+
+
+
 
 
 Bug fixes
 =========
 
-bla
------------------
-[https://jira.jboss.org/jira/browse/JGRP-XXX]
+FLUSH failed on asymmetric partitions
+-------------------------------------
+[https://jira.jboss.org/browse/JGRP-1061]
 
-On disconnect / reconnect, TCPGOSSIP could have a leak.
+FLUSH would fail on merging of partitions like these: A: {A,B}, B: {B}. This caused a merge to fail as well.
 
 
 
