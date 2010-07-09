@@ -4,7 +4,7 @@ Release Notes JGroups 2.10
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.10.txt,v 1.3 2010/07/09 14:54:38 belaban Exp $
+Version: $Id: ReleaseNotes-2.10.txt,v 1.4 2010/07/09 15:07:36 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.10 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -101,6 +101,30 @@ than having to create the full list, and remove the sender.
 
 
 
+Ability to use keywords instead of IP addresses
+-----------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1204]
+
+Whenever IP addresses (symbolic or dotted-decimal notation) are used, we can now use a keyword instead. Currently,
+the keywords are "GLOBAL" (public IP address), "SITE_LOCAL" (private IP address), "LINK_LOCAL" (link local),
+"LOOPBACK" (a loopback address) and "NON_LOOPBACK" (any but a loopback address).
+This is useful in cloud environments where IP address may not be known beforehand.
+Example: java -Djgroups.bind_addr=SITE_LOCAL
+Example: <UDP bind_addr="GLOBAL" ... />
+
+
+
+
+GossipRouter: re-introduce pinging to detect crashed clients
+------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1213]
+
+When clients are terminated without closing of sockets (e.g. in virtualized environments), they'd cause their
+entries to not be removed in GossipRouter. This was changed by (re-)introducing pinging.
+
+
+
+
 
 
 
@@ -141,6 +165,13 @@ This made UNICAST faster, too.
 
 
 
+STREAMING_STATE_TRANSFER slow
+-----------------------------
+[https://jira.jboss.org/browse/JGRP-1223]
+
+Due to incorrect use of a stream.
+
+
 
 
 Bug fixes
@@ -151,6 +182,16 @@ FLUSH failed on asymmetric partitions
 [https://jira.jboss.org/browse/JGRP-1061]
 
 FLUSH would fail on merging of partitions like these: A: {A,B}, B: {B}. This caused a merge to fail as well.
+
+
+
+S3_PING / FILE_PING fixes and optimizations
+--------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1216]: remove failed members
+[https://jira.jboss.org/browse/JGRP-1218]: failure to create a bucket, but no exception thrown
+[https://jira.jboss.org/browse/JGRP-1215]: ditto
+[https://jira.jboss.org/browse/JGRP-1219]: create unique bucket names to avoid collisions
+[https://jira.jboss.org/browse/JGRP-1217]: UUIDs instead of logical names, also to avoid collisions
 
 
 
