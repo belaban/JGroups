@@ -4,7 +4,7 @@ Release Notes JGroups 2.10
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.10.txt,v 1.1 2010/07/09 14:12:39 belaban Exp $
+Version: $Id: ReleaseNotes-2.10.txt,v 1.2 2010/07/09 14:26:57 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.10 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -26,6 +26,29 @@ http://www.jgroups.org/manual/html/ch02.html, chapter 2.13.
 
 
 
+Use of factory to create sockets
+--------------------------------
+[https://jira.jboss.org/browse/JGRP-278]
+
+There's now a method Protocol.setSocketFactory(SocketFactory) which allows to set a socket factory, used to create and
+close datagram and TCP (client and server) sockets. The default implementation keeps track of open sockets, so
+./probe.sh socks
+dumps a list of open sockets.
+
+
+
+SCOPE: concurrent delivery of messages from the same sender
+-----------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-822]
+
+By default, messages from a sender P are delivered in the (FIFO) order in which P sent them (ignoring OOB messages for
+now). However, sometimes it would be beneficial to deliver unrelated messages concurrently, e.g. modifications sent by P
+for different HTTP sessions.
+
+SCOPE is a new protocol, which allows a developer to define a scope for a message, and that scope is then used to
+deliver messages from P concurrently.
+
+See http://www.jgroups.org/manual/html/user-advanced.html#Scopes for details.
 
 
 
@@ -37,9 +60,18 @@ Optimizations
 =============
 
 
-bla
--------
-[https://jira.jboss.org/jira/browse/JGRP-XXX]
+Use of IDs rather than names for headers
+----------------------------------------
+[https://jira.jboss.org/browse/JGRP-932]
+
+
+Messages have a hashmap, where keys are strings and values headers. This is inefficient, as strings can get quite large
+if someone picks a long name for a protocol. Strings were therefore changed into IDs (a short), which saves space,
+both in the marshalled form (fewer bytes) and in memory. Plus, the lookup for a given protocol is probably faster, too,
+as no string comparison has to be done.
+
+This is an incompatible change for protocol developers, but it is simple to change existing protocols to use the new
+scheme.
 
 
 
