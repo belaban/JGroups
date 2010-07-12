@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.14 2010/07/12 11:31:59 belaban Exp $
+$Id: ManualTests.txt,v 1.15 2010/07/12 12:07:06 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -138,9 +138,9 @@ Test 11
 -------
 
 - Start A, B
-- Shun A (CTRL-Z and then fg)
-- When A has rejoined the group, kill A
-- The view needs to be {B} now
+- Suspend A (CTRL-Z)
+- Wait until B shows membershiop of 1, then resume A (fg)
+- A and B needs to merge back into a group of 2
 
 
 
