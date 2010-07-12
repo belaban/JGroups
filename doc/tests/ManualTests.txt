@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.13 2009/01/05 12:14:00 belaban Exp $
+$Id: ManualTests.txt,v 1.14 2010/07/12 11:31:59 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -12,7 +12,6 @@ tests should be executed before releasing a new version of JGroups.
 - All the tests use the JGroups/Demos/Draw program
 - All tests should be run with both FD and FD_SOCK
 - All test should be run with FLUSH (flush-udp.xml) and without FLUSH (udp.xml)
-- When FLUSH is used tests should be run with both Channel.BLOCK turned off and on
 
 
 When *FD only* is used make sure that timeout and max_tries are relatively low. For example,

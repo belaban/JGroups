@@ -4,7 +4,7 @@ Release Notes JGroups 2.10
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.10.txt,v 1.4 2010/07/09 15:07:36 belaban Exp $
+Version: $Id: ReleaseNotes-2.10.txt,v 1.5 2010/07/12 11:29:58 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.10 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -192,7 +192,6 @@ S3_PING / FILE_PING fixes and optimizations
 [https://jira.jboss.org/browse/JGRP-1215]: ditto
 [https://jira.jboss.org/browse/JGRP-1219]: create unique bucket names to avoid collisions
 [https://jira.jboss.org/browse/JGRP-1217]: UUIDs instead of logical names, also to avoid collisions
-
 
 
 
