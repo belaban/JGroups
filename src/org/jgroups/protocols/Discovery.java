@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.73 2010/04/08 09:36:24 belaban Exp $
+ * @version $Id: Discovery.java,v 1.74 2010/07/12 10:35:25 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -107,6 +107,10 @@ public abstract class Discovery extends Protocol {
     }
 
     public void handleConnect() {
+    }
+
+    public void discoveryRequestReceived(Address sender, String logical_name, Collection<PhysicalAddress> physical_addrs) {
+        
     }
 
     public long getTimeout() {
@@ -308,6 +312,7 @@ public abstract class Discovery extends Protocol {
                                 down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                             if(logical_addr != null && data.getLogicalName() != null)
                                 UUID.add((UUID)logical_addr, data.getLogicalName());
+                            discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
                         }
 
                         if(return_entire_cache && !hdr.return_view_only) {
