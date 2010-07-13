@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.44 2010/06/22 13:16:40 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.45 2010/07/13 12:28:03 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -211,7 +211,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     /**
     * Try to obtain correct Connection (or create one if not yet existent)
     */
-   ConnectionTable.Connection getConnection(Address dest) throws Exception
+   BasicConnectionTable.Connection getConnection(Address dest) throws Exception
    {
       Connection conn;
       SocketChannel sock_ch;
@@ -953,7 +953,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       }
    }
 
-   class Connection extends ConnectionTable.Connection {
+   class Connection extends BasicConnectionTable.Connection {
       private SocketChannel sock_ch = null;
       private WriteHandler m_writeHandler;
       private SelectorWriteHandler m_selectorWriteHandler;
