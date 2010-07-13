@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>2.10.0.GA</version>
+    <version>2.11.0.Alpha1</version>
     <url>http://www.jgroups.org</url>
 
 
