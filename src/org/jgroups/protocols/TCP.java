@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.62 2010/06/15 10:10:40 belaban Exp $
+// $Id: TCP.java,v 1.63 2010/07/13 12:40:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -24,7 +24,7 @@ import java.util.Collection;
  * as well.
  * <p>
  * 
- * This functionality is in ConnectionTable, which is used by TCP. TCP sends
+ * This functionality is in TCPConnectionMap, which is used by TCP. TCP sends
  * messages using ct.send() and registers with the connection table to receive
  * all incoming messages.
  * 
@@ -62,7 +62,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     }
 
     public void start() throws Exception {
-        ct=createConnectionTable(reaper_interval,
+        ct=createConnectionMap(reaper_interval,
                               conn_expire_time,
                               bind_addr,
                               external_addr,
@@ -117,15 +117,14 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
      * @param bindAddress
      * @param startPort
      * @throws Exception
-     * @return ConnectionTable Sub classes overrides this method to initialize a
-     *         different version of ConnectionTable.
+     * @return TCPConnectionMap Subclasses override this method to initialize a different version of ConnectionMap
      */
-    protected TCPConnectionMap createConnectionTable(long reaperInterval,
-                                                     long connExpireTime,
-                                                     InetAddress bindAddress,
-                                                     InetAddress externalAddress,
-                                                     int startPort,
-                                                     int endPort
+    protected TCPConnectionMap createConnectionMap(long reaperInterval,
+                                                   long connExpireTime,
+                                                   InetAddress bindAddress,
+                                                   InetAddress externalAddress,
+                                                   int startPort,
+                                                   int endPort
     ) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {

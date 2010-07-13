@@ -1,4 +1,4 @@
-// $Id: ConnectionMapDemo.java,v 1.1 2010/07/13 12:28:01 belaban Exp $
+// $Id: ConnectionMapDemo.java,v 1.2 2010/07/13 12:40:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -122,13 +122,13 @@ public class ConnectionMapDemo implements TCPConnectionMap.Receiver, AbstractCon
             }
         }
         catch(Exception ex) {
-            System.err.println("ConnectionTableDemo.main(): " + ex);
+            System.err.println("ConnectionMapDemo.main(): " + ex);
         }
     }
 
 
     static void help() {
-        System.out.println("ConnectionTableDemo [-help] [-local_port <port>] [-remote_host <host>] " +
+        System.out.println("ConnectionMapDemo [-help] [-local_port <port>] [-remote_host <host>] " +
                            "[-remote_port <port>] [-reaper_interval <interval (msecs)>] " +
                            "[-conn_expire_time <time (msecs)>]");
     }
