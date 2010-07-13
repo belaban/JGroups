@@ -13,6 +13,9 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.*;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +29,7 @@ public class TCPConnectionMap{
     private final Address local_addr; // bind_addr + port of srv_sock
     private final ThreadGroup thread_group=new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionTable");     
     private final ServerSocket srv_sock;
-    private final Receiver receiver;
+    private Receiver receiver;
     private final long conn_expire_time;
     private final Log log=LogFactory.getLog(getClass());
     private int recv_buf_size=120000;
@@ -82,12 +85,28 @@ public class TCPConnectionMap{
         return local_addr;
     }
 
+    public Receiver getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(Receiver receiver) {
+        this.receiver=receiver;
+    }
+
     public SocketFactory getSocketFactory() {
         return socket_factory;
     }
 
     public void setSocketFactory(SocketFactory socket_factory) {
         this.socket_factory=socket_factory;
+    }
+
+    public void addConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
+        mapper.addConnectionMapListener(l);
+    }
+
+    public void removeConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
+        mapper.removeConnectionMapListener(l);
     }
 
     /**
@@ -321,6 +340,10 @@ public class TCPConnectionMap{
         return mapper.getNumConnections();
     }
 
+    public boolean connectionEstablishedTo(Address addr) {
+        return mapper.connectionEstablishedTo(addr);
+    }
+
     public String printConnections() {
         return mapper.printConnections();
     }
@@ -336,8 +359,17 @@ public class TCPConnectionMap{
     public int getSenderQueueSize() {
         return send_queue_size;
     }
+
+    public String toString() {
+        StringBuilder ret=new StringBuilder();
+        ret.append("local_addr=" + local_addr).append("\n");
+        ret.append("connections (" + mapper.size() + "):\n");
+        ret.append(mapper.toString());
+        ret.append('\n');
+        return ret.toString();
+    }
     
-    private class TCPConnection implements Connection {
+    public class TCPConnection implements Connection {
 
         private final Socket sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
         private final Lock send_lock=new ReentrantLock(); // serialize send()        
@@ -753,7 +785,35 @@ public class TCPConnectionMap{
                 getLock().unlock();
             }
             return conn;
-        }       
-    }   
+        }
+
+        public boolean connectionEstablishedTo(Address address) {
+            lock.lock();
+            try {
+                TCPConnection conn=conns.get(address);
+                return conn != null && conn.isConnected();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        public int size() {return conns.size();}
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+
+            getLock().lock();
+            try {
+                for(Map.Entry<Address,TCPConnection> entry: conns.entrySet()) {
+                    sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                }
+                return sb.toString();
+            }
+            finally {
+                getLock().unlock();
+            }
+        }
+    }
 }
 

@@ -4,8 +4,9 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.ConnectionTable;
-import org.jgroups.blocks.BasicConnectionTable;
+import org.jgroups.blocks.TCPConnectionMap;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -14,26 +15,28 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ConnectionTableUnitTest.java,v 1.5 2008/05/20 12:49:07 belaban Exp $
+ * @version $Id: ConnectionMapUnitTest.java,v 1.1 2010/07/13 12:28:00 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
-public class ConnectionTableUnitTest {
-    ConnectionTable  ct1, ct2;
+public class ConnectionMapUnitTest {
+    TCPConnectionMap ct1, ct2;
     static final int port1=5555, port2=6666;
-
 
 
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ct1=new ConnectionTable(port1);
+        ct1=new TCPConnectionMap("TCPConnectionMap1",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
+                                 null, null, null, port1, port1);
+
         ct1.setUseSendQueues(false);
         ct1.start();
-        // log("address of ct1: " + ct1.getLocalAddress());
-        ct2=new ConnectionTable(port2);
+        ct2=new TCPConnectionMap("TCPConnectionMap2",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
+                                 null, null, null, port2, port2);
         ct2.setUseSendQueues(false);
         ct2.start();
-        //log("address of ct2: " + ct2.getLocalAddress());
     }
 
     @AfterMethod
@@ -60,7 +63,7 @@ public class ConnectionTableUnitTest {
     public void testSendEmptyData() throws Exception {
         byte[]  data=new byte[0];
         Address myself=ct1.getLocalAddress();
-        ct1.setReceiver(new BasicConnectionTable.Receiver() {
+        ct1.setReceiver(new TCPConnectionMap.Receiver() {
             public void receive(Address sender, byte[] data, int offset, int length) {}
         });
         ct1.send(myself, data, 0, data.length);
@@ -144,13 +147,13 @@ public class ConnectionTableUnitTest {
 
 
 
-    static class MyReceiver implements ConnectionTable.Receiver {
-        long            num_expected=0, num_received=0, start_time=0, stop_time=0;
-        boolean         done=false, send_response=false;
-        long            modulo;
-        ConnectionTable ct;
+    static class MyReceiver implements TCPConnectionMap.Receiver {
+        long             num_expected=0, num_received=0, start_time=0, stop_time=0;
+        boolean          done=false, send_response=false;
+        long             modulo;
+        TCPConnectionMap ct;
 
-        MyReceiver(ConnectionTable ct, long num_expected, boolean send_response) {
+        MyReceiver(TCPConnectionMap ct, long num_expected, boolean send_response) {
             this.ct=ct;
             this.num_expected=num_expected;
             this.send_response=send_response;
