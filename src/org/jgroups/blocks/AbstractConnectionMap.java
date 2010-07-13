@@ -127,8 +127,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     }
 
     /**
-     * Removes all connections from ConnectionTable which are not in
-     * current_mbrs
+     * Removes all connections which are not in current_mbrs
      * 
      * @param current_mbrs
      */

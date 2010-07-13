@@ -39,8 +39,8 @@ public abstract class BasicTCP extends TP {
     @Property(description="Send buffer size in bytes")
     int send_buf_size=150000;
     
-    @Property(description="Max time allowed for a socket creation in ConnectionTable")
-    int sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+    @Property(description="Max time allowed for a socket creation in connection table")
+    int sock_conn_timeout=2000; // max time in millis for a socket creation in connection table
     
     @Property(description="Max time to block on reading of peer address")
     int peer_addr_read_timeout=1000; // max time to block on reading of peer address
@@ -131,7 +131,7 @@ public abstract class BasicTCP extends TP {
                 if(physical_addr != null)
                     physical_mbrs.add(physical_addr);
             }
-            retainAll(physical_mbrs); // remove all connections from the ConnectionTable which are not members
+            retainAll(physical_mbrs); // remove all connections which are not members
         }
         return ret;
     }

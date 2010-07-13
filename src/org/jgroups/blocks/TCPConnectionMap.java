@@ -27,7 +27,7 @@ public class TCPConnectionMap{
     private final Mapper mapper;
     private final InetAddress bind_addr;
     private final Address local_addr; // bind_addr + port of srv_sock
-    private final ThreadGroup thread_group=new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionTable");     
+    private final ThreadGroup thread_group=new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionMap");
     private final ServerSocket srv_sock;
     private Receiver receiver;
     private final long conn_expire_time;
@@ -78,7 +78,7 @@ public class TCPConnectionMap{
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
         
-        acceptor=f.newThread(thread_group, new ConnectionAcceptor(),"ConnectionTable.Acceptor");
+        acceptor=f.newThread(thread_group, new ConnectionAcceptor(),"ConnectionMap.Acceptor");
     }    
     
     public Address getLocalAddress() {       
@@ -516,7 +516,7 @@ public class TCPConnectionMap{
                 byte[] input_cookie=new byte[cookie.length];
                 in.readFully(input_cookie, 0, input_cookie.length);
                 if(!matchCookie(input_cookie))
-                    throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie read by " + getLocalAddress()
+                    throw new SocketException("ConnectionMap.Connection.readPeerAddress(): cookie read by " + getLocalAddress()
                                               + " does not match own cookie; terminating connection");
                 // then read the version
                 short version=in.readShort();
