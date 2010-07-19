@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.312 2010/06/17 20:18:11 belaban Exp $
+ * @version $Id: TP.java,v 1.313 2010/07/19 06:27:02 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -522,7 +522,8 @@ public abstract class TP extends Protocol {
 
     public void setTimerThreadFactory(ThreadFactory factory) {
         timer_thread_factory=factory;
-        timer.setThreadFactory(factory);
+        if(timer instanceof DefaultTimeScheduler)
+            ((DefaultTimeScheduler)timer).setThreadFactory(factory);
     }
 
     public TimeScheduler getTimer() {return timer;}
@@ -723,7 +724,7 @@ public abstract class TP extends Protocol {
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
-        timer=new TimeScheduler(timer_thread_factory, num_timer_threads);
+        timer=new DefaultTimeScheduler(timer_thread_factory, num_timer_threads);
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);
 
@@ -787,12 +788,7 @@ public abstract class TP extends Protocol {
         }
 
         if(timer != null) {
-            try {
-                timer.stop();
-            }
-            catch(InterruptedException e) {
-                log.error("failed stopping the timer", e);
-            }
+            timer.stop();
         }
 
         // 3. Stop the thread pools
