@@ -1,31 +1,31 @@
 package org.jgroups.tests;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.AfterMethod;
-import org.jgroups.Global;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.util.Util;
-import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.util.DefaultTimeScheduler;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Set;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Stresses the NakreceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
+ * Stresses the NakReceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.8 2010/06/14 08:11:26 belaban Exp $
+ * @version $Id: NakReceiverWindowTest2.java,v 1.9 2010/07/19 07:19:50 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {
@@ -45,7 +45,7 @@ public class NakReceiverWindowTest2 {
         win=new NakReceiverWindow(self, new Retransmitter.RetransmitCommand() {
             public void retransmit(long first_seqno, long last_seqno, Address sender) {
             }
-        }, 0, 0, new TimeScheduler(2));
+        }, 0, 0, new DefaultTimeScheduler(2));
     }
 
     @AfterMethod
