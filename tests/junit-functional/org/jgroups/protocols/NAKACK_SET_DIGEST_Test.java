@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
  * @author Bela Ban
- * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.3 2010/03/05 09:05:37 belaban Exp $
+ * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.4 2010/07/19 07:26:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_SET_DIGEST_Test {
@@ -22,10 +22,9 @@ public class NAKACK_SET_DIGEST_Test {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        a=Util.createRandomAddress();
-        b=Util.createRandomAddress();
-        c=Util.createRandomAddress();
-        UUID.add((UUID)a, "A"); UUID.add((UUID)b, "B"); UUID.add((UUID)c, "C");
+        a=Util.createRandomAddress("A");
+        b=Util.createRandomAddress("B");
+        c=Util.createRandomAddress("C");
         nak=new NAKACK();
         d1=new MutableDigest(2);
         d1.add(a, 0, 11, 11);
@@ -43,7 +42,7 @@ public class NAKACK_SET_DIGEST_Test {
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
-            public TimeScheduler getTimer() {return new TimeScheduler(1);}
+            public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
         };
         transport.setId(TP_ID);
 

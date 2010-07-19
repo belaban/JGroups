@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.5 2010/03/05 09:05:37 belaban Exp $
+ * @version $Id: NAKACK_Delivery_Test.java,v 1.6 2010/07/19 07:27:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
@@ -36,9 +36,8 @@ public class NAKACK_Delivery_Test {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        c1=Util.createRandomAddress();
-        c2=Util.createRandomAddress();
-        UUID.add((UUID)c1, "C1"); UUID.add((UUID)c2, "C2");
+        c1=Util.createRandomAddress("C1");
+        c2=Util.createRandomAddress("C2");
         nak=new NAKACK();
 
         TP transport=new TP() {
@@ -48,7 +47,7 @@ public class NAKACK_Delivery_Test {
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
-            public TimeScheduler getTimer() {return new TimeScheduler(1);}
+            public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
         };
 
         transport.setId((short)100);

@@ -1,16 +1,15 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.11 2009/11/25 11:36:28 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.12 2010/07/19 07:25:37 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.util.Util;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 
@@ -23,7 +22,7 @@ import java.io.IOException;
  */
 public class NakReceiverWindowStressTest implements Retransmitter.RetransmitCommand {
     NakReceiverWindow win=null;
-    Address sender=null;
+    final Address sender=Util.createRandomAddress("A");
     int num_msgs=1000, prev_value=0;
     double discard_prob=0.0; // discard 0% of all insertions
     long start, stop;
@@ -51,10 +50,9 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
     public void start() throws IOException, InterruptedException {
         System.out.println("num_msgs=" + num_msgs + "\ndiscard_prob=" + discard_prob);
 
-        TimeScheduler timer=new TimeScheduler();
+        TimeScheduler timer=new DefaultTimeScheduler();
         try {
-            sender=new IpAddress("localhost", 5555);
-            win=new NakReceiverWindow(sender, this, 1, timer);
+            win=new NakReceiverWindow(sender, this, 0, timer);
             start=System.currentTimeMillis();
             sendMessages(num_msgs);
         }
@@ -119,7 +117,7 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
     }
 
 
-    void out(String msg) {
+    static void out(String msg) {
         System.out.println(msg);
     }
 
