@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.TimeScheduler;
@@ -16,7 +17,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.19 2010/01/15 12:24:00 belaban Exp $
+ * @version $Id: Simulator.java,v 1.20 2010/07/19 06:44:44 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -180,12 +181,7 @@ public class Simulator {
 		send_thread=null;
 		send_queue.close(false);
 		if(ad != null) {
-			try {
-				ad.getTimer().stop();
-			}
-			catch(InterruptedException e) {
-				e.printStackTrace();
-			}
+            ad.getTimer().stop();
 		}
 	}
 
@@ -360,7 +356,7 @@ public class Simulator {
 	class ProtocolAdapter extends TP {
 
 		ProtocolAdapter() {
-			timer=new TimeScheduler();
+			timer=new DefaultTimeScheduler();
 		}
 
         public boolean supportsMulticasting() {

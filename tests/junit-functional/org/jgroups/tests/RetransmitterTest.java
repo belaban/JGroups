@@ -1,4 +1,4 @@
-// $Id: RetransmitterTest.java,v 1.7 2009/11/25 11:36:27 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.8 2010/07/19 06:44:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,8 +6,9 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.DefaultRetransmitter;
-import org.jgroups.stack.StaticInterval;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.StaticInterval;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -16,14 +17,19 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class RetransmitterTest {
     private final Address sender=Util.createRandomAddress();
     private TimeScheduler timer;
+    private Retransmitter xmitter;
+
 
     @BeforeMethod
     void initTimer() {
-        timer=new TimeScheduler();
+        timer=new DefaultTimeScheduler();
+        xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
+        xmitter.reset();
     }
 
     @AfterMethod
@@ -32,8 +38,6 @@ public class RetransmitterTest {
     }
 
     public void testNoEntry() {
-        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
         Assert.assertEquals(0, size);
@@ -41,8 +45,6 @@ public class RetransmitterTest {
 
 
     public void testSingleEntry() {
-        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 1);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -51,8 +53,6 @@ public class RetransmitterTest {
 
 
     public void testEntry() {
-        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -61,8 +61,6 @@ public class RetransmitterTest {
 
 
     public void testMultipleEntries() {
-        Retransmitter xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
