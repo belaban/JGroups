@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.util.AgeOutCache;
-import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.annotations.DataProvider;
@@ -12,16 +11,14 @@ import org.testng.annotations.Test;
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.12 2010/07/19 06:36:11 belaban Exp $
+ * @version $Id: AgeOutCacheTest.java,v 1.13 2010/07/19 07:06:29 belaban Exp $
  */
 @Test(groups = Global.FUNCTIONAL,sequential=true)
 public class AgeOutCacheTest {
 
     @DataProvider(name="timerCreator")
     protected Object[][] timerCreator() {
-        return new Object[][] {
-                {new DefaultTimeScheduler(5)}
-        };
+        return Util.createTimer();
     }
 
 
