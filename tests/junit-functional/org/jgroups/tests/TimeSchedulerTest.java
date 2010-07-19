@@ -5,10 +5,12 @@ import org.jgroups.TimeoutException;
 import org.jgroups.Global;
 import org.jgroups.stack.Interval;
 import org.jgroups.stack.StaticInterval;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Date;
@@ -30,17 +32,26 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.11 2009/09/28 15:57:09 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.12 2010/07/19 06:37:39 belaban Exp $
  */
-@Test(groups="broken")
+@Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
     static final int NUM_MSGS=1000;
     static long[] xmit_timeouts={1000, 2000, 4000, 8000};
     static double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
 
 
-    public void testCancel() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @DataProvider(name="createTimer")
+    Object[][] createTimer() {
+        return new Object[][] {
+                {new DefaultTimeScheduler()},
+                // todo: add other TimeScheduler impls as well !
+        };
+    }
+
+
+    @Test(dataProvider="createTimer")
+    public void testCancel(TimeScheduler timer) throws InterruptedException {
         for(int i=0; i < 10; i++)
             timer.scheduleWithDynamicInterval(new OneTimeTask(1000));
         assert timer.size() == 10;
@@ -49,10 +60,10 @@ public class TimeSchedulerTest {
     }
 
 
-    public void testTaskCancellationBeforeTaskHasRun() throws InterruptedException {
+    @Test(dataProvider="createTimer")
+    public void testTaskCancellationBeforeTaskHasRun(TimeScheduler timer) throws InterruptedException {
         Future future;
         StressTask task=new StressTask();
-        TimeScheduler timer=new TimeScheduler();
         try {
             future=timer.scheduleWithDynamicInterval(task);
             assert timer.size() == 1;
@@ -62,7 +73,8 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions ==0 : "task should never have executed as it was cancelled before execution";
-            timer.purge(); // removes cancelled tasks
+            if(timer instanceof DefaultTimeScheduler)
+                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
             assert timer.size() == 0;
         }
         finally {
@@ -70,11 +82,11 @@ public class TimeSchedulerTest {
         }
     }
 
-    
-    public void testTaskCancellationAfterHasRun() throws InterruptedException {
+
+    @Test(dataProvider="createTimer")
+    public void testTaskCancellationAfterHasRun(TimeScheduler timer) throws InterruptedException {
         Future future;
         StressTask task=new StressTask();
-        TimeScheduler timer=new TimeScheduler();
         try {
             future=timer.scheduleWithDynamicInterval(task);
             assert timer.size() == 1;
@@ -87,7 +99,8 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 200ms";
-            timer.purge(); // removes cancelled tasks
+            if(timer instanceof DefaultTimeScheduler)
+                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
             assert timer.size() == 0;
         }
         finally {
@@ -96,11 +109,10 @@ public class TimeSchedulerTest {
     }
 
 
-
-    public  void testRepeatingTask() throws InterruptedException {
+    @Test(dataProvider="createTimer")
+    public  void testRepeatingTask(TimeScheduler timer) throws InterruptedException {
         Future future;
         RepeatingTask task=new RepeatingTask(300);
-        TimeScheduler timer=new TimeScheduler();
         try {
             future=timer.scheduleWithDynamicInterval(task);
             Util.sleep(3000);
@@ -119,7 +131,7 @@ public class TimeSchedulerTest {
         }
     }
 
-    private String printExecutionTimes(RepeatingTask task) {
+    private static String printExecutionTimes(RepeatingTask task) {
         StringBuilder sb=new StringBuilder();
         List<Long> times=task.getExecutionTimes();
         long base=times.get(0);
@@ -131,10 +143,9 @@ public class TimeSchedulerTest {
     }
 
 
-
-    public void testStress() throws InterruptedException {
+    @Test(dataProvider="createTimer")
+    public void testStress(TimeScheduler timer) throws InterruptedException {
         StressTask t;
-        TimeScheduler timer=new TimeScheduler();
         final int NUM_A=500, NUM_B=1000;
         int cnt=0, print=NUM_A * NUM_B / 10;
         try {
@@ -166,13 +177,11 @@ public class TimeSchedulerTest {
     }
 
 
-
-    public void testDynamicTask() throws InterruptedException {
+    @Test(dataProvider="createTimer")
+    public void testDynamicTask(TimeScheduler timer) throws InterruptedException {
         TimeScheduler.Task task=new DynamicTask();
-        TimeScheduler timer=new TimeScheduler();
         try {
             ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
-            Assert.assertEquals(1, timer.getQueue().size());
 
             assert !(future.isCancelled());
             assert !(future.isDone());
@@ -191,9 +200,8 @@ public class TimeSchedulerTest {
     }
 
 
-
-    public void testDynamicTaskCancel() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @Test(dataProvider="createTimer")
+    public void testDynamicTaskCancel(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask();
             ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
@@ -219,8 +227,8 @@ public class TimeSchedulerTest {
     }
 
 
-    public void testIsDone() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @Test(dataProvider="createTimer")
+    public void testIsDone(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask();
             ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
@@ -241,8 +249,9 @@ public class TimeSchedulerTest {
         }
     }
 
-    public void testIsDone2() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+
+    @Test(dataProvider="createTimer")
+    public void testIsDone2(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000,-1});
             ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
@@ -267,8 +276,8 @@ public class TimeSchedulerTest {
     }
 
 
-    public void testIsDone3() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @Test(dataProvider="createTimer")
+    public void testIsDone3(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{-1});
             ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
@@ -289,8 +298,8 @@ public class TimeSchedulerTest {
     }
 
 
-    public void testImmediateExecution() throws InterruptedException {
-        TimeScheduler timer=new TimeScheduler();
+    @Test(dataProvider="createTimer")
+    public void testImmediateExecution(TimeScheduler timer) throws InterruptedException {
         try {
             Promise<Boolean> p=new Promise<Boolean>();
             ImmediateTask task=new ImmediateTask(p);
@@ -311,9 +320,9 @@ public class TimeSchedulerTest {
     }
 
 
-    public void test2Tasks() throws InterruptedException {
+    @Test(dataProvider="createTimer")
+    public void test2Tasks(TimeScheduler timer) throws InterruptedException {
         int size;
-        TimeScheduler timer=new TimeScheduler();
         try {
             System.out.println(System.currentTimeMillis() + ": adding task");
             timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
@@ -357,11 +366,11 @@ public class TimeSchedulerTest {
       * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
       * more than 30% earlier or later than the scheduled retransmission time
       */
-     public void testRetransmits() throws InterruptedException {
+     @Test(dataProvider="createTimer")
+     public void testRetransmits(TimeScheduler timer) throws InterruptedException {
          Entry entry;
          int num_non_correct_entries=0;
          Map<Long,Entry> msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
-         TimeScheduler timer=new TimeScheduler();
 
          try {
              // 1. Add NUM_MSGS messages:
@@ -492,7 +501,7 @@ public class TimeSchedulerTest {
         public void run() {
             if(base == 0)
                 base=System.currentTimeMillis();
-            System.out.println((num +1) + ": this is the repeating task (" + (System.currentTimeMillis() - base) + "ms after start)");
+            System.out.println((num +1) + ": this is a repeating task (" + (System.currentTimeMillis() - base) + "ms after start)");
             execution_times.add(System.currentTimeMillis());
             num++;
         }
@@ -500,7 +509,6 @@ public class TimeSchedulerTest {
 
 
     static class StressTask implements TimeScheduler.Task {
-        boolean cancelled=false;
         int num_executions=0;
 
         public int getNumExecutions() {
@@ -524,7 +532,6 @@ public class TimeSchedulerTest {
         long second_xmit=0; // time between first_xmit and second_xmit should be ca. 2000ms
         long third_xmit=0;  // time between third_xmit and second_xmit should be ca. 4000ms
         long fourth_xmit=0; // time between third_xmit and second_xmit should be ca. 8000ms
-        boolean cancelled=false;
         Interval interval=new StaticInterval(xmit_timeouts);
         long seqno=0;
 
