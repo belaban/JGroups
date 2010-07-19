@@ -6,10 +6,10 @@ import java.util.concurrent.*;
 
 /** Cache which removes its elements after a certain time
  * @author Bela Ban
- * @version $Id: AgeOutCache.java,v 1.5 2009/07/20 16:50:41 belaban Exp $
+ * @version $Id: AgeOutCache.java,v 1.6 2010/07/19 06:28:22 belaban Exp $
  */
 public class AgeOutCache<K> {
-    private final ScheduledExecutorService timer;
+    private final TimeScheduler timer;
     private long timeout;
     private final ConcurrentMap<K,ScheduledFuture> map=new ConcurrentHashMap<K,ScheduledFuture>();
     private Handler handler=null;
@@ -19,12 +19,12 @@ public class AgeOutCache<K> {
     }
 
 
-    public AgeOutCache(ScheduledExecutorService timer, long timeout) {
+    public AgeOutCache(TimeScheduler timer, long timeout) {
         this.timer=timer;
         this.timeout=timeout;
     }
 
-    public AgeOutCache(ScheduledExecutorService timer, long timeout, Handler handler) {
+    public AgeOutCache(TimeScheduler timer, long timeout, Handler handler) {
         this(timer, timeout);
         this.handler=handler;
     }
