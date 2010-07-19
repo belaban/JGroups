@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.14 2010/06/14 08:11:26 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.15 2010/07/19 07:17:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -11,9 +11,7 @@ import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -21,41 +19,33 @@ import java.util.List;
 
 @Test(groups=Global.FUNCTIONAL)
 public class NakReceiverWindowTest {
-    private Address sender;
-    private MyRetransmitCommand cmd=new MyRetransmitCommand();
-    private TimeScheduler timer;
+    private static final Address sender=Util.createRandomAddress();
+    private static final MyRetransmitCommand cmd=new MyRetransmitCommand();
 
-    @BeforeMethod
-    void initTimer() {
-        timer=new TimeScheduler();
-    }
 
-    @AfterMethod
-    void destroyTimer() throws InterruptedException {
-        timer.stop();
+    @DataProvider(name="createTimer")
+    Object[][] createTimer() {
+        return Util.createTimer();
     }
 
 
-    @BeforeClass
-    protected void setUp() throws Exception {
-        sender=Util.createRandomAddress();
-    }
-
-
-    public void test1() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test1(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
         check(win, 0, 1, 1);
         assert win.get(23) == null;
     }
 
 
-    public void test2() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test2(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         check(win, 0, 100, 100);
     }
 
 
-    public void test3() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test3(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         assert win.get(1) != null;
@@ -70,14 +60,16 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test4() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test4(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
         win.add(2, new Message());
         check(win, 0, 2, 1);
     }
 
 
-    public void test5() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test5(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         win.add(100, new Message());
@@ -85,7 +77,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test6() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test6(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         System.out.println("win: " + win);
@@ -100,8 +93,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testLowerBounds() {
+    @Test(dataProvider="createTimer")
+    public void testLowerBounds(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
         win.add(101, new Message());
         System.out.println("win: " + win);
@@ -116,7 +109,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test7() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test7(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -133,8 +127,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testLowerBounds2() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testLowerBounds2(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
         win.add(100, new Message());
         win.add(101, new Message());
@@ -153,7 +147,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test8() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test8(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -176,8 +171,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testAdd() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testAdd(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         check(win, 0, 0, 0);
         win.add(0, new Message()); // discarded, next expected is 1
@@ -201,8 +196,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void test9() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test9(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -224,8 +219,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testHighestDelivered() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testHighestDelivered(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -253,8 +248,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testMissingMessages() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testMissingMessages(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
@@ -265,8 +260,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testMissingMessages2() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testMissingMessages2(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
@@ -279,8 +274,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testMissingMessages3() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testMissingMessages3(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
@@ -307,8 +302,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testMissingMessages4() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testMissingMessages4(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         win.add(105, new Message());
@@ -335,8 +330,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testMissingMessages5() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testMissingMessages5(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         check(win, 0, 101, 100);
@@ -364,7 +359,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test10() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test10(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -375,7 +371,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test10a() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test10a(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -388,7 +385,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void test11() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test11(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -400,8 +398,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void test12() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test12(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
 
         win.add(1, new Message(null, null, new Integer(1)));
@@ -414,8 +412,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void test13() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void test13(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
@@ -433,8 +431,8 @@ public class NakReceiverWindowTest {
 
 
 
-
-    public void testAddOOBAtHead() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testAddOOBAtHead(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(0, oob());
@@ -446,8 +444,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testAddOOBAtTail() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testAddOOBAtTail(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(1, oob());
@@ -459,8 +457,8 @@ public class NakReceiverWindowTest {
     }
 
 
-
-    public void testAddOOBInTheMiddle() throws Exception {
+    @Test(dataProvider="createTimer")
+    public void testAddOOBInTheMiddle(TimeScheduler timer) throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(3, oob());
@@ -478,30 +476,34 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void testUpdateHighestSeen() {
-        add(1000);
-        add(2000);
-        add(3000);
-        add(4000);
-        add(5000);
-        add(10000);
-        add(15000);
-        add(20000);
-        add(30000);
+    @Test(dataProvider="createTimer")
+    public void testUpdateHighestSeen(TimeScheduler timer) {
+        add(1000, timer);
+        add(2000, timer);
+        add(3000, timer);
+        add(4000, timer);
+        add(5000, timer);
+        add(10000, timer);
+        add(15000, timer);
+        add(20000, timer);
+        add(30000, timer);
     }
 
 
-    public void test1000() {
-        add(1000);
+    @Test(dataProvider="createTimer")
+    public void test1000(TimeScheduler timer) {
+        add(1000, timer);
     }
 
 
-    public void test10000() {
-        add(10000);
+    @Test(dataProvider="createTimer")
+    public void test10000(TimeScheduler timer) {
+        add(10000, timer);
     }
 
 
-    public void testHasMessagesToRemove() {
+    @Test(dataProvider="createTimer")
+    public void testHasMessagesToRemove(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         assert !win.hasMessagesToRemove();
         win.add(2, new Message());
@@ -515,7 +517,9 @@ public class NakReceiverWindowTest {
         assert ! win.hasMessagesToRemove();
     }
 
-    public void testRemoveOOBMessage() {
+
+    @Test(dataProvider="createTimer")
+    public void testRemoveOOBMessage(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         System.out.println("win = " + win);
         win.add(2, msg());
@@ -533,7 +537,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void testRemoveOOBMessages() {
+    @Test(dataProvider="createTimer")
+    public void testRemoveOOBMessages(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(0, msg());
         List<Message> list=win.removeOOBMessages();
@@ -552,7 +557,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void testRemoveRegularAndOOBMessages() {
+    @Test(dataProvider="createTimer")
+    public void testRemoveRegularAndOOBMessages(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, msg());
         System.out.println("win = " + win);
@@ -572,7 +578,9 @@ public class NakReceiverWindowTest {
         assert win.getHighestDelivered() == 2;
     }
 
-    public void testRemoveMany() {
+
+    @Test(dataProvider="createTimer")
+    public void testRemoveMany(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, msg());
         win.add(2, msg());
@@ -591,7 +599,8 @@ public class NakReceiverWindowTest {
     }
 
 
-    public void testRetransmitter() {
+    @Test(dataProvider="createTimer")
+    public void testRetransmitter(TimeScheduler timer) {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, msg());
         win.add(2, msg());
@@ -609,7 +618,7 @@ public class NakReceiverWindowTest {
 
 
 
-    private void add(int num_msgs) {
+    private static void add(int num_msgs, TimeScheduler timer) {
         long start, stop;
         double time_per_msg;
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
