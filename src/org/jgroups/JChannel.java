@@ -81,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.240 2010/06/15 10:10:42 belaban Exp $
+ * @version $Id: JChannel.java,v 1.241 2010/07/19 06:27:43 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -346,7 +346,7 @@ public class JChannel extends Channel {
     @ManagedAttribute
     public int getTimerThreads() {
         TimeScheduler timer=getTimer();
-        return timer != null? timer.getCorePoolSize() : -1;
+        return timer != null? timer.getMinThreads() : -1;
     }
 
     public String dumpTimerQueue() {
