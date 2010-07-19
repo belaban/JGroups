@@ -2,34 +2,31 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.util.AgeOutCache;
+import org.jgroups.util.DefaultTimeScheduler;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.11 2010/03/05 09:05:28 belaban Exp $
+ * @version $Id: AgeOutCacheTest.java,v 1.12 2010/07/19 06:36:11 belaban Exp $
  */
-@Test(groups = Global.FUNCTIONAL, sequential = true)
+@Test(groups = Global.FUNCTIONAL,sequential=true)
 public class AgeOutCacheTest {
-    ScheduledExecutorService timer;
 
-    @BeforeClass
-    void start() throws Exception {
-        timer=Executors.newScheduledThreadPool(5);
+    @DataProvider(name="timerCreator")
+    protected Object[][] timerCreator() {
+        return new Object[][] {
+                {new DefaultTimeScheduler(5)}
+        };
     }
 
-    @AfterClass
-    void stop() throws Exception {
-        timer.shutdownNow();
-    }
 
-    public void testExpiration() {
+    @Test(dataProvider="timerCreator")
+    public void testExpiration(TimeScheduler timer) {
         AgeOutCache<Integer> cache=new AgeOutCache<Integer>(timer, 500L,
                                                             new AgeOutCache.Handler<Integer>() {
                                                                 public void expired(Integer key) {
@@ -43,10 +40,14 @@ public class AgeOutCacheTest {
         assert size == 5 : "size is " + size;
         Util.sleep(1500);
         System.out.println("cache:\n" + cache);
-        assert (size=cache.size()) == 0 : "size is " + size;
+        size=cache.size();
+        assert size == 0 : "size is " + size;
+        timer.stop();
     }
 
-    public void testRemoveAndExpiration() {
+
+    @Test(dataProvider="timerCreator")
+    public void testRemoveAndExpiration(TimeScheduler timer) {
         AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 500L);
         for (int i = 1; i <= 5; i++)
             cache.add(i);
@@ -64,10 +65,12 @@ public class AgeOutCacheTest {
         }
 
         assert cache.size() == 0;
+        timer.stop();
     }
 
 
-    public void testContains() {
+    @Test(dataProvider="timerCreator")
+    public void testContains(TimeScheduler timer) {
         AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 5000L);
         for (int i = 1; i <= 5; i++)
             cache.add(i);
@@ -79,9 +82,12 @@ public class AgeOutCacheTest {
         cache.clear();
         assert cache.size() == 0;
         assert !cache.contains(4);
+        timer.stop();
     }
 
-    public void testGradualExpiration() {
+
+    @Test(dataProvider="timerCreator")
+    public void testGradualExpiration(TimeScheduler timer) {
         AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 5000L,
                                                               new AgeOutCache.Handler<Integer>() {
                                                                   public void expired(Integer key) {
@@ -96,5 +102,6 @@ public class AgeOutCacheTest {
         System.out.println("\ncache:\n" + cache);
         int size = cache.size();
         assert size < 10 && size > 0 : " size was " + size + ", but should have been < 10 or > 0";
+        timer.stop();
     }
 }
