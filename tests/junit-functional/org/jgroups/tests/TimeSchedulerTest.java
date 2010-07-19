@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.12 2010/07/19 06:37:39 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.13 2010/07/19 07:06:40 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -43,10 +43,7 @@ public class TimeSchedulerTest {
 
     @DataProvider(name="createTimer")
     Object[][] createTimer() {
-        return new Object[][] {
-                {new DefaultTimeScheduler()},
-                // todo: add other TimeScheduler impls as well !
-        };
+        return Util.createTimer();
     }
 
 
