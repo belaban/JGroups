@@ -2,292 +2,152 @@
 package org.jgroups.util;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.Global;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-import java.util.concurrent.*;
 
 
 /**
- * Fixed-delay & fixed-rate single thread scheduler
- * <p/>
- * The scheduler supports varying scheduling intervals by asking the task
- * every time for its next preferred scheduling interval. Scheduling can
- * either be <i>fixed-delay</i> or <i>fixed-rate</i>. The notions are
- * borrowed from <tt>java.util.Timer</tt> and retain the same meaning.
- * I.e. in fixed-delay scheduling, the task's new schedule is calculated
- * as:<br>
- * new_schedule = time_task_starts + scheduling_interval
- * <p/>
- * In fixed-rate scheduling, the next schedule is calculated as:<br>
- * new_schedule = time_task_was_supposed_to_start + scheduling_interval
- * <p/>
- * The scheduler internally holds a queue (DelayQueue) of tasks sorted in ascending order
- * according to their next execution time. A task is removed from the queue
- * if it is cancelled, i.e. if <tt>TimeScheduler.Task.isCancelled()</tt>
- * returns true.
- * <p/>
- * The scheduler extends <tt>ScheduledThreadPoolExecutor</tt> to keep tasks
- * sorted. <tt>java.util.Timer</tt> uses an array arranged as a binary heap (DelayQueue).
- * <p/>
- * Initially, the scheduler is in <tt>SUSPEND</tt>ed mode, <tt>start()</tt>
- * need not be called: if a task is added, the scheduler gets started
- * automatically. Calling <tt>start()</tt> starts the scheduler if it's
- * suspended or stopped else has no effect. Once <tt>stop()</tt> is called,
- * added tasks will not restart it: <tt>start()</tt> has to be called to
- * restart the scheduler.
+ * Timer-like interface which allows for execution of tasks. Taks can be executed
+ * <ul>
+ * <li>one time only
+ * <li>at recurring time intervals. Intervals can be fixed-delay or fixed-rate,
+ * see {@link java.util.concurrent.ScheduledExecutorService} for details
+ * <li>dynamic; at the end of the task execution, a task is asked what the next execution time should be. To do this,
+ * method {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} needs to be implemented.
+ * </ul>
+ * 
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.33 2009/11/05 08:43:34 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.34 2010/07/19 06:25:31 belaban Exp $
  */
-public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
+public interface TimeScheduler extends ThreadManager {
 
-    /** The interface that submitted tasks must implement */
+    /** The interface that dynamic tasks
+     * ({@link TimeScheduler#scheduleWithDynamicInterval(org.jgroups.util.TimeScheduler.Task)}) must implement */
     public interface Task extends Runnable {
-        /** @return the next schedule interval. If <= 0 the task will not be re-scheduled */
+        /** @return the next scheduled interval. If <= 0 the task will not be re-scheduled */
         long nextInterval();
     }
 
-    /** How many core threads */
-    private static int TIMER_DEFAULT_NUM_THREADS=3;
-
-
-    protected static final Log log=LogFactory.getLog(TimeScheduler.class);
-
-
-
-    static {
-        String tmp;
-        try {
-            tmp=System.getProperty(Global.TIMER_NUM_THREADS);
-            if(tmp != null)
-                TIMER_DEFAULT_NUM_THREADS=Integer.parseInt(tmp);
-        }
-        catch(Exception e) {
-            log.error("could not set number of timer threads", e);
-        }
-    }
-
-    private ThreadDecorator threadDecorator=null;
 
     /**
-     * Create a scheduler that executes tasks in dynamically adjustable intervals
+     * Executes command with zero required delay. This has effect equivalent to <tt>schedule(command, 0, anyUnit)</tt>.
+     *
+     * @param command the task to execute
+     * @throws java.util.concurrent.RejectedExecutionException at discretion of <tt>RejectedExecutionHandler</tt>,
+     * if task cannot be accepted for execution because the executor has been shut down.
+     * @throws NullPointerException if command is null
      */
-    public TimeScheduler() {
-        this(TIMER_DEFAULT_NUM_THREADS);
-    }
+    public void execute(Runnable command);
+    
 
-    public TimeScheduler(ThreadFactory factory) {
-        this(factory, TIMER_DEFAULT_NUM_THREADS);
-    }
-
-    public TimeScheduler(ThreadFactory factory, int max_threads) {
-        super(max_threads, factory);
-        setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(getRejectedExecutionHandler()));
-    }
-
-    public TimeScheduler(int corePoolSize) {
-        super(corePoolSize);
-        setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(getRejectedExecutionHandler()));
-    }
-
-    public ThreadDecorator getThreadDecorator() {
-        return threadDecorator;
-    }
-
-    public void setThreadDecorator(ThreadDecorator threadDecorator) {
-        this.threadDecorator=threadDecorator;
-    }
-
-    public String dumpTaskQueue() {
-        return getQueue().toString();
-    }
+    /**
+     * Creates and executes a one-shot action that becomes enabled after the given delay.
+     *
+     * @param command the task to execute
+     * @param delay the time from now to delay execution
+     * @param unit the time unit of the delay parameter
+     * @return a ScheduledFuture representing pending completion of the task and whose <tt>get()</tt> method
+     *         will return <tt>null</tt> upon completion
+     * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
+     * @throws NullPointerException if command is null
+     */
+    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit);
 
 
 
+
+    /**
+     * Creates and executes a periodic action that becomes enabled first after the given initial delay, and
+     * subsequently with the given period; that is executions will commence after <tt>initialDelay</tt> then
+     * <tt>initialDelay+period</tt>, then <tt>initialDelay + 2 * period</tt>, and so on.
+     * If any execution of the task encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or termination of the executor.  If any execution of
+     * this task takes longer than its period, then subsequent executions may start late, but will not concurrently execute.
+     *
+     * @param command the task to execute
+     * @param initialDelay the time to delay first execution
+     * @param period the period between successive executions
+     * @param unit the time unit of the initialDelay and period parameters
+     * @return a ScheduledFuture representing pending completion of the task, and whose <tt>get()</tt> method will
+     *         throw an exception upon cancellation
+     * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
+     * @throws NullPointerException if command is null
+     * @throws IllegalArgumentException if period less than or equal to zero
+     */
+    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
+
+
+    
+    /**
+     * Creates and executes a periodic action that becomes enabled first after the given initial delay, and
+     * subsequently with the given delay between the termination of one execution and the commencement of the next.
+     * If any execution of the task encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or termination of the executor.
+     *
+     * @param command the task to execute
+     * @param initialDelay the time to delay first execution
+     * @param delay the delay between the termination of one execution and the commencement of the next
+     * @param unit the time unit of the initialDelay and delay parameters
+     * @return a ScheduledFuture representing pending completion of the task, and whose <tt>get()</tt>
+     *         method will throw an exception upon cancellation
+     * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
+     * @throws NullPointerException if command is null
+     * @throws IllegalArgumentException if delay less than or equal to zero
+     */
+    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+
+
+    
     /**
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
-     * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. The task is neve done until nextInterval()
-     * return a value <= 0 or the task is cancelled.
+     * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. The task is never done until
+     * nextInterval() return a value <= 0 or the task is cancelled.
      * @param task the task to execute
-     * @param relative scheduling scheme: <tt>true</tt>:<br>
-     * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>
-     * <tt>false</tt>:<br> Task is scheduled relative to its <i>last</i> execution schedule. This has the effect
-     * that the time between two consecutive executions of the task remains the same.<p/>
-     * Note that relative is always true; we always schedule the next execution relative to the last *actual*
-     * (not scheduled) execution
      */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task) {
-        if(task == null)
-            throw new NullPointerException();
-
-        if (isShutdown())
-            return null;
-
-        TaskWrapper task_wrapper=new TaskWrapper(task);
-        task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
-        return task_wrapper;
-    }
+    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task);
 
 
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-        return super.scheduleWithFixedDelay(new RobustRunnable(command), initialDelay, delay, unit);
-    }
 
     /**
-     * Answers the number of tasks currently in the queue.
+     * Returns a list of tasks currently waiting for execution. If there are a lot of tasks, the returned string
+     * should probably only return the number of tasks rather than a full dump.
+     * @return
+     */
+    public String dumpTaskQueue();
+
+    /**
+     * Returns the configured core threads, or -1 if not applicable
+     * @return
+     */
+    public int getMinThreads();
+
+    /**
+     * Returns the configured max threads, or -1 if not applicable
+     * @return
+     */
+    public int getMaxThreads();
+
+    /**
+     * Returns the currently running threads, or -1 if not applicable
+     * @return
+     */
+    public int getActiveThreads();
+
+
+    /**
+     * Returns the number of tasks currently in the queue.
      * @return The number of tasks currently in the queue.
      */
-    public int size() {
-        return getQueue().size();
-    }
-
+    public int size();
 
 
     /**
-     * Stop the scheduler if it's running. Switch to stopped, if it's
-     * suspended. Clear the task queue, cancelling all un-executed tasks
-     *
-     * @throws InterruptedException if interrupted while waiting for thread
-     *                              to return
+     * Stops the scheduler if running, cancelling all pending tasks
      */
-    public void stop() throws InterruptedException {
-        java.util.List<Runnable> tasks=shutdownNow();
-        for(Runnable task: tasks) {
-            if(task instanceof Future) {
-                Future future=(Future)task;
-                future.cancel(true);
-            }
-        }
-        getQueue().clear();
-        awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
-    }
+    public void stop();
+    
 
-
-
-
-    @Override
-    protected void afterExecute(Runnable r, Throwable t)
-    {
-        try {
-           super.afterExecute(r, t);
-        }
-        finally {
-           if(threadDecorator != null)
-              threadDecorator.threadReleased(Thread.currentThread());
-        }
-    }
-
-    /**
-     * Class which catches exceptions in run() - https://jira.jboss.org/jira/browse/JGRP-1062
-     */
-    static class RobustRunnable implements Runnable {
-        final Runnable command;
-
-        public RobustRunnable(Runnable command) {
-            this.command=command;
-        }
-
-        public void run() {
-            if(command != null) {
-                try {
-                    command.run();
-                }
-                catch(Throwable t) {
-                    if(log.isErrorEnabled())
-                        log.error("exception executing task " + command + ": " +  t);
-                }
-            }
-        }
-    }
-
-
-    private class TaskWrapper<V> implements Runnable, ScheduledFuture<V> {
-        private final Task                  task;
-        private volatile ScheduledFuture<?> future; // cannot be null !
-        private volatile boolean            cancelled=false;
-
-
-        public TaskWrapper(Task task) {
-            this.task=task;
-        }
-
-        public ScheduledFuture<?> getFuture() {
-            return future;
-        }
-
-        public void run() {
-            try {
-                if(cancelled) {
-                    if(future != null)
-                        future.cancel(true);
-                    return;
-                }
-                if(future != null && future.isCancelled())
-                    return;
-                task.run();
-            }
-            catch(Throwable t) {
-                log.error("failed running task " + task, t);
-            }
-
-            if(cancelled) {
-                if(future != null)
-                    future.cancel(true);
-                return;
-            }
-            if(future != null && future.isCancelled())
-                return;
-            
-            doSchedule();
-        }
-
-
-        public void doSchedule() {
-            long next_interval=task.nextInterval();
-            if(next_interval <= 0) {
-                if(log.isTraceEnabled())
-                    log.trace("task will not get rescheduled as interval is " + next_interval);
-            }
-            else {
-                future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
-                if(cancelled)
-                    future.cancel(true);
-            }
-        }
-
-        public int compareTo(Delayed o) {
-            long my_delay=future.getDelay(TimeUnit.MILLISECONDS), their_delay=o.getDelay(TimeUnit.MILLISECONDS);
-            return my_delay < their_delay? -1 : my_delay > their_delay? 1 : 0;
-        }
-
-        public long getDelay(TimeUnit unit) {
-            return future != null? future.getDelay(unit) : -1;
-        }
-
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            cancelled=true;
-            if(future != null)
-                future.cancel(mayInterruptIfRunning);
-            return cancelled;
-        }
-
-        public boolean isCancelled() {
-            return cancelled || (future != null && future.isCancelled());
-        }
-
-        public boolean isDone() {
-            return future == null || future.isDone();
-        }
-
-        public V get() throws InterruptedException, ExecutionException {
-            return null;
-        }
-
-        public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return null;
-        }
-
-    }
-
+    /** Returns true if stop() has been called, false otherwise */
+    public boolean isShutdown();
 }
