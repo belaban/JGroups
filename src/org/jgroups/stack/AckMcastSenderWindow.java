@@ -5,6 +5,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
 
 import java.io.PrintWriter;
@@ -29,7 +30,7 @@ import java.util.concurrent.Future;
  * retransmissions because of timeouts.
  * @author Bela Ban June 9 1999, 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: AckMcastSenderWindow.java,v 1.16 2009/05/13 13:06:56 belaban Exp $
+ * @version $Id: AckMcastSenderWindow.java,v 1.17 2010/07/19 09:42:02 belaban Exp $
  */
 public class AckMcastSenderWindow {
     /**
@@ -210,7 +211,7 @@ public class AckMcastSenderWindow {
      * @throws IllegalArgumentException if <code>cmd</code> is null
      */
     public AckMcastSenderWindow(RetransmitCommand cmd, Interval retransmit_intervals) {
-        init(cmd, retransmit_intervals, new TimeScheduler(), true);
+        init(cmd, retransmit_intervals, new DefaultTimeScheduler(), true);
     }
 
     /**
@@ -465,12 +466,7 @@ public class AckMcastSenderWindow {
         // ii. Clear all pending msgs and notify anyone waiting
         synchronized(msgs) {
             if(retransmitter_owned) {
-                try {
-                    timer.stop();
-                }
-                catch(InterruptedException ex) {
-                    if(log.isErrorEnabled()) log.error(_toString(ex));
-                }
+                timer.stop();
             }
             else {
                 for(Entry entry: msgs.values()) {
