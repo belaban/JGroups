@@ -6,10 +6,11 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: TimeSchedulerStressTest.java,v 1.1 2010/07/19 11:22:13 belaban Exp $
+ * @version $Id: TimeSchedulerStressTest.java,v 1.2 2010/07/19 11:29:01 belaban Exp $
  */
 public class TimeSchedulerStressTest {
     final TimeScheduler timer;
@@ -64,7 +65,7 @@ public class TimeSchedulerStressTest {
             }
             for(int i=0; i < num_tasks; i++) {
                 MyTask task=new MyTask();
-                timer.execute(task);
+                timer.schedule(task, task_duration, TimeUnit.MILLISECONDS);
                 task.get();
                 Util.sleep(interval);
             }
@@ -72,11 +73,10 @@ public class TimeSchedulerStressTest {
     }
 
 
-    class MyTask implements Runnable {
+    static class MyTask implements Runnable {
         final Promise<Boolean> result=new Promise<Boolean>();
 
         public void run() {
-            Util.sleep(task_duration);
             result.setResult(true);
         }
 
