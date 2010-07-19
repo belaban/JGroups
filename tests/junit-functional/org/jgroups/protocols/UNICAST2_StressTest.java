@@ -6,8 +6,10 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests time for N threads to deliver M messages to UNICAST2
  * @author Bela Ban
- * @version $Id: UNICAST2_StressTest.java,v 1.3 2010/03/12 15:41:18 belaban Exp $
+ * @version $Id: UNICAST2_StressTest.java,v 1.4 2010/07/19 07:31:57 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST2_StressTest {
@@ -36,17 +38,22 @@ public class UNICAST2_StressTest {
 
     static final short UNICAST_ID=ClassConfigurator.getProtocolId(UNICAST2.class);
 
-    @Test
-    public static void stressTest() {
-        start(NUM_THREADS, NUM_MSGS, false, MAX_MSG_BATCH_SIZE);
+    @DataProvider(name="createTimer")
+    Object[][] createTimer() {
+        return Util.createTimer();
     }
 
-    @Test
-    public static void stressTestOOB() {
-        start(NUM_THREADS, NUM_MSGS, true, MAX_MSG_BATCH_SIZE);
+    @Test(dataProvider="createTimer")
+    public static void stressTest(TimeScheduler timer) {
+        start(NUM_THREADS, NUM_MSGS, false, MAX_MSG_BATCH_SIZE, timer);
     }
 
-    private static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size) {
+    @Test(dataProvider="createTimer")
+    public static void stressTestOOB(TimeScheduler timer) {
+        start(NUM_THREADS, NUM_MSGS, true, MAX_MSG_BATCH_SIZE, timer);
+    }
+
+    private static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size, TimeScheduler timer) {
         final UNICAST2 unicast=new UNICAST2();
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
@@ -64,7 +71,8 @@ public class UNICAST2_StressTest {
 //            }
 //        });
 
-        TimeScheduler timer=new TimeScheduler(10);
+        if(timer == null)
+            timer=new DefaultTimeScheduler();
         unicast.setTimer(timer);
 
         unicast.setDownProtocol(new Protocol() {
@@ -143,11 +151,7 @@ public class UNICAST2_StressTest {
             System.out.println("Elements: " + delivered_msg_list);
 
         unicast.stop();
-        try {
-            timer.stop();
-        }
-        catch(InterruptedException e) {
-        }
+        timer.stop();
 
         List<Long> results=new ArrayList<Long>(delivered_msg_list);
 
@@ -246,6 +250,6 @@ public class UNICAST2_StressTest {
                     "[-oob <true | false>] [-max <batch size>]");
             return;
         }
-        start(num_threads, num_msgs, oob, max);
+        start(num_threads, num_msgs, oob, max, null);
     }
 }
