@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ConnectionMapUnitTest.java,v 1.1 2010/07/13 12:28:00 belaban Exp $
+ * @version $Id: ConnectionMapUnitTest.java,v 1.2 2010/07/20 07:39:43 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapUnitTest {
@@ -28,13 +28,13 @@ public class ConnectionMapUnitTest {
     protected void setUp() throws Exception {
         ct1=new TCPConnectionMap("TCPConnectionMap1",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, port1, port1);
+                                 null, null, null, null, port1, port1);
 
         ct1.setUseSendQueues(false);
         ct1.start();
         ct2=new TCPConnectionMap("TCPConnectionMap2",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, port2, port2);
+                                 null, null, null, null, port2, port2);
         ct2.setUseSendQueues(false);
         ct2.start();
     }

@@ -1,4 +1,4 @@
-// $Id: ConnectionMapDemo.java,v 1.2 2010/07/13 12:40:24 belaban Exp $
+// $Id: ConnectionMapDemo.java,v 1.3 2010/07/20 07:39:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -48,7 +48,7 @@ public class ConnectionMapDemo implements TCPConnectionMap.Receiver, AbstractCon
         else
             ct=new TCPConnectionMap("TCPConnectionMap",
                                     new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                    this, null, null, local_port, local_port);
+                                    null, this, null, null, local_port, local_port);
         ct.addConnectionMapListener(this);
         ct.start();
         this.dst_host=dst_host;

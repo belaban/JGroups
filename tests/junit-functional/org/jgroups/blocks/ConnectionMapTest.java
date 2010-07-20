@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionMap
  * @author Bela Ban
- * @version $Id: ConnectionMapTest.java,v 1.2 2010/07/13 12:40:27 belaban Exp $
+ * @version $Id: ConnectionMapTest.java,v 1.3 2010/07/20 07:39:44 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapTest {
@@ -71,11 +71,11 @@ public class ConnectionMapTest {
 
         ct1=new TCPConnectionMap("ConnectionMapTest1",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 dummy, loopback_addr, null, PORT1, PORT1);
+                                 null, dummy, loopback_addr, null, PORT1, PORT1);
         ct1.start();
         ct2=new TCPConnectionMap("ConnectionMapTest2",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 dummy, loopback_addr, null, PORT2, PORT2);
+                                 null, dummy, loopback_addr, null, PORT2, PORT2);
 
 
         ct2.start();
