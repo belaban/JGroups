@@ -7,11 +7,13 @@ import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.34 2010/06/15 06:44:35 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.35 2010/07/20 10:31:00 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -67,11 +69,11 @@ public class FD_ALL extends Protocol {
 
     // task which multicasts HEARTBEAT message after 'interval' ms
     @GuardedBy("lock")
-    private ScheduledFuture<?> heartbeat_sender_future=null;
+    private Future<?> heartbeat_sender_future=null;
 
     // task which checks for members exceeding timeout and suspects them
     @GuardedBy("lock")
-    private ScheduledFuture<?> timeout_checker_future=null;    
+    private Future<?> timeout_checker_future=null;    
 
     private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
     

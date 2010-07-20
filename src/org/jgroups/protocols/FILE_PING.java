@@ -1,15 +1,18 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
+import org.jgroups.util.Promise;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
 
 import java.io.*;
-import java.util.*;
-import java.util.concurrent.ScheduledFuture;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -19,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.19 2010/06/17 14:57:15 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.20 2010/07/20 10:34:19 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -38,7 +41,7 @@ public class FILE_PING extends Discovery {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected File root_dir=null;
     protected FilenameFilter filter;
-    private ScheduledFuture<?> writer_future;
+    private Future<?> writer_future;
 
 
     public void init() throws Exception {

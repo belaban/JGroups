@@ -2,7 +2,7 @@
 package org.jgroups.util;
 
 
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.34 2010/07/19 06:25:31 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.35 2010/07/20 10:34:48 belaban Exp $
  */
 public interface TimeScheduler extends ThreadManager {
 
@@ -52,30 +52,7 @@ public interface TimeScheduler extends ThreadManager {
      * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
      * @throws NullPointerException if command is null
      */
-    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit);
-
-
-
-
-    /**
-     * Creates and executes a periodic action that becomes enabled first after the given initial delay, and
-     * subsequently with the given period; that is executions will commence after <tt>initialDelay</tt> then
-     * <tt>initialDelay+period</tt>, then <tt>initialDelay + 2 * period</tt>, and so on.
-     * If any execution of the task encounters an exception, subsequent executions are suppressed.
-     * Otherwise, the task will only terminate via cancellation or termination of the executor.  If any execution of
-     * this task takes longer than its period, then subsequent executions may start late, but will not concurrently execute.
-     *
-     * @param command the task to execute
-     * @param initialDelay the time to delay first execution
-     * @param period the period between successive executions
-     * @param unit the time unit of the initialDelay and period parameters
-     * @return a ScheduledFuture representing pending completion of the task, and whose <tt>get()</tt> method will
-     *         throw an exception upon cancellation
-     * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
-     * @throws NullPointerException if command is null
-     * @throws IllegalArgumentException if period less than or equal to zero
-     */
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
+    public Future<?> schedule(Runnable command, long delay, TimeUnit unit);
 
 
     
@@ -95,7 +72,7 @@ public interface TimeScheduler extends ThreadManager {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if delay less than or equal to zero
      */
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+    public Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
 
 
     
@@ -105,7 +82,7 @@ public interface TimeScheduler extends ThreadManager {
      * nextInterval() return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task);
+    public Future<?> scheduleWithDynamicInterval(Task task);
 
 
 

@@ -15,7 +15,7 @@ import java.util.concurrent.*;
  * of execution time (by using a {@link java.util.concurrent.DelayQueue} internally.
  * 
  * @author Bela Ban
- * @version $Id: DefaultTimeScheduler.java,v 1.1 2010/07/19 06:25:47 belaban Exp $
+ * @version $Id: DefaultTimeScheduler.java,v 1.2 2010/07/20 10:34:02 belaban Exp $
  */
 public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements TimeScheduler {
 
@@ -99,7 +99,7 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
      * Note that relative is always true; we always schedule the next execution relative to the last *actual*
      * (not scheduled) execution
      */
-    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task) {
+    public Future<?> scheduleWithDynamicInterval(Task task) {
         if(task == null)
             throw new NullPointerException();
 
@@ -193,17 +193,17 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
     }
 
 
-    private class TaskWrapper<V> implements Runnable, ScheduledFuture<V> {
-        private final Task                  task;
-        private volatile ScheduledFuture<?> future; // cannot be null !
-        private volatile boolean            cancelled=false;
+    private class TaskWrapper<V> implements Runnable, Future<V> {
+        private final Task         task;
+        private volatile Future<?> future; // cannot be null !
+        private volatile boolean   cancelled=false;
 
 
         public TaskWrapper(Task task) {
             this.task=task;
         }
 
-        public ScheduledFuture<?> getFuture() {
+        public Future<?> getFuture() {
             return future;
         }
 
@@ -247,14 +247,6 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
             }
         }
 
-        public int compareTo(Delayed o) {
-            long my_delay=future.getDelay(TimeUnit.MILLISECONDS), their_delay=o.getDelay(TimeUnit.MILLISECONDS);
-            return my_delay < their_delay? -1 : my_delay > their_delay? 1 : 0;
-        }
-
-        public long getDelay(TimeUnit unit) {
-            return future != null? future.getDelay(unit) : -1;
-        }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
             cancelled=true;
