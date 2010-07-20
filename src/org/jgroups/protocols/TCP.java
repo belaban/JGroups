@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.63 2010/07/13 12:40:26 belaban Exp $
+// $Id: TCP.java,v 1.64 2010/07/20 10:30:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -130,6 +130,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
         if(reaperInterval == 0 && connExpireTime == 0) {
             cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK,
                                         getThreadFactory(),
+                                        getSocketFactory(),
                                         this,
                                         bindAddress,
                                         externalAddress,
@@ -150,6 +151,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
             }
             cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK, 
                                         getThreadFactory(),
+                                        getSocketFactory(),
                                         this,
                                         bindAddress,
                                         externalAddress,
