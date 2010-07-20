@@ -46,13 +46,14 @@ public class TCPConnectionMap{
 
     public TCPConnectionMap(String service_name,
                             ThreadFactory f,
+                            SocketFactory socket_factory,
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
                             int srv_port,
                             int max_port
                             ) throws Exception {
-        this(service_name, f,r,bind_addr,external_addr,srv_port,max_port,0,0);
+        this(service_name, f,socket_factory, r,bind_addr,external_addr,srv_port,max_port,0,0);
     }
 
     public TCPConnectionMap(String service_name,
@@ -65,10 +66,26 @@ public class TCPConnectionMap{
                             long reaper_interval,
                             long conn_expire_time
                             ) throws Exception {
+        this(service_name, f, null, r, bind_addr, external_addr, srv_port, max_port, reaper_interval, conn_expire_time);
+    }
+
+    public TCPConnectionMap(String service_name,
+                            ThreadFactory f,
+                            SocketFactory socket_factory,
+                            Receiver r,
+                            InetAddress bind_addr,
+                            InetAddress external_addr,
+                            int srv_port,
+                            int max_port,
+                            long reaper_interval,
+                            long conn_expire_time
+                            ) throws Exception {
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
-        this.bind_addr=bind_addr;               
+        this.bind_addr=bind_addr;
         this.conn_expire_time = conn_expire_time;
+        if(socket_factory != null)
+            this.socket_factory=socket_factory;
         this.srv_sock=createServerSocket(service_name, srv_port, max_port);
 
         if(external_addr != null)
@@ -77,9 +94,9 @@ public class TCPConnectionMap{
             local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
-        
+
         acceptor=f.newThread(thread_group, new ConnectionAcceptor(),"ConnectionMap.Acceptor");
-    }    
+    }
     
     public Address getLocalAddress() {       
         return local_addr;
