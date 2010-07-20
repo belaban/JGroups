@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Bela Ban
- * @version $Id: TimeSchedulerStressTest.java,v 1.3 2010/07/20 10:35:06 belaban Exp $
+ * @version $Id: TimeSchedulerStressTest.java,v 1.4 2010/07/20 12:59:07 belaban Exp $
  */
 public class TimeSchedulerStressTest {
     final TimeScheduler timer;
@@ -20,6 +20,8 @@ public class TimeSchedulerStressTest {
     final AtomicInteger total_tasks=new AtomicInteger(0);
     final AtomicInteger total_sched=new AtomicInteger(0);
     final AtomicInteger total_task_invocations=new AtomicInteger(0);
+
+    static final int NUM_THREADS_IN_TIMER=5;
 
 
     public TimeSchedulerStressTest(TimeScheduler timer, int num_threads, int num_tasks, long task_duration) {
@@ -116,6 +118,7 @@ public class TimeSchedulerStressTest {
         long task_duration=50; // ms
         TimeScheduler timer=null;
 
+
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num_threads")) {
                 num_threads=Integer.parseInt(args[++i]);
@@ -132,10 +135,10 @@ public class TimeSchedulerStressTest {
             if(args[i].equals("-type")) {
                 String tmp=args[++i];
                 if(tmp.equals("default")) {
-                    timer=new DefaultTimeScheduler(10); // ? That's not what we do in real life !
+                    timer=new DefaultTimeScheduler(NUM_THREADS_IN_TIMER); // ? That's not what we do in real life !
                 }
                 else if(tmp.equals("new")) {
-                    timer=new TimeScheduler2(10);
+                    timer=new TimeScheduler2(NUM_THREADS_IN_TIMER);
                 }
                 else {
                     help();
@@ -149,8 +152,8 @@ public class TimeSchedulerStressTest {
         }
 
         if(timer == null) {
-            System.out.println("timer is null, using DefaultTimeScheduler with " + 10 + " threads");
-            timer=new DefaultTimeScheduler(10);
+            System.out.println("timer is null, using DefaultTimeScheduler with " + NUM_THREADS_IN_TIMER + " threads");
+            timer=new DefaultTimeScheduler(NUM_THREADS_IN_TIMER);
         }
 
         TimeSchedulerStressTest test=new TimeSchedulerStressTest(timer, num_threads, num_tasks, task_duration);
