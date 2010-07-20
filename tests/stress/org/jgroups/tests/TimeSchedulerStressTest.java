@@ -1,32 +1,31 @@
 package org.jgroups.tests;
 
-import org.jgroups.util.DefaultTimeScheduler;
-import org.jgroups.util.Promise;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Bela Ban
- * @version $Id: TimeSchedulerStressTest.java,v 1.2 2010/07/19 11:29:01 belaban Exp $
+ * @version $Id: TimeSchedulerStressTest.java,v 1.3 2010/07/20 10:35:06 belaban Exp $
  */
 public class TimeSchedulerStressTest {
     final TimeScheduler timer;
     final int num_threads;
-    final int num_tasks; // to process per thread
-    final long task_duration; // ms
-    final long interval; // ms between tasks
+    final int num_tasks;       // to process per thread
+    final long task_duration;  // ms
 
     final CyclicBarrier barrier;
+    final AtomicInteger total_tasks=new AtomicInteger(0);
+    final AtomicInteger total_sched=new AtomicInteger(0);
+    final AtomicInteger total_task_invocations=new AtomicInteger(0);
 
 
-    public TimeSchedulerStressTest(TimeScheduler timer, int num_threads, int num_tasks, long task_duration, long interval) {
+    public TimeSchedulerStressTest(TimeScheduler timer, int num_threads, int num_tasks, long task_duration) {
         this.timer=timer;
         this.num_threads=num_threads;
         this.task_duration=task_duration;
-        this.interval=interval;
         this.num_tasks=num_tasks;
         barrier=new CyclicBarrier(num_threads +1);
     }
@@ -40,18 +39,23 @@ public class TimeSchedulerStressTest {
             threads[i].start();
         }
 
-
         Util.sleep(1000);
         System.out.println("starting " + threads.length + " threads");
         long start=System.currentTimeMillis();
         barrier.await();
 
+        Reporter reporter=new Reporter();
+        reporter.setDaemon(true);
+        reporter.start();
+
         for(MyThread thread: threads)
             thread.join();
         long diff=System.currentTimeMillis() - start;
-        System.out.println("Time: " + diff + " ms");
-
         timer.stop();
+        
+        System.out.println("Time: " + diff + " ms for " + total_tasks + " tasks");
+        System.out.println("running tasks: " + timer.size() + ", total_sched: " + total_sched + ", completed: " + total_tasks +
+        ", total task invocations: " + total_task_invocations);
     }
 
 
@@ -62,21 +66,41 @@ public class TimeSchedulerStressTest {
                 barrier.await();
             }
             catch(Exception e) {
+                e.printStackTrace();
             }
+
+            MyTask[] tasks=new MyTask[num_tasks];
+
             for(int i=0; i < num_tasks; i++) {
-                MyTask task=new MyTask();
-                timer.schedule(task, task_duration, TimeUnit.MILLISECONDS);
+                tasks[i]=new MyTask();
+                timer.schedule(tasks[i], task_duration, TimeUnit.MILLISECONDS);
+                total_sched.incrementAndGet();
+            }
+
+            for(MyTask task: tasks) {
                 task.get();
-                Util.sleep(interval);
+                total_tasks.incrementAndGet();
+            }
+        }
+    }
+
+    class Reporter extends Thread {
+
+        public void run() {
+            while(!timer.isShutdown()) {
+                System.out.println("running tasks: " + timer.size() + ", total_sched: " + total_sched + ", completed: " + total_tasks +
+                        ", total task invocations: " + total_task_invocations);
+                Util.sleep(2000);
             }
         }
     }
 
 
-    static class MyTask implements Runnable {
+    class MyTask implements Runnable {
         final Promise<Boolean> result=new Promise<Boolean>();
 
         public void run() {
+            total_task_invocations.incrementAndGet();
             result.setResult(true);
         }
 
@@ -90,7 +114,6 @@ public class TimeSchedulerStressTest {
         int num_threads=100;
         int num_tasks=100; // to process per thread
         long task_duration=50; // ms
-        long interval=0; //
         TimeScheduler timer=null;
 
         for(int i=0; i < args.length; i++) {
@@ -106,14 +129,13 @@ public class TimeSchedulerStressTest {
                 task_duration=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-interval")) {
-                interval=Long.parseLong(args[++i]);
-                continue;
-            }
             if(args[i].equals("-type")) {
                 String tmp=args[++i];
                 if(tmp.equals("default")) {
-                    timer=new DefaultTimeScheduler(num_threads); // ? That's not what we do in real life !
+                    timer=new DefaultTimeScheduler(10); // ? That's not what we do in real life !
+                }
+                else if(tmp.equals("new")) {
+                    timer=new TimeScheduler2(10);
                 }
                 else {
                     help();
@@ -127,16 +149,16 @@ public class TimeSchedulerStressTest {
         }
 
         if(timer == null) {
-            System.out.println("timer is null, using DefaultTimeScheduler with " + num_threads + " threads");
-            timer=new DefaultTimeScheduler(num_threads);
+            System.out.println("timer is null, using DefaultTimeScheduler with " + 10 + " threads");
+            timer=new DefaultTimeScheduler(10);
         }
 
-        TimeSchedulerStressTest test=new TimeSchedulerStressTest(timer, num_threads, num_tasks, task_duration, interval);
+        TimeSchedulerStressTest test=new TimeSchedulerStressTest(timer, num_threads, num_tasks, task_duration);
         test.start();
     }
 
     static void help() {
-        System.out.println("TimeSchedulerStressTest [-type <\"default\">] [-num_threads <num>] [-num_tasks <num>]" +
-                " [-task_duration <ms>] [-interval <ms>]");
+        System.out.println("TimeSchedulerStressTest [-type <\"default\" | \"new\">] [-num_threads <num>] [-num_tasks <num>]" +
+                " [-task_duration <ms>]");
     }
 }

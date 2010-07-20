@@ -7,6 +7,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -14,7 +15,7 @@ import java.util.concurrent.*;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.1 2010/07/19 15:20:31 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.2 2010/07/20 10:36:46 belaban Exp $
  */
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
@@ -56,6 +57,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler2() {
+       // todo: wrap ThreadPoolExecutor with ThreadManagerThreadPoolExecutor and invoke setThreadDecorator()
        pool=new ThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, TIMER_DEFAULT_NUM_THREADS,
                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -124,10 +126,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if(work == null)
             return null;
 
-        if(!running)
-            startRunner();
-
         long key=unit.convert(delay, TimeUnit.MILLISECONDS) + System.currentTimeMillis(); // execution time
+
+        // key=322649L; // todo: remove !
+
         Entry task=new Entry(work);
         Entry existing=tasks.putIfAbsent(key, task);
         if(existing != null) {
@@ -135,11 +137,15 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             task=existing;
         }
 
+        if(!running)
+            startRunner();
+
         return task;
     }
 
 
 
+    // todo: cancellation doesn't work with FixedDelayTask !!
     public Future<?> scheduleWithFixedDelay(Runnable task, long initial_delay, long delay, TimeUnit unit) {
         FixedDelayTask wrapper=new FixedDelayTask(task, this, delay);
         return schedule(wrapper, initial_delay, unit);
@@ -275,12 +281,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     private static class Entry implements Future {
-        Runnable task;
+        final Runnable task;
 
-        // todo: use pointer to last entry, so we avoid iteration (O(n) cost !)
-        Entry next=null;
-        
-        volatile boolean cancelled=false;
+        private ConcurrentLinkedQueue<Runnable> queue=null;
+
+        private final AtomicBoolean cancelled=new AtomicBoolean(false);
         volatile boolean done=false;
 
 
@@ -288,46 +293,45 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             this.task=task;
         }
 
-        synchronized void add(Runnable task) {
+        void add(Runnable task) {
             if(task == null)
                 return;
-            if(next == null)
-                next=new Entry(task);
-            else {
-                Entry tmp=next;
-                while(tmp.next != null) {
-                    tmp=tmp.next;
-                }
-                tmp.next=new Entry(task);
+
+            if(cancelled.get())
+                System.err.println("add(): task has been cancelled !");
+
+            synchronized(this) {
+                if(queue == null)
+                    queue=new ConcurrentLinkedQueue<Runnable>();
             }
+            queue.add(task);
         }
 
-        synchronized void execute() {
-            if(cancelled)
+        void execute() {
+            if(!cancelled.compareAndSet(false, true))
                 return;
-            task.run();
-            if(next != null) {
-                try {
+            try {
+                task.run();
+            }
+            catch(Throwable t) {
+                log.error("task execution failed", t);
+            }
 
-                    // todo: use the pool to execute every task !
-                    if(!cancelled)
-                        next.execute();
-                }
-                catch(Throwable t) {
-                    log.error("failed task execution", t);
+            if(queue != null) {
+                for(Runnable tmp: queue) {
+                    try {
+                        tmp.run();
+                    }
+                    catch(Throwable t) {
+                        log.error("task execution failed", t);
+                    }
                 }
             }
             done=true;
         }
 
-        synchronized int size() {
-            int num=1;
-            Entry tmp=next;
-            while(tmp != null) {
-                tmp=tmp.next;
-                num++;
-            }
-            return num;
+        int size() {
+            return 1 + (queue != null? queue.size() : 0);
         }
 
         public String toString() {
@@ -335,12 +339,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
-            cancelled=true;
-            return true;
+            return cancelled.compareAndSet(false, true);
         }
 
         public boolean isCancelled() {
-            return cancelled;
+            return cancelled.get();
         }
 
         public boolean isDone() {

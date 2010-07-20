@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The advantage of this protocol over {@link org.jgroups.protocols.UNICAST} is that it doesn't send acks for every
  * message. Instead, it sends 'acks' after receiving max_bytes and/ or periodically (stable_interval).
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.9 2010/06/14 08:11:27 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.10 2010/07/20 10:35:22 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Reliable unicast layer")
@@ -462,7 +462,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     }
                 }
             };
-            stable_task_future=timer.scheduleAtFixedRate(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
+            stable_task_future=timer.scheduleWithFixedDelay(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
             if(log.isTraceEnabled())
                 log.trace("stable task started");
         }
