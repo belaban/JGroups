@@ -1,8 +1,8 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.TimeoutException;
 import org.jgroups.Global;
+import org.jgroups.TimeoutException;
 import org.jgroups.stack.Interval;
 import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.DefaultTimeScheduler;
@@ -14,12 +14,11 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Date;
-import java.util.Map;
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
@@ -32,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.13 2010/07/19 07:06:40 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.14 2010/07/20 10:36:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -178,7 +177,7 @@ public class TimeSchedulerTest {
     public void testDynamicTask(TimeScheduler timer) throws InterruptedException {
         TimeScheduler.Task task=new DynamicTask();
         try {
-            ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+            Future<?> future=timer.scheduleWithDynamicInterval(task);
 
             assert !(future.isCancelled());
             assert !(future.isDone());
@@ -201,7 +200,7 @@ public class TimeSchedulerTest {
     public void testDynamicTaskCancel(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask();
-            ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+            Future<?> future=timer.scheduleWithDynamicInterval(task);
 
             assert !(future.isCancelled());
             assert !(future.isDone());
@@ -228,7 +227,7 @@ public class TimeSchedulerTest {
     public void testIsDone(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask();
-            ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+            Future<?> future=timer.scheduleWithDynamicInterval(task);
 
             assert !(future.isCancelled());
             assert !(future.isDone());
@@ -251,7 +250,7 @@ public class TimeSchedulerTest {
     public void testIsDone2(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000,-1});
-            ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+            Future<?> future=timer.scheduleWithDynamicInterval(task);
 
             assert !(future.isCancelled());
             assert !(future.isDone());
@@ -277,7 +276,7 @@ public class TimeSchedulerTest {
     public void testIsDone3(TimeScheduler timer) throws InterruptedException {
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{-1});
-            ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+            Future<?> future=timer.scheduleWithDynamicInterval(task);
             Thread.sleep(100);
             assert !(future.isCancelled());
             assert future.isDone();
