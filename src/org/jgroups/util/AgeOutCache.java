@@ -6,12 +6,12 @@ import java.util.concurrent.*;
 
 /** Cache which removes its elements after a certain time
  * @author Bela Ban
- * @version $Id: AgeOutCache.java,v 1.6 2010/07/19 06:28:22 belaban Exp $
+ * @version $Id: AgeOutCache.java,v 1.7 2010/07/20 10:33:26 belaban Exp $
  */
 public class AgeOutCache<K> {
     private final TimeScheduler timer;
     private long timeout;
-    private final ConcurrentMap<K,ScheduledFuture> map=new ConcurrentHashMap<K,ScheduledFuture>();
+    private final ConcurrentMap<K,Future> map=new ConcurrentHashMap<K,Future>();
     private Handler handler=null;
 
     public interface Handler<K> {
@@ -46,7 +46,7 @@ public class AgeOutCache<K> {
     }
 
     public void add(final K key) {
-        ScheduledFuture<?> future=timer.schedule(new Runnable() {
+        Future<?> future=timer.schedule(new Runnable() {
             public void run() {
                 if(handler != null) {
                     try {
@@ -55,12 +55,12 @@ public class AgeOutCache<K> {
                     catch(Throwable t) {
                     }
                 }
-                ScheduledFuture tmp=map.remove(key);
+                Future<?> tmp=map.remove(key);
                 if(tmp != null)
                     tmp.cancel(true);
             }
         }, timeout, TimeUnit.MILLISECONDS);
-        ScheduledFuture result=map.putIfAbsent(key, future);
+        Future<?> result=map.putIfAbsent(key, future);
         if(result != null)
             future.cancel(true);
     }
@@ -70,7 +70,7 @@ public class AgeOutCache<K> {
     }
 
     public void remove(K key) {
-        ScheduledFuture future=map.remove(key);
+        Future<?> future=map.remove(key);
         if(future != null)
             future.cancel(true);
     }
@@ -83,7 +83,7 @@ public class AgeOutCache<K> {
     }
 
     public void clear() {
-        for(ScheduledFuture future: map.values())
+        for(Future<?> future: map.values())
             future.cancel(true);
         map.clear();
     }
@@ -94,13 +94,8 @@ public class AgeOutCache<K> {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<K,ScheduledFuture> entry: map.entrySet()) {
-            long time_to_expire=entry.getValue().getDelay(TimeUnit.MILLISECONDS);
-            sb.append(entry.getKey()).append(": ");
-            if(time_to_expire > 0)
-                sb.append(time_to_expire).append(" ms to expire\n");
-            else
-                sb.append("expired");
+        for(Map.Entry<K,Future> entry: map.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
     }
