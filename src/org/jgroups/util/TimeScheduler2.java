@@ -7,6 +7,8 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -18,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.3 2010/07/20 12:14:49 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.4 2010/07/20 12:34:36 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -239,9 +241,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             while(running && !tasks.isEmpty()) {
                 long current_time=System.currentTimeMillis();
                 long execution_time=tasks.firstKey();
-
-
-
                 if(execution_time <= current_time) {
                     final Entry entry=tasks.remove(execution_time);
                     if(entry != null) {
@@ -295,7 +294,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private static class Entry implements Future {
         final Runnable task;
 
-        private ConcurrentLinkedQueue<Runnable> queue=null;
+        private Collection<Runnable> queue=null;
 
         private final Lock lock=new ReentrantLock();
 
@@ -315,8 +314,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             try {
                 if(done)
                     return false;
-                if(queue == null)
-                    queue=new ConcurrentLinkedQueue<Runnable>();
+                if(queue == null) {
+                 //   queue=new ConcurrentLinkedQueue<Runnable>();
+                    queue=new LinkedList<Runnable>();
+                }
                 queue.add(task);
                 return true;
             }
@@ -326,7 +327,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         void execute() {
-            if(!cancelled.compareAndSet(false, true))
+            if(isCancelled() || isDone())
                 return;
 
             try {
@@ -348,9 +349,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                         }
                     }
                 }
-                done=true;
             }
             finally {
+                done=true;
                 lock.unlock();
             }
         }
