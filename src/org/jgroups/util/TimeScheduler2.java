@@ -3,11 +3,14 @@ package org.jgroups.util;
 
 
 import org.jgroups.Global;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -15,8 +18,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.2 2010/07/20 10:36:46 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.3 2010/07/20 12:14:49 belaban Exp $
  */
+@Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
@@ -131,10 +135,15 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         // key=322649L; // todo: remove !
 
         Entry task=new Entry(work);
-        Entry existing=tasks.putIfAbsent(key, task);
-        if(existing != null) {
-            existing.add(work);
-            task=existing;
+
+        while(!isShutdown()) {
+            Entry existing=tasks.putIfAbsent(key, task);
+            if(existing != null) {
+                if(!existing.add(work))
+                    continue;
+                task=existing;
+            }
+            break;
         }
 
         if(!running)
@@ -147,7 +156,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     // todo: cancellation doesn't work with FixedDelayTask !!
     public Future<?> scheduleWithFixedDelay(Runnable task, long initial_delay, long delay, TimeUnit unit) {
-        FixedDelayTask wrapper=new FixedDelayTask(task, this, delay);
+        TaskWrapper wrapper=new FixedIntervalTaskWrapper(task, delay);
         return schedule(wrapper, initial_delay, unit);
     }
 
@@ -169,7 +178,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if (pool.isShutdown())
             return null;
 
-        TaskWrapper task_wrapper=new TaskWrapper(task);
+        TaskWrapper task_wrapper=new DynamicIntervalTaskWrapper(task);
         task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
         return task_wrapper;
     }
@@ -226,10 +235,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
     private void _run() {
-        while(running && !tasks.isEmpty()) {
+        while(running) {
             while(running && !tasks.isEmpty()) {
                 long current_time=System.currentTimeMillis();
                 long execution_time=tasks.firstKey();
+
+
+
                 if(execution_time <= current_time) {
                     final Entry entry=tasks.remove(execution_time);
                     if(entry != null) {
@@ -285,6 +297,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         private ConcurrentLinkedQueue<Runnable> queue=null;
 
+        private final Lock lock=new ReentrantLock();
+
         private final AtomicBoolean cancelled=new AtomicBoolean(false);
         volatile boolean done=false;
 
@@ -293,23 +307,28 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             this.task=task;
         }
 
-        void add(Runnable task) {
-            if(task == null)
-                return;
-
+        boolean add(Runnable task) {
             if(cancelled.get())
                 System.err.println("add(): task has been cancelled !");
 
-            synchronized(this) {
+            lock.lock();
+            try {
+                if(done)
+                    return false;
                 if(queue == null)
                     queue=new ConcurrentLinkedQueue<Runnable>();
+                queue.add(task);
+                return true;
             }
-            queue.add(task);
+            finally {
+                lock.unlock();
+            }
         }
 
         void execute() {
             if(!cancelled.compareAndSet(false, true))
                 return;
+
             try {
                 task.run();
             }
@@ -317,17 +336,23 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 log.error("task execution failed", t);
             }
 
-            if(queue != null) {
-                for(Runnable tmp: queue) {
-                    try {
-                        tmp.run();
-                    }
-                    catch(Throwable t) {
-                        log.error("task execution failed", t);
+            lock.lock();
+            try {
+                if(queue != null) {
+                    for(Runnable tmp: queue) {
+                        try {
+                            tmp.run();
+                        }
+                        catch(Throwable t) {
+                            log.error("task execution failed", t);
+                        }
                     }
                 }
+                done=true;
             }
-            done=true;
+            finally {
+                lock.unlock();
+            }
         }
 
         int size() {
@@ -360,32 +385,33 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    private static class FixedDelayTask implements Runnable {
-        private final Runnable task;
-        private final TimeScheduler2 timer;
-        private final long delay;
-
-        public FixedDelayTask(Runnable task, TimeScheduler2 timer, long delay) {
-            this.task=task;
-            this.timer=timer;
-            this.delay=delay;
-        }
-
-        public void run() {
-            if(task != null) {
-                task.run();
-                timer.schedule(this, delay, TimeUnit.MILLISECONDS);
-            }
-        }
-    }
-
-   private class TaskWrapper<V> implements Runnable, Future<V> {
-        private final Task          task;
-        private volatile Future<?>  future; // cannot be null !
-        private volatile boolean    cancelled=false;
+//    private static class FixedDelayTask implements Runnable {
+//        private final Runnable task;
+//        private final TimeScheduler2 timer;
+//        private final long delay;
+//
+//        public FixedDelayTask(Runnable task, TimeScheduler2 timer, long delay) {
+//            this.task=task;
+//            this.timer=timer;
+//            this.delay=delay;
+//        }
+//
+//        public void run() {
+//            if(task != null) {
+//                task.run();
+//                timer.schedule(this, delay, TimeUnit.MILLISECONDS);
+//            }
+//        }
+//    }
 
 
-        public TaskWrapper(Task task) {
+    private abstract class TaskWrapper<V> implements Runnable, Future<V> {
+        protected final Runnable      task;
+        protected volatile Future<?>  future; // cannot be null !
+        protected volatile boolean    cancelled=false;
+
+
+        public TaskWrapper(Runnable task) {
             this.task=task;
         }
 
@@ -415,13 +441,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             }
             if(future != null && future.isCancelled())
                 return;
-            
+
             doSchedule();
         }
 
+        protected abstract long nextInterval();
 
         public void doSchedule() {
-            long next_interval=task.nextInterval();
+            long next_interval=nextInterval();
             if(next_interval <= 0) {
                 if(log.isTraceEnabled())
                     log.trace("task will not get rescheduled as interval is " + next_interval);
@@ -432,15 +459,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                     future.cancel(true);
             }
         }
-
-//        public int compareTo(Delayed o) {
-//            long my_delay=future.getDelay(TimeUnit.MILLISECONDS), their_delay=o.getDelay(TimeUnit.MILLISECONDS);
-//            return my_delay < their_delay? -1 : my_delay > their_delay? 1 : 0;
-//        }
-//
-//        public long getDelay(TimeUnit unit) {
-//            return future != null? future.getDelay(unit) : -1;
-//        }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
             cancelled=true;
@@ -464,8 +482,35 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             return null;
         }
-
     }
+
+
+    private class FixedIntervalTaskWrapper<V> extends TaskWrapper<V> {
+        final long interval;
+
+        public FixedIntervalTaskWrapper(Runnable task, long interval) {
+            super(task);
+            this.interval=interval;
+        }
+
+        protected long nextInterval() {
+            return interval;
+        }
+    }
+
+
+   private class DynamicIntervalTaskWrapper<V> extends TaskWrapper<V> {
+
+       public DynamicIntervalTaskWrapper(Task task) {
+           super(task);
+       }
+
+       protected long nextInterval() {
+           if(task instanceof Task)
+               return ((Task)task).nextInterval();
+           return 0;
+       }
+   }
 
 
 
