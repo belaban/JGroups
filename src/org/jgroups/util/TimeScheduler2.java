@@ -4,13 +4,13 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,12 +20,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.4 2010/07/20 12:34:36 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.5 2010/07/20 12:59:16 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
-
-
     private ThreadPoolExecutor pool;
 
     private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<Long,Entry>();
@@ -133,18 +131,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             return null;
 
         long key=unit.convert(delay, TimeUnit.MILLISECONDS) + System.currentTimeMillis(); // execution time
-
-        // key=322649L; // todo: remove !
-
         Entry task=new Entry(work);
-
         while(!isShutdown()) {
             Entry existing=tasks.putIfAbsent(key, task);
-            if(existing != null) {
-                if(!existing.add(work))
-                    continue;
-                task=existing;
-            }
+            if(existing == null)
+                break; // break out of the while loop
+            if(!existing.add(work))
+                continue;
+            task=existing;
             break;
         }
 
@@ -296,10 +290,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         private Collection<Runnable> queue=null;
 
+        @GuardedBy("lock")
         private final Lock lock=new ReentrantLock();
 
-        private final AtomicBoolean cancelled=new AtomicBoolean(false);
-        volatile boolean done=false;
+        private volatile boolean cancelled=false;
+        private volatile boolean done=false;
 
 
         public Entry(Runnable task) {
@@ -307,16 +302,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         boolean add(Runnable task) {
-            if(cancelled.get())
-                System.err.println("add(): task has been cancelled !");
-
             lock.lock();
             try {
                 if(done)
                     return false;
                 if(queue == null) {
-                 //   queue=new ConcurrentLinkedQueue<Runnable>();
-                    queue=new LinkedList<Runnable>();
+                    // queue=new ConcurrentLinkedQueue<Runnable>();
+                    queue=new LinkedList<Runnable>(); // queue is protected by lock anyway
                 }
                 queue.add(task);
                 return true;
@@ -327,7 +319,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         void execute() {
-            if(isCancelled() || isDone())
+            if(cancelled || done)
                 return;
 
             try {
@@ -365,11 +357,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
-            return cancelled.compareAndSet(false, true);
+            if(cancelled || done)
+                return false;
+            cancelled=done=true;
+            return true;
         }
 
         public boolean isCancelled() {
-            return cancelled.get();
+            return cancelled;
         }
 
         public boolean isDone() {
