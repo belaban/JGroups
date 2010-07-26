@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.14 2010/07/20 10:36:27 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.15 2010/07/26 16:03:02 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -53,6 +53,46 @@ public class TimeSchedulerTest {
         assert timer.size() == 10;
         timer.stop();
         assert timer.size() == 0 : "stopped timer should have no tasks";
+    }
+
+
+    /**
+     * Tests creating many tasks at the same time and then cancelling some. Asserts that not all tasks are cancelled;
+     * this was the case in an early implementation of {@link org.jgroups.util.TimeScheduler2}.
+     * @param timer
+     */
+    @Test(dataProvider="createTimer")
+    public void testMultipleCancellations(TimeScheduler timer) {
+        final int NUM=20;
+
+        Future<?>[] futures=new Future<?>[NUM];
+
+        try {
+            for(int i=0; i < NUM; i++) {
+                futures[i]=timer.schedule(new MyRunnable(i), 1000, TimeUnit.MILLISECONDS);
+                if(i % 2 == 0)
+                    futures[i].cancel(false);
+            }
+
+            Util.sleep(3000);
+
+            for(int i=0; i < NUM; i++) {
+                Future<?> future=futures[i];
+                System.out.println("[" + i + "] done=" + future.isDone() + ", cancelled=" + future.isCancelled());
+            }
+
+            for(int i=0; i < NUM; i++) {
+                Future<?> future=futures[i];
+                assert future.isDone();
+                if(i % 2 == 0)
+                    assert future.isCancelled();
+                else
+                    assert !future.isCancelled();
+            }
+        }
+        finally {
+            timer.stop();
+        }
     }
 
 
@@ -520,6 +560,18 @@ public class TimeSchedulerTest {
         }
     }
 
+
+    static class MyRunnable implements Runnable {
+        final int num;
+
+        public MyRunnable(int num) {
+            this.num=num;
+        }
+
+        public void run() {
+            System.out.println("[" + num + "] at " + System.currentTimeMillis());
+        }
+    }
 
 
     private static class Entry implements TimeScheduler.Task {
