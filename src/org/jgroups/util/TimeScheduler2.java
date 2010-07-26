@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.5 2010/07/20 12:59:16 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.6 2010/07/26 13:57:55 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -152,8 +152,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     // todo: cancellation doesn't work with FixedDelayTask !!
     public Future<?> scheduleWithFixedDelay(Runnable task, long initial_delay, long delay, TimeUnit unit) {
-        TaskWrapper wrapper=new FixedIntervalTaskWrapper(task, delay);
-        return schedule(wrapper, initial_delay, unit);
+        if(task == null)
+            throw new NullPointerException();
+        if (isShutdown())
+            return null;
+        RecurringTask wrapper=new FixedIntervalTask(task, delay);
+        wrapper.doSchedule();
+        return wrapper;
     }
 
 
@@ -162,19 +167,17 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * {@link org.jgroups.util.TimeScheduler2.Task#nextInterval()} milliseconds. The task is neve done until nextInterval()
      * return a value <= 0 or the task is cancelled.
      * @param task the task to execute
- * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>
- * <tt>false</tt>:<br> Task is scheduled relative to its <i>last</i> execution schedule. This has the effect
- * that the time between two consecutive executions of the task remains the same.<p/>
- * Note that relative is always true; we always schedule the next execution relative to the last *actual*
+     * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>
+     * <tt>false</tt>:<br> Task is scheduled relative to its <i>last</i> execution schedule. This has the effect
+     * that the time between two consecutive executions of the task remains the same.<p/>
+     * Note that relative is always true; we always schedule the next execution relative to the last *actual*
      */
     public Future<?> scheduleWithDynamicInterval(Task task) {
         if(task == null)
             throw new NullPointerException();
-
-        if (pool.isShutdown())
+        if (isShutdown())
             return null;
-
-        TaskWrapper task_wrapper=new DynamicIntervalTaskWrapper(task);
+        RecurringTask task_wrapper=new DynamicIntervalTask(task);
         task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
         return task_wrapper;
     }
@@ -187,9 +190,17 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * @return The number of tasks currently in the queue.
      */
     public int size() {
-        return tasks.size();
+        int retval=0;
+        Collection<Entry> values=tasks.values();
+        for(Entry entry: values)
+            retval+=entry.size();
+        return retval;
     }
 
+
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 
 
     /**
@@ -214,6 +225,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         catch(InterruptedException e) {
         }
         stopRunner();
+
+        for(Entry entry: tasks.values())
+            entry.cancel(true);
+        tasks.clear();
     }
 
 
@@ -334,6 +349,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 if(queue != null) {
                     for(Runnable tmp: queue) {
                         try {
+                            if(cancelled)
+                                break;
                             tmp.run();
                         }
                         catch(Throwable t) {
@@ -381,66 +398,26 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-//    private static class FixedDelayTask implements Runnable {
-//        private final Runnable task;
-//        private final TimeScheduler2 timer;
-//        private final long delay;
-//
-//        public FixedDelayTask(Runnable task, TimeScheduler2 timer, long delay) {
-//            this.task=task;
-//            this.timer=timer;
-//            this.delay=delay;
-//        }
-//
-//        public void run() {
-//            if(task != null) {
-//                task.run();
-//                timer.schedule(this, delay, TimeUnit.MILLISECONDS);
-//            }
-//        }
-//    }
-
-
-    private abstract class TaskWrapper<V> implements Runnable, Future<V> {
+    /**
+     * Task which executes multiple times. An instance of this class wraps the real task and intercepts run(): when
+     * called, it forwards the call to task.run() and then schedules another execution (until cancelled). The
+     * {@link #nextInterval()} method determines the time to wait until the next execution.
+     * @param <V>
+     */
+    private abstract class RecurringTask<V> implements Runnable, Future<V> {
         protected final Runnable      task;
         protected volatile Future<?>  future; // cannot be null !
         protected volatile boolean    cancelled=false;
 
 
-        public TaskWrapper(Runnable task) {
+        public RecurringTask(Runnable task) {
             this.task=task;
         }
 
-        public Future<?> getFuture() {
-            return future;
-        }
-
-        public void run() {
-            try {
-                if(cancelled) {
-                    if(future != null)
-                        future.cancel(true);
-                    return;
-                }
-                if(future != null && future.isCancelled())
-                    return;
-                task.run();
-            }
-            catch(Throwable t) {
-                log.error("failed running task " + task, t);
-            }
-
-            if(cancelled) {
-                if(future != null)
-                    future.cancel(true);
-                return;
-            }
-            if(future != null && future.isCancelled())
-                return;
-
-            doSchedule();
-        }
-
+        /**
+         * The time to wait until the next execution
+         * @return Number of milliseconds to wait until the next execution is scheduled
+         */
         protected abstract long nextInterval();
 
         public void doSchedule() {
@@ -448,13 +425,32 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             if(next_interval <= 0) {
                 if(log.isTraceEnabled())
                     log.trace("task will not get rescheduled as interval is " + next_interval);
+                return;
             }
-            else {
-                future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
-                if(cancelled)
-                    future.cancel(true);
-            }
+            
+            future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
+            if(cancelled)
+                future.cancel(true);
         }
+
+
+        public void run() {
+            if(cancelled) {
+                if(future != null)
+                    future.cancel(true);
+                return;
+            }
+
+            try {
+                task.run();
+            }
+            catch(Throwable t) {
+                log.error("failed running task " + task, t);
+            }
+            if(!cancelled)
+                doSchedule();
+        }
+
 
         public boolean cancel(boolean mayInterruptIfRunning) {
             cancelled=true;
@@ -464,7 +460,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean isCancelled() {
-            return cancelled || (future != null && future.isCancelled());
+            return cancelled;
         }
 
         public boolean isDone() {
@@ -481,10 +477,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    private class FixedIntervalTaskWrapper<V> extends TaskWrapper<V> {
+    private class FixedIntervalTask<V> extends RecurringTask<V> {
         final long interval;
 
-        public FixedIntervalTaskWrapper(Runnable task, long interval) {
+        public FixedIntervalTask(Runnable task, long interval) {
             super(task);
             this.interval=interval;
         }
@@ -495,9 +491,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-   private class DynamicIntervalTaskWrapper<V> extends TaskWrapper<V> {
+   private class DynamicIntervalTask<V> extends RecurringTask<V> {
 
-       public DynamicIntervalTaskWrapper(Task task) {
+       public DynamicIntervalTask(Task task) {
            super(task);
        }
 
