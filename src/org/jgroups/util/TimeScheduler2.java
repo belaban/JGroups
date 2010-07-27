@@ -11,6 +11,7 @@ import org.jgroups.logging.LogFactory;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.8 2010/07/27 10:50:42 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.9 2010/07/27 14:51:20 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -30,13 +31,20 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     private volatile Thread runner=null;
 
+    private final Lock lock=new ReentrantLock();
+
+    private final Condition tasks_available=lock.newCondition();
+
+    @GuardedBy("lock")
+    private long next_execution_time=0;
+
     protected volatile boolean running=false;
 
 
     /** How many core threads */
     private static int TIMER_DEFAULT_NUM_THREADS=3;
 
-    private static long INTERVAL=30;
+    private static long INTERVAL=100;
 
 
     protected static final Log log=LogFactory.getLog(TimeScheduler2.class);
@@ -146,6 +154,21 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if(!running)
             startRunner();
 
+        if(key < next_execution_time) {
+            try {
+                if(lock.tryLock(10, TimeUnit.MILLISECONDS)) {
+                    try {
+                        tasks_available.signal();
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+                }
+            }
+            catch(InterruptedException e) {
+            }
+        }
+
         return task;
     }
 
@@ -186,8 +209,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     /**
-     * Answers the number of tasks currently in the queue.
-     * @return The number of tasks currently in the queue.
+     * Returns the number of tasks currently in the timer
+     * @return The number of tasks currently in the timer
      */
     public int size() {
         int retval=0;
@@ -204,11 +227,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     /**
-     * Stop the scheduler if it's running. Switch to stopped, if it's
-     * suspended. Clear the task queue, cancelling all un-executed tasks
+     * Stops the timer, cancelling all tasks
      *
-     * @throws InterruptedException if interrupted while waiting for thread
-     *                              to return
+     * @throws InterruptedException if interrupted while waiting for thread to return
      */
     public void stop() {
         java.util.List<Runnable> remaining_tasks=pool.shutdownNow();
@@ -246,6 +267,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
     private void _run() {
+        int cnt=0;
         while(running) {
             while(running && !tasks.isEmpty()) {
 
@@ -265,8 +287,27 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 head_map.clear();
             }
 
-            // todo: get rid of the fixed sleep, always maintain a variable to sleep till the next task !
-            Util.sleep(INTERVAL);
+            if(tasks.isEmpty()) {
+                if(++cnt >= 10)
+                    break; // terminates the thread - will be restarted on next task submission
+                Util.sleep(INTERVAL);
+            }
+            else {
+                cnt=0;
+
+                lock.lock();
+                try {
+                    next_execution_time=tasks.firstKey();
+                    long sleep_time=next_execution_time - System.currentTimeMillis();
+                    tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
+                }
+                catch(InterruptedException e) {
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+
         }
     }
 
@@ -274,7 +315,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         synchronized(this) {
             if(runner == null || !runner.isAlive()) {
                 running=true;
-                runner=new Thread(this, "Timer runner");
+                runner=new Thread(this, "Timer thread");
                 runner.start();
             }
         }
@@ -283,6 +324,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void stopRunner() {
         synchronized(this) {
             running=false;
+        }
+
+        lock.lock();
+        try {
+            tasks_available.signal();
+        }
+        finally {
+            lock.unlock();
         }
     }
 
