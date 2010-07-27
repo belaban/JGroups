@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * next task to be executed. When ready, it passes the task to the associated pool to get executed.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.7 2010/07/26 15:40:36 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.8 2010/07/27 10:50:42 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -36,7 +36,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     /** How many core threads */
     private static int TIMER_DEFAULT_NUM_THREADS=3;
 
-    private static long INTERVAL=100;
+    private static long INTERVAL=30;
 
 
     protected static final Log log=LogFactory.getLog(TimeScheduler2.class);
@@ -151,7 +151,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
 
-    // todo: cancellation doesn't work with FixedDelayTask !!
     public Future<?> scheduleWithFixedDelay(Runnable task, long initial_delay, long delay, TimeUnit unit) {
         if(task == null)
             throw new NullPointerException();
@@ -249,23 +248,24 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private void _run() {
         while(running) {
             while(running && !tasks.isEmpty()) {
-                long current_time=System.currentTimeMillis();
-                long execution_time=tasks.firstKey();
-                if(execution_time <= current_time) {
-                    final Entry entry=tasks.remove(execution_time);
-                    if(entry != null) {
-                        pool.execute(new Runnable() {
-                            public void run() {
-                                entry.execute();
-                            }
-                        });
-                    }
-                }
-                else
+
+                // returns a map of entries which are ready to be executed
+                ConcurrentNavigableMap<Long,Entry> head_map=tasks.headMap(System.currentTimeMillis(), true);
+                if(head_map.isEmpty())
                     break;
+
+                for(final Entry entry: head_map.values()) {
+                    pool.execute(new Runnable() {
+                        public void run() {
+                            entry.execute();
+                        }
+                    });
+                }
+
+                head_map.clear();
             }
 
-            // todo: get rid of the fixed sleep, always maintain a variable to sleep till the next task ! 
+            // todo: get rid of the fixed sleep, always maintain a variable to sleep till the next task !
             Util.sleep(INTERVAL);
         }
     }
@@ -273,9 +273,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void startRunner() {
         synchronized(this) {
             if(runner == null || !runner.isAlive()) {
+                running=true;
                 runner=new Thread(this, "Timer runner");
                 runner.start();
-                running=true;
             }
         }
     }
