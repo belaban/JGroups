@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.17 2010/07/28 13:19:59 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.18 2010/07/28 14:14:23 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -131,10 +131,10 @@ public class TimeSchedulerTest {
 
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
-            assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 200ms";
+            assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 500ms";
             if(timer instanceof DefaultTimeScheduler)
                 ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
-            assert timer.size() == 0;
+            assert timer.size() == 0 : " timer size should be 0, but is " + size;
         }
         finally {
             timer.stop();
