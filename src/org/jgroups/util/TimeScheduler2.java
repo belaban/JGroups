@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.11 2010/07/28 12:44:36 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.12 2010/07/28 13:03:13 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -42,34 +42,18 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     protected volatile boolean running=false;
 
-
-    /** How many core threads */
-    private static int TIMER_DEFAULT_NUM_THREADS=3;
-
-
     protected static final Log log=LogFactory.getLog(TimeScheduler2.class);
 
+    protected ThreadDecorator threadDecorator=null;
 
+    protected ThreadFactory timer_thread_factory=null;
 
-    static {
-        String tmp;
-        try {
-            tmp=System.getProperty(Global.TIMER_NUM_THREADS);
-            if(tmp != null)
-                TIMER_DEFAULT_NUM_THREADS=Integer.parseInt(tmp);
-        }
-        catch(Exception e) {
-            log.error("could not set number of timer threads", e);
-        }
-    }
-
-    private ThreadDecorator threadDecorator=null;
 
     /**
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler2() {
-        pool=new ThreadManagerThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, TIMER_DEFAULT_NUM_THREADS,
+        pool=new ThreadManagerThreadPoolExecutor(1, 4,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         if(threadDecorator != null)
@@ -104,6 +88,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     public void setThreadFactory(ThreadFactory factory) {
         pool.setThreadFactory(factory);
+    }
+
+    public void setTimerThreadFactory(ThreadFactory factory) {
+        timer_thread_factory=factory;
+    }
+
+    public ThreadFactory getTimerThreadFactory() {
+        return timer_thread_factory;
     }
 
     public int getMinThreads() {
@@ -146,7 +138,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
         return sb.toString();
     }
-
 
 
 
@@ -362,7 +353,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         synchronized(this) {
             if(runner == null || !runner.isAlive()) {
                 running=true;
-                runner=new Thread(this, "Timer thread");
+                runner=timer_thread_factory != null?
+                        timer_thread_factory.newThread(this, "Timer runner") :
+                        new Thread(this, "Timer thread");
                 runner.start();
             }
         }
