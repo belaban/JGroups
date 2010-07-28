@@ -13,10 +13,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.15 2010/07/26 16:03:02 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.16 2010/07/28 13:15:39 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -398,48 +395,79 @@ public class TimeSchedulerTest {
 
 
 
-     /**
-      * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
-      * more than 30% earlier or later than the scheduled retransmission time
-      */
-     @Test(dataProvider="createTimer")
-     public void testRetransmits(TimeScheduler timer) throws InterruptedException {
-         Entry entry;
-         int num_non_correct_entries=0;
-         Map<Long,Entry> msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
+    /**
+     * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
+     * more than 30% earlier or later than the scheduled retransmission time
+     */
+    @Test(dataProvider="createTimer")
+    public void testRetransmits(TimeScheduler timer) throws InterruptedException {
+        Entry entry;
+        int num_non_correct_entries=0;
+        Map<Long,Entry> msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
 
-         try {
-             // 1. Add NUM_MSGS messages:
-             System.out.println("-- adding " + NUM_MSGS + " messages:");
-             for(long i=0; i < NUM_MSGS; i++) {
-                 entry=new Entry(i);
-                 msgs.put(new Long(i), entry);
-                 timer.scheduleWithDynamicInterval(entry);
-             }
-             System.out.println("-- done");
+        try {
+            // 1. Add NUM_MSGS messages:
+            System.out.println("-- adding " + NUM_MSGS + " messages:");
+            for(long i=0; i < NUM_MSGS; i++) {
+                entry=new Entry(i);
+                msgs.put(new Long(i), entry);
+                timer.scheduleWithDynamicInterval(entry);
+            }
+            System.out.println("-- done");
 
-             // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
-             System.out.println("-- waiting for all retransmits");
+            // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
+            System.out.println("-- waiting for all retransmits");
 
-             // 3. Check whether all Entries have correct retransmission times
-             long end_time=System.currentTimeMillis() + 20000L, start=System.currentTimeMillis();
-             while(System.currentTimeMillis() < end_time) {
-                 num_non_correct_entries=check(msgs, false);
-                 if(num_non_correct_entries == 0)
-                     break;
-                 Util.sleep(1000);
-             }
-             System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
+            // 3. Check whether all Entries have correct retransmission times
+            long end_time=System.currentTimeMillis() + 20000L, start=System.currentTimeMillis();
+            while(System.currentTimeMillis() < end_time) {
+                num_non_correct_entries=check(msgs, false);
+                if(num_non_correct_entries == 0)
+                    break;
+                Util.sleep(1000);
+            }
+            System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
 
-             num_non_correct_entries=check(msgs, true);
-             if(num_non_correct_entries > 0)
-                 System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
-             assert num_non_correct_entries == 0: "expected 0 incorrect entries but got " + num_non_correct_entries;
-         }
-         finally {
-             timer.stop();
-         }
-     }
+            num_non_correct_entries=check(msgs, true);
+            if(num_non_correct_entries > 0)
+                System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+            assert num_non_correct_entries == 0: "expected 0 incorrect entries but got " + num_non_correct_entries;
+        }
+        finally {
+            timer.stop();
+        }
+    }
+
+
+    /**
+     * Tests adding a task and - before it executes - adding tasks which are to be executed sooner
+     * @param timer
+     */
+    @Test(dataProvider="createTimer")
+    public void testTasksPreemptingEachOther(TimeScheduler timer) {
+        final List<Integer> results=new ArrayList<Integer>(3);
+
+        long execution_time=4000;
+
+        for(int num: new Integer[]{1,2,3}) {
+            final int cnt=num;
+            timer.schedule(new Runnable() {
+                public void run() {
+                    results.add(cnt);
+                }
+            }, execution_time, TimeUnit.MILLISECONDS);
+            execution_time-=1000;
+            Util.sleep(100);
+        }
+
+        Util.sleep(5000);
+
+        System.out.println("results = " + results);
+        assert results.size() == 3;
+        assert results.get(0) == 3;
+        assert results.get(1) == 2;
+        assert results.get(2) == 1;
+    }
 
 
     static int check(Map<Long,Entry> msgs, boolean print) {
