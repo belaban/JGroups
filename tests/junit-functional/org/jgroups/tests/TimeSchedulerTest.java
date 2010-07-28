@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.16 2010/07/28 13:15:39 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.17 2010/07/28 13:19:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -54,12 +54,12 @@ public class TimeSchedulerTest {
 
 
     /**
-     * Tests creating many tasks at the same time and then cancelling some. Asserts that not all tasks are cancelled;
+     * Tests creating many tasks at the same time and then cancelling every second task. Asserts that not all tasks are cancelled;
      * this was the case in an early implementation of {@link org.jgroups.util.TimeScheduler2}.
      * @param timer
      */
     @Test(dataProvider="createTimer")
-    public void testMultipleCancellations(TimeScheduler timer) {
+    public void testSchedulingTasksThenCancellingEverySecondTask(TimeScheduler timer) {
         final int NUM=20;
 
         Future<?>[] futures=new Future<?>[NUM];
