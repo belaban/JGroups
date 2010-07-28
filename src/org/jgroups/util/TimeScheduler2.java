@@ -23,15 +23,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.10 2010/07/28 09:32:42 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.11 2010/07/28 12:44:36 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
-    private ThreadPoolExecutor pool;
+    private ThreadManagerThreadPoolExecutor pool;
 
     private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<Long,Entry>();
 
-    private volatile Thread runner=null;
+    private Thread runner=null;
 
     private final Lock lock=new ReentrantLock();
 
@@ -65,32 +65,32 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     private ThreadDecorator threadDecorator=null;
 
-   /**
+    /**
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler2() {
-       // todo: wrap ThreadPoolExecutor with ThreadManagerThreadPoolExecutor and invoke setThreadDecorator()
-       pool=new ThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, TIMER_DEFAULT_NUM_THREADS,
-                                   5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                   Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
-   }
-
-    public TimeScheduler2(ThreadFactory factory) {
-        pool=new ThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, TIMER_DEFAULT_NUM_THREADS,
-                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                    factory, new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadManagerThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, TIMER_DEFAULT_NUM_THREADS,
+                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        if(threadDecorator != null)
+            pool.setThreadDecorator(threadDecorator);
     }
 
-    public TimeScheduler2(ThreadFactory factory, int max_threads) {
-        pool=new ThreadPoolExecutor(TIMER_DEFAULT_NUM_THREADS, max_threads,
-                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                    factory, new ThreadPoolExecutor.CallerRunsPolicy());
+
+    public TimeScheduler2(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size) {
+        pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
+                                                 new LinkedBlockingQueue<Runnable>(max_queue_size),
+                                                 factory, new ThreadPoolExecutor.CallerRunsPolicy());
+        if(threadDecorator != null)
+            pool.setThreadDecorator(threadDecorator);
     }
 
     public TimeScheduler2(int corePoolSize) {
-        pool=new ThreadPoolExecutor(corePoolSize, corePoolSize,
-                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize,
+                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        if(threadDecorator != null)
+            pool.setThreadDecorator(threadDecorator);
     }
 
     public ThreadDecorator getThreadDecorator() {
@@ -99,6 +99,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     public void setThreadDecorator(ThreadDecorator threadDecorator) {
         this.threadDecorator=threadDecorator;
+        pool.setThreadDecorator(threadDecorator);
     }
 
     public void setThreadFactory(ThreadFactory factory) {
@@ -109,20 +110,41 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         return pool.getCorePoolSize();
     }
 
+    public void setMinThreads(int size) {
+        pool.setCorePoolSize(size);
+    }
+
     public int getMaxThreads() {
         return pool.getMaximumPoolSize();
     }
 
-    public int getActiveThreads() {
-        return pool.getActiveCount();
+    public void setMaxThreads(int size) {
+        pool.setMaximumPoolSize(size);
     }
 
-    public BlockingQueue<Runnable> getQueue() {
-        return pool.getQueue();
+    public long getKeepAliveTime() {
+        return pool.getKeepAliveTime(TimeUnit.MILLISECONDS);
     }
 
-    public String dumpTaskQueue() {
-        return pool.getQueue().toString();
+    public void setKeepAliveTime(long time) {
+        pool.setKeepAliveTime(time, TimeUnit.MILLISECONDS);
+    }
+
+    public int getCurrentThreads() {
+        return pool.getPoolSize();
+    }
+
+    public int getQueueSize() {
+        return pool.getQueue().size();
+    }
+
+
+    public String dumpTimerTasks() {
+        StringBuilder sb=new StringBuilder();
+        for(Entry entry: tasks.values()) {
+            sb.append(entry.dump()).append("\n");
+        }
+        return sb.toString();
     }
 
 
@@ -220,6 +242,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * @throws InterruptedException if interrupted while waiting for thread to return
      */
     public void stop() {
+        stopRunner();
+
         java.util.List<Runnable> remaining_tasks=pool.shutdownNow();
         for(Runnable task: remaining_tasks) {
             if(task instanceof Future) {
@@ -233,7 +257,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
         catch(InterruptedException e) {
         }
-        stopRunner();
 
         for(Entry entry: tasks.values())
             entry.cancel(true);
@@ -260,7 +283,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         while(running) {
             while(running && !tasks.isEmpty()) {
                 
-                // entries which are <= curr time (ready to be executed)
+                // head_map = entries which are <= curr time (ready to be executed)
                 if((head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty())
                     break;
 
@@ -361,18 +384,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     
-    protected void afterExecute(Runnable r, Throwable t)
-    {
-//        try {
-//            pool.afterExecute(r, t);
-//        }
-//        finally {
-//            if(threadDecorator != null)
-//                threadDecorator.threadReleased(Thread.currentThread());
-//        }
-    }
-
-
 
     private static class Entry implements Future {
         final Runnable task;
@@ -394,7 +405,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             if(done)
                 return null;
             lock.lock();
-            
             try {
                 if(done)
                     return null;
@@ -451,6 +461,16 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         public String toString() {
             return size() + " tasks";
+        }
+
+        public String dump() {
+            StringBuilder sb=new StringBuilder();
+            sb.append(task);
+            if(queue != null) {
+                for(MyTask task: queue)
+                    sb.append(", ").append(task);
+            }
+            return sb.toString();
         }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
@@ -521,6 +541,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             finally {
                 done=true;
             }
+        }
+
+        public String toString() {
+            return task.toString();
         }
     }
 
@@ -600,6 +624,12 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             return null;
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append(getClass().getSimpleName() + ": task=" + task + ", cancelled=" + cancelled);
+            return sb.toString();
         }
     }
 

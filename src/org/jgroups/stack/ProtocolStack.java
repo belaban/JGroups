@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.102 2010/07/19 06:38:35 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.103 2010/07/28 12:43:22 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -279,7 +279,7 @@ public class ProtocolStack extends Protocol implements Transport {
         if(transport != null) {
             timer=transport.getTimer();
             if(timer != null)
-                return timer.dumpTaskQueue();
+                return timer.dumpTimerTasks();
         }
         return "";
     }
