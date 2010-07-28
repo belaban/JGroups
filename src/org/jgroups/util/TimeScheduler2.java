@@ -11,6 +11,7 @@ import org.jgroups.logging.LogFactory;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -23,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.12 2010/07/28 13:03:13 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.13 2010/07/28 14:20:33 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -39,6 +40,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     @GuardedBy("lock")
     private long next_execution_time=0;
+
+    protected final AtomicBoolean no_tasks=new AtomicBoolean(true);
 
     protected volatile boolean running=false;
 
@@ -167,8 +170,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if(!running)
             startRunner();
 
-        if(key < next_execution_time)
+        if(key < next_execution_time || no_tasks.compareAndSet(true, false)) {
+            if(key >= next_execution_time)
+                key=0L;
             taskReady(key);
+        }
 
         return task;
     }
@@ -289,9 +295,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             }
 
             if(tasks.isEmpty()) {
+                no_tasks.compareAndSet(false, true);
                 if(++cnt >= 10)
                     break;    // terminates the thread - will be restarted on the next task submission
-                waitFor(100); // sleeps until time elapses, or a task with a lower execution time is added 
+                waitFor(100); // sleeps until time elapses, or a task with a lower execution time is added
             }
             else {
                 cnt=0;
@@ -337,7 +344,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         try {
             if(lock.tryLock(10, TimeUnit.MILLISECONDS)) {
                 try {
-                    next_execution_time=trigger_time;
+                    if(trigger_time > 0)
+                        next_execution_time=trigger_time;
                     tasks_available.signal();
                 }
                 finally {
