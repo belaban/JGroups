@@ -18,10 +18,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Implementation of {@link org.jgroups.util.TimeScheduler}. Uses a thread pool and a single thread which waits for the
- * next task to be executed. When ready, it passes the task to the associated pool to get executed.
+ * next task to be executed. When ready, it passes the task to the associated pool to get executed. When multiple tasks
+ * are scheduled to get executed at the same time, they're collected in a queue associated with the task execution
+ * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.9 2010/07/27 14:51:20 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.10 2010/07/28 09:32:42 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -43,8 +45,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     /** How many core threads */
     private static int TIMER_DEFAULT_NUM_THREADS=3;
-
-    private static long INTERVAL=100;
 
 
     protected static final Log log=LogFactory.getLog(TimeScheduler2.class);
@@ -154,20 +154,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if(!running)
             startRunner();
 
-        if(key < next_execution_time) {
-            try {
-                if(lock.tryLock(10, TimeUnit.MILLISECONDS)) {
-                    try {
-                        tasks_available.signal();
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
-            }
-            catch(InterruptedException e) {
-            }
-        }
+        if(key < next_execution_time)
+            taskReady(key);
 
         return task;
     }
@@ -268,12 +256,12 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     private void _run() {
         int cnt=0;
+        ConcurrentNavigableMap<Long,Entry> head_map;
         while(running) {
             while(running && !tasks.isEmpty()) {
-
-                // returns a map of entries which are ready to be executed
-                ConcurrentNavigableMap<Long,Entry> head_map=tasks.headMap(System.currentTimeMillis(), true);
-                if(head_map.isEmpty())
+                
+                // entries which are <= curr time (ready to be executed)
+                if((head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty())
                     break;
 
                 for(final Entry entry: head_map.values()) {
@@ -283,31 +271,67 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                         }
                     });
                 }
-
                 head_map.clear();
             }
 
             if(tasks.isEmpty()) {
                 if(++cnt >= 10)
-                    break; // terminates the thread - will be restarted on next task submission
-                Util.sleep(INTERVAL);
+                    break;    // terminates the thread - will be restarted on the next task submission
+                waitFor(100); // sleeps until time elapses, or a task with a lower execution time is added 
             }
             else {
                 cnt=0;
+                waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
+            }
+        }
+    }
 
-                lock.lock();
+    /**
+     * Sleeps until the next task in line is ready to be executed
+     */
+    protected void waitUntilNextExecution() {
+        lock.lock();
+        try {
+            next_execution_time=tasks.firstKey();
+            long sleep_time=next_execution_time - System.currentTimeMillis();
+
+            tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
+        }
+        catch(InterruptedException e) {
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    protected void waitFor(long sleep_time) {
+        lock.lock();
+        try {
+            tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
+        }
+        catch(InterruptedException e) {
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Signals that a task with a lower execution time than next_execution_time is ready
+     */
+    protected void taskReady(long trigger_time) {
+        try {
+            if(lock.tryLock(10, TimeUnit.MILLISECONDS)) {
                 try {
-                    next_execution_time=tasks.firstKey();
-                    long sleep_time=next_execution_time - System.currentTimeMillis();
-                    tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
-                }
-                catch(InterruptedException e) {
+                    next_execution_time=trigger_time;
+                    tasks_available.signal();
                 }
                 finally {
                     lock.unlock();
                 }
             }
-
+        }
+        catch(InterruptedException e) {
         }
     }
 
