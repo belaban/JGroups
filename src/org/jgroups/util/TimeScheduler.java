@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.35 2010/07/20 10:34:48 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.36 2010/07/28 12:43:46 belaban Exp $
  */
 public interface TimeScheduler extends ThreadManager {
 
@@ -85,13 +85,14 @@ public interface TimeScheduler extends ThreadManager {
     public Future<?> scheduleWithDynamicInterval(Task task);
 
 
+    public void setThreadFactory(ThreadFactory factory);
 
     /**
      * Returns a list of tasks currently waiting for execution. If there are a lot of tasks, the returned string
      * should probably only return the number of tasks rather than a full dump.
      * @return
      */
-    public String dumpTaskQueue();
+    public String dumpTimerTasks();
 
     /**
      * Returns the configured core threads, or -1 if not applicable
@@ -99,17 +100,31 @@ public interface TimeScheduler extends ThreadManager {
      */
     public int getMinThreads();
 
+    /** Sets the core pool size. Can be ignored if not applicable */
+    public void setMinThreads(int size);
+
+
     /**
      * Returns the configured max threads, or -1 if not applicable
      * @return
      */
     public int getMaxThreads();
 
+    /** Sets the max pool size. Can be ignored if not applicable */
+    public void setMaxThreads(int size);
+
+    /** Returns the keep alive time (in ms) of the thread pool, or -1 if not applicable */
+    public long getKeepAliveTime();
+
+    /** Sets the keep alive time (in ms) of the thread pool. Can be ignored if not applicable */
+    public void setKeepAliveTime(long time);
+
+
     /**
-     * Returns the currently running threads, or -1 if not applicable
+     * Returns the current threads in the pool, or -1 if not applicable
      * @return
      */
-    public int getActiveThreads();
+    public int getCurrentThreads();
 
 
     /**

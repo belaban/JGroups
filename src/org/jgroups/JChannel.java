@@ -25,7 +25,6 @@ import java.io.Serializable;
 import java.net.URL;
 import java.net.ServerSocket;
 import java.net.DatagramSocket;
-import java.net.MulticastSocket;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,7 +80,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.241 2010/07/19 06:27:43 belaban Exp $
+ * @version $Id: JChannel.java,v 1.242 2010/07/28 12:43:36 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -349,9 +348,10 @@ public class JChannel extends Channel {
         return timer != null? timer.getMinThreads() : -1;
     }
 
+    @ManagedOperation
     public String dumpTimerQueue() {
         TimeScheduler timer=getTimer();
-        return timer != null? timer.dumpTaskQueue() : "<n/a";
+        return timer != null? timer.dumpTimerTasks() : "<n/a";
     }
 
     /**

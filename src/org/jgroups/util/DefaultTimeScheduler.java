@@ -15,7 +15,7 @@ import java.util.concurrent.*;
  * of execution time (by using a {@link java.util.concurrent.DelayQueue} internally.
  * 
  * @author Bela Ban
- * @version $Id: DefaultTimeScheduler.java,v 1.2 2010/07/20 10:34:02 belaban Exp $
+ * @version $Id: DefaultTimeScheduler.java,v 1.3 2010/07/28 12:43:55 belaban Exp $
  */
 public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements TimeScheduler {
 
@@ -62,6 +62,10 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
         setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(getRejectedExecutionHandler()));
     }
 
+    public void setThreadFactory(ThreadFactory factory) {
+        super.setThreadFactory(factory);
+    }
+
     public ThreadDecorator getThreadDecorator() {
         return threadDecorator;
     }
@@ -70,21 +74,37 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
         this.threadDecorator=threadDecorator;
     }
 
-    public String dumpTaskQueue() {
+    public String dumpTimerTasks() {
         return getQueue().toString();
     }
 
 
-    public int getActiveThreads() {
-        return super.getActiveCount();
+    public int getCurrentThreads() {
+        return super.getPoolSize();
     }
 
     public int getMinThreads() {
         return super.getCorePoolSize();
     }
 
+    public void setMinThreads(int size) {
+        super.setCorePoolSize(size);
+    }
+
     public int getMaxThreads() {
         return super.getMaximumPoolSize();
+    }
+
+    public void setMaxThreads(int size) {
+        super.setMaximumPoolSize(size);
+    }
+
+    public long getKeepAliveTime() {
+        return super.getKeepAliveTime(TimeUnit.MILLISECONDS);
+    }
+
+    public void setKeepAliveTime(long time) {
+        super.setKeepAliveTime(time, TimeUnit.MILLISECONDS);
     }
 
     /**
