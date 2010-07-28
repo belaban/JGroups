@@ -47,12 +47,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.313 2010/07/19 06:27:02 belaban Exp $
+ * @version $Id: TP.java,v 1.314 2010/07/28 12:45:51 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
         "use_concurrent_stack", "prevent_port_reuse", "persistent_ports", "pm_expiry_time", "persistent_ports_file",
-        "start_port", "end_port", "use_local_host"})
+        "start_port", "end_port", "use_local_host", "marshaller_pool_size", "num_timer_threads", "timer.num_threads"})
 public abstract class TP extends Protocol {
 
     private static final byte LIST=1; // we have a list of messages rather than a single message when set
@@ -98,10 +98,6 @@ public abstract class TP extends Protocol {
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
               description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces=null;
-
-    @Property
-    @Deprecated
-    int marshaller_pool_size=0;
 
     @Property(description="Max number of elements in the logical address cache before eviction starts")
     protected int logical_addr_cache_max_size=20;
@@ -177,8 +173,20 @@ public abstract class TP extends Protocol {
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
     protected String thread_pool_rejection_policy="Discard";
 
-    @Property(name="timer.num_threads",description="Number of threads to be used by the timer thread pool. Default is 4")
-    protected int num_timer_threads=4;
+    @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
+            "\"new\" (TimeScheduler2) and \"timewheel\" (not yet implemented). Note that this property might disappear " +
+            "in future releases, if one of the 3 timers is chosen as default timer")
+    protected String timer_type="new";
+
+    protected int timer_min_threads=2;
+
+    protected int timer_max_threads=10;
+
+    protected long timer_keep_alive_time=5000;
+
+    @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
+    protected int timer_queue_max_size=10000;
+
 
     @Property(description="Enable bundling of smaller messages into bigger ones. Default is true")
     protected boolean enable_bundling=true;
@@ -311,6 +319,45 @@ public abstract class TP extends Protocol {
     }
 
     public long getThreadPoolKeepAliveTime() {return thread_pool_keep_alive_time;}
+
+
+
+    @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
+    public void setTimerMinThreads(int size) {
+        timer_min_threads=size;
+        if(timer != null)
+            timer.setMinThreads(size);
+    }
+
+    public int getTimerMinThreads() {return timer_min_threads;}
+
+
+    @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
+    public void setTimerMaxThreads(int size) {
+        timer_max_threads=size;
+        if(timer != null)
+            timer.setMaxThreads(size);
+    }
+
+    public int getTimerMaxThreads() {return timer_max_threads;}
+
+
+    @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
+    public void setTimerKeepAliveTime(long time) {
+        timer_keep_alive_time=time;
+        if(timer != null)
+            timer.setKeepAliveTime(time);
+    }
+
+    public long getTimerKeepAliveTime() {return timer_keep_alive_time;}
+
+    @ManagedAttribute
+    public int getTimerQueueSize() {
+        if(timer instanceof TimeScheduler2)
+            return ((TimeScheduler2)timer).getQueueSize();
+        return 0;
+    }
+
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -336,7 +383,10 @@ public abstract class TP extends Protocol {
     @ManagedAttribute(description="Number of regular messages received")
     protected long num_incoming_msgs_received=0;
 
-
+    @ManagedAttribute(description="Class of the timer implementation")
+    public String getTimerClass() {
+        return timer != null? timer.getClass().getSimpleName() : "null";
+    }
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
@@ -522,8 +572,7 @@ public abstract class TP extends Protocol {
 
     public void setTimerThreadFactory(ThreadFactory factory) {
         timer_thread_factory=factory;
-        if(timer instanceof DefaultTimeScheduler)
-            ((DefaultTimeScheduler)timer).setThreadFactory(factory);
+        timer.setThreadFactory(factory);
     }
 
     public TimeScheduler getTimer() {return timer;}
@@ -645,10 +694,19 @@ public abstract class TP extends Protocol {
         return thread_pool_queue_max_size;
     }
 
-
-    @ManagedAttribute(description="Number of timer tasks queued up for execution")
+    @ManagedAttribute(name="TimerTasks",description="Number of timer tasks queued up for execution")
     public int getNumTimerTasks() {
         return timer != null? timer.size() : -1;
+    }
+
+    @ManagedOperation
+    public String dumpTimerTasks() {
+        return timer.dumpTimerTasks();
+    }
+
+    @ManagedAttribute(description="Number of threads currently in the pool")
+    public int getTimerThreads() {
+        return timer.getCurrentThreads();
     }
 
     public void setRegularRejectionPolicy(String rejection_policy) {
@@ -724,7 +782,19 @@ public abstract class TP extends Protocol {
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
-        timer=new DefaultTimeScheduler(timer_thread_factory, num_timer_threads);
+        if(timer_type.equalsIgnoreCase("old")) {
+            timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
+        }
+        else if(timer_type.equalsIgnoreCase("new")) {
+            timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                     timer_queue_max_size);
+        }
+        else if(timer_type.equalsIgnoreCase("timerwheel")) {
+            throw new UnsupportedOperationException("timerwheel timer is not yet implemented");
+        }
+        else {
+            throw new Exception("timer_type has to be either \"old\", \"new\" or \"timerwheel\"");
+        }
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);
 
@@ -773,6 +843,10 @@ public abstract class TP extends Protocol {
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
                     logical_addr_cache.removeMarkedElements();
+                }
+
+                public String toString() {
+                    return "TP.LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
                 }
             }, logical_addr_cache_expiration, logical_addr_cache_expiration, TimeUnit.MILLISECONDS);
         }
@@ -1700,6 +1774,10 @@ public abstract class TP extends Protocol {
                     num_bundling_tasks--;
                     lock.unlock();
                 }
+            }
+
+            public String toString() {
+                return getClass().getSimpleName();
             }
         }
     }
