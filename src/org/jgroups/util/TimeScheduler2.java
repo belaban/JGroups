@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.15 2010/07/29 11:52:17 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.16 2010/07/29 15:07:48 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -56,7 +56,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler2() {
-        pool=new ThreadManagerThreadPoolExecutor(1, 4,
+        pool=new ThreadManagerThreadPoolExecutor(4, 10,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         modifyPool();
@@ -71,7 +71,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
     public TimeScheduler2(int corePoolSize) {
-        pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize,
+        pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         modifyPool();
