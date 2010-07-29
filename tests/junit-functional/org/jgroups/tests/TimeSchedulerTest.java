@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.21 2010/07/29 09:56:52 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.22 2010/07/29 11:55:25 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -109,6 +109,8 @@ public class TimeSchedulerTest {
             assert num_executions ==0 : "task should never have executed as it was cancelled before execution";
             if(timer instanceof DefaultTimeScheduler)
                 ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
+            else
+                Util.sleep(1000);
             assert timer.size() == 0;
         }
         finally {

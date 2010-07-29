@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.14 2010/07/29 09:29:39 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.15 2010/07/29 11:52:17 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -186,7 +186,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if (isShutdown())
             return null;
         RecurringTask wrapper=new FixedIntervalTask(task, delay);
-        wrapper.doSchedule();
+        wrapper.doSchedule(initial_delay);
         return wrapper;
     }
 
@@ -586,6 +586,12 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 return;
             }
             
+            future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
+            if(cancelled)
+                future.cancel(true);
+        }
+
+        public void doSchedule(long next_interval) {
             future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
             if(cancelled)
                 future.cancel(true);
