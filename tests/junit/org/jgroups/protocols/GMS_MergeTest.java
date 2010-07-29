@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
- * @version $Id: GMS_MergeTest.java,v 1.23 2010/07/07 09:40:09 belaban Exp $
+ * @version $Id: GMS_MergeTest.java,v 1.24 2010/07/29 15:07:11 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
@@ -109,7 +109,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             System.out.println("merge_id = " + merge_id);
             assert new_merge_id.equals(merge_id);
 
-            long timeout=(long)(gms.getMergeTimeout() * 1.5);
+            long timeout=gms.getMergeTimeout() * 2;
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");
             long target_time=System.currentTimeMillis() + timeout;
             while(System.currentTimeMillis() < target_time) {

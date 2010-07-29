@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.22 2010/07/29 11:55:25 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.23 2010/07/29 15:07:39 belaban Exp $
  */
-@Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
+@Test(groups=Global.FUNCTIONAL,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {
     static final int NUM_MSGS=1000;
     static long[] xmit_timeouts={1000, 2000, 4000, 8000};
@@ -172,6 +172,8 @@ public class TimeSchedulerTest {
     private static String printExecutionTimes(RepeatingTask task) {
         StringBuilder sb=new StringBuilder();
         List<Long> times=task.getExecutionTimes();
+        if(times.isEmpty())
+            return "[]";
         long base=times.get(0);
         int cnt=1;
         for(Long time: times) {

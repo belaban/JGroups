@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.268 2010/07/28 12:43:11 belaban Exp $
+ * @version $Id: Util.java,v 1.269 2010/07/29 15:07:25 belaban Exp $
  */
 public class Util {
 
@@ -2126,7 +2126,7 @@ public class Util {
     public static Object[][] createTimer() {
         return new Object[][] {
                 {new DefaultTimeScheduler(5)},
-                {new TimeScheduler2(5)}
+                {new TimeScheduler2()}
         };
     }
 
