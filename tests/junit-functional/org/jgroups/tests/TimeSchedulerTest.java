@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.20 2010/07/29 09:55:55 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.21 2010/07/29 09:56:52 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -488,6 +488,18 @@ public class TimeSchedulerTest {
         }, 0, 3000, TimeUnit.MILLISECONDS);
 
         Util.sleep(500);
+        future.cancel(true);
+
+        System.out.println("variable was set: " + set);
+        assert set.get();
+
+        future=timer.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                set.set(true);
+            }
+        }, 300, 3000, TimeUnit.MILLISECONDS);
+
+        Util.sleep(1000);
         future.cancel(true);
 
         System.out.println("variable was set: " + set);
