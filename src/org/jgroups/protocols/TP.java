@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.315 2010/07/28 13:03:23 belaban Exp $
+ * @version $Id: TP.java,v 1.316 2010/07/29 09:29:51 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -176,9 +176,9 @@ public abstract class TP extends Protocol {
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
             "\"new\" (TimeScheduler2) and \"timewheel\" (not yet implemented). Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
-    protected String timer_type="new";
+    protected String timer_type="old";
 
-    protected int timer_min_threads=2;
+    protected int timer_min_threads=4;
 
     protected int timer_max_threads=10;
 
@@ -783,6 +783,11 @@ public abstract class TP extends Protocol {
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
         if(timer_type.equalsIgnoreCase("old")) {
+            if(timer_min_threads < 2) {
+                log.warn("timer.min_threads should not be less than 2 for timer_type=\"old\"; setting value to 2 (from " +
+                        timer_min_threads + ")");
+                timer_min_threads=2;
+            }
             timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
         }
         else if(timer_type.equalsIgnoreCase("new")) {
