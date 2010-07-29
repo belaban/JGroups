@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionMap
  * @author Bela Ban
- * @version $Id: ConnectionMapTest.java,v 1.3 2010/07/20 07:39:44 belaban Exp $
+ * @version $Id: ConnectionMapTest.java,v 1.4 2010/07/29 14:17:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapTest {
@@ -87,31 +87,24 @@ public class ConnectionMapTest {
         Util.sleep(100);
 
         int num_conns;
-        System.out.println("ct1: " + ct1 + "ct2: " + ct2);
         num_conns=ct1.getNumConnections();
         assert num_conns == 0;
         num_conns=ct2.getNumConnections();
         assert num_conns == 0;
 
-        barrier.await(10000, TimeUnit.MILLISECONDS);
+        barrier.await();
         sender1.join();
         sender2.join();
-       
-        
-        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
-        num_conns=ct1.getNumConnections();
-        assert num_conns == 1 : "num_conns is " + num_conns;
-        num_conns=ct2.getNumConnections();
-        assert num_conns == 1;
-        
+
         Util.sleep(500);
-        
-        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        String msg="ct1: " + ct1 + "\nct2: " + ct2;
+        System.out.println(msg);
+
         num_conns=ct1.getNumConnections();
-        assert num_conns == 1;
+        assert num_conns == 1 : "num_conns for ct1 is " + num_conns + ", " + msg;
         num_conns=ct2.getNumConnections();
-        assert num_conns == 1;
-        
+        assert num_conns == 1 : "num_conns for ct2 is " + num_conns + ", " + msg;
+
         assert ct1.connectionEstablishedTo(addr2) : "valid connection to peer";
         assert ct2.connectionEstablishedTo(addr1) : "valid connection to peer";
     }
@@ -132,12 +125,13 @@ public class ConnectionMapTest {
 
         public void run() {
             try {
-                barrier.await(10000, TimeUnit.MILLISECONDS);
+                barrier.await();
                 if(sleep_time > 0)
                     Util.sleep(sleep_time);
                 conn_table.send(dest, data, 0, data.length);
             }
             catch(Exception e) {
+                e.printStackTrace();
             }
         }
     }
