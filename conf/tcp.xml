@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.41 2010/07/28 12:42:40 belaban Exp $
+    version: $Id: tcp.xml,v 1.42 2010/07/29 09:29:14 belaban Exp $
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -20,8 +20,8 @@
          use_send_queues="true"
          sock_conn_timeout="300"
 
-         timer_type="new"
-         timer.min_threads="1"
+         timer_type="old"
+         timer.min_threads="4"
          timer.max_threads="10"
          timer.keep_alive_time="3000"
          
