@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.19 2010/07/29 08:54:30 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.20 2010/07/29 09:55:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer")
 public class TimeSchedulerTest {
@@ -470,6 +471,29 @@ public class TimeSchedulerTest {
         assert results.get(1) == 2;
         assert results.get(2) == 1;
     }
+
+
+    /**
+     * Tests the initial-delay argument of
+     * {@link TimeScheduler#scheduleWithFixedDelay(Runnable, long, long, java.util.concurrent.TimeUnit)}
+     */
+    @Test(dataProvider="createTimer")
+    public void testSchedulerWithFixedDelay(TimeScheduler timer) {
+        final AtomicBoolean set=new AtomicBoolean(false);
+
+        Future<?> future=timer.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                set.set(true);
+            }
+        }, 0, 3000, TimeUnit.MILLISECONDS);
+
+        Util.sleep(500);
+        future.cancel(true);
+
+        System.out.println("variable was set: " + set);
+        assert set.get();
+    }
+
 
 
     static int check(Map<Long,Entry> msgs, boolean print) {
