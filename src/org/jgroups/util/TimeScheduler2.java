@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.13 2010/07/28 14:20:33 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.14 2010/07/29 09:29:39 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -59,8 +59,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         pool=new ThreadManagerThreadPoolExecutor(1, 4,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
-        if(threadDecorator != null)
-            pool.setThreadDecorator(threadDecorator);
+        modifyPool();
     }
 
 
@@ -68,17 +67,17 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
                                                  factory, new ThreadPoolExecutor.CallerRunsPolicy());
-        if(threadDecorator != null)
-            pool.setThreadDecorator(threadDecorator);
+        modifyPool();
     }
 
     public TimeScheduler2(int corePoolSize) {
         pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
-        if(threadDecorator != null)
-            pool.setThreadDecorator(threadDecorator);
+        modifyPool();
     }
+
+
 
     public ThreadDecorator getThreadDecorator() {
         return threadDecorator;
@@ -305,6 +304,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
             }
         }
+    }
+
+
+    protected void modifyPool() {
+        if(threadDecorator != null)
+            pool.setThreadDecorator(threadDecorator);
+        pool.allowCoreThreadTimeOut(true);
     }
 
     /**
