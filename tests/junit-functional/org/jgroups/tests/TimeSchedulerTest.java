@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.23 2010/07/29 15:07:39 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.24 2010/08/03 15:34:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {
@@ -152,8 +152,8 @@ public class TimeSchedulerTest {
         Future future;
         RepeatingTask task=new RepeatingTask(300);
         try {
-            future=timer.scheduleWithDynamicInterval(task);
-            Util.sleep(3000);
+            future=timer.scheduleAtFixedRate(task, 0, 300, TimeUnit.MILLISECONDS);
+            Util.sleep(3200);
 
             System.out.println("<<< cancelling task");
             future.cancel(true);
@@ -174,10 +174,9 @@ public class TimeSchedulerTest {
         List<Long> times=task.getExecutionTimes();
         if(times.isEmpty())
             return "[]";
-        long base=times.get(0);
         int cnt=1;
         for(Long time: times) {
-            sb.append("#" + cnt++ + ": ").append(time - base).append("\n");
+            sb.append("#" + cnt++ + ": ").append(time).append("\n");
         }
         return sb.toString();
     }
@@ -454,7 +453,7 @@ public class TimeSchedulerTest {
     public void testTasksPreemptingEachOther(TimeScheduler timer) {
         final List<Integer> results=new ArrayList<Integer>(3);
 
-        long execution_time=4000;
+        long execution_time=6000;
 
         for(int num: new Integer[]{1,2,3}) {
             final int cnt=num;
@@ -463,17 +462,17 @@ public class TimeSchedulerTest {
                     results.add(cnt);
                 }
             }, execution_time, TimeUnit.MILLISECONDS);
-            execution_time-=1000;
-            Util.sleep(100);
+            execution_time-=2000;
+            Util.sleep(300);
         }
 
-        Util.sleep(5000);
+        Util.sleep(8000);
 
         System.out.println("results = " + results);
-        assert results.size() == 3;
-        assert results.get(0) == 3;
-        assert results.get(1) == 2;
-        assert results.get(2) == 1;
+        assert results.size() == 3: "results = " + results;
+        assert results.get(0) == 3: "results = " + results;
+        assert results.get(1) == 2: "results = " + results;
+        assert results.get(2) == 1: "results = " + results;
     }
 
 
@@ -607,8 +606,9 @@ public class TimeSchedulerTest {
         public void run() {
             if(base == 0)
                 base=System.currentTimeMillis();
-            System.out.println((num +1) + ": this is a repeating task (" + (System.currentTimeMillis() - base) + "ms after start)");
-            execution_times.add(System.currentTimeMillis());
+            long time=System.currentTimeMillis() - base;
+            System.out.println((num +1) + ": this is a repeating task (" + time + "ms after start)");
+            execution_times.add(time);
             num++;
         }
     }
