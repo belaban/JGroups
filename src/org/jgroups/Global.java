@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.59 2010/05/10 10:35:43 belaban Exp $
+ * @version $Id: Global.java,v 1.60 2010/08/03 17:01:27 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -78,11 +78,11 @@ public class Global {
 
     // for TestNG
     public static final String FUNCTIONAL="functional";
+    public static final String TIME_SENSITIVE="time-sensitive";
     public static final String STACK_DEPENDENT="stack-dependent";
     public static final String STACK_INDEPENDENT="stack-independent";
     public static final String GOSSIP_ROUTER="gossip-router";
     public static final String FLUSH="flush";
-    public static final String STRESS="stress";
     public static final String INITIAL_MCAST_ADDR="INITIAL_MCAST_ADDR";
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";
     public static final String INITIAL_TCP_PORT="INITIAL_TCP_PORT";
