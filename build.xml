@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.252 2010/07/13 09:20:58 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.253 2010/08/03 17:01:48 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -16,6 +16,7 @@
     <property name="other.dir" value="${tests.dir}/other"/>
     <property name="junit.dir" value="${tests.dir}/junit"/>
     <property name="junit-functional.dir" value="${tests.dir}/junit-functional"/>
+    <property name="time-sensitive.dir" value="${tests.dir}/time-sensitive"/>
     <property name="stress.dir" value="${tests.dir}/stress"/>
     <property name="perf.dir" value="${tests.dir}/perf"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
@@ -409,6 +410,7 @@
     <target name="all-tests">
         <sequential>
         	<antcall target="functional"/>
+            <antcall target="time-sensitive"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
@@ -430,6 +432,21 @@
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
+        </testng>
+    </target>
+
+    <target name="time-sensitive" depends="postcompile">
+        <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
+        <testng classpathref="jg.classpath"
+                usedefaultlisteners="false"
+                outputdir="${tmp.dir}/test-results/xml"
+                listeners="org.jgroups.util.JUnitXMLReporter"
+                threadcount="1"
+                parallel="methods"
+                >
+        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
+        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            <xmlfileset dir="${testng.conf.dir}" includes="time-sensitive.xml"/>
         </testng>
     </target>
 
