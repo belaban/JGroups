@@ -21,17 +21,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- * 
- * Move to broken group since it is heavily dependent on sleeps which lead to transient failures 
- * depending on the load of a test machine.
- * 
- * 
- * 
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.24 2010/08/03 15:34:31 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.25 2010/08/03 17:02:10 belaban Exp $
  */
-@Test(groups=Global.FUNCTIONAL,dataProvider="createTimer",sequential=true)
+@Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {
     static final int NUM_MSGS=1000;
     static long[] xmit_timeouts={1000, 2000, 4000, 8000};
@@ -148,7 +142,7 @@ public class TimeSchedulerTest {
 
 
     @Test(dataProvider="createTimer")
-    public  void testRepeatingTask(TimeScheduler timer) throws InterruptedException {
+    public void testRepeatingTask(TimeScheduler timer) throws InterruptedException {
         Future future;
         RepeatingTask task=new RepeatingTask(300);
         try {
@@ -453,20 +447,26 @@ public class TimeSchedulerTest {
     public void testTasksPreemptingEachOther(TimeScheduler timer) {
         final List<Integer> results=new ArrayList<Integer>(3);
 
-        long execution_time=6000;
+        long execution_time=4000;
+        final long base=System.currentTimeMillis();
 
         for(int num: new Integer[]{1,2,3}) {
             final int cnt=num;
             timer.schedule(new Runnable() {
                 public void run() {
                     results.add(cnt);
+                    System.out.println("[" + (System.currentTimeMillis() - base) + "] " + cnt);
                 }
             }, execution_time, TimeUnit.MILLISECONDS);
-            execution_time-=2000;
+            execution_time-=1300;
             Util.sleep(300);
         }
 
-        Util.sleep(8000);
+        for(int i=0; i < 10; i++) {
+            if(results.size() == 3)
+                break;
+            Util.sleep(500);
+        }
 
         System.out.println("results = " + results);
         assert results.size() == 3: "results = " + results;
