@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.36 2010/07/28 12:43:46 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.37 2010/08/03 15:33:47 belaban Exp $
  */
 public interface TimeScheduler extends ThreadManager {
 
@@ -73,6 +73,34 @@ public interface TimeScheduler extends ThreadManager {
      * @throws IllegalArgumentException if delay less than or equal to zero
      */
     public Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+
+
+      /**
+     * Creates and executes a periodic action that becomes enabled first
+     * after the given initial delay, and subsequently with the given
+     * period; that is executions will commence after
+     * <tt>initialDelay</tt> then <tt>initialDelay+period</tt>, then
+     * <tt>initialDelay + 2 * period</tt>, and so on.
+     * If any execution of the task
+     * encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or
+     * termination of the executor.  If any execution of this task
+     * takes longer than its period, then subsequent executions
+     * may start late, but will not concurrently execute.
+     *
+     * @param command the task to execute
+     * @param initialDelay the time to delay first execution
+     * @param period the period between successive executions
+     * @param unit the time unit of the initialDelay and period parameters
+     * @return a ScheduledFuture representing pending completion of
+     *         the task, and whose <tt>get()</tt> method will throw an
+     *         exception upon cancellation
+     * @throws java.util.concurrent.RejectedExecutionException if the task cannot be
+     *         scheduled for execution
+     * @throws NullPointerException if command is null
+     * @throws IllegalArgumentException if period less than or equal to zero
+     */
+    public Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
 
 
     

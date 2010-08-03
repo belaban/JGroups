@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.18 2010/08/03 14:00:34 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.19 2010/08/03 15:34:11 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -158,7 +158,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         Future<?> retval=null;
 
-        long key=unit.convert(delay, TimeUnit.MILLISECONDS) + System.currentTimeMillis(); // execution time
+        long key=System.currentTimeMillis() + unit.convert(delay, TimeUnit.MILLISECONDS); // execution time
         Entry task=new Entry(work);
         while(!isShutdown()) {
             Entry existing=tasks.putIfAbsent(key, task);
@@ -187,6 +187,17 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if (isShutdown())
             return null;
         RecurringTask wrapper=new FixedIntervalTask(task, delay);
+        wrapper.doSchedule(initial_delay);
+        return wrapper;
+    }
+
+
+    public Future<?> scheduleAtFixedRate(Runnable task, long initial_delay, long delay, TimeUnit unit) {
+        if(task == null)
+            throw new NullPointerException();
+        if (isShutdown())
+            return null;
+        RecurringTask wrapper=new FixedRateTask(task, delay);
         wrapper.doSchedule(initial_delay);
         return wrapper;
     }
@@ -555,9 +566,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
          */
         protected abstract long nextInterval();
 
+        protected boolean rescheduleOnZeroDelay() {return false;}
+
         public void doSchedule() {
             long next_interval=nextInterval();
-            if(next_interval <= 0) {
+            if(next_interval <= 0 && !rescheduleOnZeroDelay()) {
                 if(log.isTraceEnabled())
                     log.trace("task will not get rescheduled as interval is " + next_interval);
                 return;
@@ -635,6 +648,25 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         protected long nextInterval() {
             return interval;
         }
+    }
+
+    private class FixedRateTask<V> extends RecurringTask<V> {
+        final long interval;
+        final long first_execution;
+        int num_executions=0;
+
+        public FixedRateTask(Runnable task, long interval) {
+            super(task);
+            this.interval=interval;
+            this.first_execution=System.currentTimeMillis();
+        }
+
+        protected long nextInterval() {
+            long target_time=first_execution + (interval * ++num_executions);
+            return target_time - System.currentTimeMillis();
+        }
+
+        protected boolean rescheduleOnZeroDelay() {return true;}
     }
 
 
