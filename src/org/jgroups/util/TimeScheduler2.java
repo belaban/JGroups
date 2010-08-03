@@ -8,8 +8,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -24,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.16 2010/07/29 15:07:48 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.17 2010/08/03 10:56:02 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -153,17 +152,18 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         if(work == null)
             return null;
 
+        Future<?> retval=null;
+
         long key=unit.convert(delay, TimeUnit.MILLISECONDS) + System.currentTimeMillis(); // execution time
-        Future<?> task=new Entry(work);
+        Entry task=new Entry(work);
         while(!isShutdown()) {
-            Entry existing=tasks.putIfAbsent(key, (Entry)task);
-            if(existing == null)
+            Entry existing=tasks.putIfAbsent(key, task);
+            if(existing == null) {
+                retval=task.getFuture();
                 break; // break out of the while loop
-            Future<?> tmp;
-            if((tmp=existing.add(work)) != null) {
-                task=tmp;
-                break;
             }
+            if((retval=existing.add(work)) != null)
+                break;
         }
 
         if(!running)
@@ -175,7 +175,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             taskReady(key);
         }
 
-        return task;
+        return retval;
     }
 
 
@@ -273,24 +273,30 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
     }
 
-    private void _run() {
+     private void _run() {
         int cnt=0;
         ConcurrentNavigableMap<Long,Entry> head_map;
         while(running) {
             while(running && !tasks.isEmpty()) {
-                
+
                 // head_map = entries which are <= curr time (ready to be executed)
                 if((head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty())
                     break;
 
-                for(final Entry entry: head_map.values()) {
+                final List<Long> keys=new LinkedList<Long>();
+                for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
+                    final Long key=entry.getKey();
+                    final Entry val=entry.getValue();
+
                     pool.execute(new Runnable() {
                         public void run() {
-                            entry.execute();
+                            val.execute();
                         }
                     });
+                    keys.add(key);
                 }
-                head_map.clear();
+
+                tasks.keySet().removeAll(keys);
             }
 
             if(tasks.isEmpty()) {
@@ -304,7 +310,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
             }
         }
-    }
+     }
 
 
     protected void modifyPool() {
@@ -392,33 +398,31 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     
 
-    private static class Entry implements Future {
-        final Runnable task;
-
-        private Collection<MyTask> queue=null;
+    private static class Entry {
+        private final MyTask     task; // the task (wrapper) to execute
+        private MyTask           last; // points to the last task
+        private final Lock       lock=new ReentrantLock();
 
         @GuardedBy("lock")
-        private final Lock lock=new ReentrantLock();
-
-        private volatile boolean cancelled=false;
-        private volatile boolean done=false;
+        private boolean          completed=false; // set to true when the task has been executed
 
 
         public Entry(Runnable task) {
-            this.task=task;
+            last=this.task=new MyTask(task);
+        }
+
+        Future<?> getFuture() {
+            return task;
         }
 
         Future<?> add(Runnable task) {
-            if(done)
-                return null;
             lock.lock();
             try {
-                if(done)
+                if(completed)
                     return null;
-                if(queue == null)
-                    queue=new LinkedList<MyTask>(); // queue is protected by lock anyway
                 MyTask retval=new MyTask(task);
-                queue.add(retval);
+                last.next=retval;
+                last=last.next;
                 return retval;
             }
             finally {
@@ -427,23 +431,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         void execute() {
-            if(done)
-                return;
-            if(!cancelled) {
-                try {
-                    task.run();
-                }
-                catch(Throwable t) {
-                    log.error("task execution failed", t);
-                }
-            }
-
             lock.lock();
             try {
-                if(queue != null) {
-                    for(MyTask tmp: queue) {
-                        if(tmp.isCancelled() || tmp.isDone())
-                            continue;
+                if(completed)
+                    return;
+                completed=true;
+
+                for(MyTask tmp=task; tmp != null; tmp=tmp.next) {
+                    if(!(tmp.isCancelled() || tmp.isDone())) {
                         try {
                             tmp.run();
                         }
@@ -457,13 +452,28 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 }
             }
             finally {
-                done=true;
+                lock.unlock();
+            }
+        }
+
+        void cancel(boolean interrupt_if_running) {
+            lock.lock();
+            try {
+                if(completed)
+                    return;
+                for(MyTask tmp=task; tmp != null; tmp=tmp.next)
+                    tmp.cancel(interrupt_if_running);
+            }
+            finally {
                 lock.unlock();
             }
         }
 
         int size() {
-            return 1 + (queue != null? queue.size() : 0);
+            int retval=1;
+            for(MyTask tmp=task.next; tmp != null; tmp=tmp.next)
+                retval++;
+            return retval;
         }
 
         public String toString() {
@@ -472,42 +482,28 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         public String dump() {
             StringBuilder sb=new StringBuilder();
-            sb.append(task);
-            if(queue != null) {
-                for(MyTask task: queue)
-                    sb.append(", ").append(task);
+            boolean first=true;
+            for(MyTask tmp=task; tmp != null; tmp=tmp.next) {
+                if(!first)
+                    sb.append(", ");
+                else
+                    first=false;
+                sb.append(tmp);
             }
             return sb.toString();
         }
 
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            if(cancelled || done)
-                return false;
-            cancelled=true;
-            return true;
-        }
-
-        public boolean isCancelled() {
-            return cancelled;
-        }
-
-        public boolean isDone() {
-            return done || cancelled;
-        }
-
-        public Object get() throws InterruptedException, ExecutionException {
-            return null;
-        }
-
-        public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return null;
-        }
     }
 
+
+    /**
+     * Simple task wrapper, always executed by at most 1 thread.
+     */
     protected static class MyTask implements Future, Runnable {
         protected final Runnable   task;
         protected volatile boolean cancelled=false;
         protected volatile boolean done=false;
+        protected MyTask           next;
 
         public MyTask(Runnable task) {
             this.task=task;
