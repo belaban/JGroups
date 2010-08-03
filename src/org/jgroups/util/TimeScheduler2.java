@@ -8,7 +8,10 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -23,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.17 2010/08/03 10:56:02 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.18 2010/08/03 14:00:34 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -40,6 +43,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     @GuardedBy("lock")
     private long next_execution_time=0;
 
+    /** Needed to signal going from 0 tasks to non-zero (we cannot use tasks.isEmpty() here ...) */
     protected final AtomicBoolean no_tasks=new AtomicBoolean(true);
 
     protected volatile boolean running=false;
@@ -58,7 +62,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         pool=new ThreadManagerThreadPoolExecutor(4, 10,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
-        modifyPool();
+        init();
     }
 
 
@@ -66,14 +70,14 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
                                                  factory, new ThreadPoolExecutor.CallerRunsPolicy());
-        modifyPool();
+        init();
     }
 
     public TimeScheduler2(int corePoolSize) {
         pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
-        modifyPool();
+        init();
     }
 
 
@@ -165,9 +169,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             if((retval=existing.add(work)) != null)
                 break;
         }
-
-        if(!running)
-            startRunner();
 
         if(key < next_execution_time || no_tasks.compareAndSet(true, false)) {
             if(key >= next_execution_time)
@@ -264,59 +265,50 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         return pool.isShutdown();
     }
 
+
     public void run() {
-        try {
-            _run();
-        }
-        finally {
-            running=false;
+        while(running) {
+            try {
+                _run();
+            }
+            catch(Throwable t) {
+                log.error("failed executing tasks(s)", t);
+            }
         }
     }
 
-     private void _run() {
-        int cnt=0;
-        ConcurrentNavigableMap<Long,Entry> head_map;
-        while(running) {
-            while(running && !tasks.isEmpty()) {
 
-                // head_map = entries which are <= curr time (ready to be executed)
-                if((head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty())
-                    break;
-
-                final List<Long> keys=new LinkedList<Long>();
-                for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
-                    final Long key=entry.getKey();
-                    final Entry val=entry.getValue();
-
-                    pool.execute(new Runnable() {
-                        public void run() {
-                            val.execute();
-                        }
-                    });
-                    keys.add(key);
-                }
-
-                tasks.keySet().removeAll(keys);
+    protected void _run() {
+        ConcurrentNavigableMap<Long,Entry> head_map; // head_map = entries which are <= curr time (ready to be executed)
+        if(!(head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty()) {
+            final List<Long> keys=new LinkedList<Long>();
+            for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
+                final Long key=entry.getKey();
+                final Entry val=entry.getValue();
+                pool.execute(new Runnable() {
+                    public void run() {
+                        val.execute();
+                    }
+                });
+                keys.add(key);
             }
-
-            if(tasks.isEmpty()) {
-                no_tasks.compareAndSet(false, true);
-                if(++cnt >= 10)
-                    break;    // terminates the thread - will be restarted on the next task submission
-                waitFor(100); // sleeps until time elapses, or a task with a lower execution time is added
-            }
-            else {
-                cnt=0;
-                waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
-            }
+            tasks.keySet().removeAll(keys);
         }
-     }
+
+        if(tasks.isEmpty()) {
+            no_tasks.compareAndSet(false, true);
+            waitFor(10000); // sleeps until time elapses, or a task with a lower execution time is added
+        }
+        else
+            waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
+    }
 
 
-    protected void modifyPool() {
+    protected void init() {
         if(threadDecorator != null)
             pool.setThreadDecorator(threadDecorator);
         pool.allowCoreThreadTimeOut(true);
+        startRunner();
     }
 
     /**
@@ -325,9 +317,10 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void waitUntilNextExecution() {
         lock.lock();
         try {
+            if(!running)
+                return;
             next_execution_time=tasks.firstKey();
             long sleep_time=next_execution_time - System.currentTimeMillis();
-
             tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
         }
         catch(InterruptedException e) {
@@ -340,6 +333,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void waitFor(long sleep_time) {
         lock.lock();
         try {
+            if(!running)
+                return;
             tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
         }
         catch(InterruptedException e) {
@@ -353,41 +348,27 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * Signals that a task with a lower execution time than next_execution_time is ready
      */
     protected void taskReady(long trigger_time) {
+        lock.lock();
         try {
-            if(lock.tryLock(10, TimeUnit.MILLISECONDS)) {
-                try {
-                    if(trigger_time > 0)
-                        next_execution_time=trigger_time;
-                    tasks_available.signal();
-                }
-                finally {
-                    lock.unlock();
-                }
-            }
+            if(trigger_time > 0)
+                next_execution_time=trigger_time;
+            tasks_available.signal();
         }
-        catch(InterruptedException e) {
+        finally {
+            lock.unlock();
         }
     }
 
     protected void startRunner() {
-        synchronized(this) {
-            if(runner == null || !runner.isAlive()) {
-                running=true;
-                runner=timer_thread_factory != null?
-                        timer_thread_factory.newThread(this, "Timer runner") :
-                        new Thread(this, "Timer thread");
-                runner.start();
-            }
-        }
+        running=true;
+        runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer thread");
+        runner.start();
     }
 
     protected void stopRunner() {
-        synchronized(this) {
-            running=false;
-        }
-
         lock.lock();
         try {
+            running=false;
             tasks_available.signal();
         }
         finally {
