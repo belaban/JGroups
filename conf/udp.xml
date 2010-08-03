@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.42 2010/07/29 09:29:14 belaban Exp $
+  version: $Id: udp.xml,v 1.43 2010/08/03 14:01:16 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -25,10 +25,11 @@
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
-         timer_type="old"
-         timer.min_threads="4"
+         timer_type="new"
+         timer.min_threads="2"
          timer.max_threads="10"
          timer.keep_alive_time="3000"
+         timer.queue_max_size="500"
 
          thread_pool.enabled="true"
          thread_pool.min_threads="2"
