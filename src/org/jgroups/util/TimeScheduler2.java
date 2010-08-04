@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.20 2010/08/04 09:36:26 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.21 2010/08/04 09:38:57 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -319,7 +319,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void init() {
         if(threadDecorator != null)
             pool.setThreadDecorator(threadDecorator);
-        pool.allowCoreThreadTimeOut(true);
+        // pool.allowCoreThreadTimeOut(true);
         startRunner();
     }
 
