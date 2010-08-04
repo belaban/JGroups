@@ -15,7 +15,7 @@ import java.util.concurrent.*;
  * of execution time (by using a {@link java.util.concurrent.DelayQueue} internally.
  * 
  * @author Bela Ban
- * @version $Id: DefaultTimeScheduler.java,v 1.3 2010/07/28 12:43:55 belaban Exp $
+ * @version $Id: DefaultTimeScheduler.java,v 1.4 2010/08/04 12:35:32 belaban Exp $
  */
 public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements TimeScheduler {
 
@@ -269,18 +269,19 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
 
 
         public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean retval=!isDone();
             cancelled=true;
             if(future != null)
                 future.cancel(mayInterruptIfRunning);
-            return cancelled;
+            return retval;
         }
 
         public boolean isCancelled() {
-            return cancelled || (future != null && future.isCancelled());
+            return cancelled;
         }
 
         public boolean isDone() {
-            return future == null || future.isDone();
+            return cancelled || (future == null || future.isDone());
         }
 
         public V get() throws InterruptedException, ExecutionException {
