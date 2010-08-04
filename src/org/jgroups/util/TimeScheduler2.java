@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.23 2010/08/04 12:48:47 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.24 2010/08/04 12:49:08 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -626,7 +626,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append(getClass().getSimpleName() + ": task=" + task + ", cancelled=" + cancelled);
+            sb.append(getClass().getSimpleName() + ": task=" + task + ", cancelled=" + isCancelled());
             return sb.toString();
         }
     }
