@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.21 2010/08/04 09:38:57 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.22 2010/08/04 12:35:32 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -503,10 +503,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean cancel(boolean mayInterruptIfRunning) {
-            if(cancelled || done)
-                return false;
-            cancelled=done=true;
-            return true;
+            boolean retval=!isDone();
+            cancelled=true;
+            return retval;
         }
 
         public boolean isCancelled() {
@@ -514,7 +513,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean isDone() {
-            return done;
+            return done || cancelled;
         }
 
         public Object get() throws InterruptedException, ExecutionException {
@@ -526,7 +525,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public void run() {
-            if(cancelled || done)
+            if(isDone())
                 return;
             try {
                 task.run();
@@ -608,10 +607,11 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
         public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean retval=!isDone();
             cancelled=true;
             if(future != null)
                 future.cancel(mayInterruptIfRunning);
-            return cancelled;
+            return retval;
         }
 
         public boolean isCancelled() {
@@ -619,7 +619,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         public boolean isDone() {
-            return future == null || future.isDone();
+            return cancelled || (future == null || future.isDone());
         }
 
         public V get() throws InterruptedException, ExecutionException {

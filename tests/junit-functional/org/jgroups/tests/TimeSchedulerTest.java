@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.25 2010/08/03 17:02:10 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.26 2010/08/04 12:35:31 belaban Exp $
  */
 @Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {
@@ -246,13 +246,11 @@ public class TimeSchedulerTest {
             assert !(future.isCancelled());
             assert !(future.isDone());
 
-            boolean success=future.cancel(true);
-            assert success;
+            assert future.cancel(true);
             assert future.isCancelled();
             assert future.isDone();
 
-            success=future.cancel(true);
-            assert success;
+            assert future.cancel(true) == false;
         }
         finally {
             timer.stop();
@@ -289,19 +287,17 @@ public class TimeSchedulerTest {
             TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000,-1});
             Future<?> future=timer.scheduleWithDynamicInterval(task);
 
-            assert !(future.isCancelled());
-            assert !(future.isDone());
+            assert !future.isCancelled();
+            assert !future.isDone();
 
             Thread.sleep(3500);
-            assert !(future.isCancelled());
+            assert !future.isCancelled();
             assert future.isDone();
 
-            boolean success=future.cancel(true);
-            if(success)
-                assert future.isCancelled();
-            else
-                assert !(future.isCancelled());
+            assert !future.cancel(true); // cancel() fails because the task is done
+            assert future.isCancelled();
             assert future.isDone();
+            assert !future.cancel(true);
         }
         finally {
             timer.stop();
@@ -315,14 +311,11 @@ public class TimeSchedulerTest {
             TimeScheduler.Task task=new DynamicTask(new long[]{-1});
             Future<?> future=timer.scheduleWithDynamicInterval(task);
             Thread.sleep(100);
-            assert !(future.isCancelled());
+            assert !future.isCancelled();
             assert future.isDone();
 
-            boolean success=future.cancel(true);
-            if(success)
-                assert future.isCancelled();
-            else
-                assert !(future.isCancelled());
+            assert !future.cancel(true);
+            assert future.isCancelled();
             assert future.isDone();
         }
         finally {
