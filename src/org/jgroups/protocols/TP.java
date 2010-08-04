@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.319 2010/08/04 09:40:42 belaban Exp $
+ * @version $Id: TP.java,v 1.320 2010/08/04 14:08:10 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -174,7 +174,7 @@ public abstract class TP extends Protocol {
     protected String thread_pool_rejection_policy="Discard";
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
-            "\"new\" (TimeScheduler2) and \"timewheel\" (not yet implemented). Note that this property might disappear " +
+            "\"new\" (TimeScheduler2) and \"timingwheel\". Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
     protected String timer_type="old";
 
@@ -794,11 +794,12 @@ public abstract class TP extends Protocol {
             timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
                                      timer_queue_max_size);
         }
-        else if(timer_type.equalsIgnoreCase("timerwheel")) {
-            throw new UnsupportedOperationException("timerwheel timer is not yet implemented");
+        else if(timer_type.equalsIgnoreCase("timingwheel")) {
+            timer=new HashedTimingWheel(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                        timer_queue_max_size);
         }
         else {
-            throw new Exception("timer_type has to be either \"old\", \"new\" or \"timerwheel\"");
+            throw new Exception("timer_type has to be either \"old\", \"new\" or \"timingwheel\"");
         }
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);
