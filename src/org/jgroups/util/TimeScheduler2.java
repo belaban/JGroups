@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.19 2010/08/03 15:34:11 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.20 2010/08/04 09:36:26 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
@@ -67,6 +67,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     public TimeScheduler2(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size) {
+        timer_thread_factory=factory;
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
                                                  factory, new ThreadPoolExecutor.CallerRunsPolicy());
@@ -372,7 +373,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     protected void startRunner() {
         running=true;
-        runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer thread");
+        runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer runner");
         runner.start();
     }
 
