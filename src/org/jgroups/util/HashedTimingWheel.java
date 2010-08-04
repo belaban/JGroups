@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * [1] http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt
  *
  * @author Bela Ban
- * @version $Id: HashedTimingWheel.java,v 1.1 2010/08/04 14:08:19 belaban Exp $
+ * @version $Id: HashedTimingWheel.java,v 1.2 2010/08/04 16:03:32 belaban Exp $
  */
 @Experimental @Unsupported
 public class HashedTimingWheel implements TimeScheduler, Runnable  {
@@ -39,11 +39,13 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
     protected ThreadFactory timer_thread_factory=null;
 
-    protected static final int WHEEL_SIZE=256;   // number of ticks on the timing wheel
+    protected static final int WHEEL_SIZE=200;   // number of ticks on the timing wheel
 
-    protected static final long TICK_TIME=100L;  // number of milliseconds a tick has
+    protected static final long TICK_TIME=50L;  // number of milliseconds a tick has
 
-    protected final List<MyTask>[] wheel=new List[WHEEL_SIZE];
+    protected static final long ROTATION_TIME=WHEEL_SIZE * TICK_TIME; // time for 1 lap
+
+    protected final List<MyTask>[] wheel;
 
     protected int wheel_position=0; // current position of the wheel, run() advances it by one (every TICK_TIME ms)
 
@@ -51,7 +53,9 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     /**
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
+    @SuppressWarnings("unchecked")
     public HashedTimingWheel() {
+        wheel=new List[WHEEL_SIZE];
         pool=new ThreadManagerThreadPoolExecutor(4, 10,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -59,7 +63,9 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     }
 
 
+    @SuppressWarnings("unchecked")
     public HashedTimingWheel(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size) {
+        wheel=new List[WHEEL_SIZE];
         timer_thread_factory=factory;
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
@@ -67,7 +73,9 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         init();
     }
 
+    @SuppressWarnings("unchecked")
     public HashedTimingWheel(int corePoolSize) {
+        wheel=(List<MyTask>[])new List[WHEEL_SIZE];
         pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -154,14 +162,13 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
         MyTask retval=null;
 
-        long time=System.currentTimeMillis() + unit.convert(delay, TimeUnit.MILLISECONDS); // execution time
+        long time=unit.convert(delay, TimeUnit.MILLISECONDS); // execution time
 
         lock.lock();
         try {
-            int num_ticks=(int)((time % (WHEEL_SIZE * TICK_TIME)) / TICK_TIME);
+            int num_ticks=(int)Math.max(1, ((time % ROTATION_TIME) / TICK_TIME));
             int position=(wheel_position + num_ticks) % WHEEL_SIZE;
-            int rounds=(int)(time / (WHEEL_SIZE * TICK_TIME));
-
+            int rounds=(int)(time / ROTATION_TIME);
             List<MyTask> list=wheel[position];
             retval=new MyTask(work, rounds);
             list.add(retval);
@@ -265,8 +272,6 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         }
         catch(InterruptedException e) {
         }
-
-
     }
 
 
@@ -276,10 +281,16 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
 
     public void run() {
+        final long base_time=System.currentTimeMillis();
+        long next_time, sleep_time;
+        long cnt=0;
+
         while(running) {
             try {
                 _run();
-                Util.sleep(TICK_TIME);
+                next_time=base_time + (++cnt * TICK_TIME);
+                sleep_time=Math.max(0, next_time - System.currentTimeMillis());
+                Util.sleep(sleep_time);
             }
             catch(Throwable t) {
                 log.error("failed executing tasks(s)", t);
