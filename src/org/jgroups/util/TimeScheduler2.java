@@ -26,11 +26,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
- * @version $Id: TimeScheduler2.java,v 1.22 2010/08/04 12:35:32 belaban Exp $
+ * @version $Id: TimeScheduler2.java,v 1.23 2010/08/04 12:48:47 belaban Exp $
  */
 @Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
-    private ThreadManagerThreadPoolExecutor pool;
+    private final ThreadManagerThreadPoolExecutor pool;
 
     private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<Long,Entry>();
 
@@ -53,6 +53,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected ThreadDecorator threadDecorator=null;
 
     protected ThreadFactory timer_thread_factory=null;
+
+    protected static final long SLEEP_TIME=10000;
 
 
     /**
@@ -94,14 +96,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     public void setThreadFactory(ThreadFactory factory) {
         pool.setThreadFactory(factory);
-    }
-
-    public void setTimerThreadFactory(ThreadFactory factory) {
-        timer_thread_factory=factory;
-    }
-
-    public ThreadFactory getTimerThreadFactory() {
-        return timer_thread_factory;
     }
 
     public int getMinThreads() {
@@ -268,7 +262,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
 
         for(Entry entry: tasks.values())
-            entry.cancel(true);
+            entry.cancel();
         tasks.clear();
     }
 
@@ -309,7 +303,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         if(tasks.isEmpty()) {
             no_tasks.compareAndSet(false, true);
-            waitFor(10000); // sleeps until time elapses, or a task with a lower execution time is added
+            waitFor(); // sleeps until time elapses, or a task with a lower execution time is added
         }
         else
             waitUntilNextExecution(); // waits until next execution, or a task with a lower execution time is added
@@ -342,12 +336,12 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
     }
 
-    protected void waitFor(long sleep_time) {
+    protected void waitFor() {
         lock.lock();
         try {
             if(!running)
                 return;
-            tasks_available.await(sleep_time, TimeUnit.MILLISECONDS);
+            tasks_available.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
         }
         catch(InterruptedException e) {
         }
@@ -449,13 +443,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             }
         }
 
-        void cancel(boolean interrupt_if_running) {
+        void cancel() {
             lock.lock();
             try {
                 if(completed)
                     return;
                 for(MyTask tmp=task; tmp != null; tmp=tmp.next)
-                    tmp.cancel(interrupt_if_running);
+                    tmp.cancel(true);
             }
             finally {
                 lock.unlock();
