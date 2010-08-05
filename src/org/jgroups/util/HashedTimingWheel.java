@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * [1] http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt
  *
  * @author Bela Ban
- * @version $Id: HashedTimingWheel.java,v 1.3 2010/08/05 06:48:19 belaban Exp $
+ * @version $Id: HashedTimingWheel.java,v 1.4 2010/08/05 06:57:20 belaban Exp $
  */
 @Experimental @Unsupported
 public class HashedTimingWheel implements TimeScheduler, Runnable  {
@@ -353,6 +353,13 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         lock.lock();
         try {
             running=false;
+            for(List<MyTask> list: wheel) {
+                if(!list.isEmpty()) {
+                    for(MyTask task: list)
+                        task.cancel(true);
+                    list.clear();
+                }
+            }
         }
         finally {
             lock.unlock();
