@@ -20,7 +20,7 @@
 
         timer_type="new"
         timer.min_threads="4"
-        timer.max_threads="20"
+        timer.max_threads="10"
         timer.keep_alive_time="3000"
         timer.queue_max_size="500"
 
