@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.322 2010/08/05 06:48:48 belaban Exp $
+ * @version $Id: TP.java,v 1.323 2010/08/05 06:51:23 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -176,7 +176,7 @@ public abstract class TP extends Protocol {
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
             "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
-    protected String timer_type="old";
+    protected String timer_type="new";
 
     protected int timer_min_threads=4;
 
