@@ -5,7 +5,7 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.10 2010/08/03 13:26:14 belaban Exp $
+  Version: $Id: fast-local.xml,v 1.11 2010/08/05 08:16:39 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -29,7 +29,7 @@
          thread_naming_pattern="cl"
 
          timer_type="new"
-         timer.min_threads="2"
+         timer.min_threads="4"
          timer.max_threads="10"
          timer.keep_alive_time="3000"
          timer.queue_max_size="500"
