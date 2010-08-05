@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.321 2010/08/04 16:02:11 belaban Exp $
+ * @version $Id: TP.java,v 1.322 2010/08/05 06:48:48 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -174,7 +174,7 @@ public abstract class TP extends Protocol {
     protected String thread_pool_rejection_policy="Discard";
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
-            "\"new\" (TimeScheduler2) and \"timingwheel\". Note that this property might disappear " +
+            "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
     protected String timer_type="old";
 
@@ -187,6 +187,14 @@ public abstract class TP extends Protocol {
     @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
     protected int timer_queue_max_size=10000;
 
+    // hashed timing wheel specific props
+    @Property(name="timer.wheel_size",
+              description="Number of ticks in the HashedTimingWheel timer. Only applicable if timer_type is \"wheel\"")
+    protected int wheel_size=200;
+
+    @Property(name="timer.tick_time",
+              description="Tick duration in the HashedTimingWheel timer. Only applicable if timer_type is \"wheel\"")
+    protected long tick_time=50L;
 
     @Property(description="Enable bundling of smaller messages into bigger ones. Default is true")
     protected boolean enable_bundling=true;
@@ -794,12 +802,12 @@ public abstract class TP extends Protocol {
             timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
                                      timer_queue_max_size);
         }
-        else if(timer_type.equalsIgnoreCase("timingwheel") || timer_type.equalsIgnoreCase("wheel")) {
+        else if(timer_type.equalsIgnoreCase("wheel")) {
             timer=new HashedTimingWheel(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                        timer_queue_max_size);
+                                        timer_queue_max_size, wheel_size, tick_time);
         }
         else {
-            throw new Exception("timer_type has to be either \"old\", \"new\" or \"timingwheel\"");
+            throw new Exception("timer_type has to be either \"old\", \"new\" or \"wheel\"");
         }
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);

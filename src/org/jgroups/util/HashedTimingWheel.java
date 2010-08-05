@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * [1] http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt
  *
  * @author Bela Ban
- * @version $Id: HashedTimingWheel.java,v 1.2 2010/08/04 16:03:32 belaban Exp $
+ * @version $Id: HashedTimingWheel.java,v 1.3 2010/08/05 06:48:19 belaban Exp $
  */
 @Experimental @Unsupported
 public class HashedTimingWheel implements TimeScheduler, Runnable  {
@@ -39,11 +39,11 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
     protected ThreadFactory timer_thread_factory=null;
 
-    protected static final int WHEEL_SIZE=200;   // number of ticks on the timing wheel
+    protected int wheel_size=200;   // number of ticks on the timing wheel
 
-    protected static final long TICK_TIME=50L;  // number of milliseconds a tick has
+    protected long tick_time=50L;  // number of milliseconds a tick has
 
-    protected static final long ROTATION_TIME=WHEEL_SIZE * TICK_TIME; // time for 1 lap
+    protected final long ROTATION_TIME;// time for 1 lap
 
     protected final List<MyTask>[] wheel;
 
@@ -55,7 +55,8 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
      */
     @SuppressWarnings("unchecked")
     public HashedTimingWheel() {
-        wheel=new List[WHEEL_SIZE];
+        ROTATION_TIME=wheel_size * tick_time;
+        wheel=new List[wheel_size];
         pool=new ThreadManagerThreadPoolExecutor(4, 10,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -64,8 +65,12 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
 
     @SuppressWarnings("unchecked")
-    public HashedTimingWheel(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size) {
-        wheel=new List[WHEEL_SIZE];
+    public HashedTimingWheel(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size,
+                             int wheel_size, long tick_time) {
+        this.wheel_size=wheel_size;
+        this.tick_time=tick_time;
+        ROTATION_TIME=wheel_size * tick_time;
+        wheel=new List[this.wheel_size];
         timer_thread_factory=factory;
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
@@ -73,9 +78,11 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         init();
     }
 
+
     @SuppressWarnings("unchecked")
     public HashedTimingWheel(int corePoolSize) {
-        wheel=(List<MyTask>[])new List[WHEEL_SIZE];
+        ROTATION_TIME=wheel_size * tick_time;
+        wheel=(List<MyTask>[])new List[wheel_size];
         pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
                                                  5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
                                                  Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -166,8 +173,8 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
         lock.lock();
         try {
-            int num_ticks=(int)Math.max(1, ((time % ROTATION_TIME) / TICK_TIME));
-            int position=(wheel_position + num_ticks) % WHEEL_SIZE;
+            int num_ticks=(int)Math.max(1, ((time % ROTATION_TIME) / tick_time));
+            int position=(wheel_position + num_ticks) % wheel_size;
             int rounds=(int)(time / ROTATION_TIME);
             List<MyTask> list=wheel[position];
             retval=new MyTask(work, rounds);
@@ -288,7 +295,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         while(running) {
             try {
                 _run();
-                next_time=base_time + (++cnt * TICK_TIME);
+                next_time=base_time + (++cnt * tick_time);
                 sleep_time=Math.max(0, next_time - System.currentTimeMillis());
                 Util.sleep(sleep_time);
             }
@@ -302,7 +309,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     protected void _run() {
         lock.lock();
         try {
-            wheel_position=(wheel_position +1) % WHEEL_SIZE;
+            wheel_position=(wheel_position +1) % wheel_size;
             List<MyTask> list=wheel[wheel_position];
             if(list.isEmpty())
                 return;
