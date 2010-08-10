@@ -40,6 +40,7 @@
     <class id="38" name="org.jgroups.protocols.LOOPBACK"/>
     <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
     <class id="40" name="org.jgroups.protocols.UNICAST2"/>
+    <class id="41" name="org.jgroups.protocols.SCOPE"/>
 
 
     <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
@@ -49,5 +50,5 @@
     <class id="204" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
 
     <!-- Reserved IDs -->
-    <class id="512" name="org.jgroups.protocols.SCOPE"/>
+
 </protocol-ids>
