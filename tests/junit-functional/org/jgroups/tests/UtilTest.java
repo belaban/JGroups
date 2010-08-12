@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.22 2010/03/01 09:56:43 belaban Exp $
+// $Id: UtilTest.java,v 1.23 2010/08/12 15:57:23 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -620,6 +620,26 @@ public class UtilTest {
             assert el.intValue() >= 0 && el.intValue() < 10;
         }
     }
+
+
+    public static void testPickNext() {
+        List<Integer> list=new ArrayList<Integer>(10);
+        for(int i=0; i < 10; i++)
+            list.add(i);
+        Integer num=Util.pickNext(list, 5);
+        System.out.println("number next to 5: " + num);
+        assert num != null;
+        assert num.equals(6);
+
+        num=Util.pickNext(list, 9);
+        System.out.println("number next to 9: " + num);
+        assert num != null;
+        assert num.equals(0);
+
+        num=Util.pickNext(list, 11);
+        assert num == null;
+    }
+
 
     public static void testAll() {
         List<String> l=new ArrayList<String>();
