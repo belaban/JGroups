@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.270 2010/08/05 06:57:29 belaban Exp $
+ * @version $Id: Util.java,v 1.271 2010/08/12 15:57:22 belaban Exp $
  */
 public class Util {
 
@@ -2103,6 +2103,25 @@ public class Util {
         int size=array.length;
         int index=(int)((Math.random() * size * 10) % size);
         return array[index];
+    }
+
+    /**
+     * Returns the object next to element in list
+     * @param list
+     * @param obj
+     * @param <T>
+     * @return
+     */
+    public static <T> T pickNext(List<T> list, T obj) {
+        if(list == null || obj == null)
+            return null;
+        Object[] array=list.toArray();
+        for(int i=0; i < array.length; i++) {
+            T tmp=(T)array[i];
+            if(tmp != null && tmp.equals(obj))
+                return (T)array[(i+1) % array.length];
+        }
+        return null;
     }
 
 
