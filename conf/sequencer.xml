@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: sequencer.xml,v 1.17 2010/02/08 07:11:15 belaban Exp $
+  version: $Id: sequencer.xml,v 1.18 2010/08/12 14:45:25 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -62,7 +62,7 @@
                 view_bundling="true"/>
     <SEQUENCER />
     <FC max_credits="500000"
-                    min_threshold="0.20"/>
+                    min_threshold="0.6"/>
     <FRAG2 frag_size="60000"  />
     <!--pbcast.STREAMING_STATE_TRANSFER /-->
     <pbcast.STATE_TRANSFER  />

@@ -54,7 +54,7 @@
     <pbcast.GMS print_local_addr="true" join_timeout="7000" 
                  view_bundling="true"/>
     <FC max_credits="2000000"
-        min_threshold="0.10"/>
+        min_threshold="0.60"/>
     <FRAG2 frag_size="60000"  />
     <pbcast.STREAMING_STATE_TRANSFER/>
     <!-- <pbcast.STATE_TRANSFER/> -->
