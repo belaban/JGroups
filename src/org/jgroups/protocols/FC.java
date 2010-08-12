@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.116 2010/06/15 06:44:35 belaban Exp $
+ * @version $Id: FC.java,v 1.117 2010/08/12 14:39:16 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -72,11 +72,14 @@ public class FC extends Protocol {
 
 
     /**
-     * If credits fall below this limit, we send more credits to the sender. (We also send when
-     * credits are exhausted (0 credits left))
+     * If we've received (min_threshold * max_credits) bytes from P, we send more credits to P. Example: if
+     * max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits to P once we've
+     * received 250'000 bytes from P. 
      */
-    @Property(description="If credits (bytes) used so far fall below this limit, we send more credits to the sender")
-    private double min_threshold=0.25;
+    @Property(description="The threshold (as a percentage of max_credits) at which a receiver sends more credits to " +
+            "a sender. Example: if max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits " +
+            "to P once we've received 250'000 bytes from P")
+    private double min_threshold=0.60;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
