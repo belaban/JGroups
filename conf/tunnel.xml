@@ -25,7 +25,7 @@
                 view_bundling="true"
                 view_ack_collection_timeout="5000"/>
     <FC max_credits="2000000"
-        min_threshold="0.10"/>
+        min_threshold="0.6"/>
     <FRAG2 frag_size="60000"/>    
     <pbcast.STATE_TRANSFER/>
     <pbcast.FLUSH timeout="0"/>

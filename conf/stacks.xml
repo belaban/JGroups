@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.48 2010/02/08 07:11:15 belaban Exp $
+  Version: $Id: stacks.xml,v 1.49 2010/08/12 14:45:25 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -55,7 +55,7 @@
 
                         view_bundling="true"/>
             <FC max_credits="2000000"
-                min_threshold="0.10"/>
+                min_threshold="0.6"/>
             <FRAG2 frag_size="60000"  />
 			<pbcast.STREAMING_STATE_TRANSFER/>
 	        <!-- <pbcast.STATE_TRANSFER/> -->
@@ -178,7 +178,7 @@
 
                         view_bundling="true"/>
             <FC max_credits="2000000"
-                min_threshold="0.10"/>
+                min_threshold="0.6"/>
             <FRAG2 frag_size="60000"  />
             <pbcast.STREAMING_STATE_TRANSFER/>
 	        <!-- <pbcast.STATE_TRANSFER/> -->
@@ -290,7 +290,7 @@
 
                         view_bundling="true"/>
             <FC max_credits="2000000"
-                min_threshold="0.10"/>
+                min_threshold="0.6"/>
             <FRAG2 frag_size="60000"  />
             <pbcast.STREAMING_STATE_TRANSFER/>
 	        <!-- <pbcast.STATE_TRANSFER/> -->
@@ -374,7 +374,7 @@
                         view_bundling="true"
                         view_ack_collection_timeout="5000"/>
             <FC max_credits="2000000"
-                min_threshold="0.10"/>
+                min_threshold="0.6"/>
             <FRAG2 frag_size="60000"  />
             <!-- <pbcast.STREAMING_STATE_TRANSFER/> -->
 	        <pbcast.STATE_TRANSFER/>

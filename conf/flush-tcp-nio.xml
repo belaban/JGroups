@@ -5,7 +5,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
     author: Bela Ban
-    version: $Id: flush-tcp-nio.xml,v 1.13 2009/12/11 10:45:19 belaban Exp $
+    version: $Id: flush-tcp-nio.xml,v 1.14 2010/08/12 14:45:25 belaban Exp $
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -65,7 +65,7 @@
 
                 view_bundling="true"/>
     <FC max_credits="2000000"
-        min_threshold="0.10"/>
+        min_threshold="0.6"/>
     <FRAG2 frag_size="60000"  />
     <pbcast.STREAMING_STATE_TRANSFER/>
     <pbcast.FLUSH timeout="0"/>   
