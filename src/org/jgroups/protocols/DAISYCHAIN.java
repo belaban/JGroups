@@ -1,8 +1,10 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -19,8 +21,9 @@ import java.util.concurrent.Executor;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.3 2010/08/13 11:34:53 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.4 2010/08/13 13:07:39 belaban Exp $
  */
+@Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
 public class DAISYCHAIN extends Protocol {
 
