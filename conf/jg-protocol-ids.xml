@@ -41,6 +41,7 @@
     <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
     <class id="40" name="org.jgroups.protocols.UNICAST2"/>
     <class id="41" name="org.jgroups.protocols.SCOPE"/>
+    <class id="42" name="org.jgroups.protocols.DAISYCHAIN"/>
 
 
     <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
