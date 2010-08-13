@@ -652,10 +652,6 @@ public class TCPConnectionMap{
             public void addToQueue(byte[] data) throws Exception{
                 if(canRun())
                     send_queue.add(data);
-                else 
-                    throw new Exception("Queue closed since sender thread has died, running="
-                                    + sending.get() + ", underlying connection open= "
-                                    + isConnected());
             }
 
             public void start() {
