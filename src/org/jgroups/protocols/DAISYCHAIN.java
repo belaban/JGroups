@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.5 2010/08/13 15:18:16 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.6 2010/08/13 15:21:13 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -33,13 +33,18 @@ public class DAISYCHAIN extends Protocol {
     @Property(description="Loop back multicast messages")
     boolean loopback=true;
 
-    
+    @Property(description="Max number of messages in the send queue. The adder will block until more space is available")
+    int send_queue_max_size=1000;
+
+    @Property(description="Max number of messages in the forward queue. The adder will block until more space is available")
+    int forward_queue_max_size=1000;
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected Address local_addr, next;
     protected int     view_size=0;
 
-    protected final BlockingQueue<Message> send_queue=new ConcurrentLinkedBlockingQueue<Message>(1000);
-    protected final BlockingQueue<Message> forward_queue=new ConcurrentLinkedBlockingQueue<Message>(1000);
+    protected final BlockingQueue<Message> send_queue=new ConcurrentLinkedBlockingQueue<Message>(send_queue_max_size);
+    protected final BlockingQueue<Message> forward_queue=new ConcurrentLinkedBlockingQueue<Message>(forward_queue_max_size);
     protected boolean forward=false; // flipped between true and false, to ensure fairness
     protected final Lock lock=new ReentrantLock();
 
