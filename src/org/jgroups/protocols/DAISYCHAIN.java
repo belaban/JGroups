@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.2 2010/08/13 10:23:52 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.3 2010/08/13 11:34:53 belaban Exp $
  */
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
 public class DAISYCHAIN extends Protocol {
@@ -41,7 +41,7 @@ public class DAISYCHAIN extends Protocol {
     public Object down(final Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                Message msg=(Message)evt.getArg();
+                final Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest != null && !dest.isMulticastAddress())
                     break; // only process multicast messages
@@ -59,6 +59,7 @@ public class DAISYCHAIN extends Protocol {
 
                 if(loopback) {
                     if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(msg));
+                    msg.setSrc(local_addr);
 
                     Executor pool=msg.isFlagSet(Message.OOB)? getTransport().getOOBThreadPool()
                             : getTransport().getDefaultThreadPool();
