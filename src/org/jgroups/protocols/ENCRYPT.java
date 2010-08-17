@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.60 2010/08/17 08:34:11 belaban Exp $
+// $Id: ENCRYPT.java,v 1.61 2010/08/17 08:36:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -943,7 +943,11 @@ public class ENCRYPT extends Protocol {
 
     private SecretKeySpec decodeKey(byte[] encodedKey) throws Exception {
         // try and decode secrey key sent from keyserver
-        byte[] keyBytes=asymCipher.doFinal(encodedKey);
+        byte[] keyBytes;
+
+        synchronized(this) {
+            keyBytes=asymCipher.doFinal(encodedKey);
+        }
 
         SecretKeySpec keySpec=null;
         try {
