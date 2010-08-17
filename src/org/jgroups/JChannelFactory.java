@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.57 2009/07/07 06:09:03 belaban Exp $
+// $Id: JChannelFactory.java,v 1.58 2010/08/17 09:20:53 belaban Exp $
 
 package org.jgroups;
 
@@ -563,7 +563,7 @@ public class JChannelFactory implements ChannelFactory {
          */
         String root_name=root.getNodeName();
         if(!PROTOCOL_STACKS.equals(root_name.trim().toLowerCase())) {
-            String error="XML protocol stack configuration does not start with a '<config>' element; " +
+            String error="XML protocol stack configuration does not start with a '<" + PROTOCOL_STACKS + ">' element; " +
                     "maybe the XML configuration needs to be converted to the new format ?\n" +
                     "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so";
             throw new IOException("invalid XML configuration: " + error);
