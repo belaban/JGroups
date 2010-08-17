@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.38.4.1 2008/03/12 07:28:27 belaban Exp $
+// $Id: ENCRYPT.java,v 1.38.4.2 2010/08/17 08:28:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -24,6 +24,8 @@ import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -151,13 +153,16 @@ public class ENCRYPT extends Protocol {
     // queue to hold upcoming messages while key negotiation is happening
     private BlockingQueue<Event> upMessageQueue = new LinkedBlockingQueue<Event>();
 
-//	 queue to hold downcoming messages while key negotiation is happening
+    //	 queue to hold downcoming messages while key negotiation is happening
     private BlockingQueue<Event> downMessageQueue = new LinkedBlockingQueue<Event>();
     // decrypting cypher for secret key requests
     private Cipher asymCipher;
 
     /** determines whether to encrypt the entire message, or just the buffer */
     private boolean encrypt_entire_message=false;
+
+    /** To prevent concurrent access to the decrypting cypher */
+    protected final Lock decrypt_lock=new ReentrantLock();
 
 
     public ENCRYPT()
@@ -764,7 +769,7 @@ public class ENCRYPT extends Protocol {
         //we do not synchronize here as we only have one up thread so we should never get an issue
         //synchronized(upLock){
         Event tmp =null;
-        while ((tmp = (Event)upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
+        while ((tmp =upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
             Message msg = decryptMessage(symDecodingCipher, ((Message)tmp.getArg()).copy());
 
             if (msg != null){
@@ -824,7 +829,7 @@ public class ENCRYPT extends Protocol {
         EncryptHeader hdr = (EncryptHeader)msg.getHeader(EncryptHeader.KEY);
         if (!hdr.getVersion().equals(getSymVersion())){
             log.warn("attempting to use stored cipher as message does not uses current encryption version ");
-            cipher = (Cipher)keyMap.get(hdr.getVersion());
+            cipher =keyMap.get(hdr.getVersion());
             if (cipher == null) {
                 log.warn("Unable to find a matching cipher in previous key map");
                 return null;
@@ -843,13 +848,22 @@ public class ENCRYPT extends Protocol {
     }
 
 
-    private static Message _decrypt(Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
+    private Message _decrypt(final Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
+        byte[] decrypted_msg;
+
+        decrypt_lock.lock();
+        try {
+            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+        }
+        finally {
+            decrypt_lock.unlock();
+        }
+
         if(!decrypt_entire_msg) {
-            msg.setBuffer(cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+            msg.setBuffer(decrypted_msg);
             return msg;
         }
 
-        byte[] decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
         Message ret=(Message)Util.streamableFromByteBuffer(Message.class, decrypted_msg);
         if(ret.getDest() == null)
             ret.setDest(msg.getDest());
@@ -1040,7 +1054,7 @@ public class ENCRYPT extends Protocol {
         //	we do not synchronize here as we only have one down thread so we should never get an issue
         //  first lets replay any oustanding events
         Event tmp =null;
-        while((tmp = (Event)downMessageQueue.poll(0L, TimeUnit.MILLISECONDS) )!= null){
+        while((tmp =downMessageQueue.poll(0L, TimeUnit.MILLISECONDS))!= null){
             sendDown(tmp);
         }
     }
@@ -1093,13 +1107,13 @@ public class ENCRYPT extends Protocol {
      * @return
      * @throws Exception
      */
-    private static byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception
+    private synchronized byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception
     {
         return cipher.doFinal(plain, offset, length);
     }
 
 
-    private SecretKeySpec decodeKey(byte[] encodedKey) throws Exception
+    private synchronized SecretKeySpec decodeKey(byte[] encodedKey) throws Exception
     {
         // try and decode secrey key sent from keyserver
         byte[] keyBytes = asymCipher.doFinal(encodedKey);
