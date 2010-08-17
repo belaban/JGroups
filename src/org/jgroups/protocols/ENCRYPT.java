@@ -1,8 +1,9 @@
-// $Id: ENCRYPT.java,v 1.59 2010/06/15 06:44:35 belaban Exp $
+// $Id: ENCRYPT.java,v 1.60 2010/08/17 08:34:11 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
@@ -23,6 +24,8 @@ import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * ENCRYPT layer. Encrypt and decrypt the group communication in JGroups
@@ -165,7 +168,12 @@ public class ENCRYPT extends Protocol {
     // needed because we do simultaneous encode/decode with these ciphers - which
     // would be a threading issue
     Cipher symEncodingCipher;
+
+    @GuardedBy("decrypt_lock")
     Cipher symDecodingCipher;
+
+    /** To synchronize access to symDecodingCipher */
+    protected final Lock decrypt_lock=new ReentrantLock();
 
     // version filed for secret key
     private String symVersion=null;
@@ -718,13 +726,22 @@ public class ENCRYPT extends Protocol {
         }
     }
 
-    private static Message _decrypt(Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
+    private Message _decrypt(Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
+        byte[] decrypted_msg;
+
+        decrypt_lock.lock();
+        try {
+            decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+        }
+        finally {
+            decrypt_lock.unlock();
+        }
+
         if(!decrypt_entire_msg) {
-            msg.setBuffer(cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
+            msg.setBuffer(decrypted_msg);
             return msg;
         }
 
-        byte[] decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
         Message ret=(Message)Util.streamableFromByteBuffer(Message.class, decrypted_msg);
         if(ret.getDest() == null)
             ret.setDest(msg.getDest());
@@ -920,7 +937,7 @@ public class ENCRYPT extends Protocol {
      * @return
      * @throws Exception
      */
-    private static byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception {
+    private synchronized byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception {
         return cipher.doFinal(plain, offset, length);
     }
 
