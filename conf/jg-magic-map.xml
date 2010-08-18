@@ -45,4 +45,5 @@
     <class id="74" name="org.jgroups.protocols.SCOPE$ScopeHeader"/>
     <class id="75" name="org.jgroups.blocks.mux.MuxHeader"/>
     <class id="76" name="org.jgroups.protocols.DAISYCHAIN$DaisyHeader"/>
+    <class id="77" name="org.jgroups.protocols.RELAY$RelayHeader"/>
 </magic-number-class-mapping>
