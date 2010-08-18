@@ -26,7 +26,7 @@ import java.util.Map;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.115 2010/04/07 15:34:29 belaban Exp $
+ * @version $Id: Message.java,v 1.116 2010/08/18 08:39:31 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -420,6 +420,17 @@ public class Message implements Streamable {
      * @return Message with specified data
      */
     public Message copy(boolean copy_buffer) {
+        return copy(copy_buffer, true);
+    }
+
+    /**
+     * Create a copy of the message. If offset and length are used (to refer to another buffer), the copy will
+     * contain only the subset offset and length point to, copying the subset into the new copy.
+     * @param copy_buffer
+     * @param copy_headers Copy the headers
+     * @return Message with specified data
+     */
+    public Message copy(boolean copy_buffer, boolean copy_headers) {
         Message retval=new Message(false);
         retval.dest_addr=dest_addr;
         retval.src_addr=src_addr;
@@ -431,7 +442,7 @@ public class Message implements Streamable {
             retval.setBuffer(buf, offset, length);
         }
 
-        retval.headers=createHeaders(headers);
+        retval.headers=copy_headers? createHeaders(headers) : createHeaders(3);
         return retval;
     }
 
