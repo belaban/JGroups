@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
@@ -16,9 +17,10 @@ import java.io.IOException;
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
  * and - if coordinator - relays all multicast messages via the bridge cluster to the remote relay.  
  * @author Bela Ban
- * @version $Id: RELAY.java,v 1.2 2010/08/18 10:02:15 belaban Exp $
+ * @version $Id: RELAY.java,v 1.3 2010/08/18 12:42:08 belaban Exp $
  */
 @Experimental @Unsupported
+@MBean(description="RELAY protocol")
 public class RELAY extends Protocol {
 
     @Property(description="Properties of the bridge cluster (e.g. tcp.xml)")
@@ -29,6 +31,10 @@ public class RELAY extends Protocol {
 
     @Property(description="If true, messages are relayed asynchronously, ie. via submission of a task to the timer thread pool")
     protected boolean async=false;
+
+    @Property(description="If set to false, don't perform relaying. Used e.g. for backup clusters; " +
+            "unidirectional replication from one cluster to another, but not back. Can be changed at runtime")
+    protected boolean relay=true;
 
     protected Address local_addr;
 
@@ -68,15 +74,13 @@ public class RELAY extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                if(is_coord && ch != null) {
+                if(is_coord && relay && ch != null) {
                     Message msg=(Message)evt.getArg();
                     Address dest=msg.getDest();
                     RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
                     boolean multicast=dest == null || dest.isMulticastAddress();
-
-                    if(multicast && hdr == null) {
+                    if(multicast && hdr == null)
                         relay(msg);
-                    }
                 }
                 break;
             case Event.VIEW_CHANGE:
@@ -113,7 +117,6 @@ public class RELAY extends Protocol {
                     log.error("failed creating channel (props=" + props + ")", e);
                 }
             }
-
         }
     }
 
