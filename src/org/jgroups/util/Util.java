@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.271 2010/08/12 15:57:22 belaban Exp $
+ * @version $Id: Util.java,v 1.272 2010/08/18 07:43:48 belaban Exp $
  */
 public class Util {
 
@@ -3449,17 +3449,16 @@ public class Util {
 
 
     public static boolean isCoordinator(JChannel ch) {
-        if(ch == null) return false;
-        View view=ch.getView();
-        if(view == null)
-            return false;
-        Address local_addr=ch.getAddress();
-        if(local_addr == null)
+        return isCoordinator(ch.getView(), ch.getAddress());
+    }
+
+
+    public static boolean isCoordinator(View view, Address local_addr) {
+        if(view == null || local_addr == null)
             return false;
         Vector<Address> mbrs=view.getMembers();
         return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.firstElement());
     }
-
 
     public static MBeanServer getMBeanServer() {
 		ArrayList servers = MBeanServerFactory.findMBeanServer(null);
