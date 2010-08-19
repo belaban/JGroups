@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.118 2010/08/14 14:59:31 belaban Exp $
+ * @version $Id: FC.java,v 1.119 2010/08/19 12:59:23 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -804,8 +804,7 @@ public class FC extends Protocol {
 
     private void sendCredit(Address dest, long credit) {
         if(log.isTraceEnabled())
-            log.trace("replentished " + dest + " with " + credit
-					+ " credits");
+            log.trace("replenishing " + dest + " with " + credit	+ " credits");
         Number number;
         if(credit < Integer.MAX_VALUE)
             number=(int)credit;
