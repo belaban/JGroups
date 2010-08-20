@@ -8,6 +8,8 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -32,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.120 2010/08/20 06:10:50 belaban Exp $
+ * @version $Id: FC.java,v 1.121 2010/08/20 12:15:45 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -131,7 +133,7 @@ public class FC extends Protocol {
      * is received after reaching <tt>min_credits</tt> credits.
      */
     @GuardedBy("received_lock")
-    private final Map<Address,Long> received=new HashMap<Address, Long>(11);
+    private final ConcurrentMap<Address,Credit> received=new ConcurrentHashMap<Address,Credit>(11);
 
 
     /**
@@ -161,9 +163,6 @@ public class FC extends Protocol {
 
     /** Lock protecting sent credits table and some other vars (creditors for example) */
     private final Lock sent_lock=new ReentrantLock();
-
-    /** Lock protecting received credits table */
-    private final Lock received_lock=new ReentrantLock();
 
 
     /** Mutex to block on down() */
@@ -317,20 +316,20 @@ public class FC extends Protocol {
 
     @ManagedOperation(description="Print receiver credits")
     public String printReceiverCredits() {
-        return printMap(received);
+        return printReceiverMap(received);
     }
 
     @ManagedOperation(description="Print credits")
     public String printCredits() {
         StringBuilder sb=new StringBuilder();
-        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
+        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printReceiverMap(received));
         return sb.toString();
     }
 
     public Map<String, Object> dumpStats() {
         Map<String, Object> retval=super.dumpStats();      
         retval.put("senders", printMap(sent));
-        retval.put("receivers", printMap(received));       
+        retval.put("receivers", printReceiverMap(received));
         return retval;
     }
 
@@ -457,7 +456,8 @@ public class FC extends Protocol {
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
                             Long sent_credits=(Long)msg.getObject();
-                            handleCreditRequest(received, received_lock, sender, sent_credits);
+                            if(sent_credits != null)
+                                handleCreditRequest(received, sender, sent_credits.longValue());
                             break;
                         default:
                             log.error("header type " + hdr.type + " not known");
@@ -467,7 +467,7 @@ public class FC extends Protocol {
                 }
 
                 Address sender=msg.getSrc();
-                long new_credits=adjustCredit(received, received_lock, sender, msg.getLength());
+                long new_credits=adjustCredit(received, sender, msg.getLength());
                 
                 // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
                 // introduction of the concurrent stack
@@ -712,89 +712,72 @@ public class FC extends Protocol {
 
 
     /**
-     * Check whether sender has enough credits left. If not, send him some more
+     * Check whether sender has enough credits left. If not, send it some more
      * @param map The hashmap to use
-     * @param lock The lock which can be used to lock map
      * @param sender The address of the sender
      * @param length The number of bytes received by this message. We don't care about the size of the headers for
      * the purpose of flow control
      * @return long Number of credits to be sent. Greater than 0 if credits needs to be sent, 0 otherwise
      */
-    private long adjustCredit(Map<Address,Long> map, final Lock lock, Address sender, int length) {
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("src is null");
+    private long adjustCredit(Map<Address,Credit> map, Address sender, int length) {
+        if(sender == null || length == 0)
             return 0;
-        }
 
-        if(length == 0)
-            return 0; // no effect
+        Credit cred=map.get(sender);
+        if(cred == null)
+            return 0;
 
-        lock.lock();
-        try {
-            long remaining_cred=decrementCredit(map, sender, length);
-            if(log.isTraceEnabled())
-                log.trace("sender " + sender + " minus " + length
-						+ " credits, " + remaining_cred + " remaining");
-            if(remaining_cred == -1)
-                return 0;
-            long credit_response=max_credits - remaining_cred;
-            if(credit_response >= min_credits) {
-                map.put(sender, max_credits);
-                return credit_response; // this will trigger sending of new credits as we have received more than min_credits bytes from src
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-        return 0;
+        if(log.isTraceEnabled())
+            log.trace("sender " + sender + " minus " + length + " credits, " + (cred.get() - length) + " remaining");
+
+        return cred.decrement(length);
     }
 
     /**
      * @param map The map to modify
-     * @param lock The lock to lock map
      * @param sender The sender who requests credits
      * @param left_credits Number of bytes that the sender has left to send messages to us
      */
-    private void handleCreditRequest(Map<Address,Long> map, Lock lock, Address sender, Long left_credits) {
+    private void handleCreditRequest(Map<Address,Credit> map, Address sender, long left_credits) {
         if(sender == null) return;
         long credit_response=0;
+        Credit cred=map.get(sender);
 
-        lock.lock();
-        try {
-            Long old_credit=map.get(sender);
-            if(old_credit != null) {
-                credit_response=Math.min(max_credits, max_credits - old_credit);
-            }
+        long old_credit=cred != null? cred.get() : 0;
+        if(old_credit > 0)
+            credit_response=Math.min(max_credits, max_credits - old_credit);
 
-            if(credit_response > 0) {
-                if(log.isTraceEnabled())
-                    log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-                map.put(sender, max_credits);
+        if(credit_response > 0) {
+            if(log.isTraceEnabled())
+                log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
+            if(cred != null)
+                cred.set(max_credits);
+            else
+                map.put(sender, new Credit(max_credits));
+            pending_requesters.remove(sender);
+        }
+        else {
+            if(pending_requesters.contains(sender)) {
+                // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
+                // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
+                // credits is negative, we simply send max_credits back
+                long credits_left=Math.max(0, left_credits);
+                credit_response=max_credits - credits_left;
+                // credit_response = max_credits;
+                if(cred != null)
+                    cred.set(max_credits);
+                else
+                    map.put(sender, new Credit(max_credits));
                 pending_requesters.remove(sender);
+                if(log.isWarnEnabled())
+                    log.warn("Received two credit requests from " + sender +
+                            " without any intervening messages; sending " + credit_response + " credits");
             }
             else {
-                if(pending_requesters.contains(sender)) {
-                    // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
-                    // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
-                    // credits is negative, we simply send max_credits back
-                    long credits_left=Math.max(0, left_credits.longValue());
-                    credit_response=max_credits - credits_left;
-                    // credit_response = max_credits;
-                    map.put(sender, max_credits);
-                    pending_requesters.remove(sender);
-                    if(log.isWarnEnabled())
-                        log.warn("Received two credit requests from " + sender +
-                                " without any intervening messages; sending " + credit_response + " credits");
-                }
-                else {
-                    pending_requesters.add(sender);
-                    if(log.isTraceEnabled())
-                        log.trace("received credit request from " + sender + " but have no credits available");
-                }
+                pending_requesters.add(sender);
+                if(log.isTraceEnabled())
+                    log.trace("received credit request from " + sender + " but have no credits available");
             }
-        }
-        finally {
-            lock.unlock();
         }
 
         if(credit_response > 0)
@@ -839,13 +822,12 @@ public class FC extends Protocol {
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 
         sent_lock.lock();
-        received_lock.lock();
         try {
             // add members not in membership to received and sent hashmap (with full credits)
             for(int i=0; i < mbrs.size(); i++) {
                 addr=mbrs.elementAt(i);
                 if(!received.containsKey(addr))
-                    received.put(addr, max_credits);
+                    received.put(addr, new Credit(max_credits));
                 if(!sent.containsKey(addr))
                     sent.put(addr, max_credits);
             }
@@ -878,7 +860,6 @@ public class FC extends Protocol {
         }
         finally {
             sent_lock.unlock();
-            received_lock.unlock();
         }
     }
 
@@ -888,6 +869,40 @@ public class FC extends Protocol {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
+    }
+
+    private static String printReceiverMap(Map<Address,Credit> m) {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,Credit> entry: m.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private class Credit {
+        private long credits_left;
+
+        private Credit(long credits) {
+            this.credits_left=credits;
+        }
+
+        private synchronized long decrement(long credits) {
+            credits_left=Math.max(0, credits_left - credits);
+            long credit_response=max_credits - credits_left;
+            if(credit_response >= min_credits) {
+                credits_left=max_credits;
+                return credit_response;
+            }
+            return 0;
+        }
+
+        private synchronized long get() {return credits_left;}
+
+        private synchronized void set(long new_credits) {credits_left=new_credits;}
+
+        public String toString() {
+            return String.valueOf(credits_left);
+        }
     }
 
 
