@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.6 2010/08/13 15:21:13 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.7 2010/08/23 16:28:57 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -40,13 +40,15 @@ public class DAISYCHAIN extends Protocol {
     int forward_queue_max_size=1000;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected Address local_addr, next;
-    protected int     view_size=0;
+    protected Address            local_addr, next;
+    protected int                view_size=0;
 
     protected final BlockingQueue<Message> send_queue=new ConcurrentLinkedBlockingQueue<Message>(send_queue_max_size);
     protected final BlockingQueue<Message> forward_queue=new ConcurrentLinkedBlockingQueue<Message>(forward_queue_max_size);
-    protected boolean forward=false; // flipped between true and false, to ensure fairness
+    protected boolean    forward=false; // flipped between true and false, to ensure fairness
     protected final Lock lock=new ReentrantLock();
+    protected Executor   default_pool=null;
+    protected Executor   oob_pool=null;
 
 
     @ManagedAttribute
@@ -61,6 +63,11 @@ public class DAISYCHAIN extends Protocol {
     @ManagedAttribute
     public int getSendQueueSize() {return send_queue.size();}
 
+
+    public void init() throws Exception {
+        default_pool=getTransport().getDefaultThreadPool();
+        oob_pool=getTransport().getOOBThreadPool();
+    }
 
     public Object down(final Event evt) {
         switch(evt.getType()) {
@@ -93,8 +100,7 @@ public class DAISYCHAIN extends Protocol {
                     if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(msg));
                     msg.setSrc(local_addr);
 
-                    Executor pool=msg.isFlagSet(Message.OOB)? getTransport().getOOBThreadPool()
-                            : getTransport().getDefaultThreadPool();
+                    Executor pool=msg.isFlagSet(Message.OOB)? oob_pool : default_pool;
                     pool.execute(new Runnable() {
                         public void run() {
                             up_prot.up(evt);
@@ -134,16 +140,16 @@ public class DAISYCHAIN extends Protocol {
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": received message from " + msg.getSrc() + " with ttl=" + ttl);
                 if(--ttl > 0) {
-                    Message copy=msg.copy(true);
-                    copy.setDest(next);
+                        Message copy=msg.copy(true);
+                        copy.setDest(next);
                     copy.putHeader(getId(), new DaisyHeader(ttl));
-                    try {
-                        forward_queue.put(copy);
+                        try {
+                            forward_queue.put(copy);
+                        }
+                        catch(InterruptedException e) {
+                        }
+                        forward();
                     }
-                    catch(InterruptedException e) {
-                    }
-                    forward();
-                }
 
                 // 2. Pass up
                 msg.setDest(null);
@@ -186,7 +192,7 @@ public class DAISYCHAIN extends Protocol {
 
 
     public static class DaisyHeader extends Header {
-        private short ttl;
+        private short   ttl;
 
         public DaisyHeader() {
         }
