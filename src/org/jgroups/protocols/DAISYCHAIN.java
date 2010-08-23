@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.7 2010/08/23 16:28:57 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.8 2010/08/23 16:54:38 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -160,9 +160,12 @@ public class DAISYCHAIN extends Protocol {
 
 
     protected Object forward() {
+        Message msg=null;
+
         lock.lock();
         try {
-            Message msg=forward? forward_queue.poll() : send_queue.poll();
+            String tmp=forward? " forwarding" : " sending";
+            msg=forward? forward_queue.poll() : send_queue.poll();
             if(msg == null) {
                 msg=forward? send_queue.poll() : forward_queue.poll();
                 msgs_sent++;
@@ -172,14 +175,15 @@ public class DAISYCHAIN extends Protocol {
             }
             if(log.isTraceEnabled()) {
                 DaisyHeader hdr=(DaisyHeader)msg.getHeader(getId());
-                log.trace(local_addr + ": " + (forward? " forwarding" : " sending") + " message with ttl=" + hdr.getTTL() + " to " + next);
+                log.trace(local_addr + ": " + tmp + " message with ttl=" + hdr.getTTL() + " to " + next);
             }
-            return down_prot.down(new Event(Event.MSG, msg));
         }
         finally {
             forward=!forward;
             lock.unlock();
         }
+
+        return msg != null? down_prot.down(new Event(Event.MSG, msg)) : null;
     }
     
 
