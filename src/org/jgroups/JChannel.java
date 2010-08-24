@@ -80,7 +80,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.242 2010/07/28 12:43:36 belaban Exp $
+ * @version $Id: JChannel.java,v 1.243 2010/08/24 06:55:39 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -496,7 +496,7 @@ public class JChannel extends Channel {
                                      boolean useFlushIfPresent) throws ChannelException {
 
         if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            if(log.isTraceEnabled()) log.trace("already connected to " + this.cluster_name);
             return;
         }
 
