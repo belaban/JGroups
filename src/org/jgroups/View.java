@@ -21,7 +21,7 @@ import java.util.Collection;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.24 2009/12/17 16:37:19 belaban Exp $
+ * @version $Id: View.java,v 1.25 2010/08/24 11:46:38 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -74,7 +74,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param id      The lamport timestamp of this view
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(Address creator, long id, Vector<Address> members) {
+    public View(Address creator, long id, Collection<Address> members) {
         this(new ViewId(creator, id), members);
     }
 
