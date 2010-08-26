@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.51 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FRAG.java,v 1.52 2010/08/26 15:38:22 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -201,7 +201,7 @@ public class FRAG extends Protocol {
      */
     private void fragment(Message msg, long size) {
         Address            dest=msg.getDest(), src=msg.getSrc();
-        long               id=curr_id.getAndIncrement(); // used as seqnos
+        long               frag_id=curr_id.getAndIncrement(); // used as seqnos
         int                num_frags;
 
         try {
@@ -224,7 +224,7 @@ public class FRAG extends Protocol {
 
             for(int i=0; i < num_frags; i++) {
                 Message frag_msg=new Message(dest, src, fragments[i]);
-                FragHeader hdr=new FragHeader(id, i, num_frags);
+                FragHeader hdr=new FragHeader(frag_id, i, num_frags);
                 frag_msg.putHeader(this.id, hdr);
                 Event evt=new Event(Event.MSG, frag_msg);
                 down_prot.down(evt);
