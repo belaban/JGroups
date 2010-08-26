@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.53 2010/03/05 09:04:54 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.54 2010/08/26 15:41:29 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -243,12 +243,13 @@ public class FRAG2 extends Protocol {
                 log.trace(sb.toString());
             }
 
-            long id=getNextId(); // used as a seqno
+            long frag_id=getNextId(); // used as a seqno
             for(int i=0; i < fragments.size(); i++) {
                 Range r=fragments.get(i);
-                Message frag_msg=msg.copy(false); // don't copy the buffer, only src, dest and headers. But do copy the headers
+                // don't copy the buffer, only src, dest and headers. Only copy the headers one time !
+                Message frag_msg=msg.copy(false, i == 0);
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
-                FragHeader hdr=new FragHeader(id, i, num_frags);
+                FragHeader hdr=new FragHeader(frag_id, i, num_frags);
                 frag_msg.putHeader(this.id, hdr);
                 down_prot.down(new Event(Event.MSG, frag_msg));
             }
@@ -405,12 +406,11 @@ public class FRAG2 extends Protocol {
             int     combined_length=0, length, offset;
             int     index=0;
 
-            for(Message fragment: fragments) {
+            for(Message fragment: fragments)
                 combined_length+=fragment.getLength();
-            }
 
             combined_buffer=new byte[combined_length];
-            retval=fragments[0].copy(false);
+            retval=fragments[0].copy(false); // doesn't copy the payload, but copies the headers
 
             for(int i=0; i < fragments.length; i++) {
                 Message fragment=fragments[i];
