@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.5 2010/03/05 09:05:28 belaban Exp $
+// $Id: FCTest.java,v 1.6 2010/08/27 12:12:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -44,7 +44,7 @@ public class FCTest {
         fc.setMaxCredits(10000);
         fc.setMaxBlockTime(1000);
         FRAG2 frag=new FRAG2();
-        frag.setFragSize(60000);
+        frag.setFragSize(8000);
         Protocol[] stack=new Protocol[]{frag, fc};
         s.setProtocolStack(stack);
         s.start();
