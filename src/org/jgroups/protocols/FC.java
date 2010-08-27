@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.122 2010/08/24 14:21:40 belaban Exp $
+ * @version $Id: FC.java,v 1.123 2010/08/27 08:41:05 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -127,12 +127,11 @@ public class FC extends Protocol {
     private final Map<Address,Long> sent=new HashMap<Address, Long>(11);
 
     /**
-     * Map<Address,Long>: keys are members, values are credits left (in bytes).
+     * Keeps track of credits / member at the receiver's side. Keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
-     * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
-     * is received after reaching <tt>min_credits</tt> credits.
+     * When the credits fall below the threshold, we refill and send a REPLENISH message to the sender.
+     * The sender blocks until REPLENISH message is received.
      */
-    @GuardedBy("received_lock")
     private final ConcurrentMap<Address,Credit> received=new ConcurrentHashMap<Address,Credit>(11);
 
 
