@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.78 2010/06/14 08:10:51 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.79 2010/08/27 09:25:44 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -508,6 +508,20 @@ public class NakReceiverWindow {
     }
 
 
+    /** Returns the lowest, highest delivered and highest received seqnos */
+    public long[] getDigest() {
+        lock.readLock().lock();
+        try {
+            long[] retval=new long[3];
+            retval[0]=low;
+            retval[1]=highest_delivered;
+            retval[2]=highest_received;
+            return retval;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
 
     /**
