@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.255 2010/06/14 08:11:19 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.256 2010/08/27 09:26:08 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -1192,8 +1192,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
             NakReceiverWindow win=entry.getValue(); // guaranteed to be non-null (CCHM)
-            long low=win.getLowestSeen(), highest_delivered=win.getHighestDelivered(), highest_received=win.getHighestReceived();
-            map.put(sender, new Digest.Entry(low, highest_delivered, highest_received));
+            long[] digest=win.getDigest();
+            map.put(sender, new Digest.Entry(digest[0], digest[1], digest[2]));
         }
         return new Digest(map);
     }
