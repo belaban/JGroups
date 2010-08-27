@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.123 2010/08/27 08:41:05 belaban Exp $
+ * @version $Id: FC.java,v 1.124 2010/08/27 11:25:10 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -123,8 +123,8 @@ public class FC extends Protocol {
      * number of credits is decremented by the message size. A HashMap rather than a ConcurrentHashMap is
      * currently used as there might be null values
      */
-    @GuardedBy("sent_lock")
-    private final Map<Address,Long> sent=new HashMap<Address, Long>(11);
+    @GuardedBy("lock")
+    private final ConcurrentMap<Address,Credit> sent=new ConcurrentHashMap<Address,Credit>(11);
 
     /**
      * Keeps track of credits / member at the receiver's side. Keys are members, values are credits left (in bytes).
@@ -138,7 +138,7 @@ public class FC extends Protocol {
     /**
      * List of members from whom we expect credits
      */
-    @GuardedBy("sent_lock")
+    @GuardedBy("lock")
     private final Set<Address> creditors=new HashSet<Address>(11);
 
     
@@ -157,15 +157,15 @@ public class FC extends Protocol {
     /**
      * the lowest credits of any destination (sent_msgs)
      */
-    @GuardedBy("sent_lock")
+    @GuardedBy("lock")
     private long lowest_credit=max_credits;
 
     /** Lock protecting sent credits table and some other vars (creditors for example) */
-    private final Lock sent_lock=new ReentrantLock();
+    private final Lock lock=new ReentrantLock();
 
 
     /** Mutex to block on down() */
-    private final Condition credits_available=sent_lock.newCondition();
+    private final Condition credits_available=lock.newCondition();
    
 
     /**
@@ -179,7 +179,7 @@ public class FC extends Protocol {
     };   
 
     /** Last time a credit request was sent. Used to prevent credit request storms */
-    @GuardedBy("sent_lock")
+    @GuardedBy("lock")
     private long last_credit_request=0;   
 
     public void resetStats() {
@@ -315,20 +315,20 @@ public class FC extends Protocol {
 
     @ManagedOperation(description="Print receiver credits")
     public String printReceiverCredits() {
-        return printReceiverMap(received);
+        return printMap(received);
     }
 
     @ManagedOperation(description="Print credits")
     public String printCredits() {
         StringBuilder sb=new StringBuilder();
-        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printReceiverMap(received));
+        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
     }
 
     public Map<String, Object> dumpStats() {
         Map<String, Object> retval=super.dumpStats();      
         retval.put("senders", printMap(sent));
-        retval.put("receivers", printReceiverMap(received));
+        retval.put("receivers", printMap(received));
         return retval;
     }
 
@@ -356,21 +356,20 @@ public class FC extends Protocol {
      */
     @ManagedOperation(description="Unblock a sender")
     public void unblock() {
-        sent_lock.lock();
+        lock.lock();
         try {
             if(log.isTraceEnabled())
                 log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
-            for(Map.Entry<Address, Long> entry: sent.entrySet()) {
-                entry.setValue(max_credits);
-            }
+            for(Map.Entry<Address,Credit> entry: sent.entrySet())
+                entry.getValue().set(max_credits);
 
             lowest_credit=computeLowestCredit(sent);
             creditors.clear();
             credits_available.signalAll();
         }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -388,26 +387,26 @@ public class FC extends Protocol {
                     "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
         }
 
-        sent_lock.lock();
+        lock.lock();
         try {
             running=true;
             lowest_credit=max_credits;
         }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
     }
 
     public void stop() {
         super.stop();
-        sent_lock.lock();
+        lock.lock();
         try {
             running=false;
             ignore_thread.set(false);
             credits_available.signalAll(); // notify all threads waiting on the mutex that we are done
         }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -522,7 +521,7 @@ public class FC extends Protocol {
                 end_time.set(System.currentTimeMillis() + tmp);
         }
 
-        sent_lock.lock();
+        lock.lock();
         try {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
                 if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
@@ -542,7 +541,7 @@ public class FC extends Protocol {
                             if(max_block_times != null) {
                                 Long tmp=end_time.get();
                                 if(tmp != null) {
-                                    // Negative value means we don't wait at all ! If the end_time already elapsed
+                                    // A negative block_time means we don't wait at all ! If the end_time already elapsed
                                     // (because we waited for other threads to get processed), the message will not
                                     // block at all and get sent immediately
                                     block_time=tmp - start_blocking;
@@ -566,17 +565,17 @@ public class FC extends Protocol {
                                 // a credit request storm
                                 last_credit_request=System.currentTimeMillis();
 
-                                // we need to send the credit requests down *without* holding the sent_lock, otherwise we might
+                                // we need to send the credit requests down *without* holding the lock, otherwise we might
                                 // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                                Map<Address,Long> sent_copy=new HashMap<Address,Long>(sent);
+                                Map<Address,Credit> sent_copy=new HashMap<Address,Credit>(sent);
                                 sent_copy.keySet().retainAll(creditors);
-                                sent_lock.unlock();
+                                lock.unlock();
                                 try {
-                                    for(Map.Entry<Address,Long> entry: sent_copy.entrySet())
-                                        sendCreditRequest(entry.getKey(), entry.getValue());
+                                    for(Map.Entry<Address,Credit> entry: sent_copy.entrySet())
+                                        sendCreditRequest(entry.getKey(), entry.getValue().get());
                                 }
                                 finally {
-                                    sent_lock.lock();
+                                    lock.lock();
                                 }
                             }
                         }
@@ -599,7 +598,7 @@ public class FC extends Protocol {
                 lowest_credit=Math.min(tmp, lowest_credit);
         }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
@@ -608,25 +607,21 @@ public class FC extends Protocol {
 
     /**
      * Checks whether one member (unicast msg) or all members (multicast msg) have enough credits. Add those
-     * that don't to the creditors list. Called with sent_lock held
+     * that don't to the creditors list. Called with lock held
      * @param dest
      * @param length
      */
     private void determineCreditors(Address dest, int length) {
         boolean multicast=dest == null || dest.isMulticastAddress();
-        Address mbr;
-        Long credits;
         if(multicast) {
-            for(Map.Entry<Address,Long> entry: sent.entrySet()) {
-                mbr=entry.getKey();
-                credits=entry.getValue();
-                if(credits <= length)
-                    creditors.add(mbr);
+            for(Map.Entry<Address,Credit> entry: sent.entrySet()) {
+                if(entry.getValue().get() <= length)
+                    creditors.add(entry.getKey());
             }
         }
         else {
-            credits=sent.get(dest);
-            if(credits != null && credits <= length)
+            Credit cred=sent.get(dest);
+            if(cred != null && cred.get() <= length)
                 creditors.add(dest);
         }
     }
@@ -639,31 +634,22 @@ public class FC extends Protocol {
      * @param credits
      * @return The lowest number of credits left, or -1 if a unicast member was not found
      */
-    private long decrementCredit(Map<Address, Long> m, Address dest, long credits) {
+    private long decrementCredit(Map<Address,Credit> map, Address dest, long credits) {
         boolean multicast=dest == null || dest.isMulticastAddress();
-        long lowest=max_credits, new_credit;
-        Long val;
+        long lowest=max_credits;
 
         if(multicast) {
-            if(m.isEmpty())
+            if(map.isEmpty())
                 return -1;
-            for(Map.Entry<Address, Long> entry: m.entrySet()) {
-                val=entry.getValue();
-                new_credit=val - credits;
-                entry.setValue(new_credit);
-                lowest=Math.min(new_credit, lowest);
-            }
+            for(Credit cred: map.values())
+                lowest=Math.min(cred.decrement(credits), lowest);
             return lowest;
         }
         else {
-            val=m.get(dest);
-            if(val != null) {
-                lowest=val;
-                lowest-=credits;
-                m.put(dest, lowest);
-                return lowest;
+            Credit cred=map.get(dest);
+            if(cred != null)
+                return lowest=cred.decrement(credits);
             }
-        }
         return -1;
     }
 
@@ -672,42 +658,33 @@ public class FC extends Protocol {
         if(sender == null) return;
         StringBuilder sb=null;
 
-        sent_lock.lock();
+        lock.lock();
         try {
-            Long old_credit=sent.get(sender);
-            if(old_credit == null)
+            Credit cred=sent.get(sender);
+            if(cred == null)
                 return;
-            Long new_credit=Math.min(max_credits, old_credit + increase.longValue());
+            long new_credit=Math.min(max_credits, cred.get() + increase.longValue());
 
             if(log.isTraceEnabled()) {
                 sb=new StringBuilder();
-                sb.append("received credit from ").append(sender).append(", old credit was ").append(old_credit)
+                sb.append("received credit from ").append(sender).append(", old credit was ").append(cred)
                         .append(", new credits are ").append(new_credit).append(".\nCreditors before are: ").append(creditors);
             }
 
-            sent.put(sender, new_credit);
+            cred.increment(increase.longValue());
+
             lowest_credit=computeLowestCredit(sent);
-            // boolean was_empty=true;
-            if(!creditors.isEmpty()) {  // we are blocked because we expect credit from one or more members
-                // was_empty=false;
-                creditors.remove(sender);
-                if(log.isTraceEnabled()) {
-                    sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
-                    log.trace(sb);
-                }
-            }
-            if(creditors.isEmpty()) {// && !was_empty) {
+            if(!creditors.isEmpty() && creditors.remove(sender) && creditors.isEmpty())
                 credits_available.signalAll();
             }
-        }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
     }
 
-    private static long computeLowestCredit(Map<Address, Long> m) {
-        Collection<Long> credits=m.values(); // List of Longs (credits)
-        return Collections.min(credits);
+    private static long computeLowestCredit(Map<Address,Credit> m) {
+        Collection<Credit> credits=m.values();
+        return Collections.min(credits).get();
     }
 
 
@@ -730,7 +707,7 @@ public class FC extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sender " + sender + " minus " + length + " credits, " + (cred.get() - length) + " remaining");
 
-        return cred.decrement(length);
+        return cred.decrementAndGet(length);
     }
 
     /**
@@ -780,6 +757,7 @@ public class FC extends Protocol {
             }
         }
 
+
         if(credit_response > 0)
             sendCredit(sender, credit_response);
     }
@@ -821,7 +799,7 @@ public class FC extends Protocol {
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 
-        sent_lock.lock();
+        lock.lock();
         try {
             // add members not in membership to received and sent hashmap (with full credits)
             for(int i=0; i < mbrs.size(); i++) {
@@ -829,7 +807,7 @@ public class FC extends Protocol {
                 if(!received.containsKey(addr))
                     received.put(addr, new Credit(max_credits));
                 if(!sent.containsKey(addr))
-                    sent.put(addr, max_credits);
+                    sent.put(addr, new Credit(max_credits));
             }
             // remove members that left
             for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
@@ -859,19 +837,11 @@ public class FC extends Protocol {
             }
         }
         finally {
-            sent_lock.unlock();
+            lock.unlock();
         }
     }
 
-    private static String printMap(Map<Address,Long> m) {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,Long> entry: m.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
-    }
-
-    private static String printReceiverMap(Map<Address,Credit> m) {
+    private static String printMap(Map<Address,Credit> m) {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,Credit> entry: m.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
@@ -879,14 +849,16 @@ public class FC extends Protocol {
         return sb.toString();
     }
 
-    private class Credit {
+
+
+    private class Credit implements Comparable {
         private long credits_left;
 
         private Credit(long credits) {
             this.credits_left=credits;
         }
 
-        private synchronized long decrement(long credits) {
+        private synchronized long decrementAndGet(long credits) {
             credits_left=Math.max(0, credits_left - credits);
             long credit_response=max_credits - credits_left;
             if(credit_response >= min_credits) {
@@ -896,13 +868,26 @@ public class FC extends Protocol {
             return 0;
         }
 
+        private synchronized long decrement(long credits) {
+            return credits_left=Math.max(0, credits_left - credits);
+        }
+
         private synchronized long get() {return credits_left;}
 
-        private synchronized void set(long new_credits) {credits_left=new_credits;}
+        private synchronized void set(long new_credits) {credits_left=Math.min(max_credits, new_credits);}
+
+        private synchronized long increment(long credits) {
+            return credits_left=Math.min(max_credits, credits_left + credits);
+        }
 
         public String toString() {
             return String.valueOf(credits_left);
         }
+
+        public int compareTo(Object o) {
+            Credit other=(Credit)o;
+            return credits_left < other.credits_left ? -1 : credits_left > other.credits_left ? 1 : 0;
+    }
     }
 
 
