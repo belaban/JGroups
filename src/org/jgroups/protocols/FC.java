@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.124 2010/08/27 11:25:10 belaban Exp $
+ * @version $Id: FC.java,v 1.125 2010/08/30 10:32:43 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -533,7 +533,7 @@ public class FC extends Protocol {
                     long start_blocking=System.currentTimeMillis();
                     num_blockings++; // we count overall blockings, not blockings for *all* threads
                     if(log.isTraceEnabled())
-                        log.trace("Starting blocking. lowest_credit=" + lowest_credit + "; msg length =" + length);
+                        log.trace("Blocking (lowest_credit=" + lowest_credit + "; length=" + length + ")");
 
                     while(length > lowest_credit && running) {
                         try {
