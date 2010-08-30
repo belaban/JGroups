@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.125 2010/08/30 10:32:43 belaban Exp $
+ * @version $Id: FC.java,v 1.126 2010/08/30 10:42:26 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -323,6 +323,11 @@ public class FC extends Protocol {
         StringBuilder sb=new StringBuilder();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
+    }
+
+    @ManagedOperation(description="Prints the creditors")
+    public String printCreditors() {
+        return creditors.toString();
     }
 
     public Map<String, Object> dumpStats() {
