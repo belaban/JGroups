@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.32 2010/03/25 16:08:21 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.33 2010/08/30 14:12:52 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -490,7 +490,7 @@ public class SizeTest {
 
 
     public static void testFCHeader() throws Exception {
-        FC.FcHeader hdr=new FC.FcHeader(FC.FcHeader.REPLENISH);
+        FcHeader hdr=new FcHeader(FcHeader.REPLENISH);
         _testSize(hdr);
     }
 
