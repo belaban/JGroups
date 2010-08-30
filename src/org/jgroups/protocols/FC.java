@@ -1,12 +1,14 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.127 2010/08/30 10:50:09 belaban Exp $
+ * @version $Id: FC.java,v 1.128 2010/08/30 14:11:45 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -893,47 +895,11 @@ public class FC extends Protocol {
         public int compareTo(Object o) {
             Credit other=(Credit)o;
             return credits_left < other.credits_left ? -1 : credits_left > other.credits_left ? 1 : 0;
-    }
-    }
-
-
-    public static class FcHeader extends Header {
-        public static final byte REPLENISH=1;
-        public static final byte CREDIT_REQUEST=2; // the sender of the message is the requester
-
-        byte type=REPLENISH;
-
-        public FcHeader() {
-
-        }
-
-        public FcHeader(byte type) {
-            this.type=type;
-        }
-
-        public int size() {
-            return Global.BYTE_SIZE;
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            out.writeByte(type);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            type=in.readByte();
-        }
-
-        public String toString() {
-            switch(type) {
-                case REPLENISH:
-                    return "REPLENISH";
-                case CREDIT_REQUEST:
-                    return "CREDIT_REQUEST";
-                default:
-                    return "<invalid type>";
-            }
         }
     }
+
+
+
 
 
 }
