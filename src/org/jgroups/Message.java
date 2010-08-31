@@ -26,7 +26,7 @@ import java.util.Map;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.116 2010/08/18 08:39:31 belaban Exp $
+ * @version $Id: Message.java,v 1.117 2010/08/31 12:23:18 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -385,7 +385,7 @@ public class Message implements Streamable {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(short id, Header hdr) {
-        if(id < 0)
+        if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         return headers.putHeaderIfAbsent(id, hdr);
     }
@@ -402,7 +402,7 @@ public class Message implements Streamable {
     }
 
     public Header getHeader(short id) {
-        if(id < 0)
+        if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         return headers.getHeader(id);
     }
