@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.74 2009/10/14 15:44:03 vlada Exp $
+ * @version $Id: Event.java,v 1.75 2010/09/03 09:46:40 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -79,6 +79,7 @@ public class Event {
      * @param type
      * @deprecated in order to make an Event immutable
      */
+    @Deprecated
     public void setType(int type) {
         throw new IllegalAccessError("setType() has been deprecated, to make Events immutable");
     }
@@ -87,6 +88,7 @@ public class Event {
         return arg;
     }
 
+    @Deprecated
     public void setArg(Object arg) {
         throw new IllegalAccessError("setArg() has been deprecated, to make Events immutable");
     }
