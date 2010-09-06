@@ -1,17 +1,13 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
-import org.jgroups.util.Util;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedOperation;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -36,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: MFC.java,v 1.1 2010/08/31 12:21:55 belaban Exp $
+ * @version $Id: MFC.java,v 1.2 2010/09/06 11:08:08 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
@@ -125,6 +121,10 @@ public class MFC extends FlowControl {
 
     protected Object handleDownMessage(final Event evt, final Message msg, int length) {
         Address dest=msg.getDest();
+        if(dest != null && !dest.isMulticastAddress()) {
+            log.error(getClass().getSimpleName() + " doesn't handle unicast messages; passing message down");
+            return down_prot.down(evt);
+        }
 
         if(max_block_times != null) {
             long tmp=getMaxBlockTime(length);
@@ -140,7 +140,7 @@ public class MFC extends FlowControl {
                         log.trace("bypassing blocking to avoid deadlocking " + Thread.currentThread());
                 }
                 else {
-                    determineCreditors(dest, length);
+                    determineCreditors(length);
                     long start_blocking=System.currentTimeMillis();
                     num_blockings++; // we count overall blockings, not blockings for *all* threads
                     if(log.isTraceEnabled())
@@ -204,7 +204,7 @@ public class MFC extends FlowControl {
                 }
             }
 
-            long tmp=decrementCredit(sent, dest, length);
+            long tmp=decrementCredit(sent, length);
             if(tmp != -1)
                 lowest_credit=Math.min(tmp, lowest_credit);
         }
@@ -217,23 +217,13 @@ public class MFC extends FlowControl {
     }
 
     /**
-     * Checks whether one member (unicast msg) or all members (multicast msg) have enough credits. Add those
-     * that don't to the creditors list. Called with lock held
-     * @param dest
+     * Adds members which have not enough credits to the creditors list. Called with lock held
      * @param length
      */
-    protected void determineCreditors(Address dest, int length) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
-        if(multicast) {
-            for(Map.Entry<Address,Credit> entry: sent.entrySet()) {
-                if(entry.getValue().get() <= length)
-                    creditors.add(entry.getKey());
-            }
-        }
-        else {
-            Credit cred=sent.get(dest);
-            if(cred != null && cred.get() <= length)
-                creditors.add(dest);
+    protected void determineCreditors(int length) {
+        for(Map.Entry<Address,Credit> entry: sent.entrySet()) {
+            if(entry.getValue().get() <= length)
+                creditors.add(entry.getKey());
         }
     }
 
@@ -247,23 +237,13 @@ public class MFC extends FlowControl {
      * @param credits
      * @return The lowest number of credits left, or -1 if a unicast member was not found
      */
-    protected long decrementCredit(Map<Address,Credit> map, Address dest, long credits) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
+    protected long decrementCredit(Map<Address,Credit> map, long credits) {
+        if(map.isEmpty())
+            return -1;
         long lowest=max_credits;
-
-        if(multicast) {
-            if(map.isEmpty())
-                return -1;
-            for(Credit cred: map.values())
-                lowest=Math.min(cred.decrement(credits), lowest);
-            return lowest;
-        }
-        else {
-            Credit cred=map.get(dest);
-            if(cred != null)
-                return lowest=cred.decrement(credits);
-            }
-        return -1;
+        for(Credit cred: map.values())
+            lowest=Math.min(cred.decrement(credits), lowest);
+        return lowest;
     }
 
     protected void handleCredit(Address sender, Number increase) {
