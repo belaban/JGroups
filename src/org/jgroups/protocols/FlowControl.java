@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.1 2010/08/31 12:21:55 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.2 2010/09/06 09:26:54 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -384,6 +384,9 @@ public abstract class FlowControl extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_FC))
+                    break;
+
                 Address dest=msg.getDest();
                 boolean multicast=dest == null || dest.isMulticastAddress();
                 boolean handle_multicasts=handleMulticastMessage();
@@ -391,8 +394,6 @@ public abstract class FlowControl extends Protocol {
                 if(!process)
                     break;
 
-                if(msg.isFlagSet(Message.NO_FC))
-                    break;
                 int length=msg.getLength();
                 if(length == 0)
                     break;
@@ -417,17 +418,17 @@ public abstract class FlowControl extends Protocol {
                 // JGRP-465. We only deal with msgs to avoid having to use a concurrent collection; ignore views,
                 // suspicions, etc which can come up on unusual threads.
                 Message msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_FC))
+                    break;
+
                 Address dest=msg.getDest();
                 boolean multicast=dest == null || dest.isMulticastAddress();
                 boolean handle_multicasts=handleMulticastMessage();
-                boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast);
+                FcHeader hdr=(FcHeader)msg.getHeader(this.id);
+                boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
                 if(!process)
                     break;
-
-                if(msg.isFlagSet(Message.NO_FC))
-                    break;
                 
-                FcHeader hdr=(FcHeader)msg.getHeader(this.id);
                 if(hdr != null) {
                     switch(hdr.type) {
                         case FcHeader.REPLENISH:
