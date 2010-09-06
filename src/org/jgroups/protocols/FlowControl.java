@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.2 2010/09/06 09:26:54 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.3 2010/09/06 11:07:46 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -146,9 +146,6 @@ public abstract class FlowControl extends Protocol {
     protected boolean frag_size_received=false;
 
    
-
-    /** Lock protecting sent credits table and some other vars (creditors for example) */
-    // protected final Lock lock=new ReentrantLock();
 
 
 
