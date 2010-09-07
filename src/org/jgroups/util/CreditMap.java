@@ -14,10 +14,11 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Maintains credits for senders, when credits fall below 0, a sender blocks until new credits have been received.
  * @author Bela Ban
- * @version $Id: CreditMap.java,v 1.2 2010/09/07 10:58:58 belaban Exp $
+ * @version $Id: CreditMap.java,v 1.3 2010/09/07 13:25:21 belaban Exp $
  */
 public class CreditMap {
     protected final long              max_credits;
+
     @GuardedBy("lock")
     protected final Map<Address,Long> credits=new HashMap<Address,Long>();
     protected long                    min_credits;
@@ -29,6 +30,14 @@ public class CreditMap {
     public CreditMap(long max_credits) {
         this.max_credits=max_credits;
         min_credits=max_credits;
+    }
+
+    public long getAccumulatedCredits() {
+        return accumulated_credits;
+    }
+
+    public long getMinCredits() {
+        return min_credits;
     }
 
     public Set<Address> keys() {
@@ -51,11 +60,11 @@ public class CreditMap {
         }
     }
 
-    public Long putIfAbsent(Address key, Long value) {
+    public Long putIfAbsent(Address key) {
         lock.lock();
         try {
             Long val=credits.get(key);
-            return val != null? val : credits.put(key, value);
+            return val != null? val : credits.put(key, max_credits);
         }
         finally {
             lock.unlock();
@@ -114,6 +123,17 @@ public class CreditMap {
         }
     }
 
+    public void clear() {
+        lock.lock();
+        try {
+            credits.clear();
+            credits_available.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
     public String toString() {
         StringBuilder sb=new StringBuilder();
         lock.lock();
@@ -121,7 +141,7 @@ public class CreditMap {
             for(Map.Entry<Address,Long> entry: credits.entrySet()) {
                 sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
-            sb.append("min_credits=" + min_credits);
+            sb.append("min_credits=" + min_credits + ", accumulated=" + accumulated_credits);
         }
         finally {
             lock.unlock();
