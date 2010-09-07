@@ -3,9 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.annotations.GuardedBy;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -14,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Maintains credits for senders, when credits fall below 0, a sender blocks until new credits have been received.
  * @author Bela Ban
- * @version $Id: CreditMap.java,v 1.4 2010/09/07 14:00:51 belaban Exp $
+ * @version $Id: CreditMap.java,v 1.5 2010/09/07 15:30:09 belaban Exp $
  */
 public class CreditMap {
     protected final long              max_credits;
@@ -53,7 +51,14 @@ public class CreditMap {
     public Long remove(Address key) {
         lock.lock();
         try {
-            return credits.remove(key);
+            Long retval=credits.remove(key);
+            flushAccumulatedCredits();
+            long new_min=computeLowestCredit();
+            if(new_min > min_credits) {
+                min_credits=new_min;
+                credits_available.signalAll();
+            }
+            return retval;
         }
         finally {
             lock.unlock();
@@ -72,6 +77,26 @@ public class CreditMap {
         }
     }
 
+
+    public List<Address> getMembersWithInsufficientCredits(long credit_needed) {
+        List<Address> retval=new LinkedList<Address>();
+
+        lock.lock();
+        try {
+            if(credit_needed > min_credits) {
+                flushAccumulatedCredits();
+                for(Map.Entry<Address,Long> entry: credits.entrySet()) {
+                    if(entry.getValue().longValue() < credit_needed)
+                        retval.add(entry.getKey());
+                }
+            }
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+    
 
     /**
      * Decrements credits bytes from all. Returns true if successful, or false if not. Blocks for timeout ms
