@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Maintains credits for senders, when credits fall below 0, a sender blocks until new credits have been received.
  * @author Bela Ban
- * @version $Id: CreditMap.java,v 1.3 2010/09/07 13:25:21 belaban Exp $
+ * @version $Id: CreditMap.java,v 1.4 2010/09/07 14:00:51 belaban Exp $
  */
 public class CreditMap {
     protected final long              max_credits;
@@ -63,6 +63,7 @@ public class CreditMap {
     public Long putIfAbsent(Address key) {
         lock.lock();
         try {
+            flushAccumulatedCredits();
             Long val=credits.get(key);
             return val != null? val : credits.put(key, max_credits);
         }
@@ -111,11 +112,14 @@ public class CreditMap {
             if(val == null)
                 return;
 
-            boolean update_min_credits=val.longValue() <= min_credits;
+            boolean potential_update=val.longValue() - accumulated_credits <= min_credits;
             decrementAndAdd(sender, new_credits);
-            if(update_min_credits) {
-                min_credits=computeLowestCredit();
-                credits_available.signalAll();
+            if(potential_update) {
+                long new_min=computeLowestCredit();
+                if(new_min > min_credits) {
+                    min_credits=new_min;
+                    credits_available.signalAll();
+                }
             }
         }
         finally {
@@ -193,6 +197,16 @@ public class CreditMap {
                 if(val != null)
                     this.credits.put(member, Math.min(max_credits, val.longValue() + new_credits));
             }
+        }
+    }
+
+    // Called with lock held
+    protected void flushAccumulatedCredits() {
+        if(accumulated_credits > 0) {
+            for(Map.Entry<Address,Long> entry: this.credits.entrySet()) {
+                entry.setValue(Math.max(0, entry.getValue().longValue() - accumulated_credits));
+            }
+            accumulated_credits=0;
         }
     }
 

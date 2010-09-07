@@ -13,7 +13,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests CreditMap
  * @author Bela Ban
- * @version $Id: CreditMapTest.java,v 1.1 2010/09/07 13:24:43 belaban Exp $
+ * @version $Id: CreditMapTest.java,v 1.2 2010/09/07 14:00:50 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class CreditMapTest {
@@ -95,6 +95,33 @@ public class CreditMapTest {
         System.out.println("\nmap:\n" + map);
         assert map.getMinCredits() == MAX_CREDITS;
         assert map.getAccumulatedCredits() == 0;
+    }
+
+    public void testDecrementAndReplenish2() {
+        map.putIfAbsent(a);
+        map.decrement(200, 100);
+
+        map.putIfAbsent(b);
+        map.decrement(200, 100);
+
+        map.putIfAbsent(c);
+        map.decrement(200, 100);
+
+        map.putIfAbsent(d);
+        map.decrement(200, 100);
+
+        // A: 200, B: 400, C: 600, D: 800
+        System.out.println("map = " + map);
+
+        assert map.getAccumulatedCredits() == 200;
+        assert map.getMinCredits() == 200;
+
+        map.replenish(d, 100);
+        map.replenish(c, 100);
+        map.replenish(a, 100);
+        map.replenish(b, 100);
+
+        assert map.getMinCredits() == 300;
     }
 
     public void testBlockingDecrementAndReplenishment() throws Exception {
