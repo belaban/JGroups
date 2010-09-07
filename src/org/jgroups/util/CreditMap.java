@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Maintains credits for senders, when credits fall below 0, a sender blocks until new credits have been received.
  * @author Bela Ban
- * @version $Id: CreditMap.java,v 1.1 2010/09/07 10:51:45 belaban Exp $
+ * @version $Id: CreditMap.java,v 1.2 2010/09/07 10:58:58 belaban Exp $
  */
 public class CreditMap {
     protected final long              max_credits;
@@ -73,15 +74,16 @@ public class CreditMap {
     public boolean decrement(long credits, long timeout) {
         lock.lock();
         try {
-            if(credits <= min_credits) {
-                accumulated_credits+=credits;
-                min_credits-=credits;
+            if(decrement(credits))
                 return true;
+
+            try {
+                credits_available.await(timeout, TimeUnit.MILLISECONDS);
+                if(decrement(credits))
+                    return true;
             }
-
-
-
-
+            catch(InterruptedException e) {
+            }
             return false;
         }
         finally {
@@ -101,13 +103,11 @@ public class CreditMap {
                 return;
 
             boolean update_min_credits=val.longValue() <= min_credits;
-            decrementAndAdd(accumulated_credits, sender, new_credits);
-            decrementAndAdd(accumulated_credits, sender, new_credits);
+            decrementAndAdd(sender, new_credits);
             if(update_min_credits) {
                 min_credits=computeLowestCredit();
                 credits_available.signalAll();
             }
-            accumulated_credits=0;
         }
         finally {
             lock.unlock();
@@ -129,6 +129,16 @@ public class CreditMap {
         return sb.toString();
     }
 
+    // need to be called with lock held
+    protected boolean decrement(long credits) {
+        if(credits <= min_credits) {
+            accumulated_credits+=credits;
+            min_credits-=credits;
+            return true;
+        }
+        return false;
+    }
+
     /** Needs to be called with lock held */
     protected long computeLowestCredit() {
         long lowest=max_credits;
@@ -140,22 +150,22 @@ public class CreditMap {
     /**
      * Decrements credits bytes from all elements and add new_credits to member (if non null).
      * The lowest credit needs to be greater than min_credits. Needs to be called with lock held
-     * @param credits Number of bytes to decrement from all. NOP is 0.
      * @param member The member to which new_credits are added. NOP if null
      * @param new_credits Number of bytes to add to member. NOP if 0.
      */
-    protected void decrementAndAdd(long credits, Address member, long new_credits) {
+    protected void decrementAndAdd(Address member, long new_credits) {
         boolean replenish=member != null && new_credits > 0;
 
-        if(credits > 0) {
+        if(accumulated_credits > 0) {
             for(Map.Entry<Address,Long> entry: this.credits.entrySet()) {
-                entry.setValue(Math.max(0, entry.getValue().longValue() - credits));
+                entry.setValue(Math.max(0, entry.getValue().longValue() - accumulated_credits));
                 if(replenish) {
                     Address tmp=entry.getKey();
                     if(tmp.equals(member))
                         entry.setValue(Math.min(max_credits, entry.getValue().longValue() + new_credits));
                 }
             }
+            accumulated_credits=0;
         }
         else {
             if(replenish) {
