@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: MFC.java,v 1.2 2010/09/06 11:08:08 belaban Exp $
+ * @version $Id: MFC.java,v 1.3 2010/09/07 10:38:32 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
@@ -126,12 +126,6 @@ public class MFC extends FlowControl {
             return down_prot.down(evt);
         }
 
-        if(max_block_times != null) {
-            long tmp=getMaxBlockTime(length);
-            if(tmp > 0)
-                end_time.set(System.currentTimeMillis() + tmp);
-        }
-
         lock.lock();
         try {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
@@ -141,25 +135,16 @@ public class MFC extends FlowControl {
                 }
                 else {
                     determineCreditors(length);
-                    long start_blocking=System.currentTimeMillis();
                     num_blockings++; // we count overall blockings, not blockings for *all* threads
                     if(log.isTraceEnabled())
                         log.trace("Starting blocking. lowest_credit=" + lowest_credit + "; msg length =" + length);
 
+                    long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
                     while(length > lowest_credit && running) {
                         try {
-                            long block_time=max_block_time;
-                            if(max_block_times != null) {
-                                Long tmp=end_time.get();
-                                if(tmp != null) {
-                                    // A negative block_time means we don't wait at all ! If the end_time already elapsed
-                                    // (because we waited for other threads to get processed), the message will not
-                                    // block at all and get sent immediately
-                                    block_time=tmp - start_blocking;
-                                }
-                            }
-
+                            long start=System.currentTimeMillis();
                             boolean rc=credits_available.await(block_time, TimeUnit.MILLISECONDS);
+                            total_time_blocking+=System.currentTimeMillis() - start;
                             if(length <= lowest_credit || rc || !running)
                                 break;
 
@@ -168,13 +153,14 @@ public class MFC extends FlowControl {
                             if(!rc && max_block_times != null)
                                 break;
 
-                            long wait_time=System.currentTimeMillis() - last_credit_request;
+                            long curr_time=System.currentTimeMillis();
+                            long wait_time=curr_time - last_credit_request;
                             if(wait_time >= max_block_time) {
 
                                 // we have to set this var now, because we release the lock below (for sending a
                                 // credit request), so all blocked threads would send a credit request, leading to
                                 // a credit request storm
-                                last_credit_request=System.currentTimeMillis();
+                                last_credit_request=curr_time;
 
                                 // we need to send the credit requests down *without* holding the lock, otherwise we might
                                 // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
@@ -196,11 +182,6 @@ public class MFC extends FlowControl {
                             // Thread.currentThread().interrupt();
                         }
                     }
-                    long block_time=System.currentTimeMillis() - start_blocking;
-                    if(log.isTraceEnabled())
-                        log.trace("total time blocked: " + block_time + " ms");
-                    total_time_blocking+=block_time;
-                    last_blockings.add(block_time);
                 }
             }
 

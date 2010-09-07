@@ -24,7 +24,7 @@ import org.jgroups.annotations.MBean;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: UFC.java,v 1.1 2010/08/31 12:21:54 belaban Exp $
+ * @version $Id: UFC.java,v 1.2 2010/09/07 10:38:21 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class UFC extends FlowControl {
@@ -75,6 +75,7 @@ public class UFC extends FlowControl {
         super.stop();
         for(final Credit cred: sent.values()) {
             synchronized(cred) {
+                cred.set(max_credits);
                 cred.notifyAll();
             }
         }
@@ -96,40 +97,23 @@ public class UFC extends FlowControl {
             return down_prot.down(evt);
         }
 
-        if(max_block_times != null) {
-            long tmp=getMaxBlockTime(length);
-            if(tmp > 0)
-                end_time.set(System.currentTimeMillis() + tmp);
-        }
-
         UfcCredit cred=(UfcCredit)sent.get(dest);
         if(cred == null) {
             log.error("destination " + dest + " not found; passing message down");
             return down_prot.down(evt);
         }
 
+        long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
+        
         while(running) {
             if(cred.decrementIfEnoughCredits(length, 0)) // timeout == 0: don't block
                 break;
-
-            long start_blocking=System.currentTimeMillis();
-            long block_time=max_block_time;
-            if(max_block_times != null) {
-                Long tmp=end_time.get();
-                if(tmp != null) {
-                    // A negative block_time means we don't wait at all ! If the end_time already elapsed
-                    // (because we waited for other threads to get processed), the message will not
-                    // block at all and get sent immediately
-                    block_time=tmp - start_blocking;
-                }
-            }
 
             if(log.isTraceEnabled())
                 log.trace("blocking for credits (for " + block_time + " ms)");
             boolean rc=cred.decrementIfEnoughCredits(length, block_time);
             if(rc && log.isTraceEnabled())
                 log.trace("unblocking (received credits)");
-            last_blockings.add(System.currentTimeMillis() - start_blocking);
             
             if(rc || !running || max_block_times != null)
                 break;

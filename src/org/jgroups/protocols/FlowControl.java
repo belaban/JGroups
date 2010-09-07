@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.3 2010/09/06 11:07:46 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.4 2010/09/07 10:38:01 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -67,7 +67,7 @@ public abstract class FlowControl extends Protocol {
     protected Map<Long,Long> max_block_times=null;
 
     /** Keeps track of the end time after which a message should not get blocked anymore */
-    protected static final ThreadLocal<Long> end_time=new ThreadLocal<Long>();
+    // protected static final ThreadLocal<Long> end_time=new ThreadLocal<Long>();
 
 
     /**
@@ -108,7 +108,7 @@ public abstract class FlowControl extends Protocol {
     protected int num_credit_responses_sent=0, num_credit_responses_received=0;
     protected long total_time_blocking=0;
 
-    protected final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
+    // protected final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
     
     
     
@@ -168,7 +168,7 @@ public abstract class FlowControl extends Protocol {
         num_blockings=0;
         num_credit_responses_sent=num_credit_responses_received=num_credit_requests_received=num_credit_requests_sent=0;
         total_time_blocking=0;
-        last_blockings.clear();
+        // last_blockings.clear();
     }
 
     public long getMaxCredits() {
@@ -313,10 +313,10 @@ public abstract class FlowControl extends Protocol {
         return retval;
     }
 
-    @ManagedOperation(description="Print last blocking times")
-    public String showLastBlockingTimes() {
-        return last_blockings.toString();
-    }
+    //@ManagedOperation(description="Print last blocking times")
+    //public String showLastBlockingTimes() {
+      //  return last_blockings.toString();
+    //}
 
 
     protected long getMaxBlockTime(long length) {
@@ -723,47 +723,6 @@ public abstract class FlowControl extends Protocol {
             return credits_left < other.credits_left ? -1 : credits_left > other.credits_left ? 1 : 0;
         }
     }
-
-
-   /* protected abstract class Credit implements Comparable {
-        protected long credits_left;
-
-        protected Credit(long credits) {
-            this.credits_left=credits;
-        }
-
-        protected long decrementAndGet(long credits) {
-            credits_left=Math.max(0, credits_left - credits);
-            long credit_response=max_credits - credits_left;
-            if(credit_response >= min_credits) {
-                credits_left=max_credits;
-                return credit_response;
-            }
-            return 0;
-        }
-
-        protected long decrement(long credits) {
-            return credits_left=Math.max(0, credits_left - credits);
-        }
-
-        protected long get() {return credits_left;}
-
-        protected void set(long new_credits) {credits_left=Math.min(max_credits, new_credits);}
-
-        protected long increment(long credits) {
-            return credits_left=Math.min(max_credits, credits_left + credits);
-        }
-
-        public String toString() {
-            return String.valueOf(credits_left);
-        }
-
-        public int compareTo(Object o) {
-            Credit other=(Credit)o;
-            return credits_left < other.credits_left ? -1 : credits_left > other.credits_left ? 1 : 0;
-        }
-       
-    }*/
 
 
 }
