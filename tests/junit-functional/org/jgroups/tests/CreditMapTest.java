@@ -8,12 +8,13 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 
 /**
  * Tests CreditMap
  * @author Bela Ban
- * @version $Id: CreditMapTest.java,v 1.2 2010/09/07 14:00:50 belaban Exp $
+ * @version $Id: CreditMapTest.java,v 1.3 2010/09/07 15:30:08 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class CreditMapTest {
@@ -142,12 +143,11 @@ public class CreditMapTest {
         thread.start();
 
         addAll();
-        map.decrement(800, 100);
+        assert map.decrement(800, 100);
         System.out.println("map:\n" + map);
 
         barrier.await();
-        boolean rc=map.decrement(250, 5000);
-        assert rc;
+        assert map.decrement(250, 5000);
         System.out.println("map:\n" + map);
         assert map.getMinCredits() == 50;
         assert map.getAccumulatedCredits() == 250;
@@ -159,7 +159,7 @@ public class CreditMapTest {
         Decrementer[] decrementers=new Decrementer[credit_sizes.length];
 
         addAll();
-        map.decrement(800, 100);
+        assert map.decrement(800, 100);
 
         for(int i=0; i < credit_sizes.length; i++)
             decrementers[i]=new Decrementer(map, credit_sizes[i], 20000, true);
@@ -189,7 +189,7 @@ public class CreditMapTest {
 
     public void testClear() {
         addAll();
-        map.decrement(800, 100);
+        assert map.decrement(800, 100);
 
         Decrementer decr1=new Decrementer(map, 300, 20000, false), decr2=new Decrementer(map, 500, 20000, false);
         decr1.start();
@@ -201,6 +201,37 @@ public class CreditMapTest {
         Util.sleep(500);
         assert !decr1.isAlive();
         assert !decr2.isAlive();
+    }
+
+
+    public void testGetMembersWithInsufficientCredits() {
+        addAll();
+        assert map.decrement(800, 50);
+        List<Address> list=map.getMembersWithInsufficientCredits(100);
+        assert list.isEmpty();
+
+        list=map.getMembersWithInsufficientCredits(200);
+        assert list.isEmpty();
+
+        list=map.getMembersWithInsufficientCredits(250);
+        assert list.size() == 4;
+        assert list.contains(a) && list.contains(b) && list.contains(c) && list.contains(d);
+
+        map.remove(b); map.remove(c);
+        list=map.getMembersWithInsufficientCredits(250);
+        assert list.size() == 2;
+        assert list.contains(a) && list.contains(d);
+
+        map.decrement(100, 50);
+        map.putIfAbsent(b); map.putIfAbsent(c);
+
+        // Now A and D have 100 credits, B and C 1000
+        list=map.getMembersWithInsufficientCredits(800);
+        assert list.size() == 2;
+        assert list.contains(a) && list.contains(d);
+
+        list=map.getMembersWithInsufficientCredits(100);
+        assert list.isEmpty();
     }
 
 
