@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Maintains credits for senders, when credits fall below 0, a sender blocks until new credits have been received.
  * @author Bela Ban
- * @version $Id: CreditMap.java,v 1.6 2010/09/07 15:39:33 belaban Exp $
+ * @version $Id: CreditMap.java,v 1.7 2010/09/08 10:51:22 belaban Exp $
  */
 public class CreditMap {
     protected final long              max_credits;
@@ -112,6 +112,9 @@ public class CreditMap {
             if(decrement(credits))
                 return true;
 
+            if(timeout <= 0)
+                return false;
+            
             try {
                 credits_available.await(timeout, TimeUnit.MILLISECONDS);
                 if(decrement(credits))
