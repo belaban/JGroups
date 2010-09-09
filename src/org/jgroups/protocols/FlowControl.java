@@ -6,7 +6,6 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -31,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.4 2010/09/07 10:38:01 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.5 2010/09/09 11:34:47 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -88,10 +87,9 @@ public abstract class FlowControl extends Protocol {
     protected long min_credits=0;
     
     /**
-     * Whether an up thread that comes back down should be allowed to
-     * bypass blocking if all credits are exhausted. Avoids JGRP-465.
-     * Set to false by default in 2.5 because we have OOB messages for credit replenishments - this flag should not be set
-     * to true if the concurrent stack is used
+     * Whether an up thread that comes back down should be allowed to bypass blocking if all credits are exhausted.
+     * Avoids JGRP-465. Set to false by default in 2.5 because we have OOB messages for credit replenishments -
+     * this flag should not be set to true if the concurrent stack is used
      */
     @Property(description="Does not block a down message if it is a result of handling an up message in the" +
             "same thread. Fixes JGRP-928")
@@ -101,27 +99,12 @@ public abstract class FlowControl extends Protocol {
     
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
-    
-    
-    protected int num_blockings=0;
-    protected int num_credit_requests_received=0, num_credit_requests_sent=0;
-    protected int num_credit_responses_sent=0, num_credit_responses_received=0;
-    protected long total_time_blocking=0;
+    protected int  num_credit_requests_received=0, num_credit_requests_sent=0;
+    protected int  num_credit_responses_sent=0, num_credit_responses_received=0;
 
-    // protected final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
-    
-    
-    
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
-    
-    /**
-     * Map<Address,Long>: keys are members, values are credits left. For each send, the
-     * number of credits is decremented by the message size. A HashMap rather than a ConcurrentHashMap is
-     * currently used as there might be null values
-     */
-    @GuardedBy("lock")
-    protected final Map<Address,Credit> sent=new ConcurrentHashMap<Address,Credit>(11);
+   
 
     /**
      * Keeps track of credits / member at the receiver's side. Keys are members, values are credits left (in bytes).
@@ -131,11 +114,6 @@ public abstract class FlowControl extends Protocol {
      */
     protected final Map<Address,Credit> received=new ConcurrentHashMap<Address,Credit>(11);
 
-
-  
-    
-    /** Peers who have asked for credit that we didn't have */
-    protected final Set<Address> pending_requesters=new HashSet<Address>(11);
 
     /**
      * Whether FlowControl is still running, this is set to false when the protocol terminates (on stop())
@@ -159,16 +137,10 @@ public abstract class FlowControl extends Protocol {
         }
     };   
 
-    /** Last time a credit request was sent. Used to prevent credit request storms */
-    @GuardedBy("lock")
-    protected long last_credit_request=0;   
 
     public void resetStats() {
         super.resetStats();
-        num_blockings=0;
         num_credit_responses_sent=num_credit_responses_received=num_credit_requests_received=num_credit_requests_sent=0;
-        total_time_blocking=0;
-        // last_blockings.clear();
     }
 
     public long getMaxCredits() {
@@ -195,10 +167,8 @@ public abstract class FlowControl extends Protocol {
         this.min_credits=min_credits;
     }
 
-    @ManagedAttribute(description="Number of times flow control blocks sender")
-    public int getNumberOfBlockings() {
-        return num_blockings;
-    }
+
+    public abstract int getNumberOfBlockings();
 
     public long getMaxBlockTime() {
         return max_block_time;
@@ -259,14 +229,13 @@ public abstract class FlowControl extends Protocol {
         return sb.toString();
     }
     
-    @ManagedAttribute(description="Total time (ms) spent in flow control block")
-    public long getTotalTimeBlocked() {
-        return total_time_blocking;
-    }
+
+    public abstract long getTotalTimeBlocked();
 
     @ManagedAttribute(description="Average time spent in a flow control block")
     public double getAverageTimeBlocked() {
-        return num_blockings == 0? 0.0 : total_time_blocking / (double)num_blockings;
+        long number_of_blockings=getNumberOfBlockings();
+        return number_of_blockings == 0? 0.0 : getTotalTimeBlocked() / (double)number_of_blockings;
     }
 
     @ManagedAttribute(description="Number of credit requests received")
@@ -288,35 +257,26 @@ public abstract class FlowControl extends Protocol {
     public int getNumberOfCreditResponsesSent() {
         return num_credit_responses_sent;
     }
-
-    @ManagedOperation(description="Print sender credits")
-    public String printSenderCredits() {
-        return printMap(sent);
-    }
+    
+    public abstract String printSenderCredits();
 
     @ManagedOperation(description="Print receiver credits")
     public String printReceiverCredits() {
         return printMap(received);
     }
 
-    @ManagedOperation(description="Print credits")
+
     public String printCredits() {
         StringBuilder sb=new StringBuilder();
-        sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
+        sb.append("receivers:\n").append(printMap(received));
         return sb.toString();
     }
 
     public Map<String, Object> dumpStats() {
         Map<String, Object> retval=super.dumpStats();      
-        retval.put("senders", printMap(sent));
         retval.put("receivers", printMap(received));
         return retval;
     }
-
-    //@ManagedOperation(description="Print last blocking times")
-    //public String showLastBlockingTimes() {
-      //  return last_blockings.toString();
-    //}
 
 
     protected long getMaxBlockTime(long length) {
@@ -339,9 +299,7 @@ public abstract class FlowControl extends Protocol {
      */
     protected abstract boolean handleMulticastMessage();
 
-    protected abstract Credit createCredit(long credits);
-
-    protected abstract void handleCredit(Address sender, Number increase);
+    protected abstract void handleCredit(Address sender, long increase);
 
 
     /**
@@ -394,6 +352,13 @@ public abstract class FlowControl extends Protocol {
                 int length=msg.getLength();
                 if(length == 0)
                     break;
+
+                if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
+                    if(log.isTraceEnabled())
+                        log.trace("bypassing flow control because of synchronous response " + Thread.currentThread());
+                    break;
+                }
+
                 return handleDownMessage(evt, msg, length);
             case Event.CONFIG:
                 handleConfigEvent((Map<String,Object>)evt.getArg()); 
@@ -430,14 +395,14 @@ public abstract class FlowControl extends Protocol {
                     switch(hdr.type) {
                         case FcHeader.REPLENISH:
                             num_credit_responses_received++;
-                            handleCredit(msg.getSrc(), (Number)msg.getObject());
+                            handleCredit(msg.getSrc(), (Long)msg.getObject());
                             break;
                         case FcHeader.CREDIT_REQUEST:
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
-                            Long sent_credits=(Long)msg.getObject();
-                            if(sent_credits != null)
-                                handleCreditRequest(received, sender, sent_credits.longValue());
+                            Long requested_credits=(Long)msg.getObject();
+                            if(requested_credits != null)
+                                handleCreditRequest(received, sender, requested_credits.longValue());
                             break;
                         default:
                             log.error("header type " + hdr.type + " not known");
@@ -459,10 +424,8 @@ public abstract class FlowControl extends Protocol {
                 finally {
                     if(ignore_synchronous_response)
                         ignore_thread.set(false); // need to revert because the thread is placed back into the pool
-                    if(new_credits > 0) {
-                        if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + sender);
+                    if(new_credits > 0)
                         sendCredit(sender, new_credits);
-                    }
                 }
 
             case Event.VIEW_CHANGE:
@@ -498,39 +461,6 @@ public abstract class FlowControl extends Protocol {
 
 
 
-
-
-
-    /**
-     * Decrements credits from a single member, or all members in sent_msgs, depending on whether it is a multicast
-     * or unicast message. No need to acquire mutex (must already be held when this method is called)
-     * @param dest
-     * @param credits
-     * @return The lowest number of credits left, or -1 if a unicast member was not found
-     */
-    protected long decrementCredit(Map<Address,Credit> map, Address dest, long credits) {
-        if(dest == null || dest.isMulticastAddress()) {
-            if(map.isEmpty())
-                return -1;
-            long lowest=max_credits;
-            for(Credit cred: map.values())
-                lowest=Math.min(cred.decrement(credits), lowest);
-            return lowest;
-        }
-        else {
-            Credit cred=map.get(dest);
-            if(cred != null)
-                return cred.decrement(credits);
-            }
-        return -1;
-    }
-
-
-
-
-   
-
-
     /**
      * Check whether sender has enough credits left. If not, send it some more
      * @param map The hashmap to use
@@ -548,7 +478,7 @@ public abstract class FlowControl extends Protocol {
             return 0;
 
         if(log.isTraceEnabled())
-            log.trace("sender " + sender + " minus " + length + " credits, " + (cred.get() - length) + " remaining");
+            log.trace(sender + " used " + length + " credits, " + (cred.get() - length) + " remaining");
 
         return cred.decrementAndGet(length);
     }
@@ -556,65 +486,27 @@ public abstract class FlowControl extends Protocol {
     /**
      * @param map The map to modify
      * @param sender The sender who requests credits
-     * @param left_credits Number of bytes that the sender has left to send messages to us
+     * @param requested_credits Number of bytes that the sender has left to send messages to us
      */
-    protected void handleCreditRequest(Map<Address,Credit> map, Address sender, long left_credits) {
-        if(sender == null) return;
-        long credit_response=0;
-        Credit cred=map.get(sender);
+    protected void handleCreditRequest(Map<Address,Credit> map, Address sender, long requested_credits) {
+        Credit cred;
+        if(sender == null || (cred=map.get(sender)) == null)
+            return;
 
-        long old_credit=cred != null? cred.get() : 0;
-        if(old_credit > 0)
-            credit_response=Math.min(max_credits, max_credits - old_credit);
-
+        long credit_response=Math.min(max_credits, Math.min(requested_credits, max_credits - cred.get()));
         if(credit_response > 0) {
             if(log.isTraceEnabled())
                 log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-            if(cred != null)
-                cred.set(max_credits);
-            else
-                map.put(sender, createCredit(max_credits));
-            pending_requesters.remove(sender);
-        }
-        else {
-            if(pending_requesters.contains(sender)) {
-                // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
-                // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
-                // credits is negative, we simply send max_credits back
-                long credits_left=Math.max(0, left_credits);
-                credit_response=max_credits - credits_left;
-                // credit_response = max_credits;
-                if(cred != null)
-                    cred.set(max_credits);
-                else
-                    map.put(sender, createCredit(max_credits));
-                pending_requesters.remove(sender);
-                if(log.isWarnEnabled())
-                    log.warn("Received two credit requests from " + sender +
-                            " without any intervening messages; sending " + credit_response + " credits");
-            }
-            else {
-                pending_requesters.add(sender);
-                if(log.isTraceEnabled())
-                    log.trace("received credit request from " + sender + " but have no credits available");
-            }
-        }
-
-
-        if(credit_response > 0)
+            cred.set(max_credits);
             sendCredit(sender, credit_response);
+        }
     }
 
 
-    protected void sendCredit(Address dest, long credit) {
+    protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
-            log.trace("replenishing " + dest + " with " + credit	+ " credits");
-        Number number;
-        if(credit < Integer.MAX_VALUE)
-            number=(int)credit;
-        else
-            number=credit;
-        Message msg=new Message(dest, null, number);
+            if(log.isTraceEnabled()) log.trace("sending " + credits + " credits to " + dest);
+        Message msg=new Message(dest, null, new Long(credits));
         msg.setFlag(Message.OOB);
         msg.putHeader(this.id, REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
@@ -625,12 +517,12 @@ public abstract class FlowControl extends Protocol {
      * We cannot send this request as OOB messages, as the credit request needs to queue up behind the regular messages;
      * if a receiver cannot process the regular messages, that is a sign that the sender should be throttled !
      * @param dest The member to which we send the credit request
-     * @param credits_left The number of bytes (of credits) left for dest
+     * @param credits_needed The number of bytes (of credits) left for dest
      */
-    protected void sendCreditRequest(final Address dest, Long credits_left) {
+    protected void sendCreditRequest(final Address dest, Long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
-        Message msg=new Message(dest, null, credits_left);
+        Message msg=new Message(dest, null, credits_needed);
         msg.putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
@@ -647,9 +539,7 @@ public abstract class FlowControl extends Protocol {
         for(int i=0; i < mbrs.size(); i++) {
             addr=mbrs.elementAt(i);
             if(!received.containsKey(addr))
-                received.put(addr, createCredit(max_credits));
-            if(!sent.containsKey(addr))
-                sent.put(addr, createCredit(max_credits));
+                received.put(addr, new Credit(max_credits));
         }
         // remove members that left
         for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
@@ -657,17 +547,9 @@ public abstract class FlowControl extends Protocol {
             if(!mbrs.contains(addr))
                 it.remove();
         }
-
-        // remove members that left
-        for(Iterator<Address> it=sent.keySet().iterator(); it.hasNext();) {
-            addr=it.next();
-            if(!mbrs.contains(addr))
-                it.remove(); // modified the underlying map
-        }
-
-      
     }
 
+    
     protected static long computeLowestCredit(Map<Address,Credit> m) {
         Collection<Credit> credits=m.values();
         return Collections.min(credits).get();
@@ -683,12 +565,45 @@ public abstract class FlowControl extends Protocol {
 
 
 
-    protected abstract class Credit implements Comparable {
+    protected class Credit implements Comparable {
         protected long credits_left;
+        protected int  num_blockings=0;
+        protected long total_blocking_time=0;
+        protected long last_credit_request=0;
 
+        
         protected Credit(long credits) {
             this.credits_left=credits;
         }
+
+
+        protected synchronized boolean decrementIfEnoughCredits(long credits, long timeout) {
+            if(credits <= credits_left) {
+                credits_left-=credits;
+                return true;
+            }
+
+            if(timeout <= 0)
+                return false;
+
+            long start=System.currentTimeMillis();
+            try {
+                this.wait(timeout);
+            }
+            catch(InterruptedException e) {
+            }
+            finally {
+                total_blocking_time+=System.currentTimeMillis() - start;
+                num_blockings++;
+            }
+
+            if(credits <= credits_left) {
+                credits_left-=credits;
+                return true;
+            }
+            return false;
+        }
+
 
         protected synchronized long decrementAndGet(long credits) {
             credits_left=Math.max(0, credits_left - credits);
@@ -700,19 +615,30 @@ public abstract class FlowControl extends Protocol {
             return 0;
         }
 
-        protected synchronized long decrement(long credits) {
-            return credits_left=Math.max(0, credits_left - credits);
+
+        protected synchronized long increment(long credits) {
+            long retval=credits_left=Math.min(max_credits, credits_left + credits);
+            notifyAll();
+            return retval;
         }
 
-        
+        protected synchronized boolean needToSendCreditRequest() {
+            long current_time=System.currentTimeMillis();
+            if(current_time - last_credit_request >= max_block_time) {
+                last_credit_request=current_time;
+                return true;
+            }
+            return false;
+        }
+
+        protected int getNumBlockings() {return num_blockings;}
+
+        protected long getTotalBlockingTime() {return total_blocking_time;}
 
         protected synchronized long get() {return credits_left;}
 
         protected synchronized void set(long new_credits) {credits_left=Math.min(max_credits, new_credits);}
 
-        protected synchronized long increment(long credits) {
-            return credits_left=Math.min(max_credits, credits_left + credits);
-        }
 
         public String toString() {
             return String.valueOf(credits_left);

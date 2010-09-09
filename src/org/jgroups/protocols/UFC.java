@@ -4,6 +4,13 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -24,50 +31,62 @@ import org.jgroups.annotations.MBean;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: UFC.java,v 1.2 2010/09/07 10:38:21 belaban Exp $
+ * @version $Id: UFC.java,v 1.3 2010/09/09 11:34:47 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class UFC extends FlowControl {
+    
+    /**
+     * Map<Address,Long>: keys are members, values are credits left. For each send,
+     * the number of credits is decremented by the message size
+     */
+    protected final Map<Address,Credit> sent=new ConcurrentHashMap<Address,Credit>(11);
+
+
+
+    @ManagedOperation(description="Print sender credits")
+    public String printSenderCredits() {
+        return printMap(sent);
+    }
 
     
+    @ManagedOperation(description="Print credits")
+    public String printCredits() {
+        StringBuilder sb=new StringBuilder(super.printCredits());
+        sb.append("\nsenders:\n").append(printMap(sent));
+        return sb.toString();
+    }
+
+    public Map<String, Object> dumpStats() {
+        Map<String, Object> retval=super.dumpStats();
+        retval.put("senders", printMap(sent));
+        return retval;
+    }
+
 
     protected boolean handleMulticastMessage() {
         return false;
     }
 
 
-    protected Credit createCredit(long credits) {
-        return new UfcCredit(credits);
-    }
 
     public void unblock() {
         super.unblock();
     }
 
-    public double getAverageTimeBlocked() {
-        int    blockings=0;
-        long   total_time_blocked=0;
-
-        for(Credit cred: sent.values()) {
-            blockings+=((UfcCredit)cred).getNumBlockings();
-            total_time_blocked=((UfcCredit)cred).getTotalBlockingTime();
-        }
-
-        return blockings > 0? total_time_blocked / (double)blockings : 0.0; // prevent div-by-zero
-    }
-
-
+    @ManagedAttribute(description="Number of times flow control blocks sender")
     public int getNumberOfBlockings() {
         int retval=0;
         for(Credit cred: sent.values())
-            retval+=((UfcCredit)cred).getNumBlockings();
+            retval+=cred.getNumBlockings();
         return retval;
     }
 
+    @ManagedAttribute(description="Total time (ms) spent in flow control block")
     public long getTotalTimeBlocked() {
         long retval=0;
         for(Credit cred: sent.values())
-            retval+=((UfcCredit)cred).getTotalBlockingTime();
+            retval+=cred.getTotalBlockingTime();
         return retval;
     }
 
@@ -91,13 +110,7 @@ public class UFC extends FlowControl {
             return down_prot.down(evt);
         }
 
-        if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
-            if(log.isTraceEnabled())
-                log.trace("bypassing blocking to avoid deadlocking " + Thread.currentThread());
-            return down_prot.down(evt);
-        }
-
-        UfcCredit cred=(UfcCredit)sent.get(dest);
+        Credit cred=sent.get(dest);
         if(cred == null) {
             log.error("destination " + dest + " not found; passing message down");
             return down_prot.down(evt);
@@ -106,36 +119,47 @@ public class UFC extends FlowControl {
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         
         while(running) {
-            if(cred.decrementIfEnoughCredits(length, 0)) // timeout == 0: don't block
-                break;
-
-            if(log.isTraceEnabled())
-                log.trace("blocking for credits (for " + block_time + " ms)");
             boolean rc=cred.decrementIfEnoughCredits(length, block_time);
-            if(rc && log.isTraceEnabled())
-                log.trace("unblocking (received credits)");
-            
             if(rc || !running || max_block_times != null)
                 break;
 
-            if(cred.sendCreditRequest(System.currentTimeMillis()))
-                sendCreditRequest(dest, cred.get());
+            if(cred.needToSendCreditRequest())
+                sendCreditRequest(dest, Math.max(0, max_credits - cred.get()));
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
         return down_prot.down(evt);
     }
-    
 
 
-    protected void handleCredit(Address sender, Number increase) {
+    protected void handleViewChange(Vector<Address> mbrs) {
+        super.handleViewChange(mbrs);
+        if(mbrs == null) return;
+
+        // add members not in membership to received and sent hashmap (with full credits)
+        for(int i=0; i < mbrs.size(); i++) {
+            Address addr=mbrs.elementAt(i);
+            if(!sent.containsKey(addr))
+                sent.put(addr, new Credit(max_credits));
+        }
+
+        // remove members that left
+        for(Iterator<Address> it=sent.keySet().iterator(); it.hasNext();) {
+            Address addr=it.next();
+            if(!mbrs.contains(addr))
+                it.remove(); // modified the underlying map
+        }
+    }
+
+
+    protected void handleCredit(Address sender, long increase) {
         if(sender == null) return;
         StringBuilder sb=null;
 
         Credit cred=sent.get(sender);
         if(cred == null)
             return;
-        long new_credit=Math.min(max_credits, cred.get() + increase.longValue());
+        long new_credit=Math.min(max_credits, cred.get() + increase);
 
         if(log.isTraceEnabled()) {
             sb=new StringBuilder();
@@ -143,67 +167,8 @@ public class UFC extends FlowControl {
                     .append(", new credits: ").append(new_credit);
             log.trace(sb);
         }
-
-        cred.increment(increase.longValue());
+        cred.increment(increase);
     }
     
-
-    protected class UfcCredit extends Credit {
-        int num_blockings=0;
-        long total_blocking_time=0;
-        long last_credit_request=0;
-
-        protected UfcCredit(long credits) {
-            super(credits);
-        }
-
-        protected synchronized boolean decrementIfEnoughCredits(long credits, long timeout) {
-            if(credits <= credits_left) {
-                credits_left-=credits;
-                return true;
-            }
-
-            if(timeout <= 0)
-                return false;
-
-            long start=System.currentTimeMillis();
-            try {
-                this.wait(timeout);
-            }
-            catch(InterruptedException e) {
-            }
-            finally {
-                total_blocking_time+=System.currentTimeMillis() - start;
-                num_blockings++;
-            }
-
-            if(credits <= credits_left) {
-                credits_left-=credits;
-                return true;
-            }
-            return false;
-        }
-
-        protected synchronized long increment(long credits) {
-            long retval=super.increment(credits);
-            notifyAll();
-            return retval;
-        }
-
-        protected synchronized boolean sendCreditRequest(long current_time) {
-            if(current_time - last_credit_request >= max_block_time) {
-                // we have to set this var now, because we release the lock below (for sending a credit request), so
-                // all blocked threads would send a credit request, leading to a credit request storm
-                last_credit_request=System.currentTimeMillis();
-                return true;
-            }
-            return false;
-        }
-
-        protected int getNumBlockings() {return num_blockings;}
-
-        protected long getTotalBlockingTime() {return total_blocking_time;}
-    }
-
 
 }
