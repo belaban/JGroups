@@ -38,15 +38,14 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.77 2010/06/15 10:10:44 belaban Exp $
+ * @version $Id: Protocol.java,v 1.78 2010/09/09 08:20:08 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     
-    @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
-    @ManagedAttribute(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
+    @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
     protected boolean          stats=true;
 
     /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
