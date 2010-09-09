@@ -31,7 +31,7 @@ import org.jgroups.util.Util;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.32 2009/12/11 13:21:17 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.33 2010/09/09 09:35:20 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -190,21 +190,41 @@ public class ResourceDMBean implements DynamicMBean {
         throw new ClassNotFoundException("Class " + name + " cannot be found");
     }
 
+//    private void findMethods() {
+//        //find all methods but don't include methods from Object class
+//        List<Method> methods = new ArrayList<Method>(Arrays.asList(getObject().getClass().getMethods()));
+//        List<Method> objectMethods = new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));
+//        methods.removeAll(objectMethods);
+//
+//        for(Method method:methods) {
+//            //does method have @ManagedAttribute annotation?
+//            if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
+//                exposeManagedAttribute(method);
+//            }
+//            //or @ManagedOperation
+//            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
+//                exposeManagedOperation(method);
+//            }
+//        }
+//    }
+
+    /** find all methods but don't include methods from Object class */
     private void findMethods() {
-        //find all methods but don't include methods from Object class               
-        List<Method> methods = new ArrayList<Method>(Arrays.asList(getObject().getClass().getMethods()));
-        List<Method> objectMethods = new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));
-        methods.removeAll(objectMethods);
-               
-        for(Method method:methods) {
-            //does method have @ManagedAttribute annotation?
-            if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
-                exposeManagedAttribute(method);
+        for(Class<?> clazz=getObject().getClass();clazz != null; clazz=clazz.getSuperclass()) {
+            if(clazz.equals(Object.class))
+                break;
+
+            Method[] methods=clazz.getDeclaredMethods();
+            for(Method method: methods) {
+                //does method have @ManagedAttribute annotation?
+                if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
+                    exposeManagedAttribute(method);
+                }
+                //or @ManagedOperation
+                else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
+                    exposeManagedOperation(method);
+                }
             }
-            //or @ManagedOperation
-            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
-                exposeManagedOperation(method);                
-            }                     
         }
     }
 
