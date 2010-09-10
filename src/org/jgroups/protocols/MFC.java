@@ -7,12 +7,12 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.CreditMap;
+import org.jgroups.util.Tuple;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: MFC.java,v 1.4 2010/09/09 11:34:47 belaban Exp $
+ * @version $Id: MFC.java,v 1.5 2010/09/10 10:55:18 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
@@ -46,11 +46,7 @@ public class MFC extends FlowControl {
     /** Maintains credits per member */
     protected CreditMap credits;
 
-    /** Number of credits waiting to be decremented, used to determine how many credits to ask for in credit requests */
-    @ManagedAttribute(description="The total number of bytes accumulated by messages which cannot be sent due " +
-            "to insufficient credits",writable=false)
-    protected final AtomicLong blocked_credits=new AtomicLong(0);
-
+    
     /** Last time a credit request was sent. Used to prevent credit request storms */
     protected long last_credit_request=0;
 
@@ -107,27 +103,18 @@ public class MFC extends FlowControl {
         }
 
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
-        try {
-            if(length > 0 && max_block_times == null)
-                this.blocked_credits.addAndGet(length);
-            while(running) {
-                boolean rc=credits.decrement(length, block_time);
-                if(rc || max_block_times != null || !running)
-                    break;
+        while(running) {
+            boolean rc=credits.decrement(length, block_time);
+            if(rc || max_block_times != null || !running)
+                break;
 
-                if(needToSendCreditRequest()) {
-                    long credits_blocked=blocked_credits.get();
-                    List<Address> targets=credits.getMembersWithInsufficientCredits(credits_blocked);
-                    for(Address target: targets)
-                        sendCreditRequest(target, credits_blocked);
-                }
+            if(needToSendCreditRequest()) {
+                List<Tuple<Address,Long>> targets=credits.getMembersWithCreditsLessThan(min_credits);
+                for(Tuple<Address,Long> tuple: targets)
+                    sendCreditRequest(tuple.getVal1(), Math.min(max_credits, max_credits - tuple.getVal2()));
             }
         }
-        finally {
-            if(length > 0 && max_block_times == null)
-                this.blocked_credits.getAndAdd(-length);
-        }
-
+        
         // send message - either after regular processing, or after blocking (when enough credits are available again)
         return down_prot.down(evt);
     }
