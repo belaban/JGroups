@@ -194,7 +194,6 @@ public class Test implements Receiver {
         if(tmp3 != null)
             this.processing_delay=Long.parseLong(tmp3);
 
-
         String transport_name=this.config.getProperty("transport");
         transport=(Transport)Util.loadClass(transport_name, this.getClass()).newInstance();
         transport.create(this.config);
@@ -853,6 +852,11 @@ public class Test implements Receiver {
                 warmup=Integer.parseInt(args[++i]);
                 continue;
             }
+            if("-name".equals(args[i])) {
+                String name=args[++i];
+                config.setProperty("name", name);
+                continue;
+            }
             help();
             return;
         }
@@ -910,7 +914,7 @@ public class Test implements Receiver {
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
                 "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)] " +
                 "[-num_buddies <number of backup buddies>, this enables buddy replication] " +
-                "[-warmup <num messages>]");
+                "[-warmup <num messages>] [-name <logical name>]");
     }
 
 
