@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.5 2010/09/09 11:34:47 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.6 2010/09/10 10:53:42 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -521,7 +521,7 @@ public abstract class FlowControl extends Protocol {
      */
     protected void sendCreditRequest(final Address dest, Long credits_needed) {
         if(log.isTraceEnabled())
-            log.trace("sending credit request to " + dest);
+            log.trace("sending request for " + credits_needed + " credits to " + dest);
         Message msg=new Message(dest, null, credits_needed);
         msg.putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
