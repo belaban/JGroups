@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests CreditMap
  * @author Bela Ban
- * @version $Id: CreditMapTest.java,v 1.3 2010/09/07 15:30:08 belaban Exp $
+ * @version $Id: CreditMapTest.java,v 1.4 2010/09/10 12:07:31 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class CreditMapTest {
@@ -143,11 +143,13 @@ public class CreditMapTest {
         thread.start();
 
         addAll();
-        assert map.decrement(800, 100);
+        boolean rc=map.decrement(800, 100);
+        assert rc;
         System.out.println("map:\n" + map);
 
         barrier.await();
-        assert map.decrement(250, 5000);
+        rc=map.decrement(250, 5000);
+        assert rc;
         System.out.println("map:\n" + map);
         assert map.getMinCredits() == 50;
         assert map.getAccumulatedCredits() == 250;
@@ -159,7 +161,8 @@ public class CreditMapTest {
         Decrementer[] decrementers=new Decrementer[credit_sizes.length];
 
         addAll();
-        assert map.decrement(800, 100);
+        boolean rc=map.decrement(800, 100);
+        assert rc;
 
         for(int i=0; i < credit_sizes.length; i++)
             decrementers[i]=new Decrementer(map, credit_sizes[i], 20000, true);
@@ -189,7 +192,8 @@ public class CreditMapTest {
 
     public void testClear() {
         addAll();
-        assert map.decrement(800, 100);
+        boolean rc=map.decrement(800, 100);
+        assert rc;
 
         Decrementer decr1=new Decrementer(map, 300, 20000, false), decr2=new Decrementer(map, 500, 20000, false);
         decr1.start();
@@ -198,7 +202,13 @@ public class CreditMapTest {
         Util.sleep(500);
         map.clear();
 
-        Util.sleep(500);
+        for(int i=0; i < 5; i++) {
+            if(!decr1.isAlive() && !decr2.isAlive())
+                break;
+            else
+                Util.sleep(1000);
+        }
+        
         assert !decr1.isAlive();
         assert !decr2.isAlive();
     }
@@ -206,7 +216,8 @@ public class CreditMapTest {
 
     public void testGetMembersWithInsufficientCredits() {
         addAll();
-        assert map.decrement(800, 50);
+        boolean rc=map.decrement(800, 50);
+        assert rc;
         List<Address> list=map.getMembersWithInsufficientCredits(100);
         assert list.isEmpty();
 
