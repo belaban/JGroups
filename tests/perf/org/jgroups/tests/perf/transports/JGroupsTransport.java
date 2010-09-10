@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.21 2009/04/09 09:11:39 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.22 2010/09/10 10:13:22 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -44,6 +44,9 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         jmx=Boolean.parseBoolean(this.config.getProperty("jmx"));
         channel=new JChannel(props);
         channel.setReceiver(this);
+        String name=config.getProperty("name");
+        if(name != null)
+            channel.setName(name);
     }
 
     public void create(Configuration config) throws Exception {
