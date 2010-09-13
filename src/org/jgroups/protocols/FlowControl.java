@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the receiver sends more credits to the sender.
  * 
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.7 2010/09/13 09:08:36 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.8 2010/09/13 09:27:05 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
