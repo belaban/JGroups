@@ -24,8 +24,10 @@
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 view_bundling="true"
                 view_ack_collection_timeout="5000"/>
-    <FC max_credits="2000000"
-        min_threshold="0.6"/>
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
     <FRAG2 frag_size="60000"/>    
     <pbcast.STATE_TRANSFER/>
     <pbcast.FLUSH timeout="0"/>

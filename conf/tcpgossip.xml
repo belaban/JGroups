@@ -50,7 +50,10 @@
 	<UNICAST timeout="300,600,1200" />
 	<pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"
 		max_bytes="0" />
-	<pbcast.GMS print_local_addr="true" join_timeout="5000" />
-	<FC max_credits="2000000" min_threshold="0.6" />
-	<FRAG2 frag_size="60000" />
+    <pbcast.GMS print_local_addr="true" join_timeout="5000" />
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60000" />
 </config>

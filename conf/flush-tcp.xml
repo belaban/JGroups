@@ -52,9 +52,11 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="7000" 
-                 view_bundling="true"/>
-    <FC max_credits="2000000"
-        min_threshold="0.60"/>
+                view_bundling="true"/>
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
     <FRAG2 frag_size="60000"  />
     <pbcast.STREAMING_STATE_TRANSFER/>
     <!-- <pbcast.STATE_TRANSFER/> -->
