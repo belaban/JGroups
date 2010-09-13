@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: UFC.java,v 1.3 2010/09/09 11:34:47 belaban Exp $
+ * @version $Id: UFC.java,v 1.4 2010/09/13 09:08:36 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class UFC extends FlowControl {
@@ -92,27 +92,22 @@ public class UFC extends FlowControl {
 
     public void stop() {
         super.stop();
-        for(final Credit cred: sent.values()) {
-            synchronized(cred) {
-                cred.set(max_credits);
-                cred.notifyAll();
-            }
-        }
+        for(Credit cred: sent.values())
+            cred.set(max_credits);
     }
 
 
 
 
-    protected Object handleDownMessage(final Event evt, final Message msg, int length) {
-        Address dest=msg.getDest();
-        if(dest == null || dest.isMulticastAddress()) {
+    protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
+        if(dest == null || dest.isMulticastAddress()) { // 2nd line of defense, not really needed
             log.error(getClass().getSimpleName() + " doesn't handle multicast messages; passing message down");
             return down_prot.down(evt);
         }
 
         Credit cred=sent.get(dest);
         if(cred == null) {
-            log.error("destination " + dest + " not found; passing message down");
+            log.warn("destination " + dest + " not found; passing message down");
             return down_prot.down(evt);
         }
 
@@ -137,8 +132,7 @@ public class UFC extends FlowControl {
         if(mbrs == null) return;
 
         // add members not in membership to received and sent hashmap (with full credits)
-        for(int i=0; i < mbrs.size(); i++) {
-            Address addr=mbrs.elementAt(i);
+        for(Address addr: mbrs) {
             if(!sent.containsKey(addr))
                 sent.put(addr, new Credit(max_credits));
         }
@@ -153,16 +147,13 @@ public class UFC extends FlowControl {
 
 
     protected void handleCredit(Address sender, long increase) {
-        if(sender == null) return;
-        StringBuilder sb=null;
-
-        Credit cred=sent.get(sender);
-        if(cred == null)
+        Credit cred;
+        if(sender == null || (cred=sent.get(sender)) == null || increase <= 0)
             return;
-        long new_credit=Math.min(max_credits, cred.get() + increase);
 
+        long new_credit=Math.min(max_credits, cred.get() + increase);
         if(log.isTraceEnabled()) {
-            sb=new StringBuilder();
+            StringBuilder sb=new StringBuilder();
             sb.append("received " + increase + " credits from ").append(sender).append(", old credits: ").append(cred)
                     .append(", new credits: ").append(new_credit);
             log.trace(sb);
