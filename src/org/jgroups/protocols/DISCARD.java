@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.40 2010/07/08 10:03:54 belaban Exp $
+// $Id: DISCARD.java,v 1.41 2010/09/13 12:25:42 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -295,12 +295,7 @@ public class DISCARD extends Protocol {
         num_down=num_up=0;
     }
 
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> m=new HashMap<String,Object>(2);
-        m.put("num_dropped_down", new Integer(num_down));
-        m.put("num_dropped_up", new Integer(num_up));
-        return m;
-    }
+
     
     public static class DiscardHeader extends Header {
 		private final Set<Address> dropMessages;
