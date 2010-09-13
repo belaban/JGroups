@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the receiver sends more credits to the sender.
  * 
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.8 2010/09/13 09:27:05 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.9 2010/09/13 10:05:37 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -33,7 +33,7 @@ public abstract class FlowControl extends Protocol {
     /**
      * Max number of bytes to send per receiver until an ack must be received before continuing sending
      */
-    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 500000 bytes")
+    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed")
     protected long max_credits=500000;
 
     /**
@@ -56,14 +56,14 @@ public abstract class FlowControl extends Protocol {
 
 
     /**
-     * If we've received (min_threshold * max_credits) bytes from P, we send more credits to P. Example: if
-     * max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits to P once we've
-     * received 250'000 bytes from P. 
+     * If we're down to (min_threshold * max_credits) bytes for P, we send more credits to P. Example: if
+     * max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits to P once we've got only
+     * 250'000 credits left for P (we've received 750'000 bytes from P).
      */
     @Property(description="The threshold (as a percentage of max_credits) at which a receiver sends more credits to " +
             "a sender. Example: if max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits " +
-            "to P once we've received 250'000 bytes from P")
-    protected double min_threshold=0.60;
+            "to P once we've got only 250'000 credits left for P (we've received 750'000 bytes from P)")
+    protected double min_threshold=0.40;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
@@ -575,8 +575,8 @@ public abstract class FlowControl extends Protocol {
 
         protected synchronized long decrementAndGet(long credits) {
             credits_left=Math.max(0, credits_left - credits);
-            long credit_response=max_credits - credits_left;
-            if(credit_response >= min_credits) {
+            if(credits_left <= min_credits) {
+                long credit_response=Math.min(max_credits, max_credits - credits_left);
                 credits_left=max_credits;
                 return credit_response;
             }
