@@ -33,7 +33,7 @@ import java.util.Vector;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: MFC.java,v 1.5 2010/09/10 10:55:18 belaban Exp $
+ * @version $Id: MFC.java,v 1.6 2010/09/13 09:08:36 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {
@@ -95,9 +95,8 @@ public class MFC extends FlowControl {
         credits.clear();
     }
 
-    protected Object handleDownMessage(final Event evt, final Message msg, int length) {
-        Address dest=msg.getDest();
-        if(dest != null && !dest.isMulticastAddress()) {
+    protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
+        if(dest != null && !dest.isMulticastAddress()) { // 2nd line of defense, not really needed
             log.error(getClass().getSimpleName() + " doesn't handle unicast messages; passing message down");
             return down_prot.down(evt);
         }
