@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.103 2010/07/28 12:43:22 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.104 2010/09/13 12:58:57 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -251,20 +251,36 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public Map<String,Object> dumpStats(String protocol_name) {
-        Protocol p;
-        Map<String,Object> retval=new HashMap<String,Object>(), tmp;
-        String prot_name;
+        return dumpStats(protocol_name, null);
+    }
 
-        p=top_prot;
-        while(p != null) {
-            prot_name=p.getName();
-            if(prot_name.equals(protocol_name)) {
-                tmp=p.dumpStats();
-                if(tmp != null)
-                    retval.put(prot_name, tmp);
+
+    public Map<String,Object> dumpStats(String protocol_name, List<String> attrs) {
+        Protocol prot=findProtocol(protocol_name);
+        if(prot == null)
+            return null;
+
+        Map<String,Object> retval=new HashMap<String,Object>(), tmp;
+        tmp=prot.dumpStats();
+        if(tmp != null) {
+            if(attrs != null && !attrs.isEmpty()) {
+                // weed out attrs not in list
+                for(Iterator<String> it=tmp.keySet().iterator(); it.hasNext();) {
+                    String attrname=it.next();
+                    boolean found=false;
+                    for(String attr: attrs) {
+                        if(attrname.startsWith(attr)) {
+                            found=true;
+                            break; // found
+                        }
+                    }
+                    if(!found)
+                        it.remove();
+                }
             }
-            p=p.getDownProtocol();
+            retval.put(protocol_name, tmp);
         }
+
         return retval;
     }
 
