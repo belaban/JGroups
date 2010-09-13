@@ -18,7 +18,7 @@ import java.util.concurrent.Executor;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.10 2010/08/24 12:15:41 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.11 2010/09/13 12:02:47 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -142,9 +142,12 @@ public class DAISYCHAIN extends Protocol {
 
     protected void handleView(View view) {
         view_size=view.size();
-        next=Util.pickNext(view.getMembers(), local_addr);
-        if(log.isDebugEnabled())
-            log.debug("next=" + next);
+        Address tmp=Util.pickNext(view.getMembers(), local_addr);
+        if(tmp != null && !tmp.equals(local_addr)) {
+            next=tmp;
+            if(log.isDebugEnabled())
+                log.debug("next=" + next);
+        }
     }
 
 
