@@ -80,7 +80,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.243 2010/08/24 06:55:39 belaban Exp $
+ * @version $Id: JChannel.java,v 1.244 2010/09/13 12:58:55 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -687,9 +687,13 @@ public class JChannel extends Channel {
         return retval;
     }
 
+    public Map<String,Object> dumpStats(String protocol_name, List<String> attrs) {
+        return prot_stack.dumpStats(protocol_name, attrs);
+    }
+
     @ManagedOperation
     public Map<String,Object> dumpStats(String protocol_name) {
-        return prot_stack.dumpStats(protocol_name);
+        return prot_stack.dumpStats(protocol_name, null);
     }
 
     protected Map<String,Long> dumpChannelStats() {
@@ -2060,8 +2064,17 @@ public class JChannel extends Channel {
                     Map<String, Object> tmp_stats;
                     int index=key.indexOf("=");
                     if(index > -1) {
-                        String value=key.substring(index +1);
-                        tmp_stats=dumpStats(value);
+                        List<String> list=null;
+                        String protocol_name=key.substring(index +1);
+                        index=protocol_name.indexOf(".");
+                        if(index > -1) {
+                            String rest=protocol_name;
+                            protocol_name=protocol_name.substring(0, index);
+                            String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
+                            list=Util.parseStringList(attrs, ",");
+                        }
+
+                        tmp_stats=dumpStats(protocol_name, list);
                     }
                     else
                         tmp_stats=dumpStats();

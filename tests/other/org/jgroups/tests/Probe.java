@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -177,6 +177,7 @@ public class Probe {
                 "Examples:\n" +
                 "probe.sh keys // dumps all keys\n" +
                 "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
-                "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n");
+                "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
+                "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*");
     }
 }
