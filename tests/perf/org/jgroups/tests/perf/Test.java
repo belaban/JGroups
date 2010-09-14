@@ -172,6 +172,9 @@ public class Test implements Receiver {
         tmp2=this.config.getProperty("log_interval");
         if(tmp2 != null)
             log_interval=Long.parseLong(tmp2);
+        else {
+            log_interval=num_msgs / 10;
+        }
 
         if(num_threads > 0 && log_interval % num_threads != 0)
             throw new IllegalArgumentException("log_interval (" + log_interval + ") must be divisible by num_threads (" + num_threads + ")");
