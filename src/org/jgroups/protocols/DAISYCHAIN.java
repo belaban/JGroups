@@ -20,7 +20,7 @@ import java.util.concurrent.Executor;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.12 2010/09/14 11:55:36 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.13 2010/09/14 12:19:21 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -44,7 +44,8 @@ public class DAISYCHAIN extends Protocol {
     protected Executor               oob_pool=null;
     protected BlockingQueue<Message> send_queue;
     protected BlockingQueue<Message> forward_queue;
-    protected boolean                forward=false; // flipped between true and false, to ensure fairness
+    protected volatile boolean       forward=false; // flipped between true and false, to ensure fairness
+    protected volatile boolean       running=true;
 
     @ManagedAttribute
     public int msgs_forwarded=0;
@@ -63,6 +64,16 @@ public class DAISYCHAIN extends Protocol {
         oob_pool=getTransport().getOOBThreadPool();
         send_queue=new ConcurrentLinkedBlockingQueue<Message>(send_queue_size);
         forward_queue=new ConcurrentLinkedBlockingQueue<Message>(forward_queue_size);
+    }
+
+    public void start() throws Exception {
+        super.start();
+        running=true;
+    }
+
+    public void stop() {
+        super.stop();
+        running=false;
     }
 
     public Object down(final Event evt) {
@@ -140,13 +151,9 @@ public class DAISYCHAIN extends Protocol {
                     Message copy=msg.copy(true);
                     copy.setDest(next);
                     copy.putHeader(getId(), new DaisyHeader(ttl));
-                    try {
-                        msgs_forwarded++;
-                        forward_queue.put(copy);
-                    }
-                    catch(InterruptedException e) {
-                    }
-                    processQueues();
+                    msgs_forwarded++;
+                    if(forward_queue.offer(copy)) // we don't want incoming threads to block
+                        processQueues();
                 }
 
                 // 2. Pass up
@@ -158,7 +165,8 @@ public class DAISYCHAIN extends Protocol {
 
 
     protected Object processQueues() {
-        for(int i=0; i < 10; i++) {
+        int cnt=0;
+        while(running && cnt++ < 10000) { // cnt is a second line of defense against loops and should never be used !
             try {
                 Message msg=forward? forward_queue.poll() : send_queue.poll();
                 if(msg == null) {
