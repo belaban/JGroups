@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.28 2010/09/15 13:49:26 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.29 2010/09/15 14:18:29 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -33,18 +33,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class XmlConfigurator implements ProtocolStackConfigurator {
    
     private static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
-
     private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
-
     public static final String ATTR_NAME="name";
     public static final String ATTR_VALUE="value";
-    public static final String ATTR_INHERIT="inherit";
-    public static final String ELMT_PROT_OVERRIDE="protocol-override";
-    public static final String ELMT_PROT="protocol";
-    public static final String ELMT_PROT_NAME="protocol-name";
-    public static final String ELMT_CLASS="class-name";
-    public static final String ELMT_DESCRIPTION="description";
-    public static final String ELMT_PROT_PARAMS="protocol-params";
+
 
     private final ArrayList<ProtocolData> mProtocolStack=new ArrayList<ProtocolData>();
     private final String mStackName;
