@@ -60,7 +60,7 @@ public class AUTH extends Protocol {
             X509Token tmp=(X509Token)auth_plugin;
             tmp.setCertificate();
         }
-
+        auth_plugin.init();
     }
 
     /**
@@ -113,7 +113,7 @@ public class AUTH extends Protocol {
                     }
                     else {
                         if(log.isWarnEnabled())
-                            log.warn("AUTH failed to validate AuthHeader token");
+                            log.warn("failed to validate AuthHeader token");
                         sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Authentication failed"));
                     }
                 }
