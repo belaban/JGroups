@@ -5,7 +5,7 @@ package org.jgroups.conf;
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolData.java,v 1.11 2010/09/15 13:49:26 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.12 2010/09/15 14:56:44 belaban Exp $
  */
 
 import java.util.HashMap;
@@ -21,16 +21,13 @@ public class ProtocolData {
     /**
      *
      * @param protocolName
-     * @param description
      * @param className
      * @param params
      * @deprecated Use {@link #ProtocolData(String, String, ProtocolParameter[])} instead
      */
 
 
-    public ProtocolData(String protocolName,
-                        String className,
-                        ProtocolParameter[] params) {
+    public ProtocolData(String protocolName, String className, ProtocolParameter[] params) {
         mProtocolName=protocolName;
         mClassName=className;
         if(params != null) {
@@ -48,30 +45,10 @@ public class ProtocolData {
         return mProtocolName;
     }
 
-    @Deprecated
-    public static String getDescription() {
-        return "n/a";
-    }
 
     public Map getParameters() {
         return mParameters;
     }
-
-    @Deprecated
-    public static boolean isOverride() {
-        return false;
-    }
-
-    public ProtocolParameter[] getParametersAsArray() {
-        ProtocolParameter[] result=new ProtocolParameter[mParameters.size()];
-        Iterator it=mParameters.keySet().iterator();
-        for(int i=0; i < result.length; i++) {
-            String key=(String)it.next();
-            result[i]=(ProtocolParameter)mParameters.get(key);
-        }
-        return result;
-    }
-
 
 
     public String getProtocolString(boolean new_format) {
