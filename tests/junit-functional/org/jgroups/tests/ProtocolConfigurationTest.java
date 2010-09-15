@@ -2,11 +2,11 @@ package org.jgroups.tests;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.util.StackType;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -21,12 +21,11 @@ import java.util.Vector;
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.6 2009/10/26 14:34:21 belaban Exp $
+ * @version $Id: ProtocolConfigurationTest.java,v 1.7 2010/09/15 15:51:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {
 	ProtocolStack stack = null;
-	ProtocolConfiguration protocol_config = null ;
 	Protocol protocol = null ;
 	static final String orderProps="org.jgroups.tests.ProtocolConfigurationTest$ORDERING(a=1;b=2;c=3)";
 	static final String refsProps="org.jgroups.tests.ProtocolConfigurationTest$REFS(a=1;b=2;c=3)";

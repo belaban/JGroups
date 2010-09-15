@@ -4,6 +4,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -80,7 +81,7 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.244 2010/09/13 12:58:55 belaban Exp $
+ * @version $Id: JChannel.java,v 1.245 2010/09/15 15:50:44 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1687,8 +1688,8 @@ public class JChannel extends Channel {
 
         // replace vars with system props
         try {
-            Collection<Configurator.ProtocolConfiguration> configs=Configurator.parseConfigurations(tmp);
-            for(Configurator.ProtocolConfiguration config: configs)
+            Collection<ProtocolConfiguration> configs=Configurator.parseConfigurations(tmp);
+            for(ProtocolConfiguration config: configs)
                 config.substituteVariables();
             tmp=Configurator.printConfigurations(configs);
         }
