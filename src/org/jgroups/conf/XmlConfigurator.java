@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.27 2009/10/23 17:01:40 vlada Exp $
+ * @version $Id: XmlConfigurator.java,v 1.28 2010/09/15 13:49:26 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -131,13 +131,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return mStackName;
     }
 
-    public void override(ProtocolData data) throws IOException {
-        int index=mProtocolStack.indexOf(data);
-        if(index < 0)
-            throw new IOException("You can not override a protocol that doesn't exist");
-        ProtocolData source=mProtocolStack.get(index);
-        source.override(data.getParametersAsArray());
-    }
 
     public void add(ProtocolData data) {
         mProtocolStack.add(data);
