@@ -23,6 +23,8 @@ public abstract class AuthToken implements Serializable, Streamable {
         this.auth = auth;
     }
 
+    public void init() {}
+
     /**
      * Used to return the full package and class name of the implementation. This is used by the
      * AUTH protocol to create an instance of the implementation.

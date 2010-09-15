@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
  * Matches the IP address or logical name of a joiner against a regular expression and accepts or rejects based on
  * pattern matching
  * @author Bela Ban
- * @version $Id: RegexMembership.java,v 1.1 2010/09/15 12:12:14 belaban Exp $
+ * @version $Id: RegexMembership.java,v 1.2 2010/09/15 13:37:06 belaban Exp $
  */
 public class RegexMembership extends AuthToken {
 
@@ -82,30 +82,35 @@ public class RegexMembership extends AuthToken {
 
     public boolean authenticate(AuthToken token, Message msg) {
         Address sender=msg.getSrc();
-        String ip_addr=null;
-        String logical_name=null;
+
 
         if(match_ip_address) {
             PhysicalAddress src=sender != null? (PhysicalAddress)auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, sender)) : null;
-            if(src != null)
-                ip_addr=src.toString();
-            Matcher matcher=pattern.matcher(ip_addr);
-            if(matcher.matches())
-                return true;
+            String ip_addr=src != null? src.toString() : null;
+            if(ip_addr != null) {
+                Matcher matcher=pattern.matcher(ip_addr);
+                boolean result=matcher.matches();
+                if(log.isTraceEnabled())
+                    log.trace("matching ip_address: pattern= " + pattern + ", input= " + ip_addr + ", result= " + result);
+                if(result)
+                    return true;
+            }
         }
         if(match_logical_name) {
-            logical_name=sender != null? UUID.get(sender) : null;
-            Matcher matcher=pattern.matcher(logical_name);
-            if(matcher.matches())
-                return true;
+            String logical_name=sender != null? UUID.get(sender) : null;
+            if(logical_name != null) {
+                Matcher matcher=pattern.matcher(logical_name);
+                boolean result=matcher.matches();
+                if(log.isTraceEnabled())
+                    log.trace("matching logical_name: pattern= " + pattern + ", input= " + logical_name + ", result= " + result);
+                if(result)
+                    return true;
+            }
         }
         return false;
     }
 
-    private static boolean hasPort(String member) {
-        return member.contains(":");
-    }
-
+   
 
     public void writeTo(DataOutputStream out) throws IOException {
     }
