@@ -2,12 +2,12 @@ package org.jgroups.tests;
 
 import org.jgroups.Event;
 import org.jgroups.Global ;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Configurator ;
 import org.jgroups.stack.Configurator.InetAddressInfo;
-import org.jgroups.stack.Configurator.ProtocolConfiguration;
-import org.jgroups.annotations.Property; 
+import org.jgroups.annotations.Property;
 import org.jgroups.util.Util ;
 
 import org.testng.annotations.BeforeMethod;
@@ -19,12 +19,11 @@ import java.net.InetAddress ;
 /**
  * Tests checks made on InetAddress and related addresses in Configurator.
  * @author Richard Achmatowicz
- * @version $Id: InetAddressChecksTest.java,v 1.3 2009/10/20 14:46:30 belaban Exp $
+ * @version $Id: InetAddressChecksTest.java,v 1.4 2010/09/15 15:51:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class InetAddressChecksTest {
 	ProtocolStack stack = null;
-	ProtocolConfiguration protocol_config = null ;
 	Protocol protocol = null ;
 	static final String ipCheckNoConsistentProps="org.jgroups.tests.InetAddressChecksTest$IPCHECK(" + 
 								"inetAddress1=127.0.0.1;inetAddress2=::1;inetAddress3=192.168.0.100;i=3)" ;

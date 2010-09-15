@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.JChannel;
 import org.jgroups.Global;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -15,7 +16,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.14 2009/10/28 15:57:21 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.15 2010/09/15 15:51:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -152,7 +153,7 @@ public class ConfiguratorTest {
                 "FRAG2(frag_size=60000):" +
                 "pbcast.STREAMING_STATE_TRANSFER(use_reading_thread=true)";
         
-        Vector<Configurator.ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
+        Vector<ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(14, ret.size());
 

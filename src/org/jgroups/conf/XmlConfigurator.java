@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.29 2010/09/15 14:18:29 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.30 2010/09/15 15:51:19 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -17,7 +17,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Configurator.ProtocolConfiguration;
 import org.jgroups.util.Util;
 
 import javax.xml.parsers.DocumentBuilder;
