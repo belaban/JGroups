@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.82 2010/05/10 11:23:05 belaban Exp $
+ * @version $Id: Configurator.java,v 1.83 2010/09/15 15:42:48 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
 
@@ -140,7 +140,7 @@ public class Configurator implements ProtocolStackFactory {
         config=new ProtocolConfiguration(prot_spec);
 
         // create an instance of the protocol class and configure it
-        prot=config.createLayer(stack);
+        prot=createLayer(stack, config);
         prot.init();
         return prot;
     }
@@ -351,7 +351,7 @@ public class Configurator implements ProtocolStackFactory {
                         retval.add(layer);
                     }
                     else {
-                        layer=protocol_config.createLayer(stack);
+                        layer=createLayer(stack, protocol_config);
                         if(layer == null)
                             return null;
                         singleton_transports.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
@@ -360,10 +360,81 @@ public class Configurator implements ProtocolStackFactory {
                 }
                 continue;
             }
-            layer=protocol_config.createLayer(stack);
+            layer=createLayer(stack, protocol_config);
             if(layer == null)
                 return null;
             retval.addElement(layer);
+        }
+        return retval;
+    }
+
+
+    protected static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
+        String              protocol_name=config.getProtocolName();
+        Map<String, String> properties=config.getProperties();
+        Protocol            retval=null;
+
+        if(protocol_name == null || properties == null)
+            return null;
+
+        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + protocol_name;
+        Class<?> clazz=null;
+
+        try {
+            clazz=Util.loadClass(defaultProtocolName, stack.getClass());
+        }
+        catch(ClassNotFoundException e) {
+        }
+
+        if(clazz == null) {
+            try {
+                clazz=Util.loadClass(protocol_name, stack.getClass());
+            }
+            catch(ClassNotFoundException e) {
+            }
+            if(clazz == null) {
+                throw new Exception("unable to load class for protocol " + protocol_name +
+                        " (either as an absolute - " + protocol_name + " - or relative - " +
+                        defaultProtocolName + " - package name)!");
+            }
+        }
+
+        try {
+            retval=(Protocol)clazz.newInstance();
+            if(retval == null)
+                throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
+            retval.setProtocolStack(stack);
+
+            removeDeprecatedProperties(retval, properties);
+            // before processing Field and Method based properties, take dependencies specified
+            // with @Property.dependsUpon into account
+            AccessibleObject[] dependencyOrderedFieldsAndMethods = computePropertyDependencies(retval, properties) ;
+            for(AccessibleObject ordered: dependencyOrderedFieldsAndMethods) {
+                if (ordered instanceof Field) {
+                    resolveAndAssignField(retval, (Field)ordered, properties) ;
+                }
+                else if (ordered instanceof Method) {
+                    resolveAndInvokePropertyMethod(retval, (Method)ordered, properties) ;
+                }
+            }
+
+            List<Object> additional_objects=retval.getConfigurableObjects();
+            if(additional_objects != null && !additional_objects.isEmpty()) {
+                for(Object obj: additional_objects) {
+                    resolveAndAssignFields(obj, properties);
+                    resolveAndInvokePropertyMethods(obj, properties);
+                }
+            }
+
+            if(!properties.isEmpty()) {
+                throw new IllegalArgumentException("the following properties in " + protocol_name
+                        + " are not recognized: " + properties);
+            }
+        }
+        catch(InstantiationException inst_ex) {
+            log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +
+                    " interface Protocol and that is has a public empty constructor !");
+            throw inst_ex;
         }
         return retval;
     }
@@ -1133,7 +1204,7 @@ public class Configurator implements ProtocolStackFactory {
         private final String             protocol_name;
         private String                   properties_str;
         private final Map<String,String> properties=new HashMap<String,String>();
-        private static final String      protocol_prefix="org.jgroups.protocols";
+        public static final String       protocol_prefix="org.jgroups.protocols";
 
 
         /**
@@ -1217,73 +1288,7 @@ public class Configurator implements ProtocolStackFactory {
             properties_str=propertiesToString();
         }
         
-        private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
-            Protocol retval=null;
-            if(protocol_name == null)
-                return null;
-
-            String defaultProtocolName=protocol_prefix + '.' + protocol_name;
-            Class<?> clazz=null;
-
-            try {
-                clazz=Util.loadClass(defaultProtocolName, this.getClass());
-            }
-            catch(ClassNotFoundException e) {
-            }
-
-            if(clazz == null) {
-                try {
-                    clazz=Util.loadClass(protocol_name, this.getClass());
-                }
-                catch(ClassNotFoundException e) {
-                }
-                if(clazz == null) {
-                    throw new Exception("unable to load class for protocol " + protocol_name +
-                            " (either as an absolute - " + protocol_name + " - or relative - " +
-                            defaultProtocolName + " - package name)!");
-                }
-            }
-
-            try {
-                retval=(Protocol)clazz.newInstance();
-                if(retval == null)
-                    throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
-                retval.setProtocolStack(prot_stack);
-                
-                removeDeprecatedProperties(retval, properties);   
-                // before processing Field and Method based properties, take dependencies specified
-                // with @Property.dependsUpon into account
-                AccessibleObject[] dependencyOrderedFieldsAndMethods = computePropertyDependencies(retval, properties) ;
-                for(AccessibleObject ordered: dependencyOrderedFieldsAndMethods) {
-                	if (ordered instanceof Field) {
-                		resolveAndAssignField(retval, (Field)ordered, properties) ;
-                	}
-                	else if (ordered instanceof Method) {
-                		resolveAndInvokePropertyMethod(retval, (Method)ordered, properties) ;                		
-                	}
-                }
-                
-                List<Object> additional_objects=retval.getConfigurableObjects();
-                if(additional_objects != null && !additional_objects.isEmpty()) {
-                    for(Object obj: additional_objects) {
-                        resolveAndAssignFields(obj, properties);
-                        resolveAndInvokePropertyMethods(obj, properties);
-                    }
-                }
-
-                if(!properties.isEmpty()) {
-                    throw new IllegalArgumentException("the following properties in " + protocol_name
-                            + " are not recognized: " + properties);
-                }
-            }
-            catch(InstantiationException inst_ex) {
-                log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +
-                        " interface Protocol and that is has a public empty constructor !");
-                throw inst_ex;
-            }
-            return retval;
-        }
-
+       
         public String toString() {
             StringBuilder retval=new StringBuilder();
             if(protocol_name == null)
