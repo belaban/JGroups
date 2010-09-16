@@ -37,23 +37,23 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.84 2010/09/15 15:49:42 belaban Exp $
+ * @version $Id: Configurator.java,v 1.85 2010/09/16 14:21:41 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
-
     protected static final Log log=LogFactory.getLog(Configurator.class);
     private final ProtocolStack stack;
+    
      
     public Configurator() {      
-        stack = null;
+        stack=null;
     }
 
     public Configurator(ProtocolStack protocolStack) {
          stack=protocolStack;
     }
 
-    public Protocol setupProtocolStack() throws Exception{
-         return setupProtocolStack(stack.getSetupString(), stack);
+    public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception{
+         return setupProtocolStack(config, stack);
     }
      
     public Protocol setupProtocolStack(ProtocolStack copySource)throws Exception{
@@ -85,9 +85,8 @@ public class Configurator implements ProtocolStackFactory {
      *   -----------------------
      * </pre>
      */
-    private static Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {
-        Vector<ProtocolConfiguration> protocol_configs=parseConfigurations(configuration);
-        Vector<Protocol> protocols=createProtocols(protocol_configs, st);
+    private static Protocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
+        List<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
         // basic protocol sanity check
@@ -159,14 +158,14 @@ public class Configurator implements ProtocolStackFactory {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    private static Protocol connectProtocols(Vector<Protocol> protocol_list) {
+    private static Protocol connectProtocols(List<Protocol> protocol_list) {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
-            current_layer=protocol_list.elementAt(i);
+            current_layer=protocol_list.get(i);
             if(i + 1 >= protocol_list.size())
                 break;
-            next_layer=protocol_list.elementAt(i + 1);
+            next_layer=protocol_list.get(i + 1);
             next_layer.setDownProtocol(current_layer);
             current_layer.setUpProtocol(next_layer);
 
@@ -199,8 +198,8 @@ public class Configurator implements ProtocolStackFactory {
      * @param config_str Configuration string
      * @return Vector of strings
      */
-    private static Vector<String> parseProtocols(String config_str) throws IOException {
-        Vector<String> retval=new Vector<String>();
+    private static List<String> parseProtocols(String config_str) throws IOException {
+        List<String> retval=new LinkedList<String>();
         PushbackReader reader=new PushbackReader(new StringReader(config_str));
         int ch;
         StringBuilder sb;
@@ -261,17 +260,17 @@ public class Configurator implements ProtocolStackFactory {
     /**
      * Return a number of ProtocolConfigurations in a vector
      * @param configuration protocol-stack configuration string
-     * @return Vector of ProtocolConfigurations
+     * @return List of ProtocolConfigurations
      */
-    public static Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
-        Vector<ProtocolConfiguration> retval=new Vector<ProtocolConfiguration>();
-        Vector<String> protocol_string=parseProtocols(configuration);              
+    public static List<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
+        List<ProtocolConfiguration> retval=new ArrayList<ProtocolConfiguration>();
+        List<String> protocol_string=parseProtocols(configuration);
 
         if(protocol_string == null)
             return null;
         
-        for(String component_string:protocol_string) {                       
-            retval.addElement(new ProtocolConfiguration(component_string));
+        for(String component_string: protocol_string) {                       
+            retval.add(new ProtocolConfiguration(component_string));
         }
         return retval;
     }
@@ -328,16 +327,16 @@ public class Configurator implements ProtocolStackFactory {
      * each ProtocolConfiguration and returns all Protocols in a vector.
      * @param protocol_configs Vector of ProtocolConfigurations
      * @param stack The protocol stack
-     * @return Vector of Protocols
+     * @return List of Protocols
      */
-    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
-        Vector<Protocol> retval=new Vector<Protocol>();
+    private static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
+        List<Protocol> retval=new LinkedList<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
         String singleton_name;
 
         for(int i=0; i < protocol_configs.size(); i++) {
-            protocol_config=protocol_configs.elementAt(i);
+            protocol_config=protocol_configs.get(i);
             singleton_name=protocol_config.getProperties().get(Global.SINGLETON_NAME);
             if(singleton_name != null && singleton_name.trim().length() > 0) {
                Map<String,Tuple<TP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
@@ -356,7 +355,7 @@ public class Configurator implements ProtocolStackFactory {
                         if(layer == null)
                             return null;
                         singleton_transports.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
-                        retval.addElement(layer);
+                        retval.add(layer);
                     }
                 }
                 continue;
@@ -364,7 +363,7 @@ public class Configurator implements ProtocolStackFactory {
             layer=createLayer(stack, protocol_config);
             if(layer == null)
                 return null;
-            retval.addElement(layer);
+            retval.add(layer);
         }
         return retval;
     }
@@ -444,23 +443,23 @@ public class Configurator implements ProtocolStackFactory {
     /**
      Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol names
      */
-    public static void sanityCheck(Vector<Protocol> protocols) throws Exception {
-        Vector<String> names=new Vector<String>();
+    public static void sanityCheck(List<Protocol> protocols) throws Exception {
+        List<String> names=new ArrayList<String>();
         Protocol prot;
         String name;       
-        Vector<ProtocolReq> req_list=new Vector<ProtocolReq>();        
+        List<ProtocolReq> req_list=new ArrayList<ProtocolReq>();
 
         // Checks for unique names
         for(int i=0; i < protocols.size(); i++) {
-            prot=protocols.elementAt(i);
+            prot=protocols.get(i);
             name=prot.getName();
             for(int j=0; j < names.size(); j++) {
-                if(name.equals(names.elementAt(j))) {
+                if(name.equals(names.get(j))) {
                     throw new Exception("Configurator.sanityCheck(): protocol name " + name +
                             " has been used more than once; protocol names have to be unique !");
                 }
             }
-            names.addElement(name);
+            names.add(name);
         }
 
         // check for unique IDs
@@ -568,8 +567,8 @@ public class Configurator implements ProtocolStackFactory {
      * where InetAddressInfo instances encapsulate the InetAddress related information 
      * of the Fields and Methods.
      */
-    public static Map<String, Map<String,InetAddressInfo>> createInetAddressMap(Vector<ProtocolConfiguration> protocol_configs, 
-    		Vector<Protocol> protocols) throws Exception {
+    public static Map<String, Map<String,InetAddressInfo>> createInetAddressMap(List<ProtocolConfiguration> protocol_configs,
+                                                                                List<Protocol> protocols) throws Exception {
     	// Map protocol -> Map<String, InetAddressInfo>, where the latter is protocol specific
     	Map<String, Map<String,InetAddressInfo>> inetAddressMap = new HashMap<String, Map<String, InetAddressInfo>>() ;
 
@@ -664,7 +663,7 @@ public class Configurator implements ProtocolStackFactory {
      * - if the defaultValue attribute is not "", generate a value for the field using the 
      * property converter for that property and assign it to the field
      */
-    public static void setDefaultValues(Vector<ProtocolConfiguration> protocol_configs, Vector<Protocol> protocols,
+    public static void setDefaultValues(List<ProtocolConfiguration> protocol_configs, List<Protocol> protocols,
                                         StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
@@ -770,7 +769,7 @@ public class Configurator implements ProtocolStackFactory {
 
 
     /** Check whether any of the protocols 'below' provide evt_type */
-    static boolean providesUpServices(Vector<ProtocolReq> req_list, int evt_type) {        
+    static boolean providesUpServices(List<ProtocolReq> req_list, int evt_type) {
         for (ProtocolReq pr:req_list){
             if(pr.providesUpService(evt_type))
                 return true;
@@ -780,8 +779,8 @@ public class Configurator implements ProtocolStackFactory {
 
 
     /** Checks whether any of the protocols 'above' provide evt_type */
-    static boolean providesDownServices(Vector<ProtocolReq> req_list, int evt_type) {
-        for (ProtocolReq pr:req_list){
+    static boolean providesDownServices(List<ProtocolReq> req_list, int evt_type) {
+        for(ProtocolReq pr:req_list){
             if(pr.providesDownService(evt_type))
                 return true;
         }

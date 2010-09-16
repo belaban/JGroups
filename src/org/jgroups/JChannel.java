@@ -3,35 +3,36 @@ package org.jgroups;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.blocks.MethodCall;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.stack.Configurator;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.Configurator;
 import org.jgroups.util.*;
-import org.jgroups.util.Queue;
-import org.jgroups.util.UUID;
-import org.jgroups.blocks.MethodCall;
 import org.w3c.dom.Element;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.net.URL;
-import java.net.ServerSocket;
+import java.lang.reflect.Method;
 import java.net.DatagramSocket;
-import java.util.*;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
-import java.lang.reflect.Method;
 
 
 /**
@@ -81,15 +82,13 @@ import java.lang.reflect.Method;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.245 2010/09/15 15:50:44 belaban Exp $
+ * @version $Id: JChannel.java,v 1.246 2010/09/16 14:21:39 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
 
     /** The default protocol stack used by the default constructor  */
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
-
-    protected String properties=null;
 
     /*the address of this JChannel instance*/
     protected UUID local_addr=null;
@@ -306,14 +305,11 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Returns the protocol stack configuration in string format. An example of this property is<BR>
+     * Returns the protocol stack configuration in string format. An example of this property is<br/>
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
      */
     public String getProperties() {
-        String retval=prot_stack != null? prot_stack.printProtocolSpec(true) : null;
-        if(retval != null)
-            properties=retval;
-        return properties;
+        return prot_stack != null? prot_stack.printProtocolSpec(true) : null;
     }
 
     public boolean statsEnabled() {
@@ -634,9 +630,10 @@ public class JChannel extends Channel {
             mq.reset();
 
             String props=getProperties();
+            List<ProtocolConfiguration> configs=Configurator.parseConfigurations(props);
 
             // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this, props);
+            prot_stack=new ProtocolStack(this, configs);
             prot_stack.setup();
             closed=false;
         }
@@ -1682,27 +1679,21 @@ public class JChannel extends Channel {
     protected final void init(ProtocolStackConfigurator configurator) throws ChannelException {
         if(log.isInfoEnabled())
             log.info("JGroups version: " + Version.description);
-        
-        // ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
-        String tmp=configurator.getProtocolStackString();
 
-        // replace vars with system props
+        List<ProtocolConfiguration> configs;
         try {
-            Collection<ProtocolConfiguration> configs=Configurator.parseConfigurations(tmp);
-            for(ProtocolConfiguration config: configs)
-                config.substituteVariables();
-            tmp=Configurator.printConfigurations(configs);
+            configs=configurator.getProtocolStack();
+            for(ProtocolConfiguration config: configs) 
+                config.substituteVariables();  // replace vars with system props
         }
         catch(Exception e) {
             throw new ChannelException("unable to parse the protocol configuration", e);
         }
 
-
         synchronized(Channel.class) {
-            prot_stack=new ProtocolStack(this, tmp);
+            prot_stack=new ProtocolStack(this, configs);
             try {
                 prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
-                properties=tmp;
             }
             catch(Throwable e) {
                 throw new ChannelException("unable to setup the protocol stack", e);
@@ -1720,7 +1711,6 @@ public class JChannel extends Channel {
             prot_stack=new ProtocolStack(this, null);
             try {
                 prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
-                getProperties();
             }
             catch(Throwable e) {
                 throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
