@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.30 2010/09/15 15:51:19 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.31 2010/09/16 07:42:12 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -246,8 +246,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
                 Element tag=(Element)node;
                 String protocol=tag.getTagName();
-                // System.out.println("protocol: " + protocol);
-                LinkedList<ProtocolParameter> tmp=new LinkedList<ProtocolParameter>();
+                Map<String,String> params=new HashMap<String,String>();
 
                 NamedNodeMap attrs=tag.getAttributes();
                 int attrLength=attrs.getLength();
@@ -255,12 +254,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     Attr attr=(Attr)attrs.item(a);
                     String name=attr.getName();
                     String value=attr.getValue();
-                    // System.out.println("    name=" + name + ", value=" + value);
-                    tmp.add(new ProtocolParameter(name, value));
+                    params.put(name, value);
                 }
-                ProtocolParameter[] params=new ProtocolParameter[tmp.size()];
-                for(int j=0;j < tmp.size();j++)
-                    params[j]=tmp.get(j);
                 ProtocolData data=new ProtocolData(protocol, protocol, params);
                 prot_data.add(data);
             }
@@ -284,7 +279,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
 
 
-    protected static ProtocolParameter[] parseProtocolParameters(Element protparams) throws IOException {
+ /*   protected static ProtocolParameter[] parseProtocolParameters(Element protparams) throws IOException {
         try {
             Vector<ProtocolParameter> v=new Vector<ProtocolParameter>();
             protparams.normalize();
@@ -306,7 +301,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             tmp.initCause(x);
             throw tmp;
         }
-    }
+    }*/
 
     public static void main(String[] args) throws Exception {
         String input_file=null;

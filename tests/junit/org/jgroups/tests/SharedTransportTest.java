@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolData;
-import org.jgroups.conf.ProtocolParameter;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
@@ -29,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.29 2010/09/16 07:30:09 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.30 2010/09/16 07:42:13 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
