@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.18 2010/09/16 14:21:40 belaban Exp $
+// $Id: ProtocolTester.java,v 1.19 2010/09/16 15:46:53 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -45,8 +45,8 @@ public class ProtocolTester {
 
         config=new Configurator();
         JChannel mock_channel=new JChannel() {};
-        ProtocolStack stack=new ProtocolStack(mock_channel, Configurator.parseConfigurations(props));
-        stack.setup();
+        ProtocolStack stack=new ProtocolStack(mock_channel);
+        stack.setup(Configurator.parseConfigurations(props));
         stack.insertProtocol(harness, ProtocolStack.ABOVE, stack.getTopProtocol().getClass());
         
         bottom=stack.getBottomProtocol();

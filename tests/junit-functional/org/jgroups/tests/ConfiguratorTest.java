@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.17 2010/09/16 15:26:22 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.18 2010/09/16 15:46:51 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -30,12 +30,12 @@ public class ConfiguratorTest {
     @BeforeMethod
     void setUp() throws Exception {
         JChannel mock_channel=new JChannel() {};
-        stack=new ProtocolStack(mock_channel, Configurator.parseConfigurations(props));
+        stack=new ProtocolStack(mock_channel);
     }
 
     
     public void testRemovalOfTop() throws Exception {
-        stack.setup(); 
+        stack.setup(Configurator.parseConfigurations(props));
         Protocol prot=stack.removeProtocol("FC");
         assert prot != null;
         List<Protocol> protocols=stack.getProtocols();
@@ -48,7 +48,7 @@ public class ConfiguratorTest {
     }
     
     public void testRemovalOfBottom() throws Exception {
-        stack.setup(); 
+        stack.setup(Configurator.parseConfigurations(props));
         Protocol prot=stack.removeProtocol("UDP");
         assert prot != null;
         List<Protocol> protocols=stack.getProtocols();
@@ -57,7 +57,7 @@ public class ConfiguratorTest {
     }
     
     public void testAddingAboveTop() throws Exception{
-        stack.setup();           
+        stack.setup(Configurator.parseConfigurations(props));
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.ABOVE, "FC");
         List<Protocol> protocols=stack.getProtocols();
@@ -71,7 +71,7 @@ public class ConfiguratorTest {
     
     @Test(expectedExceptions={IllegalArgumentException.class})
     public void testAddingBelowBottom() throws Exception{
-        stack.setup();           
+        stack.setup(Configurator.parseConfigurations(props));           
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.BELOW, "UDP");        
     }
@@ -79,7 +79,7 @@ public class ConfiguratorTest {
     
 
     public void testInsertion() throws Exception {
-        stack.setup();
+        stack.setup(Configurator.parseConfigurations(props));
         List<Protocol> protocols=stack.getProtocols();
         assert protocols != null;
         Assert.assertEquals(6, protocols.size());

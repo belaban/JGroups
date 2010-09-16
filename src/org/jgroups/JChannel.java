@@ -82,7 +82,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.246 2010/09/16 14:21:39 belaban Exp $
+ * @version $Id: JChannel.java,v 1.247 2010/09/16 15:46:52 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -633,8 +633,8 @@ public class JChannel extends Channel {
             List<ProtocolConfiguration> configs=Configurator.parseConfigurations(props);
 
             // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this, configs);
-            prot_stack.setup();
+            prot_stack=new ProtocolStack(this);
+            prot_stack.setup(configs);
             closed=false;
         }
         catch(Exception e) {
@@ -1691,9 +1691,9 @@ public class JChannel extends Channel {
         }
 
         synchronized(Channel.class) {
-            prot_stack=new ProtocolStack(this, configs);
+            prot_stack=new ProtocolStack(this);
             try {
-                prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
+                prot_stack.setup(configs); // Setup protocol stack (creates protocol, calls init() on them)
             }
             catch(Throwable e) {
                 throw new ChannelException("unable to setup the protocol stack", e);
@@ -1708,7 +1708,7 @@ public class JChannel extends Channel {
             log.info("JGroups version: " + Version.description);
 
         synchronized(JChannel.class) {
-            prot_stack=new ProtocolStack(this, null);
+            prot_stack=new ProtocolStack(this);
             try {
                 prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
             }

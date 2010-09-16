@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.106 2010/09/16 15:27:59 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.107 2010/09/16 15:46:54 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -44,7 +44,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     private Protocol                      top_prot;
     private Protocol                      bottom_prot;
-    protected List<ProtocolConfiguration> configs;
+    // protected List<ProtocolConfiguration> configs;
     private JChannel                      channel;
     private volatile boolean              stopped=true;
 
@@ -69,8 +69,8 @@ public class ProtocolStack extends Protocol implements Transport {
     };
 
 
-    public ProtocolStack(JChannel channel, List<ProtocolConfiguration> configs) throws ChannelException {
-        this.configs=configs;
+    public ProtocolStack(JChannel channel) throws ChannelException {
+        // this.configs=configs;
         this.channel=channel;
 
         Class<?> tmp=ClassConfigurator.class; // load this class, trigger init()
@@ -85,7 +85,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Only used by Simulator; don't use */
     public ProtocolStack() throws ChannelException {
-        this(null,null);
+        this(null);
     }
 
 
@@ -340,14 +340,14 @@ public class ProtocolStack extends Protocol implements Transport {
 
         sb.append("<config>\n");
         while(prot != null) {
-            String name=prot.getName();
-            if(name != null) {
-                if("ProtocolStack".equals(name))
+            String prot_name=prot.getName();
+            if(prot_name != null) {
+                if("ProtocolStack".equals(prot_name))
                     break;
-                sb.append("  <").append(name).append(" ");
+                sb.append("  <").append(prot_name).append(" ");
                 Map<String,String> tmpProps=getProps(prot);
                 if(tmpProps != null) {
-                    len=name.length();
+                    len=prot_name.length();
                     String s;
                     for(Iterator<Entry<String,String>> it=tmpProps.entrySet().iterator();it.hasNext();) {
                         Entry<String,String> entry=it.next();
@@ -451,7 +451,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    public void setup() throws Exception {
+    public void setup(List<ProtocolConfiguration> configs) throws Exception {
         if(top_prot == null) {
             top_prot=getProtocolStackFactory().setupProtocolStack(configs);
             top_prot.setUpProtocol(this);
