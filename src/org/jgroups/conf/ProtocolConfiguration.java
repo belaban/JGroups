@@ -13,7 +13,7 @@ import java.util.Map;
  * Parses and encapsulates the specification for 1 protocol of the protocol stack, e.g.
  * <code>UNICAST(timeout=5000)</code>
  * @author Bela Ban
- * @version $Id: ProtocolConfiguration.java,v 1.1 2010/09/15 15:48:55 belaban Exp $
+ * @version $Id: ProtocolConfiguration.java,v 1.2 2010/09/16 07:30:08 belaban Exp $
  */
 public class ProtocolConfiguration {
     private final String protocol_name;
@@ -63,25 +63,7 @@ public class ProtocolConfiguration {
         return props;
     }
 
-    private void parsePropertiesString(String properties_str, Map<String, String> properties) throws Exception {
-        int index=0;
 
-        /* "in_port=5555;out_port=6666" */
-        if(properties_str.length() > 0) {
-            String[] components=properties_str.split(";");
-            for(String property : components) {
-                String name, value;
-                index=property.indexOf('=');
-                if(index == -1) {
-                    throw new Exception("Configurator.ProtocolConfiguration(): '=' not found in " + property
-                            + " of " + protocol_name);
-                }
-                name=property.substring(0, index);
-                value=property.substring(index + 1, property.length());
-                properties.put(name, value);
-            }
-        }
-    }
 
     public void substituteVariables() {
         for(Iterator<Map.Entry<String, String>> it=properties.entrySet().iterator(); it.hasNext();) {
@@ -120,5 +102,81 @@ public class ProtocolConfiguration {
         return Util.printMapWithDelimiter(properties, ";");
     }
 
+    public String getProtocolString(boolean new_format) {
+         return new_format? getProtocolStringNewXml() : getProtocolString();
+    }
+
+    public String getProtocolString() {
+        StringBuilder buf=new StringBuilder(protocol_name);
+        if(!properties.isEmpty()) {
+            boolean first=true;
+            buf.append('(');
+            for(Map.Entry<String,String> entry: properties.entrySet()) {
+                String key=entry.getKey();
+                String val=entry.getValue();
+                if(first)
+                    first=false;
+                else
+                    buf.append(';');
+                buf.append(getParameterString(key, val));
+            }
+            buf.append(')');
+        }
+        return buf.toString();
+    }
+
+
+    public String getProtocolStringNewXml() {
+        StringBuilder buf=new StringBuilder(protocol_name + ' ');
+        if(!properties.isEmpty()) {
+            boolean first=true;
+            for(Map.Entry<String,String> entry: properties.entrySet()) {
+                String key=entry.getKey();
+                String val=entry.getValue();
+                if(first)
+                    first=false;
+                else
+                    buf.append(' ');
+                buf.append(getParameterStringXml(key, val));
+            }
+        }
+        return buf.toString();
+    }
+
+    protected static String getParameterString(String name, String value) {
+        StringBuilder buf=new StringBuilder(name);
+        if(value != null)
+            buf.append('=').append(value);
+        return buf.toString();
+    }
+
+    protected static String getParameterStringXml(String name, String val) {
+        StringBuilder buf=new StringBuilder(name);
+        if(val != null)
+            buf.append("=\"").append(val).append('\"');
+        return buf.toString();
+    }
+
+
+
+    protected void parsePropertiesString(String properties_str, Map<String, String> properties) throws Exception {
+        int index=0;
+
+        /* "in_port=5555;out_port=6666" */
+        if(properties_str.length() > 0) {
+            String[] components=properties_str.split(";");
+            for(String property : components) {
+                String name, value;
+                index=property.indexOf('=');
+                if(index == -1) {
+                    throw new Exception("Configurator.ProtocolConfiguration(): '=' not found in " + property
+                            + " of " + protocol_name);
+                }
+                name=property.substring(0, index);
+                value=property.substring(index + 1, property.length());
+                properties.put(name, value);
+            }
+        }
+    }
 
 }

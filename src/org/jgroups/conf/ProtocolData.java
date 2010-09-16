@@ -5,12 +5,14 @@ package org.jgroups.conf;
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolData.java,v 1.13 2010/09/16 07:13:53 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.14 2010/09/16 07:30:08 belaban Exp $
  */
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+
+
+
 
 public class ProtocolData {
     /** Map<String,ProtocolParameter> of property keys and values */
@@ -44,7 +46,7 @@ public class ProtocolData {
     }
 
 
-    public Map getParameters() {
+    public Map<String,String> getParameters() {
         return mParameters;
     }
 

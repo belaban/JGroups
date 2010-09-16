@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.29 2009/05/13 13:07:04 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.30 2010/09/16 07:30:08 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -408,27 +408,18 @@ public class ConfiguratorFactory {
      * @param configurator
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
-
-        ProtocolData[] protocols=null;
-        try {
-            protocols=configurator.getProtocolStack();
-
-            for(ProtocolData protocol:protocols) {
-                if(protocol != null) {
-                    Map<String,ProtocolParameter> parms=protocol.getParameters();
-                    ProtocolParameter parm;
-                    for(Map.Entry<String,ProtocolParameter> entry:parms.entrySet()) {
-                        parm=entry.getValue();
-                        String val=parm.getValue();
-                        String replacement=Util.substituteVariable(val);
-                        if(!replacement.equals(val)) {
-                            parm.setValue(replacement);
-                        }
+        ProtocolData[] protocols=configurator.getProtocolStack();
+        for(ProtocolData data: protocols) {
+            if(data != null) {
+                Map<String,String> parms=data.getParameters();
+                for(Map.Entry<String,String> entry:parms.entrySet()) {
+                    String val=entry.getValue();
+                    String replacement=Util.substituteVariable(val);
+                    if(!replacement.equals(val)) {
+                        entry.setValue(replacement);
                     }
                 }
             }
-        }
-        catch(Exception ignored) {
         }
     }          
 }
