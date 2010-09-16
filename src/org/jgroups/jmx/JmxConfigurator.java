@@ -2,23 +2,22 @@ package org.jgroups.jmx;
 
 import org.jgroups.JChannel;
 import org.jgroups.JChannelFactory;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.*;
-
-import java.util.Vector;
-import java.util.Set;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: JmxConfigurator.java,v 1.19 2010/07/06 08:05:51 belaban Exp $
+ * @version $Id: JmxConfigurator.java,v 1.20 2010/09/16 15:28:24 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
@@ -38,14 +37,17 @@ public class JmxConfigurator {
      */
     public static void registerChannel(JChannel channel, MBeanServer server, String domain,
                     String cluster_name, boolean register_protocols) throws Exception {
+
+        if(channel == null)
+            throw new NullPointerException("channel cannot be null");
         if (cluster_name == null)
-            cluster_name = channel != null ? channel.getClusterName() : null;
+            cluster_name=channel.getClusterName();
         if (cluster_name == null)
             cluster_name = "null";
 
         if (register_protocols) {
             ProtocolStack stack = channel.getProtocolStack();
-            Vector<Protocol> protocols = stack.getProtocols();
+            List<Protocol> protocols = stack.getProtocols();
             for (Protocol p : protocols) {
                 if (p.getClass().isAnnotationPresent(MBean.class)) {
                          register(p, server, getProtocolRegistrationName(cluster_name, domain, p));
@@ -91,7 +93,7 @@ public class JmxConfigurator {
                     throws Exception {
 
         ProtocolStack stack = c.getProtocolStack();
-        Vector<Protocol> protocols = stack.getProtocols();
+        List<Protocol> protocols = stack.getProtocols();
         for (Protocol p : protocols) {
             if (p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
