@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.19 2010/02/22 13:38:12 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.20 2010/09/16 15:27:18 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class MessageBundlingTest extends ChannelTestBase {
@@ -160,16 +160,16 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     private static void setLoopback(JChannel ch, boolean b) {
         ProtocolStack stack=ch.getProtocolStack();
-        Vector<Protocol> prots=stack.getProtocols();
-        TP transport=(TP)prots.lastElement();
+        List<Protocol> prots=stack.getProtocols();
+        TP transport=(TP)prots.get(prots.size() -1);
         transport.setLoopback(b);
     }
 
 
     private static void setBundling(JChannel ch, boolean enabled, int max_bytes, long timeout) {
         ProtocolStack stack=ch.getProtocolStack();
-        Vector<Protocol> prots=stack.getProtocols();
-        TP transport=(TP)prots.lastElement();
+        List<Protocol> prots=stack.getProtocols();
+        TP transport=(TP)prots.get(prots.size() -1);
         transport.setEnableBundling(enabled);
         if(enabled) {
             transport.setMaxBundleSize(max_bytes);

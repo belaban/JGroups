@@ -13,7 +13,7 @@ import java.util.Iterator;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.10 2009/04/09 09:11:20 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.11 2010/09/16 15:27:40 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -109,8 +109,8 @@ public class PerfTpTest {
         }
         else {
             List msgs=new LinkedList();
-            Vector protocols=ch.getProtocolStack().getProtocols();
-            transport=(Protocol)protocols.lastElement();
+            List protocols=ch.getProtocolStack().getProtocols();
+            transport=(Protocol)protocols.get(protocols.size() -1);
             int i=0;
             while(true) {
                 msg=new Message();

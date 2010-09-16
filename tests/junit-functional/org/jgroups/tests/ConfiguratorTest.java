@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
@@ -11,12 +11,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.16 2010/09/16 14:21:38 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.17 2010/09/16 15:26:22 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -39,9 +38,9 @@ public class ConfiguratorTest {
         stack.setup(); 
         Protocol prot=stack.removeProtocol("FC");
         assert prot != null;
-        Vector<Protocol> protocols=stack.getProtocols();
+        List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(5, protocols.size());
-        assert protocols.firstElement().getName().endsWith("UNICAST");
+        assert protocols.get(0).getName().endsWith("UNICAST");
         assert  stack.getTopProtocol().getUpProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol().getUpProtocol() != null;
@@ -52,18 +51,18 @@ public class ConfiguratorTest {
         stack.setup(); 
         Protocol prot=stack.removeProtocol("UDP");
         assert prot != null;
-        Vector<Protocol> protocols=stack.getProtocols();
+        List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(5, protocols.size());
-        assert protocols.lastElement().getName().endsWith("PING");
+        assert protocols.get(protocols.size() -1).getName().endsWith("PING");
     }
     
     public void testAddingAboveTop() throws Exception{
         stack.setup();           
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.ABOVE, "FC");
-        Vector<Protocol> protocols=stack.getProtocols();
+        List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());       
-        assert protocols.firstElement().getName().endsWith("TRACE");
+        assert protocols.get(0).getName().endsWith("TRACE");
         assert  stack.getTopProtocol().getUpProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol().getUpProtocol() != null;
