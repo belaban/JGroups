@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.28 2009/10/20 15:11:42 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.29 2010/09/16 07:30:09 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -479,7 +479,7 @@ public class SharedTransportTest extends ChannelTestBase {
         ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
         ProtocolData[] protocols=config.getProtocolStack();
         ProtocolData transport=protocols[0];
-        transport.getParameters().put(Global.SINGLETON_NAME, new ProtocolParameter(Global.SINGLETON_NAME, singleton_name));
+        transport.getParameters().put(Global.SINGLETON_NAME, singleton_name);
         return new JChannel(config);
     }
 
