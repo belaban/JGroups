@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.85 2010/09/16 14:21:41 belaban Exp $
+ * @version $Id: Configurator.java,v 1.86 2010/09/16 15:32:23 belaban Exp $
  */
 public class Configurator implements ProtocolStackFactory {
     protected static final Log log=LogFactory.getLog(Configurator.class);
@@ -57,7 +57,7 @@ public class Configurator implements ProtocolStackFactory {
     }
      
     public Protocol setupProtocolStack(ProtocolStack copySource)throws Exception{
-        Vector<Protocol> protocols=copySource.copyProtocols(stack);
+        List<Protocol> protocols=copySource.copyProtocols(stack);
         Collections.reverse(protocols);
         return connectProtocols(protocols);                  
     }
