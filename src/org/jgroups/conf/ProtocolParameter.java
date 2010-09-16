@@ -6,11 +6,10 @@ package org.jgroups.conf;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolParameter.java,v 1.6 2007/12/03 13:17:08 belaban Exp $
+ * @version $Id: ProtocolParameter.java,v 1.7 2010/09/16 07:13:53 belaban Exp $
  */
 
 public class ProtocolParameter {
-
     private final String mParameterName;
     private String mParameterValue;
 
@@ -42,19 +41,7 @@ public class ProtocolParameter {
         return another instanceof ProtocolParameter && getName().equals(((ProtocolParameter)another).getName());
     }
 
-    public String getParameterString() {
-        StringBuilder buf=new StringBuilder(mParameterName);
-        if(mParameterValue != null)
-            buf.append('=').append(mParameterValue);
-        return buf.toString();
-    }
-
-    public String getParameterStringXml() {
-        StringBuilder buf=new StringBuilder(mParameterName);
-        if(mParameterValue != null)
-            buf.append("=\"").append(mParameterValue).append('\"');
-        return buf.toString();
-    }
+ 
 
 
 }
