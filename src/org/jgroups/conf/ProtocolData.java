@@ -5,7 +5,7 @@ package org.jgroups.conf;
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolData.java,v 1.12 2010/09/15 14:56:44 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.13 2010/09/16 07:13:53 belaban Exp $
  */
 
 import java.util.HashMap;
@@ -14,9 +14,9 @@ import java.util.Map;
 
 public class ProtocolData {
     /** Map<String,ProtocolParameter> of property keys and values */
-    private final Map mParameters=new HashMap();
-    private final String mProtocolName;
-    private final String mClassName;
+    private final Map<String,String>    mParameters=new HashMap<String,String>();
+    private final String                mProtocolName;
+    private final String                mClassName;
 
     /**
      *
@@ -25,14 +25,12 @@ public class ProtocolData {
      * @param params
      * @deprecated Use {@link #ProtocolData(String, String, ProtocolParameter[])} instead
      */
-
-
     public ProtocolData(String protocolName, String className, ProtocolParameter[] params) {
         mProtocolName=protocolName;
         mClassName=className;
         if(params != null) {
             for(int i=0; i < params.length; i++) {
-                mParameters.put(params[i].getName(), params[i]);
+                mParameters.put(params[i].getName(), params[i].getValue());
             }
         }
     }
@@ -58,32 +56,54 @@ public class ProtocolData {
     public String getProtocolString() {
         StringBuilder buf=new StringBuilder(mClassName);
         if(!mParameters.isEmpty()) {
+            boolean first=true;
             buf.append('(');
-            Iterator i=mParameters.keySet().iterator();
-            while(i.hasNext()) {
-                String key=(String)i.next();
-                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
-                buf.append(param.getParameterString());
-                if(i.hasNext()) buf.append(';');
+            for(Map.Entry<String,String> entry: mParameters.entrySet()) {
+                String key=entry.getKey();
+                String val=entry.getValue();
+                if(first)
+                    first=false;
+                else
+                    buf.append(';');
+                buf.append(getParameterString(key, val));
             }
             buf.append(')');
         }
         return buf.toString();
     }
+    
 
     public String getProtocolStringNewXml() {
         StringBuilder buf=new StringBuilder(mClassName + ' ');
         if(!mParameters.isEmpty()) {
-            Iterator i=mParameters.keySet().iterator();
-            while(i.hasNext()) {
-                String key=(String)i.next();
-                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
-                buf.append(param.getParameterStringXml());
-                if(i.hasNext()) buf.append(' ');
+            boolean first=true;
+            for(Map.Entry<String,String> entry: mParameters.entrySet()) {
+                String key=entry.getKey();
+                String val=entry.getValue();
+                if(first)
+                    first=false;
+                else
+                    buf.append(' ');
+                buf.append(getParameterStringXml(key, val));
             }
         }
         return buf.toString();
     }
+
+    protected static String getParameterString(String name, String value) {
+        StringBuilder buf=new StringBuilder(name);
+        if(value != null)
+            buf.append('=').append(value);
+        return buf.toString();
+    }
+
+    protected static String getParameterStringXml(String name, String val) {
+        StringBuilder buf=new StringBuilder(name);
+        if(val != null)
+            buf.append("=\"").append(val).append('\"');
+        return buf.toString();
+    }
+
 
     public int hashCode() {
         return mProtocolName.hashCode();
