@@ -35,7 +35,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.11 2010/06/18 04:39:08 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.12 2010/09/16 14:57:17 belaban Exp $
  */
 @Experimental
 public class S3_PING extends FILE_PING {
@@ -55,8 +55,8 @@ public class S3_PING extends FILE_PING {
   
     public void init() throws Exception {
         super.init();
-        if(access_key == null || secret_access_key == null)
-            throw new IllegalArgumentException("access_key and secret_access_key must be non-null");
+        //if(access_key == null || secret_access_key == null)
+          //  throw new IllegalArgumentException("access_key and secret_access_key must be non-null");
 
         conn=new AWSAuthConnection(access_key, secret_access_key);
 
@@ -697,11 +697,13 @@ public class S3_PING extends FILE_PING {
                 connection.setRequestProperty("Content-Type", "");
             }
 
-            String canonicalString=
-                    Utils.makeCanonicalString(method, bucket, key, pathArgs, connection.getRequestProperties());
-            String encodedCanonical=Utils.encode(this.awsSecretAccessKey, canonicalString, false);
-            connection.setRequestProperty("Authorization",
-                                          "AWS " + this.awsAccessKeyId + ":" + encodedCanonical);
+            if(this.awsAccessKeyId != null && this.awsSecretAccessKey != null) {
+                String canonicalString=
+                        Utils.makeCanonicalString(method, bucket, key, pathArgs, connection.getRequestProperties());
+                String encodedCanonical=Utils.encode(this.awsSecretAccessKey, canonicalString, false);
+                connection.setRequestProperty("Authorization",
+                                              "AWS " + this.awsAccessKeyId + ":" + encodedCanonical);
+            }
         }
 
 
