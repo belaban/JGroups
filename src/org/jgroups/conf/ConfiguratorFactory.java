@@ -12,6 +12,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.AccessControlException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,7 +26,7 @@ import java.util.Map;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.30 2010/09/16 07:30:08 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.31 2010/09/16 11:55:32 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -408,10 +409,10 @@ public class ConfiguratorFactory {
      * @param configurator
      */
     public static void substituteVariables(ProtocolStackConfigurator configurator) {
-        ProtocolData[] protocols=configurator.getProtocolStack();
-        for(ProtocolData data: protocols) {
+        List<ProtocolConfiguration> protocols=configurator.getProtocolStack();
+        for(ProtocolConfiguration data: protocols) {
             if(data != null) {
-                Map<String,String> parms=data.getParameters();
+                Map<String,String> parms=data.getProperties();
                 for(Map.Entry<String,String> entry:parms.entrySet()) {
                     String val=entry.getValue();
                     String replacement=Util.substituteVariable(val);

@@ -13,7 +13,7 @@ import java.util.Map;
  * Parses and encapsulates the specification for 1 protocol of the protocol stack, e.g.
  * <code>UNICAST(timeout=5000)</code>
  * @author Bela Ban
- * @version $Id: ProtocolConfiguration.java,v 1.3 2010/09/16 07:42:12 belaban Exp $
+ * @version $Id: ProtocolConfiguration.java,v 1.4 2010/09/16 11:55:31 belaban Exp $
  */
 public class ProtocolConfiguration {
     private final String protocol_name;
@@ -47,6 +47,12 @@ public class ProtocolConfiguration {
             }
         }
         parsePropertiesString(properties);
+    }
+
+    public ProtocolConfiguration(String protocol_name, Map<String,String> properties) {
+        this.protocol_name=protocol_name;
+        if(!properties.isEmpty())
+            this.properties.putAll(properties);
     }
 
     public String getProtocolName() {

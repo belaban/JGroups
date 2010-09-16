@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.conf.ProtocolData;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.30 2010/09/16 07:42:13 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.31 2010/09/16 11:55:34 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -476,9 +476,9 @@ public class SharedTransportTest extends ChannelTestBase {
 
     private JChannel createSharedChannel(String singleton_name) throws ChannelException {
         ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
-        ProtocolData[] protocols=config.getProtocolStack();
-        ProtocolData transport=protocols[0];
-        transport.getParameters().put(Global.SINGLETON_NAME, singleton_name);
+        List<ProtocolConfiguration> protocols=config.getProtocolStack();
+        ProtocolConfiguration transport=protocols.get(0);
+        transport.getProperties().put(Global.SINGLETON_NAME, singleton_name);
         return new JChannel(config);
     }
 
