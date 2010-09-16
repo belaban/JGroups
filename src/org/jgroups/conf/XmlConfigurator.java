@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.32 2010/09/16 11:55:32 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.33 2010/09/16 14:21:42 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -71,9 +71,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
     /**
      * 
-     * @param convert
-     *                If false: print old plain output, else print new XML
-     *                format
+     * @param convert If false: print old plain output, else print new XML format
      * @return String with protocol stack in specified format
      */
     public String getProtocolStackString(boolean convert) {
@@ -292,14 +290,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
             if(old_format) {
                 String cfg=inputAsString(input);
-                Vector<ProtocolConfiguration> tmp=Configurator.parseConfigurations(cfg);
+                List<ProtocolConfiguration> tmp=Configurator.parseConfigurations(cfg);
                 System.out.println(dump(tmp));
-
-                //                conf=XmlConfigurator.getInstanceOldFormat(input);
-                //                output=conf.getProtocolStackString(true);
-                //                output=replace(output, "org.jgroups.protocols.", "");
-                //                System.out.println(getTitle(input_file));
-                //                System.out.println('\n' + output);
             }
             else {
                 conf=XmlConfigurator.getInstance(input);
@@ -312,11 +304,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
     }
 
-    /**
-     * @param tmp
-     *                Vector of Configurator.ProtocolConfiguration
-     * @return String (XML format)
-     */
+    
     private static String dump(Collection<ProtocolConfiguration> configs) {
         StringBuilder sb=new StringBuilder();
         String indent="  ";

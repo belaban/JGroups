@@ -16,7 +16,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.15 2010/09/15 15:51:09 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.16 2010/09/16 14:21:38 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -31,7 +31,7 @@ public class ConfiguratorTest {
     @BeforeMethod
     void setUp() throws Exception {
         JChannel mock_channel=new JChannel() {};
-        stack=new ProtocolStack(mock_channel, props);
+        stack=new ProtocolStack(mock_channel, Configurator.parseConfigurations(props));
     }
 
     
@@ -153,7 +153,7 @@ public class ConfiguratorTest {
                 "FRAG2(frag_size=60000):" +
                 "pbcast.STREAMING_STATE_TRANSFER(use_reading_thread=true)";
         
-        Vector<ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
+        List<ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(14, ret.size());
 

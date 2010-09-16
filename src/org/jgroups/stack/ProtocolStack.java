@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
+import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.TimeScheduler;
@@ -29,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.104 2010/09/13 12:58:57 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.105 2010/09/16 14:21:41 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -44,11 +45,11 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
 
-    private Protocol top_prot = null;
-    private Protocol bottom_prot = null;
-    private String   setup_string;
-    private JChannel channel = null;
-    private volatile boolean stopped=true;
+    private Protocol                      top_prot;
+    private Protocol                      bottom_prot;
+    protected List<ProtocolConfiguration> configs;
+    private JChannel                      channel;
+    private volatile boolean              stopped=true;
 
 
     private final TP.ProbeHandler props_handler=new TP.ProbeHandler() {
@@ -71,8 +72,8 @@ public class ProtocolStack extends Protocol implements Transport {
     };
 
 
-    public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
-        this.setup_string=setup_string;
+    public ProtocolStack(JChannel channel, List<ProtocolConfiguration> configs) throws ChannelException {
+        this.configs=configs;
         this.channel=channel;
 
         Class<?> tmp=ClassConfigurator.class; // load this class, trigger init()
@@ -85,16 +86,11 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-
     /** Only used by Simulator; don't use */
     public ProtocolStack() throws ChannelException {
         this(null,null);
     }
 
-
-    public String getSetupString() {
-        return setup_string;
-    }
 
     /**
      * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()}  instead
@@ -466,7 +462,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void setup() throws Exception {
         if(top_prot == null) {
-            top_prot=getProtocolStackFactory().setupProtocolStack();
+            top_prot=getProtocolStackFactory().setupProtocolStack(configs);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();
@@ -961,7 +957,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public interface ProtocolStackFactory{
-        public Protocol setupProtocolStack() throws Exception;
+        public Protocol setupProtocolStack(List<ProtocolConfiguration> cfg) throws Exception;
         public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception;
     }
 

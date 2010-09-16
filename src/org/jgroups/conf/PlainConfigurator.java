@@ -1,6 +1,8 @@
-// $Id: PlainConfigurator.java,v 1.3 2010/09/16 11:55:32 belaban Exp $
+// $Id: PlainConfigurator.java,v 1.4 2010/09/16 14:21:42 belaban Exp $
 
 package org.jgroups.conf;
+
+import org.jgroups.stack.Configurator;
 
 import java.util.List;
 
@@ -32,11 +34,13 @@ public class PlainConfigurator implements ProtocolStackConfigurator {
         return mProperties;
     }
 
-    /**
-     * Throws a UnsupportedOperationException all the time. No parsing implemented.
-     */
+    
     public List<ProtocolConfiguration> getProtocolStack() {
-        /**todo: Implement this org.jgroups.conf.ProtocolStackConfigurator method*/
-        throw new java.lang.UnsupportedOperationException("Method getProtocolStack() not yet implemented.");
+        try {
+            return Configurator.parseConfigurations(mProperties);
+        }
+        catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

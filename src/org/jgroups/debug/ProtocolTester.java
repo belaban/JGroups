@@ -1,13 +1,13 @@
-// $Id: ProtocolTester.java,v 1.17 2009/05/13 13:07:11 belaban Exp $
+// $Id: ProtocolTester.java,v 1.18 2010/09/16 14:21:40 belaban Exp $
 
 package org.jgroups.debug;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -16,7 +16,6 @@ import org.jgroups.util.Util;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
-import java.util.ArrayList;
 
 
 /**
@@ -46,7 +45,7 @@ public class ProtocolTester {
 
         config=new Configurator();
         JChannel mock_channel=new JChannel() {};
-        ProtocolStack stack=new ProtocolStack(mock_channel,props);
+        ProtocolStack stack=new ProtocolStack(mock_channel, Configurator.parseConfigurations(props));
         stack.setup();
         stack.insertProtocol(harness, ProtocolStack.ABOVE, stack.getTopProtocol().getClass());
         

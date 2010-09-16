@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.15 2009/04/09 09:11:20 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.16 2010/09/16 14:21:43 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -93,20 +93,7 @@ public final class ViewDeliveryDemo {
         }
     }
 
-    private static void reopen() throws Exception {
-        System.out.println("closing and reopening.");
-        try {
-            channel.close();
-            System.out.println("closed");
-            Thread.sleep(random.nextInt(5000));
-            channel.open();
-            channel.connect("view_test");
-        }
-        catch(Throwable t) {
-            System.err.println("failed to reopen the channel");
-            t.printStackTrace();
-        }
-    }
+   
 
     private static void reconnect() throws Exception {
         System.out.println("disconnecting and reconnecting.");
