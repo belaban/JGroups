@@ -30,20 +30,17 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.105 2010/09/16 14:21:41 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.106 2010/09/16 15:27:59 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
     public static final int BELOW = 2; // used by insertProtocol()
 
     /**
-     * Holds the shared transports, keyed by 'TP.singleton_name'. The values are
-     * the transport and the use count for init() (decremented by destroy()) and
-     * start() (decremented by stop()
+     * Holds the shared transports, keyed by 'TP.singleton_name'. The values are the transport and the use count for
+     * init() (decremented by destroy()) and start() (decremented by stop()
      */
     private static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
-
-
 
     private Protocol                      top_prot;
     private Protocol                      bottom_prot;
@@ -97,8 +94,6 @@ public class ProtocolStack extends Protocol implements Transport {
      * @return
      */
     public ThreadFactory getThreadFactory() {
-
-        getTransport().getThreadFactory();
         TP transport=getTransport();
         return transport != null? transport.getThreadFactory() : null;
     }
@@ -123,10 +118,6 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    public Channel getChannel() {
-        return channel;
-    }
-
 
     /**
      * @deprecated Use {@link org.jgroups.protocols.TP#getTimer()} to fetch the timer and call getCorePoolSize() directly
@@ -145,20 +136,20 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
-    public Vector<Protocol> getProtocols() {
-        Vector<Protocol> v=new Vector<Protocol>();
+    public List<Protocol> getProtocols() {
+        List<Protocol> v=new ArrayList<Protocol>(15);
         Protocol p=top_prot;
         while(p != null) {
-            v.addElement(p);
+            v.add(p);
             p=p.getDownProtocol();
         }
         return v;
     }
 
 
-    public Vector<Protocol> copyProtocols(ProtocolStack targetStack) throws IllegalAccessException, InstantiationException {
-        Vector<Protocol> list=getProtocols();
-        Vector<Protocol> retval=new Vector<Protocol>(list.size());
+    public List<Protocol> copyProtocols(ProtocolStack targetStack) throws IllegalAccessException, InstantiationException {
+        List<Protocol> list=getProtocols();
+        List<Protocol> retval=new ArrayList<Protocol>(list.size());
         for(Protocol prot: list) {
             Protocol new_prot=prot.getClass().newInstance();
             new_prot.setProtocolStack(targetStack);
@@ -302,7 +293,7 @@ public class ProtocolStack extends Protocol implements Transport {
      */
     public String printProtocolSpec(boolean include_properties) {
         StringBuilder sb=new StringBuilder();
-        Vector<Protocol> protocols=getProtocols();
+        List<Protocol> protocols=getProtocols();
 
         if(protocols == null || protocols.isEmpty()) return null;
         boolean first_colon_printed=false;
@@ -384,7 +375,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     private String printProtocolSpecAsPlainString(boolean print_props) {
         StringBuilder sb=new StringBuilder();
-        Vector<Protocol> protocols=getProtocols();
+        List<Protocol> protocols=getProtocols();
 
         if(protocols == null) return null;
 
@@ -679,8 +670,8 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /**
      * Finds the first protocol of a list and returns it. Returns null if no protocol can be found
-     * @param clazz
-     * @return
+     * @param classes A list of protocol classes to find
+     * @return Protocol The protocol found
      */
     public Protocol findProtocol(Class<?> ... classes) {
         for(Class<?> clazz: classes) {
@@ -692,7 +683,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public void initProtocolStack() throws Exception {
-        Vector <Protocol> protocols = getProtocols();
+        List<Protocol> protocols = getProtocols();
         Collections.reverse(protocols);
         for(Protocol prot: protocols) {
             if(prot instanceof TP) {
