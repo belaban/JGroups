@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.31 2010/09/16 07:42:12 belaban Exp $
+ * @version $Id: XmlConfigurator.java,v 1.32 2010/09/16 11:55:32 belaban Exp $
  */
 
 import org.jgroups.Global;
@@ -30,24 +30,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class XmlConfigurator implements ProtocolStackConfigurator {
-   
-    private static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
-    private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
-    public static final String ATTR_NAME="name";
-    public static final String ATTR_VALUE="value";
+    private static final String               JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+    private static final String               W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
+    private final List<ProtocolConfiguration> configuration=new ArrayList<ProtocolConfiguration>();
+    protected static final Log                log=LogFactory.getLog(XmlConfigurator.class);
 
-
-    private final ArrayList<ProtocolData> mProtocolStack=new ArrayList<ProtocolData>();
-    private final String mStackName;
-    protected static final Log log=LogFactory.getLog(XmlConfigurator.class);
-
-    protected XmlConfigurator(String stackName,ProtocolData[] protocols) {
-        mStackName=stackName;
-        mProtocolStack.addAll(Arrays.asList(protocols));
-    }
-
-    protected XmlConfigurator(String stackName) {
-        this(stackName, new ProtocolData[0]);
+    
+    protected XmlConfigurator(List<ProtocolConfiguration> protocols) {
+        configuration.addAll(protocols);
     }
 
     public static XmlConfigurator getInstance(URL url) throws java.io.IOException {
@@ -88,11 +78,11 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
      */
     public String getProtocolStackString(boolean convert) {
         StringBuilder buf=new StringBuilder();
-        Iterator<ProtocolData> it=mProtocolStack.iterator();
+        Iterator<ProtocolConfiguration> it=configuration.iterator();
         if(convert)
             buf.append("<config>\n");
         while(it.hasNext()) {
-            ProtocolData d=it.next();
+            ProtocolConfiguration d=it.next();
             if(convert)
                 buf.append("    <");
             buf.append(d.getProtocolString(convert));
@@ -114,17 +104,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return getProtocolStackString(false);
     }
 
-    public ProtocolData[] getProtocolStack() {
-        return mProtocolStack.toArray(new ProtocolData[mProtocolStack.size()]);
-    }
-
-    public String getName() {
-        return mStackName;
-    }
-
-
-    public void add(ProtocolData data) {
-        mProtocolStack.add(data);
+    public List<ProtocolConfiguration> getProtocolStack() {
+        return configuration;
     }
 
 
@@ -220,14 +201,11 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     
     protected static XmlConfigurator parse(Element root_element) throws java.io.IOException {
         XmlConfigurator configurator=null;
-
-        /** LinkedList<ProtocolData> */
-        LinkedList<ProtocolData> prot_data=new LinkedList<ProtocolData>();
+        final LinkedList<ProtocolConfiguration> prot_data=new LinkedList<ProtocolConfiguration>();
 
         /**
-         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the
-         * code below is pretty amateurish... But it seems to work, and it is
-         * executed only on startup, so no perf loss on the critical path. If
+         * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
+         * But it seems to work, and it is executed only on startup, so no perf loss on the critical path. If
          * somebody wants to improve this, please be my guest.
          */
         try {
@@ -245,7 +223,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     continue;
 
                 Element tag=(Element)node;
-                String protocol=tag.getTagName();
+                String  protocol=tag.getTagName();
                 Map<String,String> params=new HashMap<String,String>();
 
                 NamedNodeMap attrs=tag.getAttributes();
@@ -256,14 +234,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     String value=attr.getValue();
                     params.put(name, value);
                 }
-                ProtocolData data=new ProtocolData(protocol, protocol, params);
-                prot_data.add(data);
+                ProtocolConfiguration cfg=new ProtocolConfiguration(protocol, params);
+                prot_data.add(cfg);
             }
-
-            ProtocolData[] data=new ProtocolData[(prot_data.size())];
-            for(int k=0;k < prot_data.size();k++)
-                data[k]=prot_data.get(k);
-            configurator=new XmlConfigurator("bla", data);
+            configurator=new XmlConfigurator(prot_data);
         }
         catch(Exception x) {
             if(x instanceof java.io.IOException)
@@ -278,30 +252,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
 
-
- /*   protected static ProtocolParameter[] parseProtocolParameters(Element protparams) throws IOException {
-        try {
-            Vector<ProtocolParameter> v=new Vector<ProtocolParameter>();
-            protparams.normalize();
-            NodeList parameters=protparams.getChildNodes();
-            for(int i=0;i < parameters.getLength();i++) {
-                if(parameters.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    String pname=parameters.item(i).getAttributes().getNamedItem(ATTR_NAME).getNodeValue();
-                    String pvalue=parameters.item(i).getAttributes().getNamedItem(ATTR_VALUE).getNodeValue();
-                    ProtocolParameter p=new ProtocolParameter(pname, pvalue);
-                    v.addElement(p);
-                }//end if
-            }//for
-            ProtocolParameter[] result=new ProtocolParameter[v.size()];
-            v.copyInto(result);
-            return result;
-        }
-        catch(Exception x) {
-            IOException tmp=new IOException();
-            tmp.initCause(x);
-            throw tmp;
-        }
-    }*/
 
     public static void main(String[] args) throws Exception {
         String input_file=null;
