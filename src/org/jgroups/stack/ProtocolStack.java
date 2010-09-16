@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.107 2010/09/16 15:46:54 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.108 2010/09/16 15:51:18 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -453,7 +453,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void setup(List<ProtocolConfiguration> configs) throws Exception {
         if(top_prot == null) {
-            top_prot=getProtocolStackFactory().setupProtocolStack(configs);
+            top_prot=new Configurator(this).setupProtocolStack(configs);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();
@@ -462,15 +462,11 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    protected ProtocolStackFactory getProtocolStackFactory() {
-        return new Configurator(this);
-    }
-
 
 
     public void setup(ProtocolStack stack) throws Exception {
         if(top_prot == null) {
-            top_prot=getProtocolStackFactory().setupProtocolStack(stack);
+            top_prot=new Configurator(this).setupProtocolStack(stack);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();
@@ -947,9 +943,5 @@ public class ProtocolStack extends Protocol implements Transport {
         }
     }
 
-    public interface ProtocolStackFactory{
-        public Protocol setupProtocolStack(List<ProtocolConfiguration> cfg) throws Exception;
-        public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception;
-    }
 
 }

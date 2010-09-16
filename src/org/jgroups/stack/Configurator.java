@@ -10,7 +10,6 @@ import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.ProtocolStack.ProtocolStackFactory;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
@@ -37,9 +36,9 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.86 2010/09/16 15:32:23 belaban Exp $
+ * @version $Id: Configurator.java,v 1.87 2010/09/16 15:51:18 belaban Exp $
  */
-public class Configurator implements ProtocolStackFactory {
+public class Configurator {
     protected static final Log log=LogFactory.getLog(Configurator.class);
     private final ProtocolStack stack;
     
