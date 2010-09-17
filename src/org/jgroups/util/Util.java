@@ -37,7 +37,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.273 2010/09/17 11:50:07 belaban Exp $
+ * @version $Id: Util.java,v 1.274 2010/09/17 13:03:55 belaban Exp $
  */
 public class Util {
 
@@ -2114,6 +2114,18 @@ public class Util {
         return retval;
     }
 
+
+    public static int getRank(View view, Address addr) {
+        if(view == null || addr == null)
+            return 0;
+        List<Address> members=view.getMembers();
+        for(int i=0; i < members.size(); i++) {
+            Address mbr=members.get(i);
+            if(mbr.equals(addr))
+                return i+1;
+        }
+        return 0;
+    }
 
 
     public static Object pickRandomElement(List list) {
