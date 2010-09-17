@@ -35,7 +35,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.12 2010/09/16 14:57:17 belaban Exp $
+ * @version $Id: S3_PING.java,v 1.13 2010/09/17 19:36:37 benbrowning Exp $
  */
 @Experimental
 public class S3_PING extends FILE_PING {
@@ -49,6 +49,12 @@ public class S3_PING extends FILE_PING {
     @Property(description="When non-null, we set location to prefix-UUID")
     protected String prefix=null;
 
+    @Property(description="When non-null, we use this pre-signed URL for PUTs")
+    protected String pre_signed_put_url=null;
+
+    @Property(description="When non-null, we use this pre-signed URL for DELETEs")
+    protected String pre_signed_delete_url=null;
+
     protected AWSAuthConnection conn=null;
 
 
@@ -57,6 +63,8 @@ public class S3_PING extends FILE_PING {
         super.init();
         //if(access_key == null || secret_access_key == null)
           //  throw new IllegalArgumentException("access_key and secret_access_key must be non-null");
+
+        validateProperties();
 
         conn=new AWSAuthConnection(access_key, secret_access_key);
 
@@ -80,6 +88,10 @@ public class S3_PING extends FILE_PING {
             }
         }
 
+        if(usingPreSignedUrls()) {
+            PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
+            location = parsedPut.getBucket();
+        }
 
         if(!conn.checkBucketExists(location)) {
             conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
@@ -102,6 +114,10 @@ public class S3_PING extends FILE_PING {
 
         List<PingData> retval=new ArrayList<PingData>();
         try {
+            if (usingPreSignedUrls()) {
+                PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
+                clustername = parsedPut.getPrefix();
+            }
             ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
             if(rsp.entries != null) {
                 for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
@@ -137,11 +153,18 @@ public class S3_PING extends FILE_PING {
         String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
         String key=clustername + "/" + filename;
         try {
-            Map headers=new TreeMap();
-            headers.put("Content-Type", Arrays.asList("text/plain"));
             byte[] buf=Util.objectToByteBuffer(data);
             S3Object val=new S3Object(buf, null);
-            conn.put(location, key, val, headers).connection.getResponseMessage();
+
+            if (pre_signed_put_url != null) {
+                Map headers = new TreeMap();
+                headers.put("x-amz-acl", Arrays.asList("public-read"));
+                conn.put(pre_signed_put_url, val, headers).connection.getResponseMessage();
+            } else {
+                Map headers=new TreeMap();
+                headers.put("Content-Type", Arrays.asList("text/plain"));
+                conn.put(location, key, val, headers).connection.getResponseMessage();
+            }
         }
         catch(Exception e) {
             log.error("failed marshalling " + data + " to buffer", e);
@@ -157,7 +180,11 @@ public class S3_PING extends FILE_PING {
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
-            conn.delete(location, key, headers).connection.getResponseMessage();
+            if (pre_signed_delete_url != null) {
+                conn.delete(pre_signed_delete_url).connection.getResponseMessage();
+            } else {
+                conn.delete(location, key, headers).connection.getResponseMessage();
+            }
             if(log.isTraceEnabled())
                 log.trace("removing " + location + "/" + key);
         }
@@ -167,7 +194,103 @@ public class S3_PING extends FILE_PING {
     }
 
 
+    protected void validateProperties() {
+        if (pre_signed_put_url != null && pre_signed_delete_url != null) {
+            PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
+            PreSignedUrlParser parsedDelete = new PreSignedUrlParser(pre_signed_delete_url);
+            if (!parsedPut.getBucket().equals(parsedDelete.getBucket()) ||
+                    !parsedPut.getPrefix().equals(parsedDelete.getPrefix())) {
+                throw new IllegalArgumentException("pre_signed_put_url and pre_signed_delete_url must have the same path");
+            }
+        } else if (pre_signed_put_url != null || pre_signed_delete_url != null) {
+            throw new IllegalArgumentException("pre_signed_put_url and pre_signed_delete_url must both be set or both unset");
+        }
+    }
+    
+    protected boolean usingPreSignedUrls() {
+        return pre_signed_put_url != null;
+    }
 
+
+    /**
+     * Use this helper method to generate pre-signed S3 urls for use with S3_PING.
+     * You'll need to generate urls for both the put and delete http methods.
+     * Example:
+     * Your AWS Access Key is "abcd".
+     * Your AWS Secret Access Key is "efgh".
+     * You want this node to write its information to "/S3_PING/DemoCluster/node1".
+     * So, your bucket is "S3_PING" and your key is "DemoCluster/node1".
+     * You want this to expire one year from now, or
+     *   (System.currentTimeMillis / 1000) + (60 * 60 * 24 * 365)
+     *   Let's assume that this equals 1316286684
+     * 
+     * Here's how to generate the value for the pre_signed_put_url property:
+     * String putUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "put",
+     *                                              "S3_Ping", "DemoCluster/node1",
+     *                                              1316286684);
+     *                                              
+     * Here's how to generate the value for the pre_signed_delete_url property:
+     * String deleteUrl = S3_PING.generatePreSignedUrl("abcd", "efgh", "delete",
+     *                                                 "S3_Ping", "DemoCluster/node1",
+     *                                                 1316286684);
+     * 
+     * @param awsAccessKey Your AWS Access Key
+     * @param awsSecretAccessKey Your AWS Secret Access Key
+     * @param method The HTTP method - use "put" or "delete" for use with S3_PING
+     * @param bucket The S3 bucket you want to write to
+     * @param key The key within the bucket to write to
+     * @param expirationDate The date this pre-signed url should expire, in seconds since epoch
+     * @return The pre-signed url to be used in pre_signed_put_url or pre_signed_delete_url properties
+     */
+    public static String generatePreSignedUrl(String awsAccessKey, String awsSecretAccessKey, String method,
+                                       String bucket, String key, long expirationDate) {
+        Map headers = new HashMap();
+        if (method.equalsIgnoreCase("PUT")) {
+            headers.put("x-amz-acl", Arrays.asList("public-read"));
+        }
+        return Utils.generateQueryStringAuthentication(awsAccessKey, awsSecretAccessKey, method,
+                                                       bucket, key, new HashMap(), headers,
+                                                       expirationDate);
+    }
+
+
+
+    /**
+     * Utility class to parse S3 pre-signed URLs
+     */
+    static class PreSignedUrlParser {
+        String bucket = "";
+        String prefix = "";
+
+        public PreSignedUrlParser(String preSignedUrl) {
+            try {
+                URL url = new URL(preSignedUrl);
+                String path = url.getPath();
+                String[] pathParts = path.split("/");
+                
+                if (pathParts.length < 3) {
+                    throw new IllegalArgumentException("pre-signed url " + preSignedUrl + " must point to a file within a bucket");
+                }
+                if (pathParts.length > 4) {
+                    throw new IllegalArgumentException("pre-signed url " + preSignedUrl + " may only have only subdirectory under a bucket");
+                }
+                this.bucket = pathParts[1];
+                if (pathParts.length > 3) {
+                    this.prefix = pathParts[2];
+                }
+            } catch (MalformedURLException ex) {
+                throw new IllegalArgumentException("pre-signed url " + preSignedUrl + " is not a valid url");
+            }
+        }
+
+        public String getBucket() {
+            return bucket;
+        }
+        
+        public String getPrefix() {
+            return prefix;
+        }
+    }
 
     
 
@@ -355,6 +478,14 @@ public class S3_PING extends FILE_PING {
             return new Response(request);
         }
 
+        public Response put(String preSignedUrl, S3Object object, Map headers) throws IOException {
+            HttpURLConnection request = makePreSignedRequest("PUT", preSignedUrl, headers);
+            request.setDoOutput(true);
+            request.getOutputStream().write(object.data == null? new byte[]{} : object.data);
+
+            return new Response(request);
+        }
+
         /**
          * Creates a copy of an existing S3 Object.  In this signature, we will copy the
          * existing metadata.  The default access control policy is private; if you want
@@ -442,6 +573,10 @@ public class S3_PING extends FILE_PING {
          */
         public Response delete(String bucket, String key, Map headers) throws IOException {
             return new Response(makeRequest("DELETE", bucket, Utils.urlencode(key), null, headers));
+        }
+
+        public Response delete(String preSignedUrl) throws IOException {
+            return new Response(makePreSignedRequest("DELETE", preSignedUrl, null));
         }
 
         /**
@@ -638,6 +773,16 @@ public class S3_PING extends FILE_PING {
             addHeaders(connection, headers);
             if(object != null) addMetadataHeaders(connection, object.metadata);
             addAuthHeader(connection, method, bucket, key, pathArgs);
+
+            return connection;
+        }
+
+        private HttpURLConnection makePreSignedRequest(String method, String preSignedUrl, Map headers) throws IOException {
+            URL url = new URL(preSignedUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(method);
+
+            addHeaders(connection, headers);
 
             return connection;
         }
@@ -1643,6 +1788,30 @@ public class S3_PING extends FILE_PING {
                 callingFormat=CallingFormat.getPathCallingFormat();
             }
             return callingFormat;
+        }
+
+        public static String generateQueryStringAuthentication(String awsAccessKey, String awsSecretAccessKey,
+                                                               String method, String bucket, String key,
+                                                               Map pathArgs, Map headers) {
+            int defaultExpiresIn = 300; // 5 minutes
+            long expirationDate = (System.currentTimeMillis() / 1000) + defaultExpiresIn;
+            return generateQueryStringAuthentication(awsAccessKey, awsSecretAccessKey,
+                                                     method, bucket, key,
+                                                     pathArgs, headers, expirationDate);
+        }
+
+        public static String generateQueryStringAuthentication(String awsAccessKey, String awsSecretAccessKey,
+                                                               String method, String bucket, String key,
+                                                               Map pathArgs, Map headers, long expirationDate) {
+            method = method.toUpperCase(); // Method should always be uppercase
+            String canonicalString =
+                makeCanonicalString(method, bucket, key, pathArgs, headers, "" + expirationDate);
+            String encodedCanonical = encode(awsSecretAccessKey, canonicalString, true);
+            return "http://" + DEFAULT_HOST + "/" + bucket + "/" + key + "?" +
+                "AWSAccessKeyId=" + awsAccessKey + "&Expires=" + expirationDate +
+                "&Signature=" + encodedCanonical;
+            // connection.setRequestProperty("Authorization",
+            //                               "AWS " + this.awsAccessKeyId + ":" + encodedCanonical);
         }
     }
 
