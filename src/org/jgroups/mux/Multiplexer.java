@@ -1,11 +1,11 @@
 package org.jgroups.mux;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.113 2010/03/05 08:59:12 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.114 2010/09/17 11:55:26 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -53,7 +53,7 @@ public class Multiplexer implements UpHandler {
      * Map<String,MuxChannel>. Maintains the mapping between service IDs and
      * their associated MuxChannels
      */
-    private final ConcurrentMap<String,MuxChannel> services=new ConcurrentHashMap<String,MuxChannel>();
+    private final ConcurrentMap<String, MuxChannel> services=Util.createConcurrentMap();
     private final JChannel channel;
 
     /** Thread pool to concurrently process messages sent to different services */

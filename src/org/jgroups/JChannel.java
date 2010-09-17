@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 
@@ -82,7 +81,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.247 2010/09/16 15:46:52 belaban Exp $
+ * @version $Id: JChannel.java,v 1.248 2010/09/17 11:54:47 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -135,7 +134,7 @@ public class JChannel extends Channel {
      */
     protected final Map<String,Object> additional_data=new HashMap<String,Object>();
     
-    protected final ConcurrentMap<String,Object> config=new ConcurrentHashMap<String,Object>();
+    protected final ConcurrentMap<String,Object> config=Util.createConcurrentMap(16);
 
     protected final Log log=LogFactory.getLog(JChannel.class);
 

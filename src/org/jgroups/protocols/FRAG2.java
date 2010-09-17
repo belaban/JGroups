@@ -9,12 +9,14 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.54 2010/08/26 15:41:29 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.55 2010/09/17 11:54:20 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})
@@ -55,7 +57,7 @@ public class FRAG2 extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final ConcurrentMap<Address,ConcurrentMap<Long,FragEntry>> fragment_list=new ConcurrentHashMap<Address,ConcurrentMap<Long,FragEntry>>(11);
+    private final ConcurrentMap<Address,ConcurrentMap<Long,FragEntry>> fragment_list=Util.createConcurrentMap(11);
 
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     private int curr_id=1;
@@ -273,7 +275,7 @@ public class FRAG2 extends Protocol {
 
         ConcurrentMap<Long,FragEntry> frag_table=fragment_list.get(sender);
         if(frag_table == null) {
-            frag_table=new ConcurrentHashMap<Long,FragEntry>();
+            frag_table=Util.createConcurrentMap(16, .075f, 16);
             ConcurrentMap<Long,FragEntry> tmp=fragment_list.putIfAbsent(sender, frag_table);
             if(tmp != null) // value was already present
                 frag_table=tmp;

@@ -1,7 +1,5 @@
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
@@ -10,15 +8,16 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
- * @version $Id: ReplCache.java,v 1.27 2009/12/30 12:45:59 belaban Exp $
+ * @version $Id: ReplCache.java,v 1.28 2010/09/17 11:59:53 belaban Exp $
  */
 @Experimental @Unsupported
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
@@ -80,7 +79,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     private static final short REMOVE      = 4;
     private static final short REMOVE_MANY = 5;
 
-    protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
+    protected static Map<Short, Method> methods=Util.createConcurrentMap(8);
     private TimeScheduler timer;
 
 

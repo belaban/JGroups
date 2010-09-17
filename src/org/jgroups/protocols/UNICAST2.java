@@ -3,15 +3,18 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.*;
+import org.jgroups.stack.AckSenderWindow;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.AgeOutCache;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The advantage of this protocol over {@link org.jgroups.protocols.UNICAST} is that it doesn't send acks for every
  * message. Instead, it sends 'acks' after receiving max_bytes and/ or periodically (stable_interval).
  * @author Bela Ban
- * @version $Id: UNICAST2.java,v 1.10 2010/07/20 10:35:22 belaban Exp $
+ * @version $Id: UNICAST2.java,v 1.11 2010/09/17 12:05:09 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Reliable unicast layer")
@@ -64,8 +67,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
-    private final ConcurrentMap<Address,SenderEntry> send_table=new ConcurrentHashMap<Address,SenderEntry>();
-    private final ConcurrentMap<Address,ReceiverEntry> recv_table=new ConcurrentHashMap<Address,ReceiverEntry>();
+    private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
+    private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
     private final Vector<Address> members=new Vector<Address>(11);
 

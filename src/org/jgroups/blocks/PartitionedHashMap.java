@@ -1,24 +1,23 @@
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
-import org.jgroups.util.Util;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
-import java.io.ByteArrayInputStream;
 
 /** Hashmap which distributes its keys and values across the cluster. A PUT/GET/REMOVE computes the cluster node to which
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
@@ -35,7 +34,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.20 2009/05/13 13:06:54 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.21 2010/09/17 11:59:53 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -72,7 +71,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     private static final short GET     = 2;
     private static final short REMOVE  = 3;
 
-    protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
+    protected static Map<Short,Method> methods=Util.createConcurrentMap(8);
 
      static {
         try {

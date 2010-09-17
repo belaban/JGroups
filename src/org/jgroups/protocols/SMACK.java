@@ -13,12 +13,13 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -49,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.37 2010/06/15 06:44:35 belaban Exp $
+ * @version $Id: SMACK.java,v 1.38 2010/09/17 12:03:35 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -60,8 +61,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
     final Set<Address>     members=new LinkedHashSet<Address>();      // contains Addresses
     AckMcastSenderWindow   sender_win=null;
-    final Map<Address,AckReceiverWindow> receivers=new ConcurrentHashMap<Address,AckReceiverWindow>();   // keys=sender (Address), values=AckReceiverWindow
-    final Map<Address,Integer>          xmit_table=new ConcurrentHashMap<Address,Integer>();  // keeps track of num xmits / member (keys: mbr, val:num)
+    final Map<Address, AckReceiverWindow> receivers=Util.createConcurrentMap();   // keys=sender (Address), values=AckReceiverWindow
+    final Map<Address, Integer> xmit_table=Util.createConcurrentMap();  // keeps track of num xmits / member (keys: mbr, val:num)
     Address                local_addr=null;           // my own address
     @GuardedBy("lock")
     long                   seqno=1;                   // seqno for msgs sent by this sender

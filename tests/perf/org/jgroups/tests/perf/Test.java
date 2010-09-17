@@ -28,7 +28,7 @@ public class Test implements Receiver {
     Object          local_addr=null;
 
     /** Keys=member addresses, value=MemberInfo */
-    final Map<Object,MemberInfo> senders=new ConcurrentHashMap<Object,MemberInfo>(10);
+    final Map<Object,MemberInfo> senders=Util.createConcurrentMap();
 
     /** Keeps track of members. ArrayList<SocketAddress> */
     final List      members=new ArrayList();
@@ -61,7 +61,7 @@ public class Test implements Receiver {
     boolean         final_results_received=false;
 
     /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
-    final Map<Object,MemberInfo>  results=new ConcurrentHashMap<Object,MemberInfo>(12);
+    final Map<Object,MemberInfo>  results=Util.createConcurrentMap();
 
     private ResultsPublisher publisher=new ResultsPublisher();
 

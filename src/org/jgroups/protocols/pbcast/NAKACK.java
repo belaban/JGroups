@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.256 2010/08/27 09:26:08 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.257 2010/09/17 11:56:13 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -172,21 +172,25 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private long xmit_time_stats_start;
 
 
-    /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
-    private ConcurrentMap<Address,StatsEntry> sent=new ConcurrentHashMap<Address,StatsEntry>();
+    /**
+     * Captures stats on XMIT_REQS, XMIT_RSPS per sender
+     */
+    private ConcurrentMap<Address, StatsEntry> sent=Util.createConcurrentMap();
 
-    /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
-    private ConcurrentMap<Address,StatsEntry> received=new ConcurrentHashMap<Address,StatsEntry>();
+    /**
+     * Captures stats on XMIT_REQS, XMIT_RSPS per receiver
+     */
+    private ConcurrentMap<Address, StatsEntry> received=Util.createConcurrentMap();
 
     /**
      * Per-sender map of seqnos and timestamps, to keep track of avg times for retransmission of messages
      */
-    private final ConcurrentMap<Address,ConcurrentMap<Long,Long>> xmit_stats=new ConcurrentHashMap<Address,ConcurrentMap<Long,Long>>();
+    private final ConcurrentMap<Address, ConcurrentMap<Long, Long>> xmit_stats=Util.createConcurrentMap();
 
     /**
      * Maintains a list of the last N retransmission times (duration it took to retransmit a message) for all members
      */
-    private final ConcurrentMap<Address,BoundedList<Long>> xmit_times_history=new ConcurrentHashMap<Address,BoundedList<Long>>();
+    private final ConcurrentMap<Address, BoundedList<Long>> xmit_times_history=Util.createConcurrentMap();
 
     /**
      * Maintains a smoothed average of the retransmission times per sender,
@@ -209,7 +213,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final Lock seqno_lock=new ReentrantLock();
 
     /** Map to store sent and received messages (keyed by sender) */
-    private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
+    private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=Util.createConcurrentMap();
 
     private volatile boolean leaving=false;
     private volatile boolean running=false;

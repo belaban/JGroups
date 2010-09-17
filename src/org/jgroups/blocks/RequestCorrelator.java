@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.66 2010/06/15 06:44:39 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.67 2010/09/17 12:02:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -11,9 +11,10 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 
@@ -39,8 +40,10 @@ public class RequestCorrelator {
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
     protected Object transport=null;
 
-    /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final ConcurrentMap<Long,RspCollector> requests=new ConcurrentHashMap<Long,RspCollector>();
+    /**
+     * The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>)
+     */
+    protected final ConcurrentMap<Long, RspCollector> requests=Util.createConcurrentMap();
 
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */

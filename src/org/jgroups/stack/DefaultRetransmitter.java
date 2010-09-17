@@ -3,9 +3,9 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 
@@ -25,10 +25,10 @@ import java.util.concurrent.ConcurrentMap;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class DefaultRetransmitter extends Retransmitter {
-    private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
+    private final ConcurrentMap<Long,Task> msgs=Util.createConcurrentMap();
 
 
     /**

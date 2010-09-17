@@ -12,7 +12,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -26,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.35 2010/07/20 10:31:00 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.36 2010/09/17 11:52:58 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -57,9 +56,11 @@ public class FD_ALL extends Protocol {
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    
-    /** Map of addresses and timestamps of last updates */
-    private final Map<Address,Long> timestamps=new ConcurrentHashMap<Address,Long>();
+
+    /**
+     * Map of addresses and timestamps of last updates
+     */
+    private final Map<Address, Long> timestamps=Util.createConcurrentMap();
 
     private Address local_addr=null;
     
