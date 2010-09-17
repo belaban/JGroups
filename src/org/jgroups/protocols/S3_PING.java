@@ -35,7 +35,7 @@ import static java.lang.String.valueOf;
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
  * This protocol is unsupported and experimental !
  * @author Bela Ban
- * @version $Id: S3_PING.java,v 1.13 2010/09/17 19:36:37 benbrowning Exp $
+ * @version $Id: S3_PING.java,v 1.14 2010/09/17 19:50:47 benbrowning Exp $
  */
 @Experimental
 public class S3_PING extends FILE_PING {
@@ -156,7 +156,7 @@ public class S3_PING extends FILE_PING {
             byte[] buf=Util.objectToByteBuffer(data);
             S3Object val=new S3Object(buf, null);
 
-            if (pre_signed_put_url != null) {
+            if (usingPreSignedUrls()) {
                 Map headers = new TreeMap();
                 headers.put("x-amz-acl", Arrays.asList("public-read"));
                 conn.put(pre_signed_put_url, val, headers).connection.getResponseMessage();
@@ -180,7 +180,7 @@ public class S3_PING extends FILE_PING {
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
-            if (pre_signed_delete_url != null) {
+            if (usingPreSignedUrls()) {
                 conn.delete(pre_signed_delete_url).connection.getResponseMessage();
             } else {
                 conn.delete(location, key, headers).connection.getResponseMessage();
@@ -1810,8 +1810,6 @@ public class S3_PING extends FILE_PING {
             return "http://" + DEFAULT_HOST + "/" + bucket + "/" + key + "?" +
                 "AWSAccessKeyId=" + awsAccessKey + "&Expires=" + expirationDate +
                 "&Signature=" + encodedCanonical;
-            // connection.setRequestProperty("Authorization",
-            //                               "AWS " + this.awsAccessKeyId + ":" + encodedCanonical);
         }
     }
 
