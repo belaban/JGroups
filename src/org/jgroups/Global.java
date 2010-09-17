@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.60 2010/08/03 17:01:27 belaban Exp $
+ * @version $Id: Global.java,v 1.61 2010/09/17 11:49:37 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -96,6 +96,10 @@ public class Global {
     public static final String STREAMING_STATE_TRANSFER_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
     public static final String FD_SOCK_SRV_SOCK="jgroups.fd_sock.srv_sock";
     public static final String BSH_SRV_SOCK="jgroups.bsh.srv_sock";
+
+    public static final String CCHM_INITIAL_CAPACITY="cchm.initial_capacity";
+    public static final String CCHM_LOAD_FACTOR="cchm.load_factor";
+    public static final String CCHM_CONCURRENCY_LEVEL="cchm.concurrency_level";
 
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
