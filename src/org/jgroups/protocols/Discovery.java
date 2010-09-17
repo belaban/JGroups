@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.75 2010/07/28 09:49:57 belaban Exp $
+ * @version $Id: Discovery.java,v 1.76 2010/09/17 13:26:40 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -67,6 +67,10 @@ public abstract class Discovery extends Protocol {
             "discovery request, or not. Default is false, except for TCPPING")
     boolean return_entire_cache=false;
 
+    @Property(description="Only members with a rank <= max_rank will send a discovery response. 1 means only the " +
+            "coordinator will reply. 0 disables this; everyone replies. JIRA: https://jira.jboss.org/browse/JGRP-1181")
+    int max_rank=0;
+
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
@@ -77,6 +81,9 @@ public abstract class Discovery extends Protocol {
     /** The largest cluster size foudn so far (gets reset on stop()) */
     @ManagedAttribute
     private volatile int max_found_members=0;
+
+    @ManagedAttribute
+    protected int rank=0;
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -97,6 +104,8 @@ public abstract class Discovery extends Protocol {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
+        if(max_rank > 0)
+            return_entire_cache=true;
     }
 
 
@@ -286,6 +295,9 @@ public abstract class Discovery extends Protocol {
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
+                        if(max_rank > 0 && rank > 0 && rank > max_rank) // https://jira.jboss.org/browse/JGRP-1181
+                            return null;
+
                         if(group_addr == null || hdr.cluster_name == null) {
                             if(log.isWarnEnabled())
                                 log.warn("group_addr (" + group_addr + ") or cluster_name of header (" + hdr.cluster_name
@@ -425,6 +437,7 @@ public abstract class Discovery extends Protocol {
                         members.addAll(tmp);
                     }
                 }
+                rank=Util.getRank(view, local_addr);
                 return down_prot.down(evt);
 
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
