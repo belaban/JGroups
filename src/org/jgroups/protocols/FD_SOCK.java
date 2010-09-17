@@ -6,12 +6,14 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.ThreadFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -30,7 +32,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.119 2010/06/15 10:10:40 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.120 2010/09/17 11:54:20 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -98,7 +100,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     private volatile Thread pinger_thread=null; // listens on ping_sock, suspects member if socket is closed
 
     /** Cache of member addresses and their ServerSocket addresses */
-    private final ConcurrentMap<Address,IpAddress> cache=new ConcurrentHashMap<Address,IpAddress>(11);
+    private final ConcurrentMap<Address,IpAddress> cache=Util.createConcurrentMap(11);
 
     private final Promise<IpAddress> ping_addr_promise=new Promise<IpAddress>(); // to fetch the ping_addr for ping_dest
     private final Object sock_mutex=new Object(); // for access to ping_sock, ping_input

@@ -6,11 +6,11 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.util.Util;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: UFC.java,v 1.4 2010/09/13 09:08:36 belaban Exp $
+ * @version $Id: UFC.java,v 1.5 2010/09/17 12:05:09 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class UFC extends FlowControl {
@@ -40,7 +40,7 @@ public class UFC extends FlowControl {
      * Map<Address,Long>: keys are members, values are credits left. For each send,
      * the number of credits is decremented by the message size
      */
-    protected final Map<Address,Credit> sent=new ConcurrentHashMap<Address,Credit>(11);
+    protected final Map<Address,Credit> sent=Util.createConcurrentMap();
 
 
 

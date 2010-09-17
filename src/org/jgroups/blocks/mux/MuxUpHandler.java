@@ -1,26 +1,26 @@
 package org.jgroups.blocks.mux;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.UpHandler;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.ImmutableReference;
+import org.jgroups.util.Util;
+
+import java.util.Map;
 
 /**
  * Allows up handler multiplexing.
  * 
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxUpHandler.java,v 1.4 2010/06/19 02:24:48 bstansberry Exp $
+ * @version $Id: MuxUpHandler.java,v 1.5 2010/09/17 11:55:25 belaban Exp $
  */
 public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
 
     protected final Log log=LogFactory.getLog(getClass());
-    private final Map<Short, UpHandler> handlers = new ConcurrentHashMap<Short, UpHandler>();
+    private final Map<Short, UpHandler> handlers=Util.createConcurrentMap();
     private volatile UpHandler defaultHandler;
     private volatile Event lastFlushEvent;
     private final Object flushMutex = new Object();

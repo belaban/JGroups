@@ -12,9 +12,10 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -38,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.166 2010/03/12 09:07:44 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.167 2010/09/17 12:05:09 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -72,8 +73,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
-    private final ConcurrentMap<Address,SenderEntry> send_table=new ConcurrentHashMap<Address,SenderEntry>();
-    private final ConcurrentMap<Address,ReceiverEntry> recv_table=new ConcurrentHashMap<Address,ReceiverEntry>();
+    private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
+    private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
     private final Vector<Address> members=new Vector<Address>(11);
 

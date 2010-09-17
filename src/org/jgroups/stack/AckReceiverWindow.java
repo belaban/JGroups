@@ -3,9 +3,11 @@ package org.jgroups.stack;
 
 import org.jgroups.Message;
 import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,12 +25,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.51 2010/03/23 16:09:54 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.52 2010/09/17 11:50:37 belaban Exp $
  */
 public class AckReceiverWindow {
     private final AtomicLong                   next_to_remove;
     private final AtomicBoolean                processing=new AtomicBoolean(false);
-    private final ConcurrentMap<Long,Segment>  segments=new ConcurrentHashMap<Long,Segment>(64, 0.75F, 64);
+    private final ConcurrentMap<Long,Segment>  segments=Util.createConcurrentMap();
     private volatile Segment                   current_segment=null;
     private volatile Segment                   current_remove_segment=null;
     private final int                          segment_capacity;

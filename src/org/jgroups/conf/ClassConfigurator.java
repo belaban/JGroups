@@ -2,24 +2,23 @@
 package org.jgroups.conf;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.ChannelException;
 import org.jgroups.Global;
-import org.jgroups.util.Util;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.io.InputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * This class will be replaced with the class that read info
@@ -41,12 +40,12 @@ public class ClassConfigurator {
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
     // this is where we store magic numbers; contains data from jg-magic-map.xml
-    private static final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
-    private static final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
+    private static final Map<Class,Short> classMap=Util.createConcurrentMap(150, 0.75f, 150); // key=Class, value=magic number
+    private static final Map<Short,Class> magicMap=Util.createConcurrentMap(150, 0.75f, 150); // key=magic number, value=Class
 
     /** Contains data read from jg-protocol-ids.xml */
-    private static final Map<Class,Short> protocol_ids=new ConcurrentHashMap<Class,Short>();
-    private static final Map<Short,Class> protocol_names=new ConcurrentHashMap<Short,Class>();
+    private static final Map<Class,Short> protocol_ids=Util.createConcurrentMap(150, 0.75f, 150);
+    private static final Map<Short,Class> protocol_names=Util.createConcurrentMap(150, 0.75f, 150);
 
     protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
 

@@ -9,11 +9,11 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.79 2010/08/27 09:25:44 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.80 2010/09/17 11:58:18 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -77,8 +77,10 @@ public class NakReceiverWindow {
     private long highest_received=0;
 
 
-    /** ConcurrentMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers */
-    private final ConcurrentMap<Long,Message> xmit_table=new ConcurrentHashMap<Long,Message>();
+    /**
+     * ConcurrentMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers
+     */
+    private final ConcurrentMap<Long, Message> xmit_table=Util.createConcurrentMap();
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered

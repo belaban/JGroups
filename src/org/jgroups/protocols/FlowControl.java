@@ -4,12 +4,14 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -19,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the receiver sends more credits to the sender.
  * 
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.9 2010/09/13 10:05:37 belaban Exp $
+ * @version $Id: FlowControl.java,v 1.10 2010/09/17 11:54:20 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {
@@ -97,7 +99,7 @@ public abstract class FlowControl extends Protocol {
      * by the size of the received message. When the credits fall below the threshold, we refill and send a REPLENISH
      * message to the sender.
      */
-    protected final Map<Address,Credit> received=new ConcurrentHashMap<Address,Credit>(11);
+    protected final Map<Address,Credit> received=Util.createConcurrentMap();
 
 
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */

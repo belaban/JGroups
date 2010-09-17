@@ -1,7 +1,8 @@
 package org.jgroups.blocks;
 
+import org.jgroups.util.Util;
+
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -10,10 +11,10 @@ import java.util.concurrent.ConcurrentMap;
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
  * an elements is marked as removable, but later reinserted, the mark is removed.
  * @author Bela Ban
- * @version $Id: LazyRemovalCache.java,v 1.6 2010/04/22 12:13:06 belaban Exp $
+ * @version $Id: LazyRemovalCache.java,v 1.7 2010/09/17 11:55:27 belaban Exp $
  */
 public class LazyRemovalCache<K,V> {
-    private final ConcurrentMap<K,Entry<V>> map=new ConcurrentHashMap<K,Entry<V>>();
+    private final ConcurrentMap<K, Entry<V>> map=Util.createConcurrentMap();
 
     /** Max number of elements, if exceeded, we remove all elements marked as removable and older than max_age ms */
     private final int max_elements;

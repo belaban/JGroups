@@ -5,17 +5,16 @@ import org.jgroups.Address;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains the highest received and highest delivered seqno per member
  * @author Bela Ban
- * @version $Id: SeqnoTable.java,v 1.2 2008/03/12 09:57:20 belaban Exp $
+ * @version $Id: SeqnoTable.java,v 1.3 2010/09/17 12:03:36 belaban Exp $
  */
 public class SeqnoTable {
     private long next_to_receive=0;
-    private final ConcurrentMap<Address,Entry> map=new ConcurrentHashMap<Address,Entry>();
+    private final ConcurrentMap<Address, Entry> map=Util.createConcurrentMap();
 
 
     public SeqnoTable(long next_to_receive) {

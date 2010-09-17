@@ -10,7 +10,6 @@ import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -36,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.128 2010/08/30 14:11:45 belaban Exp $
+ * @version $Id: FC.java,v 1.129 2010/09/17 11:52:58 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -126,7 +125,7 @@ public class FC extends Protocol {
      * currently used as there might be null values
      */
     @GuardedBy("lock")
-    private final ConcurrentMap<Address,Credit> sent=new ConcurrentHashMap<Address,Credit>(11);
+    private final ConcurrentMap<Address,Credit> sent=Util.createConcurrentMap();
 
     /**
      * Keeps track of credits / member at the receiver's side. Keys are members, values are credits left (in bytes).
@@ -134,7 +133,7 @@ public class FC extends Protocol {
      * When the credits fall below the threshold, we refill and send a REPLENISH message to the sender.
      * The sender blocks until REPLENISH message is received.
      */
-    private final ConcurrentMap<Address,Credit> received=new ConcurrentHashMap<Address,Credit>(11);
+    private final ConcurrentMap<Address,Credit> received=Util.createConcurrentMap();
 
 
     /**

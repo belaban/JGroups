@@ -1,22 +1,21 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.util.*;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
+import org.jgroups.util.*;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.Future;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ConcurrentMap;
-import java.util.*;
 
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.8 2010/07/08 11:52:35 belaban Exp $
+ * @version $Id: Merger.java,v 1.9 2010/09/17 11:55:29 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;
@@ -493,7 +492,7 @@ public class Merger {
         private Thread thread=null;
 
         /** List of all subpartition coordinators and their members */
-        private final ConcurrentMap<Address,Collection<Address>> coords=new ConcurrentHashMap<Address,Collection<Address>>();
+        private final ConcurrentMap<Address,Collection<Address>> coords=Util.createConcurrentMap(8, 0.75f, 8);
 
         /**
          * @param views Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
