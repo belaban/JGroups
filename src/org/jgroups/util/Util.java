@@ -28,6 +28,8 @@ import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -35,7 +37,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.272 2010/08/18 07:43:48 belaban Exp $
+ * @version $Id: Util.java,v 1.273 2010/09/17 11:50:07 belaban Exp $
  */
 public class Util {
 
@@ -65,6 +67,11 @@ public class Util {
 
     private static Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
     private static Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
+
+
+    protected static int   CCHM_INITIAL_CAPACITY=16;
+    protected static float CCHM_LOAD_FACTOR=0.75f;
+    protected static int   CCHM_CONCURRENCY_LEVEL=16;
 
     /**
      * Global thread group to which all (most!) JGroups threads belong
@@ -111,6 +118,24 @@ public class Util {
 
         if(ip_stack_type == StackType.Unknown)
             ip_stack_type=StackType.IPv6;
+
+        try {
+            String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
+            if(cchm_initial_capacity != null)
+                CCHM_INITIAL_CAPACITY=Integer.valueOf(cchm_initial_capacity);
+        } catch(SecurityException ex) {}
+
+        try {
+            String cchm_load_factor=System.getProperty(Global.CCHM_LOAD_FACTOR);
+            if(cchm_load_factor != null)
+                CCHM_LOAD_FACTOR=Float.valueOf(cchm_load_factor);
+        } catch(SecurityException ex) {}
+
+        try {
+            String cchm_concurrency_level=System.getProperty(Global.CCHM_CONCURRENCY_LEVEL);
+            if(cchm_concurrency_level != null)
+                CCHM_CONCURRENCY_LEVEL=Integer.valueOf(cchm_concurrency_level);
+        } catch(SecurityException ex) {}
     }
 
 
@@ -2849,6 +2874,19 @@ public class Util {
         if(COUNTER >= Short.MAX_VALUE)
             COUNTER=1;
         return retval;
+    }
+
+
+    public static <K,V> ConcurrentMap<K,V> createConcurrentMap(int initial_capacity, float load_factor, int concurrency_level) {
+        return new ConcurrentHashMap<K,V>(initial_capacity, load_factor, concurrency_level);
+    }
+
+    public static <K,V> ConcurrentMap<K,V> createConcurrentMap(int initial_capacity) {
+        return new ConcurrentHashMap<K,V>(initial_capacity);
+    }
+
+    public static <K,V> ConcurrentMap<K,V> createConcurrentMap() {
+        return new ConcurrentHashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR, CCHM_CONCURRENCY_LEVEL);
     }
 
 
