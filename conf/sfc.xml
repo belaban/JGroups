@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.15 2010/02/08 07:11:15 belaban Exp $
+  version: $Id: sfc.xml,v 1.16 2010/09/20 14:29:08 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -54,7 +54,7 @@
                    discard_delivered_msgs="true" />
     <UNICAST timeout="300,600,1200,2400,3600" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="500000"
-                   max_bytes="10000000" />
+                   max_bytes="4m" />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                  view_bundling="true" />
     <SFC max_credits="10000000"/>

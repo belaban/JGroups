@@ -5,7 +5,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
     author: Bela Ban
-    version: $Id: tcp-nio.xml,v 1.21 2010/09/13 10:51:53 belaban Exp $
+    version: $Id: tcp-nio.xml,v 1.22 2010/09/20 14:29:08 belaban Exp $
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -60,7 +60,7 @@
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="400000"/>
+                   max_bytes="4m"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 view_bundling="true"/>
     <UFC max_credits="2M"
