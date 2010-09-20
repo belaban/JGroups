@@ -5,7 +5,7 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.13 2010/09/13 10:51:53 belaban Exp $
+  Version: $Id: fast-local.xml,v 1.14 2010/09/20 14:29:08 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
@@ -65,7 +65,7 @@
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="1000000"/>
+                   max_bytes="8m"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 
                 view_bundling="true"/>

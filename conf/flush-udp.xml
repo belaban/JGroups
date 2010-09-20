@@ -51,7 +51,7 @@
                    discard_delivered_msgs="false"/>
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="400000"/>   
+                   max_bytes="4m"/>   
     <pbcast.GMS print_local_addr="true" join_timeout="3000" view_bundling="true"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>

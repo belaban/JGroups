@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.50 2010/09/13 10:51:53 belaban Exp $
+  Version: $Id: stacks.xml,v 1.51 2010/09/20 14:29:08 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -50,7 +50,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200,2400,3600"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
 
                         view_bundling="true"/>
@@ -115,7 +115,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200,2400,3600"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
 
                         view_bundling="true"/>
@@ -175,7 +175,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200" />
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="7000"
 
                         view_bundling="true"/>
@@ -239,7 +239,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200" />
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="7000"  
 
                         view_bundling="true"/>
@@ -289,7 +289,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200" />
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
 
                         view_bundling="true"/>
@@ -344,7 +344,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200" />
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
 
                         view_bundling="true"/>
@@ -374,7 +374,7 @@
                            discard_delivered_msgs="false"/>
             <UNICAST timeout="300,600,1200,2400,3600"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
-                           max_bytes="400000"/>
+                           max_bytes="4m"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
 
                         view_bundling="true"

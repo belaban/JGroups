@@ -39,17 +39,17 @@
 		oob_thread_pool.queue_enabled="false" 
 		oob_thread_pool.queue_max_size="100"
 		oob_thread_pool.rejection_policy="discard" />
-	<TCPGOSSIP timeout="3000"
-		initial_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"
-		num_initial_members="3" />
-	<MERGE2 max_interval="30000" min_interval="10000" />
-	<FD timeout="2000" max_tries="4" />
-	<VERIFY_SUSPECT timeout="1500" />
-	<pbcast.NAKACK use_mcast_xmit="false" gc_lag="100"
-		retransmit_timeout="600,1200,2400,4800" />
-	<UNICAST timeout="300,600,1200" />
-	<pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"
-		max_bytes="0" />
+    <TCPGOSSIP timeout="3000"
+               initial_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"
+               num_initial_members="3" />
+    <MERGE2 max_interval="30000" min_interval="10000" />
+    <FD timeout="2000" max_tries="4" />
+    <VERIFY_SUSPECT timeout="1500" />
+    <pbcast.NAKACK use_mcast_xmit="false" gc_lag="100"
+                   retransmit_timeout="600,1200,2400,4800" />
+    <UNICAST timeout="300,600,1200" />
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"
+                   max_bytes="4m" />
     <pbcast.GMS print_local_addr="true" join_timeout="5000" />
     <UFC max_credits="2M"
          min_threshold="0.4"/>

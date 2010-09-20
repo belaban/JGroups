@@ -25,7 +25,7 @@
     <UNICAST timeout="1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000"
         desired_avg_gossip="20000"
-        max_bytes="0"/>
+        max_bytes="4m"/>
     <FRAG frag_size="8192"/>
     <AUTH auth_class="org.jgroups.auth.FixedMembershipToken"
           fixed_members_value="localhost/1010*localhost/1011"
