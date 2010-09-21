@@ -18,14 +18,14 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.23 2010/03/05 09:05:48 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.24 2010/09/21 07:13:12 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
     static final long NUM_MSGS=10000;
     static final int MSG_SIZE=1000;
-    private static final String GROUP=getUniqueClusterName("DiscardTest");
+    private static final String GROUP="DiscardTest";
     final Promise<Long> ch1_all_received=new Promise<Long>();
     final Promise<Long> ch2_all_received=new Promise<Long>();
 
