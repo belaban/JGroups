@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * in docs/design/STABLE.txt
  * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.106 2010/06/15 06:44:38 belaban Exp $
+ * @version $Id: STABLE.java,v 1.107 2010/09/21 11:51:30 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
@@ -144,7 +144,7 @@ public class STABLE extends Protocol {
         this.max_bytes=max_bytes;
     }
 
-    @ManagedAttribute
+    @ManagedAttribute(name="BytesReceived")
     public long getBytes() {return num_bytes_received;}
     @ManagedAttribute
     public int getStableSent() {return num_stable_msgs_sent;}
