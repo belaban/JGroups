@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.259 2010/09/21 07:00:27 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.260 2010/09/22 08:16:55 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -798,14 +798,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         boolean added=loopback || win.add(hdr.seqno, msg);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
-        if(msg.isFlagSet(Message.OOB)) {
-            if(added) {
-                if(loopback)
-                    msg=win.get(hdr.seqno);
-                if(msg != null && msg.isFlagSet(Message.OOB)) {
-                    if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
-                        up_prot.up(new Event(Event.MSG, msg));
-                }
+        if(added && msg.isFlagSet(Message.OOB)) {
+            if(loopback)
+                msg=win.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
+            if(msg != null && msg.isFlagSet(Message.OOB)) {
+                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
+                    up_prot.up(new Event(Event.MSG, msg));
             }
         }
 
