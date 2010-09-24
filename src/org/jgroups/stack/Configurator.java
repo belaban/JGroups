@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.87 2010/09/16 15:51:18 belaban Exp $
+ * @version $Id: Configurator.java,v 1.88 2010/09/24 04:53:36 belaban Exp $
  */
 public class Configurator {
     protected static final Log log=LogFactory.getLog(Configurator.class);
@@ -481,7 +481,7 @@ public class Configurator {
                 if(!providesDownServices(req_list, evt_type)) {
                     throw new Exception("Configurator.sanityCheck(): event " +
                             Event.type2String(evt_type) + " is required by " +
-                            pr.name + ", but not provided by any of the layers above");
+                            pr.name + ", but not provided by any of the layers below");
                 }
             } 
             
