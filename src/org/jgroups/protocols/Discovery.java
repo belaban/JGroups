@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.76 2010/09/17 13:26:40 belaban Exp $
+ * @version $Id: Discovery.java,v 1.77 2010/09/24 04:53:37 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -155,8 +155,10 @@ public abstract class Discovery extends Protocol {
 
 
     public Vector<Integer> providedUpServices() {
-        Vector<Integer> ret=new Vector<Integer>(1);
-        ret.addElement(new Integer(Event.FIND_INITIAL_MBRS));
+        Vector<Integer> ret=new Vector<Integer>(3);
+        ret.addElement(Event.FIND_INITIAL_MBRS);
+        ret.addElement(Event.FIND_ALL_MBRS);
+        ret.addElement(Event.GET_PHYSICAL_ADDRESS);
         return ret;
     }
     
