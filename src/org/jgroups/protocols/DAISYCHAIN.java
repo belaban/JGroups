@@ -20,7 +20,7 @@ import java.util.concurrent.Executor;
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/> 
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
- * @version $Id: DAISYCHAIN.java,v 1.13 2010/09/14 12:19:21 belaban Exp $
+ * @version $Id: DAISYCHAIN.java,v 1.14 2010/09/27 07:10:41 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
@@ -54,10 +54,10 @@ public class DAISYCHAIN extends Protocol {
     public int msgs_sent=0;
 
     @ManagedAttribute
-    public int getForwardQueueSize() {return forward_queue.size();}
+    public int getElementsInForwardQueue() {return forward_queue.size();}
 
     @ManagedAttribute
-    public int getSendQueueSize() {return send_queue.size();}
+    public int getElementsInSendQueue() {return send_queue.size();}
 
     public void init() throws Exception {
         default_pool=getTransport().getDefaultThreadPool();
