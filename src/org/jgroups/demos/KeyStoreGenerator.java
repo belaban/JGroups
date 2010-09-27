@@ -1,6 +1,8 @@
-//$Id: KeyStoreGenerator.java,v 1.4 2008/10/09 13:25:52 vlada Exp $
+//$Id: KeyStoreGenerator.java,v 1.5 2010/09/27 08:02:48 belaban Exp $
 
 package org.jgroups.demos;
+
+import org.jgroups.util.Util;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -39,10 +41,8 @@ public class KeyStoreGenerator {
 
     public static void main(String[] args) {
 
-        int i=0, j;
+        int i=0;
         String arg=null;
-        ;
-        boolean specified=false;
 
         while(i < args.length && args[i].startsWith("-")) {
             arg=args[i++];
@@ -66,8 +66,7 @@ public class KeyStoreGenerator {
             else if(arg.equalsIgnoreCase("--storeName")) {
 
                 if(i < args.length) {
-                    String temp=args[i++];
-                    keyStoreName=temp;
+                    keyStoreName=args[i++];
                 }
                 else {
                     System.out.println("No keystore supplied using default of " + keyStoreName);
@@ -112,7 +111,7 @@ public class KeyStoreGenerator {
         }
         finally {
             try {
-                stream.close();
+                Util.close(stream);
             }
             catch(Exception e) {
 
@@ -122,15 +121,9 @@ public class KeyStoreGenerator {
     }
 
     public static SecretKey initSymKey() throws Exception {
-        KeyGenerator keyGen=null;
-        // generate secret key
-
-        keyGen=KeyGenerator.getInstance(getAlgorithm(symAlg));
-
+        KeyGenerator keyGen=KeyGenerator.getInstance(getAlgorithm(symAlg));
         keyGen.init(keySize);
-        SecretKey secretKey=keyGen.generateKey();
-
-        return secretKey;
+        return keyGen.generateKey();
 
     }
 
