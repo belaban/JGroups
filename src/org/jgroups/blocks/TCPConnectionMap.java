@@ -13,8 +13,6 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.*;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -642,7 +640,7 @@ public class TCPConnectionMap{
 
             final BlockingQueue<byte[]> send_queue;
             final Thread runner;
-            private final AtomicBoolean sending = new AtomicBoolean(false);
+            private final AtomicBoolean running= new AtomicBoolean(false);
 
             public Sender(ThreadFactory tf,int send_queue_size) {
                 this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
@@ -655,19 +653,19 @@ public class TCPConnectionMap{
             }
 
             public void start() {
-                if(sending.compareAndSet(false, true)) {
+                if(running.compareAndSet(false, true)) {
                     runner.start();
                 }
             }
 
             public void stop() {
-                if(sending.compareAndSet(true, false)) {
+                if(running.compareAndSet(true, false)) {
                     runner.interrupt();
                 }
             }
             
             public boolean isRunning() {
-                return sending.get();
+                return running.get();
             }
             
             public boolean canRun() {
