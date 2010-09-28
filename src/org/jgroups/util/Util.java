@@ -37,7 +37,7 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.274 2010/09/17 13:03:55 belaban Exp $
+ * @version $Id: Util.java,v 1.275 2010/09/28 15:10:31 belaban Exp $
  */
 public class Util {
 
@@ -79,6 +79,10 @@ public class Util {
     private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups") {
         public void uncaughtException(Thread t, Throwable e) {
             LogFactory.getLog("org.jgroups").error("uncaught exception in " + t + " (thread group=" + GLOBAL_GROUP + " )", e);
+            final ThreadGroup tgParent = getParent();
+            if(tgParent != null) {
+                tgParent.uncaughtException(t,e);
+            }
         }
     };
 
