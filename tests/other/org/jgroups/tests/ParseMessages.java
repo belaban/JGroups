@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Parses messages out of a captured file and writes them to stdout
  * @author Bela Ban
- * @version $Id: ParseMessages.java,v 1.1 2010/09/29 13:33:27 belaban Exp $
+ * @version $Id: ParseMessages.java,v 1.2 2010/09/29 13:33:52 belaban Exp $
  */
 public class ParseMessages {
     InputStream input=null;
@@ -32,13 +32,13 @@ public class ParseMessages {
             dis=new DataInputStream(input);
 
             for(;;) {
-                // version=dis.readShort();
+                version=dis.readShort();
 
-                int ch1 = input.read();
-                int ch2 = input.read();
-                if ((ch1 | ch2) < 0)
-                    throw new EOFException();
-                version=(short)((ch1 << 8) + (ch2 << 0));
+//                int ch1 = input.read();
+//                int ch2 = input.read();
+//                if ((ch1 | ch2) < 0)
+//                    throw new EOFException();
+//                version=(short)((ch1 << 8) + (ch2 << 0));
 
 
                 System.out.println("version = " + version + " (" + Version.print(version) + ")");
