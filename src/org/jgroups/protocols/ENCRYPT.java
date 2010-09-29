@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.61 2010/08/17 08:36:06 belaban Exp $
+// $Id: ENCRYPT.java,v 1.62 2010/09/29 14:21:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -520,7 +520,7 @@ public class ENCRYPT extends Protocol {
             return;
         }
 
-        if(msg.getLength() == 0) {
+        if(msg.getLength() == 0 && !encrypt_entire_message) {
             passItUp(evt);
             return;
         }
@@ -896,7 +896,7 @@ public class ENCRYPT extends Protocol {
         }
 
         Message msg=(Message)evt.getArg();
-        if(msg.getLength() == 0) {
+        if(msg.getLength() == 0 && !encrypt_entire_message) {
             passItDown(evt);
             return;
         }
