@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.77 2010/09/24 04:53:37 belaban Exp $
+ * @version $Id: Discovery.java,v 1.78 2010/09/30 10:11:19 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -440,6 +440,21 @@ public abstract class Discovery extends Protocol {
                     }
                 }
                 rank=Util.getRank(view, local_addr);
+                if(ergonomics) {
+                    int size=view.size();
+                    if(size <= Global.SMALL_CLUSTER_SIZE) {
+                        max_rank=0;
+                        return_entire_cache=false;
+                    }
+                    else if(size <= Global.NORMAL_CLUSTER_SIZE) {
+                        max_rank=size / 5;
+                        return_entire_cache=true;
+                    }
+                    else {
+                        max_rank=Math.min(size / 5, 10);
+                        return_entire_cache=true;
+                    }
+                }
                 return down_prot.down(evt);
 
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
