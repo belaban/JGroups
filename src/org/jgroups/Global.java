@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.61 2010/09/17 11:49:37 belaban Exp $
+ * @version $Id: Global.java,v 1.62 2010/09/30 10:10:54 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -103,6 +103,12 @@ public class Global {
 
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
+
+
+    public static final int SMALL_CLUSTER_SIZE=10;
+    public static final int NORMAL_CLUSTER_SIZE=20;
+    public static final int BIG_CLUSTER_SIZE=100;
+
 
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
