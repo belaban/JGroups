@@ -1561,16 +1561,44 @@
                     We highly recommend setting max_rank in large clusters.
                 </para>
                 <para>
-                    This functionality was implemented in  https://jira.jboss.org/browse/JGRP-1181.
+                    This functionality was implemented in
+                    <ulink url="https://jira.jboss.org/browse/JGRP-1181">https://jira.jboss.org/browse/JGRP-1181</ulink>.
                 </para>
             </section>
             <section>
                 <title>Failure detection protocols</title>
                 <para>
-                    
+                    Failure detection protocols determine when a member is unresponsive, and subsequently
+                    <emphasis>suspect</emphasis> it. Usually (FD, FD_ALL), messages (heartbeats) are used to determine
+                    the health of a member, but we can also use TCP connections (FD_SOCK) to connect to a member P, and
+                    suspect P when the connection is closed.
                 </para>
+                <para>
+                    Heartbeating requires messages to be sent around, and we need to be careful to limit the number of
+                    messages sent by a failure detection protocol (1) to detect crashed members and (2) when a member
+                    has been suspected. The following sections discuss how to configure FD_ALL and FD_SOCK, the most
+                    commonly used failure detection protocols, for use in large clusters.
+                </para>
+
+                <section>
+                    <title>FD_SOCK</title>
+                </section>
+                
+                <section>
+                    <title>FD_ALL</title>
+                </section>
             </section>
 
+        </section>
+
+        <section>
+            <title>Ergonomics</title>
+            <para>
+                Ergonomics is similar to the dynamic setting of optimal values for the JVM, e.g. garbage collection,
+                memory sizes etc. In JGroups, ergonomics means that we try to dynamically determine and set optimal
+                values for protocol properties. Examples are thread pool size, flow control credits, heartbeat
+                frequency and so on.
+            </para>
         </section>
 
     </section>
