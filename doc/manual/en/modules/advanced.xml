@@ -1525,5 +1525,53 @@
             This section is a collection of best practices and tips and tricks for running large clusters on JGroups.
             By large clusters, we mean several hundred nodes in a cluster.
         </para>
+
+        <section>
+            <title>Reducing chattiness</title>
+            <para>
+                When we have a chatty protocol, scaling to a large number of nodes might be a problem: too many messages
+                are sent and - because they are generated in addition to the regular traffic - this can have a
+                negative impact on the cluster. A possible impact is that more of the regular messages are dropped, and
+                have to be retransmitted, which impacts performance. Or heartbeats are dropped, leading to false
+                suspicions. So while the negative effects of chatty protocols may not be seen in small clusters, they
+                <emphasis>will</emphasis> be seen in large clusters !
+            </para>
+
+            <section>
+                <title>Discovery</title>
+                <para>
+                    A discovery protocol (e.g. PING, TCPPING, MPING etc) is run at startup, to discover the initial
+                    membership, and periodically by the merge protocol, to detect partitioned subclusters.
+                </para>
+                <para>
+                    When we send a multicast discovery request to a large cluster, every node in the cluster might
+                    possibly reply with a discovery response sent back to the sender. So, in a cluster of 300 nodes,
+                    the discovery requester might be up to 299 discovery responses ! Even worse, because num_ping_requests
+                    in Discovery is by default set to 2, so we're sending 2 discovery requests, we might receive up to
+                    num_ping_requests * (N-1) discovery responses, even though we might be able to find out the
+                    coordinator after a few responses already !
+                </para>
+                <para>
+                    To reduce the large number of responses, we can set a max_rank property: the value defines which
+                    members are going to send a discovery response. The rank is the index of a member in a cluster: in
+                    {A,B,C,D,E}, A's index is 1, B's index is 2 and so on. A max_rank of 3 would trigger discovery
+                    responses from only A, B and C, but not from D or E.
+                </para>
+                <para>
+                    We highly recommend setting max_rank in large clusters.
+                </para>
+                <para>
+                    This functionality was implemented in  https://jira.jboss.org/browse/JGRP-1181.
+                </para>
+            </section>
+            <section>
+                <title>Failure detection protocols</title>
+                <para>
+                    
+                </para>
+            </section>
+
+        </section>
+
     </section>
 </chapter>
