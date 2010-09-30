@@ -1517,4 +1517,13 @@
         </para>
         
     </section>
+
+
+    <section>
+        <title>Large clusters</title>
+        <para>
+            This section is a collection of best practices and tips and tricks for running large clusters on JGroups.
+            By large clusters, we mean several hundred nodes in a cluster.
+        </para>
+    </section>
 </chapter>
