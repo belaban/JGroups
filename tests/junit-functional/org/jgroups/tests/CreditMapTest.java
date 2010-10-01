@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests CreditMap
  * @author Bela Ban
- * @version $Id: CreditMapTest.java,v 1.4 2010/09/10 12:07:31 belaban Exp $
+ * @version $Id: CreditMapTest.java,v 1.5 2010/10/01 13:16:52 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class CreditMapTest {
@@ -170,7 +170,7 @@ public class CreditMapTest {
         for(Decrementer decr: decrementers)
             decr.start();
 
-        Util.sleep(500);
+        Util.sleep(1000);
         int alive=countAliveThreads(decrementers);
         assert alive == 3;
 
