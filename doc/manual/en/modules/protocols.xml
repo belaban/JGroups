@@ -110,6 +110,20 @@
 			${MPING}
             <para></para>
         </section>
+
+        <section>
+            <title>S3_PING</title>
+            This uses an Amazon S3 bucket into which all members write their addresses. New joiners read all addresses
+            from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
+            delets its corresponding file.
+            <para>
+              S3_PING is primarily meant to be used on Amazon EC2 where multicast traffic is not allowed and
+              no external process (GossipRouter) is desired.
+            </para>
+
+			${S3_PING}
+            <para></para>
+        </section>
     </section>
 
     <section>
