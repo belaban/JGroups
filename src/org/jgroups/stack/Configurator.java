@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.88 2010/09/24 04:53:36 belaban Exp $
+ * @version $Id: Configurator.java,v 1.89 2010/10/01 09:42:31 belaban Exp $
  */
 public class Configurator {
     protected static final Log log=LogFactory.getLog(Configurator.class);
@@ -952,7 +952,8 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && deprecated_msg.length() > 0) {
-                    log.warn(method.getDeclaringClass().getSimpleName() + "." + methodName + ": " + deprecated_msg);
+                    log.warn(method.getDeclaringClass().getSimpleName() + "." + methodName + " has been deprecated : " +
+                            deprecated_msg);
                 }
             }
 
@@ -997,7 +998,8 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && deprecated_msg.length() > 0) {
-                    log.warn(field.getDeclaringClass().getSimpleName() + "." + field.getName() + ": " + deprecated_msg);
+                    log.warn(field.getDeclaringClass().getSimpleName() + "." + field.getName() + " has been deprecated: " +
+                            deprecated_msg);
                 }
             }
             
