@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.36 2010/09/17 11:52:58 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.37 2010/10/01 09:19:31 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})
@@ -37,7 +37,7 @@ public class FD_ALL extends Protocol {
     long interval=3000;
 
     @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
-    long timeout=5000;
+    long timeout=10000;
     
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
@@ -270,7 +270,7 @@ public class FD_ALL extends Protocol {
 
         Set<Address> keys=timestamps.keySet();
         keys.retainAll(mbrs); // remove all nodes which have left the cluster
-        for(Address member:mbrs)
+        for(Address member: mbrs)
             update(member);
 
         if(has_at_least_two) {
@@ -287,7 +287,6 @@ public class FD_ALL extends Protocol {
 
     private String printTimeStamps() {
         StringBuilder sb=new StringBuilder();
-        
         long current_time=System.currentTimeMillis();
         for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
             Entry<Address,Long> entry=it.next();
@@ -364,15 +363,12 @@ public class FD_ALL extends Protocol {
      * Class which periodically multicasts a HEARTBEAT message to the cluster
      */
     class HeartbeatSender implements Runnable {
-
         public void run() {
             Message heartbeat=new Message(); // send to all
             heartbeat.setFlag(Message.OOB);
             Header hdr=new Header(Header.HEARTBEAT);
             heartbeat.putHeader(id, hdr);
             down_prot.down(new Event(Event.MSG, heartbeat));
-            if(log.isTraceEnabled())
-              log.trace(local_addr + " sent heartbeat to cluster");
             num_heartbeats_sent++;
         }
     }
@@ -381,7 +377,6 @@ public class FD_ALL extends Protocol {
     class TimeoutChecker implements Runnable {
 
         public void run() {                        
-            
             if(log.isTraceEnabled())
                 log.trace("checking for expired senders, table is:\n" + printTimeStamps());
 
