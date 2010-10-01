@@ -35,7 +35,7 @@ import java.util.Map;
     			propertyName=annotation.name();
     			boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
     			if(isDeprecated && log.isWarnEnabled()) {
-    				log.warn(annotation.deprecatedMessage());
+    				log.warn(propertyName + " has been deprecated: " + annotation.deprecatedMessage());
     			}
     		}
     		return propertyName ;
