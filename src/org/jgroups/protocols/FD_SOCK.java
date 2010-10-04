@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.120 2010/09/17 11:54:20 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.121 2010/10/04 11:27:29 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -381,7 +381,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             
             if(!setupPingSocket(ping_addr) && isPingerThreadRunning()) {
                 // covers use cases #7 and #8 in ManualTests.txt
-                if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
+                if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest);
                 broadcastSuspectMessage(ping_dest);
                 pingable_mbrs.removeElement(ping_dest);
                 continue;
