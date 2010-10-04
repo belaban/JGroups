@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.123 2010/10/04 11:40:12 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.124 2010/10/04 12:55:33 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -83,7 +83,11 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     
     private final Vector<Address> members=new Vector<Address>(11); // list of group members (updated on VIEW_CHANGE)
-    private final Vector<Address> pingable_mbrs=new Vector<Address>(11); 
+
+    protected final Set<Address> suspected_mbrs=new HashSet<Address>();
+
+    private final Vector<Address> pingable_mbrs=new Vector<Address>(11);
+
     volatile boolean srv_sock_sent=false; // has own socket been broadcast yet ?
     /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
     private final Promise<Map<Address,IpAddress>> get_cache_promise=new Promise<Map<Address,IpAddress>>();
@@ -167,6 +171,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         stopPingerThread();        
         stopServerSocket(true); // graceful close
         bcast_task.removeAll();
+        suspected_mbrs.clear();
     }
 
     public void resetStats() {
@@ -191,16 +196,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                         if(hdr.mbrs != null) {
                             if(log.isTraceEnabled())
                                 log.trace("received SUSPECT message from " + msg.getSrc() + ": suspects=" + hdr.mbrs);
-                            for(Address m: hdr.mbrs) {
-                                if(local_addr != null && m.equals(local_addr)) {
-                                    if(log.isWarnEnabled() && log_suspected_msgs)
-                                        log.warn("I (" + local_addr + ") was suspected by " + msg.getSrc() +
-                                                "; ignoring the SUSPECT message");
-                                    continue;
-                                }
-                                up_prot.up(new Event(Event.SUSPECT, m));
-                                down_prot.down(new Event(Event.SUSPECT, m));
-                            }
+                            suspect(hdr.mbrs);
                         }
                         break;
 
@@ -304,6 +300,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 synchronized(this) {
                     members.removeAllElements();
                     members.addAll(new_mbrs);
+                    suspected_mbrs.retainAll(new_mbrs);
                     cache.keySet().retainAll(members); // remove all entries in 'cache' which are not in the new membership
                     bcast_task.adjustSuspectedMembers(members);
                     pingable_mbrs.removeAllElements();
@@ -426,6 +423,35 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /* ----------------------------------- Private Methods -------------------------------------- */
+
+
+    void suspect(Set<Address> suspects) {
+        if(suspects == null)
+            return;
+
+        final List<Address> eligible_mbrs=new ArrayList<Address>();
+        synchronized(this) {
+            for(Address suspect: suspects) {
+                suspect_history.add(suspect);
+                suspected_mbrs.add(suspect);
+            }
+            eligible_mbrs.addAll(members);
+            eligible_mbrs.removeAll(suspected_mbrs);
+        }
+
+        // Check if we're coord, then send up the stack
+        if(local_addr != null && !eligible_mbrs.isEmpty()) {
+            Address first=eligible_mbrs.get(0);
+            if(local_addr.equals(first)) {
+                if(log.isDebugEnabled())
+                    log.debug("suspecting " + suspected_mbrs);
+                for(Address suspect: suspects) {
+                    up_prot.up(new Event(Event.SUSPECT, suspect));
+                    down_prot.down(new Event(Event.SUSPECT, suspect));
+                }
+            }
+        }
+    }
 
 
     void handleSocketClose(Exception ex) {
