@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.14 2009/12/17 16:30:05 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.15 2010/10/04 07:46:39 belaban Exp $
  */
 public class Util {
 
@@ -2145,7 +2145,7 @@ public class Util {
                 sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
                 sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
-                        "(see http://www.jboss.com/wiki/Edit.jsp?page=CrossTalking for details). ");
+                        "(see https://www.jboss.org/community/docs/DOC-9469 for details). ");
                 sb.append("\nException was: " + ex);
                 log.warn(sb);
             }
