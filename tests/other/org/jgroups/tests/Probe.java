@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.10.2.1 $
+ * @version $Revision: 1.10.2.2 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -59,7 +59,7 @@ public class Probe {
                 mcast_sock.receive(rsp);
             }
             catch(Throwable t) {
-                System.out.println("\n");
+                System.out.println("\nTotal responses=" + count + ", " + matched + " matches, " + not_matched + " non-matches");
                 return;
             }
             byte[] data=rsp.getData();
