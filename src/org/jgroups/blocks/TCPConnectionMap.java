@@ -742,7 +742,7 @@ public class TCPConnectionMap{
 
         public boolean isOpen() {
             return isConnected()
-                            && (isSenderUsed() ? sender.isRunning() : true)
+                            && (!isSenderUsed() || sender.isRunning())
                             && (connectionPeerReceiver != null && connectionPeerReceiver.isRunning());
         }
 
