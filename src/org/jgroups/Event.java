@@ -5,7 +5,7 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.75 2010/09/03 09:46:40 belaban Exp $
+ * @version $Id: Event.java,v 1.76 2010/10/05 13:16:50 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message
@@ -105,7 +105,7 @@ public class Event {
             case SUSPECT:                return "SUSPECT";
             case BLOCK:	                 return "BLOCK";
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
-            case FIND_ALL_MBRS: return "FIND_ALL_INITIAL_VIEWS";
+            case FIND_ALL_MBRS:          return "FIND_ALL_INITIAL_VIEWS";
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";
@@ -135,8 +135,17 @@ public class Event {
             case REBROADCAST:            return "REBROADCAST";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case PREPARE_VIEW:           return "PREPARE_VIEW";
+            case GET_PHYSICAL_ADDRESS:   return "GET_PHYSICAL_ADDRESS";
+            case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
+            case SET_PHYSICAL_ADDRESS:   return "SET_PHYSICAL_ADDRESS";
+            case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
+            case GET_LOCAL_ADDRESS: return "GET_LOCAL_ADDRESS";
+            case CONNECT_USE_FLUSH: return "CONNECT_USE_FLUSH";
+            case CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: return "CONNECT_WITH_STATE_TRANSFER_USE_FLUSH";
+            
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
+
         }
     }
 
