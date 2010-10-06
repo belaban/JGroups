@@ -81,7 +81,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.248 2010/09/17 11:54:47 belaban Exp $
+ * @version $Id: JChannel.java,v 1.249 2010/10/06 09:46:24 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -149,12 +149,19 @@ public class JChannel extends Channel {
 
 
     /**
-     * Used by subclass to create a JChannel without a protocol stack, don't use as application programmer
-     * @deprecated Remove in 3.0 
+     * Creates a JChannel without a protocol stack; used for programmatic creation of channel and protocol stack
+     * @param create_protocol_stack If true, tthe default configuration will be used. If false, no protocol stack
+     * will be created
      */
-
-    protected JChannel(boolean no_op) {
-        ;
+    public JChannel(boolean create_protocol_stack) {
+        if(create_protocol_stack) {
+            try {
+                init(ConfiguratorFactory.getStackConfigurator(DEFAULT_PROTOCOL_STACK));
+            }
+            catch(ChannelException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
@@ -288,15 +295,22 @@ public class JChannel extends Channel {
         receive_local_msgs=ch.receive_local_msgs;
     }
 
+    public ProtocolStack createProtocolStack() {
+        prot_stack=new ProtocolStack();
+        prot_stack.setChannel(this);
+        return prot_stack;
+    }
+
  
     /**
-     * Returns the protocol stack.
-     * Currently used by Debugger.
-     * Specific to JChannel, therefore
-     * not visible in Channel
+     * Returns the protocol stack
      */
     public ProtocolStack getProtocolStack() {
         return prot_stack;
+    }
+
+    public void setProtocolStack(ProtocolStack stack) {
+        this.prot_stack=stack;
     }
 
     protected Log getLog() {

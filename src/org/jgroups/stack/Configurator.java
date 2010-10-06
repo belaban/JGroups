@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.89 2010/10/01 09:42:31 belaban Exp $
+ * @version $Id: Configurator.java,v 1.90 2010/10/06 09:45:44 belaban Exp $
  */
 public class Configurator {
     protected static final Log log=LogFactory.getLog(Configurator.class);
@@ -118,6 +118,37 @@ public class Configurator {
         return connectProtocols(protocols);        
     }
 
+
+    public static void setDefaultValues(List<Protocol> protocols) throws Exception {
+        if(protocols == null)
+            return;
+
+        // basic protocol sanity check
+        sanityCheck(protocols);
+
+        // check InetAddress related features of stack
+        Collection<InetAddress> addrs=getInetAddresses(protocols);
+        StackType ip_version=Util.getIpStackType(); // 0 = n/a, 4 = IPv4, 6 = IPv6
+
+        if(!addrs.isEmpty()) {
+            // check that all user-supplied InetAddresses have a consistent version:
+            // 1. If an addr is IPv6 and we have an IPv4 stack --> FAIL
+            // 2. If an address is an IPv4 class D (multicast) address and the stack is IPv6: FAIL
+            // Else pass
+
+            for(InetAddress addr : addrs) {
+                if(addr instanceof Inet6Address && ip_version == StackType.IPv4)
+                    throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4 stack");
+                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
+                    throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
+            }
+        }
+
+        // process default values
+        setDefaultValues(protocols, ip_version);
+    }
+
+
     /**
      * Creates a new protocol given the protocol specification. Initializes the properties and starts the
      * up and down handler threads.
@@ -157,7 +188,7 @@ public class Configurator {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    private static Protocol connectProtocols(List<Protocol> protocol_list) {
+    public static Protocol connectProtocols(List<Protocol> protocol_list) {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
@@ -653,15 +684,44 @@ public class Configurator {
     	}
     	return inetAddressMap ;
     }
-    
-    
+
+
+    public static List<InetAddress> getInetAddresses(List<Protocol> protocols) throws Exception {
+        List<InetAddress> retval=new LinkedList<InetAddress>();
+
+        // collect InetAddressInfo
+        for(Protocol protocol : protocols) {
+            String protocolName=protocol.getName();
+
+            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
+            for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+                Field[] fields=clazz.getDeclaredFields();
+                for(int j=0; j < fields.length; j++) {
+                    if(fields[j].isAnnotationPresent(Property.class)) {
+                        if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                            Object value=getValueFromProtocol(protocol, fields[j]);
+                            if(value instanceof InetAddress)
+                                retval.add((InetAddress)value);
+                            else if(value instanceof IpAddress)
+                                retval.add(((IpAddress)value).getIpAddress());
+                            else if(value instanceof InetSocketAddress)
+                                retval.add(((InetSocketAddress)value).getAddress());
+                        }
+                    }
+                }
+            }
+        }
+        return retval;
+    }
+
+
     /*
-     * Method which processes @Property.default() values, associated with the annotation
-     * using the defaultValue= attribute. This method does the following:
-     * - locate all properties which have no user value assigned
-     * - if the defaultValue attribute is not "", generate a value for the field using the 
-     * property converter for that property and assign it to the field
-     */
+    * Method which processes @Property.default() values, associated with the annotation
+    * using the defaultValue= attribute. This method does the following:
+    * - locate all properties which have no user value assigned
+    * - if the defaultValue attribute is not "", generate a value for the field using the
+    * property converter for that property and assign it to the field
+    */
     public static void setDefaultValues(List<ProtocolConfiguration> protocol_configs, List<Protocol> protocols,
                                         StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
@@ -745,6 +805,53 @@ public class Configurator {
                                 if(log.isDebugEnabled())
                                     log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    public static void setDefaultValues(List<Protocol> protocols, StackType ip_version) throws Exception {
+        InetAddress default_ip_address=Util.getNonLoopbackAddress();
+        if(default_ip_address == null) {
+            log.warn("unable to find an address other than loopback for IP version " + ip_version);
+            default_ip_address=Util.getLocalhost(ip_version);
+        }
+
+        for(Protocol protocol : protocols) {
+            String protocolName=protocol.getName();
+
+            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
+            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), Property.class);
+            for(int j=0; j < fields.length; j++) {
+                // get the default value for the field - check for InetAddress types
+                if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
+                    Object propertyValue=getValueFromProtocol(protocol, fields[j]);
+                    if(propertyValue == null) {
+                        // add to collection of @Properties with no user specified value
+                        Property annotation=fields[j].getAnnotation(Property.class);
+
+                        String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                        if(defaultValue != null && defaultValue.length() > 0) {
+                            // condition for invoking converter
+                            Object converted=null;
+                            try {
+                                if(defaultValue.equalsIgnoreCase(Global.NON_LOOPBACK_ADDRESS))
+                                    converted=default_ip_address;
+                                else
+                                    converted=PropertyHelper.getConvertedValue(protocol, fields[j], defaultValue, true);
+                                if(converted != null)
+                                    setField(fields[j], protocol, converted);
+                            }
+                            catch(Exception e) {
+                                throw new Exception("default could not be assigned for field " + fields[j].getName() + " in "
+                                        + protocolName + " with default value " + defaultValue, e);
+                            }
+
+                            if(log.isDebugEnabled())
+                                log.debug("set property " + protocolName + "." + fields[j].getName() + " to default value " + converted);
                         }
                     }
                 }

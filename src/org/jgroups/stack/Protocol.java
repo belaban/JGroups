@@ -38,7 +38,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.80 2010/09/30 10:10:55 belaban Exp $
+ * @version $Id: Protocol.java,v 1.81 2010/10/06 09:47:03 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -75,7 +75,6 @@ public abstract class Protocol {
     public void setLevel(String level) {
         log.setLevel(level);
     }
-
 
     public String getLevel() {
         return log.getLevel();
@@ -119,6 +118,32 @@ public abstract class Protocol {
     public boolean setPropertiesInternal(Properties props) {
         throw new UnsupportedOperationException("use a setter instead");
     }
+
+    public Protocol setValues(Map<String,Object> values) {
+        if(values == null)
+            return this;
+        for(Map.Entry<String,Object> entry: values.entrySet()) {
+            String attrname=entry.getKey();
+            Object value=entry.getValue();
+            Field field=Util.getField(getClass(), attrname);
+            if(field != null) {
+                Configurator.setField(field, this, value);
+            }
+        }
+        return this;
+    }
+
+
+    public Protocol setValue(String name, Object value) {
+        if(name == null || value == null)
+            return this;
+        Field field=Util.getField(getClass(), name);
+        if(field != null) {
+            Configurator.setField(field, this, value);
+        }
+        return this;
+    }
+
 
     /**
      * @return

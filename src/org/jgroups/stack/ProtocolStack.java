@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.108 2010/09/16 15:51:18 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.109 2010/10/06 09:47:56 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -83,11 +83,13 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    /** Only used by Simulator; don't use */
-    public ProtocolStack() throws ChannelException {
-        this(null);
+    /** Used for programmatic creation of ProtocolStack */
+    public ProtocolStack() {
     }
 
+    public void setChannel(JChannel ch) {
+        this.channel=ch;
+    }
 
     /**
      * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()}  instead
@@ -475,6 +477,35 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
+
+
+    /**
+     * Adds a protocol at the tail of the protocol list
+     * @param prot
+     * @return
+     */
+    public ProtocolStack addProtocol(Protocol prot) {
+        if(prot == null)
+            return this;
+        if(bottom_prot == null) {
+            top_prot=bottom_prot=prot;
+            return this;
+        }
+
+        Protocol curr=bottom_prot;
+        for(;;) {
+            Protocol tmp=curr.getUpProtocol();
+            if(tmp != null)
+                curr=tmp;
+            else
+                break;
+        }
+
+        insertProtocolInStack(prot, curr, ABOVE);
+        return this;
+    }
+
+
     /**
      * Inserts an already created (and initialized) protocol into the protocol list. Sets the links
      * to the protocols above and below correctly and adjusts the linked list of protocols accordingly.
@@ -487,7 +518,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * @exception Exception Will be thrown when the new protocol cannot be created, or inserted.
      */
     public void insertProtocol(Protocol prot, int position, String neighbor_prot) throws Exception {
-        if(neighbor_prot == null) throw new IllegalArgumentException("Configurator.insertProtocol(): neighbor_prot is null");
+        if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new IllegalArgumentException("position has to be ABOVE or BELOW");
 
@@ -524,12 +555,14 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     private void checkAndSwitchTop(Protocol oldTop, Protocol newTop){
-        if(oldTop == top_prot)
+        if(oldTop == top_prot) {
             top_prot = newTop;
+            top_prot.setUpProtocol(this);
+        }
     }
 
     public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> neighbor_prot) throws Exception {
-        if(neighbor_prot == null) throw new IllegalArgumentException("Configurator.insertProtocol(): neighbor_prot is null");
+        if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new IllegalArgumentException("position has to be ABOVE or BELOW");
 
@@ -542,7 +575,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void insertProtocol(Protocol prot, int position, Class<? extends Protocol> ... neighbor_prots) throws Exception {
-        if(neighbor_prots == null) throw new IllegalArgumentException("Configurator.insertProtocol(): neighbor_prots is null");
+        if(neighbor_prots == null) throw new IllegalArgumentException("neighbor_prots is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new IllegalArgumentException("position has to be ABOVE or BELOW");
 
@@ -568,7 +601,7 @@ public class ProtocolStack extends Protocol implements Transport {
         prot.up_prot=this;
         top_prot=prot;
         if(log.isDebugEnabled())
-            log.debug("inserted " + prot + " on top of the stack");
+            log.debug("inserted " + prot + " at the top of the stack");
     }
 
 
@@ -676,6 +709,17 @@ public class ProtocolStack extends Protocol implements Transport {
                 return prot;
         }
         return null;
+    }
+
+    public void init() throws Exception {
+        List<Protocol> protocols=getProtocols();
+        Collections.reverse(protocols);
+        top_prot=Configurator.connectProtocols(protocols);
+        top_prot.setUpProtocol(this);
+        this.setDownProtocol(top_prot);
+        bottom_prot=getBottomProtocol();
+        Configurator.setDefaultValues(protocols);
+        initProtocolStack();
     }
 
     public void initProtocolStack() throws Exception {
