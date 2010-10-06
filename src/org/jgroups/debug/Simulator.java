@@ -17,7 +17,7 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.20 2010/07/19 06:44:44 belaban Exp $
+ * @version $Id: Simulator.java,v 1.21 2010/10/06 09:47:19 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;
@@ -59,13 +59,9 @@ public class Simulator {
 		top=protStack[0];
 		bottom=this.protStack[this.protStack.length-1];
 
-		try {
-			prot_stack=new ProtocolStack();
-		} catch (ChannelException e) {           
-			e.printStackTrace();
-		}
+        prot_stack=new ProtocolStack();
 
-		if(protStack.length > 1) {
+        if(protStack.length > 1) {
 			for(int i=0; i < protStack.length; i++) {
 				Protocol p1=protStack[i];
 				p1.setProtocolStack(prot_stack);

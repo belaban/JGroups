@@ -56,15 +56,12 @@ import java.util.Map;
     	}
     	
     	public static Object getConvertedValue(Object obj, Field field, Map<String, String> props, String prop, boolean check_scope) throws Exception {
-    		if (obj == null) {
+    		if (obj == null)
     			throw new IllegalArgumentException("Cannot get converted value: Object is null") ;
-    		}
-    		if (field == null) {
+    		if (field == null)
     			throw new IllegalArgumentException("Cannot get converted value: Field is null") ;
-    		}
-    		if (props == null) {
+    		if (props == null)
     			throw new IllegalArgumentException("Cannot get converted value: Properties is null") ;
-    		}
 
     		Property annotation=field.getAnnotation(Property.class);
     		if (annotation == null) {
@@ -90,6 +87,39 @@ import java.util.Map;
 			}
 			return converted ;
     	}
+
+
+        public static Object getConvertedValue(Object obj, Field field, String value, boolean check_scope) throws Exception {
+            if(obj == null)
+                throw new IllegalArgumentException("Cannot get converted value: Object is null");
+            if(field == null)
+                throw new IllegalArgumentException("Cannot get converted value: Field is null");
+
+            Property annotation=field.getAnnotation(Property.class);
+            if(annotation == null) {
+                throw new IllegalArgumentException("Cannot get property name for field " +
+                        field.getName() + " which is not annotated with @Property");
+            }
+            String propertyName=field.getName();
+            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+
+            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+            if(propertyConverter == null) {
+                throw new Exception("Could not find property converter for field " + propertyName
+                        + " in " + name);
+            }
+            Object converted=null;
+            try {
+                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+                converted=propertyConverter.convert(obj, field.getType(), tmp, value, check_scope);
+            }
+            catch(Exception e) {
+                throw new Exception("Conversion of " + propertyName + " in " + name +
+                        " with original property value " + value + " failed", e);
+            }
+            return converted;
+        }
+
 
     	public static Object getConvertedValue(Object obj, Method method, Map<String, String> props, String prop, boolean check_scope) throws Exception {
     		if (obj == null) {
