@@ -6,10 +6,15 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JdbcDiscovery.java,v 1.2 2010/10/07 18:33:33 belaban Exp $
+ * @version $Id: JdbcDiscovery.java,v 1.3 2010/10/07 18:36:01 belaban Exp $
  */
 public class JdbcDiscovery extends FILE_PING {
 
+    public void init() throws Exception {
+        super.init();
+
+
+    }
 
     protected void remove(String clustername, Address addr) {
         super.remove(clustername, addr);
