@@ -367,19 +367,17 @@ public class FLUSH extends Protocol {
                             break;
                         case FlushHeader.ABORT_FLUSH:
                             Collection<Address> flushParticipants = fh.flushParticipants;
-
-                            if (flushParticipants != null && flushParticipants.contains(localAddress)) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug(localAddress
-                                            + ": received ABORT_FLUSH from flush coordinator "
-                                            + msg.getSrc()
-                                            + ",  am I flush participant="
-                                            + flushParticipants.contains(localAddress));
-                                }
-                                flushInProgress.set(false);
-                                flushNotCompletedMap.clear();
-                                flushCompletedMap.clear();
+                            boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
+                            if (log.isDebugEnabled()) {
+                               log.debug(localAddress
+                                       + ": received ABORT_FLUSH from flush coordinator "
+                                       + msg.getSrc()
+                                       + ",  am I flush participant="
+                                       + participant);
                             }
+                            if (participant) {                                
+                               resetForNextFlush();                                
+                            }                            
                             break;
                         case FlushHeader.FLUSH_NOT_COMPLETED:
                             if (log.isDebugEnabled()) {
@@ -406,10 +404,7 @@ public class FLUSH extends Protocol {
                             // reject flush if we have at least one OK and at least one FAIL
                             if (flushCollision) {
                                 Runnable r = new Runnable() {
-                                    public void run() {
-                                        // wait a bit so ABORTs do not get received before other
-                                        // possible FLUSH_COMPLETED
-                                        Util.sleep(1000);
+                                    public void run() {                                        
                                         rejectFlush(fh.flushParticipants, fh.viewID);
                                     }
                                 };
@@ -551,7 +546,8 @@ public class FLUSH extends Protocol {
 
     private void rejectFlush(Collection<? extends Address> participants, long viewId) {
         for (Address flushMember : participants) {
-            Message reject = new Message(flushMember, localAddress, null);
+            Message reject = new Message(flushMember, localAddress, null);   
+            reject.setFlag(Message.OOB);
             reject.putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
             down_prot.down(new Event(Event.MSG, reject));
         }
@@ -615,19 +611,27 @@ public class FLUSH extends Protocol {
             startFlushTime = 0;
         }
 
-        synchronized (sharedLock) {
+        if (log.isDebugEnabled())
+           log.debug(localAddress
+                   + ": received STOP_FLUSH, unblocking FLUSH.down() and sending UNBLOCK up");
+        
+        resetForNextFlush();
+        if (sentUnblock.compareAndSet(false, true)) {
+            // ensures that we do not repeat unblock event
+            sendUnBlockUpToChannel();
+        }       
+    }
+
+
+   private void resetForNextFlush() {
+      synchronized (sharedLock) {
             flushCompletedMap.clear();
             flushNotCompletedMap.clear();
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
             flushCompleted = false;
-        }
-
-        if (log.isDebugEnabled())
-            log.debug(localAddress
-                    + ": received STOP_FLUSH, unblocking FLUSH.down() and sending UNBLOCK up");
-
+        }        
         blockMutex.lock();
         try {
             isBlockingFlushDown = false;
@@ -635,13 +639,8 @@ public class FLUSH extends Protocol {
         } finally {
             blockMutex.unlock();
         }        
-
         flushInProgress.set(false);
-        if (sentUnblock.compareAndSet(false, true)) {
-            // ensures that we do not repeat unblock event
-            sendUnBlockUpToChannel();
-        }       
-    }
+   }
 
     /**
      * Starts the flush protocol
@@ -794,10 +793,7 @@ public class FLUSH extends Protocol {
         } else if (collision) {
             // reject flush if we have at least one OK and at least one FAIL
             Runnable r = new Runnable() {
-                public void run() {
-                    // wait a bit so ABORTs do not get received before other possible
-                    // FLUSH_COMPLETED
-                    Util.sleep(1000);
+                public void run() {                    
                     rejectFlush(header.flushParticipants, header.viewID);
                 }
             };
