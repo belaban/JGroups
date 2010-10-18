@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JDBC_PING.java,v 1.1 2010/10/18 10:58:31 belaban Exp $
+ * @version $Id: JDBC_PING.java,v 1.2 2010/10/18 10:58:57 belaban Exp $
+ * @since 2.11
  */
 public class JDBC_PING extends FILE_PING {
 
