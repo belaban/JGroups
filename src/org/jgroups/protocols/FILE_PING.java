@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * added to our transport's UUID-PhysicalAddress cache.<p/>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
- * @version $Id: FILE_PING.java,v 1.20 2010/07/20 10:34:19 belaban Exp $
+ * @version $Id: FILE_PING.java,v 1.21 2010/10/18 07:22:02 belaban Exp $
  */
 @Experimental
 public class FILE_PING extends Discovery {
@@ -186,8 +186,15 @@ public class FILE_PING extends Discovery {
 
         File[] files=dir.listFiles(filter);
         if(files != null) {
-            for(File file: files)
-                retval.add(readFile(file));
+            for(File file: files) {
+                PingData data=readFile(file);
+                if(data == null) {
+                    log.warn("failed reading " + file.getName() + ": removing it");
+                    file.delete();
+                }
+                else
+                    retval.add(data);
+            }
         }
         return retval;
     }
