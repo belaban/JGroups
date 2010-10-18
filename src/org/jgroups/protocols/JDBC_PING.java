@@ -6,9 +6,9 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JdbcDiscovery.java,v 1.3 2010/10/07 18:36:01 belaban Exp $
+ * @version $Id: JDBC_PING.java,v 1.1 2010/10/18 10:58:31 belaban Exp $
  */
-public class JdbcDiscovery extends FILE_PING {
+public class JDBC_PING extends FILE_PING {
 
     public void init() throws Exception {
         super.init();
