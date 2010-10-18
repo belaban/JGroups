@@ -45,7 +45,7 @@
     <class id="43" name="org.jgroups.protocols.RELAY"/>
     <class id="44" name="org.jgroups.protocols.MFC"/>
     <class id="45" name="org.jgroups.protocols.UFC"/>
-    <class id="46" name="org.jgroups.protocols.JdbcDiscovery"/>
+    <class id="46" name="org.jgroups.protocols.JDBC_PING"/>
 
 
     <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
