@@ -607,7 +607,7 @@
                 On top of this declarative configuration, JGroups provides an API to create a channel programmatically.
                 The way to do this is to first create a JChannel, then an instance of ProtocolStack, then add all desired
                 protocols to the stack and finally calling init() on the stack to set it up. The rest, e.g. calling
-                JChannel.connect() is the same as with declarative creation.
+                JChannel.connect() is the same as with the declarative creation.
             </para>
             <para>
                 An example of how to programmatically create a channel is shown below (copied from ProgrammaticChat):
