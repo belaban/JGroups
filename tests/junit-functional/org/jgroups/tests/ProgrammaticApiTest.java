@@ -9,18 +9,15 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ProgrammaticApiTest.java,v 1.1 2010/10/06 09:46:32 belaban Exp $
+ * @version $Id: ProgrammaticApiTest.java,v 1.2 2010/10/20 12:19:02 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class ProgrammaticApiTest {
 
     public void testChannelCreation() throws Exception {
         JChannel ch=new JChannel(false);
-        ch.setReceiver(new ReceiverAdapter() {
-            public void receive(Message msg) {
-                System.out.println("<< " + msg);
-            }
-        });
+        MyReceiver receiver=new MyReceiver();
+        ch.setReceiver(receiver);
         ProtocolStack stack=ch.createProtocolStack();
         stack.addProtocol(new SHARED_LOOPBACK()).addProtocol(new MockProtocol1()).addProtocol(new MockProtocol2());
         stack.init();
@@ -29,6 +26,8 @@ public class ProgrammaticApiTest {
         Protocol transport=stack.getTransport();
         transport.up(new Event(Event.MSG, new Message(null, Util.createRandomAddress(), "hello world")));
 
+        Util.close(ch);
+        assert receiver.getNumMsgsReceived() == 1;
     }
 
 
@@ -39,5 +38,19 @@ public class ProgrammaticApiTest {
 
     protected static class MockProtocol2 extends Protocol {
         
+    }
+
+
+    static class MyReceiver extends ReceiverAdapter {
+        int num_msgs_received=0;
+
+        public int getNumMsgsReceived() {
+            return num_msgs_received;
+        }
+
+        public void receive(Message msg) {
+            System.out.println("<< " + msg);
+            num_msgs_received++;
+        }
     }
 }
