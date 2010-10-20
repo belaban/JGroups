@@ -81,7 +81,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.249 2010/10/06 09:46:24 belaban Exp $
+ * @version $Id: JChannel.java,v 1.250 2010/10/20 14:08:51 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -295,11 +295,6 @@ public class JChannel extends Channel {
         receive_local_msgs=ch.receive_local_msgs;
     }
 
-    public ProtocolStack createProtocolStack() {
-        prot_stack=new ProtocolStack();
-        prot_stack.setChannel(this);
-        return prot_stack;
-    }
 
  
     /**
@@ -311,6 +306,8 @@ public class JChannel extends Channel {
 
     public void setProtocolStack(ProtocolStack stack) {
         this.prot_stack=stack;
+        if(prot_stack != null)
+            prot_stack.setChannel(this);
     }
 
     protected Log getLog() {
