@@ -600,6 +600,75 @@
               protocol stack.</emphasis></para>
 
 
+        <section>
+            <title>Programmatic creation</title>
+            <para>
+                Usually, channels are created by passing the name of an XML configuration file to the JChannel() constructor.
+                On top of this declarative configuration, JGroups provides an API to create a channel programmatically.
+                The way to do this is to first create a JChannel, then an instance of ProtocolStack, then add all desired
+                protocols to the stack and finally calling init() on the stack to set it up. The rest, e.g. calling
+                JChannel.connect() is the same as with declarative creation.
+            </para>
+            <para>
+                An example of how to programmatically create a channel is shown below (copied from ProgrammaticChat):
+                <screen>
+        JChannel ch=new JChannel(false);         // 1
+        ProtocolStack stack=new ProtocolStack(); // 2
+        ch.setProtocolStack(stack);              // 3
+        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+                .addProtocol(new PING())
+                .addProtocol(new MERGE2())
+                .addProtocol(new FD_SOCK())
+                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+                .addProtocol(new VERIFY_SUSPECT())
+                .addProtocol(new BARRIER())
+                .addProtocol(new NAKACK())
+                .addProtocol(new UNICAST2())
+                .addProtocol(new STABLE())
+                .addProtocol(new GMS())
+                .addProtocol(new UFC())
+                .addProtocol(new MFC())
+                .addProtocol(new FRAG2());       // 4
+        stack.init();                            // 5
+
+        ch.setReceiver(new ReceiverAdapter() {
+            public void viewAccepted(View new_view) {
+                System.out.println("view: " + new_view);
+            }
+
+            public void receive(Message msg) {
+                System.out.println(msg.getObject() + " [" + msg.getSrc() + "]");
+            }
+        });
+
+        ch.connect("ChatCluster");
+
+
+        for(;;) {
+            String line=Util.readStringFromStdin(": ");
+            ch.send(null, null, line);
+        }
+                </screen>
+            </para>
+            <para>
+                First a JChannel is created. The 'false' argument tells the channel not to create a ProtocolStack. This
+                is needed because we will create one ourselves later (2) and set it in the channel (3).
+            </para>
+            <para>
+                Next, all protocols are added to the stack. Note that the order is from bottom (transport protocol) to
+                top. So UDP as transport is added first, then PING and so on, until FRAG2, which is the top protocol.
+                Every protocol can be configured via setters, but there is also a generic setValue(String attr_name,
+                Object value), which can be used to configure protocols as well, as shown in the example.
+            </para>
+            <para>
+                Once the stack is configured, we call ProtocolStack.init() to link all protocols correctly and to call
+                init() in every protocol instance. After this, the channel is ready to be used and all subsequent
+                actions (e.g. connect()) can be executed. When the init() method returns, we have essentially the
+                equivalent of new JChannel(config_file).
+            </para>
+        </section>
+
+
 
     </section>
 
