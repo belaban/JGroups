@@ -7,7 +7,31 @@
     <name>JGroups</name>
     <version>2.11.0.Beta1</version>
     <url>http://www.jgroups.org</url>
+    <description>
+        Reliable cluster communication
+    </description>
 
+    <developers>
+        <developer>
+            <name>Bela Ban</name>
+            <email>belaban@yahoo.com</email>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>LGPL</name>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>
+            cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups login
+        </connection>
+        <url>
+            cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups login            
+        </url>
+    </scm>
 
     <distributionManagement>
         <repository>
