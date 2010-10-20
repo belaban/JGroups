@@ -15,18 +15,27 @@ import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: ProgrammaticChat.java,v 1.1 2010/10/06 09:46:31 belaban Exp $
+ * @version $Id: ProgrammaticChat.java,v 1.2 2010/10/20 11:35:10 belaban Exp $
  */
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
         JChannel ch=new JChannel(false);
         ProtocolStack stack=ch.createProtocolStack();
-        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5"))).
-                addProtocol(new PING()).addProtocol(new MERGE2()).addProtocol(new FD_SOCK()).
-                addProtocol(new FD_ALL()).addProtocol(new VERIFY_SUSPECT()).addProtocol(new BARRIER()).
-                addProtocol(new NAKACK()).addProtocol(new UNICAST2()).addProtocol(new STABLE()).
-                addProtocol(new GMS()).addProtocol(new UFC()).addProtocol(new MFC()).addProtocol(new FRAG2());
+        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+                .addProtocol(new PING())
+                .addProtocol(new MERGE2())
+                .addProtocol(new FD_SOCK())
+                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+                .addProtocol(new VERIFY_SUSPECT())
+                .addProtocol(new BARRIER())
+                .addProtocol(new NAKACK())
+                .addProtocol(new UNICAST2())
+                .addProtocol(new STABLE())
+                .addProtocol(new GMS())
+                .addProtocol(new UFC())
+                .addProtocol(new MFC())
+                .addProtocol(new FRAG2());
         stack.init();
 
         ch.setReceiver(new ReceiverAdapter() {
