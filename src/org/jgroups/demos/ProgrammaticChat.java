@@ -15,13 +15,14 @@ import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: ProgrammaticChat.java,v 1.2 2010/10/20 11:35:10 belaban Exp $
+ * @version $Id: ProgrammaticChat.java,v 1.3 2010/10/20 14:09:56 belaban Exp $
  */
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
         JChannel ch=new JChannel(false);
-        ProtocolStack stack=ch.createProtocolStack();
+        ProtocolStack stack=new ProtocolStack();
+        ch.setProtocolStack(stack);
         stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
                 .addProtocol(new PING())
                 .addProtocol(new MERGE2())
