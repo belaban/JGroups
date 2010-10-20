@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * stacks, and to destroy them again when not needed anymore
  *
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.109 2010/10/06 09:47:56 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.110 2010/10/20 14:09:32 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -483,25 +483,49 @@ public class ProtocolStack extends Protocol implements Transport {
      * Adds a protocol at the tail of the protocol list
      * @param prot
      * @return
+     * @since 2.11
      */
     public ProtocolStack addProtocol(Protocol prot) {
         if(prot == null)
             return this;
+        prot.setUpProtocol(this);
         if(bottom_prot == null) {
             top_prot=bottom_prot=prot;
             return this;
         }
 
-        Protocol curr=bottom_prot;
-        for(;;) {
-            Protocol tmp=curr.getUpProtocol();
-            if(tmp != null)
-                curr=tmp;
-            else
-                break;
-        }
+        prot.setDownProtocol(top_prot);
+        prot.getDownProtocol().setUpProtocol(prot);
+        top_prot=prot;
 
-        insertProtocolInStack(prot, curr, ABOVE);
+        return this;
+    }
+
+    /**
+     * Adds a list of protocols
+     * @param prots
+     * @return
+     * @since 2.11
+     */
+    public ProtocolStack addProtocols(Protocol ... prots) {
+        if(prots != null) {
+            for(Protocol prot: prots)
+                addProtocol(prot);
+        }
+        return this;
+    }
+
+    /**
+     * Adds a list of protocols
+     * @param prots
+     * @return
+     * @since 2.1
+     */
+    public ProtocolStack addProtocols(List<Protocol> prots) {
+        if(prots != null) {
+            for(Protocol prot: prots)
+                addProtocol(prot);
+        }
         return this;
     }
 
