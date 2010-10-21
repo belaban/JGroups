@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Global;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -21,7 +22,7 @@ import java.util.Map;
  * Protocol which provides STOMP support. Very simple implementation, with a 1 thread / connection model. Use for
  * a few hundred clients max.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.4 2010/10/21 13:55:25 belaban Exp $
+ * @version $Id: STOMP.java,v 1.5 2010/10/21 14:16:25 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -82,9 +83,8 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
         synchronized(connections) {
-            for(Connection conn: connections) {
+            for(Connection conn: connections)
                 conn.stop();
-            }
             connections.clear();
         }
         acceptor=null;
@@ -97,7 +97,7 @@ public class STOMP extends Protocol implements Runnable {
         while(acceptor != null && srv_sock != null) {
             try {
                 client_sock=srv_sock.accept();
-                if(log.isTraceEnabled()) // +++ remove
+                if(log.isTraceEnabled())
                     log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                 Connection conn=new Connection(client_sock);
                 Thread thread=getThreadFactory().newThread(conn, "STOMP client connection");
@@ -123,6 +123,7 @@ public class STOMP extends Protocol implements Runnable {
         protected final Socket sock;
         protected final DataInputStream in;
         protected final DataOutputStream out;
+        protected final UUID session_id=UUID.randomUUID();
 
         public Connection(Socket sock) throws IOException {
             this.sock=sock;
@@ -136,26 +137,32 @@ public class STOMP extends Protocol implements Runnable {
             Util.close(in);
             Util.close(out);
             Util.close(sock);
+        }
+
+        protected void remove() {
             synchronized(connections) {
                 connections.remove(this);
             }
         }
-
 
         public void run() {
             while(!sock.isClosed()) {
                 try {
                     Frame frame=readFrame(in);
                     if(frame != null) {
-                        System.out.println("frame = " + frame);
+                        if(log.isTraceEnabled())
+                            log.trace(frame);
+                        handleFrame(frame);
                     }
                 }
                 catch(EOFException eof_ex) {
                     stop();
+                    remove();
                 }
                 catch(IOException ex) {
                     log.error("failure reading frame", ex);
                     stop();
+                    remove();
                 }
                 catch(Throwable t) {
                     log.error("failure reading frame", t);
@@ -163,6 +170,58 @@ public class STOMP extends Protocol implements Runnable {
 
             }
         }
+
+
+        protected void handleFrame(Frame frame) {
+            switch(frame.getVerb()) {
+                case CONNECT:
+                    writeResponse(ServerResponse.CONNECTED,
+                                  "session-id", session_id.toString(),
+                                  "password-check", "none");
+                    break;
+                case SUBSCRIBE:
+                    break;
+                case UNSUBSCRIBE:
+                    break;
+                case BEGIN:
+                    break;
+                case COMMIT:
+                    break;
+                case ABORT:
+                    break;
+                case ACK:
+                    break;
+                case DISCONNECT:
+                    break;
+                default:
+                    log.error("Verb " + frame.getVerb() + " is not handled");
+                    break;
+            }
+        }
+
+        /**
+         * Sends back a response. The keys_and_values vararg array needs to have an even number of elements
+         * @param response
+         * @param keys_and_values
+         */
+        private void writeResponse(ServerResponse response, String ... keys_and_values) {
+            String tmp=response.name();
+            try {
+                out.write(tmp.getBytes());
+                out.write('\n');
+
+                for(int i=0; i < keys_and_values.length; i++) {
+                    String key=keys_and_values[i];
+                    String val=keys_and_values[++i];
+                    out.write((key + ": " + val + "\n").getBytes());
+                }
+                out.flush();
+            }
+            catch(IOException ex) {
+                log.error("failed writing response " + response, ex);
+            }
+        }
+
 
         private Frame readFrame(DataInputStream in) throws IOException {
             String tmp_verb=Util.readLine(in);
@@ -247,6 +306,18 @@ public class STOMP extends Protocol implements Runnable {
             this.verb=verb;
             this.headers=headers;
             this.body=body;
+        }
+
+        public byte[] getBody() {
+            return body;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        public ClientVerb getVerb() {
+            return verb;
         }
 
         public String toString() {
