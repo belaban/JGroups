@@ -21,7 +21,7 @@ import java.util.Map;
  * Protocol which provides STOMP support. Very simple implementation, with a 1 thread / connection model. Use for
  * a few hundred clients max.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.2 2010/10/21 13:12:25 belaban Exp $
+ * @version $Id: STOMP.java,v 1.3 2010/10/21 13:29:22 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -144,11 +144,16 @@ public class STOMP extends Protocol implements Runnable {
             while(!sock.isClosed()) {
                 try {
                     Frame frame=readFrame(in);
-                    System.out.println("frame = " + frame);
+                    if(frame != null) {
+                        System.out.println("frame = " + frame);
+                    }
+                }
+                catch(EOFException eof_ex) {
+                    stop();
                 }
                 catch(IOException ex) {
                     log.error("failure reading frame", ex);
-                    stop(); // ??
+                    stop();
                 }
 
             }
@@ -158,6 +163,8 @@ public class STOMP extends Protocol implements Runnable {
             String verb=Util.readLine(in);
             if(verb == null)
                 throw new EOFException("reading verb");
+            if(verb.length() == 0)
+                return null;
 
             Map<String,String> headers=new HashMap<String,String>();
             byte[] body=null;
