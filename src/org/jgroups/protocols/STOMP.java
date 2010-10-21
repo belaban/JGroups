@@ -21,7 +21,7 @@ import java.util.Map;
  * Protocol which provides STOMP support. Very simple implementation, with a 1 thread / connection model. Use for
  * a few hundred clients max.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.3 2010/10/21 13:29:22 belaban Exp $
+ * @version $Id: STOMP.java,v 1.4 2010/10/21 13:55:25 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -45,6 +45,9 @@ public class STOMP extends Protocol implements Runnable {
 
 
 
+    public static enum ClientVerb      {CONNECT, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT};
+    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR}
+    public static enum ServerResponse  {CONNECTED}
 
     
     public STOMP() {
@@ -93,9 +96,6 @@ public class STOMP extends Protocol implements Runnable {
         Socket client_sock;
         while(acceptor != null && srv_sock != null) {
             try {
-                if(log.isTraceEnabled()) // +++ remove
-                    log.trace("waiting for client connections on " + srv_sock.getInetAddress() + ":" +
-                            srv_sock.getLocalPort());
                 client_sock=srv_sock.accept();
                 if(log.isTraceEnabled()) // +++ remove
                     log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
@@ -131,6 +131,8 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         public void stop() {
+            if(log.isTraceEnabled())
+                log.trace("closing connection to " + sock.getRemoteSocketAddress());
             Util.close(in);
             Util.close(out);
             Util.close(sock);
@@ -155,16 +157,29 @@ public class STOMP extends Protocol implements Runnable {
                     log.error("failure reading frame", ex);
                     stop();
                 }
+                catch(Throwable t) {
+                    log.error("failure reading frame", t);
+                }
 
             }
         }
 
         private Frame readFrame(DataInputStream in) throws IOException {
-            String verb=Util.readLine(in);
-            if(verb == null)
+            String tmp_verb=Util.readLine(in);
+            if(tmp_verb == null)
                 throw new EOFException("reading verb");
-            if(verb.length() == 0)
+            if(tmp_verb.length() == 0)
                 return null;
+
+            ClientVerb verb;
+
+            try {
+                verb=ClientVerb.valueOf(tmp_verb);
+            }
+            catch(IllegalArgumentException illegal_ex) {
+                log.error("verb " + tmp_verb + " unknown");
+                return null;
+            }
 
             Map<String,String> headers=new HashMap<String,String>();
             byte[] body=null;
@@ -224,11 +239,11 @@ public class STOMP extends Protocol implements Runnable {
     }
 
     protected static class Frame {
-        final String verb;
+        final ClientVerb verb;
         final Map<String,String> headers;
         final byte[] body;
 
-        public Frame(String verb, Map<String, String> headers, byte[] body) {
+        public Frame(ClientVerb verb, Map<String, String> headers, byte[] body) {
             this.verb=verb;
             this.headers=headers;
             this.body=body;
@@ -243,6 +258,8 @@ public class STOMP extends Protocol implements Runnable {
             }
             if(body != null && body.length > 0) {
                 sb.append("body: ").append(body.length).append(" bytes");
+                if(body.length < 50)
+                    sb.append(": " + new String(body));
             }
             return sb.toString();
         }
