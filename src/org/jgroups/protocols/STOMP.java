@@ -1,6 +1,8 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -17,10 +19,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Protocol which provides STOMP support. Very simple implementation, with a 1 thread / connection model. Use for
- * a few hundred clients max.
+ * Protocol which provides STOMP (http://stomp.codehaus.org/) support. Very simple implementation, with a
+ * one-thread-per-connection model. Use for a few hundred clients max.<p/>
+ * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
+ * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.6 2010/10/22 13:23:52 belaban Exp $
+ * @version $Id: STOMP.java,v 1.7 2010/10/22 15:51:52 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -44,18 +48,20 @@ public class STOMP extends Protocol implements Runnable {
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected ServerSocket           srv_sock;
-    protected Thread                 acceptor;
-    protected final List<Connection> connections=new LinkedList<Connection>();
+    protected ServerSocket             srv_sock;
+    protected Thread                   acceptor;
+    protected final List<Connection>   connections=new LinkedList<Connection>();
 
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String, Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
 
 
-    public static enum ClientVerb      {CONNECT, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT};
+    public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT};
     public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR}
     public static enum ServerResponse  {CONNECTED}
+
+    public static final byte           NULL_BYTE=0;
 
     
     public STOMP() {
@@ -123,6 +129,60 @@ public class STOMP extends Protocol implements Runnable {
     }
 
 
+    public Object up(Event evt) {
+        switch(evt.getType()) {
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                StompHeader hdr=(StompHeader)msg.getHeader(id);
+                String destination=hdr != null? hdr.destination : null;
+                String sender=msg.getSrc() != null? msg.getSrc().toString() : "n/a";
+                sendToClients(destination, sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                break;
+        }
+        
+
+        return up_prot.up(evt);
+    }
+
+    private void sendToClients(String destination, String sender, byte[] buffer, int offset, int length) {
+        int len=10 + length + (ServerVerb.MESSAGE.name().length() + 2) 
+                + (destination != null? destination.length()+ 2 : 0)
+                + (sender != null? sender.length() +2 : 0);
+
+        ByteBuffer buf=ByteBuffer.allocate(len);
+
+        StringBuilder sb=new StringBuilder(ServerVerb.MESSAGE.name()).append("\n");
+        if(destination != null)
+            sb.append("destination: ").append(destination).append("\n");
+        if(sender != null)
+            sb.append("sender: ").append(sender).append("\n");
+        sb.append("\n");
+
+        byte[] tmp=sb.toString().getBytes();
+
+        if(buffer != null) {
+            buf.put(tmp, 0, tmp.length);
+            buf.put(buffer, offset, length);
+        }
+        buf.put(NULL_BYTE);
+
+        final List<Connection> target_connections=new ArrayList<Connection>();
+        if(destination == null) {
+            synchronized(connections) {
+                target_connections.addAll(connections);
+            }
+        }
+        else {
+            Set<Connection> conns=subscriptions.get(destination);
+            if(conns != null)
+                target_connections.addAll(conns);
+        }
+
+        for(Connection conn: target_connections)
+            conn.writeResponse(buf.array(), buf.arrayOffset(), buf.position());
+    }
+
+
     /**
      * Class which handles a connection to a client
      */
@@ -179,15 +239,19 @@ public class STOMP extends Protocol implements Runnable {
 
 
         protected void handleFrame(Frame frame) {
+            Map<String,String> headers=frame.getHeaders();
             switch(frame.getVerb()) {
                 case CONNECT:
                     writeResponse(ServerResponse.CONNECTED,
                                   "session-id", session_id.toString(),
                                   "password-check", "none");
                     break;
-                case SUBSCRIBE:
-                    Map<String,String> headers=frame.getHeaders();
+                case SEND:
                     String destination=headers.get("destination");
+                    
+                    break;
+                case SUBSCRIBE:
+                    destination=headers.get("destination");
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
                         if(conns == null) {
@@ -200,7 +264,6 @@ public class STOMP extends Protocol implements Runnable {
                     }
                     break;
                 case UNSUBSCRIBE:
-                    headers=frame.getHeaders();
                     destination=headers.get("destination");
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
@@ -246,6 +309,16 @@ public class STOMP extends Protocol implements Runnable {
             }
             catch(IOException ex) {
                 log.error("failed writing response " + response, ex);
+            }
+        }
+
+        private void writeResponse(byte[] response, int offset, int length) {
+            try {
+                out.write(response, offset, length);
+                out.flush();
+            }
+            catch(IOException ex) {
+                log.error("failed writing response", ex);
             }
         }
 
@@ -360,6 +433,24 @@ public class STOMP extends Protocol implements Runnable {
                     sb.append(": " + new String(body));
             }
             return sb.toString();
+        }
+    }
+
+
+    public static class StompHeader extends org.jgroups.Header {
+        protected String destination;
+
+        public int size() {
+            return Global.BYTE_SIZE // presence
+                    + (destination != null? destination.length() +2 : 0);
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeString(destination, out);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            destination=Util.readString(in);
         }
     }
 }
