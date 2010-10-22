@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
@@ -24,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.7 2010/10/22 15:51:52 belaban Exp $
+ * @version $Id: STOMP.java,v 1.8 2010/10/22 16:28:58 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -145,9 +146,10 @@ public class STOMP extends Protocol implements Runnable {
     }
 
     private void sendToClients(String destination, String sender, byte[] buffer, int offset, int length) {
-        int len=10 + length + (ServerVerb.MESSAGE.name().length() + 2) 
+        int len=50 + length + (ServerVerb.MESSAGE.name().length() + 2) 
                 + (destination != null? destination.length()+ 2 : 0)
-                + (sender != null? sender.length() +2 : 0);
+                + (sender != null? sender.length() +2 : 0)
+                + (buffer != null? 20 : 0);
 
         ByteBuffer buf=ByteBuffer.allocate(len);
 
@@ -156,6 +158,8 @@ public class STOMP extends Protocol implements Runnable {
             sb.append("destination: ").append(destination).append("\n");
         if(sender != null)
             sb.append("sender: ").append(sender).append("\n");
+        if(buffer != null)
+            sb.append("content-length: ").append(String.valueOf(length)).append("\n");
         sb.append("\n");
 
         byte[] tmp=sb.toString().getBytes();
@@ -222,12 +226,7 @@ public class STOMP extends Protocol implements Runnable {
                         handleFrame(frame);
                     }
                 }
-                catch(EOFException eof_ex) {
-                    stop();
-                    remove();
-                }
                 catch(IOException ex) {
-                    log.error("failure reading frame", ex);
                     stop();
                     remove();
                 }
@@ -248,7 +247,12 @@ public class STOMP extends Protocol implements Runnable {
                     break;
                 case SEND:
                     String destination=headers.get("destination");
-                    
+                    String sender=session_id.toString();
+
+                    Message msg=new Message(null, null, frame.getBody());
+                    Header hdr=new StompHeader(destination);
+                    msg.putHeader(id, hdr);
+                    down_prot.down(new Event(Event.MSG, msg));
                     break;
                 case SUBSCRIBE:
                     destination=headers.get("destination");
@@ -354,8 +358,8 @@ public class STOMP extends Protocol implements Runnable {
                     headers.put(header.substring(0, index).trim(), header.substring(index+1).trim());
             }
 
-            if(headers.containsKey("length")) {
-                int length=Integer.parseInt(headers.get("length"));
+            if(headers.containsKey("content-length")) {
+                int length=Integer.parseInt(headers.get("content-length"));
                 body=new byte[length];
                 in.read(body, 0, body.length);
             }
@@ -439,6 +443,13 @@ public class STOMP extends Protocol implements Runnable {
 
     public static class StompHeader extends org.jgroups.Header {
         protected String destination;
+
+        public StompHeader() {
+        }
+
+        public StompHeader(String destination) {
+            this.destination=destination;
+        }
 
         public int size() {
             return Global.BYTE_SIZE // presence
