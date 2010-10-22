@@ -13,16 +13,14 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Protocol which provides STOMP support. Very simple implementation, with a 1 thread / connection model. Use for
  * a few hundred clients max.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.5 2010/10/21 14:16:25 belaban Exp $
+ * @version $Id: STOMP.java,v 1.6 2010/10/22 13:23:52 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -36,13 +34,22 @@ public class STOMP extends Protocol implements Runnable {
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
     @ManagedAttribute(description="Number of client connections",writable=false)
-    int getNumConnections() {return connections.size();}
+    public int getNumConnections() {return connections.size();}
+
+    @ManagedAttribute(description="Number of subscriptions",writable=false)
+    public int getNumSubscriptions() {return subscriptions.size();}
+
+    @ManagedAttribute(description="Print subscriptions",writable=false)
+    public String getSubscriptions() {return subscriptions.keySet().toString();}
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected ServerSocket           srv_sock;
     protected Thread                 acceptor;
     protected final List<Connection> connections=new LinkedList<Connection>();
+
+    // Subscriptions and connections which are subscribed
+    protected final ConcurrentMap<String, Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
 
 
@@ -167,7 +174,6 @@ public class STOMP extends Protocol implements Runnable {
                 catch(Throwable t) {
                     log.error("failure reading frame", t);
                 }
-
             }
         }
 
@@ -180,8 +186,29 @@ public class STOMP extends Protocol implements Runnable {
                                   "password-check", "none");
                     break;
                 case SUBSCRIBE:
+                    Map<String,String> headers=frame.getHeaders();
+                    String destination=headers.get("destination");
+                    if(destination != null) {
+                        Set<Connection> conns=subscriptions.get(destination);
+                        if(conns == null) {
+                            conns=new HashSet<Connection>();
+                            Set<Connection> tmp=subscriptions.putIfAbsent(destination, conns);
+                            if(tmp != null)
+                                conns=tmp;
+                        }
+                        conns.add(this);
+                    }
                     break;
                 case UNSUBSCRIBE:
+                    headers=frame.getHeaders();
+                    destination=headers.get("destination");
+                    if(destination != null) {
+                        Set<Connection> conns=subscriptions.get(destination);
+                        if(conns != null) {
+                            if(conns.remove(this) && conns.isEmpty())
+                                subscriptions.remove(destination);
+                        }
+                    }
                     break;
                 case BEGIN:
                     break;
