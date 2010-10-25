@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.12 2010/10/25 12:25:40 belaban Exp $
+ * @version $Id: STOMP.java,v 1.13 2010/10/25 13:01:35 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -38,9 +38,10 @@ public class STOMP extends Protocol implements Runnable {
     @Property(description="If set to false, then a destination of /a/b match /a/b/c, a/b/d, a/b/c/d etc")
     protected boolean exact_destination_match=true;
 
-    @Property(description="If true, the list of endpoints will be sent to all clients (via the ENDPOINTS command). This" +
-            "allows intelligent clients to connect to a different server should a connection be closed.")
-    protected boolean send_endpoints=true;
+    @Property(description="If true, information such as a list of endpoints, or views, will be sent to all clients " +
+            "(via the INFO command). This allows for example intelligent clients to connect to " +
+            "a different server should a connection be closed.")
+    protected boolean send_info=true;
 
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
@@ -174,7 +175,7 @@ public class STOMP extends Protocol implements Runnable {
                                 endpoints.put(msg.getSrc(), hdr.endpoint);
                             }
                             update_clients=old_endpoint == null || !old_endpoint.equals(hdr.endpoint);
-                            if(update_clients && this.send_endpoints) {
+                            if(update_clients && this.send_info) {
                                 synchronized(connections) {
                                     for(Connection conn: connections) {
                                     conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
@@ -206,7 +207,10 @@ public class STOMP extends Protocol implements Runnable {
 
         synchronized(connections) {
             for(Connection conn: connections) {
-                conn.writeResponse(ServerVerb.INFO, "view", view.toString());
+                if(send_info)
+                    conn.writeResponse(ServerVerb.INFO, "view", view.toString(), "endpoints", getAllEndpoints());
+                else
+                    conn.writeResponse(ServerVerb.INFO, "view", view.toString());
             }
         }
     }
@@ -360,6 +364,9 @@ public class STOMP extends Protocol implements Runnable {
                     Header hdr=StompHeader.createMessageHeader(destination, sender);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));
+                    String receipt=headers.get("receipt");
+                    if(receipt != null)
+                        writeResponse(ServerVerb.RECEIPT, "receipt-id", receipt);
                     break;
                 case SUBSCRIBE:
                     destination=headers.get("destination");
