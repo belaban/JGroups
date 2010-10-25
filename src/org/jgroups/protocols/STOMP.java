@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.8 2010/10/22 16:28:58 belaban Exp $
+ * @version $Id: STOMP.java,v 1.9 2010/10/25 07:24:38 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -35,6 +35,9 @@ public class STOMP extends Protocol implements Runnable {
     /* -----------------------------------------    Properties     ----------------------------------------------- */
     @Property(description="Port on which the STOMP protocol listens for requests",writable=false)
     protected int port=8787;
+
+    @Property(description="If set to false, then a destination of /a/b match /a/b/c, a/b/d, a/b/c/d etc")
+    protected boolean exact_destination_match=true;
 
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
@@ -54,7 +57,7 @@ public class STOMP extends Protocol implements Runnable {
     protected final List<Connection>   connections=new LinkedList<Connection>();
 
     // Subscriptions and connections which are subscribed
-    protected final ConcurrentMap<String, Set<Connection>> subscriptions=Util.createConcurrentMap(20);
+    protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
 
 
@@ -136,7 +139,7 @@ public class STOMP extends Protocol implements Runnable {
                 Message msg=(Message)evt.getArg();
                 StompHeader hdr=(StompHeader)msg.getHeader(id);
                 String destination=hdr != null? hdr.destination : null;
-                String sender=msg.getSrc() != null? msg.getSrc().toString() : "n/a";
+                String sender=hdr != null? hdr.sender : msg.getSrc().toString();
                 sendToClients(destination, sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                 break;
         }
@@ -170,16 +173,24 @@ public class STOMP extends Protocol implements Runnable {
         }
         buf.put(NULL_BYTE);
 
-        final List<Connection> target_connections=new ArrayList<Connection>();
+        final Set<Connection> target_connections=new HashSet<Connection>();
         if(destination == null) {
             synchronized(connections) {
                 target_connections.addAll(connections);
             }
         }
         else {
-            Set<Connection> conns=subscriptions.get(destination);
-            if(conns != null)
-                target_connections.addAll(conns);
+            if(!exact_destination_match) {
+                for(Map.Entry<String,Set<Connection>> entry: subscriptions.entrySet()) {
+                    if(entry.getKey().startsWith(destination))
+                        target_connections.addAll(entry.getValue());
+                }
+            }
+            else {
+                Set<Connection> conns=subscriptions.get(destination);
+                if(conns != null)
+                    target_connections.addAll(conns);
+            }
         }
 
         for(Connection conn: target_connections)
@@ -213,6 +224,14 @@ public class STOMP extends Protocol implements Runnable {
         protected void remove() {
             synchronized(connections) {
                 connections.remove(this);
+            }
+            for(Set<Connection> conns: subscriptions.values()) {
+                conns.remove(this);
+            }
+            for(Iterator<Map.Entry<String,Set<Connection>>> it=subscriptions.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String,Set<Connection>> entry=it.next();
+                if(entry.getValue().isEmpty())
+                    it.remove();
             }
         }
 
@@ -248,9 +267,8 @@ public class STOMP extends Protocol implements Runnable {
                 case SEND:
                     String destination=headers.get("destination");
                     String sender=session_id.toString();
-
                     Message msg=new Message(null, null, frame.getBody());
-                    Header hdr=new StompHeader(destination);
+                    Header hdr=new StompHeader(destination, sender);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));
                     break;
@@ -443,25 +461,30 @@ public class STOMP extends Protocol implements Runnable {
 
     public static class StompHeader extends org.jgroups.Header {
         protected String destination;
+        protected String sender;
 
         public StompHeader() {
         }
 
-        public StompHeader(String destination) {
+        public StompHeader(String destination, String sender) {
             this.destination=destination;
+            this.sender=sender;
         }
 
         public int size() {
-            return Global.BYTE_SIZE // presence
-                    + (destination != null? destination.length() +2 : 0);
+            return Global.BYTE_SIZE * 2 // presence
+                    + (destination != null? destination.length() +2 : 0)
+                    + (sender != null? sender.length() +2 : 0);
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             Util.writeString(destination, out);
+            Util.writeString(sender, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             destination=Util.readString(in);
+            sender=Util.readString(in);
         }
     }
 }
