@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.13 2010/10/25 13:01:35 belaban Exp $
+ * @version $Id: STOMP.java,v 1.14 2010/10/25 16:37:16 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -457,6 +457,7 @@ public class STOMP extends Protocol implements Runnable {
             }
             catch(IllegalArgumentException illegal_ex) {
                 log.error("verb " + tmp_verb + " unknown");
+                writeResponse(ServerVerb.ERROR, "message", "verb " + tmp_verb + " unknown");
                 return null;
             }
 
