@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.33 2010/08/30 14:12:52 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.34 2010/10/25 11:53:12 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -507,6 +507,13 @@ public class SizeTest {
     }
 
 
+    public static void testStompHeader() throws Exception {
+        STOMP.StompHeader hdr=STOMP.StompHeader.createMessageHeader("/topics/chat", UUID.randomUUID().toString());
+        _testSize(hdr);
+
+        hdr=STOMP.StompHeader.createEndpointHeader("192.168.1.5:8787");
+        _testSize(hdr);
+    }
 
     public static void testStateHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -749,7 +756,7 @@ public class SizeTest {
 
     private static void _testSize(Header hdr) throws Exception {
         long size=hdr.size();
-        byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
+        byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
     }
