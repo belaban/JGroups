@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.10 2010/10/25 11:53:11 belaban Exp $
+ * @version $Id: STOMP.java,v 1.11 2010/10/25 12:18:29 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -37,6 +37,10 @@ public class STOMP extends Protocol implements Runnable {
 
     @Property(description="If set to false, then a destination of /a/b match /a/b/c, a/b/d, a/b/c/d etc")
     protected boolean exact_destination_match=true;
+
+    @Property(description="If true, the list of endpoints will be sent to all clients (via the ENDPOINTS command). This" +
+            "allows intelligent clients to connect to a different server should a connection be closed.")
+    protected boolean send_endpoints=true;
 
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
@@ -66,8 +70,7 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
-    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR}
-    public static enum ServerResponse  {CONNECTED}
+    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, ENDPOINTS, CONNECTED}
 
     public static final byte           NULL_BYTE=0;
 
@@ -164,8 +167,16 @@ public class STOMP extends Protocol implements Runnable {
                         break;
                     case ENDPOINT:
                         if(hdr.endpoint != null) {
+                            boolean update_clients;
+                            String old_endpoint=null;
                             synchronized(endpoints) {
                                 endpoints.put(msg.getSrc(), hdr.endpoint);
+                            }
+                            update_clients=old_endpoint == null || !old_endpoint.equals(hdr.endpoint);
+                            if(update_clients && this.send_endpoints) {
+                                for(Connection conn: connections) {
+                                    conn.writeResponse(ServerVerb.ENDPOINTS, "endpoints", getAllEndpoints());
+                                }
                             }
                         }
                         return null;
@@ -195,12 +206,18 @@ public class STOMP extends Protocol implements Runnable {
         for(Util.AddressScope scope: Util.AddressScope.values()) {
             try {
                 InetAddress addr=Util.getAddress(scope);
-                if(addr != null) return addr.toString() + ":" + port;
+                if(addr != null) return addr.getHostAddress() + ":" + port;
             }
             catch(SocketException e) {
             }
         }
         return null;
+    }
+
+    protected String getAllEndpoints() {
+        synchronized(endpoints) {
+            return Util.printListWithDelimiter(endpoints.values(), ",");
+        }
     }
 
     protected void broadcastEndpoint() {
@@ -323,7 +340,7 @@ public class STOMP extends Protocol implements Runnable {
             Map<String,String> headers=frame.getHeaders();
             switch(frame.getVerb()) {
                 case CONNECT:
-                    writeResponse(ServerResponse.CONNECTED,
+                    writeResponse(ServerVerb.CONNECTED,
                                   "session-id", session_id.toString(),
                                   "password-check", "none");
                     break;
@@ -379,7 +396,7 @@ public class STOMP extends Protocol implements Runnable {
          * @param response
          * @param keys_and_values
          */
-        private void writeResponse(ServerResponse response, String ... keys_and_values) {
+        private void writeResponse(ServerVerb response, String ... keys_and_values) {
             String tmp=response.name();
             try {
                 out.write(tmp.getBytes());
@@ -390,6 +407,7 @@ public class STOMP extends Protocol implements Runnable {
                     String val=keys_and_values[++i];
                     out.write((key + ": " + val + "\n").getBytes());
                 }
+                out.write("\n".getBytes());
                 out.write(NULL_BYTE);
                 out.flush();
             }
@@ -529,7 +547,7 @@ public class STOMP extends Protocol implements Runnable {
         protected Type   type;
         protected String destination; // used when type=MESSAGE
         protected String sender;      // used when type=MESSAGE
-        protected String endpoint;    // used when type=ENPOINT
+        protected String endpoint;    // used when type=ENDPOINT
 
         public StompHeader() {
         }
