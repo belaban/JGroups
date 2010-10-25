@@ -1,9 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -13,8 +10,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -25,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.9 2010/10/25 07:24:38 belaban Exp $
+ * @version $Id: STOMP.java,v 1.10 2010/10/25 11:53:11 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -50,18 +49,23 @@ public class STOMP extends Protocol implements Runnable {
     @ManagedAttribute(description="Print subscriptions",writable=false)
     public String getSubscriptions() {return subscriptions.keySet().toString();}
 
+    @ManagedAttribute
+    public String getEndpoints() {return endpoints.toString();}
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected ServerSocket             srv_sock;
-    protected Thread                   acceptor;
-    protected final List<Connection>   connections=new LinkedList<Connection>();
+    protected ServerSocket              srv_sock;
+    @ManagedAttribute(writable=false)
+    protected String                    endpoint;
+    protected Thread                    acceptor;
+    protected final List<Connection>    connections=new LinkedList<Connection>();
+    protected final Map<Address,String> endpoints=new HashMap<Address,String>();
 
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
 
 
-    public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT};
+    public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
     public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR}
     public static enum ServerResponse  {CONNECTED}
 
@@ -84,6 +88,8 @@ public class STOMP extends Protocol implements Runnable {
             acceptor.setDaemon(true);
             acceptor.start();
         }
+
+        endpoint=getAddress(srv_sock.getLocalPort());
     }
 
 
@@ -133,19 +139,76 @@ public class STOMP extends Protocol implements Runnable {
     }
 
 
+    public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                handleView((View)evt.getArg());
+                break;
+        }
+        return down_prot.down(evt);
+    }
+
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 StompHeader hdr=(StompHeader)msg.getHeader(id);
-                String destination=hdr != null? hdr.destination : null;
-                String sender=hdr != null? hdr.sender : msg.getSrc().toString();
-                sendToClients(destination, sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                if(hdr == null) {
+                    sendToClients(null, msg.getSrc().toString(), msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    break;
+                }
+
+                switch(hdr.type) {
+                    case MESSAGE:
+                        sendToClients(hdr.destination, hdr.sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        break;
+                    case ENDPOINT:
+                        if(hdr.endpoint != null) {
+                            synchronized(endpoints) {
+                                endpoints.put(msg.getSrc(), hdr.endpoint);
+                            }
+                        }
+                        return null;
+                    default:
+                        throw new IllegalArgumentException("type " + hdr.type + " is not known");
+                }
+                break;
+
+            case Event.VIEW_CHANGE:
+                handleView((View)evt.getArg());
                 break;
         }
         
 
         return up_prot.up(evt);
+    }
+
+    private void handleView(View view) {
+        broadcastEndpoint();
+        List<Address> mbrs=view.getMembers();
+        synchronized(endpoints) {
+            endpoints.keySet().retainAll(mbrs);
+        }
+    }
+
+    private static String getAddress(int port) {
+        for(Util.AddressScope scope: Util.AddressScope.values()) {
+            try {
+                InetAddress addr=Util.getAddress(scope);
+                if(addr != null) return addr.toString() + ":" + port;
+            }
+            catch(SocketException e) {
+            }
+        }
+        return null;
+    }
+
+    protected void broadcastEndpoint() {
+        if(endpoint != null) {
+            Message msg=new Message();
+            msg.putHeader(id, StompHeader.createEndpointHeader(endpoint));
+            down_prot.down(new Event(Event.MSG, msg));
+        }
     }
 
     private void sendToClients(String destination, String sender, byte[] buffer, int offset, int length) {
@@ -268,7 +331,7 @@ public class STOMP extends Protocol implements Runnable {
                     String destination=headers.get("destination");
                     String sender=session_id.toString();
                     Message msg=new Message(null, null, frame.getBody());
-                    Header hdr=new StompHeader(destination, sender);
+                    Header hdr=StompHeader.createMessageHeader(destination, sender);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));
                     break;
@@ -327,6 +390,7 @@ public class STOMP extends Protocol implements Runnable {
                     String val=keys_and_values[++i];
                     out.write((key + ": " + val + "\n").getBytes());
                 }
+                out.write(NULL_BYTE);
                 out.flush();
             }
             catch(IOException ex) {
@@ -460,31 +524,83 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static class StompHeader extends org.jgroups.Header {
-        protected String destination;
-        protected String sender;
+        public static enum Type {MESSAGE, ENDPOINT}
+
+        protected Type   type;
+        protected String destination; // used when type=MESSAGE
+        protected String sender;      // used when type=MESSAGE
+        protected String endpoint;    // used when type=ENPOINT
 
         public StompHeader() {
         }
 
-        public StompHeader(String destination, String sender) {
-            this.destination=destination;
-            this.sender=sender;
+        public static StompHeader createMessageHeader(String destination, String sender) {
+            StompHeader retval=new StompHeader();
+            retval.type=Type.MESSAGE;
+            retval.destination=destination;
+            retval.sender=sender;
+            return retval;
         }
 
+        public static StompHeader createEndpointHeader(String endpoint) {
+            StompHeader retval=new StompHeader();
+            retval.type=Type.ENDPOINT;
+            retval.endpoint=endpoint;
+            return retval;
+        }
+
+
         public int size() {
-            return Global.BYTE_SIZE * 2 // presence
-                    + (destination != null? destination.length() +2 : 0)
-                    + (sender != null? sender.length() +2 : 0);
+            switch(type) {
+                case MESSAGE:
+                    return Global.BYTE_SIZE * 2   // presence
+                            + Global.INT_SIZE     // type
+                            + (destination != null? destination.length() +2 : 0)
+                            + (sender != null? sender.length() +2 : 0);
+                
+                case ENDPOINT:
+                    return Global.BYTE_SIZE   // presence
+                            + Global.INT_SIZE // type
+                            + (endpoint != null? endpoint.length() +2 : 0);
+            }
+            return 0;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeString(destination, out);
-            Util.writeString(sender, out);
+            out.writeInt(type.ordinal());
+            switch(type) {
+                case MESSAGE:
+                    Util.writeString(destination, out);
+                    Util.writeString(sender, out);
+                    break;
+                case ENDPOINT:
+                    Util.writeString(endpoint, out);
+                    break;
+            }
+
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            destination=Util.readString(in);
-            sender=Util.readString(in);
+            type=Type.values()[in.readInt()];
+            switch(type) {
+                case MESSAGE:
+                    destination=Util.readString(in);
+                    sender=Util.readString(in);
+                    break;
+                case ENDPOINT:
+                    endpoint=Util.readString(in);
+                    break;
+            }
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder(type.toString()).append(" ");
+            if(type == Type.MESSAGE) {
+                sb.append("destination=").append(destination).append(", sender=").append(sender);
+            }
+            else if(type == Type.ENDPOINT)
+                sb.append("endpoint=").append(endpoint);
+            return sb.toString();
         }
     }
 }
