@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.11 2010/10/25 12:18:29 belaban Exp $
+ * @version $Id: STOMP.java,v 1.12 2010/10/25 12:25:40 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -70,7 +70,8 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
-    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, ENDPOINTS, CONNECTED}
+    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO
+    }
 
     public static final byte           NULL_BYTE=0;
 
@@ -174,8 +175,10 @@ public class STOMP extends Protocol implements Runnable {
                             }
                             update_clients=old_endpoint == null || !old_endpoint.equals(hdr.endpoint);
                             if(update_clients && this.send_endpoints) {
-                                for(Connection conn: connections) {
-                                    conn.writeResponse(ServerVerb.ENDPOINTS, "endpoints", getAllEndpoints());
+                                synchronized(connections) {
+                                    for(Connection conn: connections) {
+                                    conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
+                                    }
                                 }
                             }
                         }
@@ -194,11 +197,17 @@ public class STOMP extends Protocol implements Runnable {
         return up_prot.up(evt);
     }
 
-    private void handleView(View view) {
+    protected void handleView(View view) {
         broadcastEndpoint();
         List<Address> mbrs=view.getMembers();
         synchronized(endpoints) {
             endpoints.keySet().retainAll(mbrs);
+        }
+
+        synchronized(connections) {
+            for(Connection conn: connections) {
+                conn.writeResponse(ServerVerb.INFO, "view", view.toString());
+            }
         }
     }
 
