@@ -1,4 +1,4 @@
-// $Id: StompDraw.java,v 1.1 2010/10/26 16:08:40 belaban Exp $
+// $Id: StompDraw.java,v 1.2 2010/10/26 17:11:32 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -22,7 +22,6 @@ import java.util.List;
  */
 public class StompDraw implements StompConnection.Listener, ActionListener {
     private int                    member_size=1;
-    static final boolean           first=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
@@ -61,7 +60,6 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
                port=args[++i];
                continue;
            }
-
            help();
            return;
        }
@@ -142,7 +140,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     }
 
     void setTitle() {
-        setTitle(null);
+        setTitle("Draw demo - " + member_size + " server(s)");
     }
 
     public void onInfo(Map<String, String> information) {
@@ -152,9 +150,22 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
             if(list != null) {
                 member_size=list.size();
                 if(mainFrame != null)
-                    setTitle("Draw demo - " + member_size + " mbr(s)");
+                    setTitle();
                 members.clear();
                 members.addAll(list);
+            }
+            else {
+                String targets=information.get("endpoints");
+                if(targets != null) {
+                    list=Util.parseCommaDelimitedStrings(targets);
+                    if(list != null) {
+                        member_size=list.size();
+                        if(mainFrame != null)
+                            setTitle();
+                        members.clear();
+                        members.addAll(list);
+                    }
+                }
             }
         }
     }

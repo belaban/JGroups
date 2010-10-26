@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.3 2010/10/26 16:08:42 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.4 2010/10/26 17:11:33 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -46,6 +46,8 @@ public class StompConnection implements Runnable {
 
     protected volatile boolean running=true;
 
+    protected String session_id;
+
     protected final Log log=LogFactory.getLog(getClass());
 
 
@@ -55,6 +57,9 @@ public class StompConnection implements Runnable {
     public StompConnection(String dest) {
         server_destinations.add(dest);
     }
+
+    public String getSessionId() {return session_id;}
+
 
     public void addListener(Listener listener) {
         if(listener != null)
@@ -201,6 +206,10 @@ public class StompConnection implements Runnable {
                             notifyListeners(frame.getHeaders(), buf, 0, buf != null? buf.length : 0);
                             break;
                         case CONNECTED:
+                            String sess_id=frame.getHeaders().get("session-id");
+                            if(sess_id != null) {
+                                this.session_id=sess_id;
+                            }
                             break;
                         case ERROR:
                             break;
