@@ -22,13 +22,14 @@ import java.util.concurrent.ConcurrentMap;
  * Protocol which provides STOMP (http://stomp.codehaus.org/) support. Very simple implementation, with a
  * one-thread-per-connection model. Use for a few hundred clients max.<p/>
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
- * SMS messages to mobile clients, SNMP traps etc.
+ * SMS messages to mobile clients, SNMP traps etc.<p/>
+ * Note that the full STOMP protocol has not yet been implemented, e.g. transactions are not supported.
  * todo: use a thread pool to handle incoming frames and to send messages to clients
  * <p/>
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.17 2010/10/26 12:30:14 belaban Exp $
+ * @version $Id: STOMP.java,v 1.18 2010/10/26 16:08:43 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -68,6 +69,8 @@ public class STOMP extends Protocol implements Runnable {
     protected Thread                    acceptor;
     protected final List<Connection>    connections=new LinkedList<Connection>();
     protected final Map<Address,String> endpoints=new HashMap<Address,String>();
+
+    protected View view;
 
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
@@ -137,6 +140,7 @@ public class STOMP extends Protocol implements Runnable {
                     connections.add(conn);
                 }
                 thread.start();
+                conn.sendInfo();
             }
             catch(IOException io_ex) {
                 break;
@@ -207,6 +211,7 @@ public class STOMP extends Protocol implements Runnable {
             throw new EOFException("reading verb");
         if(verb.length() == 0)
             return null;
+        verb=verb.trim();
         
         Map<String,String> headers=new HashMap<String,String>();
         byte[] body=null;
@@ -266,6 +271,8 @@ public class STOMP extends Protocol implements Runnable {
     protected void handleView(View view) {
         broadcastEndpoint();
         List<Address> mbrs=view.getMembers();
+        this.view=view;
+        
         synchronized(endpoints) {
             endpoints.keySet().retainAll(mbrs);
         }
@@ -474,6 +481,17 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
 
+        public void sendInfo() {
+            synchronized(connections) {
+                for(Connection conn: connections) {
+                    if(send_info)
+                        conn.writeResponse(ServerVerb.INFO, "view", view.toString(), "endpoints", getAllEndpoints());
+                    else
+                        conn.writeResponse(ServerVerb.INFO, "view", view.toString());
+                }
+            }
+        }
+
         /**
          * Sends back a response. The keys_and_values vararg array needs to have an even number of elements
          * @param response
@@ -495,7 +513,7 @@ public class STOMP extends Protocol implements Runnable {
                 out.flush();
             }
             catch(IOException ex) {
-                log.error("failed writing response " + response, ex);
+                log.error("failed writing response " + response + ": " + ex);
             }
         }
 
@@ -505,11 +523,11 @@ public class STOMP extends Protocol implements Runnable {
                 out.flush();
             }
             catch(IOException ex) {
-                log.error("failed writing response", ex);
+                log.error("failed writing response: " + ex);
             }
         }
     }
-    
+
 
     public static class Frame {
         final String             verb;
@@ -544,7 +562,7 @@ public class STOMP extends Protocol implements Runnable {
             if(body != null && body.length > 0) {
                 sb.append("body: ");
                 if(body.length < 50)
-                    sb.append(": " + new String(body)).append(body.length).append(" bytes");
+                    sb.append(": " + new String(body)).append(" (").append(body.length).append(" bytes)");
                 else
                     sb.append(body.length).append(" bytes");
             }
