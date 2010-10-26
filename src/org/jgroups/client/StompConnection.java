@@ -1,5 +1,7 @@
 package org.jgroups.client;
 
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.STOMP;
@@ -9,15 +11,25 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * STOMP client to access the STOMP protocol
+ * STOMP client to access the STOMP [1] protocol. Note that the full STOMP protocol is not implemented, e.g. transactions
+ * are currently not supported.
+ * <p/>
+ * The interactive client can be started with -h HOST -p PORT, which are the hostname and port of a JGroups server, running
+ * with STOMP in its stack configuration. The interactive client supports automatic failover to a different server if
+ * the currently connected-to server crashes, and a simple syntax for sending STOMP messages:
+ * <pre>
+ * subscribe DEST // example: subscribe /topics/a
+ * send DEST message // example: send /topics/a Hello world
+ * </pre>
+ * <p/>
+ * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.2 2010/10/26 12:30:16 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.3 2010/10/26 16:08:42 belaban Exp $
  */
+@Experimental @Unsupported
 public class StompConnection implements Runnable {
     protected Socket           sock;
     protected DataInputStream  in;
@@ -32,11 +44,12 @@ public class StompConnection implements Runnable {
 
     protected Thread runner;
 
+    protected volatile boolean running=true;
+
     protected final Log log=LogFactory.getLog(getClass());
 
 
     /**
-     *
      * @param dest IP address + ':' + port, e.g. "192.168.1.5:8787"
      */
     public StompConnection(String dest) {
@@ -78,17 +91,26 @@ public class StompConnection implements Runnable {
             sb.append("login: ").append(userid).append("\n");
         if(password != null)
             sb.append("passcode: ").append(password).append("\n");
-        sb.append("\n").append(STOMP.NULL_BYTE);
+        sb.append("\n");
 
         out.write(sb.toString().getBytes());
+        out.write(STOMP.NULL_BYTE);
         out.flush();
     }
 
 
     public void reconnect() throws IOException {
+        if(!running)
+            return;
         connect();
         for(String subscription: subscriptions)
             subscribe(subscription);
+        if(log.isDebugEnabled()) {
+            log.debug("reconnected to " + sock.getInetAddress().getHostAddress() + ":" + sock.getPort());
+            if(!subscriptions.isEmpty())
+                log.debug("re-subscribed to " + subscriptions);
+        }
+
     }
 
 
@@ -98,23 +120,68 @@ public class StompConnection implements Runnable {
     }
 
     public void disconnect() {
-
+        running=false;
+        close();
     }
 
     public void subscribe(String destination) {
         if(destination == null)
             return;
         subscriptions.add(destination);
+
+        StringBuilder sb=new StringBuilder();
+        sb.append(STOMP.ClientVerb.SUBSCRIBE.name()).append("\n");
+        sb.append("destination: ").append(destination).append("\n");
+        sb.append("\n");
+
+        try {
+            out.write(sb.toString().getBytes());
+            out.write(STOMP.NULL_BYTE);
+            out.flush();
+        }
+        catch(IOException ex) {
+            log.error("failed subscribing to " + destination + ": " + ex);
+        }
     }
 
     public void unsubscribe(String destination) {
         if(destination == null)
             return;
         subscriptions.remove(destination);
+
+        StringBuilder sb=new StringBuilder();
+        sb.append(STOMP.ClientVerb.UNSUBSCRIBE.name()).append("\n");
+        sb.append("destination: ").append(destination).append("\n");
+        sb.append("\n");
+
+        try {
+            out.write(sb.toString().getBytes());
+            out.write(STOMP.NULL_BYTE);
+            out.flush();
+        }
+        catch(IOException ex) {
+            log.error("failed unsubscribing from " + destination + ": " + ex);
+        }
     }
 
     public void send(String destination, byte[] buf, int offset, int length) {
+        StringBuilder sb=new StringBuilder();
+        sb.append(STOMP.ClientVerb.SEND.name()).append("\n");
+        if(destination != null)
+            sb.append("destination: ").append(destination).append("\n");
+        if(buf != null)
+            sb.append("content-length: ").append(length +1).append("\n"); // the 1 additional byte is the NULL_BYTE
+        sb.append("\n");
 
+        try {
+            out.write(sb.toString().getBytes());
+            out.write(buf, offset, length);
+            out.write(STOMP.NULL_BYTE);
+            out.flush();
+        }
+        catch(IOException ex) {
+            log.error("failed sending message to server: " + ex);
+        }
     }
 
     public void send(String destination, byte[] buf) {
@@ -122,7 +189,7 @@ public class StompConnection implements Runnable {
     }
 
     public void run() {
-        while(isConnected()) {
+        while(isConnected() && running) {
             try {
                 STOMP.Frame frame=STOMP.readFrame(in);
                 if(frame != null) {
@@ -138,6 +205,16 @@ public class StompConnection implements Runnable {
                         case ERROR:
                             break;
                         case INFO:
+                            notifyListeners(frame.getHeaders());
+                            String endpoints=frame.getHeaders().get("endpoints");
+                            if(endpoints != null) {
+                                List<String> list=Util.parseCommaDelimitedStrings(endpoints);
+                                if(list != null) {
+                                    boolean changed=server_destinations.addAll(list);
+                                    if(changed && log.isDebugEnabled())
+                                        log.debug("INFO: new server target list: " + server_destinations);
+                                }
+                            }
                             break;
                         case RECEIPT:
                             break;
@@ -172,6 +249,17 @@ public class StompConnection implements Runnable {
         }
     }
 
+    protected void notifyListeners(Map<String,String> info) {
+        for(Listener listener: listeners) {
+            try {
+                listener.onInfo(info);
+            }
+            catch(Throwable t) {
+                log.error("failed calling listener", t);
+            }
+        }
+    }
+
     protected String pickRandomDestination() {
         return server_destinations.isEmpty()? null : server_destinations.iterator().next();
     }
@@ -199,7 +287,7 @@ public class StompConnection implements Runnable {
     }
 
     protected boolean isConnected() {
-        return sock != null && sock.isConnected();
+        return sock != null && sock.isConnected() && !sock.isClosed();
     }
 
     protected synchronized void startRunner() {
@@ -241,12 +329,37 @@ public class StompConnection implements Runnable {
             }
 
             public void onInfo(Map<String, String> information) {
+                System.out.println("<< INFO: " + information);
             }
         });
         conn.connect();
 
-        for(;;) {
-            
+        while(conn.isConnected()) {
+            try {
+                String line=Util.readStringFromStdin(": ");
+                if(line.startsWith("subscribe")) {
+                    String dest=line.substring("subscribe".length()).trim();
+                    conn.subscribe(dest);
+                }
+                else if(line.startsWith("unsubscribe")) {
+                    String dest=line.substring("unsubscribe".length()).trim();
+                    conn.unsubscribe(dest);
+                }
+                else if(line.startsWith("send")) {
+                    String rest=line.substring("send".length()).trim();
+
+                    int index=rest.indexOf(' ');
+                    if(index != -1) {
+                        String dest=rest.substring(0, index);
+                        String body=rest.substring(index+1);
+                        byte[] buf=body.getBytes();
+                        conn.send(dest, buf, 0, buf.length);
+                    }
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
