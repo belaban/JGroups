@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.15 2010/10/26 06:46:40 belaban Exp $
+ * @version $Id: STOMP.java,v 1.16 2010/10/26 11:57:36 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -72,13 +72,11 @@ public class STOMP extends Protocol implements Runnable {
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
-
-
     public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
-    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO
-    }
+    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO}
 
     public static final byte           NULL_BYTE=0;
+
 
     
     public STOMP() {
@@ -202,6 +200,79 @@ public class STOMP extends Protocol implements Runnable {
         return up_prot.up(evt);
     }
 
+
+    public static Frame readFrame(DataInputStream in) throws IOException {
+        String tmp_verb=Util.readLine(in);
+        if(tmp_verb == null)
+            throw new EOFException("reading verb");
+        if(tmp_verb.length() == 0)
+            return null;
+
+        ClientVerb verb;
+
+        try {
+            verb=ClientVerb.valueOf(tmp_verb);
+        }
+        catch(IllegalArgumentException illegal_ex) {
+            // writeResponse(ServerVerb.ERROR, "message", "verb " + tmp_verb + " unknown");
+            return null;
+        }
+
+        Map<String,String> headers=new HashMap<String,String>();
+        byte[] body=null;
+
+        for(;;) {
+            String header=Util.readLine(in);
+            if(header == null)
+                throw new EOFException("reading header");
+            if(header.length() == 0)
+                break;
+            int index=header.indexOf(":");
+            if(index != -1)
+                headers.put(header.substring(0, index).trim(), header.substring(index+1).trim());
+        }
+
+        if(headers.containsKey("content-length")) {
+            int length=Integer.parseInt(headers.get("content-length"));
+            body=new byte[length];
+            in.read(body, 0, body.length);
+        }
+        else {
+            ByteBuffer buf=ByteBuffer.allocate(500);
+            boolean terminate=false;
+            for(;;) {
+                int c=in.read();
+                if(c == -1 || c == 0)
+                    terminate=true;
+
+                if(buf.remaining() == 0 || terminate) {
+                    if(body == null) {
+                        body=new byte[buf.position()];
+                        System.arraycopy(buf.array(), buf.arrayOffset(), body, 0, buf.position());
+                    }
+                    else {
+                        byte[] tmp=new byte[body.length + buf.position()];
+                        System.arraycopy(body, 0, tmp, 0, body.length);
+                        try {
+                            System.arraycopy(buf.array(), buf.arrayOffset(), tmp, body.length, buf.position());
+                        }
+                        catch(Throwable t) {
+                        }
+                        body=tmp;
+                    }
+                    buf.rewind();
+                }
+
+                if(terminate)
+                    break;
+
+                buf.put((byte)c);
+            }
+        }
+        return new Frame(verb, headers, body);
+    }
+
+
     protected void handleView(View view) {
         broadcastEndpoint();
         List<Address> mbrs=view.getMembers();
@@ -298,7 +369,7 @@ public class STOMP extends Protocol implements Runnable {
     /**
      * Class which handles a connection to a client
      */
-    protected class Connection implements Runnable {
+    public class Connection implements Runnable {
         protected final Socket sock;
         protected final DataInputStream in;
         protected final DataOutputStream out;
@@ -445,84 +516,10 @@ public class STOMP extends Protocol implements Runnable {
                 log.error("failed writing response", ex);
             }
         }
-
-
-        private Frame readFrame(DataInputStream in) throws IOException {
-            String tmp_verb=Util.readLine(in);
-            if(tmp_verb == null)
-                throw new EOFException("reading verb");
-            if(tmp_verb.length() == 0)
-                return null;
-
-            ClientVerb verb;
-
-            try {
-                verb=ClientVerb.valueOf(tmp_verb);
-            }
-            catch(IllegalArgumentException illegal_ex) {
-                log.error("verb " + tmp_verb + " unknown");
-                writeResponse(ServerVerb.ERROR, "message", "verb " + tmp_verb + " unknown");
-                return null;
-            }
-
-            Map<String,String> headers=new HashMap<String,String>();
-            byte[] body=null;
-
-            for(;;) {
-                String header=Util.readLine(in);
-                if(header == null)
-                    throw new EOFException("reading header");
-                if(header.length() == 0)
-                    break;
-                int index=header.indexOf(":");
-                if(index != -1)
-                    headers.put(header.substring(0, index).trim(), header.substring(index+1).trim());
-            }
-
-            if(headers.containsKey("content-length")) {
-                int length=Integer.parseInt(headers.get("content-length"));
-                body=new byte[length];
-                in.read(body, 0, body.length);
-            }
-            else {
-                ByteBuffer buf=ByteBuffer.allocate(500);
-                boolean terminate=false;
-                for(;;) {
-                    int c=in.read();
-                    if(c == -1 || c == 0)
-                        terminate=true;
-
-                    if(buf.remaining() == 0 || terminate) {
-                        if(body == null) {
-                            body=new byte[buf.position()];
-                            System.arraycopy(buf.array(), buf.arrayOffset(), body, 0, buf.position());
-                        }
-                        else {
-                            byte[] tmp=new byte[body.length + buf.position()];
-                            System.arraycopy(body, 0, tmp, 0, body.length);
-                            try {
-                                System.arraycopy(buf.array(), buf.arrayOffset(), tmp, body.length, buf.position());
-                            }
-                            catch(Throwable t) {
-                            }
-                            body=tmp;
-                        }
-                        buf.rewind();
-                    }
-
-                    if(terminate)
-                        break;
-
-                    buf.put((byte)c);
-                }
-            }
-
-
-            return new Frame(verb, headers, body);
-        }
     }
+    
 
-    protected static class Frame {
+    public static class Frame {
         final ClientVerb verb;
         final Map<String,String> headers;
         final byte[] body;
