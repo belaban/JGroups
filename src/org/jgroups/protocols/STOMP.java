@@ -23,8 +23,12 @@ import java.util.concurrent.ConcurrentMap;
  * one-thread-per-connection model. Use for a few hundred clients max.<p/>
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.
+ * todo: use a thread pool to handle incoming frames and to send messages to clients
+ * <p/>
+ * todo: add PING to test health of client connections
+ * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.14 2010/10/25 16:37:16 belaban Exp $
+ * @version $Id: STOMP.java,v 1.15 2010/10/26 06:46:40 belaban Exp $
  * @since 2.11
  */
 @MBean
