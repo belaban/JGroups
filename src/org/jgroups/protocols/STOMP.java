@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.16 2010/10/26 11:57:36 belaban Exp $
+ * @version $Id: STOMP.java,v 1.17 2010/10/26 12:30:14 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -202,22 +202,12 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static Frame readFrame(DataInputStream in) throws IOException {
-        String tmp_verb=Util.readLine(in);
-        if(tmp_verb == null)
+        String verb=Util.readLine(in);
+        if(verb == null)
             throw new EOFException("reading verb");
-        if(tmp_verb.length() == 0)
+        if(verb.length() == 0)
             return null;
-
-        ClientVerb verb;
-
-        try {
-            verb=ClientVerb.valueOf(tmp_verb);
-        }
-        catch(IllegalArgumentException illegal_ex) {
-            // writeResponse(ServerVerb.ERROR, "message", "verb " + tmp_verb + " unknown");
-            return null;
-        }
-
+        
         Map<String,String> headers=new HashMap<String,String>();
         byte[] body=null;
 
@@ -426,7 +416,9 @@ public class STOMP extends Protocol implements Runnable {
 
         protected void handleFrame(Frame frame) {
             Map<String,String> headers=frame.getHeaders();
-            switch(frame.getVerb()) {
+            ClientVerb verb=ClientVerb.valueOf(frame.getVerb());
+            
+            switch(verb) {
                 case CONNECT:
                     writeResponse(ServerVerb.CONNECTED,
                                   "session-id", session_id.toString(),
@@ -520,11 +512,11 @@ public class STOMP extends Protocol implements Runnable {
     
 
     public static class Frame {
-        final ClientVerb verb;
+        final String             verb;
         final Map<String,String> headers;
-        final byte[] body;
+        final byte[]             body;
 
-        public Frame(ClientVerb verb, Map<String, String> headers, byte[] body) {
+        public Frame(String verb, Map<String, String> headers, byte[] body) {
             this.verb=verb;
             this.headers=headers;
             this.body=body;
@@ -538,7 +530,7 @@ public class STOMP extends Protocol implements Runnable {
             return headers;
         }
 
-        public ClientVerb getVerb() {
+        public String getVerb() {
             return verb;
         }
 
@@ -550,9 +542,11 @@ public class STOMP extends Protocol implements Runnable {
                     sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
             if(body != null && body.length > 0) {
-                sb.append("body: ").append(body.length).append(" bytes");
+                sb.append("body: ");
                 if(body.length < 50)
-                    sb.append(": " + new String(body));
+                    sb.append(": " + new String(body)).append(body.length).append(" bytes");
+                else
+                    sb.append(body.length).append(" bytes");
             }
             return sb.toString();
         }
