@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.7 2010/10/27 09:25:01 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.8 2010/10/27 09:30:11 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -208,7 +208,8 @@ public class StompConnection implements Runnable {
                 STOMP.Frame frame=STOMP.readFrame(in);
                 if(frame != null) {
                     STOMP.ServerVerb verb=STOMP.ServerVerb.valueOf(frame.getVerb());
-                    System.out.println("frame = " + frame);
+                    if(log.isTraceEnabled())
+                        log.trace("frame: " + frame);
                     switch(verb) {
                         case MESSAGE:
                             byte[] buf=frame.getBody();
