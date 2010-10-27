@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.6 2010/10/27 07:43:20 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.7 2010/10/27 09:25:01 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -304,7 +304,7 @@ public class StompConnection implements Runnable {
         Util.close(sock);
     }
 
-    protected boolean isConnected() {
+    public boolean isConnected() {
         return sock != null && sock.isConnected() && !sock.isClosed();
     }
 

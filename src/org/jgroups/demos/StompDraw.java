@@ -1,4 +1,4 @@
-// $Id: StompDraw.java,v 1.3 2010/10/27 07:43:19 belaban Exp $
+// $Id: StompDraw.java,v 1.4 2010/10/27 09:24:59 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -130,9 +130,13 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         setTitle();
 
         String session_id=stomp_client.getSessionId();
-        if(session_id != null) {
+        if(session_id != null)
             stomp_client.send(clients_dest, null, 0, 0, "client-joined", session_id);
-        }
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                StompDraw.this.stop();
+            }
+        });
     }
 
 
@@ -146,6 +150,20 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         synchronized(clients) {
             return clients.size();
         }
+    }
+
+    String getAllClients() {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        for(String client: clients) {
+            if(first)
+                first=false;
+            else
+                sb.append(",");
+            sb.append(client);
+        }
+
+        return sb.toString();
     }
 
     public void onInfo(Map<String, String> information) {
@@ -189,7 +207,33 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
                         setTitle();
                     }
                 }
+
+                stomp_client.send(clients_dest, null, 0, 0, "clients", getAllClients());
             }
+
+            String left_client=headers.get("client-left");
+            if(left_client != null) {
+                synchronized(clients) {
+                    if(clients.remove(left_client)) {
+                        num_clients=clients.size();
+                        setTitle();
+                    }
+                }
+            }
+
+            String all_clients=headers.get("clients");
+            if(all_clients != null) {
+                List<String> list=Util.parseCommaDelimitedStrings(all_clients);
+                if(list != null) {
+                    synchronized(clients) {
+                        if(clients.addAll(list)) {
+                            num_clients=clients.size();
+                            setTitle();
+                        }
+                    }
+                }
+            }
+
             return;
         }
 
@@ -252,6 +296,12 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
 
     public void stop() {
+        if(!stomp_client.isConnected())
+            return;
+        String session_id=stomp_client.getSessionId();
+        if(session_id != null) {
+            stomp_client.send(clients_dest, null, 0, 0, "client-left", session_id);
+        }
         stomp_client.disconnect();
         mainFrame.setVisible(false);
         mainFrame.dispose();
