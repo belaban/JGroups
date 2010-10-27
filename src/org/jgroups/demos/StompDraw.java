@@ -1,4 +1,4 @@
-// $Id: StompDraw.java,v 1.4 2010/10/27 09:24:59 belaban Exp $
+// $Id: StompDraw.java,v 1.5 2010/10/27 10:52:04 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -289,6 +289,8 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         }
         else if("Leave".equals(command)) {
             stop();
+            mainFrame.setVisible(false);
+            mainFrame.dispose();
         }
         else
             System.out.println("Unknown action");
@@ -303,8 +305,6 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
             stomp_client.send(clients_dest, null, 0, 0, "client-left", session_id);
         }
         stomp_client.disconnect();
-        mainFrame.setVisible(false);
-        mainFrame.dispose();
     }
 
 

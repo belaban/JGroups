@@ -10,10 +10,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -29,14 +26,22 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.20 2010/10/27 09:25:02 belaban Exp $
+ * @version $Id: STOMP.java,v 1.21 2010/10/27 10:52:07 belaban Exp $
  * @since 2.11
  */
-@MBean
+@MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
 @Experimental @Unsupported
 public class STOMP extends Protocol implements Runnable {
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */
+
+    @Property(name="bind_addr",
+              description="The bind address which should be used by the server socket. The following special values " +
+                      "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
+              defaultValueIPv4="0.0.0.0", defaultValueIPv6="::",
+              systemProperty={Global.STOMP_BIND_ADDR},writable=false)
+    protected InetAddress bind_addr=null;
+
     @Property(description="Port on which the STOMP protocol listens for requests",writable=false)
     protected int port=8787;
 
@@ -90,7 +95,7 @@ public class STOMP extends Protocol implements Runnable {
 
     public void start() throws Exception {
         super.start();
-        srv_sock=Util.createServerSocket(getSocketFactory(), Global.STOMP_SRV_SOCK, port);
+        srv_sock=Util.createServerSocket(getSocketFactory(), Global.STOMP_SRV_SOCK, bind_addr, port);
         if(log.isDebugEnabled())
             log.debug("server socket listening on " + srv_sock.getLocalSocketAddress());
 
@@ -100,7 +105,7 @@ public class STOMP extends Protocol implements Runnable {
             acceptor.start();
         }
 
-        endpoint=getAddress(srv_sock.getLocalPort());
+        endpoint=getAddress();
     }
 
 
@@ -290,7 +295,12 @@ public class STOMP extends Protocol implements Runnable {
         }
     }
 
-    private static String getAddress(int port) {
+    private String getAddress() {
+        InetSocketAddress saddr=(InetSocketAddress)srv_sock.getLocalSocketAddress();
+        InetAddress tmp=saddr.getAddress();
+        if(!tmp.isAnyLocalAddress())
+            return tmp.getHostAddress() + ":" + srv_sock.getLocalPort();
+
         for(Util.AddressScope scope: Util.AddressScope.values()) {
             try {
                 InetAddress addr=Util.getAddress(scope);
