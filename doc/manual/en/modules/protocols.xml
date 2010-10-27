@@ -1012,9 +1012,43 @@
                 automatically reconnects to any of the remaining nodes, e.g. A, B, or D. When this happens, a client
                 is also re-subscribed to the destinations it registered for. 
             </para>
+            <para>
+                The JGroups STOMP protocol can be used when we have clients, which are either not in the same network
+                segment as the JGroups server nodes, or which don't want to become full-blown JGroups server nodes.
+                <xref linkend="StompArchitecture"/> shows a typical setup.
+            </para>
 
             <para>
-                
+                <figure id="StompArchitecture">
+                    <title>STOMP architecture</title>
+                    <graphic fileref="images/StompArchitecture.png" format="PNG" align="left" scalefit="1" contentwidth="5in"/>
+                </figure>
+            </para>
+
+            <para>
+                There are 4 nodes in a cluster. Say the cluster is in a LAN, and communication is via IP multicasting
+                (UDP as transport). We now have clients which do not want to be part of the cluster themselves, e.g.
+                because they're in a different geographic location (and we don't want to switch the main cluster to TCP),
+                or because clients are frequently started and stopped, and therefore the cost of startup and joining
+                wouldn't be amortized over the lifetime of a client. Another reason could be that clients are written
+                in a different language, or perhaps, we don't want a large cluster, which could be the case if we
+                for example have 10 JGroups server nodes and 1000 clients connected to them.
+            </para>
+            <para>
+                In the example, we see 9 clients connected to every JGroups cluster node. If a client connected to
+                node A sends a message to destination /topics/chat, then the message is multicast from node A to all other
+                nodes (B, C and D). Every node then forwards the message to those clients which have previously subscribed
+                to /topics/chat.
+            </para>
+            <para>
+                When node A crashes (or leaves) the JGroups STOMP clients (org.jgroups.client.StompConnection) simply pick
+                another server node and connect to it.
+            </para>
+
+            <para>
+            </para>
+            <para>
+                The properties for STOMP are shown below:
             </para>
             ${STOMP}
         </section>
