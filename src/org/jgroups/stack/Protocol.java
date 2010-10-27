@@ -38,7 +38,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.81 2010/10/06 09:47:03 belaban Exp $
+ * @version $Id: Protocol.java,v 1.82 2010/10/27 11:48:38 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -48,8 +48,8 @@ public abstract class Protocol {
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
     protected boolean          stats=true;
 
-    @Property(name="Enables ergonomics: dynamically find the best values for properties at runtime")
-    protected boolean ergonomics=true;
+    @Property(description="Enables ergonomics: dynamically find the best values for properties at runtime")
+    protected boolean          ergonomics=true;
 
     /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
      * be set, e.g. only in cases where we want to create more than 1 protocol of the same class in the same stack */
