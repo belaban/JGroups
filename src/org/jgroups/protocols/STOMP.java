@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.19 2010/10/27 07:10:32 belaban Exp $
+ * @version $Id: STOMP.java,v 1.20 2010/10/27 09:25:02 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -169,22 +169,25 @@ public class STOMP extends Protocol implements Runnable {
                 Message msg=(Message)evt.getArg();
                 StompHeader hdr=(StompHeader)msg.getHeader(id);
                 if(hdr == null) {
-                    sendToClients(null, msg.getSrc().toString(), msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    HashMap<String, String> hdrs=new HashMap<String, String>();
+                    hdrs.put("sender", msg.getSrc().toString());
+                    sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                     break;
                 }
 
                 switch(hdr.type) {
                     case MESSAGE:
-                        sendToClients(hdr.destination, hdr.sender, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        sendToClients(hdr.headers, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         break;
                     case ENDPOINT:
-                        if(hdr.endpoint != null) {
+                        String tmp_endpoint=hdr.headers.get("endpoint");
+                        if(tmp_endpoint != null) {
                             boolean update_clients;
                             String old_endpoint=null;
                             synchronized(endpoints) {
-                                endpoints.put(msg.getSrc(), hdr.endpoint);
+                                endpoints.put(msg.getSrc(), tmp_endpoint);
                             }
-                            update_clients=old_endpoint == null || !old_endpoint.equals(hdr.endpoint);
+                            update_clients=old_endpoint == null || !old_endpoint.equals(tmp_endpoint);
                             if(update_clients && this.send_info) {
                                 synchronized(connections) {
                                     for(Connection conn: connections) {
@@ -328,24 +331,79 @@ public class STOMP extends Protocol implements Runnable {
     protected void broadcastEndpoint() {
         if(endpoint != null) {
             Message msg=new Message();
-            msg.putHeader(id, StompHeader.createEndpointHeader(endpoint));
+            msg.putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
             down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
-    private void sendToClients(String destination, String sender, byte[] buffer, int offset, int length) {
-        int len=50 + length + (ServerVerb.MESSAGE.name().length() + 2) 
-                + (destination != null? destination.length()+ 2 : 0)
-                + (sender != null? sender.length() +2 : 0)
-                + (buffer != null? 20 : 0);
+//    private void sendToClients(String destination, String sender, byte[] buffer, int offset, int length) {
+//        int len=50 + length + (ServerVerb.MESSAGE.name().length() + 2)
+//                + (destination != null? destination.length()+ 2 : 0)
+//                + (sender != null? sender.length() +2 : 0)
+//                + (buffer != null? 20 : 0);
+//
+//        ByteBuffer buf=ByteBuffer.allocate(len);
+//
+//        StringBuilder sb=new StringBuilder(ServerVerb.MESSAGE.name()).append("\n");
+//        if(destination != null)
+//            sb.append("destination: ").append(destination).append("\n");
+//        if(sender != null)
+//            sb.append("sender: ").append(sender).append("\n");
+//        if(buffer != null)
+//            sb.append("content-length: ").append(String.valueOf(length)).append("\n");
+//        sb.append("\n");
+//
+//        byte[] tmp=sb.toString().getBytes();
+//
+//        if(buffer != null) {
+//            buf.put(tmp, 0, tmp.length);
+//            buf.put(buffer, offset, length);
+//        }
+//        buf.put(NULL_BYTE);
+//
+//        final Set<Connection> target_connections=new HashSet<Connection>();
+//        if(destination == null) {
+//            synchronized(connections) {
+//                target_connections.addAll(connections);
+//            }
+//        }
+//        else {
+//            if(!exact_destination_match) {
+//                for(Map.Entry<String,Set<Connection>> entry: subscriptions.entrySet()) {
+//                    if(entry.getKey().startsWith(destination))
+//                        target_connections.addAll(entry.getValue());
+//                }
+//            }
+//            else {
+//                Set<Connection> conns=subscriptions.get(destination);
+//                if(conns != null)
+//                    target_connections.addAll(conns);
+//            }
+//        }
+//
+//        for(Connection conn: target_connections)
+//            conn.writeResponse(buf.array(), buf.arrayOffset(), buf.position());
+//    }
 
+
+    private void sendToClients(Map<String,String> headers, byte[] buffer, int offset, int length) {
+        int len=50 + length + (ServerVerb.MESSAGE.name().length() + 2);
+        if(headers != null) {
+            for(Map.Entry<String,String> entry: headers.entrySet()) {
+                len+=entry.getKey().length() +2;
+                len+=entry.getValue().length() +2;
+                len+=5; // fill chars, such as ": " or "\n"
+            }
+        }
+        len+=(buffer != null? 20 : 0);
         ByteBuffer buf=ByteBuffer.allocate(len);
 
         StringBuilder sb=new StringBuilder(ServerVerb.MESSAGE.name()).append("\n");
-        if(destination != null)
-            sb.append("destination: ").append(destination).append("\n");
-        if(sender != null)
-            sb.append("sender: ").append(sender).append("\n");
+        if(headers != null) {
+            for(Map.Entry<String,String> entry: headers.entrySet())
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+
         if(buffer != null)
             sb.append("content-length: ").append(String.valueOf(length)).append("\n");
         sb.append("\n");
@@ -359,6 +417,7 @@ public class STOMP extends Protocol implements Runnable {
         buf.put(NULL_BYTE);
 
         final Set<Connection> target_connections=new HashSet<Connection>();
+        String destination=headers != null? headers.get("destination") : null;
         if(destination == null) {
             synchronized(connections) {
                 target_connections.addAll(connections);
@@ -452,10 +511,12 @@ public class STOMP extends Protocol implements Runnable {
                                   "password-check", "none");
                     break;
                 case SEND:
-                    String destination=headers.get("destination");
-                    String sender=session_id.toString();
+                    if(!headers.containsKey("sender")) {
+                        headers.put("sender", session_id.toString());
+                    }
+
                     Message msg=new Message(null, null, frame.getBody());
-                    Header hdr=StompHeader.createMessageHeader(destination, sender);
+                    Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));
                     String receipt=headers.get("receipt");
@@ -463,7 +524,7 @@ public class STOMP extends Protocol implements Runnable {
                         writeResponse(ServerVerb.RECEIPT, "receipt-id", receipt);
                     break;
                 case SUBSCRIBE:
-                    destination=headers.get("destination");
+                    String destination=headers.get("destination");
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
                         if(conns == null) {
@@ -581,7 +642,7 @@ public class STOMP extends Protocol implements Runnable {
             if(body != null && body.length > 0) {
                 sb.append("body: ");
                 if(body.length < 50)
-                    sb.append(": " + new String(body)).append(" (").append(body.length).append(" bytes)");
+                    sb.append(new String(body)).append(" (").append(body.length).append(" bytes)");
                 else
                     sb.append(body.length).append(" bytes");
             }
@@ -593,80 +654,75 @@ public class STOMP extends Protocol implements Runnable {
     public static class StompHeader extends org.jgroups.Header {
         public static enum Type {MESSAGE, ENDPOINT}
 
-        protected Type   type;
-        protected String destination; // used when type=MESSAGE
-        protected String sender;      // used when type=MESSAGE
-        protected String endpoint;    // used when type=ENDPOINT
+        protected Type                      type;
+        protected final Map<String,String>  headers=new HashMap<String,String>();
+
 
         public StompHeader() {
         }
 
-        public static StompHeader createMessageHeader(String destination, String sender) {
-            StompHeader retval=new StompHeader();
-            retval.type=Type.MESSAGE;
-            retval.destination=destination;
-            retval.sender=sender;
+        private StompHeader(Type type) {
+            this.type=type;
+        }
+
+        /**
+         * Creates a new header
+         * @param type
+         * @param headers Keys and values to be added to the header hashmap. Needs to be an even number
+         * @return
+         */
+        public static StompHeader createHeader(Type type, String ... headers) {
+            StompHeader retval=new StompHeader(type);
+            if(headers != null) {
+                for(int i=0; i < headers.length; i++) {
+                    String key=headers[i];
+                    String value=headers[++i];
+                    retval.headers.put(key, value);
+                }
+            }
             return retval;
         }
 
-        public static StompHeader createEndpointHeader(String endpoint) {
-            StompHeader retval=new StompHeader();
-            retval.type=Type.ENDPOINT;
-            retval.endpoint=endpoint;
+        public static StompHeader createHeader(Type type, Map<String,String> headers) {
+            StompHeader retval=new StompHeader(type);
+            if(headers != null)
+                retval.headers.putAll(headers);
             return retval;
         }
+
 
 
         public int size() {
-            switch(type) {
-                case MESSAGE:
-                    return Global.BYTE_SIZE * 2   // presence
-                            + Global.INT_SIZE     // type
-                            + (destination != null? destination.length() +2 : 0)
-                            + (sender != null? sender.length() +2 : 0);
-                
-                case ENDPOINT:
-                    return Global.BYTE_SIZE   // presence
-                            + Global.INT_SIZE // type
-                            + (endpoint != null? endpoint.length() +2 : 0);
+            int retval=Global.INT_SIZE *2; // type + size of hashmap
+            for(Map.Entry<String,String> entry: headers.entrySet()) {
+                retval+=entry.getKey().length() +2;
+                retval+=entry.getValue().length() +2;
             }
-            return 0;
+            return retval;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeInt(type.ordinal());
-            switch(type) {
-                case MESSAGE:
-                    Util.writeString(destination, out);
-                    Util.writeString(sender, out);
-                    break;
-                case ENDPOINT:
-                    Util.writeString(endpoint, out);
-                    break;
+            out.writeInt(headers.size());
+            for(Map.Entry<String,String> entry: headers.entrySet()) {
+                out.writeUTF(entry.getKey());
+                out.writeUTF(entry.getValue());
             }
-
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readInt()];
-            switch(type) {
-                case MESSAGE:
-                    destination=Util.readString(in);
-                    sender=Util.readString(in);
-                    break;
-                case ENDPOINT:
-                    endpoint=Util.readString(in);
-                    break;
+            int size=in.readInt();
+            for(int i=0; i < size; i++) {
+                String key=in.readUTF();
+                String value=in.readUTF();
+                headers.put(key, value);
             }
         }
 
         public String toString() {
-            StringBuilder sb=new StringBuilder(type.toString()).append(" ");
-            if(type == Type.MESSAGE) {
-                sb.append("destination=").append(destination).append(", sender=").append(sender);
-            }
-            else if(type == Type.ENDPOINT)
-                sb.append("endpoint=").append(endpoint);
+            StringBuilder sb=new StringBuilder(type.toString());
+            sb.append("headers: ").append(headers);
             return sb.toString();
         }
     }
