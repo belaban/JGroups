@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.5 2010/10/27 07:10:13 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.6 2010/10/27 07:43:20 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -169,24 +169,33 @@ public class StompConnection implements Runnable {
         }
     }
 
-    public void send(String destination, byte[] buf, int offset, int length) {
+    public void send(String destination, byte[] buf, int offset, int length, String ... headers) {
         StringBuilder sb=new StringBuilder();
         sb.append(STOMP.ClientVerb.SEND.name()).append("\n");
         if(destination != null)
             sb.append("destination: ").append(destination).append("\n");
         if(buf != null)
             sb.append("content-length: ").append(length +1).append("\n"); // the 1 additional byte is the NULL_BYTE
+        if(headers != null && headers.length % 2 == 0) { // must be even
+            for(int i=0; i < headers.length; i++)
+                sb.append(headers[i]).append(": ").append(headers[++i]).append("\n");
+        }
         sb.append("\n");
 
         try {
             out.write(sb.toString().getBytes());
-            out.write(buf, offset, length);
+            if(buf != null)
+                out.write(buf, offset, length);
             out.write(STOMP.NULL_BYTE);
             out.flush();
         }
         catch(IOException ex) {
             log.error("failed sending message to server: " + ex);
         }
+    }
+
+    public void send(String destination, byte[] buf, int offset, int length) {
+        send(destination, buf, offset, length, null);
     }
 
     public void send(String destination, byte[] buf) {

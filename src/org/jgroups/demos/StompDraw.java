@@ -1,4 +1,4 @@
-// $Id: StompDraw.java,v 1.2 2010/10/26 17:11:32 belaban Exp $
+// $Id: StompDraw.java,v 1.3 2010/10/27 07:43:19 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -21,7 +21,8 @@ import java.util.List;
  * @author Bela Ban, Oct 17 2001
  */
 public class StompDraw implements StompConnection.Listener, ActionListener {
-    private int                    member_size=1;
+    private int                    num_servers=1;
+    private int                    num_clients=0;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
@@ -30,10 +31,12 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private final Color            draw_color=selectColor();
     private static final Color     background_color=Color.white;
-    private final                  List<String> members=new ArrayList<String>();
+    private final                  List<String> servers=new ArrayList<String>();
+    private final Set<String>      clients=new HashSet<String>();
 
     protected StompConnection      stomp_client;
     protected static final String  draw_dest="/topics/draw-demo";
+    protected static final String  clients_dest="/topics/clients";
 
 
     public StompDraw(String host, String port) throws Exception {
@@ -100,6 +103,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     public void go() throws Exception {
         stomp_client.connect();
         stomp_client.subscribe(draw_dest);
+        stomp_client.subscribe(clients_dest);
 
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -124,46 +128,48 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         mainFrame.setBounds(new Rectangle(250, 250));
         mainFrame.setVisible(true);
         setTitle();
-    }
 
-
-
-
-    void setTitle(String title) {
-        String tmp="";
-        if(title != null)
-            mainFrame.setTitle(title);
-        else {
-            tmp+=" (" + member_size + ")";
-            mainFrame.setTitle(tmp);
+        String session_id=stomp_client.getSessionId();
+        if(session_id != null) {
+            stomp_client.send(clients_dest, null, 0, 0, "client-joined", session_id);
         }
     }
 
+
+
     void setTitle() {
-        setTitle("Draw demo - " + member_size + " server(s)");
+        if(mainFrame != null)
+            mainFrame.setTitle(num_servers + " server(s), " + num_clients + " client(s)");
+    }
+
+    int getNumberOfClients() {
+        synchronized(clients) {
+            return clients.size();
+        }
     }
 
     public void onInfo(Map<String, String> information) {
         String view=information.get("view");
+        Collection<String> list;
         if(view != null) {
-            List<String> list=Util.parseCommaDelimitedStrings(view);
+            list=Util.parseCommaDelimitedStrings(view);
             if(list != null) {
-                member_size=list.size();
+                num_servers=list.size();
                 if(mainFrame != null)
                     setTitle();
-                members.clear();
-                members.addAll(list);
+                servers.clear();
+                servers.addAll(list);
             }
             else {
                 String targets=information.get("endpoints");
                 if(targets != null) {
                     list=Util.parseCommaDelimitedStrings(targets);
                     if(list != null) {
-                        member_size=list.size();
+                        num_servers=list.size();
                         if(mainFrame != null)
                             setTitle();
-                        members.clear();
-                        members.addAll(list);
+                        servers.clear();
+                        servers.addAll(list);
                     }
                 }
             }
@@ -173,6 +179,19 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     public void onMessage(Map<String, String> headers, byte[] buf, int offset, int length) {
         if(buf == null)
             return;
+        String destination=headers.get("destination");
+        if(destination != null && destination.equals(clients_dest)) {
+            String new_client=headers.get("client-joined");
+            if(new_client != null) {
+                synchronized(clients) {
+                    if(clients.add(new_client)) {
+                        num_clients=clients.size();
+                        setTitle();
+                    }
+                }
+            }
+            return;
+        }
 
         try {
             DrawCommand comm=(DrawCommand)Util.streamableFromByteBuffer(DrawCommand.class, buf, offset, length);
