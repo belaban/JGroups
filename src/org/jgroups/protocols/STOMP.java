@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.18 2010/10/26 16:08:43 belaban Exp $
+ * @version $Id: STOMP.java,v 1.19 2010/10/27 07:10:32 belaban Exp $
  * @since 2.11
  */
 @MBean
@@ -63,6 +63,7 @@ public class STOMP extends Protocol implements Runnable {
     public String getEndpoints() {return endpoints.toString();}
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
+    protected Address                   local_addr;
     protected ServerSocket              srv_sock;
     @ManagedAttribute(writable=false)
     protected String                    endpoint;
@@ -155,6 +156,9 @@ public class STOMP extends Protocol implements Runnable {
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
         return down_prot.down(evt);
     }
@@ -184,7 +188,7 @@ public class STOMP extends Protocol implements Runnable {
                             if(update_clients && this.send_info) {
                                 synchronized(connections) {
                                     for(Connection conn: connections) {
-                                    conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
+                                        conn.writeResponse(ServerVerb.INFO, "endpoints", getAllEndpoints());
                                     }
                                 }
                             }
@@ -278,12 +282,8 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         synchronized(connections) {
-            for(Connection conn: connections) {
-                if(send_info)
-                    conn.writeResponse(ServerVerb.INFO, "view", view.toString(), "endpoints", getAllEndpoints());
-                else
-                    conn.writeResponse(ServerVerb.INFO, "view", view.toString());
-            }
+            for(Connection conn: connections)
+                conn.sendInfo();
         }
     }
 
@@ -304,6 +304,26 @@ public class STOMP extends Protocol implements Runnable {
             return Util.printListWithDelimiter(endpoints.values(), ",");
         }
     }
+
+//    protected String getAllClients() {
+//        StringBuilder sb=new StringBuilder();
+//        boolean first=true;
+//
+//        synchronized(connections) {
+//            for(Connection conn: connections) {
+//                UUID session_id=conn.session_id;
+//                if(session_id != null) {
+//                    if(first)
+//                        first=false;
+//                    else
+//                        sb.append(",");
+//                    sb.append(session_id);
+//                }
+//            }
+//        }
+//
+//        return sb.toString();
+//    }
 
     protected void broadcastEndpoint() {
         if(endpoint != null) {
@@ -482,13 +502,12 @@ public class STOMP extends Protocol implements Runnable {
         }
 
         public void sendInfo() {
-            synchronized(connections) {
-                for(Connection conn: connections) {
-                    if(send_info)
-                        conn.writeResponse(ServerVerb.INFO, "view", view.toString(), "endpoints", getAllEndpoints());
-                    else
-                        conn.writeResponse(ServerVerb.INFO, "view", view.toString());
-                }
+            if(send_info) {
+                writeResponse(ServerVerb.INFO,
+                              "local_addr", local_addr != null? local_addr.toString() : "n/a",
+                              "view", view.toString(),
+                              "endpoints", getAllEndpoints());
+                              // "clients", getAllClients());
             }
         }
 
