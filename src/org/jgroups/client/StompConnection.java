@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.4 2010/10/26 17:11:33 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.5 2010/10/27 07:10:13 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -364,6 +364,9 @@ public class StompConnection implements Runnable {
                         byte[] buf=body.getBytes();
                         conn.send(dest, buf, 0, buf.length);
                     }
+                }
+                else if(line.startsWith("disconnect")) {
+                    conn.disconnect();
                 }
             }
             catch(Exception e) {
