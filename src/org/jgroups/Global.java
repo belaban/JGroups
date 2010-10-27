@@ -8,7 +8,7 @@ import org.jgroups.util.UUID;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.63 2010/10/21 10:45:51 belaban Exp $
+ * @version $Id: Global.java,v 1.64 2010/10/27 10:52:06 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -44,6 +44,8 @@ public class Global {
     public static final String MPING_MCAST_ADDR="jgroups.mping.mcast_addr";
     public static final String MPING_MCAST_PORT="jgroups.mping.mcast_port";
     public static final String MPING_IP_TTL="jgroups.mping.ip_ttl";
+
+    public static final String STOMP_BIND_ADDR="jgroups.stomp.bind_addr";
 
     public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
     public static final String PROTOCOL_ID_FILE="jgroups.conf.protocol_id_file";
