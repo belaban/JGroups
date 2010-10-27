@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.259 2010/10/20 16:22:40 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.260 2010/10/27 14:03:42 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -280,6 +280,15 @@
         <echo message="Building manual from docbook ..."/>
         <prot-properties-to-doc input="${protocols.xml}"/>
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
+    	<delete file="${protocols.xml}.tmp"/>
+        <touch file="${manual.dir}/build/timestamp"/>
+    </target>
+
+    <target name="html" description="Build html docs"
+            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
+        <echo message="Building HTML manual from docbook ..."/>
+        <prot-properties-to-doc input="${protocols.xml}"/>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
     	<delete file="${protocols.xml}.tmp"/>
         <touch file="${manual.dir}/build/timestamp"/>
     </target>
