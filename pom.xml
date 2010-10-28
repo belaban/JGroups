@@ -8,8 +8,13 @@
     <version>2.11.0.Beta3</version>
     <url>http://www.jgroups.org</url>
     <description>
-        Reliable cluster communication
+        Reliable cluster communication toolkit
     </description>
+
+    <organization>
+        <name>JBoss, a division of Red Hat</name>
+        <url>http://www.jboss.org</url>
+    </organization>
 
     <developers>
         <developer>
@@ -20,18 +25,21 @@
 
     <licenses>
         <license>
-            <name>LGPL</name>
+            <name>GNU Lesser General Public License 2.1</name>
+            <url>http://www.opensource.org/licenses/lgpl-2.1.php</url>
         </license>
     </licenses>
 
     <scm>
-        <connection>
-            cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups login
-        </connection>
-        <url>
-            cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups login            
-        </url>
+        <connection>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</connection>
+        <developerConnection>cvs -d:ext:USER@javagroups.cvs.sf.net/cvsroot/javagroups</developerConnection>
+        <url>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</url>
     </scm>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>https://jira.jboss.com/jira/browse/JGRP</url>
+    </issueManagement>
 
     <distributionManagement>
         <repository>
@@ -64,12 +72,14 @@
             <artifactId>bsh</artifactId>
             <version>1.2b7</version>
             <optional>true</optional>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.14</version>
             <optional>true</optional>
+            <scope>compile</scope>
         </dependency>
         <!--  Tests not included in maven build currently so commented out -->
         <!-- <dependency>
