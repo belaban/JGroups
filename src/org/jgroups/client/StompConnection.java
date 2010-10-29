@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.8 2010/10/27 09:30:11 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.9 2010/10/29 12:12:11 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -195,7 +195,7 @@ public class StompConnection implements Runnable {
     }
 
     public void send(String destination, byte[] buf, int offset, int length) {
-        send(destination, buf, offset, length, null);
+        send(destination, buf, offset, length, (String[])null);
     }
 
     public void send(String destination, byte[] buf) {
