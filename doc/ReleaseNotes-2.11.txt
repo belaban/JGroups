@@ -4,7 +4,7 @@ Release Notes JGroups 2.11
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.11.txt,v 1.2 2010/10/29 11:45:35 belaban Exp $
+Version: $Id: ReleaseNotes-2.11.txt,v 1.3 2010/10/29 11:48:28 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.11 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -45,6 +45,7 @@ New flow control protocols for unicast (UFC) and multicast (MFC) messages
 MFC and UFC replace FC. They can be used independently, and performance is faster than that of FC only.
 
 
+
 API for programmatic creation of channel
 ----------------------------------------
 [https://jira.jboss.org/browse/JGRP-1245]
@@ -52,6 +53,7 @@ API for programmatic creation of channel
 Allows for programmatic creation of a JChannel, no need for XML config file.
 
 Blog: http://belaban.blogspot.com/2010/10/programmatic-creation-of-channel.html
+
 
 
 S3: new features
