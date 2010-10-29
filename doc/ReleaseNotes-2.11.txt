@@ -4,7 +4,7 @@ Release Notes JGroups 2.11
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.11.txt,v 1.1 2010/10/29 11:37:01 belaban Exp $
+Version: $Id: ReleaseNotes-2.11.txt,v 1.2 2010/10/29 11:45:35 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.11 is API-backwards compatible with previous versions (down to 2.2.7).
@@ -45,6 +45,28 @@ New flow control protocols for unicast (UFC) and multicast (MFC) messages
 MFC and UFC replace FC. They can be used independently, and performance is faster than that of FC only.
 
 
+API for programmatic creation of channel
+----------------------------------------
+[https://jira.jboss.org/browse/JGRP-1245]
+
+Allows for programmatic creation of a JChannel, no need for XML config file.
+
+Blog: http://belaban.blogspot.com/2010/10/programmatic-creation-of-channel.html
+
+
+S3: new features
+----------------
+[https://jira.jboss.org/browse/JGRP-1234] Allow use of public buckets (no credentials need to be sent)
+[https://jira.jboss.org/browse/JGRP-1235] Pre-signed URLs
+
+
+
+STOMP: new protocol to allows STOMP clients to talk to a JGroups node
+---------------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1248]
+
+Blog: http://belaban.blogspot.com/2010/10/stomp-for-jgroups.html
+
 
 
 
@@ -55,7 +77,23 @@ Optimizations
 =============
 
 
+NAKACK: simplify and optimize handling of OOB messages
+------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1104]
 
+
+Discovery: reduce number of discovery responses sent in a large cluster
+-----------------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1181]
+
+A new propery (max_rank) determines who will and who won't send discovery responses.
+
+
+New timer implementations
+-------------------------
+[https://jira.jboss.org/browse/JGRP-1051]
+
+Way more effecient implementations of the timer (TimeScheduler).
 
 
 
