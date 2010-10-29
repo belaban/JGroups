@@ -9,4 +9,3 @@ eclipse-bin
 eclipse-classes
 junit*.properties
 atlassian*
-keystore/*
