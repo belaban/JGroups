@@ -8,3 +8,5 @@ eclipse-bin
 *.iws
 eclipse-classes
 junit*.properties
+atlassian*
+keystore/*
