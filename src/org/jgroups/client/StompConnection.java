@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.9 2010/10/29 12:12:11 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.10 2010/10/30 10:14:00 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -80,9 +80,13 @@ public class StompConnection implements Runnable {
         while((dest=pickRandomDestination()) != null) {
             try {
                 connect(dest);
+                if(log.isDebugEnabled())
+                    log.debug("connected to " + dest);
                 break;
             }
             catch(IOException ex) {
+                if(log.isErrorEnabled())
+                    log.error("failed connecting to " + dest);
                 close();
                 server_destinations.remove(dest);
             }
@@ -248,7 +252,7 @@ public class StompConnection implements Runnable {
                     reconnect();
                 }
                 catch(IOException e1) {
-                    log.warn("failed to reconnect; runner thread terminated");
+                    log.warn("failed to reconnect; runner thread terminated, cause: " + e1);
                 }
             }
             catch(Throwable t) {
