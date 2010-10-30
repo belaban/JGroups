@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.23 2010/10/30 09:37:01 belaban Exp $
+ * @version $Id: STOMP.java,v 1.24 2010/10/30 11:08:30 belaban Exp $
  * @since 2.11
  */
 @MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
@@ -41,6 +41,9 @@ public class STOMP extends Protocol implements Runnable {
               defaultValueIPv4="0.0.0.0", defaultValueIPv6="::",
               systemProperty={Global.STOMP_BIND_ADDR},writable=false)
     protected InetAddress bind_addr=null;
+
+    @Property(description="If set, then endpoint will be set to this address",systemProperty=Global.STOMP_ENDPOINT_ADDR)
+    protected String endpoint_addr;
 
     @Property(description="Port on which the STOMP protocol listens for requests",writable=false)
     protected int port=8787;
@@ -107,7 +110,7 @@ public class STOMP extends Protocol implements Runnable {
             acceptor.start();
         }
 
-        endpoint=getAddress();
+        endpoint=endpoint_addr != null? endpoint_addr : getAddress();
     }
 
 
