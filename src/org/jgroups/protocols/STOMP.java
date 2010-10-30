@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.22 2010/10/27 14:03:41 belaban Exp $
+ * @version $Id: STOMP.java,v 1.23 2010/10/30 09:37:01 belaban Exp $
  * @since 2.11
  */
 @MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
@@ -53,6 +53,8 @@ public class STOMP extends Protocol implements Runnable {
             "a different server should a connection be closed.")
     protected boolean send_info=true;
 
+    @Property(description="Forward received messages which don't have a StompHeader to clients")
+    protected boolean forward_non_client_generated_msgs=false;
 
     /* ---------------------------------------------   JMX      ---------------------------------------------------*/
     @ManagedAttribute(description="Number of client connections",writable=false)
@@ -174,9 +176,11 @@ public class STOMP extends Protocol implements Runnable {
                 Message msg=(Message)evt.getArg();
                 StompHeader hdr=(StompHeader)msg.getHeader(id);
                 if(hdr == null) {
-                    HashMap<String, String> hdrs=new HashMap<String, String>();
-                    hdrs.put("sender", msg.getSrc().toString());
-                    sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    if(forward_non_client_generated_msgs) {
+                        HashMap<String, String> hdrs=new HashMap<String, String>();
+                        hdrs.put("sender", msg.getSrc().toString());
+                        sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    }
                     break;
                 }
 
