@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
  * todo: add PING to test health of client connections
  * <p/> 
  * @author Bela Ban
- * @version $Id: STOMP.java,v 1.23 2010/10/30 09:37:01 belaban Exp $
+ * @version $Id: STOMP.java,v 1.22.2.1 2010/10/30 09:38:30 belaban Exp $
  * @since 2.11
  */
 @MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
