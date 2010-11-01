@@ -27,7 +27,7 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.10 2010/10/30 10:14:00 belaban Exp $
+ * @version $Id: StompConnection.java,v 1.11 2010/11/01 07:30:27 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {
@@ -179,7 +179,7 @@ public class StompConnection implements Runnable {
         if(destination != null)
             sb.append("destination: ").append(destination).append("\n");
         if(buf != null)
-            sb.append("content-length: ").append(length +1).append("\n"); // the 1 additional byte is the NULL_BYTE
+            sb.append("content-length: ").append(length).append("\n");
         if(headers != null && headers.length % 2 == 0) { // must be even
             for(int i=0; i < headers.length; i++)
                 sb.append(headers[i]).append(": ").append(headers[++i]).append("\n");
@@ -196,6 +196,13 @@ public class StompConnection implements Runnable {
         catch(IOException ex) {
             log.error("failed sending message to server: " + ex);
         }
+    }
+
+    /**
+     * Sends an INFO without body
+     */
+    public void send(String destination, String ... headers) {
+        send(destination, null, 0, 0, headers);
     }
 
     public void send(String destination, byte[] buf, int offset, int length) {
