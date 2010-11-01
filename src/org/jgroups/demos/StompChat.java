@@ -287,6 +287,7 @@ public class StompChat implements StompConnection.Listener {
                      setTitle();
                  servers.clear();
                  servers.addAll(list);
+                 newView(view);
              }
              else {
                  String targets=information.get("endpoints");
