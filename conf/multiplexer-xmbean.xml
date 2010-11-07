@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mbean PUBLIC
+        "-//JBoss//DTD JBOSS XMBEAN 1.0//EN"
+        "http://www.jboss.org/j2ee/dtd/jboss_xmbean_1_0.dtd">
+
+
+
+
+<!--
+    An example for setting up the JChannelFactory MBean
+    Author: Bela Ban
+    Version: $Id: multiplexer-xmbean.xml,v 1.3 2006/05/12 09:43:10 belaban Exp $
+    -->
+<mbean>
+
+    <description>JGroups Multiplexer</description>
+    <class>org.jgroups.jmx.JChannelFactory</class>
+
+    <!-- Constructors -->
+    <constructor>
+        <description>The default constructor</description>
+        <name>JChannelFactory</name>
+    </constructor>
+
+    <!-- Attributes -->
+    <attribute access="read-write" getMethod="getDomain" setMethod="setDomain">
+        <description>The domain which is used as prefix for all channels and protocols exposed via JMX</description>
+        <name>Domain</name>
+        <type>java.lang.String</type>
+        <descriptors>
+            <default value="jgroups.mux" />
+        </descriptors>
+    </attribute>
+
+    <attribute access="read-write" getMethod="getMultiplexerConfig" setMethod="setMultiplexerConfig">
+        <description>The file used for configuration. If this is not an absolute pathname, it will need to be found on the classpath</description>
+        <name>MultiplexerConfig</name>
+        <type>java.lang.String</type>
+        <descriptors>
+            <default value="stacks.xml" />
+        </descriptors>
+    </attribute>
+
+    <attribute access="read-write" getMethod="isExposeChannels" setMethod="setExposeChannels">
+        <description>Whether or not to expose channels via JMX</description>
+        <name>ExposeChannels</name>
+        <type>boolean</type>
+        <descriptors>
+            <default value="true" />
+        </descriptors>
+    </attribute>
+
+    <attribute access="read-write" getMethod="isExposeProtocols" setMethod="setExposeProtocols">
+        <description>Whether or not to expose protocols via JMX (if true, will set ExposeChannels to true too)</description>
+        <name>ExposeProtocols</name>
+        <type>boolean</type>
+        <descriptors>
+            <default value="true" />
+        </descriptors>
+    </attribute>
+
+
+    <!-- JBoss MBean Life Cycle Operations -->
+    <operation>
+        <description>The create() life cycle operation</description>
+        <name>create</name>
+    </operation>
+
+    <operation>
+        <description>The start lifecycle operation.</description>
+        <name>start</name>
+    </operation>
+
+    <operation>
+        <description>The stop lifecycle operation.</description>
+        <name>stop</name>
+    </operation>
+
+    <operation>
+        <description>The destroy() life cycle operation</description>
+        <name>destroy</name>
+    </operation>
+
+    <!-- Ordinary Operations -->
+    <operation>
+        <description>Dumps the channels</description>
+        <name>dumpChannels</name>
+        <return-type>java.lang.String</return-type>
+    </operation>
+
+    <operation>
+        <description>Dumps the configuration</description>
+        <name>dumpConfiguration</name>
+        <return-type>java.lang.String</return-type>
+    </operation>
+
+    <operation>
+        <description></description>
+        <name>createMultiplexerChannel</name>
+        <parameter>
+            <description>The name of the stack, as defined e.g. in stacks.xml</description>
+            <name>stack_name</name>
+            <type>java.lang.String</type>
+        </parameter>
+        <parameter>
+            <description>The application ID, all IDs need to be unique across a Multiplexer</description>
+            <name>id</name>
+            <type>java.lang.String</type>
+        </parameter>
+        <parameter>
+            <description>Whether this application wants to register for state transfer, getState() will only return when *all* registered listeners called it</description>
+            <name>register_for_state_transfer</name>
+            <type>boolean</type>
+        </parameter>
+        <parameter>
+            <description>The ID of the substate to be retrieved (or null)</description>
+            <name>substate_id</name>
+            <type>java.lang.String</type>
+        </parameter>
+        <return-type>org.jgroups.Channel</return-type>
+    </operation>
+
+    <operation>
+        <description></description>
+        <name>createMultiplexerChannel</name>
+        <parameter>
+            <description>The name of the stack, as defined e.g. in stacks.xml</description>
+            <name>stack_name</name>
+            <type>java.lang.String</type>
+        </parameter>
+        <parameter>
+            <description>The application ID, all IDs need to be unique across a Multiplexer</description>
+            <name>id</name>
+            <type>java.lang.String</type>
+        </parameter>
+        <return-type>org.jgroups.Channel</return-type>
+    </operation>
+
+</mbean>
+

@@ -1,0 +1,687 @@
+<chapter id="user-building-blocks"><title>Building Blocks</title>
+
+  <para>Building blocks are layered on top of channels. Most of them
+  do not even need a channel, all they need is a class that implements
+  interface <classname>Transport</classname> (channels do). This
+  enables them to work on any type of group transport that implements this
+  interface.  Building blocks can be used instead of channels whenever
+  a higher-level interface is required.</para>
+
+  <para>Whereas channels are simple
+  socket-like constructs, building blocks may offer a far more
+  sophisticated interface. In some cases, building blocks offer access
+  to the underlying channel, so that -- if the building block at hand
+  does not offer a certain functionality -- the channel can be
+  accessed directly.  Building blocks are located in the
+  <classname>org.jgroups.blocks</classname> package. Only the ones
+  that are relevant for application programmers are discussed
+  below.</para>
+
+
+  <section><title>PullPushAdapter</title>
+
+      <para>
+          <emphasis>Note that this building block has been deprecated and should not be used anymore !
+              Use a Receiver instead.
+          </emphasis>
+      </para>
+
+    <para>This class is a converter (or adapter, as used in <xref
+    linkend="Gamma:1995"/> between the pull-style of actively
+    receiving messages from the channel and the push-style where
+    clients register a callback which is invoked whenever a message
+    has been received. Clients of a channel do not have to allocate a
+    separate thread for message reception.</para>
+
+    <para>A <classname>PullPushAdapter</classname> is always created
+    on top of a class that implements interface
+    <classname>Transport</classname> (e.g. a channel). Clients
+    interested in being called when a message is received can register
+    with the <classname>PullPushAdapter</classname> using method
+    <methodname>setListener()</methodname>. They have to implement
+    interface <classname>MessageListener</classname>, whose
+    <methodname>receive()</methodname> method will be called when a
+    message arrives. When a client is interested in getting view,
+    suspicion messages and blocks, then it must additionally register
+    as a <classname>MembershipListener</classname> using method
+    <methodname>setMembershipListener()</methodname>. Whenever a view,
+    suspicion or block is received, the corresponding method will be
+    called.</para>
+
+    <para>Upon creation, an instance of
+    <classname>PullPushAdapter</classname> creates a thread which
+    constantly calls the <methodname>receive()</methodname> method of
+    the underlying <classname>Transport</classname> instance, blocking
+    until a message is available. When a message is received, if there
+    is a registered message listener, its
+    <methodname>receive()</methodname> method will be called.</para>
+
+    <para>As this class does not implement interface
+    <classname>Transport</classname>, but merely uses it for receiving
+    messages, an underlying object has to be used to send messages
+    (e.g. the channel on top of which an object of this class
+    resides). This is shown in <xref
+    linkend="PullPushAdapterFig"/>.</para>
+
+    <figure id="PullPushAdapterFig">
+      <title>Class <classname>PullPushAdapter</classname></title>
+      <mediaobject>
+	<!--imageobject>
+	  <imagedata align="center" fileref="PullPushAdapter.png"/>
+        </imageobject-->
+	<textobject>
+	  <phrase>A diagram representing the PullPushAdapter.</phrase>
+	</textobject>
+      </mediaobject>
+    </figure>
+
+    <para>As is shown, the thread constantly pulls messages from the
+    channel and forwards them to the registered listeners. An
+    application thus does not have to actively pull for messages, but
+    the <classname>PullPushAdapter</classname> does this for it. Note
+    however, that the application has to <emphasis>directly</emphasis>
+    access the channel if it wants to <emphasis>send</emphasis> a
+    message.</para>
+
+    <section><title>Example</title>
+
+      <para>This section shows sample code for using a
+      <classname>PullPushAdapter</classname>. The example has been
+      shortened for readability (error handling has been
+      removed).</para>
+
+      <screen>
+    public class PullPushTest implements MessageListener {
+        Channel          channel;
+        PullPushAdapter  adapter;
+        byte[]           data="Hello world".getBytes();
+        String           props; // fetch properties
+
+        public void receive(Message msg) {
+            System.out.println("Received msg: " + msg);
+        }
+
+        public void start() throws Exception {
+            channel=new JChannel(props);
+            channel.connect("PullPushTest");
+            adapter=new PullPushAdapter(channel);
+            adapter.setListener(this);
+
+            for(int i=0; i &lt; 10; i++) {
+                System.out.println("Sending msg #" + i);
+                channel.send(new Message(null, null, data));
+                Thread.currentThread().sleep(1000);
+            }
+            adapter.stop();
+            channel.close();
+        }
+
+
+        public static void main(String args[]) {
+            try {
+                new PullPushTest().start();
+            }
+            catch(Exception e) { /* error */ }
+        }
+    }
+      </screen>
+
+      <para>First a channel is created and connected to. Then an
+      instance of <classname>PullPushAdapter</classname> is created
+      with the channel as argument. The constructor of
+      <classname>PullPushAdapter</classname> starts its own thread
+      which continually reads on the channel. Then the
+      <classname>MessageListener</classname> is set, which causes all
+      messages received on the channel to be sent to
+      <methodname>receive()</methodname>. Then a number of messages
+      are sent via the channel to the entire group. As group messages
+      are also received by the sender, the
+      <methodname>receive()</methodname> method will be called every
+      time a message is received. Finally the
+      <classname>PullPushAdapter</classname> is stopped and the
+      channel closed. Note that explicitly stopping the
+      <classname>PullPushAdapter</classname> is not actually
+      necessary, a closing the channel would cause the
+      <classname>PullPushAdapter</classname> to terminate
+      anyway.</para>
+
+      <para>Note that, compared to the pull-style example, push-style
+      message reception is considerably easier (no separate thread
+      management) and requires less code to program.</para>
+
+        <note>
+            The PullPushAdapter has been deprecated, and will be removed in 3.0. Use a Receiver implementation
+            instead. The advantage of the Receiver-based (push) model is that we save 1 thread.
+        </note>
+
+    </section>
+    
+  </section>
+
+  <section><title>MessageDispatcher</title>
+
+    <para>Channels are simple patterns to
+    <emphasis>asynchronously</emphasis> send a receive
+    messages. However, a significant number of communication patterns
+    in group communication require <emphasis>synchronous
+    communication</emphasis>. For example, a sender would like to send
+    a message to the group and wait for all responses. Or another
+    application would like to send a message to the group and wait
+    only until the majority of the receivers have sent a response, or
+    until a timeout occurred.</para>
+
+    <para><classname>MessageDispatcher</classname> offers a
+    combination of the above pattern with other patterns. It provides
+    synchronous (as well as asynchronous) message sending with
+    request-response correlation, e.g. matching responses with the
+    original request. It also offers push-style message reception (by
+    internally using the
+    <classname>PullPushAdapter</classname>).</para>
+
+    <para>An instance of <classname>MessageDispatcher</classname> is
+    created with a channel as argument. It can now be used in both
+    <emphasis>client and server role</emphasis>: a client sends
+    requests and receives responses and a server receives requests and
+    send responses. <classname>MessageDispatcher</classname> allows a
+    application to be both at the same time. To be able to serve
+    requests, the <methodname>RequestHandler.handle()</methodname>
+    method has to be implemented:</para>
+
+    <screen>
+    Object handle(Message msg);
+    </screen>
+
+    <para>The <methodname>handle()</methodname> method is called any
+    time a request is received. It must return a return value (must be
+    serializable, but can be null) or throw an exception. The return
+    value will be returned to the sender (as a null response, see
+    below). The exception will also be propagated to the
+    requester.</para>
+
+    <para>The two methods to send requests are:</para>
+
+    <screen>
+    public RspList castMessage(Vector dests, Message msg, int mode, long timeout);
+    public Object sendMessage(Message msg, int mode, long timeout)
+        throws TimeoutException;
+    </screen>
+
+    <para>The <methodname>castMessage()</methodname> method sends a
+    message to all members defined in <parameter>dests</parameter>. If
+    <parameter>dests</parameter> is null the message will be sent to
+    all members of the current group. Note that a possible destination
+    set in the message will be overridden. If a message is sent
+    synchronously then the <parameter>timeout</parameter> argument
+    defines the maximum amount of time in milliseconds to wait for the
+    responses.</para>
+
+    <para>The <parameter>mode</parameter> parameter defines whether
+    the message will be sent synchronously or asynchronously. The
+    following values are valid (from
+    <classname>org.jgroups.blocks.GroupRequest</classname>):</para>
+
+    <variablelist>
+      <varlistentry>
+	<term>GET_FIRST</term> 
+    	<listitem><para>Returns the first response
+    	received.</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>GET_ALL</term>
+    	<listitem><para>Waits for all responses (minus the ones from
+        suspected members)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>GET_MAJORITY</term>
+    	<listitem><para>Waits for a majority of all responses
+        (relative to the group size)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>GET_ABS_MAJORITY</term>
+    	<listitem><para>Waits for the majority (absolute, computed
+        once)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>GET_N</term>
+    	<listitem><para>Wait for n responses (may block if n > group
+        size)</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>GET_NONE</term>
+    	<listitem><para>Wait for no responses, return immediately
+        (non-blocking). This make the call
+        asynchronous.</para></listitem>
+      </varlistentry>
+    </variablelist>
+
+    
+    <para>The <methodname>sendMessage()</methodname> method allows an
+    application programmer to send a unicast message to a receiver and
+    optionally receive the response. The destination of the message
+    has to be non-null (valid address of a receiver). The
+    <parameter>mode</parameter> argument is ignored (it is by default
+    set to <constant>GroupRequest.GET_FIRST</constant>) unless it is
+    set to <constant>GET_NONE</constant> in which case the request
+    becomes asynchronous, ie. we will not wait for the
+    response.</para>
+
+    <para>One advantage of using this building block is that failed
+    members are removed from the set of expected responses. For
+    example, when sending a message to 10 members and waiting for all
+    responses, and 2 members crash before being able to send a
+    response, the call will return with 8 valid responses and 2 marked
+    as failed. The return value of
+    <methodname>castMessage()</methodname> is a
+    <classname>RspList</classname> which contains all responses (not
+    all methods shown):</para>
+
+    <screen>
+    public class RspList implements Map&lt;Address,Rsp&gt; {
+        public boolean isReceived(Address sender);
+        public int     numSuspectedMembers();
+        public Vector  getResults();
+        public Vector  getSuspectedMembers();
+        public boolean isSuspected(Address sender);
+        public Object  get(Address sender);
+        public int     size();
+    }
+    </screen>
+
+    <para>Method <methodname>isReceived()</methodname> checks whether
+    a response from <parameter>sender</parameter> has already been
+    received. Note that this is only true as long as no response has
+    yet been received, and the member has not been marked as
+    failed. <methodname>numSuspectedMembers()</methodname> returns the
+    number of members that failed (e.g. crashed) during the wait for
+    responses. <methodname>getResults()</methodname> returns a list of
+    return values. <methodname>get()</methodname> returns the return
+    value for a specific member.</para>
+
+    <section><title>Example</title>
+
+      <para>This section describes an example of how to use a
+      <classname>MessageDispatcher</classname>.</para>
+    
+      <screen>
+    public class MessageDispatcherTest implements RequestHandler {
+        Channel            channel;
+        MessageDispatcher  disp;
+        RspList            rsp_list;
+        String             props; // to be set by application programmer
+
+        public void start() throws Exception {
+            channel=new JChannel(props);
+            disp=new MessageDispatcher(channel, null, null, this);
+            channel.connect("MessageDispatcherTestGroup");
+
+            for(int i=0; i &lt; 10; i++) {
+                Util.sleep(100);
+                System.out.println("Casting message #" + i);
+                rsp_list=disp.castMessage(null,
+                    new Message(null, null, new String("Number #" + i)),
+                    GroupRequest.GET_ALL, 0);
+                System.out.println("Responses:\n" +rsp_list);
+            }
+            channel.close();
+            disp.stop();
+        }
+
+        public Object handle(Message msg) {
+            System.out.println("handle(): " + msg);
+            return new String("Success !");
+        }
+
+        public static void main(String[] args) {
+            try {
+                new MessageDispatcherTest().start();
+            }
+            catch(Exception e) {
+                System.err.println(e);
+            }
+        }
+    }
+      </screen>
+    
+      <para>The example starts with the creation of a channel. Next,
+      an instance of <classname>MessageDispatcher</classname> is
+      created on top of the channel. Then the channel is
+      connected. The <classname>MessageDispatcher</classname> will
+      from now on send requests, receive matching responses (client
+      role) and receive requests and send responses (server
+      role).</para>
+
+      <para>We then send 10 messages to the group and wait for all
+      responses. The <parameter>timeout</parameter> argument is 0,
+      which causes the call to block until all responses have been
+      received.</para>
+
+      <para>The <methodname>handle()</methodname> method simply prints
+      out a message and returns a string.</para>
+
+      <para>Finally both the <classname>MessageDispatcher</classname>
+      and channel are closed.</para>
+
+    </section>
+    
+  </section>
+
+  <section><title>RpcDispatcher</title>
+
+    <para>This class is derived from
+    <classname>MessageDispatcher</classname>. It allows a programmer
+    to invoke remote methods in all (or single) group members and
+    optionally wait for the return value(s). An application will
+    typically create a channel and layer the
+    <classname>RpcDispatcher</classname> building block on top of it,
+    which allows it to dispatch remote methods (client role) and at
+    the same time be called by other members (server role).</para>
+
+    <para>Compared to <classname>MessageDispatcher</classname>, no
+    <methodname>handle()</methodname> method needs to be
+    implemented. Instead the methods to be called can be placed
+    directly in the class using regular method definitions (see
+    example below). The invoke remote method calls (unicast and
+    multicast) the following methods are used (not all methods
+    shown):</para>
+
+    <screen>
+    public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout);
+    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, int mode, long timeout);
+    public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout);
+    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode, long timeout);
+    </screen>
+
+    <para>The family of <methodname>callRemoteMethods()</methodname>
+    is invoked with a list of receiver addresses. If null, the method
+    will be invoked in all group members (including the sender). Each
+    call takes the name of the method to be invoked and the
+    <parameter>mode</parameter> and <parameter>timeout</parameter>
+    parameters, which are the same as for
+    <classname>MessageDispatcher</classname>. Additionally, each
+    method takes zero or more parameters: there are
+    <methodname>callRemoteMethods()</methodname> methods with up to 3
+    arguments. As shown in the example above, the first 2 methods take
+    zero and one parameters respectively.</para>
+
+    <para>The family of <methodname>callRemoteMethod()</methodname>
+    methods takes almost the same parameters, except that there is
+    only one destination address instead of a list. If the
+    <parameter>dest</parameter> argument is null, the call will
+    fail.</para>
+
+    <para>If a sender needs to use more than 3 arguments, it can use
+    the generic versions of
+    <methodname>callRemoteMethod()</methodname> and
+    <methodname>callRemoteMethods()</methodname> which use a
+    <classname>MethodCall</classname><footnote><para>See the
+    Programmer's Guide and the Javadoc documentation for more
+    information about this class.</para></footnote> instance rather
+    than explicit arguments.</para>
+
+    <para>Java's Reflection API is used to find the correct method in
+    the receiver according to the method name and number and types of
+    supplied arguments. There is a runtime exception if a method
+    cannot be resolved.</para>
+
+    <para><emphasis>(* Update: these methods are deprecated; must use
+    MethodCall argument now *)</emphasis></para>
+
+    <section><title>Example</title>
+
+      <para>The code below shows an example:</para>
+
+      <screen>
+    public class RpcDispatcherTest {
+        Channel            channel;
+        RpcDispatcher      disp;
+        RspList            rsp_list;
+        String             props; // set by application
+
+        public int print(int number) throws Exception {
+            return number * 2;
+        }
+
+        public void start() throws Exception {
+            channel=new JChannel(props);
+            disp=new RpcDispatcher(channel, null, null, this);
+            channel.connect("RpcDispatcherTestGroup");
+
+            for(int i=0; i &lt; 10; i++) {
+                Util.sleep(100);
+                rsp_list=disp.callRemoteMethods(null, "print",
+                     new Integer(i), GroupRequest.GET_ALL, 0);
+                System.out.println("Responses: " +rsp_list);
+            }
+            channel.close();
+            disp.stop();
+         }
+
+        public static void main(String[] args) {
+            try {
+                new RpcDispatcherTest().start();
+            }
+            catch(Exception e) {
+                System.err.println(e);
+            }
+        }
+    }
+     </screen>
+
+      <para>Class <classname>RpcDispatcher</classname> defines method
+      <methodname>print()</methodname> which will be called
+      subsequently. The entry point <methodname>start()</methodname>
+      method creates a channel and an
+      <classname>RpcDispatcher</classname> which is layered on
+      top. Method <methodname>callRemoteMethods()</methodname> then
+      invokes the remote <methodname>print()</methodname> method in
+      all group members (also in the caller). When all responses have
+      been received, the call returns and the responses are
+      printed.</para>
+
+      <para>As can be seen, the <classname>RpcDispatcher</classname>
+      building block reduces the amount of code that needs to be
+      written to implement RPC-based group communication applications
+      by providing a higher abstraction level between the application
+      and the primitive channels.</para>
+
+        <section><title>RequestOptions</title>
+            <para>
+                RequestOptions is a collection of options that can be passed into a call, e.g. the mode (GET_ALL, GET_NONE),
+                timeout, flags etc. It is an alternative to passing multiple arguments to a method.
+            </para>
+
+            <para>
+                All calls with individual parameters have been deprecated in 2.9 and the new calls with RequestOptions
+                are:
+      <screen>
+        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
+                                         Class[] types, RequestOptions options);
+        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
+                                         RequestOptions options);
+        public Object callRemoteMethod(Address dest, String method_name, Object[] args,
+                                       Class[] types, RequestOptions options);
+        public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
+      </screen>
+            </para>
+
+            <para>
+                An example of how to use RequestOptions is:
+      <screen>
+        RpcDispatcher disp;
+        RequestOptions opts=new RequestOptions(Request.GET_ALL).setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+        Object val=disp.callRemoteMethod(target, method_call, opts);
+      </screen>
+            </para>
+        </section>
+
+        <section><title>Asynchronous calls with futures</title>
+
+            <para>
+                When invoking a synchronous call, the calling thread is blocked until the response (or responses) has
+                been received.
+            </para>
+
+            <para>
+                A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
+                2.9, two new methods, which return futures, have been added to RpcDispatcher:
+                <screen>
+                    public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                                  MethodCall method_call, RequestOptions options);
+                    public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+                                                                  RequestOptions options);
+                </screen>
+            </para>
+
+            <para>
+                A NotifyingFuture extends java.util.concurrent.Future, with its regular methods such as isDone(),
+                get() and cancel(). NotifyingFuture adds setListener&lt;FutureListener&gt; to get notified when
+                the result is available. This is shown in the following code:
+      <screen>
+        NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
+        future.setListener(new FutureListener() {
+            void futureDone(Future&lt;T&gt; future) {
+                System.out.println("result is " + future.get());
+            }
+        }
+        );
+      </screen>
+            </para>
+
+        </section>
+
+
+    </section>
+    
+  </section>
+
+
+  <section><title>ReplicatedHashMap</title>
+
+      <para>
+          This class was written as a demo of how state can be shared between nodes of a cluster. It has never been
+          heavily tested and is therefore not meant to be used in production, and unsupported.
+      </para>
+
+      <para>A <classname>ReplicatedHashMap</classname> uses a concurrent hashmap internally
+          and allows to
+          create several instances of hashmaps in different processes. All
+          of these instances have exactly the same state at all times. When
+          creating such an instance, a group name determines which group of
+          replicated hashmaps will be joined. The new instance will then query the
+          state from existing members and update itself before starting to
+          service requests. If there are no existing members, it will simply
+          start with an empty state.
+      </para>
+
+      <para>Modifications such as <methodname>put()</methodname>,
+          <methodname>clear()</methodname> or
+          <methodname>remove()</methodname> will be propagated in orderly
+          fashion to all replicas. Read-only requests such as
+          <methodname>get()</methodname> will only be sent to the local
+          copy.
+      </para>
+
+      <para>Since both keys and values of a hashtable will be sent
+          across the network, both of them have to be
+          serializable. This allows for example to register remote RMI
+          objects with any local instance of a hashtable, which can
+          subsequently be looked up by another process which can then invoke
+          remote methods (remote RMI objects are serializable). Thus, a
+          distributed naming and registration service can be built in just a
+          couple of lines.
+      </para>
+
+      <para>A <classname>ReplicatedHashMap</classname> allows to
+          register for notifications, e.g. when a new item is set, or an
+          existing one removed. All registered listeners will notified when
+          such an event occurs. Notification is always local; for example in
+          the case of removing an element, first the element is removed in
+          all replicas, which then notify their listener(s) of the removal
+          (after the fact).
+      </para>
+
+      <para><classname>ReplicatedHashMap</classname> allow members in
+          a group to share common state across process and machine
+          boundaries.
+      </para>
+
+  </section>
+    
+
+
+
+  <section><title>NotificationBus</title>
+
+    <para>This class provides notification sending and handling
+    capability. Also, it allows an application programmer to maintain
+    a local cache which is replicated by all
+    instances. <classname>NotificationBus</classname> also sits on top
+    of a channel, however it creates its channel itself, so the
+    application programmers do not have to provide their own
+    channel. Notification consumers can subscribe to receive
+    notifications by calling <methodname>setConsumer()</methodname>
+    and implementing interface
+    <classname>NotificationBus.Consumer</classname>:</para>
+
+    <screen>
+    public interface Consumer {
+        void          handleNotification(Serializable n);
+        Serializable  getCache();
+        void          memberJoined(Address mbr);
+        void          memberLeft(Address mbr);
+    }
+    </screen>
+
+    <para>Method <methodname>handleNotification()</methodname> is
+    called whenever a notification is received from the channel. A
+    notification is any object that is serializable. Method
+    <methodname>getCache()</methodname> is called when someone wants
+    to retrieve our state; the state can be returned as a serializable
+    object. The <methodname>memberJoined()</methodname> and
+    <methodname>memberLeft()</methodname> callbacks are invoked
+    whenever a member joins or leaves (or crashes).</para>
+
+    <para>The most important methods of
+    <classname>NotificationBus</classname> are:</para>
+
+    <screen>
+    public class NotificationBus {
+         public void setConsumer(Consumer c);
+         public void start() throws Exception;
+         public void stop();
+         public void sendNotification(Serializable n);
+         public Serializable getCacheFromCoordinator(long timeout, int max_tries);
+         public Serializable getCacheFromMember(Address mbr, long timeout, int max_tries);
+    } 
+    </screen>
+
+    <para>Method <methodname>setConsumer()</methodname> allows a
+    consumer to register itself for notifications.</para>
+
+    <para>The <methodname>start()</methodname> and
+    <methodname>stop()</methodname> methods start and stop the
+    <classname>NotificationBus</classname>.</para>
+
+    <para>Method <methodname>sendNotification()</methodname> sends the
+    serializable object given as argument to all members of the group,
+    invoking their <methodname>handleNotification()</methodname>
+    methods on reception.</para>
+
+    <para>Methods <methodname>getCacheFromCoordinator()</methodname>
+    and <methodname>getCacheFromMember()</methodname> provide
+    functionality to fetch the group state from the coordinator (first
+    member in membership list) or any other member (if its address is
+    known). They take as arguments a timeout and a maximum number of
+    unsuccessful attempts until they return null. Typically one of
+    these methods would be called just after creating a new
+    <classname>NotificationBus</classname> to acquire the group
+    state. Note that if these methods are used, then the consumers
+    must implement <methodname>Consumer.getCache()</methodname>,
+    otherwise the two methods above would always return null.</para>
+    
+  </section>
+
+  
+    
+</chapter>
+

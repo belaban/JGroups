@@ -1,0 +1,1058 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="protlist">
+    <title>List of Protocols</title>
+
+    <para>
+        This section is work in progress; we strive to update the documentation as we make changes to the code.
+    </para>
+    <para>
+        The most important properties are described on the
+        <ulink url="http://www.jboss.org/wiki/Wiki.jsp?page=JGroups">wiki</ulink>. The idea is that users take one
+        of the predefined configurations (shipped with JGroups) and make only minor changes to it.
+    </para>
+
+    <para>For each protocol define:</para>
+
+    <itemizedlist>
+        <listitem>
+            <para>Properties provided</para>
+        </listitem>
+
+        <listitem>
+            <para>Required services</para>
+        </listitem>
+
+        <listitem>
+            <para>Provided services</para>
+        </listitem>
+
+        <listitem>
+            <para>Behavior</para>
+        </listitem>
+    </itemizedlist>
+
+    <section>
+        <title>Transport</title>
+
+        <section>
+            <title>UDP</title>
+            
+			${UDP}			          
+
+            <para></para>
+        </section>
+
+        <section>
+            <title>TCP</title>
+
+			${TCP}
+			
+            <para></para>
+        </section>        
+
+        <section>
+            <title>TUNNEL</title>
+            
+			${TUNNEL}
+            
+
+            <para></para>
+        </section>       
+    </section>
+
+    <section>
+        <title>Initial membership discovery</title>
+
+        The task of the discovery is to find an initial membership, which is used to determine the current
+        coordinator. Once a coordinator is found, the joiner sends a JOIN request to the coord.
+
+
+        <section>
+            <title>PING</title>
+            
+			${PING}
+            <para></para>
+        </section>
+
+
+        <section>
+            <title>FILE_PING</title>
+            This uses a shared directory into which all members write their addresses. New joiners read all addresses
+            from this directory (which needs to be shared, e.g. via NFS or SMB) and ping each of the elements of
+            the resulting set of members. When a member leaves, it deletes its corresponding file.
+            <para>
+                FILE_PING can be used instead of GossipRouter in cases where no external process is desired.
+            </para>
+
+			${PING}
+            <para></para>
+        </section>
+
+        <section>
+            <title>TCPPING</title>
+            
+			${TCPPING}
+
+            <para></para>
+        </section>
+
+        <section>
+            <title>TCPGOSSIP</title>
+            
+			${TCPGOSSIP}
+
+            <para></para>
+        </section>
+
+        <section>
+            <title>MPING</title>
+
+			${MPING}
+            <para></para>
+        </section>
+
+        <section>
+            <title>S3_PING</title>
+            This uses an Amazon S3 bucket into which all members write their addresses. New joiners read all addresses
+            from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
+            delets its corresponding file.
+            <para>
+              S3_PING is primarily meant to be used on Amazon EC2 where multicast traffic is not allowed and
+              no external process (GossipRouter) is desired.
+            </para>
+
+			${S3_PING}
+            <para></para>
+        </section>
+    </section>
+
+    <section>
+        <title>Merging after a network partition</title>
+
+        <section>
+            <title>MERGE2</title>
+				${MERGE2}
+
+            <para></para>
+        </section>
+    </section>
+
+    <section>
+
+
+        <title>Failure Detection</title>
+
+        The task of failure detection is to probe members of a group and see whether they are alive. When a member is
+        suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
+        failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
+        simply to notify everyone that a node in the cluster is suspected of having crashed.
+
+        <section>
+            <title>FD</title>
+
+            <para>Failure detection based on heartbeat messages. If reply is not
+                received without timeout ms, max_tries times, a member is declared
+                suspected, and will be excluded by GMS
+            </para>
+
+            <para>Each member send a message containing a "FD" - HEARTBEAT header to
+                its neighbor to the right (identified by the ping_dest address). The
+                heartbeats are sent by the inner class Monitor. When the neighbor
+                receives the HEARTBEAT, it replies with a message containing a "FD" -
+                HEARTBEAT_ACK header. The first member watches for "FD" - HEARTBEAT_ACK
+                replies from its neigbor. For each received reply, it resets the
+                last_ack timestamp (sets it to current time) and num_tries counter (sets
+                it to 0). The same Monitor instance that sends heartbeats whatches the
+                difference between current time and last_ack. If this difference grows
+                over timeout, the Monitor cycles several more times (until max_tries) is
+                reached) and then sends a SUSPECT message for the neighbor's address.
+                The SUSPECT message is sent down the stack, is addressed to all members,
+                and is as a regular message with a FdHeader.SUSPECT header.
+            </para>
+
+            ${FD}
+        </section>
+
+
+        <section>
+            <title>FD_ALL</title>
+
+            <para>Failure detection based on simple heartbeat protocol. Every member periodically multicasts a
+                heartbeat.
+                Every member also maintains a table of all members (minus itself). When data or a heartbeat from P are
+                received, we reset the timestamp for P to the current time.
+                Periodically, we check for expired members, and suspect those.
+            </para>
+            <para>
+                Example: &lt;FD_ALL interval="3000" timeout="10000"/&gt;
+            </para>
+            <para>
+                In the exampe above, we send a heartbeat every 3 seconds and suspect members if we haven't received a
+                heartbeat (or traffic) for more than 10 seconds. Note that since we check the timestamps every
+                'interval'
+                milliseconds, we will suspect a member after roughly 4 * 3s == 12 seconds. If we set the timeout to
+                8500,
+                then we would suspect a member after 3 * 3 secs == 9 seconds.
+            </para>
+
+			${FD_ALL}
+
+        </section>
+
+
+        <section>
+            <title>FD_SIMPLE</title>
+
+            <para/>
+        </section>
+
+
+        <section>
+            <title>FD_PING</title>
+            FD_PING uses a script or command that is
+            run with 1 argument (the host to be pinged) and needs to return 0
+            (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
+            Windows), but this is user configurable and can be replaced with any
+            user-provided script or executable.
+ 
+ 
+			 ${FD_PING}
+ 
+        </section>
+
+
+        <section>
+            <title>FD_ICMP</title>
+            Uses InetAddress.isReachable() to
+            determine whether a host is up or not. Note that this is only available in
+            JDK 5, so reflection is used to determine whether InetAddress provides
+            such a method. If not, an exception will be thrown at protocol
+            initialization time.
+            <para/>
+            The problem with InetAddress.isReachable()
+            is that it may or may not use ICMP in its implementation ! For example, an
+            implementation might try to establish a TCP connection to port 9 (echo
+            service), and - if the echo service is not running - the host would be
+            suspected, although a real ICMP packet would
+            <emphasis>not</emphasis>
+            have
+            suspected the host ! Please check your JDK/OS combo before running this
+            protocol.
+            <table>
+                <title>Properties</title>
+
+                <tgroup cols="2">
+                    <colspec align="left"/>
+
+                    <thead>
+                        <row>
+                            <entry align="center">Name</entry>
+
+                            <entry align="center">Description</entry>
+                        </row>
+                    </thead>
+
+                    <tbody>
+                        <row>
+                            <entry>bind_addr</entry>
+
+                            <entry>The network interface to be used for sending ICMP
+                                packets, e.g.
+                                <code>bind_addr="192.16.8.0.2"</code>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+
+
+        <section>
+            <title>FD_SOCK</title>
+
+            <para>Failure detection protocol based on a ring of TCP sockets created
+                between group members. Each member in a group connects to its neighbor
+                (last member connects to first) thus forming a ring. Member B is
+                suspected when its neighbor A detects abnormally closed TCP socket
+                (presumably due to a node B crash). However, if a member B is about to
+                leave gracefully, it lets its neighbor A know, so that it does not
+                become suspected.
+            </para>
+
+            <para>If you are using a multi NIC machine note that JGroups versions
+                prior to 2.2.8 have FD_SOCK implementation that does not assume this
+                possibility. Therefore JVM can possibly select NIC unreachable to its
+                neighbor and setup FD_SOCK server socket on it. Neighbor would be unable
+                to connect to that server socket thus resulting in immediate suspecting
+                of a member. Suspected member is kicked out of the group, tries to
+                rejoin, and thus goes into join/leave loop. JGroups version 2.2.8
+                introduces srv_sock_bind_addr property so you can specify network
+                interface where FD_SOCK TCP server socket should be bound. This network
+                interface is most likely the same interface used for other JGroups
+                traffic. JGroups versions 2.2.9 and newer consult bind.address system
+                property or you can specify network interface directly as FD_SOCK
+                bind_addr property.
+            </para>
+
+			${FD_SOCK}
+        </section>
+
+
+        <section>
+            <title>VERIFY_SUSPECT</title>
+            ${VERIFY_SUSPECT}
+
+            <para/>
+        </section>
+
+
+    </section>
+
+    <section>
+        <title>Reliable message transmission</title>
+
+        <section>
+            <title>pbcast.NAKACK</title>
+
+            <para>
+                NAKACK provides reliable delivery and FIFO (= First In First Out) properties for messages sent to all
+                nodes in a cluster.
+                </para>
+            <para>
+                Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
+                numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
+                a message<footnote>
+                <para>
+                    Note that NAKACK can also be configured to send retransmission requests for M to
+                    <emphasis>anyone</emphasis> in the cluster, rather than only to the sender of M.
+                </para>
+            </footnote> if that sequence number is not received.
+            </para>
+            <para>
+                FIFO order means that all messages from a given sender are received in exactly the order in which
+                they were sent.
+            </para>
+
+			${NAKACK}
+
+        </section>
+
+         <section>
+            <title>UNICAST</title>
+
+            <para>
+                UNICAST provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
+                messages between one sender and one receiver.
+                </para>
+            <para>
+                Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
+                numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
+                a message<footnote>
+            </footnote> if that sequence number is not received.
+            </para>
+            <para>
+                FIFO order means that all messages from a given sender are received in exactly the order in which
+                they were sent.
+            </para>
+             <para>
+                 On top of a reliable transport, such as TCP, UNICAST is not really needed. However, concurrent
+                 delivery of messages from the same sender is prevented by UNICAST by acquiring a lock on the sender's
+                 retransmission table, so unless concurrent delivery is desired, UNICAST should not be removed from
+                 the stack even if TCP is used.
+             </para>
+
+			${UNICAST}
+
+         </section>       
+    </section>
+
+    <section>
+        <title>Fragmentation</title>
+
+        <section>
+            <title>FRAG and FRAG2</title>
+
+            <para></para>
+            
+            ${FRAG}
+        </section>
+    </section>
+
+    <section>
+        <title>Ordering (FIFO covered by NAKACK)</title>
+        <para></para>
+
+        <section>
+            <title>Total Order (SEQUENCER)</title>
+
+            <para></para>
+        </section>
+    </section>
+
+    <section>
+        <title>Group Membership</title>
+
+        <para>Group membership takes care of joining new members, handling leave
+            requests by existing members, and handling SUSPECT messages for crashed
+            members, as emitted by failure detection protocols. The algorithm for
+            joining a new member is essentially:
+            <screen>
+                - loop
+                - find initial members (discovery)
+                - if no responses:
+                - become singleton group and break out of the loop
+                - else:
+                - determine the coordinator (oldest member) from the responses
+                - send JOIN request to coordinator
+                - wait for JOIN response
+                - if JOIN response received:
+                - install view and break out of the loop
+                - else
+                - sleep for 5 seconds and continue the loop
+            </screen>
+        </para>
+
+
+        <section>
+            <title>pbcast.GMS</title>
+
+			${GMS}
+			            
+
+            <section>
+                <title>Disabling the initial coordinator</title>
+
+                <para>Consider the following situation: a new member wants to join a
+                    group. The prodedure to do so is:
+                </para>
+
+                <itemizedlist>
+                    <listitem>
+                        <para>Multicast an (unreliable) discovery request (ping)</para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Wait for n responses or m milliseconds (whichever is
+                            first)
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Every member responds with the address of the coordinator</para>
+                    </listitem>
+
+                    <listitem>
+                        <para>If the initial responses are &gt; 0: determine the coordinator
+                            and start the JOIN protocolg
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>If the initial response are 0: become coordinator, assuming that
+                            no one else is out there
+                        </para>
+                    </listitem>
+                </itemizedlist>
+
+                <para>However, the problem is that the initial mcast discovery request
+                    might get lost, e.g. when multiple members start at the same time, the
+                    outgoing network buffer might overflow, and the mcast packet might get
+                    dropped. Nobody receives it and thus the sender will not receive any
+                    responses, resulting in an initial membership of 0. This could result in
+                    multiple coordinators, and multiple subgroups forming. How can we overcome
+                    this problem ? There are 3 solutions:
+                </para>
+
+                <orderedlist>
+                    <listitem>
+                        <para>Increase the timeout, or number of responses received. This will
+                            only help if the reason of the empty membership was a slow host. If
+                            the mcast packet was dropped, this solution won't help
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Add the MERGE(2) protocol. This doesn't actually prevent
+                            multiple initial cordinators, but rectifies the problem by merging
+                            different subgroups back into one. Note that this involves state
+                            merging which needs to be done by the application.
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>(new) Prevent members from becoming coordinator on initial
+                            startup. This solution is applicable when we know which member is
+                            going to be the initial coordinator of a fresh group. We don't care
+                            about afterwards, then coordinatorship can migrate to another member.
+                            In this case, we configure the member that is always supposed to be
+                            started first with disable_initial_coord=false (the default) and all
+                            other members with disable_initial_coord=true.This works as described
+                            below.
+                        </para>
+                    </listitem>
+                </orderedlist>
+
+                <para>When the initial membership is received, and is null, and the
+                    property disable_initial_coord is true, then we just continue in the loop
+                    and retry receving the initial membership (until it is non-null). If the
+                    property is false, we are allowed to become coordinator, and will do so.
+                    Note that - if a member is started as first member of a group - but its
+                    property is set to true, then it will loop until another member whose
+                    disable_initial_coord property is set to false, is started.
+                </para>
+            </section>
+
+        </section>
+    </section>
+
+
+    <section>
+        <title>Security</title>
+
+        <para></para>
+        <section>
+            <title>ENCRYPT</title>
+            
+            ${ENCRYPT}
+        </section>
+
+        <section>
+            <title>AUTH</title>
+        </section>
+    </section>
+
+    <section>
+        <title>State Transfer</title>
+
+        <section>
+            <title>pbcast.STATE_TRANSFER</title>
+
+            <para></para>
+        </section>
+
+        <section>
+            <title>pbcast.STREAMING_STATE_TRANSFER</title>
+
+            <section>
+                <title>Overview</title>
+
+                <para>In order to transfer application state to a joining member of a
+                    group pbcast.STATE_TRANSFER has to load entire state into memory and
+                    send it to a joining member. Major limitation of this approach is that
+                    the state transfer that is very large (&gt;1Gb) would likely result in
+                    OutOfMemoryException. In order to alleviate this problem a new state
+                    transfer methodology, based on a streaming state transfer, was
+                    introduced in JGroups 2.4
+                </para>
+
+                <para>Streaming state transfer supports both partial and full state
+                    transfer.
+                </para>
+
+                <para>Streaming state transfer provides an InputStream to a state
+                    reader and an OutputStream to a state writer. OutputStream and
+                    InputStream abstractions enable state transfer in byte chunks thus
+                    resulting in smaller memory requirements. For example, if application
+                    state consists a huge DOM tree, whose aggregate size is 2GB (and which
+                    has partly been passivated to disk), then the state provider (ie. the
+                    coordinator) can simply iterate over the DOM tree (activating the
+                    parts which have been passivated out to disk), and write to the
+                    OutputStream as it traverses the tree. The state receiver will simply
+                    read from the InputStream and reconstruct the tree on its side,
+                    possibly again passivating parts to disk.
+                </para>
+
+                <para>Rather than having to provide a 2GB byte[] buffer, streaming
+                    state transfer transfers the state in chunks of N bytes where N is
+                    user configurable.
+                </para>
+                
+                <para>Prior to 2.6.9 and 2.8 releases streaming state transfer relied 
+                	exclusively on its own tcp sockets to transfer state between members. 
+                	The downside of tcp socket approach is that it is not firewall friendly. If 
+                	use_default_transport property of pbcast.STREAMING_STATE_TRANSFER is 
+                	set to true streaming state transfer will use normal messages to transfer 
+                	state. This approach besides being completely transparent to application is also 
+                	firewall friendly. However, as expected, tcp sockets have better performance. 
+                </para>
+            </section>
+
+            <section>
+                <title>API</title>
+
+                <para>Streaming state transfer, just as regular byte based state
+                    transfer, can be used in both pull and push mode. Similarly to the
+                    current getState and setState methods of org.jgroups.MessageListener,
+                    application interested in streaming state transfer in a push mode
+                    would implement streaming getState method(s) by sending/writing state
+                    through a provided OutputStream reference and setState method(s) by
+                    receiving/reading state through a provided InputStream reference. In
+                    order to use streaming state transfer in a push mode, existing
+                    ExtendedMessageListener has been expanded to include additional four
+                    methods:
+                </para>
+
+                <para>
+                    <screen>
+                        public interface ExtendedMessageListener
+                        {
+
+                        /*non-streaming callback methods ommitted for clarity*/
+
+
+                        /**
+                        * Allows an application to write a state through a provided OutputStream.
+                        * An application is obligated to always close the given OutputStream reference.
+                        *
+                        * @param ostream the OutputStream
+                        * @see OutputStream#close()
+                        */
+                        public void getState(OutputStream ostream);
+
+                        /**
+                        * Allows an application to write a partial state through a provided OutputStream.
+                        * An application is obligated to always close the given OutputStream reference.
+                        *
+                        * @param state_id id of the partial state requested
+                        * @param ostream the OutputStream
+                        *
+                        * @see OutputStream#close()
+                        */
+                        public void getState(String state_id, OutputStream ostream);
+
+
+                        /**
+                        * Allows an application to read a state through a provided InputStream.
+                        * An application is obligated to always close the given InputStream reference.
+                        *
+                        * @param istream the InputStream
+                        * @see InputStream#close()
+                        */
+                        public void setState(InputStream istream);
+
+                        /**
+                        * Allows an application to read a partial state through a provided InputStream.
+                        * An application is obligated to always close the given InputStream reference.
+                        *
+                        * @param state_id id of the partial state requested
+                        * @param istream the InputStream
+                        *
+                        * @see InputStream#close()
+                        */
+                        public void setState(String state_id, InputStream istream);
+
+                        }
+                    </screen>
+                </para>
+
+                <para>For a pull mode (when application uses channel.receive() to
+                    fetch events) two new event classes will be introduced:
+                </para>
+
+                <para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>StreamingGetStateEvent</para>
+                        </listitem>
+
+                        <listitem>
+                            <para>StreamingSetStateEvent</para>
+                        </listitem>
+                    </itemizedlist>
+                    These two events/classes are very similar to
+                    existing GetStateEvent and SetStateEvent but introduce a new field;
+                    StreamingGetStateEvent has an OutputStream and StreamingSetStateEvent
+                    has an InputStream.
+                </para>
+
+                <para>The following code snippet demonstrates how to pull events from
+                    a channel, processing StreamingGetStateEvent and sending hypothetical
+                    state through a provided OutputStream reference. Handling of
+                    StreamingSetStateEvent is analogous to this example:
+                </para>
+
+                <screen>...
+                    Object obj=channel.receive(0);
+                    if(obj instanceof StreamingGetStateEvent) {
+                    StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+                    OutputStream oos = null;
+                    try {
+                    oos = new ObjectOutputStream(evt.getArg());
+                    oos.writeObject(state);
+                    oos.flush();
+                    } catch (Exception e) {}
+                    finally{
+                    try {
+                    oos.close();
+                    } catch (IOException e) {
+                    System.err.println(e);
+                    }
+                    }
+                    }
+                    ...
+                </screen>
+
+                <para>API that initiates state transfer on a JChannel level has the
+                    following methods:
+                </para>
+
+                <para>
+                    <screen>public boolean getState(Address target,long timeout)throws
+                        ChannelNotConnectedException,ChannelClosedException;
+                        public boolean getState(Address target,String state_id,long timeout)throws
+                        ChannelNotConnectedException,ChannelClosedException;
+                    </screen>
+                    Introduction of STREAMING_STATE_TRANSFER does
+                    <emphasis>not</emphasis>
+                    change the current API.
+                </para>
+            </section>
+
+            <section>
+                <title>Configuration</title>
+
+                <para>State transfer type choice is static, implicit and mutually
+                    exclusive. JChannel cannot use both STREAMING_STATE_TRANSFER and
+                    STATE_TRANSFER in one JChannel configuration.
+                </para>
+
+                <para>STREAMING_STATE_TRANSFER allows the following confguration
+                    parameters:
+                </para>
+
+				${STREAMING_STATE_TRANSFER}
+            </section>
+
+            <section>
+                <title>Other considerations</title>
+
+                <para>Threading model used for state writing in a member providing
+                    state and state reading in a member receiving a state is tunable. For
+                    state provider thread pool is used to spawn threads providing state.
+                    Thus member providing state, in a push mode, will be able to
+                    concurrently serve N state requests where N is max_threads
+                    configuration parameter of the thread pool. If there are no further
+                    state transfer requests pool threads will be automatically reaped
+                    after configurable "pool_thread_keep_alive" timeout expires. For a
+                    channel operating in the push mode state reader channel can read state
+                    by piggybacking on jgroups protocol stack thread or optionally use a
+                    separate thread. State reader should use a separate thread if state
+                    reading is expensive (eg. large state, serialization) thus potentially
+                    affecting liveness of jgroups protocol thread. Since most state
+                    transfers are very short (&lt;2-3 sec) by default we do not use a
+                    separate thread.
+                </para>
+            </section>
+        </section>
+    </section>
+
+
+    <section>
+        <title>Flow control</title>
+        <para>
+            Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
+            If a sender continuously sends messages at a rate that is faster than the receiver(s), the receivers will
+            either queue up messages, or the messages will get discarded by the receiver(s), triggering costly
+            retransmissions. In addition, there is spurious traffic on the cluster, causing even more retransmissions.
+        </para>
+        <para>
+            Flow control throttles the sender so the receivers are not overrun with messages.
+        </para>
+
+        <section>
+            <title>FC</title>
+            <para>
+                FC uses a credit based system, where each sender has <code>max_credits</code> credits and decrements
+                them whenever a message is sent. The sender blocks when the credits fall below 0, and only resumes
+                sending messages when it receives a replenishment message from the receivers.
+            </para>
+            <para>
+                The receivers maintain a table of credits for all senders and decrement the given sender's credits
+                as well, when a message is received.
+            </para>
+            <para>
+                When a sender's credits drops below a threshold, the receiver will send a replenishment message to
+                the sender. The threshold is defined by <code>min_bytes</code> or <code>min_threshold</code>.
+            </para>
+
+			${FC}
+
+        </section>
+
+        <section>
+            <title>SFC</title>
+            <para>
+                A simplified version of FC. FC can actually still overrun receivers when the transport's latency is very
+                small. SFC is a simple flow control protocol for group (= multipoint) messages.
+            </para>
+            <para>
+                Every sender has max_credits bytes for sending multicast messages to the group.
+            </para>
+            <para>
+                Every multicast message (we don't consider unicast messages) decrements max_credits by its size.
+                When max_credits falls below 0, the sender asks all receivers for new credits and blocks
+                until *all* credits have been received from all members.
+            </para>
+
+            <para>
+                When the receiver receives a credit request, it checks whether it has received max_credits bytes from the requester since
+                the last credit request. If yes, it sends new credits to the requester and resets the max_credits for the requester.
+                Else, it takes a note of the credit request from P and - when max_credits bytes have finally been received from P - it
+                sends the credits to P and resets max_credits for P.
+
+            </para>
+            <para>
+                The maximum amount of memory for received messages is therefore &lt;number of senders&gt; * max_credits.
+
+            </para>
+
+            <para>
+                The relationship with STABLE is as follows: when a member Q is slow, it will prevent STABLE from collecting messages above
+                the ones seen by Q (everybody else has seen more messages). However, because Q will *not* send credits back to the senders
+                until it has processed all messages worth max_credits bytes, the senders will block. This in turn allows STABLE to
+                progress and eventually garbage collect most messages from all senders. Therefore, SFC and STABLE complement each other,
+                with SFC blocking senders so that STABLE can catch up.
+
+            </para>
+			
+			${SFC}
+        </section>
+        
+    </section>
+
+    <section>
+        <title>Message stability</title>
+        <para>
+            To serve potential retransmission requests, a member has to store received messages until it is known
+            that every member in the cluster has received them. Message stability for a given message M means that M
+            has been seen by everyone in the cluster.
+        </para>
+        <para>
+            The stability protocol periodically (or when a certain number of bytes have been received) initiates a
+            consensus protocol, which multicasts a stable message containing the highest message numbers for a
+            given member. This is called a digest.
+        </para>
+        <para>
+            When everyone has received everybody else's stable messages, a digest is computed which consists of the
+            minimum sequence numbers of all received digests so far. This is the stability vector, and contain only
+            message sequence numbers that have been seen by everyone.
+        </para>
+        <para>
+            This stability vector is the broadcast to the group and everyone can remove messages from their
+            retransmission tables whose sequence numbers are smaller than the ones received in the stability vector.
+            These messages can then be garbage collected.
+        </para>
+
+        <section>
+            <title>STABLE</title>
+
+			${STABLE}
+
+
+        </section>
+
+    </section>    
+
+    <section>
+        <title>Misc</title>
+
+        <section>
+            <title>COMPRESS</title>
+            ${COMPRESS}
+            <para></para>
+        </section>
+
+
+        <section>
+            <title>pbcast.FLUSH</title>
+
+            <para>Flushing forces group members to send all their pending messages
+                prior to a certain event. The process of flushing acquiesces the
+                cluster so that state transfer or a join can be done. It is also
+                called the stop-the-world model as nobody will be able to send
+                messages while a flush is in process. Flush is used:
+            </para>
+
+            <para>
+                <itemizedlist>
+                    <listitem>
+                        <para>State transfer</para>
+
+                        <para>When a member requests state transfer it tells everyone to
+                            stop sending messages and waits for everyone's ack. Then it asks
+                            the application for its state and ships it back to the
+                            requester. After the requester has received and set the state
+                            successfully, the requester tells everyone to resume sending
+                            messages.
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>View changes (e.g.a join). Before installing a new view
+                            V2, flushing would ensure that all messages *sent* in the
+                            current view V1 are indeed *delivered* in V1, rather than in V2
+                            (in all non-faulty members). This is essentially Virtual
+                            Synchrony.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+
+            <para>FLUSH is designed as another protocol positioned just below the
+                channel, e.g. above STATE_TRANSFER and FC. STATE_TRANSFER and GMS
+                protocol request flush by sending a SUSPEND event up the stack, where
+                it is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by
+                the FLUSH protocol let's the caller know that the flush has completed.
+                When done (e.g. view was installed or state transferred), the protocol
+                sends up a RESUME event, which will allow everyone in the cluster to
+                resume sending.
+            </para>
+
+            <para>Channel can be notified that FLUSH phase has been started by
+                turning channel block option on. By default it is turned off. If
+                channel blocking is turned on FLUSH notifies application layer that
+                channel has been blocked by sending EVENT.BLOCK event. Channel
+                responds by sending EVENT.BLOCK_OK event down to FLUSH protocol. We
+                recommend turning on channel block notification only if channel is
+                used in push mode. In push mode application that uses channel can
+                perform block logic by implementing MembershipListener.block()
+                callback method.
+            </para>
+            
+            ${FLUSH}			
+
+        </section>
+
+        <section id="SCOPE">
+            <title>SCOPE</title>
+            <para>
+                As discussed in <xref linkend="Scopes">Scopes</xref>, the SCOPE protocol is used to deliver updates
+                to different scopes concurrently. It has to be placed somewhere above UNICAST and NAKACK.
+            </para>
+
+            <para>
+                SCOPE has a separate thread pool. The reason why the default thread pool from the transport wasn't used
+                is that the default thread pool has a different purpose. For example, it can use a queue to which all
+                incoming messages are added, which would defy the purpose of concurrent delivery in SCOPE. As a matter
+                of fact, using a queue would most likely delay messages get sent up into SCOPE !
+            </para>
+            <para>
+                Also, the default pool's rejection policy might not be "run", so the SCOPE implementation would have
+                to catch rejection exceptions and engage in a retry protocol, which is complex and wastes resources.
+            </para>
+
+            <para>
+                The configuration of the thread pool is shown below. If you expect <emphasis>concurrent</emphasis>
+                messages to N <emphasis>different</emphasis> scopes, then the max pool size would ideally be set
+                to N. However, in most cases, this is not necessary as (a) the messages might not be to different
+                scopes or (b) not all N scopes might get messages at the same time. So even if the max pool size is a
+                bit smaller, the cost of this is slight delays, in the sense that a message for scope Y might wait until
+                the thread processing message for scope X is available.
+            </para>
+
+            <para>
+                To remove unused scopes, an expiry policy is provided: expiration_time is the number of milliseconds
+                after which an idle scope is removed. An idle scope is a scope which hasn't seen any messages for
+                expiration_time milliseconds. The expiration_interval value defines the number of milliseconds at
+                which the expiry task runs. Setting both values to 0 disables expiration; it would then have to be
+                done manually (see <xref linkend="Scopes"/> for details).
+            </para>
+
+            ${SCOPE} 
+        </section>
+
+        <section id="STOMP">
+            <title>STOMP</title>
+            <para>
+                STOMP is a JGroups protocol which implements the <ulink url="http://stomp.codehaus.org">STOMP</ulink>
+                protocol. Currently (as of Nov 2010), transactions and acks are not implemented.
+            </para>
+            <para>
+                The location of a STOMP protocol in a stack is shown in <xref linkend="StompProtocol"/>.
+            </para>
+            <para>
+                <figure id="StompProtocol">
+                    <title>STOMP in a protocol stack</title>
+                    <graphic fileref="images/StompProtocol.png" format="PNG" align="left" scalefit="1" contentwidth="4in"/>
+                </figure>
+            </para>
+
+            <para>
+                The STOMP protocol should be near the top of the stack.
+            </para>
+            <para>
+                A STOMP instance listens on a TCP socket for client connections. The port and bind address of the
+                server socket can be defined via properties.
+            </para>
+            <para>
+                A client can send SUBSCRIBE commands for various destinations. When a SEND for a given destination is
+                received, STOMP adds a header to the message and broadcasts it to all cluster nodes. Every node then in
+                turn forwards the message to all of its connected clients which have subscribed to the same destination.
+                When a destination is not given, STOMP simply forwards the message to <emphasis>all</emphasis> connected
+                clients.
+            </para>
+            <para>
+                Traffic can be generated by clients and by servers. In the latter case, we could for example have code
+                executing in the address space of a JGroups (server) node. In the former case, clients use the SEND
+                command to send messages to a JGroups server and receive messages via the MESSAGE command. If there is
+                code on the server which generates messages, it is important that both client and server code agree
+                on a marshalling format, e.g. JSON, so that they understand each other's messages.
+            </para>
+            <para>
+                Clients can be written in any language, as long as they understand the STOMP protocol. Note that the
+                JGroups STOMP protocol implementation sends additional information (e.g. INFO) to clients; non-JGroups
+                STOMP clients should simply ignore them.
+            </para>
+            <para>
+                JGroups comes with a STOMP client (org.jgroups.client.StompConnection) and a demo (StompDraw). Both
+                need to be started with the address and port of a JGroups cluster node. Once they have been started,
+                the JGroups STOMP protocol will notify clients of cluster changes, which is needed so client can
+                failover to another JGroups server node when a node is shut down. E.g. when a client connects to C, after
+                connection, it'll get a list of endpoints (e.g. A,B,C,D). When C is terminated, or crashes, the client
+                automatically reconnects to any of the remaining nodes, e.g. A, B, or D. When this happens, a client
+                is also re-subscribed to the destinations it registered for. 
+            </para>
+            <para>
+                The JGroups STOMP protocol can be used when we have clients, which are either not in the same network
+                segment as the JGroups server nodes, or which don't want to become full-blown JGroups server nodes.
+                <xref linkend="StompArchitecture"/> shows a typical setup.
+            </para>
+
+            <para>
+                <figure id="StompArchitecture">
+                    <title>STOMP architecture</title>
+                    <graphic fileref="images/StompArchitecture.png" format="PNG" align="left" scalefit="1" contentwidth="5in"/>
+                </figure>
+            </para>
+
+            <para>
+                There are 4 nodes in a cluster. Say the cluster is in a LAN, and communication is via IP multicasting
+                (UDP as transport). We now have clients which do not want to be part of the cluster themselves, e.g.
+                because they're in a different geographic location (and we don't want to switch the main cluster to TCP),
+                or because clients are frequently started and stopped, and therefore the cost of startup and joining
+                wouldn't be amortized over the lifetime of a client. Another reason could be that clients are written
+                in a different language, or perhaps, we don't want a large cluster, which could be the case if we
+                for example have 10 JGroups server nodes and 1000 clients connected to them.
+            </para>
+            <para>
+                In the example, we see 9 clients connected to every JGroups cluster node. If a client connected to
+                node A sends a message to destination /topics/chat, then the message is multicast from node A to all other
+                nodes (B, C and D). Every node then forwards the message to those clients which have previously subscribed
+                to /topics/chat.
+            </para>
+            <para>
+                When node A crashes (or leaves) the JGroups STOMP clients (org.jgroups.client.StompConnection) simply pick
+                another server node and connect to it.
+            </para>
+
+            <para>
+            </para>
+            <para>
+                The properties for STOMP are shown below:
+            </para>
+            ${STOMP}
+        </section>
+    </section>
+
+   
+</chapter>

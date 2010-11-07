@@ -1,0 +1,65 @@
+
+// Version: $Id: PartialStateTransfer.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+// Author: Bela Ban
+
+Partial state transfer
+======================
+
+
+Requirement:
+------------
+
+We want to have multiple building blocks sitting on the same Channel (or PullPushAdapter). (This is the case when we
+have 1 Channel MBean in JBoss, and all the other HA building blocks (also MBeans) are sitting on top of this single
+Channel, multiplexing/demultiplexing requests between the channel and the building blocks.)
+If more than one of the blocks maintains state, we want a getState() method with an ID, where the
+ID identifies which state to fetch, e.g. (DistributedHashtable = DHT)
+
+DHT1  DHT2  DHT3
+     Channel
+
+When DHT2 comes online, it wants *its* state, and calls chanel.getState(new Integer(2)). The state retrieved from
+the coordinator should now only include the state for "2", but not the states of "1" and "3".
+
+
+Problem:
+--------
+
+When we retrieve state with pbcast.STATE_TRANSFER, we ship the state plus a *digest* which contains the highest delivered
+seqnos that are included in a state. The digest is then set in the joining member to determine which messages are part
+of the state, and which ones need to be accepted (consistent snapshot). Since the digest applies to *all* messages (for
+all states), we cannot retrieve a single state).
+
+Example:
+--------
+
+- Members A and B, joining member C, wants to retrieve state "2"
+- A receives 5 messages which affect state "1" (C hasn't received them yet)
+- A applies those messages to the state, then handles the state request for state "2" from C
+- A returns the state for "2" and the digest. The digest includes the 5 messages which updated state "1",
+  so they will *not* be received by C.
+- C integrates the state for "2", and the digest. However, its state for "1" is now incorrect, as it doesn't
+  contain the 5 messages, and when C receives those 5 messages, they will be discarded because the digest indicates
+  they are *not* part of the digest
+- Result: state "1" is incorrect in C
+
+
+Solution:
+---------
+
+We cannot use pbcast.STATE_TRANSFER, but have to use a stop-the-world model: when a state is requested, everybody
+stops sending messages (similar to vsync), the (partial) state is transferred, and then everybody continues
+sending messages. This requires (a) a new state transfer protocol and (b) a flush protocol.
+
+The new state transfer protocol sends down a FLUSH event (at the coordinator) before returning the state.
+
+The flush protocol stops everyone from sending and makes sure everyone has the same set of messages before returning.
+On successful state transfer, everyone is allowed to send again.
+
+The FLUSH protocol could be reused for view changes as well (as in vsync).
+
+The connect() method could also be extended to optionally return the state, e.g.
+
+connect(String groupName, boolean fetchState, Object optionalStateId);
+
+This way, we would have to run the FLUSH protocol only one: for the view change *and* the state transfer.

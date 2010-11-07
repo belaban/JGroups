@@ -1,0 +1,20 @@
+
+Loopback adaptor issues on Windows
+----------------------------------
+
+JIRA: http://jira.jboss.com/jira/browse/JGRP-79
+Version: $Id: NullingSrcAddresses.txt,v 1.1 2005/05/19 07:57:46 belaban Exp $
+
+On Windows, when a loopback adaptor is created, we can associate multiple (virtual) IP
+addresses with it, e.g. 10.0.0.1 and 10.0.0.2.
+
+However, when we have a member M1 bound to 10.0.0.1, and another member M2 bound to 10.0.0.2, and
+bind_to_all_interfaces is set to true, then it was observed that - regardless of the bind address -
+the sender's address in a DatagramPacket received was always 10.0.0.1 (the first address assigned) !
+
+Therefore, members would never find each other.
+
+The reason this shows up now (in 2.2.8) is that as an optimization, we *don't* send the src address
+in the Message anymore, so we can save a few bytes, but we null the src address, and set it to the sender's
+address when we *receive* the packet.
+This can be disabled by setting null_src_addresses to false (default is true)

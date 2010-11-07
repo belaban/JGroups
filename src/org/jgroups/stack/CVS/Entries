@@ -1,0 +1,22 @@
+/AckMcastReceiverWindow.java/1.10/Fri Feb 12 10:18:52 2010//
+/AckMcastSenderWindow.java/1.17/Mon Jul 19 09:42:02 2010//
+/AckReceiverWindow.java/1.52/Fri Sep 17 11:50:37 2010//
+/AckSenderWindow.java/1.41/Fri Mar 12 09:07:17 2010//
+/DefaultRetransmitter.java/1.4/Fri Sep 17 11:52:18 2010/-kkv/
+/ExponentialInterval.java/1.1/Fri Feb 12 10:18:52 2010//
+/GossipData.java/1.7/Fri Feb 12 10:18:52 2010//
+/GossipRouter.java/1.77/Wed Sep 15 10:50:44 2010//
+/Interval.java/1.3/Fri Feb 12 10:18:52 2010//
+/IpAddress.java/1.53/Fri Feb 12 10:18:52 2010//
+/NakReceiverWindow.java/1.80/Fri Sep 17 11:58:18 2010//
+/Protocol.java/1.82/Wed Oct 27 11:48:38 2010//
+/ProtocolStack.java/1.110/Wed Oct 20 14:09:32 2010//
+/RangeBasedRetransmitter.java/1.6/Mon Nov 30 12:36:52 2009/-kkv/
+/Retransmitter.java/1.33/Wed Nov 25 12:54:37 2009/-kkv/
+/RouterStubManager.java/1.6/Wed Jun 16 17:43:37 2010//
+/StateTransferInfo.java/1.16/Fri Feb 12 10:18:52 2010//
+/StaticInterval.java/1.3/Fri Feb 12 10:18:52 2010//
+/package.html/1.1/Fri Feb 12 10:18:52 2010/-kk/
+/Configurator.java/1.90/Wed Oct  6 09:45:44 2010//
+/RouterStub.java/1.62/Wed Jun  9 14:22:00 2010//
+D

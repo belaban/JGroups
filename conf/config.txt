@@ -1,0 +1,65 @@
+#
+# This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
+# $Id: config.txt,v 1.12 2006/12/11 10:16:54 belaban Exp $
+#
+
+# Class implementing the org.jgroups.tests.perf.Transport interface
+
+transport=org.jgroups.tests.perf.transports.JGroupsTransport
+#transport=org.jgroups.tests.perf.transports.JGroupsClusterTransport
+#transport=org.jgroups.tests.perf.transports.UdpTransport
+#transport=org.jgroups.tests.perf.transports.TcpTransport
+
+# Number of messages a sender multicasts
+num_msgs=10000
+
+# Message size in bytes.
+msg_size=1000
+
+
+# Expected number of group members.
+num_members=2
+
+# Number of senders in the group. Min 1, max num_members.
+num_senders=2
+
+# dump stats every n msgs
+log_interval=1000
+
+# number of ms to wait at the receiver to simulate delay caused by processing of the message
+processing_delay=0
+
+# Needs to either contain the full property string, or an URL pointing to a valid
+# location (needs to be changed)
+props=file:c:\\udp.xml
+
+
+# Dumps statistics about the transport
+dump_transport_stats=false
+
+# Register JGroups channel and protocols with MBeanServer, don't terminate at the end
+jmx=false
+
+
+#####################################################
+# These properties are only used by the UDP transport
+#####################################################
+bind_addr=localhost
+mcast_addr=228.1.2.3
+mcast_port=7500
+
+
+############################
+# only used by TCP Transport
+############################
+
+# List of hosts in the cluster. Since we don't specify ports, you cannot run multiple TcpTransports
+# on the same machine: each ember has to be run on a separate machine (this may be changed in a next version)
+cluster=127.0.0.1:7800,127.0.0.1:7801
+start_port=7800
+
+
+#################################################
+# JNDI name of topic (only used by JMS transport)
+#################################################
+topic=topic/testTopic

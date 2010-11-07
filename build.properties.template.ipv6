@@ -1,0 +1,16 @@
+# Example of IPv6 based build.properties
+# Replace the IPv6 addresses with your own
+
+# the network interface (NIC) which will be used by the unit tests, change this to
+# the one you want to use. Note that 'localhost' usually resolved to 127.0.0.1,
+# which may not work on Linux unless you have a multicast route set up for loopback
+jgroups.bind_addr=fe80::21b:21ff:fe07:a3b0%3
+jgroups.tcpping.initial_hosts=fe80::21b:21ff:fe07:a3b0%3[7800],fe80::21b:21ff:fe07:a3b0%3[7801]
+jgroups.tunnel.gossip_router_hosts=fe80::21b:21ff:fe07:a3b0%3[12001]
+jgroups.udp.mcast_addr=ff0e::5:6:7
+jgroups.udp.mcast_port=45588
+jgroups.udp.ip_ttl=5
+# use true for IPv6 and false for IPv4 
+jgroups.useIPv6=true
+
+

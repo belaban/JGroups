@@ -1,0 +1,154 @@
+
+Reliable view installation
+==========================
+
+Author: Bela Ban
+Version: $Id: ReliableViewInstallation.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+
+The default stack sees view as just messages; a view multicast is retransmitted until the sender is excluded because
+it left or crashed. However, this behavior can lead to problems described below. The problems occur when a view
+multicast is lost.
+
+
+A: New coordinator doesn't take over
+------------------------------------
+- Group is {A,B,C}, A is coordinator
+- A leaves gracefully, multicasts view V2 {B,C}
+- C receives V2, B doesn't receive V2
+- A terminates, which means that retransmission of A's V2 in B stops (B never receives V2)
+- B's view is now V1 {A,B,C}
+- C's view is now V2 {B,C}
+- B does *not* become the new coordinator !
+
+Problem 1:
+- A new member D wants to join, B replies to the discovery request with coord=A, C replies with coord=B
+- If D sends a JOIN request to B, B will reject the JOIN request because it thinks the coord is still A !
+- If D sends a JOIN request to A, it will time out and receive no response
+  --> In any case, D will continue looping forever, or until B is killed !
+
+Problem 2:
+- B invokes a group RPC. Because it still thinks A is part of the group, it will wait for A's reply, which
+  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
+
+
+B: Continuous SUSPECT messages
+------------------------------
+- Group is {A,B,C}, A is coordinator
+- A leaves gracefully, multicasts view V2 {B,C}
+- B receives V2, C doesn't receive V2
+- A terminates, which means that retransmission of A's V2 in C stops (C never receives V2)
+- C's view is now V1 {A,B,C}
+- B's view is now V2 {B,C}
+- When A terminates, C starts multicasting SUSPECT(A) messages to the group
+- B (as coord) handles the SUSPECT(A) message, but since A is not a member of B's view V2 {B,C}, B simply
+  *ignores* the SUSPECT(A) message !
+- C continues multicasting SUSPECT(A) messages to the cluster
+
+Problem:
+- C invokes a group RPC. Because it still thinks A is part of the group, it will wait for A's reply, which
+  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
+
+
+C: New coordinator doesn't take over, old coord crashes
+-------------------------------------------------------
+- Same as case A, but old coordinator crashes before V2 can be retransmitted to B
+- So B doesn't receive V2
+
+
+D: The coordinator leaves while another member joins
+----------------------------------------------------
+- In the current impl, the new member P will receive a view V in a JoinRsp
+- The VIEW V is then to be broadcast by the coord
+- However, the coord leaves before this happens
+--> Everybody has the old view, while P has the new view !
+--> We need to atomically return the JoinRsp and broadcast the view !
+    --> Maybe we should broadcast the view first and then return the JoinRsp to the client !
+--> See ViewHandling.txt for a new approach
+
+
+SOLUTION:
+
+1: Views need to be ack'ed
+--------------------------
+- When multicasting a view, we block until every member in that view has acknowledged the view reception
+- Because GMS runs above both UNICAST and NAKACK, we *don't* need to retransmit, but we cannot terminate (as in case A),
+  before having received an ACK for the view from each member in the new view
+  --> This solves case A
+
+2: Handling crashes of the coordinator while multicasting a view
+----------------------------------------------------------------
+- If the coordinator crashes before having received all ACKs, some members might still not receive the new view.
+  (This is highly unlikely though)
+- If we therefore receive a SUSPECT(P) where P is not member of the current view, we multicast the current view V
+  to the group. Those member who already installed V will simply ignore it, those who didn't will install it
+  --> This solves case B
+- The STABLE protocol periodically multicasts digests. We now add the current view to the digest.
+- When the coordinator receives a view V that is greater than its own view, it installs V and multicasts it
+  - Member who didn't install V will install it
+  - Member who installed V will ignore it
+- When the coordinator receives a view V which is smaller than its current view V-curr, it will multicast
+  V-curr, so that those members who didn't install V-curr (and therfore sent V with their digest) will install V-curr.
+- When the coordinator receives a view V which is identical to the current view V-curr, it doesn't do anything
+- Note that, if the received view is greater than the current view, every member checks whether it would be the
+  new coordinator. If this is the case, it becomes coordinator, installs the view and multicasts it
+--> This solves cases A, B and C
+
+
+DESIGN:
+
+On castViewChange(View v) [coord]:
+----------------------------------
+- Reset view_change_mutex
+- Populate missing_acks list with contents of v
+- Multicast v
+- Block on view_change_mutex (possibly with timeout (0 == wait forever))
+
+On SUSPECT(P) / on VIEW_ACK(P) [coord]:
+---------------------------------------
+- Remove P from missing_acks
+- If missing_acks is empty --> notify view_change_mutex
+- Neeeds to be done in receiveUpEvent(), real work is then done in up()
+
+On VIEW(v) [all]:
+-----------------
+- Send VIEW_ACK to coordinator
+- Neeeds to be done in receiveUpEvent(), real work is then done in up()
+
+
+On JOIN_RSP [client]:
+---------------------
+- Send VIEW_ACK to coordinator
+
+
+
+Two-Phase View installation
+----------------------------
+- First phase: coord multicasts PREPARE_VIEW(V)
+- Coord waits for all ACKs
+- If SUSPECT(P) is received, coord creates new view V (excluding P) and restarts first phase
+- When all ACKs have been received, coord multicasts COMMIT_VIEW(V)
+- When a participant receives the PREPARE_VIEW, it starts a timer. When the COMMIT_VIEW(V) is received,
+  the timer is cancelled. When the timer expires in participant R, we multicast a STATUS_VIEW(V). If a participant
+  has received the COMMIT_VIEW(V) message for the given view, it multicasts the COMMIT_VIEW(V) again, so that R
+  can commit (= install) V.
+- If the coordinator crashed before multicasting the COMMIT_VIEW, the SUSPECT(coord) message will make the
+  second-in-line the new coordinator, and it will either restart the first or second phase
+- If the coordinator crashed after sending the COMMIT_VIEW, and at least 1 member M received the COMMIT_VIEW, M will
+  be able to multicast COMMIT_VIEW when asked by other participants. If no member received COMMIT_VIEW, then this is
+  treated as if COMMIT_VIEW was never sent, and the new coordinator will restart the first and second phase
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

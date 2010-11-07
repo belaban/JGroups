@@ -1,0 +1,218 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.jgroups</groupId>
+    <artifactId>jgroups</artifactId>
+    <packaging>jar</packaging>
+    <name>JGroups</name>
+    <version>2.12.0.Alpha1</version>
+    <url>http://www.jgroups.org</url>
+    <description>
+        Reliable cluster communication toolkit
+    </description>
+
+    <organization>
+        <name>JBoss, a division of Red Hat</name>
+        <url>http://www.jboss.org</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <name>Bela Ban</name>
+            <email>belaban@yahoo.com</email>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License 2.1</name>
+            <url>http://www.opensource.org/licenses/lgpl-2.1.php</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</connection>
+        <developerConnection>cvs -d:ext:USER@javagroups.cvs.sf.net/cvsroot/javagroups</developerConnection>
+        <url>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</url>
+    </scm>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>https://jira.jboss.com/jira/browse/JGRP</url>
+    </issueManagement>
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Releases Repository</name>
+            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>jboss-public-repository-group</id>
+            <name>JBoss Public Maven Repository Group</name>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>bsh</groupId>
+            <artifactId>bsh</artifactId>
+            <version>1.2b7</version>
+            <optional>true</optional>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.14</version>
+            <optional>true</optional>
+            <scope>compile</scope>
+        </dependency>
+        <!--  Tests not included in maven build currently so commented out -->
+        <!-- <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>5.10</version>
+            <classifier>jdk15</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>bouncycastle</groupId>
+            <artifactId>bcprov-jdk15</artifactId>
+            <version>140</version>
+            <scope>test</scope>
+        </dependency> -->
+    </dependencies>
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>conf</directory>
+                <includes>
+                    <include>*.xml</include>
+                </includes>
+                <excludes>
+                    <exclude>*-service.xml</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>${project.build.outputDirectory}/schema</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <excludes>
+                        <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
+                        <exclude>org/jgroups/demos/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <property name="compile_classpath" refid="maven.compile.classpath"/>
+                                <property name="plugin_classpath" refid="maven.plugin.classpath"/>
+                                <delete dir="${project.build.outputDirectory}/schema" failonerror="false"/>
+                                <mkdir dir="${project.build.outputDirectory}/schema"/>
+                                <java classname="org.jgroups.util.XMLSchemaGenerator">
+                                    <classpath>
+                                        <pathelement path="${compile_classpath}"/>
+                                        <pathelement path="${plugin_classpath}"/>
+                                    </classpath>
+                                    <arg line="-o ${project.build.outputDirectory}/schema"/>
+                                </java>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies> <!--  Not really needed in Java 5 -->
+                    <dependency>
+                        <groupId>xalan</groupId>
+                        <artifactId>xalan</artifactId>
+                        <version>2.7.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>xalan</groupId>
+                        <artifactId>serializer</artifactId>
+                        <version>2.7.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- Make sure we generate src jars too -->
+            <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-source-plugin</artifactId>
+               <version>2.1.1</version>
+               <inherited>true</inherited>
+               <executions>
+                  <execution>
+                     <id>attach-sources</id>
+                     <goals>
+                        <goal>jar</goal>
+                     </goals>
+                  </execution>
+               </executions>
+            </plugin>            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>conf/manifest.mf</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Export-Package>
+                            schema;version=${pom.version},
+                            org.jgroups;version=${pom.version},
+                            org.jgroups.annotations;version=${pom.version},
+                            org.jgroups.auth;version=${pom.version},
+                            org.jgroups.blocks;version=${pom.version},
+                            org.jgroups.conf;version=${pom.version},
+                            org.jgroups.debug;version=${pom.version},
+                            org.jgroups.jmx;version=${pom.version},
+                            org.jgroups.logging;version=${pom.version},
+                            org.jgroups.mux;version=${pom.version},
+                            org.jgroups.persistence;version=${pom.version},
+                            org.jgroups.protocols;version=${pom.version},
+                            org.jgroups.protocols.pbcast;version=${pom.version},
+                            org.jgroups.stack;version=${pom.version},
+                            org.jgroups.util;version=${pom.version},
+                        </Export-Package>
+                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

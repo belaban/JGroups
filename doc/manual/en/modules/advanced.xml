@@ -1,0 +1,1605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="user-advanced">
+  <title>Advanced Concepts</title>
+
+  <para>This chapter discusses some of the more advanced concepts of JGroups
+  with respect to using it and setting it up correctly.</para>
+
+  <section>
+    <title>Using multiple channels</title>
+
+    <para>When using a fully virtual synchronous protocol stack, the
+    performance may not be great because of the larger number of protocols
+    present. For certain applications, however, throughput is more important
+    than ordering, e.g. for video/audio streams or airplane tracking. In the
+    latter case, it is important that airplanes are handed over between
+    control domains correctly, but if there are a (small) number of radar
+    tracking messages (which determine the exact location of the plane)
+    missing, it is not a problem. The first type of messages do not occur very
+    often (typically a number of messages per hour), whereas the second type
+    of messages would be sent at a rate of 10-30 messages/second. The same
+    applies for a distributed whiteboard: messages that represent a video or
+    audio stream have to be delivered as quick as possible, whereas messages
+    that represent figures drawn on the whiteboard, or new participants
+    joining the whiteboard have to be delivered according to a certain
+    order.</para>
+
+    <para>The requirements for such applications can be solved by using two
+    separate stacks: one for control messages such as group membership, floor
+    control etc and the other one for data messages such as video/audio
+    streams (actually one might consider using one channel for audio and one
+    for video). The control channel might use virtual synchrony, which is
+    relatively slow, but enforces ordering and retransmission, and the data
+    channel might use a simple UDP channel, possibly including a fragmentation
+    layer, but no retransmission layer (losing packets is preferred to costly
+    retransmission).</para>
+
+    <para>The <classname>Draw2Channels</classname> demo program (in the
+    <classname>org.jgroups.demos</classname> package) demonstrates how to use
+    two different channels.</para>
+  </section>
+
+
+    <section>
+        <title id="SharedTransport">The shared transport: sharing a transport between multiple channels in a JVM</title>
+
+        <para>
+            To save resources (threads, sockets and CPU cycles), transports of channels residing within the same
+            JVM can be shared. If we have 4 channels inside of a JVM (as is the case in an application server
+            such as JBoss), then we have 4 separate thread pools and sockets (1 per transport, and there are 4
+            transports (1 per channel)).
+        </para>
+
+        <para>
+            If those transport happen to be the same (all 4 channels use UDP, for example), then we can share them and
+            only create 1 instance of UDP. That transport instance is created and started only once, when the first
+            channel is created, and is deleted when the last channel is closed.
+        </para>
+
+        <para>
+            Each channel created over a shared transport has to join a different cluster. An exception will be thrown
+            if a channel sharing a transport tries to connect to a cluster to which another channel over the same
+            transport is already connected.
+        </para>
+
+        <para>
+            When we have 3 channels (C1 connected to "cluster-1", C2 connected to "cluster-2" and C3 connected to
+            "cluster-3") sending messages over the same shared transport, the cluster name
+            with which the channel connected is used to multiplex messages over the shared transport: a header with
+            the cluster name ("cluster-1") is added when C1 sends a message.
+        </para>
+
+        <para>
+            When a message with a header of "cluster-1" is received by the shared transport, it is used to demultiplex
+            the message and dispatch it to the right channel (C1 in this example) for processing.
+        </para>
+
+        <para>
+            How channels can share a single transport is shown in <xref linkend="SharedTransportFig"/>.
+        </para>
+
+        <figure id="SharedTransportFig"><title>A shared transport</title>
+            <graphic fileref="images/SharedTransport.png" format="PNG" align="center"  />
+        </figure>
+
+        <para>
+            Here we see 4 channels which share 2 transports. Note that first 3 channels which share transport
+            "tp_one" have the same protocols on top of the shared transport. This is <emphasis>not</emphasis>
+            required; the protocols above "tp_one" could be different for each of the 3 channels as long
+            as all applications residing on the same shared transport have the same requirements for the transport's
+            configuration.
+        </para>
+
+        <para>
+            To use shared transports, all we need to do is to add a property "singleton_name" to the transport
+            configuration. All channels with the same singleton name will be shared.
+        </para>
+    </section>
+
+  <section>
+    <title>Transport protocols</title>
+
+    <para>A <emphasis>transport protocol</emphasis> refers to the protocol at
+    the bottom of the protocol stack which is responsible for sending and
+    receiving messages to/from the network. There are a number of transport
+    protocols in JGroups. They are discussed in the following sections.</para>
+
+    <para>A typical protocol stack configuration using UDP is:</para>
+
+      <screen>
+                    &lt;config&gt;
+                        &lt;UDP
+                             mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+                             mcast_port="${jgroups.udp.mcast_port:45588}"
+                             discard_incompatible_packets="true"
+                             max_bundle_size="60000"
+                             max_bundle_timeout="30"
+                             ip_ttl="${jgroups.udp.ip_ttl:2}"
+                             enable_bundling="true"
+                             thread_pool.enabled="true"
+                             thread_pool.min_threads="1"
+                             thread_pool.max_threads="25"
+                             thread_pool.keep_alive_time="5000"
+                             thread_pool.queue_enabled="false"
+                             thread_pool.queue_max_size="100"
+                             thread_pool.rejection_policy="Run"
+                             oob_thread_pool.enabled="true"
+                             oob_thread_pool.min_threads="1"
+                             oob_thread_pool.max_threads="8"
+                             oob_thread_pool.keep_alive_time="5000"
+                             oob_thread_pool.queue_enabled="false"
+                             oob_thread_pool.queue_max_size="100"
+                             oob_thread_pool.rejection_policy="Run"/&gt;
+                        &lt;PING timeout="2000"
+                                num_initial_members="3"/&gt;
+                        &lt;MERGE2 max_interval="30000"
+                                min_interval="10000"/&gt;
+                        &lt;FD_SOCK/&gt;
+                        &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
+                        &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+                        &lt;pbcast.NAKACK
+                                       use_mcast_xmit="false" gc_lag="0"
+                                       retransmit_timeout="300,600,1200,2400,4800"
+                                       discard_delivered_msgs="true"/&gt;
+                        &lt;UNICAST timeout="300,600,1200,2400,3600"/&gt;
+                        &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                                       max_bytes="400000"/&gt;
+                        &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                                    shun="false"
+                                    view_bundling="true"/&gt;
+                        &lt;FC max_credits="20000000"
+                                        min_threshold="0.10"/&gt;
+                        &lt;FRAG2 frag_size="60000"  /&gt;
+                        &lt;pbcast.STATE_TRANSFER  /&gt;
+                    &lt;/config&gt;
+                </screen>
+    
+
+    <para>In a nutshell the properties of the protocols are:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>UDP</term>
+
+        <listitem>
+          <para>This is the transport protocol. It uses IP multicasting to send messages to the entire cluster, or
+          individual nodes. Other transports include TCP, TCP_NIO and TUNNEL.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>PING</term>
+
+        <listitem>
+          <para>Uses IP multicast (by default) to find initial members. Once
+          found, the current coordinator can be determined and a unicast JOIN
+          request will be sent to it in order to join the cluster.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>MERGE2</term>
+
+        <listitem>
+          <para>Will merge subgroups back into one group, kicks in after a cluster partition.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>FD_SOCK</term>
+
+        <listitem>
+          <para>Failure detection based on sockets (in a ring form between
+          members). Generates notification if a member fails</para>
+        </listitem>
+      </varlistentry>
+
+        <varlistentry>
+        <term>FD</term>
+
+        <listitem>
+          <para>Failure detection based on heartbeats and are-you-alive messages (in a ring form between
+          members). Generates notification if a member fails</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>VERIFY_SUSPECT</term>
+
+        <listitem>
+          <para>Double-checks whether a suspected member is really dead,
+          otherwise the suspicion generated from protocol below is discarded</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>pbcast.NAKACK</term>
+
+        <listitem>
+          <para>Ensures (a) message reliability and (b) FIFO. Message
+          reliability guarantees that a message will be received. If not,
+          the receiver(s) will request retransmission. FIFO guarantees that all
+          messages from sender P will be received in the order P sent them</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>UNICAST</term>
+
+        <listitem>
+          <para>Same as NAKACK for unicast messages: messages from sender P
+          will not be lost (retransmission if necessary) and will be in FIFO
+          order (conceptually the same as TCP in TCP/IP)</para>
+        </listitem>
+      </varlistentry>
+
+           <varlistentry>
+        <term>pbcast.STABLE</term>
+
+        <listitem>
+          <para>Deletes messages that have been seen by all members (distributed message garbage collection)</para>
+        </listitem>
+      </varlistentry>
+
+        <varlistentry>
+            <term>pbcast.GMS</term>
+
+            <listitem>
+                <para>Membership protocol. Responsible for joining/leaving members and installing new views.</para>
+            </listitem>
+        </varlistentry>
+
+      <varlistentry>
+        <term>FRAG2</term>
+
+        <listitem>
+          <para>Fragments large messages into smaller ones and reassembles
+          them back at the receiver side. For both multicast and unicast messages</para>
+        </listitem>
+      </varlistentry>
+
+         <varlistentry>
+        <term>STATE_TRANSFER</term>
+
+        <listitem>
+          <para>
+              Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
+              new member.
+          </para>
+        </listitem>
+      </varlistentry>
+
+
+    </variablelist>
+
+    <section>
+      <title>UDP</title>
+
+      <para>UDP uses IP multicast for sending messages to all members of a
+      group and UDP datagrams for unicast messages (sent to a single member).
+      When started, it opens a unicast and multicast socket: the unicast
+      socket is used to send/receive unicast messages, whereas the multicast
+      socket sends/receives multicast messages. The channel's address will be
+      the address and port number of the <emphasis>unicast</emphasis>
+      socket.</para>
+
+      <section>
+        <title>Using UDP and plain IP multicasting</title>
+
+        <para>A protocol stack with UDP as transport protocol is typically
+        used with groups whose members run on the same host or are distributed
+        across a LAN. Before running such a stack a programmer has to ensure
+        that IP multicast is enabled across subnets. It is often the case that
+        IP multicast is not enabled across subnets. Refer to section <xref
+        linkend="ItDoesntWork" /> for running a test program that determines
+        whether members can reach each other via IP multicast. If this does
+        not work, the protocol stack cannot use UDP with IP multicast as
+        transport. In this case, the stack has to either use UDP without IP
+        multicasting or other transports such as TCP.</para>
+      </section>
+
+      <section id="IpNoMulticast">
+        <title>Using UDP without IP multicasting</title>
+
+        <para>The protocol stack with UDP and PING as the bottom protocols use
+        IP multicasting by default to send messages to all members (UDP) and
+        for discovery of the initial members (PING). However, if multicasting
+        cannot be used, the UDP and PING protocols can be configured to send
+        multiple unicast messages instead of one multicast message <footnote>
+            <para>Although not as efficient (and using more bandwidth), it is
+            sometimes the only possibility to reach group members.</para>
+          </footnote> (UDP) and to access a well-known server (
+        <emphasis>GossipRouter</emphasis> ) for initial membership information
+        (PING).</para>
+
+        <para>To configure UDP to use multiple unicast messages to send a
+        group message instead of using IP multicasting, the
+        <parameter>ip_mcast</parameter> property has to be set to
+        <literal>false</literal> .</para>
+
+        <para>To configure PING to access a GossipRouter instead of using IP
+        multicast the following properties have to be set:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>gossip_host</term>
+
+            <listitem>
+              <para>The name of the host on which GossipRouter is
+              started</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>gossip_port</term>
+
+            <listitem>
+              <para>The port on which GossipRouter is listening</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>gossip_refresh</term>
+
+            <listitem>
+              <para>The number of milliseconds to wait until refreshing our
+              address entry with the GossipRouter</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Before any members are started the GossipRouter has to be
+        started, e.g.</para>
+
+          <screen>
+              java org.jgroups.stack.GossipRouter -port 5555 -bindaddress localhost
+          </screen>
+
+        <para>This starts the GossipRouter on the local host on port 5555. The
+        GossipRouter is essentially a lookup service for groups and members.
+        It is a process that runs on a well-known host and port and accepts
+        GET(group) and REGISTER(group, member) requests. The REGISTER request
+        registers a member's address and group with the GossipRouter. The GET
+        request retrieves all member addresses given a group name. Each member
+        has to periodically ( <parameter>gossip_refresh</parameter> )
+        re-register their address with the GossipRouter, otherwise the entry
+        for that member will be removed (accommodating for crashed
+        members).</para>
+
+        <para>The following example shows how to disable the use of IP
+        multicasting and use a GossipRouter instead. Only the bottom two
+        protocols are shown, the rest of the stack is the same as in the
+        previous example:</para>
+
+        <screen>
+                    &lt;UDP ip_mcast="false" mcast_addr="224.0.0.35" mcast_port="45566" ip_ttl="32"
+                         mcast_send_buf_size="150000" mcast_recv_buf_size="80000"/&gt;
+                    &lt;PING gossip_host="localhost" gossip_port="5555" gossip_refresh="15000"
+                          timeout="2000" num_initial_members="3"/&gt;
+                </screen>
+
+        <para>The property <parameter>ip_mcast</parameter> is set to
+        <literal>false</literal> in <classname>UDP</classname> and the gossip
+        properties in <classname>PING</classname> define the GossipRouter to
+        be on the local host at port 5555 with a refresh rate of 15 seconds.
+        If PING is parameterized with the GossipRouter's address
+        <emphasis>and</emphasis> port, then gossiping is enabled, otherwise it
+        is disabled. If only one parameter is given, gossiping will be
+        <emphasis>disabled</emphasis> .</para>
+
+        <para>Make sure to run the GossipRouter before starting any members,
+        otherwise the members will not find each other and each member will
+        form its own group <footnote>
+            <para>This can actually be used to test the MERGE2 protocol: start
+            two members (forming two singleton groups because they don't find
+            each other), then start the GossipRouter. After some time, the two
+            members will merge into one group</para>
+          </footnote> .</para>
+      </section>
+    </section>
+
+    <section>
+      <title>TCP</title>
+
+      <para>TCP is a replacement of UDP as bottom layer in cases where IP
+      Multicast based on UDP is not desired. This may be the case when
+      operating over a WAN, where routers will discard IP MCAST. As a rule of
+      thumb UDP is used as transport for LANs, whereas TCP is used for
+      WANs.</para>
+
+      <para>The properties for a typical stack based on TCP might look like
+      this (edited/protocols removed for brevity):</para>
+
+      <screen>
+    &lt;TCP start_port="7800" /&gt;
+    &lt;TCPPING timeout="3000"
+             initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+             port_range="1"
+             num_initial_members="3"/&gt;
+    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+    &lt;pbcast.NAKACK
+                   use_mcast_xmit="false" gc_lag="0"
+                   retransmit_timeout="300,600,1200,2400,4800"
+                   discard_delivered_msgs="true"/&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="400000"/&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                shun="true"
+                view_bundling="true"/&gt;
+            </screen>
+
+      <variablelist>
+        <varlistentry>
+          <term>TCP</term>
+
+          <listitem>
+            <para>The transport protocol, uses TCP (from TCP/IP) to send
+            unicast and multicast messages. In the latter case, it sends
+            multiple unicast messages.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>TCPPING</term>
+
+          <listitem>
+            <para>Discovers the initial membership to determine coordinator.
+            Join request will then be sent to coordinator.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>VERIFY_SUSPECT</term>
+
+          <listitem>
+            <para>Double checks that a suspected member is really dead</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>pbcast.NAKACK</term>
+
+          <listitem>
+            <para>Reliable and FIFO message delivery</para>
+          </listitem>
+        </varlistentry>
+
+          <varlistentry>
+          <term>pbcast.STABLE</term>
+
+          <listitem>
+            <para>Distributed garbage collection of messages seen by all
+            members</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>pbcast.GMS</term>
+
+          <listitem>
+            <para>Membership services. Takes care of joining and removing
+            new/old members, emits view changes</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para>Since TCP already offers some of the reliability guarantees that
+      UDP doesn't, some protocols (e.g. FRAG and UNICAST) are not needed on
+      top of TCP.</para>
+
+      <para>When using TCP, each message to the group is sent as multiple
+      unicast messages (one to each member). Due to the fact that IP
+      multicasting cannot be used to discover the initial members, another
+      mechanism has to be used to find the initial membership. There are a
+      number of alternatives:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>PING with GossipRouter: same solution as described in <xref
+          linkend="IpNoMulticast" /> . The <parameter>ip_mcast</parameter>
+          property has to be set to <literal>false</literal> . GossipRouter
+          has to be started before the first member is started.</para>
+        </listitem>
+
+        <listitem>
+          <para>TCPPING: uses a list of well-known group members that it
+          solicits for initial membership</para>
+        </listitem>
+
+        <listitem>
+          <para>TCPGOSSIP: essentially the same as the above PING <footnote>
+              <para>PING and TCPGOSSIP will be merged in the future.</para>
+            </footnote> . The only difference is that TCPGOSSIP allows for
+          multiple GossipRouters instead of only one.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>The next two section illustrate the use of TCP with both TCPPING
+      and TCPGOSSIP.</para>
+
+      <section>
+        <title>Using TCP and TCPPING</title>
+
+        <para>A protocol stack using TCP and TCPPING looks like this (other
+        protocols omitted):</para>
+
+        <screen>
+                    &lt;TCP start_port="7800" /&gt; +
+                    &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="5"
+                             timeout="3000" num_initial_members="3" /&gt;
+                </screen>
+
+        <para>The concept behind TCPPING is that no external daemon such as
+        GossipRouter is needed. Instead some selected group members assume the
+        role of well-known hosts from which initial membership information can
+        be retrieved. In the example <parameter>HostA</parameter> and
+        <parameter>HostB</parameter> are designated members that will be used
+        by TCPPING to lookup the initial membership. The property
+        <parameter>start_port</parameter> in <classname>TCP</classname> means
+        that each member should try to assign port 7800 for itself. If this is
+        not possible it will try the next higher port (
+        <literal>7801</literal> ) and so on, until it finds an unused
+        port.</para>
+
+        <para><classname>TCPPING</classname> will try to contact both
+        <parameter>HostA</parameter> and <parameter>HostB</parameter> ,
+        starting at port <literal>7800</literal> and ending at port
+        <literal>7800 + port_range</literal> , in the above example ports
+        <literal>7800</literal> - <literal>7804</literal> . Assuming that at
+        least one of <parameter>HostA</parameter> or
+        <parameter>HostB</parameter> is up, a response will be received. To be
+        absolutely sure to receive a response all the hosts on which members
+        of the group will be running can be added to the configuration
+        string.</para>
+      </section>
+
+      <section>
+        <title>Using TCP and TCPGOSSIP</title>
+
+        <para>As mentioned before <classname>TCPGOSSIP</classname> is
+        essentially the same as <classname>PING</classname> with properties
+        <parameter>gossip_host</parameter> ,
+        <parameter>gossip_port</parameter> and
+        <parameter>gossip_refresh</parameter> set. However, in TCPGOSSIP these
+        properties are called differently as shown below (only the bottom two
+        protocols are shown):</para>
+
+        <screen>
+                    &lt;TCP /&gt;
+                    &lt;TCPGOSSIP initial_hosts="localhost[5555],localhost[5556]" gossip_refresh_rate="10000"
+                               num_initial_members="3" /&gt;
+                </screen>
+
+        <para>The <parameter>initial_hosts</parameter> properties combines
+        both the host and port of a GossipRouter, and it is possible to
+        specify more than one GossipRouter. In the example there are two
+        GossipRouters at ports <literal>5555</literal> and
+        <literal>5556</literal> on the local host. Also,
+        <parameter>gossip_refresh_rate</parameter> defines how many
+        milliseconds to wait between refreshing the entry with the
+        GossipRouters.</para>
+
+        <para>The advantage of having multiple GossipRouters is that, as long
+        as at least one is running, new members will always be able to
+        retrieve the initial membership. Note that the GossipRouter should be
+        started before any of the members.</para>
+      </section>
+    </section>
+
+    <section>
+      <title>TUNNEL</title>
+
+      <section>
+        <title>Using TUNNEL to tunnel a firewall</title>
+
+        <para>Firewalls are usually placed at the connection to the internet.
+        They shield local networks from outside attacks by screening incoming
+        traffic and rejecting connection attempts to host inside the firewalls
+        by outside machines. Most firewall systems allow hosts inside the
+        firewall to connect to hosts outside it (outgoing traffic), however,
+        incoming traffic is most often disabled entirely.</para>
+
+        <para><emphasis>Tunnels</emphasis> are host protocols which
+        encapsulate other protocols by multiplexing them at one end and
+        demultiplexing them at the other end. Any protocol can be tunneled by
+        a tunnel protocol.</para>
+
+        <para>The most restrictive setups of firewalls usually disable
+        <emphasis>all</emphasis> incoming traffic, and only enable a few
+        selected ports for outgoing traffic. In the solution below, it is
+        assumed that one TCP port is enabled for outgoing connections to the GossipRouter.</para>
+
+        <para>JGroups has a mechanism that allows a programmer to tunnel a
+        firewall. The solution involves a GossipRouter, which has to be outside of the firewall,
+        so other members (possibly also behind firewalls) can access it.</para>
+
+        <para>The solution works as follows. A channel inside a firewall has
+        to use protocol TUNNEL instead of UDP or TCP as bottommost layer. Recommended 
+        discovery protocol is PING, starting with 2.8 release, you do not have to specify 
+        any gossip routers in PING. </para>
+
+        <screen>
+                    &lt;TUNNEL gossip_router_hosts="127.0.0.1[12001]" /&gt;
+                    &lt;PING /&gt;
+                </screen>
+
+        <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
+        the firewall) at port <literal>12001</literal> to register its address
+        (periodically) and to retrieve the initial membership for its
+        group. It is not recommended to use TCPGOSSIP for discovery if TUNNEL is 
+        already used. TCPGOSSIP might be used in rare scenarios when registration and 
+        initial member discovery <emphasis>has to be done </emphasis>through gossip 
+        router indepedent of transport protocol being used. Starting with 2.8 release 
+        TCPGOSSIP accepts one or multiple router hosts as a comma delimited list 
+        of host[port] elements specified in a property initial_hosts.</para>
+
+        <para><classname>TUNNEL</classname> establishes a TCP connection to the
+        <emphasis>GossipRouter</emphasis> process (also outside the firewall) that
+        accepts messages from members and passes them on to other members.
+        This connection is initiated by the host inside the firewall and
+        persists as long as the channel is connected to a group. GossipRouter will
+        use the <emphasis>same connection</emphasis> to send incoming messages
+        to the channel that initiated the connection. This is perfectly legal,
+        as TCP connections are fully duplex. Note that, if GossipRouter tried to
+        establish its own TCP connection to the channel behind the firewall,
+        it would fail. But it is okay to reuse the existing TCP connection,
+        established by the channel.</para>
+
+        <para>Note that <classname>TUNNEL</classname> has to be given the
+        hostname and port of the GossipRouter process. This example assumes a GossipRouter
+        is running on the local host at port <literal>12001</literal>. Both
+        TUNNEL and TCPGOSSIP (or PING) access the same GossipRouter. 
+        Starting with 2.8 release TUNNEL transport layer accepts one or multiple router 
+        hosts as a comma delimited list of host[port] elements specified in a 
+        property gossip_router_hosts.</para>
+
+        <para>Any time a message has to be sent, TUNNEL forwards the message
+        to GossipRouter, which distributes it to its destination: if the message's
+        destination field is null (send to all group members), then GossipRouter
+        looks up the members that belong to that group and forwards the
+        message to all of them via the TCP connection they established when
+        connecting to GossipRouter. If the destination is a valid member address,
+        then that member's TCP connection is looked up, and the message is
+        forwarded to it <footnote>
+            <para>To do so, GossipRouter has to maintain a table between groups,
+            member addresses and TCP connections.</para>
+          </footnote> .</para>
+         
+         <para> 
+          Starting with 2.8 release, gossip router is no longer a single 
+		  point of failure. In a set-up with multiple gossip routers, routers do 
+		  not communicate among themselves, and single point of failure is avoided 
+		  by having each channel simply connect to multiple available routers. In 
+          case one or more routers go down, cluster members are still able to 
+          exchange message through remaining available router instances, if there 
+          are any.
+
+          For each send invocation, a channel goes through a list of available 
+          connections to routers and attempts to send a message on each connection 
+          until it succeeds. If a message could not be sent on any of the 
+          connections – an exception is raised. Default policy for connection 
+          selection is random. However, we also provide an plug-in interface for 
+          other policies as well.
+
+          Gossip router configuration is static and is not updated for the 
+          lifetime of the channel. A list of available routers has to be provided 
+          in channel configuration file.</para>
+
+          
+
+        <para>To tunnel a firewall using JGroups, the following steps have to
+        be taken:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Check that a TCP port (e.g. 12001) is enabled in
+            the firewall for outgoing traffic</para>
+          </listitem>
+
+          <listitem>
+            <para>Start the GossipRouter:</para>
+
+            <screen>
+                            start org.jgroups.stack.GossipRouter -port 12001
+                        </screen>
+          </listitem>
+
+
+          <listitem>
+            <para>Configure the TUNNEL protocol layer as instructed
+            above.</para>
+          </listitem>
+
+          <listitem>
+            <para>Create a channel</para>
+          </listitem>
+        </orderedlist>
+
+        <para>The general setup is shown in <xref linkend="TunnelingFig" />
+        .</para>
+
+        <figure id="TunnelingFig">
+          <title>Tunneling a firewall</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata align="center" fileref="images/Tunneling.png" />
+            </imageobject>
+
+            <textobject>
+              <phrase>A diagram representing tunneling a firewall.</phrase>
+            </textobject>
+          </mediaobject>
+        </figure>
+
+        <para>First, the GossipRouter process is created on host
+        B. Note that host B should be outside the firewall, and all channels in
+        the same group should use the same GossipRouter process.
+        When a channel on host A is created, its
+        <classname>TCPGOSSIP</classname> protocol will register its address
+        with the GossipRouter and retrieve the initial membership (assume this
+        is C). Now, a TCP connection with the GossipRouter is established by A; this
+        will persist until A crashes or voluntarily leaves the group. When A
+        multicasts a message to the group, GossipRouter looks up all group members
+        (in this case, A and C) and forwards the message to all members, using
+        their TCP connections. In the example, A would receive its own copy of
+        the multicast message it sent, and another copy would be sent to
+        C.</para>
+
+        <para>This scheme allows for example <emphasis>Java applets</emphasis>
+        , which are only allowed to connect back to the host from which they
+        were downloaded, to use JGroups: the HTTP server would be located on
+        host B and the gossip and GossipRouter daemon would also run on that host.
+        An applet downloaded to either A or C would be allowed to make a TCP
+        connection to B. Also, applications behind a firewall would be able to
+        talk to each other, joining a group.</para>
+
+        <para>However, there are several drawbacks: first, having to maintain a TCP connection for the
+        duration of the connection might use up resources in the host system
+        (e.g. in the GossipRouter), leading to scalability problems, second, this
+        scheme is inappropriate when only a few channels are located behind
+        firewalls, and the vast majority can indeed use IP multicast to
+        communicate, and finally, it is not always possible to enable outgoing
+        traffic on 2 ports in a firewall, e.g. when a user does not 'own' the
+        firewall.</para>
+        
+      </section>
+    </section>
+  </section>
+
+
+    <section>
+        <title>The concurrent stack</title>
+
+        <para>
+            The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases,
+            which has some deficiencies:
+            <itemizedlist>
+                <listitem>
+                    Large number of threads: each protocol had by default 2 threads, one for the up and one for the
+                    down queue. They could be disabled per protocol by setting up_thread or down_thread to false.
+                    In the new model, these threads have been removed.
+                </listitem>
+                <listitem>
+                    Sequential delivery of messages: JGroups used to have a single queue for incoming messages,
+                    processed by one thread. Therefore, messages from different senders were still processed in
+                    FIFO order. In 2.5 these messages can be processed in parallel.
+                </listitem>
+                <listitem>
+                    Out-of-band messages: when an application doesn't care about the ordering properties of a message,
+                    the OOB flag can be set and JGroups will deliver this particular message without regard for any
+                    ordering.
+                </listitem>
+            </itemizedlist>
+        </para>
+
+        <section>
+            <title>Overview</title>
+
+            <para>
+                The architecture of the concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>. The changes
+                were made entirely inside of the transport protocol (TP, with subclasses UDP, TCP and TCP_NIO). Therefore,
+                to configure the concurrent stack, the user has to modify the config for (e.g.) UDP in the XML file.
+            </para>
+
+            <para>
+                <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
+                    <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
+                </figure>
+            </para>
+            <para>
+                
+            </para>
+
+            <para>
+                The concurrent stack consists of 2 thread pools (java.util.concurrent.Executor): the out-of-band (OOB)
+                thread pool and the regular thread pool. Packets are received by multicast or unicast receiver threads
+                (UDP) or a ConnectionTable (TCP, TCP_NIO). Packets marked as OOB (with Message.setFlag(Message.OOB)) are
+                dispatched to the OOB thread pool, and all other packets are dispatched to the regular thread pool.
+            </para>
+
+            <para>
+                When a thread pool is disabled, then we use the thread of the caller (e.g. multicast or unicast
+                receiver threads or the ConnectionTable) to send the message up the stack and into the application.
+                Otherwise, the packet will be processed by a thread from the thread pool, which sends the message up
+                the stack. When all current threads are busy, another thread might be created, up to the maximum number
+                of threads defined. Alternatively, the packet might get queued up until a thread becomes available.
+            </para>
+
+            <para>
+                The point of using a thread pool is that the receiver threads should only receive the packets and forward
+                them to the thread pools for processing, because unmarshalling and processing is slower than simply
+                receiving the message and can benefit from parallelization.
+            </para>
+
+
+            <section>
+                <title>Configuration</title>
+
+                <para>Note that this is preliminary and names or properties might change</para>
+
+                <para>
+                    We are thinking of exposing the thread pools programmatically, meaning that a developer might be able to set both
+                    threads pools programmatically, e.g. using something like TP.setOOBThreadPool(Executor executor).
+                </para>
+
+                <para>
+                    Here's an example of the new configuration:
+                    <screen>
+                        <![CDATA[
+                        <UDP
+                                mcast_addr="228.10.10.10"
+                                mcast_port="45588"
+
+                                thread_pool.enabled="true"
+                                thread_pool.min_threads="1"
+                                thread_pool.max_threads="100"
+                                thread_pool.keep_alive_time="20000"
+                                thread_pool.queue_enabled="false"
+                                thread_pool.queue_max_size="10"
+                                thread_pool.rejection_policy="Run"
+
+                                oob_thread_pool.enabled="true"
+                                oob_thread_pool.min_threads="1"
+                                oob_thread_pool.max_threads="4"
+                                oob_thread_pool.keep_alive_time="30000"
+                                oob_thread_pool.queue_enabled="true"
+                                oob_thread_pool.queue_max_size="10"
+                                oob_thread_pool.rejection_policy="Run"/>
+                                ]]>
+                    </screen>
+                </para>
+
+                <para>
+                    The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
+                </para>
+
+                <para>
+                    The attributes are listed below. The roughly correspond to the options of a
+                    java.util.concurrent.ThreadPoolExecutor in JDK 5.
+                    <table>
+                        <title>Attributes of thread pools</title>
+
+                        <tgroup cols="2">
+                            <colspec align="left" />
+
+                            <thead>
+                                <row>
+                                    <entry align="center">Name</entry>
+                                    <entry align="center">Description</entry>
+                                </row>
+                            </thead>
+
+                            <tbody>
+                                <row>
+                                    <entry>enabled</entry>
+                                    <entry>Whether of not to use a thread pool. If set to false, the caller's thread
+                                    is used.</entry>
+                                </row>
+
+                                <row>
+                                    <entry>min_threads</entry>
+                                    <entry>The minimum number of threads to use.</entry>
+                                </row>
+                                <row>
+                                    <entry>max_threads</entry>
+                                    <entry>The maximum number of threads to use.</entry>
+                                </row>
+                                <row>
+                                    <entry>keep_alive_time</entry>
+                                    <entry>Number of milliseconds until an idle thread is removed from the pool</entry>
+                                </row>
+                                <row>
+                                    <entry>queue_enabled</entry>
+                                    <entry>Whether of not to use a (bounded) queue. If enabled, when all minimum
+                                    threads are busy, work items are added to the queue. When the queue is full,
+                                    additional threads are created, up to max_threads. When max_threads have been
+                                    reached, the rejection policy is consulted.</entry>
+                                </row>
+                                <row>
+                                    <entry>max_size</entry>
+                                    <entry>The maximum number of elements in the queue. Ignored if the queue is
+                                    disabled</entry>
+                                </row>
+                                <row>
+                                    <entry>rejection_policy</entry>
+                                    <entry>Determines what happens when the thread pool (and queue, if enabled) is
+                                    full. The default is to run on the caller's thread. "Abort" throws an runtime
+                                    exception. "Discard" discards the message, "DiscardOldest" discards the
+                                    oldest entry in the queue. Note that these values might change, for example a
+                                    "Wait" value might get added in the future.</entry>
+                                </row>
+                                <row>
+                                    <entry>thread_naming_pattern</entry>
+                                    <entry>Determines how threads are named that are running from thread pools in 
+                                    concurrent stack. Valid values include any combination of "cl" letters, where
+                                    "c" includes the cluster name and "l" includes local address of the channel.
+                                        The default is "cl"
+                                    </entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                </para>
+            </section>
+
+        </section>
+
+        <section>
+            <title>Elimination of up and down threads</title>
+
+            <para>
+                By removing the 2 queues/protocol and the associated 2 threads, we effectively reduce the number of
+                threads needed to handle a message, and thus context switching overhead. We also get clear and unambiguous
+                semantics for Channel.send(): now, all messages are sent down the stack on the caller's thread and
+                the send() call only returns once the message has been put on the network. In addition, an exception will
+                only be propagated back to the caller if the message has not yet been placed in a retransmit buffer.
+                Otherwise, JGroups simply logs the error message but keeps retransmitting the message. Therefore,
+                if the caller gets an exception, the message should be re-sent.
+            </para>
+            <para>
+                On the receiving side, a message is handled by a thread pool, either the regular or OOB thread pool. Both
+                thread pools can be completely eliminated, so that we can save even more threads and thus further
+                reduce context switching. The point is that the developer is now able to control the threading behavior
+                almost completely.
+            </para>
+        </section>
+
+        <section>
+            <title>Concurrent message delivery</title>
+            <para>
+                Up to version 2.5, all messages received were processed by a single thread, even if the messages were
+                sent by different senders. For instance, if sender A sent messages 1,2 and 3, and B sent message 34 and 45,
+                and if A's messages were all received first, then B's messages 34 and 35 could only be processed after
+                messages 1-3 from A were processed !
+            </para>
+            <para>
+                Now, we can process messages from different senders in parallel, e.g. messages 1, 2 and 3 from A can be
+                processed by one thread from the thread pool and messages 34 and 35 from B can be processed on a different
+                thread.
+            </para>
+            <para>
+                As a result, we get a speedup of almost N for a cluster of N if every node is sending messages and we
+                configure the thread pool to have at least N threads. There is actually a unit test
+                (ConcurrentStackTest.java) which demonstrates this.
+            </para>
+        </section>
+
+        <section id="Scopes">
+            <title>Scopes: concurrent message delivery for messages from the same sender</title>
+            <para>
+                In the previous paragraph, we showed how the concurrent stack delivers messages from different senders
+                concurrently. But all (non-OOB) messages from the same sender P are delivered in the order in which
+                P sent them. However, this is not good enough for certain types of applications.
+            </para>
+            <para>
+                Consider the case of an application which replicates HTTP sessions. If we have sessions X, Y and Z, then
+                updates to these sessions are delivered in the order in which there were performed, e.g. X1, X2, X3,
+                Y1, Z1, Z2, Z3, Y2, Y3, X4. This means that update Y1 has to wait until updates X1-3 have been delivered.
+                If these updates take some time, e.g. spent in lock acquisition or deserialization, then all subsequent
+                messages are delayed by the sum of the times taken by the messages ahead of them in the delivery order.
+            </para>
+            <para>
+                However, in most cases, updates to different web sessions should be completely unrelated, so they could
+                be delivered concurrently. For instance, a modification to session X should not have any effect on
+                session Y, therefore updates to X, Y and Z can be delivered concurrently.
+            </para>
+            <para>
+                One solution to this is out-of-band (OOB) messages (see next paragraph). However, OOB messages do not
+                guarantee ordering, so updates X1-3 could be delivered as X1, X3, X2. If this is not wanted, but
+                messages pertaining to a given web session should all be delivered concurrently between sessions, but
+                ordered <emphasis>within</emphasis> a given session, then we can resort to <emphasis>scoped messages</emphasis>.
+            </para>
+            <para>
+                Scoped messages apply only to <emphasis>regular</emphasis> (non-OOB) messages, and are delivered
+                concurrently between scopes, but ordered within a given scope. For example, if we used the sessions above
+                (e.g. the jsessionid) as scopes, then the delivery could be as follows ('->' means sequential, '||' means concurrent):
+                <screen>
+                    X1 -> X2 -> X3 -> X4 || Y1 -> Y2 -> Y3 || Z1 -> Z2 -> Z3
+                </screen>
+                This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
+                a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
+                X2, which is deliverd before X3 and so on.
+            </para>
+            <para>
+                Taking the above example, using scoped messages, update Y1 does <emphasis>not</emphasis> have to wait for
+                updates X1-3 to complete, but is processed immediately.
+            </para>
+            <para>
+                To set the scope of a message, use method Message.setScope(short).
+            </para>
+            <para>
+                Scopes are implemented in a separate protocol called <xref linkend="SCOPE"/>. This protocol
+                has to be placed somewhere above ordering protocols like UNICAST or NAKACK (or SEQUENCER for that matter).
+            </para>
+
+            <note>
+                <title>Uniqueness of scopes</title>
+                <para>
+                    Note that scopes should be <emphasis>as unique as possible</emphasis>. Compare this to hashing: the fewer collisions
+                    there are, the better the concurrency will be. So, if for example, two web sessions pick the same
+                    scope, then updates to those sessions will be delivered in the order in which they were sent, and
+                    not concurrently. While this doesn't cause erraneous behavior, it defies the purpose of SCOPE.
+                </para>
+                <para>
+                    Also note that, if multicast and unicast messages have the same scope, they will be delivered
+                    in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
+                    to B with scope 25, then A's multicasts and unicasts will be delivered in order at B ! Again,
+                    this is correct, but since multicasts and unicasts are unrelated, might slow down things !
+                </para>
+            </note>
+        </section>
+
+        <section>
+            <title>Out-of-band messages</title>
+            <para>
+                OOB messages completely ignore any ordering constraints the stack might have. Any message marked as OOB
+                will be processed by the OOB thread pool. This is necessary in cases where we don't want the message
+                processing to wait until all other messages from the same sender have been processed, e.g. in the
+                heartbeat case: if sender P sends 5 messages and then a response to a heartbeat request received from
+                some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
+                timeout, so that P might get falsely suspected ! However, if the heartbeat response is marked as OOB,
+                then it will get processed by the OOB thread pool and therefore might be concurrent to its previously
+                sent 5 messages and not trigger a false suspicion.
+            </para>
+            <para>
+                The 2 unit tests UNICAST_OOB_Test and NAKACK_OOB_Test demonstrate how OOB messages influence the ordering,
+                for both unicast and multicast messages.
+            </para>
+        </section>
+
+
+        <section>
+            <title>Replacing the default and OOB thread pools</title>
+            <para>
+                In 2.7, there are 3 thread pools and 4 thread factories in TP:
+                <table>
+                    <title>Thread pools and factories in TP</title>
+
+                    <tgroup cols="2">
+                        <colspec align="left" />
+
+                        <thead>
+                            <row>
+                                <entry align="center">Name</entry>
+                                <entry align="center">Description</entry>
+                            </row>
+                        </thead>
+
+                        <tbody>
+                            <row>
+                                <entry>Default thread pool</entry>
+                                <entry>This is the pools for handling incoming messages. It can be fetched using
+                                    getDefaultThreadPool() and replaced using setDefaultThreadPool(). When setting a
+                                    thread pool, the old thread pool (if any) will be shutdown and all of it tasks
+                                    cancelled first
+                                </entry>
+                            </row>
+                            <row>
+                                <entry>OOB thread pool</entry>
+                                <entry>This is the pool for handling incoming OOB messages. Methods to get and set
+                                    it are getOOBThreadPool() and setOOBThreadPool()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Timer thread pool</entry>
+                                <entry>This is the thread pool for the timer. The max number of threads is set through
+                                the timer.num_threads property. The timer thread pool cannot be set, it can only
+                                be retrieved using getTimer(). However, the thread factory of the timer
+                                can be replaced (see below)</entry>
+                            </row>
+
+                            <row>
+                                <entry>Default thread factory</entry>
+                                <entry>This is the thread factory (org.jgroups.util.ThreadFactory) of the default
+                                    thread pool, which handles incoming messages. A thread pool factory is used to
+                                    name threads and possibly make them daemons.
+                                    It can be accessed using
+                                    getDefaultThreadPoolThreadFactory() and setDefaultThreadPoolThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>OOB thread factory</entry>
+                                <entry>This is the thread factory for the OOB thread pool. It can be retrieved
+                                using getOOBThreadPoolThreadFactory() and set using method
+                                setOOBThreadPoolThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Timer thread factory</entry>
+                                <entry>This is the thread factory for the timer thread pool. It can be accessed
+                                using getTimerThreadFactory() and setTimerThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Global thread factory</entry>
+                                <entry>The global thread factory can get used (e.g. by protocols) to create threads
+                                which don't live in the transport, e.g. the FD_SOCK server socket handler thread.
+                                Each protocol has a method getTransport(). Once the TP is obtained, getThreadFactory()
+                                can be called to get the global thread factory. The global thread factory
+                                can be replaced with setThreadFactory()</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </table>
+
+            </para>
+        </section>
+
+
+        <section>
+            <title>Sharing of thread pools between channels in the same JVM</title>
+            <para>
+                In 2.7, the default and OOB thread pools can be shared between instances running inside the same JVM. The
+                advantage here is that multiple channels running within the same JVM can pool (and therefore save) threads.
+                The disadvantage is that thread naming will not show to which channel instance an incoming thread
+                belongs to.
+            </para>
+            <para>
+                Note that we can not just shared thread pools between JChannels within the same JVM, but we can also
+                share entire transports. For details see <xref linkend="SharedTransport">this section</xref>.
+            </para>
+        </section>
+
+
+
+    </section>
+
+    <section>
+        <title>Misc</title>
+        <section>
+            <title>Shunning</title>
+
+            <para>
+                Note that in 2.8, shunning has been removed, so the sections below only apply to versions up to 2.7.
+            </para>
+
+            Let's say we have 4 members in a group: {A,B,C,D}. When a member (say D) is expelled from the group, e.g.
+            because it didn't respond to are-you-alive messages, and later comes back, then it is shunned. Shunning
+            causes a member to leave the group and re-join, if this is enabled on the Channel. To enable automatic
+            re-connects, the AUTO_RECONNECT option has to be set on the Channel:
+            <screen>
+                channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+            </screen>
+
+            
+            <para>To enable shunning, set FD.shun and GMS.shun to true.</para>
+
+            Let's look at a more detailed example. Say member D is overloaded, and doesn't respond to are-you-alive
+            messages (done by the failure detection (FD) protocol). It is therefore suspected and excluded. The new
+            view for A, B and C will be {A,B,C}, however for D the view is still {A,B,C,D}. So when D comes back and
+            sends messages to the group, or any individiual member, those messages will be discarded, because A,B and
+            C don't see D in their view. D is shunned when A,B or C receive an are-you-alive message from D, or D
+            shuns itself when it receives a view which doesn't include D.<para/>
+
+            So shunning is always a unilateral decision. However, things may be different if all members exclude each
+            other from the group. For example, say we have a switch connecting A, B, C and D. If someone pulls all
+            plugs on the switch, or powers the switch down, then A, B, C and D will all form singleton groups, that is,
+            each member thinks it's the only member in the group. When the switch goes back to normal, then each member
+            will shun everybody else (a real shun fest :-)). This is clearly not desirable, so in this case shunning
+            should be turned off:
+            <screen>
+                &lt;FD timeout="2000" max_tries="3" shun="false"/&gt;
+                ...
+                &lt;pbcast.GMS join_timeout="3000" shun="false"/&gt;
+            </screen>
+        </section>
+        <section>
+            <title>Using a custom socket factory</title>
+            <para>
+                JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP) or
+                TP.ProtocolAdapter (in a shared transport). The factory has methods to create sockets (Socket,
+                ServerSocket, DatagramSocket and MulticastSocket)
+                <footnote>
+                    <para>
+                        Currently, SocketFactory does not support creation of NIO sockets / channels.
+                    </para>
+                </footnote>,
+                closen sockets and list all open sockets. Every socket creation method has a service name, which could
+                be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
+                file) and create the correct socket.
+            </para>
+            <para>
+                To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
+                the code below creates a SocketFactory implementation and sets it in the transport:
+            </para>
+            <screen>
+                JChannel ch;
+                MySocketFactory factory; // e.g. extends DefaultSocketFactory
+                ch=new JChannel("config.xml");
+                ch.setSocketFactory(new MySocketFactory());
+                ch.connect("demo");
+            </screen>
+
+            <para>
+                If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
+                one in the TP.ProtocolAdapter:
+            </para>
+            <screen>
+                JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
+
+                TP transport=c1.getProtocolStack().getTransport();
+                transport.setSocketFactory(new MySocketFactory("transport"));
+
+                c1.setSocketFactory(new MySocketFactory("first-cluster"));
+                c2.setSocketFactory(new MySocketFactory("second-cluster"));
+
+                c1.connect("first-cluster");
+                c2.connect("second-cluster");
+            </screen>
+
+            <para>
+                First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
+                set one SocketFactory per channel that resides on the shared transport. When JChannel.connect() is
+                called, the SocketFactory will be set in TP.ProtocolAdapter.
+            </para>
+
+        </section>
+    </section>
+
+    <section>
+        <title>Handling network partitions</title>
+
+        <para>
+            Network partitions can be caused by switch, router or network interface crashes, among other things. If we
+            have a cluster {A,B,C,D,E} spread across 2 subnets {A,B,C} and {D,E} and the switch to which D and E are
+            connected crashes, then we end up with a network partition, with subclusters {A,B,C} and {D,E}.
+        </para>
+        <para>
+            A, B and C can ping each other, but not D or E, and vice versa. We now have 2 coordinators, A and D. Both
+            subclusters operate independently, for example, if we maintain a shared state, subcluster {A,B,C} replicate
+            changes to A, B and C.
+        </para>
+        <para>
+            This means, that if during the partition, some clients access {A,B,C}, and others {D,E}, then we end up
+            with different states in both subclusters. When a partition heals, the merge protocol (e.g. MERGE2) will
+            notify A and D that there were 2 subclusters and merge them back into {A,B,C,D,E}, with A being the new
+            coordinator and D ceasing to be coordinator.
+        </para>
+        <para>
+            The question is what happens with the 2 diverged substates ?
+        </para>
+        <para>
+            There are 2 solutions to merging substates: first we can attempt to create a new state from the 2 substates,
+            and secondly we can shut down all members of the <emphasis>non primary partition</emphasis>, such that they
+            have to re-join and possibly reacquire the state from a member in the primary partition.
+        </para>
+        <para>
+            In both cases, the application has to handle a MergeView (subclass of View), as shown in the code below:
+            <screen>
+                public void viewAccepted(View view) {
+                    if(view instanceof MergeView) {
+                        MergeView tmp=(MergeView)view;
+                        Vector&lt;View&gt; subgroups=tmp.getSubgroups();
+                        // merge state or determine primary partition
+                        // run this in a separate thread !
+                    }
+                }
+            </screen>
+        </para>
+        <para>
+            It is essential that the merge view handling code run on a separate thread if it needs more than a few
+            milliseconds, or else it would block the calling thread.
+        </para>
+        <para>
+            The MergeView contains a list of views, each view represents a subgroups and has the list of members which
+            formed this group.
+        </para>
+
+        <section>
+            <title>Merging substates</title>
+            <para>
+                The application has to merge the substates from the various subgroups ({A,B,C} and {D,E}) back into one
+                single state for {A,B,C,D,E}. This task <emphasis>has</emphasis> to be done by the application because
+                JGroups knows nothing about the application state, other than it is a byte buffer.
+            </para>
+            <para>
+                If the in-memory state is backed by a database, then the solution is easy: simply discard the in-memory
+                state and fetch it (eagerly or lazily) from the DB again. This of course assumes that the members of
+                the 2 subgroups were able to write their changes to the DB. However, this is often not the case, as
+                connectivity to the DB might have been severed by the network partition.
+            </para>
+            <para>
+                Another solution could involve tagging the state with time stamps. On merging, we could compare the
+                time stamps for the substates and let the substate with the more recent time stamps win.
+            </para>
+            <para>
+                Yet another solution could increase a counter for a state each time the state has been modified. The state
+                with the highest counter wins.
+            </para>
+            <para>
+                Again, the merging of state can only be done by the application. Whatever algorithm is picked to merge
+                state, it has to be deterministic.
+            </para>
+        </section>
+
+        <section>
+            <title>The primary partition approach</title>
+        </section>
+        <para>
+            The primary partition approach is simple: on merging, one subgroup is designated as the
+            <emphasis>primary partition</emphasis> and all others as non-primary partitions. The members in the primary
+            partition don't do anything, whereas the members in the non-primary partitions need to drop their state and
+            re-initialize their state from fresh state obtained from a member of the primary partition.
+        </para>
+        <para>
+            The code to find the primary partition needs to be deterministic, so that all members pick the <emphasis>
+            same</emphasis> primary partition. This could be for example the first view in the MergeView, or we could
+            sort all members of the new MergeView and pick the subgroup which contained the new coordinator (the one
+            from the consolidated MergeView). Another possible solution could be to pick the largest subgroup, and, if
+            there is a tie, sort the tied views lexicographically (all Addresses have a compareTo() method) and pick the
+            subgroup with the lowest ranked member.
+        </para>
+        <para>
+            Here's code which picks as primary partition the first view in the MergeView, then re-acquires the state from
+            the <emphasis>new</emphasis> coordinator of the combined view:
+            <screen>
+                public static void main(String[] args) throws Exception {
+                       final JChannel ch=new JChannel("/home/bela/udp.xml");
+                       ch.setReceiver(new ExtendedReceiverAdapter() {
+                           public void viewAccepted(View new_view) {
+                               handleView(ch, new_view);
+                           }
+                       });
+                       ch.connect("x");
+                       while(ch.isConnected())
+                           Util.sleep(5000);
+                   }
+
+                private static void handleView(JChannel ch, View new_view) {
+                    if(new_view instanceof MergeView) {
+                        ViewHandler handler=new ViewHandler(ch, (MergeView)new_view);
+                        handler.start(); // requires separate thread as we don't want to block JGroups
+                    }
+                }
+
+                private static class ViewHandler extends Thread {
+                    JChannel ch;
+                    MergeView view;
+
+                    private ViewHandler(JChannel ch, MergeView view) {
+                        this.ch=ch;
+                        this.view=view;
+                    }
+
+                    public void run() {
+                        Vector&lt;View&gt; subgroups=view.getSubgroups();
+                        View tmp_view=subgroups.firstElement(); // picks the first
+                        Address local_addr=ch.getLocalAddress();
+                        if(!tmp_view.getMembers().contains(local_addr)) {
+                            System.out.println("I (" + local_addr + ") am not member of the new primary partition (" + tmp_view +
+                                    "), will re-acquire the state");
+                            try {
+                                ch.getState(null, 30000);
+                            }
+                            catch(Exception ex) {
+                            }
+                        }
+                        else {
+                            System.out.println("I (" + local_addr + ") am member of the new primary partition (" + tmp_view +
+                                    "), will do nothing");
+                        }
+                    }
+                }
+            </screen>
+        </para>
+        <para>
+            The handleView() method is called from viewAccepted(), which is called whenever there is a new view. It spawns
+            a new thread which gets the subgroups from the MergeView, and picks the first subgroup to be the primary
+            partition. Then, if it was a member of the primary partition, it does nothing, and if not, it reaqcuires
+            the state from the coordinator of the primary partition (A).
+        </para>
+        <para>
+            The downside to the primary partition approach is that work (= state changes) on the non-primary partition
+            is discarded on merging. However, that's only problematic if the data was purely in-memory data, and not
+            backed by persistent storage. If the latter's the case, use state merging discussed above.
+        </para>
+        <para>
+            It would be simpler to shut down the non-primary partition as soon as the network partition is detected, but
+            that a non trivial problem, as we don't know whether {D,E} simply crashed, or whether they're still alive,
+            but were partitioned away by the crash of a switch. This is called a <emphasis>split brain syndrome</emphasis>,
+            and means that none of the members has enough information to determine whether it is in the primary or
+            non-primary partition, by simply exchanging messages.
+        </para>
+
+        <section>
+            <title>The Split Brain syndrome and primary partitions</title>
+            <para>
+                In certain situations, we can avoid having multiple subgroups where every subgroup is able to make
+                progress, and on merging having to discard state of the non-primary partitions.
+            </para>
+            <para>
+                If we have a fixed membership, e.g. the cluster always consists of 5 nodes, then we can run code on
+                a view reception that determines the primary partition. This code
+                <itemizedlist>
+                    <listitem>assumes that the primary partition has to have at least 3 nodes</listitem>
+                    <listitem>any cluster which has less than 3 nodes doesn't accept modfications. This could be done for
+                        shared state for example, by simply making the {D,E} partition read-only. Clients can access the
+                        {D,E} partition and read state, but not modify it.
+                    </listitem>
+                    <listitem>
+                        As an alternative, clusters without at least 3 members could shut down, so in this case D and
+                        E would leave the cluster.
+                    </listitem>
+                </itemizedlist>
+            </para>
+            <para>
+                The algorithm is shown in pseudo code below:
+                <screen>
+                    On initialization:
+                        - Mark the node as read-only
+                    
+                    On view change V:
+                        - If V has >= N members:
+                            - If not read-write: get state from coordinator and switch to read-write
+                        - Else: switch to read-only
+                </screen>
+            </para>
+            <para>
+                Of course, the above mechanism requires that at least 3 nodes are up at any given time, so upgrades have
+                to be done in a staggered way, taking only one node down at a time. In the worst case, however, this
+                mechanism leaves the cluster read-only and notifies a system admin, who can fix the issue. This is still
+                better than shutting the entire cluster down. 
+            </para>
+        </section>
+
+    </section>
+
+
+    <section>
+        <title>Flushing: making sure every node in the cluster received a message</title>
+
+        When sending messages, the properties of the default stacks (udp.xml, tcp.xml) are that all messages are delivered
+        reliably to all (non-crashed) members. However, there are no guarantees with respect to the view in which a message
+        will get delivered. For example, when a member A with view V1={A,B,C} multicasts message M1 to the group and D joins
+        at about the same time, then D may or may not receive M1, and there is no guarantee that A, B and C receive M1 in
+        V1 or V2={A,B,C,D}.
+
+        <para>
+            To change this, we can turn on virtual synchrony (by adding FLUSH to the top of the stack), which guarantees that
+            <itemizedlist>
+                <listitem>
+                    A message M sent in V1 will be delivered in V1. So, in the example above, M1 would get delivered in
+                    view V1; by A, B and C, but not by D.
+                </listitem>
+
+                <listitem>
+                    The set of messages seen by members in V1 is the same for all members before a new view V2 is installed.
+                    This is important, as it ensures that all members in a given view see the same messages. For example,
+                    in a group {A,B,C}, C sends 5 messages. A receives all 5 messages, but B doesn't. Now C crashes before
+                    it can retransmit the messages to B. FLUSH will now ensure, that before installing V2={A,B} (excluding
+                    C), B gets C's 5 messages. This is done through the flush protocol, which has all members reconcile
+                    their messages before a new view is installed. In this case, A will send C's 5 messages to B.
+                </listitem>
+            </itemizedlist>
+        </para>
+
+        <para>
+            Sometimes it is important to know that every node in the cluster received all messages up to a certain point,
+            even if there is no new view being installed. To do this (initiate a manual flush), an application programmer
+            can call Channel.startFlush() to start a flush and Channel.stopFlush() to terminate it.
+        </para>
+
+        <para>
+            Channel.startFlush() flushes all pending messages out of the system. This stops all senders (calling
+            Channel.down() during a flush will block until the flush has completed)<footnote><para>Note that block()
+            will be called in a Receiver when the flush is about to start and unblock() will be called when it ends</para></footnote>.
+            When startFlush() returns, the caller knows that (a) no messages will get sent anymore until stopFlush() is
+            called and (b) all members have received all messages sent before startFlush() was called.
+        </para>
+
+        <para>
+            Channel.stopFlush() terminates the flush protocol, no blocked senders can resume sending messages.
+        </para>
+
+        <para>
+            Note that the FLUSH protocol has to be present on top of the stack, or else the flush will fail.
+        </para>
+        
+    </section>
+
+
+    <section>
+        <title>Large clusters</title>
+        <para>
+            This section is a collection of best practices and tips and tricks for running large clusters on JGroups.
+            By large clusters, we mean several hundred nodes in a cluster.
+        </para>
+
+        <section>
+            <title>Reducing chattiness</title>
+            <para>
+                When we have a chatty protocol, scaling to a large number of nodes might be a problem: too many messages
+                are sent and - because they are generated in addition to the regular traffic - this can have a
+                negative impact on the cluster. A possible impact is that more of the regular messages are dropped, and
+                have to be retransmitted, which impacts performance. Or heartbeats are dropped, leading to false
+                suspicions. So while the negative effects of chatty protocols may not be seen in small clusters, they
+                <emphasis>will</emphasis> be seen in large clusters !
+            </para>
+
+            <section>
+                <title>Discovery</title>
+                <para>
+                    A discovery protocol (e.g. PING, TCPPING, MPING etc) is run at startup, to discover the initial
+                    membership, and periodically by the merge protocol, to detect partitioned subclusters.
+                </para>
+                <para>
+                    When we send a multicast discovery request to a large cluster, every node in the cluster might
+                    possibly reply with a discovery response sent back to the sender. So, in a cluster of 300 nodes,
+                    the discovery requester might be up to 299 discovery responses ! Even worse, because num_ping_requests
+                    in Discovery is by default set to 2, so we're sending 2 discovery requests, we might receive up to
+                    num_ping_requests * (N-1) discovery responses, even though we might be able to find out the
+                    coordinator after a few responses already !
+                </para>
+                <para>
+                    To reduce the large number of responses, we can set a max_rank property: the value defines which
+                    members are going to send a discovery response. The rank is the index of a member in a cluster: in
+                    {A,B,C,D,E}, A's index is 1, B's index is 2 and so on. A max_rank of 3 would trigger discovery
+                    responses from only A, B and C, but not from D or E.
+                </para>
+                <para>
+                    We highly recommend setting max_rank in large clusters.
+                </para>
+                <para>
+                    This functionality was implemented in
+                    <ulink url="https://jira.jboss.org/browse/JGRP-1181">https://jira.jboss.org/browse/JGRP-1181</ulink>.
+                </para>
+            </section>
+            <section>
+                <title>Failure detection protocols</title>
+                <para>
+                    Failure detection protocols determine when a member is unresponsive, and subsequently
+                    <emphasis>suspect</emphasis> it. Usually (FD, FD_ALL), messages (heartbeats) are used to determine
+                    the health of a member, but we can also use TCP connections (FD_SOCK) to connect to a member P, and
+                    suspect P when the connection is closed.
+                </para>
+                <para>
+                    Heartbeating requires messages to be sent around, and we need to be careful to limit the number of
+                    messages sent by a failure detection protocol (1) to detect crashed members and (2) when a member
+                    has been suspected. The following sections discuss how to configure FD_ALL and FD_SOCK, the most
+                    commonly used failure detection protocols, for use in large clusters.
+                </para>
+
+                <section>
+                    <title>FD_SOCK</title>
+                </section>
+                
+                <section>
+                    <title>FD_ALL</title>
+                </section>
+            </section>
+
+        </section>
+
+        <section>
+            <title>Ergonomics</title>
+            <para>
+                Ergonomics is similar to the dynamic setting of optimal values for the JVM, e.g. garbage collection,
+                memory sizes etc. In JGroups, ergonomics means that we try to dynamically determine and set optimal
+                values for protocol properties. Examples are thread pool size, flow control credits, heartbeat
+                frequency and so on.
+            </para>
+        </section>
+
+    </section>
+</chapter>

@@ -1,0 +1,28 @@
+<project name="Documentation" default="all.doc" basedir=".">
+    <property name="pdf.name" value="tutorial.pdf" />
+
+    <import file="../../../docbook-support/support.xml"/>
+
+    <target name="copy.code">
+        <mkdir dir="${basedir}/${build.dir}/en/code"/>
+        <copy todir="${basedir}/${build.dir}/en/code">
+            <fileset dir="${basedir}/en/code">
+                <include name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <target name="all.doc" depends="clean, copy.code">
+        <antcall target="lang.all"><param name="lang" value="en"/></antcall>
+    </target>
+
+    <target name="pdf" depends="clean, copy.code">
+        <antcall target="lang.docpdf"><param name="lang" value="en"/></antcall>
+    </target>
+
+    <target name="html" depends="clean, copy.code">
+        <antcall target="lang.dochtml"><param name="lang" value="en"/></antcall>
+    </target>
+
+</project>
+

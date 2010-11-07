@@ -1,0 +1,61 @@
+
+// Author: Bela Ban
+// $Id: MarshalingFormat.txt,v 1.10 2008/10/21 07:40:26 belaban Exp $
+
+
+Binary format for marshalled messages
+=====================================
+
+An org.jgroups.Message is marshalled to a byte stream as follows.
+
+- version ID: short (2 bytes). Version.encode() encodes the major, minor and patch version into the short.
+- flags (byte):
+  - single message or list of messages (LIST)
+    If single message --> SingleMessage, else MessageList
+  - multicast (MULTICAST) or unicast message (for optimizations)
+
+SingleMessage:
+- leading: byte. Has bits set for null src and dest addresses, buf and headers
+- flags: byte
+- src address: Address
+- [length of buf]: int
+- [buf]: byte[] array
+- [Headers]: list of headers --> Headers
+
+
+MessageList:
+- length: int. Number of messages in the list
+- src address: Address
+- 1-m Messages: --> SingleMessage, but with no src and dest addresses
+
+
+
+Headers:
+- length: int. Number of headers
+- For each Header:
+  - Key: UTF-8 string
+  - Header
+
+
+Header:
+- magic_number (short)
+- if magic number == -1 (not present):
+  - no-op
+- else
+  - UTF-8 string (class name)
+- size in bytes (short)
+- contents (header-specific)
+
+
+UTF-8 strings:
+- All strings start with a short that is the length of the string (DataOutputStream.writeUTF(String))
+
+
+Notes:
+
+- In most cases, we don't need to send the dest address, because the sender knows whether the message
+  was received on the unicast or multicast socket, and can thus set the dest address in an incoming
+  message to its own local address, or multicast address
+
+- This is currently as used by UDP. Once we move to Transport (e.g. including TCP), this needs to be
+  revisited. Currently (2.2.8), TCP uses externalization, *not* Streamable.

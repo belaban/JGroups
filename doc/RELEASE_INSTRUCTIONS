@@ -1,0 +1,46 @@
+// $Id: RELEASE_INSTRUCTIONS,v 1.24 2010/04/24 10:17:19 belaban Exp $
+
+	       Things to do before packaging a release
+	       ---------------------------------------
+
+Pre-release:
+- Do a cvs update -dP and commit all pending changes
+- Run all unit tests: ./build clean all-tests reports
+- Run the manual tests in doc/tests/ManualTests.txt
+- Run the performance tests to see whether performance is about the same
+  (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTests)
+
+
+Release:
+- Update the ReleaseNotes-xxx.txt for the given release
+- Set version in: Version.java, manifest.mf, build.xml and pom.xml
+  * Note that the version needs to conform to the version standards, e.g. 2.6.2.GA or 2.6.4.CR2, 2.5.4.Beta1
+- Create a CVS tag: JGroups_x_y_z
+- Add tag information to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
+- Create a distribution: ./build.sh dist
+  - the distribution files are dist/JGroups-x.y.z-rel.bin.zip, dist/JGroups-x.y.z-rel.src.zip
+- Upload distribution files to web site:
+  - Go to http://sourceforge.net/projects/javagroups/
+  - Log in and pick http://sourceforge.net/project/admin/editpackages.php?group_id=6081
+  - Add release to JGroups (new version)
+  - Release notes are included in dist, change log obtained from JIRA
+- Create PDF and HTML documentation: ./build.sh docs and upload to web site
+  - these files update the JGroups web page (http://www.jgroups.org/javagroupsnew/docs/index.html),
+  specifically the links to manual and tutorial documentation  
+  - see JGroups/bin/upload_manual.sh
+- Create javadoc: ./build.sh javadoc and upload to web site
+  - use process similar to pdf and html (script is bin/upload_javadocs.sh)
+- Add new release binary jar *and* source jar to Nexus maven repository (http://repository.jboss.org/nexus)
+  a. Run ./bin/release_to_nexus.sh (you need access permissions to Nexus)
+  b. Go to Nexus: https://repository.jboss.org/nexus
+  c. Log in (jboss.org login)
+  d. Click on Staging repositories in the left hand pane
+  e. Right click on the uploaded artifacts (JAR and src JAR) and either drop or promote them. In case of promotion,
+     the artifacts will be promoted to the jboss-releases repository and removed from the staging repo
+- Announcement to the jg-dev and jg-users mailing lists
+  -include release notes and changelog
+
+
+  NOTE: to perform these steps, you will need a SourceForge account and appropriate
+  permissions.
+

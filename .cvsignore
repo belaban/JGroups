@@ -1,0 +1,11 @@
+build.properties
+configure.cache
+classes
+dist
+eclipse-bin
+*.iml
+*.ipr
+*.iws
+eclipse-classes
+junit*.properties
+atlassian*

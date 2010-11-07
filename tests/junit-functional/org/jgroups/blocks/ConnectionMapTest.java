@@ -1,0 +1,242 @@
+package org.jgroups.blocks;
+
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+
+/**
+ * Tests ConnectionMap
+ * @author Bela Ban
+ * @version $Id: ConnectionMapTest.java,v 1.4 2010/07/29 14:17:09 belaban Exp $
+ */
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class ConnectionMapTest {
+    private TCPConnectionMap ct1, ct2;
+    static final InetAddress loopback_addr;
+
+    static {
+        try {
+            StackType type=Util.getIpStackType();
+            String tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+            loopback_addr=InetAddress.getByName(tmp);
+        }
+        catch(UnknownHostException e) {
+            throw new RuntimeException("failed initializing loopback_addr", e);
+        }
+    }
+
+    static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
+    final static int PORT1=7521, PORT2=8931;
+    static final Address addr1=new IpAddress(loopback_addr, PORT1), addr2=new IpAddress(loopback_addr, PORT2);
+
+
+
+
+    @AfterMethod
+    protected void tearDown() throws Exception {
+        if(ct2 != null) {
+            ct2.stop();
+            ct2=null;
+        }
+        if(ct1 != null) {
+            ct1.stop();
+            ct1=null;
+        }
+    }
+
+    /**
+     * A connects to B and B connects to A at the same time. This test makes sure we only have <em>one</em> connection,
+     * not two, e.g. a spurious connection. Tests http://jira.jboss.com/jira/browse/JGRP-549
+     */
+    public void testConcurrentConnect() throws Exception {
+        Sender sender1, sender2;
+        CyclicBarrier barrier=new CyclicBarrier(3);
+
+        TCPConnectionMap.Receiver dummy=new TCPConnectionMap.Receiver() {
+            public void receive(Address sender, byte[] data, int offset, int length) {}
+        };
+
+        ct1=new TCPConnectionMap("ConnectionMapTest1",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 null, dummy, loopback_addr, null, PORT1, PORT1);
+        ct1.start();
+        ct2=new TCPConnectionMap("ConnectionMapTest2",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 null, dummy, loopback_addr, null, PORT2, PORT2);
+
+
+        ct2.start();
+
+        sender1=new Sender(ct1, barrier, addr2, 0);
+        sender2=new Sender(ct2, barrier, addr1, 0);
+
+        sender1.start(); sender2.start();
+        Util.sleep(100);
+
+        int num_conns;
+        num_conns=ct1.getNumConnections();
+        assert num_conns == 0;
+        num_conns=ct2.getNumConnections();
+        assert num_conns == 0;
+
+        barrier.await();
+        sender1.join();
+        sender2.join();
+
+        Util.sleep(500);
+        String msg="ct1: " + ct1 + "\nct2: " + ct2;
+        System.out.println(msg);
+
+        num_conns=ct1.getNumConnections();
+        assert num_conns == 1 : "num_conns for ct1 is " + num_conns + ", " + msg;
+        num_conns=ct2.getNumConnections();
+        assert num_conns == 1 : "num_conns for ct2 is " + num_conns + ", " + msg;
+
+        assert ct1.connectionEstablishedTo(addr2) : "valid connection to peer";
+        assert ct2.connectionEstablishedTo(addr1) : "valid connection to peer";
+    }
+
+
+    private static class Sender extends Thread {
+        final TCPConnectionMap conn_table;
+        final CyclicBarrier    barrier;
+        final Address          dest;
+        final long             sleep_time;
+
+        public Sender(TCPConnectionMap conn_table, CyclicBarrier barrier, Address dest, long sleep_time) {
+            this.conn_table=conn_table;
+            this.barrier=barrier;
+            this.dest=dest;
+            this.sleep_time=sleep_time;
+        }
+
+        public void run() {
+            try {
+                barrier.await();
+                if(sleep_time > 0)
+                    Util.sleep(sleep_time);
+                conn_table.send(dest, data, 0, data.length);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public static void testBlockingQueue() {
+        final BlockingQueue queue=new LinkedBlockingQueue();
+
+        Thread taker=new Thread() {
+
+            public void run() {
+                try {
+                    System.out.println("taking an element from the queue");
+                    queue.take();
+                    System.out.println("clear");
+                }
+                catch(InterruptedException e) {                	
+                }
+            }
+        };
+        taker.start();
+
+        Util.sleep(500);
+
+        queue.clear(); // does this release the taker thread ?
+        Util.interruptAndWaitToDie(taker);
+        assert !(taker.isAlive()) : "taker: " + taker;
+    }
+
+
+    public void testStopConnectionMapNoSendQueues() throws Exception {
+        ct1=new TCPConnectionMap("ConnectionMapTest1",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct1.setUseSendQueues(false);
+        ct1.start();
+        ct2=new TCPConnectionMap("ConnectionMapTest2",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct2.setUseSendQueues(false);
+        ct2.start();
+        _testStop(ct1, ct2);
+    }
+
+    public void testStopConnectionMapWithSendQueues() throws Exception {
+        ct1=new TCPConnectionMap("ConnectionMapTest1",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct1.start();
+        ct2=new TCPConnectionMap("ConnectionMapTest2",
+                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct2.start();
+        _testStop(ct1, ct2);
+    }
+
+
+   /* public void testStopConnectionMapNIONoSendQueues() throws Exception {
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct1.setUseSendQueues(false);       
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct2.setUseSendQueues(false);
+        ct1.start();
+        ct2.start();
+        _testStop(ct1, ct2);
+    }
+
+
+    public void testStopConnectionMapNIOWithSendQueues() throws Exception {
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
+        ct1.start();
+        ct2.start();
+        _testStop(ct1, ct2);
+    }*/
+
+
+    private static void _testStop(TCPConnectionMap table1, TCPConnectionMap table2) throws Exception {
+        table1.send(addr1, data, 0, data.length); // send to self
+        assert table1.getNumConnections() == 0;
+        table1.send(addr2, data, 0, data.length); // send to other
+
+        table2.send(addr2, data, 0, data.length); // send to self
+        table2.send(addr1, data, 0, data.length); // send to other
+
+
+        System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
+
+        int num_conns_table1=table1.getNumConnections(), num_conns_table2=table2.getNumConnections();
+        assert num_conns_table1 == 1 : "table1 should have 1 connection, but has " + num_conns_table1 + ": " + table1;
+        assert num_conns_table2 == 1 : "table2 should have 1 connection, but has " + num_conns_table2 + ": " + table2;
+
+        table2.stop();
+        table1.stop();
+        assert table1.getNumConnections() == 0  : "table1 should have 0 connections: " + table1;
+        assert table2.getNumConnections() == 0  : "table2 should have 0 connections: " + table2;
+    }
+
+
+
+
+    static class DummyReceiver implements TCPConnectionMap.Receiver {
+        public void receive(Address sender, byte[] data, int offset, int length) {
+            System.out.println("-- received " + length + " bytes from " + sender);
+        }
+    }
+
+}

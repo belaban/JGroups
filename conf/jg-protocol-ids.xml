@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<protocol-ids>
+    <class id="2" name="org.jgroups.protocols.FD"/>
+    <class id="3" name="org.jgroups.protocols.FD_SOCK"/>
+    <class id="4" name="org.jgroups.protocols.FRAG"/>
+    <class id="5" name="org.jgroups.protocols.FRAG2"/>
+    <class id="6" name="org.jgroups.protocols.PING"/>
+    <class id="7" name="org.jgroups.protocols.MPING"/>
+    <class id="8" name="org.jgroups.protocols.S3_PING"/>
+    <class id="9" name="org.jgroups.protocols.FILE_PING"/>
+    <class id="10" name="org.jgroups.protocols.TCPPING"/>
+    <class id="11" name="org.jgroups.protocols.TCPGOSSIP"/>
+    <class id="12" name="org.jgroups.protocols.UNICAST"/>
+    <class id="13" name="org.jgroups.protocols.VERIFY_SUSPECT"/>
+    <class id="14" name="org.jgroups.protocols.pbcast.GMS"/>
+    <class id="15" name="org.jgroups.protocols.pbcast.NAKACK"/>
+    <class id="16" name="org.jgroups.protocols.pbcast.STABLE"/>
+    <class id="17" name="org.jgroups.protocols.pbcast.STATE_TRANSFER"/>
+    <class id="18" name="org.jgroups.protocols.SMACK"/>
+    <class id="19" name="org.jgroups.protocols.COMPRESS"/>
+    <class id="20" name="org.jgroups.protocols.FC"/>
+    <class id="21" name="org.jgroups.protocols.UDP"/>
+    <class id="22" name="org.jgroups.protocols.TCP"/>
+    <class id="23" name="org.jgroups.protocols.TCP_NIO"/>
+    <class id="24" name="org.jgroups.protocols.TUNNEL"/>
+    <class id="25" name="org.jgroups.protocols.ENCRYPT"/>
+    <class id="26" name="org.jgroups.protocols.SEQUENCER"/>
+    <class id="27" name="org.jgroups.protocols.FD_SIMPLE"/>
+    <class id="28" name="org.jgroups.protocols.VIEW_SYNC"/>
+    <class id="29" name="org.jgroups.protocols.FD_ALL"/>
+    <class id="30" name="org.jgroups.protocols.SFC"/>
+    <class id="31" name="org.jgroups.protocols.pbcast.FLUSH"/>
+    <class id="32" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER"/>
+    <class id="33" name="org.jgroups.protocols.AUTH"/>
+    <class id="34" name="org.jgroups.protocols.MERGE3"/>
+    <class id="35" name="org.jgroups.protocols.MERGEFAST"/>
+    <class id="36" name="org.jgroups.protocols.HTOTAL"/>
+    <class id="37" name="org.jgroups.protocols.DISCARD"/>
+    <class id="38" name="org.jgroups.protocols.LOOPBACK"/>
+    <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
+    <class id="40" name="org.jgroups.protocols.UNICAST2"/>
+    <class id="41" name="org.jgroups.protocols.SCOPE"/>
+    <class id="42" name="org.jgroups.protocols.DAISYCHAIN"/>
+    <class id="43" name="org.jgroups.protocols.RELAY"/>
+    <class id="44" name="org.jgroups.protocols.MFC"/>
+    <class id="45" name="org.jgroups.protocols.UFC"/>
+    <class id="46" name="org.jgroups.protocols.JDBC_PING"/>
+    <class id="47" name="org.jgroups.protocols.STOMP"/>
+
+
+    <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
+    <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>
+    <class id="202" name="org.jgroups.mux.MuxChannel"/>
+    <class id="203" name="org.jgroups.mux.Multiplexer"/>
+    <class id="204" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
+
+    <!-- Reserved IDs -->
+
+</protocol-ids>

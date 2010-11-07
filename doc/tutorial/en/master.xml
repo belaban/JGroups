@@ -1,0 +1,103 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+        "../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
+        <!ENTITY installation     SYSTEM "modules/installation.xml">
+        <!ENTITY sampleapp     SYSTEM "modules/sampleapp.xml">
+        ]>
+
+<book>
+
+    <bookinfo>
+        <title>JGroups tutorial</title>
+        <pubdate>$Date: 2009/06/05 07:24:45 $</pubdate>
+        <releaseinfo>$Id: master.xml,v 1.5 2009/06/05 07:24:45 belaban Exp $</releaseinfo>
+        <authorgroup>
+            <author>
+                <firstname>Bela</firstname>
+                <surname>Ban</surname>
+                <affiliation>
+                    <orgname>
+                        <ulink url="http://www.jgroups.org/">JGroups Project</ulink>
+                    </orgname>
+                    <address>
+                        <email>belaban@yahoo.com</email>
+                    </address>
+                </affiliation>
+            </author>
+        </authorgroup>
+        <copyright>
+            <year>1998-2006</year>
+            <holder>Bela Ban</holder>
+        </copyright>
+         <copyright>
+            <year>2006-2007</year>
+            <holder>Red Hat Inc</holder>
+        </copyright>
+        <legalnotice>
+            <para>This document is licensed under the
+                <ulink url="http://creativecommons.org/licenses/by-sa/3.0/us/legalcode">
+                    Creative Commons Attribution-ShareAlike (CC-BY-SA) 3.0
+                </ulink>
+            </para>
+        </legalnotice>
+    </bookinfo>
+
+    <preface>
+        <title>About the tutorial</title>
+
+        <para>
+            This is a short tutorial on how to install JGroups and write a simple application. The goal is to show how to
+            configure JGroups and how to write a simple application showing the major methods of the API.
+        </para>
+
+        <para>Bela Ban, Kreuzlingen Switzerland August 2007</para>
+
+    </preface>
+
+
+    &installation;
+    &sampleapp;
+
+
+    <bibliography>
+
+        <bibliomixed id="Ensemble:1997">
+            <title>The Ensemble Distributed Communication System</title>
+            ,
+            <orgname>CS Dept Cornell University</orgname>
+            ,
+            <pubdate>1997</pubdate>
+            .
+            <releaseinfo>
+                <ulink
+                        url="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.html"/>
+            </releaseinfo>
+            .
+        </bibliomixed>
+
+        <bibliomixed id="Gamma:1995">
+            <firstname>Erich</firstname>
+            <surname>Gamma</surname>
+            ,
+            <firstname>Richard</firstname>
+            <surname>Helm</surname>
+            ,
+            <firstname>Ralph</firstname>
+            <surname>Johnson</surname>
+            , and
+            <firstname>John</firstname>
+            <surname>Vlissides</surname>
+            .
+            <title>Design Patterns: Elements of Reusable Object-Oriented
+                Software</title>
+            .
+            <publishername>Addison-Wesley</publishername>
+            ,
+            <pubdate>1995</pubdate>
+            .
+        </bibliomixed>
+
+    </bibliography>
+
+</book>
+

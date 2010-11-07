@@ -1,0 +1,106 @@
+
+// Version: $Id: SimpleFlowControl.txt,v 1.2 2007/01/05 15:51:58 belaban Exp $
+// Author: Bela Ban
+
+
+Simple Flow control (SFC)
+=========================
+
+SFC is a simple flow control protocol for group (= multipoint) messages.
+
+Every sender has max_credits bytes for sending multicast messages to the group.
+
+Every multicast message (we don't consider unicast messages) decrements max_credits by its size.
+When max_credits falls below 0, the sender asks all receivers for new credits and blocks
+until *all* credits have been received from all members.
+
+When the receiver receives a credit request, it checks whether it has received max_credits bytes from the requester since
+the last credit request. If yes, it sends new credits to the requester and resets the max_credits for the requester.
+Else, it takes a note of the credit request from P and - when max_credits bytes have finally been received from P - it
+sends the credits to P and resets max_credits for P.
+
+The maximum amount of memory for received messages is therefore <number of senders> * max_credits.
+
+The relationship with STABLE is as follows: when a member Q is slow, it will prevent STABLE from collecting messages above
+the ones seen by Q (everybody else has seen more messages). However, because Q will *not* send credits back to the senders
+until it has processed all messages worth max_credits bytes, the senders will block. This in turn allows STABLE to
+progress and eventually garbage collect most messages from all senders. Therefore, SFC and STABLE complement each other,
+with SFC blocking senders so that STABLE can catch up.
+
+
+Variables:
+----------
+- current_credits: number of bytes available to send multicast messages
+- lock: to wait until all credit responses have been received
+- credit_responses: list of all credit responses
+- received: hashmap of bytes received from all members for multicast messages. Note that initially, all members
+            need to have max_credits received bytes for all members, otherwise new members would not send
+            credit responses !
+- pending_credit_requesters: set of senders which requested credits but from which we haven't yet received max_credits bytes
+
+
+On sending a multicast message M:
+---------------------------------
+- acquire lock
+- if no credits available:
+  - wait on lock until credits become available
+- else
+  - decrement current_credits by length of message
+  - if current_credits <= 0:
+    - add all current members to pending_credit_requesters
+    - send credit request to all members
+    - wait on lock until credits become available
+- release lock
+
+
+On receive(M) from P:
+---------------------
+- if P is not in received:
+  - add an entry for P with value of max_credits for P (see above) !
+- increment P's value in received by M's bytes to new_val
+- if P is in pending_credit_requesters:
+  - check if P's new_val is now >= max_credits
+  - If yes:
+    - send credit response to P
+    - remove P from pending_credit_requesters
+    - reset P's value in received to 0
+
+
+On reception of credit request from P:
+--------------------------------------
+- check if we received max_credits from P (received map)
+- if true:
+  - send credit response to P
+  - reset P's value in received to 0
+- else:
+  - add P to pending_credit_requesters
+
+
+On reception of credit response from P:
+---------------------------------------
+- remove P from pending_credit_requesters
+- if pending_credit_requesters is empty:
+  - set current_credits to max_credits
+  - signal lock
+
+
+On suspect(P):
+--------------
+- if pending_credit_requesters is not empty:
+  - remove P from pending_credit_requesters
+  - if pending_credit_requesters is empty:
+    - set current_credits to max_credits
+    - signal lock
+
+
+On view change(V):
+------------------
+- for each member L which left:
+  - if pending_credit_requesters is not empty:
+  - remove all Ls from pending_credit_requesters
+  - if pending_credit_requesters is empty:
+    - set current_credits to max_credits
+    - signal lock
+
+- for each member J which joined:
+  - add an entry for P with value of max_credits for P (see above)

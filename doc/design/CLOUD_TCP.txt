@@ -1,0 +1,44 @@
+
+
+Changes to TCP to make it scale better in a cloud
+=================================================
+
+Author: Bela Ban
+Version: $Id: CLOUD_TCP.txt,v 1.5 2010/07/29 06:57:25 belaban Exp $
+
+
+Problem:
+--------
+
+In many cloud services (EC2, rackspace, GAE), IP multicasting is not allowed, therefore users of JGroups have to switch
+to TCPGOSSIP:TCP in conjunction with a GossipRouter for initial lookup.
+
+With TCP, we send a cluster wide message to N-1 nodes (with UDP, we send it only once). This doesn't scale with
+increasing clusters. Even if we parallelize this, all the traffic from us to each node has to go through the switch,
+taxing our full-duplex line to the switch.
+
+Solution:
+---------
+
+Eliminate the N-1 problem by sending a cluster-wide message only to our neighbor. The neighbor then sends it to its
+neighbor and so on. Each message has a header with a TTL, which is equal to the cluster size. When a (cluster wide)
+message is received, we decrement the TTL in the header and forward it to our neighbor (unless the TTL is 0, then we
+discard it).
+
+For retransmissions, we send an XMIT-REQ to the original sender the first time, then to its neighbor, then to the
+next neighbor and so on.
+
+
+Implementation:
+---------------
+
+This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TP !).
+
+Update: IMO a better approach is to create a new protocol layered on top of the transport. This way, we can use this
+functionality with other transports as well.
+
+Take a look at Ron Levy's EPFL paper [1] for a similar approach.
+
+
+[1] http://infoscience.epfl.ch/getfile.py?docid=7701&name=paper&format=pdf&version=1
+[2] infoscience.epfl.ch/record/149218/files/paper.pdf

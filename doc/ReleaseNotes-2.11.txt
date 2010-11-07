@@ -1,0 +1,140 @@
+
+
+Release Notes JGroups 2.11
+==========================
+
+
+Version: $Id: ReleaseNotes-2.11.txt,v 1.3 2010/10/29 11:48:28 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.11 is API-backwards compatible with previous versions (down to 2.2.7).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+New features
+============
+
+
+
+AUTH: pattern matching to prevent unauthorized joiners
+------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-996]
+
+New plugin for AUTH which can use pattern matching against regular expressions to prevent unauthorized
+IP addresses to join a cluster.
+
+Blog: http://belaban.blogspot.com/2010/09/cluster-authentication-with-pattern.html
+
+
+
+DAISYCHAIN: implementation of daisy chaining
+--------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1021]
+
+Daisy chaining sends messages around in a ring, improving throughput for non IP multicast networks.
+
+Blog: http://belaban.blogspot.com/2010/08/daisychaining-in-clouds.html
+
+
+
+New flow control protocols for unicast (UFC) and multicast (MFC) messages
+-------------------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1154]
+
+MFC and UFC replace FC. They can be used independently, and performance is faster than that of FC only.
+
+
+
+API for programmatic creation of channel
+----------------------------------------
+[https://jira.jboss.org/browse/JGRP-1245]
+
+Allows for programmatic creation of a JChannel, no need for XML config file.
+
+Blog: http://belaban.blogspot.com/2010/10/programmatic-creation-of-channel.html
+
+
+
+S3: new features
+----------------
+[https://jira.jboss.org/browse/JGRP-1234] Allow use of public buckets (no credentials need to be sent)
+[https://jira.jboss.org/browse/JGRP-1235] Pre-signed URLs
+
+
+
+STOMP: new protocol to allows STOMP clients to talk to a JGroups node
+---------------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1248]
+
+Blog: http://belaban.blogspot.com/2010/10/stomp-for-jgroups.html
+
+
+
+
+
+
+
+Optimizations
+=============
+
+
+NAKACK: simplify and optimize handling of OOB messages
+------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1104]
+
+
+Discovery: reduce number of discovery responses sent in a large cluster
+-----------------------------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1181]
+
+A new propery (max_rank) determines who will and who won't send discovery responses.
+
+
+New timer implementations
+-------------------------
+[https://jira.jboss.org/browse/JGRP-1051]
+
+Way more effecient implementations of the timer (TimeScheduler).
+
+
+
+
+Bug fixes
+=========
+
+ENCRYPT: encrypt entire message when length=0
+---------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1242]
+
+ENCRYPT would not encrypt messages whose length = 0
+
+
+FD_ALL: reduce number of messages sent on suspicion
+---------------------------------------------------
+[https://jira.jboss.org/browse/JGRP-1241]
+
+
+FILE_PING: empty files stop discovery
+-------------------------------------
+[https://jira.jboss.org/browse/JGRP-1246]
+
+
+
+
+Manual
+======
+
+The manual is online at http://www.jgroups.org/manual/html/index.html
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Toronto, Canada
+
+Nov 2010
+

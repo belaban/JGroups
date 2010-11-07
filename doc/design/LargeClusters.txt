@@ -1,0 +1,39 @@
+
+
+Considerations for large clusters
+=================================
+
+Author: Bela Ban
+Version: $Id: LargeClusters.txt,v 1.3 2010/09/30 07:47:20 belaban Exp $
+JIRA: https://jira.jboss.org/browse/JGRP-100
+
+
+Discovery
+---------
+
+
+
+ConcurrentHashMap
+-----------------
+
+CCHMs have a default initial capacity (16), load factor (0.75) and concurrency level (16). These are OK for most
+scenarios, but we have to investigate whether these values are sufficient for 1000 node clusters.
+
+When for example 1000 threads from different senders access the same CCHM, we need to make sure we don't have high
+contention, ie. by spreading a 1000 senders over 16 buckets.
+
+Investigate whether we should add CCHM initial sizes, load factors and concurrency levels as properties.
+
+With ergonomics [1], we could for example set bucket sizes for CCHMs dynamically, e.g. based on cluster size.
+
+
+
+[1] https://jira.jboss.org/jira/browse/JGRP-1037
+
+
+Misc
+----
+
+- MERGE2: num_initial_members in Discovery should be large, so that we detect partitions sooner
+- GMS: view bundling should be enabled, and max_bundling_time should be a bit larger than the default, as this
+  will allow for more concurrent joins and leaves before starting the view installation process

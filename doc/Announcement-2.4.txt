@@ -1,0 +1,165 @@
+
+// $Id: Announcement-2.4.txt,v 1.2 2006/10/31 12:44:45 belaban Exp $
+
+
+Finally, after almost 5 months, JGroups 2.4 is here !
+
+There are some cool features that I'll describe in more detail
+below. Over 80 JIRA issues were resolved in 2.4, mostly bug fixes and
+new functionality.
+
+The good news is that 2.4 is API-backward compatible with all previous
+versions down to and including 2.2.7. So, for those folks who are
+using JBoss 4.0.x, which ships with JGroups 2.2.7 by default, this
+means that they can simply replace their JGroups JAR file with the one
+from 2.4 and benefit from the performance enhancements and bug fixes
+that went into 2.4. For details on the JBoss/JGroups combinations see
+http://labs.jboss.com/portal/jbosscache/compatibility/index.html.
+
+I'll now describe the new features briefly, check out the
+documentation (URL below) for a full discussion.
+
+
+FLUSH
+-----
+
+Flush is a feature that - whenever the group membership is to be
+changed, or a state to be transferred - we tell every node in the
+cluster to stop sending messages and then join/leave a node, or
+transfer the state. When done, we tell all members to resume message
+sending.
+
+Why is this needed ?
+
+In 2 cases: (1) when we use a Multiplexer (see below) and have
+multiple services sharing the same channel that require state transfer
+and (2) when we want virtual synchrony (see below).
+
+So, if you don't use the Multiplexer or don't need virtual synchrony,
+you don't need the FLUSH protocol in your configuration. FLUSH is
+quite expensive because it uses multiple rounds of multicasts across
+the cluster, so remove it if you don't need it. Note that JBoss 5
+requires FLUSH because it uses the Multiplexer: all cluster services
+share one JGroups channel.
+
+
+Multiplexer
+-----------
+
+The Multiplexer was mainly developed to accommodate multiple services
+running on top of the *same* channel. JGroups channel are quite
+expensive in their use of resources (mainly threads) and sharing a
+channel amortizes a channel over multiple services.
+
+This is beneficial in JBoss where we had 5 clustered services (in
+4.0.x), each using its own channel. In JBoss 5, we switched to the
+Multiplexer, and all 5 services use the same shared channel. Startup
+time in JBoss 5 ('all' configuration) was 43s on my laptop before the
+change, and 23s afterwards !
+
+If multiple services sharing a channel require state transfer, we run
+into the problems described in
+JGroups/doc/design/PartialStateTransfer.txt. FLUSH is required to
+prevent those problems.
+
+The Multiplexer is described in chapter 6.3 of the documentation (see
+below).
+
+
+Streaming state transfer
+------------------------
+
+So far, state has always been transferred using a byte[] buffer. This
+forced a user to serialize the entire state into a byte[] buffer at
+the state provider and unserialize the byte[] buffer into the
+application state at the state requester. If the state is 2GB or more,
+this might likely result in memory exhaustion.
+
+Streaming state transfer uses input and output streams, so users can
+stream their state to the output stream in *chunks* and don't need to
+have the entire state in memory as required by a byte[] buffer. On the
+receiving side, an input stream is provided from which the user can
+read the entire state and set the application state to it.
+
+Streaming state transfer is essential for large states !
+
+
+Partial state transfer
+----------------------
+
+This allows a programmer to transfer a subset of the entire state,
+identified by an ID. We use this (via JBossCache) in JBoss HTTP
+session replication/buddy replication, where only the state
+represented by a buddy is transferred.
+
+
+Virtual Synchrony
+-----------------
+
+Virtual Synchrony is a model of group communication, developed by Ken
+Birman at Cornell, which has the following properties:
+#1 All non-faulty members see the same set of messages between views
+#2 A message M sent by P in view V must be received by P in V, unless
+P crashes
+#3 All non-faulty members receive the same sequence of views
+
+With FLUSH, we re-implemented the old virtual synchrony implementation
+of JGroups (vsync.xml), which I wrote in 1998/1999, but which has
+never been tested rigorously. We will phase out the old implementation
+in 3.0, along with other reorganizations of the protocol stack
+packages.
+
+Note that we have not yet *fully* implemented virtual synchrony as
+flushing only flushes out messages *sent* by member P, but not those
+*received* by P. Therefore, if member A sends a message M to {A,B,C},
+and crashes immediately afterwards, and only B received M, then C will
+*not* receive M (violating rule #1 above). We will fully implement
+this in JGroups 2.5 (http://jira.jboss.com/jira/browse/JGRP-341).
+
+
+View bundling
+-------------
+
+When a large number of nodes join or leave a cluster at about the same
+time, we can collect all JOIN/LEAVE requests and create only 1
+view. View installation is quite costly, especially if FLUSH is used,
+which requires some round trips across the cluster, and so we minimize
+them.
+
+
+Failure detection
+-----------------
+
+We have 2 new protocols: FD_PING and FD_ICMP which allow for scripts
+to be run in order to check the health of a node (FD_PING) and ICMP to
+ping a machine (FD_ICMP). These can of course be combined with other
+failure detection protocols, such as FD or FD_SOCK.
+
+
+Updated documentation
+---------------------
+
+The new features have been added to the documentation at 
+http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+JIRA issues
+-----------
+
+The issues that went into 2.4 can be found at
+http://jira.jboss.com/jira/browse/JGRP.
+
+
+Acknowledgments
+---------------
+
+I'd like to thank Vladimir Blagojevic for writing the FLUSH and
+streaming/partial state transfer features, and for testing them
+thoroughly !
+
+
+
+Enjoy !
+
+Bela Ban, Red Hat Inc
+Kreuzlingen, Oct 31 2006

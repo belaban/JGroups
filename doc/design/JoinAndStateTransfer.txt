@@ -1,0 +1,31 @@
+Implementation of JChannel.connect() with state transfer - http://jira.jboss.com/jira/browse/JGRP-236
+-----------------------------------------------
+
+There are essentially three major different implementations possibilites for new JChannel.connect with state 
+transfer.
+
+Solution A:
+
+	- implement state transfer within CoordGmsImpl.handleJoin running on ViewHandler thread
+	- tightly ties state transfer to CoordGmsImpl and further bloats CoordGmsImpl.handleJoin 
+	- can we even keep ViewHandler thread so busy? Possibly run state transfer on a new thread spawned 
+	  from CoordGmsImpl.handleJoin? 
+
+Solution B: 
+	
+	- listen for SUSPEND_OK in STATE_TRANSFER (flush succeded/cluster is quiet) at coordinator
+	- add additional info to SUSPEND_OK so we know the joining member
+	- do state transfer on SUSPEND_OK running on stack thread
+	- use longer flush timeout for large states or periodically update timout to notify it of large transfer?
+
+Solution C:
+
+	- initiate state transfer within JChannel.connect() after connect_promise is set
+	- call JChannel.startFlush() and JChannel.stopFlush()
+	- we do extra flush in this case
+
+
+
+Solution C is the most viable option for regular state transfer with flush. startFlush() and stopFlush() will be 
+exposed on JChannel level and will be called by initiator of state transfer. Nice and clean solution. However, if 
+we employ solution C for new JChannel.connect method the overhead of extra flush does not seem acceptable?	 

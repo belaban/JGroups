@@ -1,0 +1,79 @@
+
+
+
+Message bundling
+================
+
+// Version: $Id: Bundling.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+// Author: Bela Ban
+
+Init:
+-----
+
+- set start = 0
+- set wait_time = 0
+- set count = 0
+
+
+On Message:
+-----------
+
+- if start == 0:
+  - set start = current time
+
+- if msg.length + count >= max_bundle_size:
+  - send all messages
+  - set count = 0
+  - set start = current time
+
+- add message
+- set count = count + msg.length
+
+- compute new wait_time: max_bundle_time - (current time - start)
+- if wait_time <= 0:
+  - send all messages
+  - Init()
+
+
+On Timeout:
+-----------
+
+- send all messages
+- Init()
+
+
+New implementation (Nov 2005)
+=============================
+- done in TP.send(), this way message bundling and using a separate thread for sending
+  messages are orthogonal issues
+
+Variables:
+----------
+- queue, queue size
+
+On send():
+----------
+- if msg size + queue size >= max_size:
+    - cancel timer
+    - bundle and send queued msgs
+    - clear queue
+- add msg to queue
+- if timer is not running: start timer
+
+On timer timeout:
+-----------------
+- bundle and send queued msgs (if any)
+- clear queue
+
+
+
+
+
+
+
+
+
+
+
+
+  

@@ -1,0 +1,47 @@
+
+
+Problems with reincarnation
+===========================
+
+Author:  Bela Ban
+Version: $Id: Reincarnation.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+JIRA:    http://jira.jboss.com/jira/browse/JGRP-130
+
+The identity of a JGroups member is always the IP address and a port. The port is usually chosen by the OS, unless
+bind_port is set (not set by default).
+Let's say a member's address is hostA:5000. When that member dies and is restarted, the OS will likely assign a
+higher port, say 5002. This depends on how many other processes requested a port in between the start and restart
+of the member.
+JGroups relies on the fact that the assignment of ports by the OS is always (not necessarily monotonically)
+*increasing* across a single machine. If this is not the case, then the following problems can occur:
+
+1. Restart:
+When a member P crashes and then is restarted, if FD is used and P is restarted *before* it is excluded,
+then we have a new member *under the same old address* ! Since it lost all of its state (e.g. retransmission table),
+retransmission requests sent to the new P will fail.
+
+2. Shunning:
+Regarding shunning: a member keeps its last N (default is 100) ports used, and makes sure it doesn't reuse one of
+those already-used ports when it is shunned. However, this is process-wide and *not* machine-wide, e.g. when we have
+processes P1 on A:5000 and P2 on A:5002 (on machine A), and both of them are shunned at the same time,
+when they rejoin, P1 does not use port 5000, but might use port 5002, and P2 doesn't use 5002, but might use 5000, so
+they could assume each other's identity !
+
+
+Both problems cannot be solved by remembering the last 100 ports: in case #1, this list is lost because we start a
+new process and in case #2, the list is process-wide, but not machine-wide.
+
+Again, these problems occur *only* when the OS reuses previously assigned ports.
+
+SOLUTION:
+
+A: Remember any ports seen by members on the same host, e.g. if we receive a view, we will add all ports
+of any members residing on the same machine to lastPortsUsed
+
+B: Use temporary storage (per host) to store the last N addresses assigned on a given host. This makes sure we
+don't reuse previous addresses
+
+C: Use logical addresses, such as java.rmi.VMID or java.rmi.server.UID, which are unique over time for a given host.
+Then, it doesn't matter what ports we use because the ports are not used to determine a member's identity.
+The JIRA task for logical addresses is http://jira.jboss.com/jira/browse/JGRP-129.
+

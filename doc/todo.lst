@@ -1,0 +1,867 @@
+$Id: todo.lst,v 1.22 2005/06/06 07:47:57 belaban Exp $
+
+
+
+
+			      Todo List
+			      ---------
+
+- Make TUNNEL/GossipRouter use Streamable, plus GossipRouter should use a ConnectionTable
+
+- FC: on a fast network, we can still run out of memory because received_msgs/delivered_msgs becomes very big.
+  Instead of basing FC on the speed of the network, we should also take the number of messages processed
+  (a.k.a delivered_msgs/received_msgs) into account, and only send credits when that number falls below a
+  certain threshold. First: look at the number of received/delivered msgs in the perf test !
+  --> Look into memory-based FC: criteria for sending credits are
+      - available free memory
+      - outstanding retransmission requests (sender sends with each message number of messages sent,
+        receiver keeps track of how many messages received, if diff is > threshold --> pause)
+      - [optional] latency
+
+- Performance tests:
+  - Fix TcpTransport: doesn't currently work (connection exception)
+                    : make TcpTransport runnable on single machine (define different ports)
+  - Test m-m mode (everyone sends to everyone) with 4 nodes
+  - Expose statistics (e.g. retransmission counter, flow control
+    stats), maybe use AOP to do so
+
+- Create common TransportProtocol (subclass of Protocol): handles all message bundling, loopback etc, real transports
+  (UDP, TCP, TUNNEL) have to extend this class and provide a send() and receive() method. Avoids code
+  duplication
+
+- Add list of joined, crashed and left members to View
+
+- Support for IPv6 addresses
+
+- Convert TUNNEL, TCP, GossipRouter to Streamable
+
+- Logical IpAddress: use any number of NICs, and fail over between
+  NICs, but always have the same logical address
+
+- TCPPING: make generic, e.g. STATIC_PING. Can apply to UDP transport
+  as well.
+
+- Add pinging over socket established by FD_SOCK
+
+- RpcDispatcherSpeedTest is very slow when using tcp.xml
+
+- BSH: use CONFIG event from transport (UDP) to Channel and back for
+  gathering of diagnostics information.
+
+- org.javagroups.tests.Bsh: use Channel with only unicast properties
+  to connect to remote member(s). Advantage is that we can include
+  fragmentation. todo: add connect(Address) to Channel.
+
+- SMACK: introduce negative acks (currently positive acks). This should be configurable.
+
+- TOTAL protocol: when B mcasts a message M, it will be unicast to
+  coord A first, who then mcasts it on behalf of B. However, when A
+  crashes before mcasting M, B will wait forever for responses (if
+  unicast responses are expected). However, if we can request
+  retransmissions from *any* member, not just the original sender of
+  the message, M can be retransmitted to the members who did not
+  receive the message.
+
+- Replace List/Queue/Stack with equivalent classes in java.util or
+  Trove (trove4j.sf.net). Use concurrent.jar
+
+- ThreadPool: should release unused threads after some time.
+  --> Replace ThreadPool with Executor in concurrent.util
+
+- Modify all building blocks to run on top of
+  PullPushAdapter. Multiple building blocks should be able to run on
+  the same PPA.
+
+- Correct implementation of merging protocol for
+  org.javagroups.protocols.GMS: current merge protocol is simplistic
+  and doesn't preserve vsync properties (bugid=556850)
+
+- Unification of ./protocols/pbcast and ./protocols directories:
+  merge same functionality where possible or abstract out common
+  functionality and create shared classes for these. There is
+  currently a lot of redundant code in both directories. Also, there
+  is the danger of fixing bugs in one branch, but not the other.
+  Starting point is pbcast.GMS: to add vsync, do the following:
+  - Flush protocol before installing view (ack-based)
+  - Discard messages with view different from current view
+
+- LinkingPing Channel (LP)
+  - Channel which acts as a 'linking pin'
+    between 1 parent group and one or more subgroups. The LP always
+    joins the parent channel and all child channels and forwards
+    messages between the parent and all child groups, and vice versa
+    (ie. acting as a router).
+  - Provision of a mechanism to join members behind a firewall to a
+    regular (e.g. UDP-based) group. Requires a new MASQ protocol,
+    which hides the real addresses of members behind the firewall and
+    provides the address of the LP instead. Upon reception of such a
+    message, LP will rerieve the real address and forward the message
+    to the correct member.
+
+- Multiplexer building block. Allows multiple building blocks on top
+  of the same channel (could extend PullPushAdapter)
+
+- Make building blocks work over the same protocol stack
+  (Channel). E.g. register building blocks with PullPushAdapter,
+  mux/demux messages.
+
+- Documentation (DocBook ?)
+
+- pbcast.STATE_TRANSFER: allow multiple simultaneous state transfers
+  to take place (use state transfer IDs)
+
+- pbcast.STATE_TRANSFER: allow for multiple chunks of state data due
+  to large states
+
+- Debugging tool: shows layers with number of messages in each
+  layer. Instrumentation of protocol layer should be as non-instrusive
+  as possible (no penality for not running the stack in debugging
+  mode). Possibility of attaching to running (possibly remote)
+  stacks. Filter views: from only number of messages down to single
+  messages (events) and their contents. Possibility to step (accept a
+  message), drop, inject, modify messages. Possibility to see only
+  certain types of messages. Assign different colors to different
+  kinds of message to easily follow them through the system.
+
+- Configurator for protocol stacks: graphical interface, user chooses
+  set of QoS (e.g. reliable transmission, fragmentation, TCP
+  etc). Configurator does dependency checking, asks for parameters
+  (e.g. UDP.mcast_addr etc). Output is a valid properties string.
+
+- TimedWriter: replace own thread with ReusableThread
+
+- Multiple Routers communicating with IP MCAST; clients connect via
+  TCP. Tunnels through links that don't support IPMCAST.
+
+- Replace TimedWriter with TimedExecutor; more generic API for timed
+  executions. Current implementation is hacked for writing to a file
+  and creating a socket.
+
+- Adapter classes making use of Channel assume the channel is already
+  connected when starting. However, if this is not the case, they
+  should automatically connect instead of throwing an exception. Maybe
+  this can be integrated into EnsChannel directly: whenever there is a
+  Send() or Cast(), and the channel is not connected, do a Connect().
+
+- (Ken) Allow objects outside the group to multicast messages to the group
+  SharedSocket (CLIENTSERVER protocol): the coordinator of a group
+  maintains a socket (UDP or TCP) and allows clients to send/mcast
+  messages and read messages sent to the group via the socket. This
+  way, clients do not have to join the group.
+
+- Distributed Shell: a number of xterm windows, each on a different
+  machine. The screen is split: the upper half is for commands that
+  are bcast to all members, executed there and the output sent back to
+  the originator (output from each host in a different color). The
+  lower half is local to each host: commands typed in there will be
+  executed on that host and the result sent back to the originator.
+
+
+
+
+
+
+
+
+
+
+				 Done
+				 ----
+
+
+
+
+- Add exception chaining (only available in JDK 1.4)
+
+- NAKACK: send xmits also to other members if no response from
+  original sender (e.g. because it crashed). All members therefore
+  have to respond to an xmit request by not only searching the
+  sent-table, but also the received-table. Requires that members store
+  *received* messages as well, not just *sent* messages.
+  - Send xmit request to
+    (a) sender (default)
+    (b) random member
+    (c) all members using multicast. Staggered replies, when 1 member sends response,
+        other members suppress reply
+
+- 2.2.8: UDP/TCP doesn't work with 127.0.0.1 (works with 2.2.7)
+
+- April 2005 (bela)
+  Retain only n messages (bounded storage) in NAKACK/NakReceiverWindow rather than unlimited. Discard
+  newest messages when buffer is full
+
+- April 2005 (bela)
+  TCP: instead of sending to each receiver in turn, use 1 queue/thread per receiver. This prevents
+  the server from hanging of a receiver hangs
+
+- March 2005 (bela)
+  FD: add similar mechanism as for FD_SOCK to accommodate for lost
+  SUSPECT broadcasts
+- FD_SOCK: use membership to establish logical failure detection ring,
+  rather than multicast
+
+
+- Feb 2005 (bela)
+  NAKACK/NakReceiverWindow:
+  - NakReceiverWindow.Retransmitter.remove(): linear search for
+    removable element plus linear removal: 2 linear access patterns !
+    Replace with log(n) access pattern, e.g. TreeMap
+  - updateHighestSeqno(): linear search
+
+- Feb 2005 (bela)
+  NakReceiverWindow: make storing of *delivered* (delivered_msgs)
+  messages optional. The pbcast version of NAKACK for example requests
+  retransmission only from the sender directly, therefore we don't
+  need the delivered messages.
+
+- Feb 2005 (bela)
+  UDP should bind to *all* available network interfaces for receiving
+  messages (JDK 1.4 specific)
+
+- Oct 6 2004 (bela)
+  FD_SOCK problem on multi-homed systems
+
+- April 2004 (bela)
+  UDP and bundling: error "ERROR 21:15:21,660 [UDP.IncomingPacketHandler thread] - message
+  does not have a UDP header". Only occurs with fc.xml and bundling enabled.
+
+- 2003 (bela)
+  ConnectionPool: garbage collect sockets over which no activity
+  occurred for n minutes
+
+- Jan/Feb 2004 (bela)
+  UDP: currently there are 3 sockets: 1 mcast in/out, 1 ucast in and 1
+  ucast out. Combine them into 1 or 2 sockets (e.g. 1 mcast in/out, 1
+  ucast in/out). The reason for this was that under Linux, because
+  sockets were not BSD-compatible, a ucast send socket has to be
+  closed and re-opened after every send ! This error may have been
+  fixed in the meantime.
+  --> Implemented in UDP and UDP1_4 protocols
+
+- 2003 (bela)
+  Add reliable unicast communication, e.g. server channel and client
+  channel. Add Channel.connect(Address) (overloading
+  Channel.connect(String))
+
+- 2003 (bela)
+  MERGE: as an alternative to periodically mcasting merge packets, we
+  could simply wait for mcasts from a member that has the same group
+  name but is not in the membership. In this case we'd attempt a merge.
+  --> Done (MERGEFAST protocol)
+
+- 2003 (bela)
+  Peer-To-Peer protocols:
+  - Simpler GMS, where joiners can ask anyone in the group to join
+    it. That member will add the new member and mcast a ViewChange
+    message. Receivers of the ViewChange message make the new
+    membership the union of the existing mbrship, plus the newly
+    joined members, minus the removed members. Membership may not be
+    exactly the same on all members, but will converge over time.
+    The advantage of this scheme is that the botleneck of the single
+    coordinator is eliminated.
+  - Simpler mcast retransmission protocol (SACK=Simple ACK). Ack-based
+    scheme, mcasts with seqnos are sent to the group, acks are
+    expected from each member. Outstanding acks from (potentially)
+    crashed members can be reset by either (a) suspect messages, (b)
+    view changes, or (c) by verifying whether the outstanding member
+    is dead.
+    --> done, added SMACK protocol
+
+- 2002/2003 (bela)
+  Look into whether NAKACK/UNICAST/STABLE need to store copies of
+  messages, or whether references are okay. Now that we use hashmaps
+  instead of headers, this might be fine. (Immutable messages)
+
+- 2003 (bela)
+  IpAddress: mainatain own cache to prevent unnecessary DNS lookups
+  IpAddressFactory: too many instances of the same IpAddress
+  In the future, we may remove this because InetAddress has its own internal
+  cache as well.
+
+- Jan 2003 (bela)
+  RpcDispatcher/MessageDispatcher: ship destination list with call and
+  discard msg if local address is not part of destination list.
+
+- Dec 10 2002 (bela)
+  Protocol/stack initialization: init(), start(), stop(), destroy()
+
+- Nov/Dec 2002 (akbollu)
+  FLOW control protocol
+
+- Aug 21 2002 (bela)
+  GMS-less reliable message transmission (see protocols/DESIGN)
+  - SMACK and FD_SIMPLE protocols (see smack.xml for a sample protocol
+    spec) 
+
+- Aug 2002 (bela)
+  Maintain bounded queue of suspects in GroupRequest
+
+- Aug 2002 (bela)
+  Test program that tests whether IP multicast can be used
+  - McastReceiverTest and McastSenderTest
+
+- June 1 2002 (bela)
+  UNICAST:
+  - UnicastTest has too many retransmissions for 10000 messages even
+    with -loopback !
+  - Exponential backoff for message retransmission (similar to
+    NakReceiverWindow)
+  - variable retransmission configuration (currently only 1 value (2
+    secs))
+
+- April 5 2002 (bela)
+  Bug in NAKACK (change to hashmap-based headers): WRAPPED_MSG headers
+  don't work because 2 NakAckHeaders are added, which doesn't work in
+  the hashmap-based case
+  --> Added header for WRAPPED_MSG under a different key
+      ("NAKACK.WRAPPED_HDR")
+
+- March 2002 (fhanik)
+  Configuration of protocol stack specified using a configuration file
+  - XML as config file format
+
+- March 31 2002 (bela)
+  Message: hashtable for headers. This allows direct access to
+  protocol-owned header. Also prevents removing the wrong header.
+
+- pbcast.NAKACK: retransmit in bundles (new feature). Because we xmit
+  multiple messages in one large message, the xmit message might
+  become too big. The assumption was that there would be a FRAG layer
+  below this protocol, however that is not the case in the default
+  setup
+  March 20 2002 (bela)
+
+- Nov 1 2001 (bela)
+  Convert GUI demos to Swing for JDK >= 1.3
+  --> Preliminary port, more work needs to be done
+
+- Oct 25 2001 (bela)
+  Revert to Thread.interrupt() bug in Linux JDK 1.3.1 (FD_SOCK) once we
+  use JDK 1.4. SUN bug id=4514257 (new bug)
+  --> Using socket.close instead of Thread.interrupt(), more portable
+
+- Oct 24 2001 (bela)
+  The Draw demo triggers a lot of retransmissions if drawing
+  extensively. This causes the drawing to block for short intervals.
+  --> Was caused by mcast_{send,recv}_buf_size being too small
+      (8k). If we assume that a message is ca. 0.5k, then 16 messages
+      would already overflow the send buffer size. Therefore the size
+      was increased, which causes fewer message to be dropped, hence
+      fewer retransmissions. Note that the behavior was always
+      correct; ie. message were indeed retransmitted (no msgs lost).
+      See "Setting of recv/send buffer sizes in UDP (FRAG problem)" in
+      JavaStack/Protocols/DESIGN for details.
+
+- Oct 2001 (bela)
+  pbcast.GMS.InstallView(): if member is not in view, generate an
+  EXIT event. However, for new joiners, this might be wrong. Either
+  remove or correct -> CheckSelfInclusion() might be wrong
+
+- Oct 17 2001 (bela)
+  Start 3 members (using FD_SOCK): kill 3rd: socket connection kill
+  is not noticed under Linux: membership is 3 instead of 2. When
+  other members leave, membership will be correct
+  --> Fixed with FD_SOCK fix (see history for version 1.0)
+
+- Oct 12 2001 (bela)
+  Retransmissions:  [ERROR] NAKACK.Up(): XMIT_REQ: range of xmit msgs is null
+  --> was caused by a bug in the externalization of
+      pbcast/NakAckHeader (was correct before)
+
+
+- Oct 10 2001 (bela)
+  Problem with Thread.interrupt on Linux/JDK1.3.1: thread waiting on
+  input (e.g. System.in.read() do *not* get interrupted !)
+  --> Fixed. See history.txt
+
+- Oct 10 2001
+  Check whether is_linux quirk is sill needed with Linux JDK 1.3
+  (UDP.java)
+  --> Removed
+
+- May 15 2001 (bela)
+  readFully(): don't allocate a byte buffer for every message, just
+  allocate buffer once and only increase size if too small.
+  (ConnectionPool and Link)
+
+- May 15 2001 (bela)
+  Test UNICAST layer: with 15 members there are retransmissions
+  - Rewrite the retransmission thread (user Timer)
+  --> Caused by small UDP send and receive buffers (dropped large
+      messages which were fragmented, retransmission was okay). See
+      JavaGroups/JavaStack/Protocols/DESIGN for details.
+
+- May 11 2001 (bela)
+  Change FD.java to use TimeScheduler
+
+- May 10 2001 (bela)
+  IpAddress: printing of hostnames in dotted-decimal notation is wrong
+  (e.g. 228.1.2.3 is printed as 228)
+
+- May 9 2001 (bela)
+  Test new AckMcastSenderWindow and NakReceiverWindow classes
+  (submitted by John)
+  --> Integrated into JavaGroups
+
+- May 8 2001 (bela)
+  Use ProtocolStack.timer (Timer) for recurring non time-critical
+  tasks (saves some threads)
+
+- May 8 2001 (bela)
+  Replace SortedList with SortedSet
+
+- May 4 2001 (bela)
+  Trace: set flag 'trace' in Trace and initialize via Trace.init()
+
+- May 2 2001 (bela)
+  FragTest doesn't work any more: UDP.SendUdpMessage():
+  java.lang.IOException: message too long
+  --> see ./JavaStack/Protocols/DESIGN (frag problem) for details
+
+- April 3 2001 (bela)
+  Fix "last msg lost" feature in pbcast/NAKACK (possibly same
+  solution as for regular NAKACK)
+  --> See pbcast/DESIGN for details
+
+- April 2001 (bela)
+  Optimizations (OptimizeIt / JPprobe). Remove some of the down threads
+
+- March 30 2001 (bela)
+  Replace all System.err/out() with Trace.print()
+  --> Replaced most (still have some left to do, but not important ones)
+
+- March 9 2001 (bela)
+  Property file for tracing: defines all modules/methods to be traced
+  plus the desired tracing level. Will be read by JChannel before
+  starting. The location of the property file needs to be defined via a
+  -Dproperty_file=<location> option at startup. If the file cannot be
+  found, no tracing will be enabled (other than the tracing set
+  programmatically).
+
+- March 9 2001 (bela)
+  PBCAST.java: dynamically adjust the 'subset' and 'gossip_interval'
+  variables. E.g. when the group size increases, decrease the
+  variables, and increase them when it decreases
+
+- March 2001 (bela)
+  UDP: specify IP address to bind to
+
+- March 2001 (jmenard)
+  Tracing for inner classes,
+  e.g. Trace.println("FD.PingerThread.run()", ...)
+
+- March 2001 (bela)
+  outOfMemory error when sending 'wrong' messages to a JavaGroups
+  process. Wrong messages could e.g. be a telnet connection.
+
+- March 2 2001 (bela)
+  FD: suspect member P, followed by UNSUSPECT P. This has to result in
+  P being removed from suspected_mbrs in ParticipantGmsImpl
+  --> Done for ./pbcast/GMS
+
+- Feb 15 2001 (bela)
+  PBCAST: bounded buffer. Discard PBCAST-related messages when the
+  buffer is full. This prevents flooding of buffers when subset or
+  pbcast_interval are chosen too high.
+
+- Feb 15 2001 (bela)
+  PBCAST: singleton members never garbage-collect their messages
+
+- Feb 2001 (i-scream)
+  Gianluca Collot: disconnecting a channel is not very clear
+  (QueueClosed Exceptions,GMS implementation dont switch to Client
+  ...) so reconnecting a disconnected channel is inpossible.
+
+- Feb 15 2001 (bela)
+  Double-check whether suspected members are really dead (e.g. in GMS,
+  before bcasting new view)
+  --> VERIFY_SUSPECT
+
+- Feb 13 2001 (bela)
+  FD: create A, B, C, D. Kill A, B and D simultaneously. C will not
+  become new coordinator
+
+- Feb 12 2001 (bela)
+  Header as a typed class
+
+- Feb 12 2001 (bela)
+  Address as a typed class
+
+- Feb 13 2001 (jmenard)
+  Tracing module to enable/disable certain error messages (similar to
+  syslog).
+
+- Feb 9 2001 (bela)
+  Gialuca Collot: replace Objects as addresses with typed equivalent
+  (e.g. Address). Subclasses are IpAddress, ATMAdress etc.
+
+- Feb 7 2001 (bela)
+  FD: if a member is suspected and subsequently receives a view in
+  which it is not a member, currently that member remains in the
+  group. However, it should leave the group and possibly rejoin it
+  (EXIT event).
+  --> Implemented in FD_SHUN
+
+- Feb 2001 (jmenard)
+  Use javac instead of jikes in Makefile: use jikes when available,
+  else javac
+  --> Added configure program
+
+- Feb 7 2001 (bela)
+  Find out why UNICAST over TCP does not work
+  --> Problem was that UNICAST did not remove members once they were
+      excluded from the group. Usually, this does not matter as new
+      members in UDP have different addresses (different
+      ports). However, in TCP members may have the same port,
+      therefore the same address. When a connection from such a member
+      was received, the connection table returned the entry for the old
+      (stale) member, which of course contained wrong
+      seqnos. Therefore, messages accumulate in UNICAST's up_queue and
+      not be propagated up by the AckReceiverWindow.
+
+- Feb 7 2001 (john georgiadis)
+  TOTAL protocol
+
+- Feb 5 2001 (bela)
+  PERF protocol: adds header with identity/seqno and removes at
+  receiver. Logs time for each message. Can also be used to measure
+  time for an event in the same protocol stack.
+
+- Jan 22 2000 (bela)
+  Problem with TCP/ConnectionPool in PBCAST: start A, start B, kill B,
+  restart B: B times out attempting to reconnect
+  --> Due to UNICAST problem (see UNICAST problem). Removed UNICAST
+      protocol (not needed over TCP anyway) from demo program
+
+- Jan 22 2000 (bela)
+  TCP/UDP/TUNNEL: local messages should be sent back up the stack
+  immediately
+  --> Done only for TCP
+
+- Jan 22 2000 (bela)
+  UDP: receive(packet): each time a new packet of 65000 bytes is
+  allocated; however, we can reuse the buffer by doing the following:
+      for(int i=0; i < buf.length; i++) buf[i]=0;  // clear the buffer
+      packet.setLength(buf.length);
+      sock.receive(packet);
+
+- Dec 10 2000 (bela)
+  MessageDispatcherTest: if using 100ms instead of 2000, the app
+  crashes: problem with ReusableThread / Scheduler ?
+  - use no Sleep(): app hangs !
+  - MessageDispatcherTest / RpcDispatcherTest: hangs when closing
+    channel (number of threads still running)
+  --> Due to bug in ReusableThread, AckMcastSenderWindow
+
+- Dec 11 2000 (bela)
+  NotificationDemo: NotificationBus.Stop() does not release all threads
+  --> Due to bug in ReusableThread
+
+- Dec 10 2000 (bela)
+  Replace all occurrences of Thread.stop() with the recommended way of
+  stopping threads. Also replace suspend()/resume().
+  to be modified:
+  - Scheduler.java
+  - AckMcastSenderWindow.java
+  - AckSenderWindow.java
+  - EnsChannel.java
+  - NakReceiverWindow.java
+  - PullPushAdapter.java
+  - JavaStack/Protocol.java
+  - JavaStack/Protocols/FD.java
+  - JavaStack/Protocols/FD_RAND.java
+  - JavaStack/Protocols/GMS.java
+  - JavaStack/Protocols/MERGE.java
+  - JavaStack/Protocols/PIGGYBACK.java
+  - JavaStack/Protocols/STABLE.java
+  - JavaStack/Protocols/TUNNEL.java
+  - JavaStack/Protocols/UDP.java
+
+
+- Nov 29 2000 (bela)
+  STATE_TRANSFER for PBCAST
+
+- Nov 29 2000 (bela)
+  Make timeouts for UNICAST message retransmission user-configurable
+
+- Nov 26 2000 (bela)
+  XMIT_REQs in PBCAST currently ask for more messages than is actually
+  necessary. Correct so that only the actual missing messsages are
+  requested for retransmission.
+  E.g. my digest for A is +2 -3 +4 +5 +6. If I receive a digest with
+  +5 as the highest seqno for A, then the XMIT_REQ will be [3-6]
+  rather than [3-3].
+
+- Nov 25 2000 (bela)
+  PBCAST.SetDigest(): do we really need to explicitely set the initial
+  digest, or could we just create a new NakReceiverWindow with
+  whatever seqno is sent ?  Problem: if P:16 is received first by the
+  new member S, but P:15 was dropped, then we would lose 1 message. I
+  think it would be best to leave it as it is and always set the
+  digest we got from the coordinator as result of the Join() call.
+  --> Currently, setting initial digests is disabled. We just take the
+      *first* seqno sent to us by a new member to be its *initial*
+      seqno (which may or may not be true)
+  --> Therefore, we may lose some message
+  --> However, as long as gossiping is not implemented (to retransmit
+      those messages), we won't change anything
+  --> Currently, I prefer not to block because some member is missing
+      a message, but won't get it since retransmission (gossiping) is
+      not yet implemented
+  --> When gossiping works, remove the comments and put setting
+      initial digests back in
+  --> Therefore, the client currently does not set its digest received
+      as a result of the Join request. This has to be uncommented once
+      gossip is available !
+  ==> see ./JavaStack/Protocols/pbcast/DESIGN for an explanantion of
+      the solution to this issue
+
+
+
+- Nov 19 2000 (bela)
+  Draw2Channels.java: 2 channels with the same properties don't work
+  --> Fixed by making the GMS non-singleton
+
+- Nov 8 2000 (bela)
+  GMS: CreateInstance() creates a singleton. This prevents multiple
+  channels in the same JVM (GMS cannot be instantiated multiple times)
+  --> Removed singleton
+
+- Aug 23 2000 (bela)
+  MessageDispatcher.CastMessage(GET_ALL): if local delivery is turned
+  off, this will hang waiting for the message from the local
+  channel. Solution: CastMessage() needs to check whether local
+  delivery is enabled or not in the channel to determine whether to
+  wait for the local msg or not. Workaround: the first parameter to
+  CastMessage() takes the members to which the message is to be sent;
+  set it explicitely.
+
+
+- July 12 2000 (bela)
+  Bug: DistributedHashtable demo hangs when MembershipListener is set
+  in RpcDispatcher(). This is inside DistributedHashtable.java
+  --> This was due to a bug in the FLUSH protocols: when a client
+      joined, it received FLUSH messages as well (although not yet a
+      server). This blocked the whole process (STOP_QUEUING). Now
+      FLUSH.HandleFlush() contains the set of processes that should be
+      flushed. If the current member is not in it, it will simply
+      discard the message.
+      This bug did not show up when using TCP because there, the FLUSH
+      message is really only sent to the current membership
+
+- July 7 2000 (bela)
+  Link: look at problem of 'wrong' peer addresses; these will be
+  rejected. What happens when a connection request is rejected ?
+  --> Peer will be rejected and tries anew (until NIC is okay again)
+
+
+- July 7 2000 (bela)
+  Link: look at CTRL-Z cases. Socket connections can still
+  be made to a process which is CTRL-Z'ed (this is normal). Therefore,
+  the ConnectionEstablisher will think it has re=established
+  connection, while the heartbeat will later fail again.
+
+- July 3 2000 (bela)
+  Bug: TCP between habutterfly and dragonfly: members don't detect
+  each other. Interfaces hme0 are better than hme1 (slower). Timing
+  problem (set timeout differently) ?
+  --> It was a simple timeout problem. Increasing the timeouts in
+  TCPPING, FD and GMS helped. Traffic going across hme0 is very slow
+  (routed via Belfast).
+
+- June 30 2000 (bela)
+  TCP: specify IP address to bind to
+
+- June 27 2000 (bela)
+  Fix memory bug (FD, STABLE ?). Occurs only with TCP (ConnectionPool)
+  as bottom protocol.
+  --> The problem was in ConnectionPool: socket.GetOutputStream().writeObject()
+  and socket.getInputStream().readObject() wrote/read a whole graph of
+  objects (Message plus all referring objects). Now we just
+  send/receive byte buffers.
+
+- June 21 2000 (bela)
+  Removed UNICAST protocol in stack (still have to find out what the
+  problem is with UNICAST). But it is not needed over TCP anyway
+  (neither is FRAG).  Bug: UNICAST does not work with TCP as bottom
+  protocol Scenario: start P, start Q, kill Q, start Q: UNICAST does
+  not pass up the HandleJoin() msg to the GMS
+
+- June 19 2000 (bela)
+  ConnectionPool / TCP: outgoing connections were only removed when a
+  member failed (SUSPECT). However, they weren't removed when a member
+  left regularly. Therefore incarnations of a member on the same port
+  used the old socket (which failed). Change involved adjusting the
+  outgoing connection table in ConnectionPool when TCP receives a
+  VIEW_CHANGE: remove connections to processes that are not members
+  any more.
+
+
+- June 19 2000 (bela)
+  Bug fixed: when only the coordinator is left, a leave hangs until
+  the leave_timeout has expired. This was due to deadlock waiting for
+  the same mutex (leave_mutex) in CoordGmsImpl.
+
+
+- June 18 2000 (bela)
+  Fixed bug in join/leave protocol (GMS). This bug only showed when
+  using TCP instead of UDP/IPMCAST. The leaving member would not get
+  his 'last view' because the TMP_VIEW was not set correctly before
+  mcasting the view.
+
+
+- Dec 14 1999 (bba)
+  Put JavaGroups on Gamelan
+
+
+- Dec 1 1999 (bba)
+  Modify view change protocol (GMS):
+  - When a HandleViewChange() message is sent after the FLUSH
+    protocol, members that receive it install a new view, thus
+    resetting message retransmission. This means, that also the
+    coordinator resets its retransmission table, resulting in the
+    following problem: when a member on a lossy link does not receive
+    the new view, it would usually be retransmitted until he receives
+    it. But since the coordinator installs a new view, message
+    retransmission is stopped, and that member may never receive the
+    new view. Therefore we have to make sure that all non-faulty
+    members have received the new view before resetting retransmission !
+  - Solution: see ./design/ViewChangeRetransmission.txt
+
+
+
+- Nov 30 1999 (bba)
+  Complete FLUSH protocol:
+    Resending of outstanding messages has to be modified: we have to
+    wait until all ACKs from all members for all outstanding messages
+    have been received (for REBROADCAST). Otherwise, since we reset
+    message retransmission upon a new view, slow members (or members
+    on a lossy link) may never receive outstanding messages due to
+    stopped retransmission.
+
+
+- Nov 99 (bba)
+  Add objects, ints etc to Message (not as Header, but to message itself !)
+
+- Nov 99 (bba)
+  Modify layer FD to *not* send out are-you-alive messages to a member
+  P while other (e.g. data) messages from P are received. Further
+  improvement: use gossip-like failure detection as described in the
+  "GSGC: Efficient Gossip-Style GC Scheme" paper
+
+- Nov 99 (bba)
+  Paper on implementation of RpcGMS (synchr. group calls plus state pattern)
+
+- Nov 99 (bba)
+  Phase out MessageCorrelator
+
+- Nov 99 (bba)
+  Remove classes not needed any longer !!!
+
+- Nov 99 (bba)
+  Remove IDs for Messages. IDs are added by MNAK/NAK layers
+
+- June 9 (bba)
+  Paper on RpcProtocol
+
+- May 11 (bba)
+  Paper on state transfer
+
+- April 29, 1999 (bba)
+  Synchronous Group RPC (GRPC) and deadlocks: investigate use of concurrency
+  to eliminate the problem while preserving ordering properties
+  (- Implementation of priority scheduler)
+
+- April 13, 1999 (bba)
+  Each protocol has certain prerequisites; GMS for example needs PING
+  and FD to be present somewhere below it. Add a sanity check
+  mechanism to the  protocol stack (configurator) that allows each
+  protocol to abort stack creation if it cannot find the protocol
+  layers it requires.
+
+- April 1 (bba): Paper on protocol stack (how to write your own layer)
+  --> user's guide
+
+- Feb 23, 1999 (bba): Wrong parameters in any protocol should cause error messages
+  Null protocol will be created, which causes later abort
+
+- Jan 13, 1999 (bba): Change Channel according to Channel interface document
+
+- Provide unicast point-to-point channel: Connect(new Address("janet", 3456))
+  Implemented and then dropped again ! Connection-less group mcast and
+  connection-oriented ucast don't mix very well in the same model. That's why
+  there are DatagramSockets and MulticastSockets...
+
+
+- Dec 98 (bba): IP multicast: problems with GMS (PingMembers)
+  Fixed
+
+- Dec 98 (bba): GossipServer and GMS: membership is not correct
+
+- Dec 11, 1998 (bba)
+  Added multicast ack (MACK) layer
+
+
+- Aug 19, 1998 (bba)
+  Dispatcher: use a factory to create a channel instead of creating an
+  EnsChannel directly (no hardcoding)
+  -- Introduced ChannelFactory, EnsChannelFactory and JChannelFactory
+
+- Jun 18, 1998 (bba)
+  MessageCorrelator: stable messages should be purged periodically
+  -- Changes in ./channel/MessageCorrelator.java
+
+- Jun 19, 1998 (bba)
+  Create 1 outboard process per Hot_Ensemble instance. Currently,
+  ejava implements 1 outboard process per Java VM
+  -- Changes in ./Ensemble/Hot_Ensemble.java
+
+
+
+
+
+			       Rejected
+			       --------
+
+
+
+
+- May 2005 (bela)
+  Handle MergeViews in DistributedHashtable, ReplicatedHashtable etc
+  --> these classes are deprecated, not maintained anymore
+
+- 2003 (bela)
+  Since message IDs are ever increasing with PBCAST, we have to reset
+  them (e.g. when they reach 2 E9; 4E9 is the current max size of a
+  long on Solaris 8). Write a protocol that resets the message IDs in
+  all members at the same logical point in time. Alternative: create
+  new SequenceNumber class, use it instead of long for seqnos
+  --> longs are 8 bytes, so we have 2E10 -1 numbers, that is more than enough.
+
+- 2003 (bela)
+  EventPool: pool for Event instances. Since a lot of Event instances
+  are used, we should reuse them to avoid constant instance
+  creation. Use OptimizeIt to measure number of Events created.
+  --> JDKs 1.4 and higher now manage object pools internally, this is
+      not needed anymore
+
+- 2003/2004
+  TransactionalHashtable: when async replication, provide option to
+  periodically replicate changes (e.g. using a queue)
+  --> done in JBossCache, currently no plans to backport to JGroups
+
+- Aug 2002
+  Integrate latest version of EJAVA (comes with 0.70 distribution of
+  Ensemble)
+  --> Nobody uses the EnsChannel, so forget about this project
+
+- Summer 2001 (bela)
+  Reduce message overhead for small messages by reducing headers
+  (static array of header names). Suggested by Gianluca.
+  --> Reduce IpAddresses as well (use InetAddress.getByName() with
+  dotted-decimal notation for unserialization to avoid reverse DNS
+  lookup) (suggested by John)
+  --> Remove dest and src from Message serialization altogether in UDP:
+      just send payload and headers. Reconstruct dest and src from
+      addresses in DatagramPacket
+  --> Experimented with various schemes, none of them was elegant

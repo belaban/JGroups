@@ -1,0 +1,15 @@
+# add your own properties in here
+
+# the network interface (NIC) which will be used by the unit tests, change this to
+# the one you want to use. Note that 'localhost' usually resolved to 127.0.0.1,
+# which may not work on Linux unless you have a multicast route set up for loopback
+jgroups.bind_addr=localhost
+jgroups.tcpping.initial_hosts=localhost[7800],localhost[7801]
+jgroups.tunnel.gossip_router_hosts=localhost[12001]
+jgroups.udp.mcast_addr=232.10.10.10
+jgroups.udp.mcast_port=45588
+jgroups.udp.ip_ttl=5
+# use true for IPv6 and false for IPv4 
+jgroups.useIPv6=false
+
+

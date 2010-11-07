@@ -1,0 +1,27 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="udp-flush"
+       parallel="methods"
+       thread-count="5">
+
+
+	<parameter name="channel.conf" value="flush-udp.xml"/>
+	<parameter name="use_blocking" value="true"/>
+    <test name="udp-flush" junit="false" time-out="80000">        
+        <groups>
+            <run>                              
+            	<include name="base"/>                
+                <include name="flush"/>
+                <exclude name="stack-independent"/>
+                <exclude name="stack-dependent"/>               
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
+        </packages>
+    </test>
+
+</suite>

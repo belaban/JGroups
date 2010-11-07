@@ -1,0 +1,90 @@
+
+
+Design of new NAKACK with only 1 retransmission table
+=====================================================
+
+Author:   Bela Ban
+Date:     April 3, 2007
+JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
+Version:  $Id: NAKACK.txt,v 1.9 2007/04/19 21:01:17 belaban Exp $
+
+
+
+Motivation
+----------
+Merge of sent-table, received-table and delivered-table into one single retransmission table. This should reduce
+complexity, and increase performance, because we don't need to handle 3 tables. Plus, sent-table maintained a sorted
+key set (TreeMap) which made insertion costly when many keys were present.
+
+
+
+Design
+------
+
+Variables:
+- xmit-table: Map<Address,NakReceiverWindow> of senders and their associated NakReceiverWindows. Each NakReceiverWindow
+              contains a Map<Long,Message> of sequence numbers and the messages associated with them.
+              Each NakReceiverWindow maintains the seqnos of (1) the highest message received, (2) the highest message
+              delivered and (3) the lowest message. The latter is the seqno that was last purged through a stability
+              message (see STABLE protocol)
+
+
+
+On sending of M (sender=P):
+- M is added to xmit-table
+- The NakReceiverWindow for P adjusts its highest received message counter
+
+
+On reception of M (sender=P):
+- If P == local address: NOP
+- Else: add M to xmit-table
+
+- Remove as many messages from xmit-table as possible and pass up
+- For each remove: NakReceiverWindow adjusts the highest delivered message counter for P's NakReceiverWindow
+
+
+
+On GET_DIGEST_STABLE:
+- For each sender S in xmit-table:
+  - Get low seqno, highest devlivered seqno and highest received seqno and add it to digest D
+- Return D
+
+
+On SET_DIGEST(D):
+- For each sender S in D:
+  - Create a new NakReceiverWindow in xmit-table with low seqno, highest devlivered seqno and highest received seqno
+
+
+On reception of stability message D:
+- For all highest seqnos in D:
+  - Call stable() in the NakReceiverWindow. This will adjust the lowest message counter in the NakReceiverWindow
+
+
+On creation of a new NakReceiverWindow with digest D:
+- Create the NakReceiverWindow with
+  - lowest seqno = D.low_seqno
+  - highest delivered seqno = D.highest_delivered_seqno
+  - highest received seqno = D.highest_received_seqno
+
+
+NakReceiverWindow
+-----------------
+- received-msgs and delivered-msgs are merged into msgs
+- msgs is a map<Long,Message> of seqnos with their associated messages
+  - low is the seqno that was last purged (by stable()) (old 'head' variable)
+  - highest_deliverable is the seqno that will be returned by the next remove()
+  - highest_received is the seqno of the highest received message (old 'tail' variable)
+  - E.g. for 1,2,4,5,7: low=1, highest_deliverable=2 and highest_received=7
+- NakReceiverWindow.remove() does *not* remove a message (unless discard_delivered_msgs = true), it instead simply
+  moves the highest_deliverable marker
+- Messages are *only* purged from NakReceiverWindow on reception of a stability message (stable())
+- Note that the highest delivered message is the highest seqno actually *removed* by the application, not the
+  highest *deliverable* message !
+
+
+
+
+
+
+
+

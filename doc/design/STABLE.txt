@@ -1,0 +1,53 @@
+
+STABLE
+======
+
+Author: Bela Ban
+Date: May 29 2007
+Version: $Id: STABLE.txt,v 1.2 2007/05/31 09:56:58 belaban Exp $
+
+Goal: to purge messages delivered by all members
+
+
+Vars
+----
+- digest: used to reconcile all STABLE messages, re-initialized on STABILITY message (with digest from NAKACK)
+- votes: list of members from whom we have received STABLE messages. Reset on STABILITY message
+
+Initialization
+--------------
+- Set digest from NAKACK
+
+When the timer expires or max_bytes have been received
+------------------------------------------------------
+- Send STABLE message
+
+Sending of STABLE message
+-------------------------
+- Get the current digest (from NAKACK) using the GET_DIGEST_STABLE event
+- Send the STABLE message to group
+
+On reception of STABLE message from P
+-------------------------------------
+- If P already present in votes: discard
+- Else:
+  - Update digest
+  - Add P to votes
+  - If votes from all members:
+    - Send STABILITY message
+
+On reception of STABILITY message
+---------------------------------
+- Pass STABLE event down to NAKACK to purge messages on which every member agreed that they have been delivered
+- Set digest from NAKACK
+- Clear votes
+
+
+View change
+-----------
+- Set digest from NAKACK
+- Clear votes
+
+
+
+

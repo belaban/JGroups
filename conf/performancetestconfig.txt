@@ -1,0 +1,35 @@
+# Author: Vladimir Blagojevic
+# Version: $Id$
+#This file is used as an input for org.jgroups.tests.perf.PerformanceTestGenerator 
+#utility. PerformanceTestGenerator, given this input file with -config flag,  then 
+#in turn generates test files that are used in conjunction with 
+#bin/clusterperfromancetest.sh. The number of test files generated is 
+#number_of_senders*message_sizes. Each test file represents one performance 
+#round. In each performance round JGroups cluster is formed and tests are 
+#executed using org.jgroups.tests.perf.Test utility.
+#
+#Configuration parameters are:
+#
+# - nodes: number of group member nodes (machines) used in the performance test
+# - total_data: total size of data in bytes
+# - number_of_sender: specifies how many nodes will be senders in each test 
+# - message_sizes: specifies message size used in each test
+# - interval: log after interval messages
+#
+#
+
+#Number of machines used for performance tests. This value should match number 
+#of computer nodes listed in CLUSTER_NODES variable of bin/clusterperformancetests.sh
+nodes=8
+
+#Total combined amount of data in bytes sent by all senders in a perfromance test round
+total_data=200000000
+
+#Number of senders in each performance round
+number_of_senders=1,4,8
+
+#Message size in bytes for each performance round
+message_sizes=100,1000,10000,100000
+
+#Log after receiving interval messages
+interval=100000

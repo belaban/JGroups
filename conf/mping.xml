@@ -1,0 +1,37 @@
+
+
+<!--
+TCP-based stack with IP multicast-based discovery
+Version: $Id: mping.xml,v 1.19 2010/09/20 14:29:08 belaban Exp $
+Author: Bela Ban
+ -->
+
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
+    <TCP bind_port="7800" sock_conn_timeout="500"
+         send_buf_size="100000" recv_buf_size="200000"
+         loopback="true"/>
+    <MPING timeout="4000"
+           receive_on_all_interfaces="true"
+           mcast_port="7500"
+           ip_ttl="8"
+           num_initial_members="2"
+           num_ping_requests="1"/>
+    <MERGE2 max_interval="10000" 
+            min_interval="5000"/>
+    <FD_SOCK/>
+    <FD timeout="2000" 
+        max_tries="3"/>
+    <VERIFY_SUSPECT timeout="1500"/>
+    <pbcast.NAKACK gc_lag="50" 
+                   retransmit_timeout="600,1200,2400,4800"
+                   />
+    <UNICAST timeout="300,600,1200" />
+    <pbcast.STABLE stability_delay="1000" 
+                   desired_avg_gossip="20000" 
+                   max_bytes="4m"/>
+    <pbcast.GMS print_local_addr="true" 
+                join_timeout="5000" 
+                />
+</config>

@@ -1,0 +1,70 @@
+
+New merging algorithm
+=====================
+
+Author: Bela Ban
+Version: $Id: MERGE.new.txt,v 1.2 2009/04/27 12:06:28 belaban Exp $
+JIRAs: https://jira.jboss.org/jira/browse/JGRP-948, https://jira.jboss.org/jira/browse/JGRP-940
+
+Goal
+----
+The digests on a merge should not include 'hearsay' information, e.g. if we have subpartitions {A,B,C} and {D,E,F},
+then B (for example) should only return its own digest, and not the digests of A and C.
+
+Design
+------
+On a merge, the merge leader sends a MERGE_REQ to all subpartition coordinators (in the example, this would be A and D).
+
+On reception of a MERGE_REQ, every coordinator multicasts a GET_DIGEST to its subpartition and waits N ms for all
+replies. Example: D wait for replies from itself, E and F. It returns the aggregated information for D, E and F after N
+milliseconds.
+
+A (the merge leader) waits for responses from itself and D. If it doesn't receive them within N ms, it cancels the merge.
+After reception of responses from itself and D, it makes sure it has digests for 6 nodes A, B, C, D, E and F. It not,
+it cancels the merge.
+
+Otherwise, A computes a MergeView and consolidates the digests, then unicasts the MERGE_VIEW to itself and D. Each
+coordinator then multicasts the new view in its subpartition (same as now).
+
+Consolidating the digests should be simple because we only have 1 entry for each member. However, in the following
+case we could have multiple overlapping entries:
+A: {A}  B: {A,B}
+
+Here's B's view includes A, so B will return digests for A and B, and A will return the digest for itself (A). In this
+case, let's log a warning and make the digest for A be the maximum of all sequence numbers (seqnos). Example:
+
+A's digest:
+A: 7 20 (20)
+
+B's digest:
+A: 2 10 (10)
+B: 5 25 (25)
+
+The merged digest for A would then be A: 7 20 (20).
+
+This should actually not happen because:
+- B's digest is a result of contacting every member of its subpartition (A and B)
+- If A is reachable from B, and B gets a response, the response will actually contain the correct seqnos 7 20 (20)
+- However, if A's digest (for itself) contains 7 21 (21), because a message was sent in the meantime, then the
+  maximum would be 7 21 (21) which is correct
+
+
+Merging of local digests (NAKACK.mergeDigest())
+-----------------------------------------------
+- We have {A,B} and {C,D}
+- The digest is A:15, B:7, C:10, D:9
+- Before receiving the merge digest A and B multicast more messages, A's seqno is now #20 and B's #10
+- A receives the digest:
+   A:20, B:10, ...
+ + A:15, B:7, ...
+ = A:20, **B:10**
+ ================
+
+==> We currently do NOT overwrite our own digest entry, but overwrite all others. This is incorrect: we need to
+    not overwrite our own digest (as is done currently), but for all other members P, we need to:
+    - If P's seqno is higher than the one in the digest: don't overwrite
+    - Else: reset P's NakReceiverWindow and overwrite it with the new seqno
+
+==> If we didn't do this, in the example above, B's seqno would be #7 whereas we already received seqnos up to #10 from
+    P, so we'd receive seqnos #7-#10 from P twice !
+    
