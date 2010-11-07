@@ -3,4 +3,5 @@
 *.ipr
 *.iml
 .idea/
+classes/
 
