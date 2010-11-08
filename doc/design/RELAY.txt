@@ -1,22 +1,26 @@
 
-Replication between data centers
-================================
+RELAY - replication between data centers
+========================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.10 2010/11/08 12:02:53 belaban Exp $
+Version: $Id: RELAY.txt,v 1.1 2010/11/08 12:02:45 belaban Exp $
 
-We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
-asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
-(almost) up-to-date data. The failing over of clients to SFO is outside the scope of this proposal, and could
-be done for example by changing DNS entries, load balancers etc.
+This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
+to the application, which list members of all local clusters.
 
-There is no replication going on from SFO to NYC by default, only when SFO becomes the primary site.
+We have data centers with a local cluster each in New York (NYC) and San Francisco (SFO). The idea is to relay
+traffic from NYC to SFO, and vice versa.
 
-The assumption is that there is no message between data centers which requires a response. This would require
-NAT functionlity, which we may provide in a future version.
+In case of a site failure of NYC, the state is available in SFO, and all clients can be switched over to SFO and
+continue working with (almost) up-to-date data. The failing over of clients to SFO is outside the scope of this
+proposal, and could be done for example by changing DNS entries, load balancers etc.
 
-For the example, we assume that each site uses a UDP based stack, and replication between the sites use a
-TCP based stack, see figure DataCenterReplication.png.
+The data centers in NYC and SFO are *completely autonomous local clusters*. There are no stability, flow control or
+retransmission messages exchanged between NYC and SFO. This is critical because we don't want the SFO cluster to block
+for example on waiting for credits from a node in the NYC cluster !
+
+For the example, we assume that each site uses a UDP based stack, and relaying between the sites uses a
+TCP based stack, see figure RELAY.png.
 
 There is a local cluster, based on UDP, at each site and one global cluster, based on TCP, which connects the
 two sites. Each coordinator of the local cluster is also a member of the global cluster, e.g. member E in NYC
@@ -101,7 +105,3 @@ Reception of message sent by self
 No, doesn't work ! The relay would have to be active on every node ! This is not feasible as this would require
 every node to have a TCP connection to NYC ! We still need to do it on reception not sending. However, messages
 cannot exclude the sender
-
-*****************************************************
-*** UPDATE: this design is continued in RELAY.txt ***
-*****************************************************
