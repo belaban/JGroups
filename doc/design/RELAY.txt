@@ -3,7 +3,7 @@ RELAY - replication between data centers
 ========================================
 
 Author: Bela Ban
-Version: $Id: RELAY.txt,v 1.1 2010/11/08 12:02:45 belaban Exp $
+Version: $Id: RELAY.txt,v 1.2 2010/11/08 14:04:36 belaban Exp $
 
 This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
 to the application, which list members of all local clusters.
@@ -23,7 +23,7 @@ For the example, we assume that each site uses a UDP based stack, and relaying b
 TCP based stack, see figure RELAY.png.
 
 There is a local cluster, based on UDP, at each site and one global cluster, based on TCP, which connects the
-two sites. Each coordinator of the local cluster is also a member of the global cluster, e.g. member E in NYC
+two sites. Each coordinator of the local cluster is also a member of the global cluster, e.g. member A in NYC
 (assuming it is the coordinator) is also member X of the TCP cluster. This is called a *relay* member. A relay
 member is always member of the local and global cluster.
 
@@ -31,12 +31,14 @@ A relay member has a UDP stack which additionally contains a protocol RELAY at t
 of the figure). RELAY has a JChannel which connects to the TCP group, but *only* when it is (or becomes) coordinator
 of the local cluster. The configuration of the TCP channel is done via a property in RELAY.
 
-Any *multicast* message (we don't relay unicast messages) that is received by RELAY traveling
-up the stack is sent via the TCP channel to the other site. When received there, the corresponding RELAY
-protocol changes the destination of the message to null (those are multicast messages after all) and leaves
-the src (which might point to X if sent from NYC), then it sends the message down the stack, where it will get
-multicast to all members of the local cluster (including the sender). When a response is received which
-points to any non-local address (e.g. X), RELAY simply drops it.
+A multicast message received by RELAY traveling up the stack is wrapped and sent via the TCP channel to the
+other site. When received there, the corresponding RELAY protocol unwraps the original message and changes the sender
+of the message to a ProxyUUID, which wraps the original sender and the local sender.
+
+A ProxyUUID extends UUID and behaves like a normal UUID, but it also contains the original sender.
+
+A unicast message received by RELAY traveling down the stack is forwarded to the current relay if the destination is
+a ProxyUUID. The relay will then wrap the message and forward it to the other site via TCP.
 
 When forwarding a message to the local cluster, RELAY adds a header. When it receives the multicast message it
 forwarded itself, and a header is present, it does *not* relay it back to the other site but simply drops it.
@@ -61,16 +63,30 @@ Therefore, a relay has to handle 3 types of messages from the global (TCP) clust
 
 Example walkthrough
 -------------------
-- C (in the NYC cluster, with coordinator E) multicasts a message
-- A, B, C, D and E receive the multicast
-- D (second-in-line) buffer the message (bounded buffer)
-- E is the relay. The byte buffer is extracted and a new message M is created. M's source is C, the dest is null
+
+Multicasting a message:
+
+- C (in the NYC cluster, with coordinator A) multicasts a message
+- A, B and C receive the multicast
+- A is the relay. The byte buffer is extracted and a new message M is created. M's source is C, the dest is null
   (= send to all). Note that the original headers are *not* sent with M. If this is needed, we need to revisit.
+- A then wraps M into a message sent from X to Y
 - X receives M, drops it (because it is the sender, determined by the header).
-- Y receives M, adds a RELAY header and sends it down the stack
-- T, U, V, W and S receive M and deliver it
-- Y does not relay M because M has a header
-- Should some member reply (to X), then RELAY at Y will drop the message
+- Y receives M, and unwraps it.
+- Y replaces the sender (C) with a ProxyUUID(D,C) (D is the sender and C the origial sender), adds a RelayHeader and
+  sends it down its local cluster
+- D, E and F receive M and deliver it
+- D does not relay M because M has a header
+
+Sending a unicast reply:
+
+- When F receives the multicast message M, it sends a unicast reply message R
+- R.dest=ProxyUUID(D,C) and R.src=F
+- RELAY.down() sees that R.dest is a ProxyUUID and therefore forwards R to the current relay (which is D)
+- D sets the destination of R to C, wraps the message and sends it to X (via the TCP cluster)
+- Y receive R and replaces R.src with a ProxyUUID(C,F)
+- Y puts R on the local channel where it is sent to C
+
 
 
 Issues
