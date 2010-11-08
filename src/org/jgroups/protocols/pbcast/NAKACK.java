@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.260 2010/09/22 08:16:55 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.261 2010/11/08 08:57:01 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
@@ -554,9 +554,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress()) {
+                if(dest != null && !dest.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
                     break; // unicast address: not null and not mcast, pass down unchanged
-                }
+
                 send(evt, msg);
                 return null;    // don't pass down the stack
 
@@ -652,6 +652,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         case Event.MSG:
             Message msg=(Message)evt.getArg();
+            if(msg.isFlagSet(Message.NO_RELIABILITY))
+                break;
             NakAckHeader hdr=(NakAckHeader)msg.getHeader(this.id);
             if(hdr == null)
                 break;  // pass up (e.g. unicast msg)

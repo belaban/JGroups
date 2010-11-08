@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.38 2010/09/17 12:03:35 belaban Exp $
+ * @version $Id: SMACK.java,v 1.39 2010/11/08 08:56:59 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
@@ -102,7 +102,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg(), tmp_msg;
-                if(msg == null) break;
+                if(msg == null || msg.isFlagSet(Message.NO_RELIABILITY)) break;
                 sender=msg.getSrc();
                 SmackHeader hdr=(SmackHeader)msg.getHeader(this.id);
                 if(hdr == null) // is probably a unicast message
@@ -202,7 +202,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
             // add a header with the current sequence number and increment seqno
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg == null) break;
+                if(msg == null || msg.isFlagSet(Message.NO_RELIABILITY)) break;
                 if(msg.getDest() == null || msg.getDest().isMulticastAddress()) {
                     lock.lock();
                     try {

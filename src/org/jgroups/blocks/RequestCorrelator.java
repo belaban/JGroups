@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.67 2010/09/17 12:02:12 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.68 2010/11/08 08:57:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -610,6 +610,10 @@ public class RequestCorrelator {
         rsp.setFlag(Message.DONT_BUNDLE);
         if(req.isFlagSet(Message.NO_FC))
             rsp.setFlag(Message.NO_FC);
+        if(req.isFlagSet(Message.NO_RELIABILITY))
+            rsp.setFlag(Message.NO_RELIABILITY);
+        if(req.isFlagSet(Message.NO_TOTAL_ORDER))
+            rsp.setFlag(Message.NO_TOTAL_ORDER);
 
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
