@@ -26,7 +26,7 @@ import java.util.Map;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.117 2010/08/31 12:23:18 belaban Exp $
+ * @version $Id: Message.java,v 1.118 2010/11/08 08:42:04 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr;
@@ -63,7 +63,11 @@ public class Message implements Streamable {
     public static final byte LOOPBACK          =  1 << 1; // if message was sent to self
     public static final byte DONT_BUNDLE       =  1 << 2; // don't bundle message at the transport
     public static final byte NO_FC             =  1 << 3; // bypass flow control
-    public static final byte SCOPED            =  1 << 4; // when a message has a scope 
+    public static final byte SCOPED            =  1 << 4; // when a message has a scope
+
+    // the following 2 flags will be removed in 3.x, when https://jira.jboss.org/browse/JGRP-1250 has been resolved
+    public static final byte NO_RELIABILITY    =  1 << 5; // bypass UNICAST(2) and NAKACK
+    public static final byte NO_TOTAL_ORDER    =  1 << 6; // bypass total order (e.g. SEQUENCER)
 
 
     // =========================== Transient flags ==============================
@@ -713,6 +717,20 @@ public class Message implements Streamable {
             else
                 first=false;
             sb.append("SCOPED");
+        }
+        if(isFlagSet(flags, NO_RELIABILITY)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("NO_RELIABILITY");
+        }
+        if(isFlagSet(flags, NO_TOTAL_ORDER)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("NO_TOTAL_ORDER");
         }
         return sb.toString();
     }
