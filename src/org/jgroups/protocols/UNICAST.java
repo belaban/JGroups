@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.167 2010/09/17 12:05:09 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.168 2010/11/08 08:56:59 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 @DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
@@ -281,7 +281,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 msg=(Message)evt.getArg();
                 dst=msg.getDest();
 
-                if(dst == null || dst.isMulticastAddress())  // only handle unicast messages
+                if(dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
                 // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
@@ -320,9 +320,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || dst.isMulticastAddress()) {
+                if (dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
                     break;
-                }
 
                 if(!started) {
                     if(log.isTraceEnabled())

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.36 2010/06/15 06:44:35 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.37 2010/11/08 08:56:59 belaban Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -80,6 +80,8 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_TOTAL_ORDER))
+                    break;
                 Address dest=msg.getDest();
                 if(dest == null || dest.isMulticastAddress()) { // only handle multicasts
                     long next_seqno=seqno.getAndIncrement();
@@ -118,6 +120,8 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
+                if(msg.isFlagSet(Message.NO_TOTAL_ORDER))
+                    break;
                 hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
