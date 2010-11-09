@@ -11,6 +11,7 @@ import org.jgroups.util.UUID;
  * @version $Id: Global.java,v 1.65 2010/10/30 11:08:29 belaban Exp $
  */
 public class Global {
+
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
     public static final int SHORT_SIZE  = Short.SIZE   / 8; // 2
     public static final int INT_SIZE    = Integer.SIZE / 8; // 4
