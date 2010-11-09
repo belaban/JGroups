@@ -3,7 +3,7 @@ RELAY - replication between data centers
 ========================================
 
 Author: Bela Ban
-Version: $Id: RELAY.txt,v 1.4 2010/11/09 09:18:56 belaban Exp $
+Version: $Id: RELAY.txt,v 1.5 2010/11/09 10:40:39 belaban Exp $
 
 This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
 to the application, which list members of all local clusters.
@@ -92,14 +92,28 @@ Sending a unicast reply:
 Implementation
 --------------
 
-RELAY.up():
+RELAY.up(msg):
+- If not coord or RelayHeader is present: break
+- If multicast message:
+  - Create new message M.dst=null, src=msg.src // no headers
+  - Wrap M and put it on the TCP channel
+- Else: // unicast
+  - If hdr == RelayHeader.FORWARD:
+    - Wrap msg and put it on the TCP channel
 
 
+RELAY.down(msg):
+- If msg is a multicast: pass down, break
+- If msg.dest is not a ProxyUUID: pass down, break
+- Create new message M.dst=msg.dst, M.src=self
+- Add RelayHeader.FORWARD to M
+- Send M to the current relay (coordinator)
 
-RELAY.down():
 
-
-
-Receive message from TCP channel:
+Receive message M from TCP channel:
+- If sender = self: discard
+- Set M.src=ProxyUUID(self,M.src)
+- Add a RelayHeader to M
+- Put M on the local channel
 
 
