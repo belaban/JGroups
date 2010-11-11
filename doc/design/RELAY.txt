@@ -3,7 +3,7 @@ RELAY - replication between data centers
 ========================================
 
 Author: Bela Ban
-Version: $Id: RELAY.txt,v 1.5 2010/11/09 10:40:39 belaban Exp $
+Version: $Id: RELAY.txt,v 1.6 2010/11/11 10:34:23 belaban Exp $
 
 This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
 to the application, which list members of all local clusters.
@@ -93,13 +93,14 @@ Implementation
 --------------
 
 RELAY.up(msg):
-- If not coord or RelayHeader is present: break
-- If multicast message:
-  - Create new message M.dst=null, src=msg.src // no headers
-  - Wrap M and put it on the TCP channel
-- Else: // unicast
-  - If hdr == RelayHeader.FORWARD:
-    - Wrap msg and put it on the TCP channel
+- If not coord: pass up and break
+- If RelayHeader present:
+  - If FORWARD: forward(msg); break
+  - If DISSEMINATE: pass up and break
+  - Default: break;
+- Else:
+  - If multicast message: forward(msg)
+  - Pass up
 
 
 RELAY.down(msg):
@@ -111,9 +112,33 @@ RELAY.down(msg):
 
 
 Receive message M from TCP channel:
-- If sender = self: discard
-- Set M.src=ProxyUUID(self,M.src)
-- Add a RelayHeader to M
+- Switch RelayHeader:
+  - Case FORWARD:
+    - If sender = self: discard
+    - Else: unwrap M into M2 and putOnLocalCluster(M2)
+  - Case VIEW:
+    // todo
+
+
+
+forward(msg):
+- Copy msg to M
+- Remove all headers from  M
+- Wrap M into a new message M2
+- Add RelayHeader.FORWARD to M2
+- Put M2 onto the TCP channel
+
+// TBD: should we leave headers ? They're going to be overwritten anyway when relaying the message
+
+
+putOnLocalCluster(M):
+- Set M.src=ProxyUUID(local_addr,M.src)
+- Add a RelayHeader.DISSEMINATE to M
 - Put M on the local channel
+
+
+
+Issues:
+- Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
 
 
