@@ -3,7 +3,7 @@ RELAY - replication between data centers
 ========================================
 
 Author: Bela Ban
-Version: $Id: RELAY.txt,v 1.7 2010/11/11 11:29:28 belaban Exp $
+Version: $Id: RELAY.txt,v 1.8 2010/11/11 13:10:39 belaban Exp $
 
 This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
 to the application, which list members of all local clusters.
@@ -101,21 +101,28 @@ Ceasing to be coordinator:
 
 
 RELAY.up(msg):
-- If not coord: pass up and break
-- If RelayHeader present:
-  - If FORWARD: forward(msg); break
-  - If DISSEMINATE: pass up and break
-  - Default: break;
+- If not coord: pass up and return
+- If RelayHeader present:  // coord
+  - If FORWARD: forward(msg.buf); return
+  - If DISSEMINATE: pass up and return
+  - If VIEW: todo
+  - Return
 - Else:
-  - If multicast message: forward(msg)
-  - Pass up
+  - If multicast message:
+    - Copy msg to M (don't copy headers)
+    - Remove all headers from M
+    - Serialize M into a buffer buf
+    - forward(buf)
+  - Pass up // unicast or multicast messages
 
 
 RELAY.down(msg):
 - If not coordinator or msg is a multicast or msg.dest is not a ProxyUUID: pass down, break
-- Create message M from msg (con't copy headers)
+- Copy msg to M (don't copy headers)
 - Set M.dst=msg.dst.original, M.src=local_addr
-- Wrap M into a message M2
+- Remove all headers from M
+- Serialize M into a buffer buf
+- Create message M2 (M2.buf=buf)
 - Add RelayHeader.FORWARD to M2
 - Send M2 to the current relay (coordinator)
 - Return // don't pass down !
@@ -125,20 +132,15 @@ Receive message M from TCP channel:
 - Switch RelayHeader:
   - Case FORWARD:
     - If sender = self: discard
-    - Else: unwrap M into M2 and putOnLocalCluster(M2)
-  - Case VIEW:
-    // todo
+    - Else: deserialize M.buf into message M2 and putOnLocalCluster(M2)
+  - Case VIEW:  // todo
 
 
+forward(buf): // buf is the serialized message to be forwarded 
+- Create a message M with M.buf=buf, M.dst=null
+- Add RelayHeader.FORWARD to M
+- Put M onto the TCP channel
 
-forward(msg):
-- Copy msg to M
-- Remove all headers from  M
-- Wrap M into a new message M2
-- Add RelayHeader.FORWARD to M2
-- Put M2 onto the TCP channel
-
-// TBD: should we leave headers ? They're going to be overwritten anyway when relaying the message
 
 
 putOnLocalCluster(M):
