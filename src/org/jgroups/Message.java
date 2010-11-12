@@ -46,6 +46,8 @@ public class Message implements Streamable {
 
     private volatile byte      flags;
 
+    private static final int NUMBER=322649;
+
     private volatile byte      transient_flags; // transient_flags is neither marshalled nor copied
 
     protected static final Log log=LogFactory.getLog(Message.class);
