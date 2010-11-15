@@ -14,14 +14,15 @@ import java.io.IOException;
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
  * and - if coordinator - relays all multicast messages via the bridge cluster to the remote cluster.<p/>
  *
- * This is <em>not</em> a big virtual cluster, e.g. consisting of {A,B,C,X,Y,Z}, but 2 clusters {A,B,C} and {X,Y,Z},
- * bridged together by RELAY. For example, when B multicasts a message M, A (if it happens to be the coord) relays M
- * to X (which happens to be the other cluster's coordinator). X then re-broadcasts M, but under its own address, so
- * M.src = X (<em>not</em> B !)<p/>
+ * This is <em>not</em> a big virtual cluster, e.g. consisting of {A,B,C,X,Y,Z}, but 2 <em>autonomous</em> clusters
+ * {A,B,C} and {X,Y,Z}, bridged together by RELAY. For example, when B multicasts a message M, A (if it happens to be
+ * the coord) relays M to X (which happens to be the other cluster's coordinator). X then re-broadcasts M, with M.src
+ * being a ProxyUUID(X,B). This means that the sender of M in the {X,Y,Z} cluster will be X for all practical purposes,
+ * but the original sender B is also recorded, for sending back a response.<p/>
  *
  * See [1] and [2] for details.<p/>
  * [1] https://jira.jboss.org/browse/JGRP-747<p/>
- * [2] doc/design/DataCenterReplication.txt
+ * [2] doc/design/RELAY.txt
  *
  * @author Bela Ban
  */
