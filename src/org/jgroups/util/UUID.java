@@ -13,7 +13,6 @@ import java.util.Collection;
  * Copied from java.util.UUID, but unneeded fields from the latter have been removed. UUIDs needs to
  * have a small memory footprint.
  * @author Bela Ban
- * @version $Id: UUID.java,v 1.5 2010/11/11 13:40:53 belaban Exp $
  */
 public class UUID implements Address, Streamable, Comparable<Address> {
     protected long   mostSigBits;

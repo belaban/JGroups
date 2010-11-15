@@ -3,7 +3,6 @@ RELAY - replication between data centers
 ========================================
 
 Author: Bela Ban
-Version: $Id: RELAY.txt,v 1.8 2010/11/11 13:10:39 belaban Exp $
 
 This is an enhanced version of DataCenterReplication.txt with the ability to send unicast messages and to provide views
 to the application, which list members of all local clusters.
@@ -152,5 +151,3 @@ putOnLocalCluster(M):
 
 Issues:
 - Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
-
-
