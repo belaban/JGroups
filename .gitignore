@@ -3,6 +3,7 @@
 *.ipr
 *.iml
 .idea/
+.idea
 classes/
 build.properties
 dist/
