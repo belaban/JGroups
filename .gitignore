@@ -1,0 +1,9 @@
+*~
+*.iws
+*.ipr
+*.iml
+.idea/
+classes/
+build.properties
+dist/
+atlassian*
