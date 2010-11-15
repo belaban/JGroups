@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.262.2.1 2010/11/10 14:02:33 belaban Exp $ -->
-
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run

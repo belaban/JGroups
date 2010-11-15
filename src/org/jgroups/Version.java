@@ -15,7 +15,11 @@ import org.jgroups.annotations.Immutable;
  * Z = 0-63 for micro versions
  *
  * @author Bela Ban
+<<<<<<< HEAD
  * @version $Id: Version.java,v 1.110.2.1 2010/11/10 14:02:34 belaban Exp $
+=======
+ * @version $Id: Version.java,v 1.111 2010/10/29 12:25:09 belaban Exp $
+>>>>>>> 3ea7a5569c386fcb3bdce3592980ec455e05c88c
  * Holds version information for JGroups.
  */
 @Immutable
