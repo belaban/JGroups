@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Global;
 import org.jgroups.stack.Protocol;
@@ -9,7 +8,6 @@ import org.testng.annotations.Test;
 /**
  * Tests custom protocol.
  * Author: Lenny Phan
- * Version: $Id: CustomProtocolTest.java,v 1.7 2009/10/28 15:58:38 belaban Exp $
  */
 public class CustomProtocolTest {
 

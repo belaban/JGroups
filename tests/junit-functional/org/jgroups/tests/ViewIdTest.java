@@ -11,7 +11,6 @@ import java.net.UnknownHostException;
 
 /**
  * Author: Bela Ban
- * Version: $Id: ViewIdTest.java,v 1.3 2009/05/05 15:13:14 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class ViewIdTest {

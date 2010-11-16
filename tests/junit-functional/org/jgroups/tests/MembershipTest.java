@@ -16,7 +16,6 @@ import java.util.Vector;
 
 /**
  * Author: Bela Ban
- * Version: $Id: MembershipTest.java,v 1.5 2009/05/05 13:51:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class MembershipTest {
