@@ -516,6 +516,11 @@ public class SizeTest {
         _testSize(hdr);
     }
 
+    public static void testRelayHeader() throws Exception {
+        RELAY.RelayHeader hdr=new RELAY.RelayHeader(RELAY.RelayHeader.Type.DISSEMINATE);
+        _testSize(hdr);
+    }
+
     public static void testStateHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         STATE_TRANSFER.StateHeader hdr;
