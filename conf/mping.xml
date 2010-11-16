@@ -2,7 +2,6 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.19 2010/09/20 14:29:08 belaban Exp $
 Author: Bela Ban
  -->
 

@@ -2,7 +2,6 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.51 2010/09/20 14:29:08 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"

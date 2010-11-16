@@ -5,7 +5,6 @@
   Therefore, this configuration will NOT work to cluster members residing on different hosts !
 
   Author: Bela Ban
-  Version: $Id: fast-local.xml,v 1.14 2010/09/20 14:29:08 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"
