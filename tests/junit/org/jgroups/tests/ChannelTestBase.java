@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author <a href="mailto://brian.stansberry@jboss.com">Brian Stansberry</a>
- * @version $Id$
  */
 @Test(groups = "base", sequential = true)
 public class ChannelTestBase {

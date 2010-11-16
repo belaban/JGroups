@@ -18,7 +18,6 @@ import java.util.Properties;
  * See bin/clusterperformancetest.sh
  *  
  * @author Vladimir Blagojevic
- * @version $Id$
  */
 public class PerformanceTestGenerator {
 	Properties configProperties = null;

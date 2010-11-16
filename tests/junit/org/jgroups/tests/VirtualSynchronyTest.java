@@ -30,7 +30,6 @@ import java.util.Random;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id$ 
  *
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)

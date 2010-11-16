@@ -17,7 +17,6 @@ import java.util.List;
 /**
  * Tests time for N threads to insert and remove M messages into an AckReceiverWindow
  * @author Bela Ban
- * @version $Id
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class AckReceiverWindowStressTest {
