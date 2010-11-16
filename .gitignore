@@ -8,6 +8,5 @@ classes/
 build.properties
 dist/
 atlassian*
-bla*.java
 keystore/
 tmp/
