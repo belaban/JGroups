@@ -4,7 +4,6 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.17 2008/04/18 09:13:12 belaban Exp $
 
 Goals
 -----

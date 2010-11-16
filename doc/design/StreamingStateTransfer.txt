@@ -4,7 +4,6 @@ Streaming state transfer
 
 Author:  Vladimir Blagojevic
 Date:    July 2006
-Version: $Id: StreamingStateTransfer.txt,v 1.4 2006/07/31 16:12:20 vlada Exp $
 
 
 Overview

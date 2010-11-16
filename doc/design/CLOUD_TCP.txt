@@ -4,7 +4,6 @@ Changes to TCP to make it scale better in a cloud
 =================================================
 
 Author: Bela Ban
-Version: $Id: CLOUD_TCP.txt,v 1.5 2010/07/29 06:57:25 belaban Exp $
 
 
 Problem:

@@ -4,7 +4,6 @@ STABLE
 
 Author: Bela Ban
 Date: May 29 2007
-Version: $Id: STABLE.txt,v 1.2 2007/05/31 09:56:58 belaban Exp $
 
 Goal: to purge messages delivered by all members
 

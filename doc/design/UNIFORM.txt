@@ -3,7 +3,6 @@ Uniform message delivery
 ========================
 
 Author: Bela Ban
-Version: $Id: UNIFORM.txt,v 1.2 2006/04/25 03:00:31 belaban Exp $
 
 
 Definition

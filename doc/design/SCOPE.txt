@@ -4,7 +4,6 @@ Implementation of the SCOPE protocol
 ====================================
 
 Author: Bela Ban
-Version: $Id
 
 Scopes allow for concurrent delivery of messages sent by the same sender, without having to resort to OOB.
 

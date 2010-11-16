@@ -1,5 +1,4 @@
 
-// Version: $Id: SimpleFlowControl.txt,v 1.2 2007/01/05 15:51:58 belaban Exp $
 // Author: Bela Ban
 
 

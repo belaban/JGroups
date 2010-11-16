@@ -4,7 +4,6 @@ Release Notes JGroups 2.11
 ==========================
 
 
-Version: $Id: ReleaseNotes-2.11.txt,v 1.3 2010/10/29 11:48:28 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.11 is API-backwards compatible with previous versions (down to 2.2.7).

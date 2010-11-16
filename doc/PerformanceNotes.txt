@@ -2,7 +2,6 @@
 Check list for performance tuning (mainly gige)
 ===============================================
 
-Version: $Id: PerformanceNotes.txt,v 1.1 2006/08/15 08:23:33 belaban Exp $
 Author: Bela Ban, Eric
 
 For the transmit queue:

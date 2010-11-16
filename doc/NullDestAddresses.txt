@@ -2,7 +2,6 @@
 Nulling of destination addresses for optimized marshalling
 ==========================================================
 
-Version: $Id: NullDestAddresses.txt,v 1.2 2005/08/26 11:06:37 belaban Exp $
 Author: Bela Ban
 Date: Aug 26 2005
 

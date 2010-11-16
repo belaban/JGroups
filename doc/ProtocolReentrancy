@@ -1,6 +1,5 @@
 
 Author: Bela Ban
-Version: $id$
 
 A typical protocol in JGroups can be assured that only up() and down() methods can be called concurrently,
 however up() and up() methods, and down() and down() methods cannot be called concurrently. This is due

@@ -3,7 +3,6 @@ Digest on view changes
 ======================
 
 Author: Bela Ban
-Version: $Id: Digest.txt,v 1.1 2006/01/26 09:23:16 belaban Exp $
 
 
 With STATE_TRANSFER we disable message garbage collection with SUSPEND_STABLE for the duration of the state transfer

@@ -4,7 +4,6 @@ Design of FILE_PING
 ===================
 
 Author: Bela Ban
-Version: $Id: FILE_PING.txt,v 1.3 2009/04/24 07:17:56 belaban Exp $
 
 
 Goal

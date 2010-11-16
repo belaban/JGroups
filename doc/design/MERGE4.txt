@@ -3,7 +3,6 @@ MERGE4
 ------
 
 Author: Bela Ban
-Version: $Id: MERGE4.txt,v 1.3 2009/06/09 11:47:35 belaban Exp $
 JIRA: https://jira.jboss.org/jira/browse/JGRP-937
 
 Goal

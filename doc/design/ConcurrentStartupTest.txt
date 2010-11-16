@@ -3,7 +3,6 @@ Notes regarding ConcurrentStartupTest
 =====================================
 
 // Author: Bela Ban
-// Version: $Id: ConcurrentStartupTest.txt,v 1.2 2006/05/20 22:02:12 belaban Exp $
 
 
 The unit test org.jgroups.tests.ConcurrentStartupTest simulates multiple nodes in a cluster being started at the same

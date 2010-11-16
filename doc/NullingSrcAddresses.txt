@@ -3,7 +3,6 @@ Loopback adaptor issues on Windows
 ----------------------------------
 
 JIRA: http://jira.jboss.com/jira/browse/JGRP-79
-Version: $Id: NullingSrcAddresses.txt,v 1.1 2005/05/19 07:57:46 belaban Exp $
 
 On Windows, when a loopback adaptor is created, we can associate multiple (virtual) IP
 addresses with it, e.g. 10.0.0.1 and 10.0.0.2.

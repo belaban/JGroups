@@ -4,7 +4,6 @@ New UNICAST design
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban
-Version: $Id: UNICAST.new.txt,v 1.6 2009/04/29 10:38:46 belaban Exp $
 
 Motivation
 ----------
