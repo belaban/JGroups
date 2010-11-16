@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id$
  * @since 2.4
  */
 @MBean(description = "Flushes the cluster")

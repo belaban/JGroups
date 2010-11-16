@@ -66,9 +66,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @see org.jgroups.StreamingSetStateEvent
  * @see org.jgroups.protocols.pbcast.STATE_TRANSFER
  * @since 2.4
- * 
- * @version $Id$
- * 
  */
 @MBean(description = "State trasnfer protocol based on streaming state transfer")
 @DeprecatedProperty(names = {"use_flush", "flush_timeout", "use_reading_thread"})
