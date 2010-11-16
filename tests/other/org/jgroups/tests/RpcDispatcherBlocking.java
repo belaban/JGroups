@@ -1,4 +1,3 @@
-// $Id: RpcDispatcherBlocking.java,v 1.10 2009/06/17 16:35:46 belaban Exp $
 
 package org.jgroups.tests;
 

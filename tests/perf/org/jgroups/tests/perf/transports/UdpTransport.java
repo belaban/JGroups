@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.14 2008/11/04 16:04:47 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;

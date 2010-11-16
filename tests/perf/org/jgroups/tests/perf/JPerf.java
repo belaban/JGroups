@@ -9,7 +9,6 @@ import java.text.NumberFormat;
 /**
  * Tool to measure TCP throughput, similar to iperf
  * @author Bela Ban
- * @version $Id: JPerf.java,v 1.4 2007/12/28 23:29:17 belaban Exp $
  */
 public class JPerf {
     boolean sender;

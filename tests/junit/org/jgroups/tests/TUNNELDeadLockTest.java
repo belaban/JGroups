@@ -17,7 +17,6 @@ import org.testng.annotations.Test;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.20 2009/11/23 20:12:55 vlada Exp $
  * @see TUNNELDeadLockTest#testStress
  */
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)

@@ -20,7 +20,6 @@ import org.testng.annotations.Test;
  * Tests return values from MessageDispatcher.castMessage()
  * 
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.10 2008/04/14 08:18:39
  *          belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)

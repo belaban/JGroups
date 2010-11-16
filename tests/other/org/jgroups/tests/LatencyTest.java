@@ -9,7 +9,6 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: LatencyTest.java,v 1.7 2010/02/11 08:04:21 belaban Exp $
  */
 public class LatencyTest {
     JChannel ch;

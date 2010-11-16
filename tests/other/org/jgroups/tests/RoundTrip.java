@@ -6,7 +6,6 @@ import org.jgroups.util.Util;
 /**
  * Class that measure RTT between a client and server
  * @author Bela Ban
- * @version $Id: RoundTrip.java,v 1.5 2006/08/08 06:28:19 belaban Exp $
  */
 public class RoundTrip extends ReceiverAdapter {
     JChannel channel;

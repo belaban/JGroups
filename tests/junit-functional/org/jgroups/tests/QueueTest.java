@@ -16,7 +16,6 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: QueueTest.java,v 1.7 2009/11/25 10:03:42 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {

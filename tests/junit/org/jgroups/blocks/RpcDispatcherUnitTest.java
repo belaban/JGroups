@@ -14,7 +14,6 @@ import java.util.Arrays;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnitTest.java,v 1.2 2010/04/21 10:51:41 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherUnitTest extends ChannelTestBase {

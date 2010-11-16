@@ -1,4 +1,3 @@
-// $Id: UtilTest.java,v 1.23 2010/08/12 15:57:23 belaban Exp $
 
 package org.jgroups.tests;
 

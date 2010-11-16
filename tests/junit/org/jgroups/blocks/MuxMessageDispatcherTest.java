@@ -19,7 +19,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Paul Ferraro
- * @version $Id: MuxMessageDispatcherTest.java,v 1.3 2010/06/07 06:57:07 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxMessageDispatcherTest extends ChannelTestBase {

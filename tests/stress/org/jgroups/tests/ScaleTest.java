@@ -10,7 +10,6 @@ import java.util.Date;
 
 /**
  * @author Bela Ban
- * @version $Id: ScaleTest.java,v 1.4 2010/01/11 08:22:18 belaban Exp $
  */
 public class ScaleTest {
     JChannel ch;

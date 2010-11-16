@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.26 2010/08/04 12:35:31 belaban Exp $
  */
 @Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {

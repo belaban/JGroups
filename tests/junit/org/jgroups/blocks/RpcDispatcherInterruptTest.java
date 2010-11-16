@@ -20,7 +20,6 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.10 2008/08/08 17:07:30 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherInterruptTest extends ChannelTestBase {

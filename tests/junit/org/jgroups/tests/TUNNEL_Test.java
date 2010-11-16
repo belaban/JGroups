@@ -27,7 +27,6 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: TUNNEL_Test.java,v 1.17 2010/02/11 13:49:03 belaban Exp $
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{

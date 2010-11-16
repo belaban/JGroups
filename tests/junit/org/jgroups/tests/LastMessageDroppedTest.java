@@ -16,7 +16,6 @@ import java.util.List;
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
  * @author Bela Ban
- * @version $Id: LastMessageDroppedTest.java,v 1.6 2010/03/05 09:05:48 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class LastMessageDroppedTest extends ChannelTestBase {

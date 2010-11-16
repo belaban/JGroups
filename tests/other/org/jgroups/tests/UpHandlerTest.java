@@ -1,4 +1,3 @@
-// $Id: UpHandlerTest.java,v 1.8 2007/01/11 12:57:42 belaban Exp $
 
 
 package org.jgroups.tests;

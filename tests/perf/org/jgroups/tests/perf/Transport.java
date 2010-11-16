@@ -17,7 +17,6 @@ import java.util.List;
  * </ol>
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Transport.java,v 1.7 2008/09/11 17:36:31 belaban Exp $
  */
 public interface Transport {
     /** Return info about command line options */

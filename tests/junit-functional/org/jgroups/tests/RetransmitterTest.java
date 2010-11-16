@@ -1,4 +1,3 @@
-// $Id: RetransmitterTest.java,v 1.8 2010/07/19 06:44:25 belaban Exp $
 
 package org.jgroups.tests;
 

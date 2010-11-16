@@ -18,7 +18,6 @@ import org.testng.annotations.Test;
  * 
  * @author Vladimir Blagojevic
  * 
- * @version $Id: TCPGOSSIP_Test.java,v 1.4 2010/05/31 15:48:33 vlada Exp $
  **/
 @Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER }, sequential = true)
 public class TCPGOSSIP_Test extends ChannelTestBase {

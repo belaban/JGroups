@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
 /**
  * Class that measure RTT between a client and server using multicast sockets
  * @author Bela Ban
- * @version $Id: RoundTripMulticast.java,v 1.2 2006/08/08 06:28:19 belaban Exp $
  */
 public class RoundTripMulticast extends ReceiverAdapter {
     MulticastSocket mcast_recv_sock;  // to receive mcast traffic

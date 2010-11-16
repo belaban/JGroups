@@ -10,7 +10,6 @@ import java.text.NumberFormat;
 
 /**
  * @author Bela Ban
- * @version $Id: MemberInfo.java,v 1.11 2008/08/01 10:15:53 belaban Exp $
  */
 public class MemberInfo implements Streamable {
     public  long start=0;

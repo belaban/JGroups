@@ -1,4 +1,3 @@
-// $Id: UnicastChannelTest.java,v 1.13 2009/04/24 14:04:10 belaban Exp $
 
 
 package org.jgroups.tests;

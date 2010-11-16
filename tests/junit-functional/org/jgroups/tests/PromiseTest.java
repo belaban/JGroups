@@ -1,4 +1,3 @@
-// $Id: PromiseTest.java,v 1.4 2008/03/10 15:39:19 belaban Exp $
 
 package org.jgroups.tests;
 

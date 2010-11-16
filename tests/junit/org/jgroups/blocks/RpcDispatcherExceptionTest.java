@@ -12,7 +12,6 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.10 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherExceptionTest extends ChannelTestBase {

@@ -21,7 +21,6 @@ import java.io.DataOutputStream;
 /**
  * Tests the size of marshalled messages (multicast, unicast)
  * @author Bela Ban
- * @version $Id: MessageSizeTest.java,v 1.7 2010/03/05 10:08:06 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageSizeTest {

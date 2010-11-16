@@ -12,7 +12,6 @@ import java.util.List;
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets, and
  * {@link LatencyTest} for simple latency tests (not round trip).
  * @author Bela Ban
- * @version $Id: PingPong.java,v 1.11 2010/02/22 14:42:24 belaban Exp $
  */
 public class PingPong extends ReceiverAdapter {
     JChannel ch;

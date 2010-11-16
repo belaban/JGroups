@@ -1,10 +1,8 @@
-// $Id: MessageListStreamableTest.java,v 1.8 2010/03/05 09:05:55 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.8 2010/03/05 09:05:55 belaban Exp $
  */
 
 import org.jgroups.logging.Log;

@@ -7,7 +7,6 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: RouterStubGet.java,v 1.2 2010/03/13 06:33:48 vlada Exp $
  */
 public class RouterStubGet {
     public static void main(String[] args) throws Exception {

@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Tests the SCOPE protocol (https://jira.jboss.org/jira/browse/JGRP-822) 
  * @author Bela Ban
- * @version $Id: SCOPE_Test.java,v 1.1 2010/03/29 06:43:29 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SCOPE_Test extends ChannelTestBase {

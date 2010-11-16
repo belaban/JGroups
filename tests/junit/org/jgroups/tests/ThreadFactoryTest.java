@@ -6,7 +6,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ThreadFactoryTest.java,v 1.2 2008/10/22 09:04:42 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ThreadFactoryTest {

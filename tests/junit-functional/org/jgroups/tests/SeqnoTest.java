@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Bela Ban
- * @version $Id: SeqnoTest.java,v 1.1 2009/11/30 11:40:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class SeqnoTest {

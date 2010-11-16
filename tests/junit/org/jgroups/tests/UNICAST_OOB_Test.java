@@ -23,7 +23,6 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.12 2010/03/12 15:16:59 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {

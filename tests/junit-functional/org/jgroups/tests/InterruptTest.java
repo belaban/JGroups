@@ -15,7 +15,6 @@ import org.jgroups.Global;
 /**
  * Tests Thread.interrupt() against InputStream.read(), Object.wait() and Thread.sleep()
  * @author Bela Ban Oct 5 2001
- * @version $Id: InterruptTest.java,v 1.4 2008/04/08 12:31:10 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class InterruptTest {

@@ -11,7 +11,6 @@ import org.jgroups.Message;
 /**
  * Tests the time to multicast a message to everyone and then receive the responses
  * @author Bela Ban
- * @version $Id: SynchronousMessageSpeedTest.java,v 1.1 2005/07/22 10:30:21 belaban Exp $
  */
 public class SynchronousMessageSpeedTest {
     Channel             channel;

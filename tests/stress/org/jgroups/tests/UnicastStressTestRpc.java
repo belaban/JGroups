@@ -10,7 +10,6 @@ import org.jgroups.blocks.RpcDispatcher;
 /**
  * Test mimicking the behavior of Inifinispan in DIST (sync and async) mode.
  * @author Bela Ban
- * @version $Id: UnicastStressTestRpc.java,v 1.1 2010/01/11 08:24:18 belaban Exp $
  */
 public class UnicastStressTestRpc extends MembershipListenerAdapter {
     JChannel ch;

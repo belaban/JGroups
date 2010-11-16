@@ -15,7 +15,6 @@ import java.util.List;
 /**
  * Tests unilateral closings of UNICAST2 connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
- * @version $Id: UNICAST2_ConnectionTests.java,v 1.1 2010/03/12 14:33:20 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST2_ConnectionTests {

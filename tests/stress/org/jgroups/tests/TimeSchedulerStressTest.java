@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Bela Ban
- * @version $Id: TimeSchedulerStressTest.java,v 1.4 2010/07/20 12:59:07 belaban Exp $
  */
 public class TimeSchedulerStressTest {
     final TimeScheduler timer;

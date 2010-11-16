@@ -10,7 +10,6 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: TupleTest.java,v 1.3 2008/04/08 13:25:25 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TupleTest {

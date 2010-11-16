@@ -23,7 +23,6 @@ import java.util.concurrent.*;
  * <li>For regular messages only: all messages are received in the order in which they were sent (order of seqnos)
  * </ul>
  * @author Bela Ban
- * @version $Id: NAKACK_Delivery_Test.java,v 1.6 2010/07/19 07:27:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {

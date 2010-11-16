@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests for contention on UNICAST, measured by the number of retransmissions in UNICAST 
  * @author Bela Ban
- * @version $Id: UNICAST_ContentionTest.java,v 1.3 2010/03/12 15:09:41 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT, sequential=true)
 public class UNICAST_ContentionTest {

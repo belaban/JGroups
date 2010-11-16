@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Test methods for ReplicatedHashMap
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMapTest.java,v 1.3 2007/08/22 11:23:28 belaban
  *          Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)

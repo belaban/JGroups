@@ -1,4 +1,3 @@
-// $Id: UnicastTest.java,v 1.20 2010/03/12 16:03:22 belaban Exp $
 
 package org.jgroups.tests;
 

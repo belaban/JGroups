@@ -12,7 +12,6 @@ import java.net.*;
  * and press <return> to get the round trip times for all nodes in the cluster, This program doesn't use JGroups at all,
  * see {@link org.jgroups.tests.PingPong} for a comparison.
  * @author Bela Ban
- * @version $Id: PingPongDatagram.java,v 1.2 2010/02/11 07:54:53 belaban Exp $
  */
 public class PingPongDatagram {
     MulticastSocket mcast_sock;

@@ -18,7 +18,6 @@ import java.util.Map;
 
 /**
  * @author Paul Ferraro
- * @version $Id: MuxRpcDispatcherTest.java,v 1.3 2010/06/07 07:12:39 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxRpcDispatcherTest extends ChannelTestBase {

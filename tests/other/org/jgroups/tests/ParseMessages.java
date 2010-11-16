@@ -12,7 +12,6 @@ import java.util.List;
 /**
  * Parses messages out of a captured file and writes them to stdout
  * @author Bela Ban
- * @version $Id: ParseMessages.java,v 1.2 2010/09/29 13:33:52 belaban Exp $
  */
 public class ParseMessages {
     InputStream input=null;

@@ -16,7 +16,6 @@ import java.util.Set;
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast tables<br/>
  * Related JIRA: https://jira.jboss.org/jira/browse/JGRP-940
  * @author Bela Ban
- * @version $Id: OverlappingUnicastMergeTest.java,v 1.5 2009/06/17 16:28:57 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OverlappingUnicastMergeTest extends ChannelTestBase {

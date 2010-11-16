@@ -11,7 +11,6 @@ import org.testng.annotations.AfterClass;
 
 /**
  * @author Bela Ban
- * @version $Id: SetPropertyTest.java,v 1.2 2008/06/03 14:37:01 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SetPropertyTest {

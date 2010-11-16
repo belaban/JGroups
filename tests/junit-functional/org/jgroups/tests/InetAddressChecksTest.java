@@ -19,7 +19,6 @@ import java.net.InetAddress ;
 /**
  * Tests checks made on InetAddress and related addresses in Configurator.
  * @author Richard Achmatowicz
- * @version $Id: InetAddressChecksTest.java,v 1.5 2010/10/06 09:45:56 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class InetAddressChecksTest {

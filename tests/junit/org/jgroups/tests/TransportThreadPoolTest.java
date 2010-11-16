@@ -17,7 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.15 2009/08/19 12:57:23 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {

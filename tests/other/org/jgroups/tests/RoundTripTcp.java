@@ -12,7 +12,6 @@ import java.net.Socket;
 /**
  * Class that measure RTT between a client and server using ServerSocket/Socket
  * @author Bela Ban
- * @version $Id: RoundTripTcp.java,v 1.3 2006/10/11 14:28:55 belaban Exp $
  */
 public class RoundTripTcp {
     ServerSocket srv_sock;

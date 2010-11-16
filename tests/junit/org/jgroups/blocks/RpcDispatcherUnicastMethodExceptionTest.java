@@ -10,7 +10,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.12 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {

@@ -13,7 +13,6 @@ import java.util.Iterator;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.11 2010/09/16 15:27:40 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;

@@ -15,7 +15,6 @@ import java.util.StringTokenizer;
  * cluster membership (listed in properties, config.txt)
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsClusterTransport.java,v 1.4 2008/07/24 10:06:00 belaban Exp $
  */
 public class JGroupsClusterTransport extends JGroupsTransport implements Transport {
     List members;

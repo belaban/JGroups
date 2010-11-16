@@ -18,7 +18,6 @@ import java.lang.reflect.Method;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Id: MethodCallTest.java,v 1.6 2008/05/20 15:16:44 belaban Exp $
  **/
 @Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {

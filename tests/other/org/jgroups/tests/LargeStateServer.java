@@ -8,7 +8,6 @@ import java.net.Socket;
 
 /**
  * @author Bela Ban
- * @version $Id: LargeStateServer.java,v 1.1 2006/05/26 06:21:13 belaban Exp $
  */
 public class LargeStateServer {
     ServerSocket srv_sock;

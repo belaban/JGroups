@@ -18,7 +18,6 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.18 2009/12/15 09:02:49 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {

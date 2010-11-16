@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: LazyRemovalCacheTest.java,v 1.2 2009/04/09 09:11:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class LazyRemovalCacheTest {

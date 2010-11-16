@@ -1,5 +1,4 @@
 
-//$Id: SimulatorTest.java,v 1.1 2008/10/23 16:59:39 rachmatowicz Exp $
 
 package org.jgroups.tests;
 

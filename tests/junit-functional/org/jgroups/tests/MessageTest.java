@@ -18,7 +18,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.15 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {

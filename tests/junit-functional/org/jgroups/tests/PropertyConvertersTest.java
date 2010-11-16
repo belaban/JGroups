@@ -11,7 +11,6 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.10 2009/10/22 13:50:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {

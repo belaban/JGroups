@@ -1,4 +1,3 @@
-// $Id: McastDiscovery.java,v 1.1 2005/06/23 13:31:10 belaban Exp $
 
 package org.jgroups.tests;
 

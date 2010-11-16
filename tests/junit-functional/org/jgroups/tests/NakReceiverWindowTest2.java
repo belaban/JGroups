@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Stresses the NakReceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
- * @version $Id: NakReceiverWindowTest2.java,v 1.9 2010/07/19 07:19:50 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NakReceiverWindowTest2 {

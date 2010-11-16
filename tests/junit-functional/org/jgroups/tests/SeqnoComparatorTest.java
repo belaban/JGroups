@@ -8,7 +8,6 @@ import org.jgroups.util.SeqnoRange;
 
 /**
  * @author Bela Ban
- * @version $Id: SeqnoComparatorTest.java,v 1.1 2009/11/30 11:40:36 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class SeqnoComparatorTest {

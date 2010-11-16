@@ -10,7 +10,6 @@ import org.testng.annotations.Test;
 /**
  * Tests setting of digest NAKACK.down(SET_DIGEST), JIRA issue is https://jira.jboss.org/jira/browse/JGRP-1060
  * @author Bela Ban
- * @version $Id: NAKACK_SET_DIGEST_Test.java,v 1.4 2010/07/19 07:26:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_SET_DIGEST_Test {

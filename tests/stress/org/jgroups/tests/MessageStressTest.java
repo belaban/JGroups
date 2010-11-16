@@ -7,7 +7,6 @@ import org.jgroups.protocols.pbcast.NakAckHeader;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageStressTest.java,v 1.6 2010/03/05 09:06:02 belaban Exp $
  */
 public class MessageStressTest {
     public static final int NUM=1000 * 1000;

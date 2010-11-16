@@ -9,7 +9,6 @@ import java.io.InputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: LargeStateClient.java,v 1.1 2006/05/26 06:21:13 belaban Exp $
  */
 public class LargeStateClient {
     Socket       sock;

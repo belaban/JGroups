@@ -21,7 +21,6 @@ import java.util.Vector;
 /**
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
- * @version $Id: ProtocolConfigurationTest.java,v 1.8 2010/10/06 09:47:10 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProtocolConfigurationTest {

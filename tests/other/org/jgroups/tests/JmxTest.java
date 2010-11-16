@@ -11,7 +11,6 @@ import javax.management.ObjectName;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxTest.java,v 1.10 2009/09/18 19:54:55 vlada Exp $
  */
 public class JmxTest {
     MBeanServer server;

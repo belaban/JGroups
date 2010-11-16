@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * concurrent senders; using one sender will cause NAKACK to FIFO order 
  * the messages and the assertions in this test will still hold true, whether
  * SEQUENCER is present or not. 
- * @version $Id: SequencerOrderTest.java,v 1.13 2009/11/20 10:49:13 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {

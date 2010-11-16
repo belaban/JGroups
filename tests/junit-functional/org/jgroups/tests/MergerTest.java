@@ -11,7 +11,6 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: MergerTest.java,v 1.3 2010/07/08 11:51:49 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class MergerTest {

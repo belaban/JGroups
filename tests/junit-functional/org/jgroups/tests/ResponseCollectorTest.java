@@ -13,7 +13,6 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: ResponseCollectorTest.java,v 1.5 2009/06/22 14:34:30 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class ResponseCollectorTest {

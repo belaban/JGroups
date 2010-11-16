@@ -19,7 +19,6 @@ import org.testng.annotations.Test;
  * configurations.
  * 
  * 
- * @version $Id: TUNNEL_Test2.java,v 1.25 2009/11/19 13:24:15 vlada Exp $
  **/
 
 @Test(groups = {Global.STACK_INDEPENDENT,"known-failures",Global.GOSSIP_ROUTER}, sequential = true)

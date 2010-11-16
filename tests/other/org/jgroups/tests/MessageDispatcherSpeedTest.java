@@ -12,7 +12,6 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageDispatcherSpeedTest.java,v 1.2 2010/04/30 07:03:35 belaban Exp $
  */
 public class MessageDispatcherSpeedTest implements MembershipListener, RequestHandler {
     Channel             channel;

@@ -12,7 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests the ReentrantLock
  * @author Bela Ban
- * @version $Id: ReentrantLockTest.java,v 1.4 2008/04/08 12:41:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ReentrantLockTest {

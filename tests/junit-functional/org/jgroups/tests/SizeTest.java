@@ -22,7 +22,6 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.35 2010/10/27 09:25:03 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {

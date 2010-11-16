@@ -1,4 +1,3 @@
-// $Id: ViewTest.java,v 1.4 2009/05/05 15:13:14 belaban Exp $
 
 package org.jgroups.tests;
 

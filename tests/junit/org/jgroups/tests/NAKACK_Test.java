@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Tests the NAKACK protocol for OOB and regular msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_Test.java,v 1.2 2009/11/17 11:06:05 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class NAKACK_Test extends ChannelTestBase {

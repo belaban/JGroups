@@ -8,7 +8,6 @@ import java.net.InetAddress;
 /**
  * Class that measure RTT between a client and server using datagram sockets
  * @author Bela Ban
- * @version $Id: RoundTripUdp.java,v 1.3 2007/08/15 08:01:15 belaban Exp $
  */
 public class RoundTripUdp {
     DatagramSocket sock;

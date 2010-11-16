@@ -20,7 +20,6 @@ import java.util.Vector;
  * the stack config passed to the program
  *
  * @author Bela Ban
- * @version $Id: UnicastTestSimple.java,v 1.3 2010/03/12 14:48:32 belaban Exp $
  */
 public class UnicastTestSimple extends ReceiverAdapter {
     private JChannel channel;

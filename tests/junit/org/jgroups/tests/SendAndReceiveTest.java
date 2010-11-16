@@ -1,4 +1,3 @@
-// $Id: SendAndReceiveTest.java,v 1.15 2009/11/09 11:44:31 belaban Exp $
 
 package org.jgroups.tests;
 

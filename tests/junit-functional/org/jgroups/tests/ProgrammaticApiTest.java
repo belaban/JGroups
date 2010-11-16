@@ -16,7 +16,6 @@ import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: ProgrammaticApiTest.java,v 1.3 2010/10/20 14:09:57 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProgrammaticApiTest {

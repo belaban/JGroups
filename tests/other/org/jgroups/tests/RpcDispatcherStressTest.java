@@ -1,4 +1,3 @@
-// $Id: RpcDispatcherStressTest.java,v 1.11 2009/06/17 16:28:59 belaban Exp $
 
 
 package org.jgroups.tests;

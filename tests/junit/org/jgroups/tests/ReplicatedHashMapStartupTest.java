@@ -20,7 +20,6 @@ import java.util.Vector;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.6 2008/06/09 13:03:06
  *          belaban Exp $
  */
 @Test(groups= { Global.FLUSH }, sequential=true)

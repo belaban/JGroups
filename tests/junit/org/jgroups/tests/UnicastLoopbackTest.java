@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
  * Tests unicasts to self (loopback of transport protocol)
  * @author Richard Achmatowicz 12 May 2008
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.15 2009/04/09 09:11:17 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastLoopbackTest extends ChannelTestBase {

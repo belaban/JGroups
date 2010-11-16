@@ -14,7 +14,6 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.12 2009/04/09 09:11:28 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherAnycastTest extends ChannelTestBase {

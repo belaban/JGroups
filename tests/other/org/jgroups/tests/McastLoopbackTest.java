@@ -5,7 +5,6 @@ import java.net.*;
 /**
  * @author Bela Ban Dec 19
  * @author 2003
- * @version $Id: McastLoopbackTest.java,v 1.3 2005/06/23 13:31:10 belaban Exp $
  */
 public class McastLoopbackTest {
 

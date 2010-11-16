@@ -1,4 +1,3 @@
-// $Id: MergeStressTest.java,v 1.21 2009/10/14 09:42:06 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeoutException;
  * GMS.handle_concurrent_startup has to be set to false.
  * 
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.21 2009/10/14 09:42:06 belaban Exp $
  */
 
 

@@ -28,7 +28,6 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests time for N threads to deliver M messages to UNICAST2
  * @author Bela Ban
- * @version $Id: UNICAST2_StressTest.java,v 1.4 2010/07/19 07:31:57 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST2_StressTest {

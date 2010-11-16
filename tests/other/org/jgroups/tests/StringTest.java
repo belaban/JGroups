@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: StringTest.java,v 1.2 2008/01/22 10:44:28 belaban Exp $
  */
 public class StringTest {
     final int NUM=1000000;

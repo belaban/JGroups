@@ -1,4 +1,3 @@
-// $Id: McastSenderTest.java,v 1.9 2008/07/17 17:48:32 belaban Exp $
 
 package org.jgroups.tests;
 

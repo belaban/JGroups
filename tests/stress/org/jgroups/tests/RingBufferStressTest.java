@@ -13,7 +13,6 @@ import java.util.Collections;
 /**
  * Tests {@link org.jgroups.util.RingBuffer} for concurrent insertion and removal
  * @author Bela Ban
- * @version $Id: RingBufferStressTest.java,v 1.4 2010/02/17 16:50:58 belaban Exp $
  */
 public class RingBufferStressTest {
 

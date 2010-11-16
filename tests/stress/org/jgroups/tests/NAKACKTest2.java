@@ -8,7 +8,6 @@ import org.jgroups.blocks.RpcDispatcher;
  * Tests the "NAKACK retransmit message lost" problem. Start 2 members, then a third one, and you should never see
  * the problem with messages than cannot be retransmitted because they were already garbage-collected.
  * @author Bela Ban Apr 4, 2004
- * @version $Id: NAKACKTest2.java,v 1.5 2009/04/09 09:11:35 belaban Exp $
  */
 public class NAKACKTest2 {
     Channel ch;

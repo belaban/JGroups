@@ -1,4 +1,3 @@
-// $Id: NetworkUtilization.java,v 1.4 2004/07/05 14:15:22 belaban Exp $
 
 package org.jgroups.tests;
 

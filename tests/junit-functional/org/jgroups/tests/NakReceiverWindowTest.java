@@ -1,4 +1,3 @@
-// $Id: NakReceiverWindowTest.java,v 1.16 2010/07/19 07:40:31 belaban Exp $
 
 package org.jgroups.tests;
 

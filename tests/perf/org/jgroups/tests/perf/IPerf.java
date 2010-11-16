@@ -26,7 +26,6 @@ import java.text.NumberFormat;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.13 2008/10/10 16:00:44 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;

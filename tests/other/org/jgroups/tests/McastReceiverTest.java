@@ -1,4 +1,3 @@
-// $Id: McastReceiverTest.java,v 1.8 2008/07/17 17:48:32 belaban Exp $
 
 package org.jgroups.tests;
 

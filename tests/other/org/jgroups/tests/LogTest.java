@@ -1,4 +1,3 @@
-// $Id: LogTest.java,v 1.6 2009/05/13 13:06:58 belaban Exp $
 
 package org.jgroups.tests;
 
