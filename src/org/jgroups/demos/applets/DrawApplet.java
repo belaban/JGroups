@@ -1,4 +1,3 @@
-// $Id: DrawApplet.java,v 1.6 2009/05/13 13:07:13 belaban Exp $
 
 package org.jgroups.demos.applets;
 

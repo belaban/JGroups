@@ -19,7 +19,6 @@ import java.util.concurrent.*;
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.<br/>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.15 2009/09/21 09:57:26 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     @ManagedAttribute(writable=false)

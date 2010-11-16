@@ -8,7 +8,6 @@ import java.util.*;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
- * @version $Id: RequestOptions.java,v 1.10 2010/04/30 07:50:36 belaban Exp $
  * @since 2.10
  */
 public class RequestOptions {

@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Bela Ban
- * @version $Id: ReplicatedMap.java,v 1.2 2007/08/22 10:06:42 belaban Exp $
  */
 public interface ReplicatedMap<K extends Serializable, V extends Serializable> extends ConcurrentMap<K, V> {
     V _put(K key, V value);

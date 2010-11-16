@@ -9,7 +9,6 @@ import java.util.concurrent.locks.Condition;
 
 /**
  * @author Bela Ban
- * @version $Id: Metronome.java,v 1.4 2009/06/26 07:29:06 belaban Exp $
  */
 public class Metronome implements Runnable {
     private final Set<Thread> threads=new HashSet<Thread>();

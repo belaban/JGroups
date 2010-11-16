@@ -9,7 +9,6 @@ package org.jgroups.util;
  * 
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * @version $Id: DefaultThreadFactory.java,v 1.7 2008/10/22 09:04:44 vlada Exp $
  */
 public class DefaultThreadFactory implements ThreadFactory, ThreadManager {
     protected final ThreadGroup group;

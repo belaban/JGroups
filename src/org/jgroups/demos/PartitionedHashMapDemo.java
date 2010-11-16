@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 
 /**
  * @author Bela Ban
- * @version $Id: PartitionedHashMapDemo.java,v 1.3 2008/08/26 06:36:48 belaban Exp $
  */
 public class PartitionedHashMapDemo {
 

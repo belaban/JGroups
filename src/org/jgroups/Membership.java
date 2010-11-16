@@ -1,4 +1,3 @@
-// $Id: Membership.java,v 1.14 2009/05/13 13:07:10 belaban Exp $
 
 package org.jgroups;
 

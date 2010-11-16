@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * task is cancelled.
  *
  * @author Bela Ban
- * @version $Id: RangeBasedRetransmitter.java,v 1.6 2009/11/30 12:36:52 belaban Exp $
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 

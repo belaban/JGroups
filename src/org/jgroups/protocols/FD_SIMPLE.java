@@ -1,4 +1,3 @@
-// $Id: FD_SIMPLE.java,v 1.31 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 

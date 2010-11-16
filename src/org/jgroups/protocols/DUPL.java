@@ -9,7 +9,6 @@ import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.7 2009/12/11 12:58:59 belaban Exp $
  */
 @Unsupported
 public class DUPL extends Protocol {

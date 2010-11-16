@@ -1,4 +1,3 @@
-// $Id: ConnectionTableNIO.java,v 1.45 2010/07/13 12:28:03 belaban Exp $
 
 package org.jgroups.blocks;
 

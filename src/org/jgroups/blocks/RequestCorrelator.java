@@ -1,4 +1,3 @@
-// $Id: RequestCorrelator.java,v 1.68 2010/11/08 08:57:00 belaban Exp $
 
 package org.jgroups.blocks;
 

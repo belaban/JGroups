@@ -43,7 +43,6 @@ import org.jgroups.util.Util;
  * 
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @version $Id: TUNNEL.java,v 1.103 2010/09/20 04:39:35 belaban Exp $
  */
 @Experimental
 public class TUNNEL extends TP {

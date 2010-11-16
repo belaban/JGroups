@@ -10,7 +10,6 @@ import java.lang.annotation.*;
  * annotation from a superclass.
  * 
  * @author Chris Mills
- * @version $Id: ManagedOperation.java,v 1.4 2008/03/12 00:26:42 vlada Exp $
  */
 
 

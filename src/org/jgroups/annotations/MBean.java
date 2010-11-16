@@ -12,7 +12,6 @@ import java.lang.annotation.*;
  * 
  * 
  * @author Chris Mills
- * @version $Id: MBean.java,v 1.6 2008/04/28 13:43:10 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)

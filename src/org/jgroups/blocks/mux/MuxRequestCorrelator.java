@@ -15,7 +15,6 @@ import org.jgroups.conf.ClassConfigurator;
  * @author Bela Ban
  * @author Paul Ferraro
  * @author Brian Stansberry
- * @version $Id: MuxRequestCorrelator.java,v 1.4 2010/06/06 14:44:14 bstansberry Exp $
  */
 public class MuxRequestCorrelator extends RequestCorrelator {
 

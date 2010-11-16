@@ -1,4 +1,3 @@
-//$Id: KeyStoreGenerator.java,v 1.5 2010/09/27 08:02:48 belaban Exp $
 
 package org.jgroups.demos;
 

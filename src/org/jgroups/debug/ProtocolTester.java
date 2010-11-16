@@ -1,4 +1,3 @@
-// $Id: ProtocolTester.java,v 1.19 2010/09/16 15:46:53 belaban Exp $
 
 package org.jgroups.debug;
 

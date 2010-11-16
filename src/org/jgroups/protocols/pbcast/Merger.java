@@ -15,7 +15,6 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: Merger.java,v 1.9 2010/09/17 11:55:29 belaban Exp $
  */
 public class Merger {
     private final GMS                          gms;

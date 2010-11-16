@@ -47,7 +47,6 @@ import java.util.concurrent.TimeoutException;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.53 2010/04/21 10:55:46 belaban Exp $
  */
 public class GroupRequest extends Request {
 

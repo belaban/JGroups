@@ -1,4 +1,3 @@
-// $Id: HTOTAL.java,v 1.15 2010/06/15 06:44:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +17,6 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.15 2010/06/15 06:44:35 belaban Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {

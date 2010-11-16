@@ -20,7 +20,6 @@ import java.util.zip.Inflater;
  * fragmentation protocol (e.g. FRAG).
  * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.27 2010/06/15 06:44:35 belaban Exp $
  */
 public class COMPRESS extends Protocol {   
 

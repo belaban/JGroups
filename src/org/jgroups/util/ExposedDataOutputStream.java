@@ -6,7 +6,6 @@ import java.io.OutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExposedDataOutputStream.java,v 1.3 2008/10/28 08:50:15 belaban Exp $
  */
 public class ExposedDataOutputStream extends DataOutputStream {
     /**

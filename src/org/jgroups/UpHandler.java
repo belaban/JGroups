@@ -1,4 +1,3 @@
-// $Id: UpHandler.java,v 1.4 2007/01/11 12:57:28 belaban Exp $
 
 package org.jgroups;
 

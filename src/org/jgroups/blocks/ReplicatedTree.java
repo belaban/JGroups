@@ -1,4 +1,3 @@
-// $Id: ReplicatedTree.java,v 1.22 2010/04/06 07:56:24 belaban Exp $
 
 package org.jgroups.blocks;
 

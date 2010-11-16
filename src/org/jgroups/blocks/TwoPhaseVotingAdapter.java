@@ -11,7 +11,6 @@ import org.jgroups.ChannelException;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: TwoPhaseVotingAdapter.java,v 1.4 2005/06/08 15:56:54 publicnmi Exp $
  */
 public class TwoPhaseVotingAdapter {
 

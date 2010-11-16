@@ -1,4 +1,3 @@
-// $Id: ChannelClosedException.java,v 1.4 2006/11/13 17:42:11 bstansberry Exp $
 
 package org.jgroups;
 

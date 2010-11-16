@@ -1,4 +1,3 @@
-// $Id: MergeView.java,v 1.8 2007/03/12 10:51:46 belaban Exp $
 
 
 package org.jgroups;

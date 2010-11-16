@@ -1,4 +1,3 @@
-// $Id: QuoteServer.java,v 1.12 2009/05/13 13:07:01 belaban Exp $
 
 package org.jgroups.demos;
 

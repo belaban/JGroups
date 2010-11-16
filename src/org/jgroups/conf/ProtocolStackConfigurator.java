@@ -1,4 +1,3 @@
-// $Id: ProtocolStackConfigurator.java,v 1.2 2010/09/16 11:55:32 belaban Exp $
 
 package org.jgroups.conf;
 

@@ -4,7 +4,6 @@ package org.jgroups.conf;
 /**
  * Uses XML to configure a protocol stack
  * @author Vladimir Blagojevic
- * @version $Id: XmlConfigurator.java,v 1.33 2010/09/16 14:21:42 belaban Exp $
  */
 
 import org.jgroups.Global;

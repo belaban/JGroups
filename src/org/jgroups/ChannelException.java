@@ -1,4 +1,3 @@
-// $Id: ChannelException.java,v 1.7 2006/11/13 17:42:11 bstansberry Exp $
 
 package org.jgroups;
 

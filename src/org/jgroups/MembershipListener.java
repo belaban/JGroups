@@ -1,4 +1,3 @@
-// $Id: MembershipListener.java,v 1.8 2007/07/21 06:21:55 belaban Exp $
 
 package org.jgroups;
 

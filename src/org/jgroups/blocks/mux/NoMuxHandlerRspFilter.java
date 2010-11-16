@@ -6,7 +6,6 @@ import org.jgroups.blocks.RspFilter;
 /**
  * Response filter that reject any {@link NoMuxHandler} responses.
  * @author Paul Ferraro
- * @version $Id: NoMuxHandlerRspFilter.java,v 1.1 2010/04/13 17:57:07 ferraro Exp $
  */
 public class NoMuxHandlerRspFilter implements RspFilter {
 

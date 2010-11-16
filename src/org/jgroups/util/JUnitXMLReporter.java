@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentMap;
  * Copied from TestNG (www.testng.org) and modified
  * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.15 2009/07/02 07:26:10 vlada Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMethodListener {
     private String output_dir=null;

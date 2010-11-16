@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * A bounded subclass of LinkedList, oldest elements are removed once max capacity is exceeded. Note that this
  * class is not synchronized (like LinkedList).
  * @author Bela Ban Nov 20, 2003
- * @version $Id: BoundedList.java,v 1.6 2009/06/11 12:30:04 belaban Exp $
  */
 public class BoundedList<T> extends ConcurrentLinkedQueue<T> {
     int max_capacity=10;

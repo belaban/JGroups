@@ -8,7 +8,6 @@ import java.io.IOException;
  * Implementations of Streamable can add their state directly to the output stream, enabling them to bypass costly
  * serialization
  * @author Bela Ban
- * @version $Id: Streamable.java,v 1.2 2005/07/25 16:21:47 belaban Exp $
  */
 public interface Streamable {
 

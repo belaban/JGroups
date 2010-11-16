@@ -11,7 +11,6 @@ import org.jgroups.Header;
  * Header that identifies the target handler for multiplexed dispatches.
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxHeader.java,v 1.3 2010/06/15 06:44:40 belaban Exp $
  */
 public class MuxHeader extends Header {
 

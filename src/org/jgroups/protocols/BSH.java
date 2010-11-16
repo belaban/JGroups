@@ -1,4 +1,3 @@
-// $Id: BSH.java,v 1.26 2010/06/18 12:01:54 belaban Exp $
 
 package org.jgroups.protocols;
 

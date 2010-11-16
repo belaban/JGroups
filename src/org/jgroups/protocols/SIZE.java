@@ -1,4 +1,3 @@
-// $Id: SIZE.java,v 1.26 2009/09/21 09:57:25 belaban Exp $
 
 package org.jgroups.protocols;
 

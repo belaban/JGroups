@@ -1,4 +1,3 @@
-// $Id: AckSenderWindow.java,v 1.41 2010/03/12 09:07:17 belaban Exp $
 
 package org.jgroups.stack;
 

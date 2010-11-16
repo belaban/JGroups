@@ -1,4 +1,3 @@
-// $Id: Queue.java,v 1.34 2009/08/18 11:52:14 belaban Exp $
 
 package org.jgroups.util;
 

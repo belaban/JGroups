@@ -1,4 +1,3 @@
-// $Id: Profiler.java,v 1.7 2009/05/13 13:07:11 belaban Exp $
 
 package org.jgroups.debug;
 

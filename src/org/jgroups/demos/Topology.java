@@ -1,4 +1,3 @@
-// $Id: Topology.java,v 1.9 2009/04/09 09:11:27 belaban Exp $
 
 
 package org.jgroups.demos;

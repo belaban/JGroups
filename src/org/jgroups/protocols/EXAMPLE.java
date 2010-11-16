@@ -1,4 +1,3 @@
-// $Id: EXAMPLE.java,v 1.11 2009/12/11 13:00:40 belaban Exp $
 
 package org.jgroups.protocols;
 

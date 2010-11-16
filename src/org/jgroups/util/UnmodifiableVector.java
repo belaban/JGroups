@@ -5,7 +5,6 @@ import java.util.*;
 /**
  * Vector which cannot be modified
  * @author Bela Ban
- * @version $Id: UnmodifiableVector.java,v 1.3 2006/12/09 22:59:34 belaban Exp $
  */
 public class UnmodifiableVector extends Vector {
     Vector v;

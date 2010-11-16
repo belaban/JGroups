@@ -11,7 +11,6 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.11 2008/03/13 15:21:46 belaban Exp $
  */
 @MBean
 public class JmxDemo {

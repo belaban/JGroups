@@ -27,7 +27,6 @@ import java.io.OutputStream;
  * @see org.jgroups.JChannel#getState(Address, String, long)
  * @since 2.3
  *
- * @version $Id: ExtendedMessageListener.java,v 1.4 2006/07/28 07:14:33 belaban Exp $
  */
 public interface ExtendedMessageListener extends MessageListener {
 

@@ -17,7 +17,6 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.15 2010/09/17 11:51:34 belaban Exp $
  */
 @Experimental
 @Unsupported

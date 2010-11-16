@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.77 2010/09/15 06:43:56 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {

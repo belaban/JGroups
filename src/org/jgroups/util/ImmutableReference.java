@@ -28,7 +28,6 @@ package org.jgroups.util;
  *
  * @author Brian Stansberry
  * 
- * @version $Id: ImmutableReference.java,v 1.1 2010/06/19 02:24:46 bstansberry Exp $
  */
 public class ImmutableReference<T> {
 

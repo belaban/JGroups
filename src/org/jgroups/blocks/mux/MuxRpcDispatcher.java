@@ -31,7 +31,6 @@ import org.jgroups.blocks.RspFilter;
  * </code>
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxRpcDispatcher.java,v 1.2 2010/06/09 02:50:38 bstansberry Exp $
  */
 public class MuxRpcDispatcher extends RpcDispatcher {
 

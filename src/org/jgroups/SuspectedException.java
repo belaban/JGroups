@@ -1,4 +1,3 @@
-// $Id: SuspectedException.java,v 1.4 2006/04/29 03:25:32 belaban Exp $
 
 package org.jgroups;
 

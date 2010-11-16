@@ -5,7 +5,6 @@ package org.jgroups;
 /**
  * Used for inter-stack and intra-stack communication.
  * @author Bela Ban
- * @version $Id: Event.java,v 1.76 2010/10/05 13:16:50 belaban Exp $
  */
 public class Event {
     public static final int MSG                                =  1;  // arg = Message

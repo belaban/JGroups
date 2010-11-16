@@ -23,7 +23,6 @@ import java.util.concurrent.Callable;
  * Property annotation of a field or a method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.20 2010/05/10 11:22:51 belaban Exp $
  */
 public class PropertyConverters {
 

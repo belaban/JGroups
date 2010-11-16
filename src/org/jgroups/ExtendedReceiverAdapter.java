@@ -7,7 +7,6 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: ExtendedReceiverAdapter.java,v 1.6 2006/10/11 14:34:36 belaban Exp $
  */
 public class ExtendedReceiverAdapter implements ExtendedReceiver {
     public byte[] getState(String state_id) {

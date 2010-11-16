@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
  * Matches the IP address or logical name of a joiner against a regular expression and accepts or rejects based on
  * pattern matching
  * @author Bela Ban
- * @version $Id: RegexMembership.java,v 1.2 2010/09/15 13:37:06 belaban Exp $
  */
 public class RegexMembership extends AuthToken {
 

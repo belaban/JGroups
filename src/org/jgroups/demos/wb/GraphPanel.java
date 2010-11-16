@@ -1,4 +1,3 @@
-// $Id: GraphPanel.java,v 1.7 2009/05/13 13:07:07 belaban Exp $
 
 
 package org.jgroups.demos.wb;

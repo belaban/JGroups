@@ -1,4 +1,3 @@
-// $Id: NotificationBus.java,v 1.19 2009/05/13 13:06:54 belaban Exp $
 
 package org.jgroups.blocks;
 

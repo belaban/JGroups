@@ -34,7 +34,6 @@ import java.util.*;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.106 2010/06/09 03:24:52 bstansberry Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;

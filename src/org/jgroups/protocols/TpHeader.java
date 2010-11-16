@@ -10,7 +10,6 @@ import java.io.*;
 /**
  * Generic transport header, used by TP.
  * @author Bela Ban
- * @version $Id: TpHeader.java,v 1.6 2010/06/15 06:44:35 belaban Exp $
  */
 public class TpHeader extends Header {
     public String channel_name=null;

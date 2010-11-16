@@ -5,7 +5,6 @@ import java.io.Serializable;
 /**
  * Returned by {@link MuxUpHandler} when a message is received with a specific {@link MuxHeader}, but no corresponding handler is registered.
  * @author Paul Ferraro
- * @version $Id: NoMuxHandler.java,v 1.1 2010/04/13 17:57:07 ferraro Exp $
  */
 public class NoMuxHandler implements Serializable {
     private static final long serialVersionUID = -694135384125080323L;

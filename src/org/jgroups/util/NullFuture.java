@@ -6,7 +6,6 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * @author Bela Ban
- * @version $Id: NullFuture.java,v 1.4 2010/01/17 12:12:01 belaban Exp $
  */
 public class NullFuture<T> implements NotifyingFuture<T> {
     final T retval;

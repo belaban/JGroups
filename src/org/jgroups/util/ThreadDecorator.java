@@ -5,7 +5,6 @@ package org.jgroups.util;
  * it that the thread has been created or released from use.
  * 
  * @author Brian Stansberry
- * @version $Id: ThreadDecorator.java,v 1.2 2008/05/26 09:28:29 belaban Exp $
  */
 public interface ThreadDecorator {
    /**

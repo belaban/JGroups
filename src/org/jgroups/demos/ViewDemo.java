@@ -1,4 +1,3 @@
-// $Id: ViewDemo.java,v 1.17 2009/11/10 05:25:51 belaban Exp $
 
 package org.jgroups.demos;
 

@@ -4,7 +4,6 @@ package org.jgroups.util;
  * Holds 2 values, useful when we have a map with a key, but more than 1 value and we don't want to create a separate
  * holder object for the values, and don't want to pass the values as a list or array.
  * @author Bela Ban
- * @version $Id: Tuple.java,v 1.1 2007/11/23 12:50:48 belaban Exp $
  */
 public class Tuple<V1,V2> {
     private V1 val1;

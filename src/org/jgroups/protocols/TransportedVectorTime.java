@@ -1,4 +1,3 @@
-// $Id: TransportedVectorTime.java,v 1.8 2008/01/22 10:44:30 belaban Exp $
 
 package org.jgroups.protocols;
 

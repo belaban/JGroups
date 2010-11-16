@@ -1,4 +1,3 @@
-// $Id: LockingException.java,v 1.3 2008/01/22 10:44:31 belaban Exp $
 
 
 package org.jgroups.blocks;

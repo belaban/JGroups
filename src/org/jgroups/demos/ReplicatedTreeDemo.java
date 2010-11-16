@@ -1,4 +1,3 @@
-// $Id: ReplicatedTreeDemo.java,v 1.9 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.demos;
 

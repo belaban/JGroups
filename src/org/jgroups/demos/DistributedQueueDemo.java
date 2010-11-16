@@ -1,4 +1,3 @@
-// $Id: DistributedQueueDemo.java,v 1.7 2007/07/23 08:28:35 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.ChannelException;

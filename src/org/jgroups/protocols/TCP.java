@@ -1,4 +1,3 @@
-// $Id: TCP.java,v 1.64 2010/07/20 10:30:22 belaban Exp $
 
 package org.jgroups.protocols;
 

@@ -41,7 +41,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.23 2010/09/17 11:59:53 belaban Exp $
  */
 @Unsupported(comment="Use JBossCache instead")
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends

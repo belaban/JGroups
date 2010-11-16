@@ -1,4 +1,3 @@
-// $Id: GmsImpl.java,v 1.41 2010/03/05 09:04:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 

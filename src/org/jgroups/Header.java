@@ -1,4 +1,3 @@
-// $Id: Header.java,v 1.12 2010/06/15 06:43:54 belaban Exp $
 
 package org.jgroups;
 

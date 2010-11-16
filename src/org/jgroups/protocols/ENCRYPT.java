@@ -1,4 +1,3 @@
-// $Id: ENCRYPT.java,v 1.62 2010/09/29 14:21:17 belaban Exp $
 
 package org.jgroups.protocols;
 

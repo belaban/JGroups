@@ -1,4 +1,3 @@
-// $Id: PERF_TP.java,v 1.22 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +12,6 @@ import org.jgroups.stack.Protocol;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.22 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class PERF_TP extends Protocol {

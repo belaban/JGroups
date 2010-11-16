@@ -1,4 +1,3 @@
-// $Id: GossipData.java,v 1.7 2009/07/08 15:30:31 belaban Exp $
 
 package org.jgroups.stack;
 

@@ -1,4 +1,3 @@
-// $Id: IpAddress.java,v 1.53 2009/10/28 14:12:56 belaban Exp $
 
 package org.jgroups.stack;
 

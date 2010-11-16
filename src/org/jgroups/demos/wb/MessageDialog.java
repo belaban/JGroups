@@ -1,4 +1,3 @@
-// $Id: MessageDialog.java,v 1.2 2004/09/23 16:29:34 belaban Exp $
 
 package org.jgroups.demos.wb;
 

@@ -15,7 +15,6 @@ import java.net.InetAddress;
 
 /**
  * @author Bela Ban
- * @version $Id: ProgrammaticChat.java,v 1.3 2010/10/20 14:09:56 belaban Exp $
  */
 public class ProgrammaticChat {
 

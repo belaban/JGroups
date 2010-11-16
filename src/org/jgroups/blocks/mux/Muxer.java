@@ -3,7 +3,6 @@ package org.jgroups.blocks.mux;
 /**
  * Allows registration/deregistrator of multiplexed handlers by mux id.
  * @author Paul Ferraro
- * @version $Id: Muxer.java,v 1.2 2010/06/09 03:24:51 bstansberry Exp $
  */
 public interface Muxer<T> {
 

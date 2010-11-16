@@ -9,7 +9,6 @@ import java.util.Collection;
 /**
  * Common super class for CoordGmsImpl and ParticipantGmsImpl
  * @author Bela Ban
- * @version $Id: ServerGmsImpl.java,v 1.1 2009/09/28 07:16:28 belaban Exp $
  */
 public abstract class ServerGmsImpl extends GmsImpl {
 

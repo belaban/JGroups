@@ -1,4 +1,3 @@
-// $Id: DISCARD.java,v 1.41 2010/09/13 12:25:42 belaban Exp $
 
 package org.jgroups.protocols;
 

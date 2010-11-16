@@ -14,7 +14,6 @@ import java.util.StringTokenizer;
  * and preventing clusters intended to be separate from joining each other.
  * 
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.9 2010/06/15 10:10:38 belaban Exp $
  */
 public class ResourceManager {
 	private static final IpAddressRep rep;

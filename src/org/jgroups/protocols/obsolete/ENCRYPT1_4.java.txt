@@ -4,7 +4,6 @@
 // replacing SecretKey with SecretKey
 
 
-// $Id: ENCRYPT1_4.java.txt,v 1.2 2009/04/09 09:11:26 belaban Exp $
 
 package org.jgroups.protocols.obsolete;
 

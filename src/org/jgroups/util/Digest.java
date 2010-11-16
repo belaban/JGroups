@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.14 2009/09/21 09:57:23 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	

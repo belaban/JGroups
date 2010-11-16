@@ -4,7 +4,6 @@ import java.util.Comparator;
 
 /**
  * @author Bela Ban
- * @version $Id: SeqnoComparator.java,v 1.1 2009/11/30 11:41:01 belaban Exp $
  */
 public class SeqnoComparator implements Comparator<Seqno> {
     public int compare(Seqno o1, Seqno o2) {

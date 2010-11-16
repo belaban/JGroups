@@ -16,7 +16,6 @@ import java.util.concurrent.locks.LockSupport;
  * be useful in ThreadPoolExecutor, as a replacement for LinkedBlockingQueue, but the perf didn't change. I'll keep it
  * for later reference ...
  * @author Bela Ban
- * @version $Id: ConcurrentLinkedBlockingQueue.java,v 1.1 2010/03/03 09:15:13 belaban Exp $
  */
 public class ConcurrentLinkedBlockingQueue<T> extends ConcurrentLinkedQueue<T> implements BlockingQueue<T> {
     private static final long serialVersionUID=-8884995454506956809L;

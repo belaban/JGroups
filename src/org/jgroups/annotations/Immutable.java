@@ -14,7 +14,6 @@ import java.lang.annotation.RetentionPolicy;
  * Adopted from Java Concurrency in Practice. This annotation defines an immutable class, ie. a class whose
  * instances cannot be modified after creation
  * @author Bela Ban
- * @version $Id: Immutable.java,v 1.2 2007/02/27 14:49:40 belaban Exp $
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.SOURCE)

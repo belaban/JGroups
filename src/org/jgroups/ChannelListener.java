@@ -1,4 +1,3 @@
-// $Id: ChannelListener.java,v 1.2 2009/06/17 16:20:01 belaban Exp $
 
 package org.jgroups;
 

@@ -23,7 +23,6 @@ import java.util.Map;
  * won't work...
  * 
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.16 2010/06/10 07:02:25 belaban Exp $
  */
 @Experimental
 public class FD_ICMP extends FD {

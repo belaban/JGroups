@@ -7,7 +7,6 @@ import java.util.LinkedList;
 /**
  * Keeps track of a single message to retransmit
  * @author Bela Ban
- * @version $Id: Seqno.java,v 1.1 2009/11/30 11:40:09 belaban Exp $
  */
 public class Seqno {
     final long low;

@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Maintains the highest received and highest delivered seqno per member
  * @author Bela Ban
- * @version $Id: SeqnoTable.java,v 1.3 2010/09/17 12:03:36 belaban Exp $
  */
 public class SeqnoTable {
     private long next_to_receive=0;

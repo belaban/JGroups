@@ -18,7 +18,6 @@ import java.util.concurrent.TimeoutException;
  * Sends a request to a single target destination
  *
  * @author Bela Ban
- * @version $Id: UnicastRequest.java,v 1.7 2010/04/21 08:58:16 belaban Exp $
  */
 public class UnicastRequest<T> extends Request {
     protected final Rsp<T>     result;

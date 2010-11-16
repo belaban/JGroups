@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.55 2010/09/17 11:54:20 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 @DeprecatedProperty(names={"overhead"})

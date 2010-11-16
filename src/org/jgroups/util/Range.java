@@ -1,4 +1,3 @@
-// $Id: Range.java,v 1.6 2009/11/24 12:09:29 belaban Exp $
 
 package org.jgroups.util;
 

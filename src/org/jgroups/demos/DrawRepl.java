@@ -1,4 +1,3 @@
-// $Id: DrawRepl.java,v 1.7 2005/07/17 11:36:42 chrislott Exp $
 
 package org.jgroups.demos;
 

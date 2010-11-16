@@ -1,4 +1,3 @@
-// $Id: TimeoutException.java,v 1.4 2006/02/16 08:41:32 belaban Exp $
 
 package org.jgroups;
 

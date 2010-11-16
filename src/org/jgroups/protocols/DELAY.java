@@ -1,4 +1,3 @@
-// $Id: DELAY.java,v 1.14 2009/09/06 13:51:07 belaban Exp $
 
 package org.jgroups.protocols;
 

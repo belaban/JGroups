@@ -48,7 +48,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.80 2010/09/17 11:58:18 belaban Exp $
  */
 public class NakReceiverWindow {
 

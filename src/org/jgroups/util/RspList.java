@@ -1,4 +1,3 @@
-// $Id: RspList.java,v 1.10 2010/01/09 11:18:47 belaban Exp $
 
 package org.jgroups.util;
 

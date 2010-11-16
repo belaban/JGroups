@@ -7,7 +7,6 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: FragHeader.java,v 1.5 2010/06/15 06:44:35 belaban Exp $
  */
 public class FragHeader extends Header {
     public long id=0;

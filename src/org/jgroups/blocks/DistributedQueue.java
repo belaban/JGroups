@@ -1,4 +1,3 @@
-// $Id: DistributedQueue.java,v 1.23 2009/05/13 13:06:54 belaban Exp $
 package org.jgroups.blocks;
 
 import org.jgroups.logging.Log;

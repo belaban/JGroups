@@ -10,7 +10,6 @@ import java.io.IOException;
 /**
  * Header used by various flow control protocols
  * @author Bela Ban
- * @version $Id: FcHeader.java,v 1.1 2010/08/30 14:08:56 belaban Exp $
  */
 public class FcHeader extends Header {
     public static final byte REPLENISH=1;

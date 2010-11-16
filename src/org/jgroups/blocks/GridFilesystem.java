@@ -7,7 +7,6 @@ import java.io.*;
 /**
  * Entry point for GridFile and GridInputStream / GridOutputStream
  * @author Bela Ban
- * @version $Id: GridFilesystem.java,v 1.8 2010/01/08 16:41:12 belaban Exp $
  */
 @Experimental
 public class GridFilesystem {

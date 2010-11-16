@@ -37,7 +37,6 @@ import java.util.regex.Matcher;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.275 2010/09/28 15:10:31 belaban Exp $
  */
 public class Util {
 

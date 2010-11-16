@@ -1,4 +1,3 @@
-// $Id: UpdateException.java,v 1.2 2006/11/13 17:42:10 bstansberry Exp $
 
 
 package org.jgroups.blocks;

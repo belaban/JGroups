@@ -1,4 +1,3 @@
-// $Id: AckMcastReceiverWindow.java,v 1.10 2009/05/13 13:06:56 belaban Exp $
 
 package org.jgroups.stack;
 

@@ -1,4 +1,3 @@
-// $Id: UserInfoDialog.java,v 1.5 2005/05/30 16:14:37 belaban Exp $
 
 package org.jgroups.demos.wb;
 

@@ -8,7 +8,6 @@ import java.util.LinkedList;
  * Keeps track of a range of messages to be retransmitted. A bit set is used to represent missing messages.
  * Every non-received message has a corresponding bit set to 0, every received message is 1.
  * @author Bela Ban
- * @version $Id: SeqnoRange.java,v 1.2 2009/11/30 11:41:58 belaban Exp $
  */
 public class SeqnoRange extends Seqno {
     final long high;

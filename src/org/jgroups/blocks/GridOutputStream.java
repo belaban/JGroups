@@ -8,7 +8,6 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: GridOutputStream.java,v 1.9 2010/01/08 16:41:12 belaban Exp $
  */
 @Experimental
 public class GridOutputStream extends OutputStream {

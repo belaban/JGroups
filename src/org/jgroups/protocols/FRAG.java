@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.52 2010/08/26 15:38:22 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {

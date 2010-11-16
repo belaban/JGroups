@@ -1,4 +1,3 @@
-// $Id: Channel.java,v 1.57 2010/06/15 10:10:42 belaban Exp $
 
 package org.jgroups;
 

@@ -1,4 +1,3 @@
-// $Id: DrawCommand.java,v 1.7 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.demos;
 

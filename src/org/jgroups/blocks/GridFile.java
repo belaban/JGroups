@@ -13,7 +13,6 @@ import java.util.Set;
 /**
  * Subclass of File to iterate through directories and files in a grid
  * @author Bela Ban
- * @version $Id: GridFile.java,v 1.17 2010/01/08 16:41:12 belaban Exp $
  */
 @Experimental
 public class GridFile extends File {

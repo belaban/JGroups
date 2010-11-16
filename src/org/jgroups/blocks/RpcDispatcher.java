@@ -1,4 +1,3 @@
-// $Id: RpcDispatcher.java,v 1.49 2010/03/26 12:48:05 belaban Exp $
 
 package org.jgroups.blocks;
 

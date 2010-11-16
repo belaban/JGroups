@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Default implementation, ignores service names
  * @author Bela Ban
- * @version $Id: DefaultSocketFactory.java,v 1.1 2010/04/27 09:27:32 belaban Exp $
  */
 public class DefaultSocketFactory implements SocketFactory {
     // Maintains information about open sockets

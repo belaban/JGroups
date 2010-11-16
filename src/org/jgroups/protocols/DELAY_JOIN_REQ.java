@@ -14,7 +14,6 @@ import java.util.Date;
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.6 2010/03/05 09:04:54 belaban Exp $
  */
 @Unsupported
 public class DELAY_JOIN_REQ extends Protocol {

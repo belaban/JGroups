@@ -33,7 +33,6 @@ import java.util.*;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.60 2010/07/12 10:35:54 belaban Exp $
  */
 public class TCPPING extends Discovery {
     

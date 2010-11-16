@@ -1,4 +1,3 @@
-// $Id: LOOPBACK.java,v 1.34 2010/01/15 12:23:57 belaban Exp $
 
 package org.jgroups.protocols;
 

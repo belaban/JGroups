@@ -1,4 +1,3 @@
-// $Id: HDRS.java,v 1.9 2010/03/05 09:04:54 belaban Exp $
 
 package org.jgroups.protocols;
 

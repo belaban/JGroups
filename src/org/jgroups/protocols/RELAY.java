@@ -24,7 +24,6 @@ import java.io.IOException;
  * [2] doc/design/DataCenterReplication.txt
  *
  * @author Bela Ban
- * @version $Id: RELAY.java,v 1.4 2010/08/18 13:07:03 belaban Exp $
  */
 @Experimental @Unsupported
 @MBean(description="RELAY protocol")

@@ -11,7 +11,6 @@ import org.jgroups.stack.Protocol;
  * before passing it down. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.10 2009/09/06 13:51:07 belaban Exp $
  */
 @Unsupported
 public class DISCARD_PAYLOAD extends Protocol {

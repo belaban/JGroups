@@ -6,7 +6,6 @@ package org.jgroups.util;
  * Class copied from {@link java.util.BitSet}. Changes are that the FixedSizeBitSet doesn't expand, so access to it
  * doesn't need to be synchronized, plus we only need a few methods so most methods of the old class have been removed.
  * @author Bela Ban
- * @version $Id: FixedSizeBitSet.java,v 1.1 2009/11/25 08:41:17 belaban Exp $
  */
 public class FixedSizeBitSet {
     /*

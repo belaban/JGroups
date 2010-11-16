@@ -2,7 +2,6 @@ package org.jgroups;
 
 /**
  * @author Bela Ban
- * @version $Id: ExtendedMembershipListener.java,v 1.3 2009/06/03 13:49:26 vlada Exp $
  */
 public interface ExtendedMembershipListener extends MembershipListener {
 

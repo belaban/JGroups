@@ -24,7 +24,6 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.17 2010/03/05 08:58:25 belaban Exp $
  */
 public class Headers {
     private short[]  ids;

@@ -1,4 +1,3 @@
-// $Id: JChannelFactory.java,v 1.58 2010/08/17 09:20:53 belaban Exp $
 
 package org.jgroups;
 

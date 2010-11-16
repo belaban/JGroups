@@ -48,7 +48,6 @@ import org.w3c.dom.Element;
  * These tables are in turn then merged into docbook.  
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.11 2010/04/30 14:27:38 vlada Exp $
  * 
  */
 public class PropertiesToXML {

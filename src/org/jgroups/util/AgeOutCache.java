@@ -6,7 +6,6 @@ import java.util.concurrent.*;
 
 /** Cache which removes its elements after a certain time
  * @author Bela Ban
- * @version $Id: AgeOutCache.java,v 1.7 2010/07/20 10:33:26 belaban Exp $
  */
 public class AgeOutCache<K> {
     private final TimeScheduler timer;

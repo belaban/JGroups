@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentMap;
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
  * @author Richard Achmatowicz
- * @version $Id: Configurator.java,v 1.90 2010/10/06 09:45:44 belaban Exp $
  */
 public class Configurator {
     protected static final Log log=LogFactory.getLog(Configurator.class);

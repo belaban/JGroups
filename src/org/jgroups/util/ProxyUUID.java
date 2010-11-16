@@ -5,7 +5,6 @@ import java.io.*;
 /**
  * Used by RELAY to ship original sender of a message.
  * @author Bela Ban
- * @version $Id: ProxyUUID.java,v 1.1 2010/11/11 13:40:40 belaban Exp $
  */
 public class ProxyUUID extends UUID {
     private static final long serialVersionUID=7850262936740849187L;

@@ -12,7 +12,6 @@ import java.lang.management.ManagementFactory;
 /** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashMap.
  * Uses MemcachedConnector and PartitionedHashMap.
  * @author Bela Ban
- * @version $Id: MemcachedServer.java,v 1.7 2008/09/03 12:38:49 belaban Exp $
  */
 public class MemcachedServer {
     private MemcachedConnector connector;

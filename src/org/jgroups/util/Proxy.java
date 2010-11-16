@@ -1,4 +1,3 @@
-// $Id: Proxy.java,v 1.6 2008/04/08 14:49:05 belaban Exp $
 
 package org.jgroups.util;
 

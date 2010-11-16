@@ -1,4 +1,3 @@
-// $Id: MergeData.java,v 1.10 2009/09/20 16:11:58 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 

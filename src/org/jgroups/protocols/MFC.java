@@ -33,7 +33,6 @@ import java.util.Vector;
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: MFC.java,v 1.6 2010/09/13 09:08:36 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class MFC extends FlowControl {

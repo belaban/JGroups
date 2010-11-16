@@ -1,4 +1,3 @@
-// $Id: DistributedTree.java,v 1.22 2009/06/17 16:29:00 belaban Exp $
 
 package org.jgroups.blocks;
 

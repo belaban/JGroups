@@ -1,4 +1,3 @@
-// $Id: Draw.java,v 1.67 2009/10/20 12:59:14 belaban Exp $
 
 
 package org.jgroups.demos;

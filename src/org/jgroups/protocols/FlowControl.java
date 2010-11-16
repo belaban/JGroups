@@ -21,7 +21,6 @@ import java.util.*;
  * the receiver sends more credits to the sender.
  * 
  * @author Bela Ban
- * @version $Id: FlowControl.java,v 1.10 2010/09/17 11:54:20 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public abstract class FlowControl extends Protocol {

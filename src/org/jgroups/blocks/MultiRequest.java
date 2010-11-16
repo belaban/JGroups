@@ -23,7 +23,6 @@ import java.util.concurrent.TimeoutException;
  * MultiRequest is currently not used
  *
  * @author Bela Ban
- * @version $Id: MultiRequest.java,v 1.3 2010/04/21 10:54:21 belaban Exp $
  * @since 2.9
  */
 public class MultiRequest extends Request {

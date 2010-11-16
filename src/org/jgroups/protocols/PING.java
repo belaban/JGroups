@@ -19,7 +19,6 @@ import java.util.List;
  * received the BECOME_SERVER event), we'll respond to PING requests with a PING
  * response.
  * @author Bela Ban
- * @version $Id: PING.java,v 1.63 2010/03/05 09:04:54 belaban Exp $
  */
 @DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "port_range", "socket_conn_timeout",
         "socket_read_timeout", "discovery_timeout"})

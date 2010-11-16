@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Simple receiver which buffers all messages
  * @author Bela Ban
- * @version $Id: MyReceiver.java,v 1.3 2009/11/03 09:14:11 belaban Exp $
  */
 public class MyReceiver extends ReceiverAdapter {
     protected final Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();

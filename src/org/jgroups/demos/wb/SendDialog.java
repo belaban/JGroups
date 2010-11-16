@@ -1,4 +1,3 @@
-// $Id: SendDialog.java,v 1.6 2006/02/16 08:22:36 belaban Exp $
 
 package org.jgroups.demos.wb;
 

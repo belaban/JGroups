@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * Reduced number of messages exchanged on suspect event: https://jira.jboss.org/browse/JGRP-1241
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.38 2010/10/01 13:18:26 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 @DeprecatedProperty(names={"shun"})

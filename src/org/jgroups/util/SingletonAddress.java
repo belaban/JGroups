@@ -7,7 +7,6 @@ import java.io.*;
 /**
  * Address with a cluster name. Used by TP.Bundler.
  * @author Bela Ban
- * @version $Id: SingletonAddress.java,v 1.1 2010/04/07 10:36:00 belaban Exp $
  */
 public class SingletonAddress implements Address {
     protected final String cluster_name;

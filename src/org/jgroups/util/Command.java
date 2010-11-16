@@ -1,4 +1,3 @@
-// $Id: Command.java,v 1.3 2006/04/05 05:33:57 belaban Exp $
 
 package org.jgroups.util;
 

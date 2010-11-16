@@ -14,7 +14,6 @@ import java.lang.annotation.Target;
  * Adopted from Java Concurrency in Practice. This annotation defines the monitor that protects the variable
  * annotated by @GuardedBy, e.g. @GuardedBy("lock") or @GuardedBy("this")
  * @author Bela Ban
- * @version $Id: GuardedBy.java,v 1.3 2007/02/27 14:49:40 belaban Exp $
  */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.SOURCE)

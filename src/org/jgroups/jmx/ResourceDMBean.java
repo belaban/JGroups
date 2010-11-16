@@ -31,7 +31,6 @@ import org.jgroups.util.Util;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.34 2010/09/09 10:39:07 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean

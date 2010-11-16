@@ -11,7 +11,6 @@ import org.jgroups.util.RspList;
  * See the source of {@link org.jgroups.blocks.DistributedLockManager} for an example implementation.  
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: VoteResponseProcessor.java,v 1.2 2005/07/17 11:36:40 chrislott Exp $
  */
 public interface VoteResponseProcessor {
     /**

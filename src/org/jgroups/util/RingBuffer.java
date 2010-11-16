@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * 
  * @author Bela Ban
- * @version $Id: RingBuffer.java,v 1.11 2010/02/22 12:28:32 belaban Exp $
  */
 public class RingBuffer<T> {
     private final AtomicStampedReference<T>[]  queue;

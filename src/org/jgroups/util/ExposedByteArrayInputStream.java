@@ -5,7 +5,6 @@ import java.io.IOException;
 
 /**
  * @author Bela Ban
- * @version $Id: ExposedByteArrayInputStream.java,v 1.2 2008/10/28 09:08:32 belaban Exp $
  */
 public class ExposedByteArrayInputStream extends ByteArrayInputStream {
 

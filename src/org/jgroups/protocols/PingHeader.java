@@ -10,7 +10,6 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: PingHeader.java,v 1.16 2010/06/15 06:44:35 belaban Exp $
  */
 public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;   // arg = null

@@ -15,7 +15,6 @@ import java.util.concurrent.*;
  * of execution time (by using a {@link java.util.concurrent.DelayQueue} internally.
  * 
  * @author Bela Ban
- * @version $Id: DefaultTimeScheduler.java,v 1.4 2010/08/04 12:35:32 belaban Exp $
  */
 public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements TimeScheduler {
 

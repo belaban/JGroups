@@ -1,4 +1,3 @@
-// $Id: RspCollector.java,v 1.4 2007/02/16 09:06:57 belaban Exp $
 
 package org.jgroups.blocks;
 

@@ -33,7 +33,6 @@ import org.w3c.dom.Element;
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
- * @version $Id: XMLSchemaGenerator.java,v 1.11 2009/12/11 13:20:05 belaban Exp $
  * 
  */
 public class XMLSchemaGenerator {

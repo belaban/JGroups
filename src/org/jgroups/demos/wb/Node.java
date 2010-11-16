@@ -1,4 +1,3 @@
-// $Id: Node.java,v 1.3 2008/01/22 10:44:37 belaban Exp $
 
 package org.jgroups.demos.wb;
 import org.jgroups.Address;

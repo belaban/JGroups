@@ -1,4 +1,3 @@
-// $Id: TotalOrder.java,v 1.15 2009/06/26 07:35:15 belaban Exp $
 
 
 package org.jgroups.demos;

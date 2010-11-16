@@ -10,7 +10,6 @@ import java.lang.annotation.*;
  * a superclass.
  * 
  * @author Chris Mills
- * @version $Id: ManagedAttribute.java,v 1.6 2008/03/13 02:00:23 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)

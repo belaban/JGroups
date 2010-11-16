@@ -6,7 +6,6 @@ import java.util.concurrent.ThreadFactory;
 /**
  * ThreadPoolExecutor subclass that implements @{link ThreadManager}.
  * @author Brian Stansberry
- * @version $Id: ThreadManagerThreadPoolExecutor.java,v 1.3 2008/09/22 13:54:54 belaban Exp $
  */
 public class ThreadManagerThreadPoolExecutor extends ThreadPoolExecutor implements ThreadManager {
     private ThreadDecorator decorator;

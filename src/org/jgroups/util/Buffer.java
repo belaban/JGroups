@@ -4,7 +4,6 @@ package org.jgroups.util;
  * Buffer with an offset and length. Will be replaced with NIO equivalent once JDK 1.4 becomes baseline. This class is
  * immutable. Note that the underlying byte[] buffer must <em>not</em> be changed as long as this Buffer instance is in use !
  * @author Bela Ban
- * @version $Id: Buffer.java,v 1.7 2009/10/29 16:09:56 belaban Exp $
  */
 public class Buffer {
     private final byte[] buf;

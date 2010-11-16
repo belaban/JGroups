@@ -9,7 +9,6 @@ import java.io.*;
 /**
  * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.10 2010/06/15 06:44:36 belaban Exp $
  */
 public class MuxHeader extends Header {
     String      id=null;

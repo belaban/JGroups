@@ -13,7 +13,6 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: NakAckHeader.java,v 1.25 2010/03/08 07:59:39 belaban Exp $
  */
 public class NakAckHeader extends Header {
     public static final byte MSG=1;       // regular msg

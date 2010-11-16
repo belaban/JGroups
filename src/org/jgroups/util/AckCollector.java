@@ -10,7 +10,6 @@ import java.util.*;
 /**
  * Collects acks from a number of nodes, waits for all acks. Can also be time bounded
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.19 2009/08/11 10:04:03 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */

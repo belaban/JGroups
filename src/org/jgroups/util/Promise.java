@@ -14,7 +14,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.
  * @author Bela Ban
- * @version $Id: Promise.java,v 1.15 2009/06/22 14:34:26 belaban Exp $
  */
 public class Promise<T> {
     private final Lock lock=new ReentrantLock();

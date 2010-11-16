@@ -17,7 +17,6 @@ import java.util.Set;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: JmxConfigurator.java,v 1.20 2010/09/16 15:28:24 belaban Exp $
  */
 public class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);

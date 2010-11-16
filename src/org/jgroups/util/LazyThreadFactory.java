@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Lazily names threads: whenever the address or cluster name is changed, all threads are renamed
  * @author Bela Ban
- * @version $Id: LazyThreadFactory.java,v 1.2 2008/06/17 15:31:35 belaban Exp $
  */
 public class LazyThreadFactory extends DefaultThreadFactory {
     private Collection<WeakReference<Thread>> threads=new ConcurrentLinkedQueue<WeakReference<Thread>>();

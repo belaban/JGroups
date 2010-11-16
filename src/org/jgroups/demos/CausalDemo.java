@@ -1,4 +1,3 @@
-// $Id: CausalDemo.java,v 1.10 2009/09/21 09:57:32 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;

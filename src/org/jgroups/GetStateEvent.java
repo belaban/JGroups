@@ -1,4 +1,3 @@
-// $Id: GetStateEvent.java,v 1.6 2006/03/17 09:04:55 belaban Exp $
 
 package org.jgroups;
 

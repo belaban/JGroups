@@ -1,4 +1,3 @@
-//$Id: TotalTokenDemo.java,v 1.13 2009/06/17 16:20:13 belaban Exp $
 
 package org.jgroups.demos;
 

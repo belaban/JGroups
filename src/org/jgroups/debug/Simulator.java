@@ -17,7 +17,6 @@ import java.util.Set ;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.21 2010/10/06 09:47:19 belaban Exp $
  */
 public class Simulator {
 	private Protocol[] protStack=null;

@@ -1,4 +1,3 @@
-// $Id: PlainConfigurator.java,v 1.4 2010/09/16 14:21:42 belaban Exp $
 
 package org.jgroups.conf;
 

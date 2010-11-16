@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.37 2010/08/03 15:33:47 belaban Exp $
  */
 public interface TimeScheduler extends ThreadManager {
 

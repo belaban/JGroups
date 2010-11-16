@@ -8,7 +8,6 @@ import java.lang.annotation.*;
  * 
  *
  * @author Vladimir Blagojevic
- * @version $Id: DeprecatedProperty.java,v 1.1 2008/05/29 13:53:04 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)

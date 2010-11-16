@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract class for a unicast or multicast request
  *
  * @author Bela Ban
- * @version $Id: Request.java,v 1.6 2010/04/21 08:57:59 belaban Exp $
  */
 public abstract class Request implements RspCollector, Command, NotifyingFuture {
     /** return only first response */

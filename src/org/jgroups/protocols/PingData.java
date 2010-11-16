@@ -20,7 +20,6 @@ import java.util.Vector;
  * Encapsulates information about a cluster node, e.g. local address, coordinator's addresss, logical name and
  * physical address(es)
  * @author Bela Ban
- * @version $Id: PingData.java,v 1.6 2009/09/26 05:37:04 belaban Exp $
  */
 public class PingData implements Streamable {
     private Address own_addr=null;

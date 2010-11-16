@@ -1,4 +1,3 @@
-// $Id: ChannelFactory.java,v 1.13 2009/07/07 06:09:03 belaban Exp $
 
 package org.jgroups;
 

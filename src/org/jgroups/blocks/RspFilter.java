@@ -8,7 +8,6 @@ import org.jgroups.Address;
  * request will not return (assuming timeout is 0) when the first response has been received, but when the filter
  * passed
  * @author Bela Ban
- * @version $Id: RspFilter.java,v 1.2 2008/11/25 10:00:35 belaban Exp $
  */
 public interface RspFilter {
 

@@ -29,7 +29,6 @@ import org.jgroups.conf.PropertyConverters;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: Property.java,v 1.10 2009/12/11 13:12:36 belaban Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)

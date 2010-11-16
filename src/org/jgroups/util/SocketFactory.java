@@ -13,7 +13,6 @@ import java.util.Map;
  * The socket creation methods have the same parameter lists as the socket constructors, e.g.
  * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket(int,int)}. 
  * @author Bela Ban
- * @version $Id: SocketFactory.java,v 1.1 2010/04/27 09:27:32 belaban Exp $
  */
 public interface SocketFactory {
 

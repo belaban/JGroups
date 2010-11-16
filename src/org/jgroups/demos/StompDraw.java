@@ -1,4 +1,3 @@
-// $Id: StompDraw.java,v 1.5 2010/10/27 10:52:04 belaban Exp $
 
 
 package org.jgroups.demos;

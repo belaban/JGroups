@@ -27,7 +27,6 @@ import java.util.*;
  * <p/>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
- * @version $Id: StompConnection.java,v 1.11 2010/11/01 07:30:27 belaban Exp $
  */
 @Experimental @Unsupported
 public class StompConnection implements Runnable {

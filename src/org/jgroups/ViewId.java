@@ -1,4 +1,3 @@
-// $Id: ViewId.java,v 1.11 2006/08/14 16:05:09 belaban Exp $
 
 package org.jgroups;
 

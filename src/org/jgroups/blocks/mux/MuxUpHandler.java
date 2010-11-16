@@ -15,7 +15,6 @@ import java.util.Map;
  * 
  * @author Bela Ban
  * @author Paul Ferraro
- * @version $Id: MuxUpHandler.java,v 1.5 2010/09/17 11:55:25 belaban Exp $
  */
 public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
 

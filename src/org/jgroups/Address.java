@@ -1,4 +1,3 @@
-// $Id: Address.java,v 1.6 2009/04/09 09:11:29 belaban Exp $
 
 package org.jgroups;
 
