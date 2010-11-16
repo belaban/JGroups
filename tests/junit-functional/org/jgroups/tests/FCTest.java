@@ -1,4 +1,3 @@
-// $Id: FCTest.java,v 1.6 2010/08/27 12:12:55 belaban Exp $
 
 package org.jgroups.tests;
 

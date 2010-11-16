@@ -11,7 +11,6 @@ import java.net.InetSocketAddress;
 /**
  * Tests loss rate of UDP datagrams
  * @author Bela Ban
- * @version $Id: DatagramTest.java,v 1.1 2007/08/16 08:47:24 belaban Exp $
  */
 public class DatagramTest {
     DatagramSocket sock;

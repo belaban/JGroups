@@ -15,7 +15,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ConnectionMapUnitTest.java,v 1.2 2010/07/20 07:39:43 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapUnitTest {

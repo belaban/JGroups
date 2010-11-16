@@ -14,7 +14,6 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests CreditMap
  * @author Bela Ban
- * @version $Id: CreditMapTest.java,v 1.5 2010/10/01 13:16:52 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class CreditMapTest {

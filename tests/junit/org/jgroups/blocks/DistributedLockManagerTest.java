@@ -16,7 +16,6 @@ import java.util.Map;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.12 2009/05/06 05:38:02 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {

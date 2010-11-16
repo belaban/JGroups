@@ -1,4 +1,3 @@
-// $Id: ConnectionMapDemo.java,v 1.3 2010/07/20 07:39:41 belaban Exp $
 
 package org.jgroups.tests;
 

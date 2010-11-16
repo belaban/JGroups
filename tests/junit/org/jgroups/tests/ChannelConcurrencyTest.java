@@ -27,7 +27,6 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.18 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups="broken",sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{

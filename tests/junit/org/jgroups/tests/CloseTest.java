@@ -1,4 +1,3 @@
-// $Id: CloseTest.java,v 1.26 2009/10/05 15:45:54 vlada Exp $
 
 package org.jgroups.tests;
 

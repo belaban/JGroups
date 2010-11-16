@@ -11,7 +11,6 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: GridFilesystemTest.java,v 1.12 2010/01/08 12:08:40 belaban Exp $
  * todo: regexp for file ls, rm, down and up
  * todo: recursive up and down
  */

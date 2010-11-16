@@ -8,7 +8,6 @@ import java.net.SocketException;
 /**
  * Returns a global IP address, if not found a site-local, if not found a non loopback, if not found the loopback addr
  * @author Bela Ban
- * @version $Id: GetGlobalAddress.java,v 1.1 2010/05/28 08:53:10 belaban Exp $
  */
 public class GetGlobalAddress {
     public static void main(String[] args) {

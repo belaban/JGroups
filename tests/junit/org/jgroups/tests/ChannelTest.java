@@ -13,7 +13,6 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.24 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class ChannelTest extends ChannelTestBase {       

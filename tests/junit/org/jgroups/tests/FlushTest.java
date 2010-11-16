@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * work with any stack.
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.93 2009/10/23 19:58:15 vlada Exp $
  */
 @Test(groups = Global.FLUSH, sequential = false)
 public class FlushTest extends ChannelTestBase {

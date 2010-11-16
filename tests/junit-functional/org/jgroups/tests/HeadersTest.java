@@ -11,7 +11,6 @@ import java.util.Map;
 /**
  * Tests the functionality of the Headers class
  * @author Bela Ban
- * @version $Id: HeadersTest.java,v 1.7 2010/06/15 06:44:41 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class HeadersTest {

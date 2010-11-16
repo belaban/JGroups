@@ -16,7 +16,6 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: GroupRequestTest.java,v 1.13 2010/04/21 09:02:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {

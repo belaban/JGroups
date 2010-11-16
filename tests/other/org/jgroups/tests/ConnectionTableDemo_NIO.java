@@ -1,4 +1,3 @@
-// $Id: ConnectionTableDemo_NIO.java,v 1.1 2006/09/14 08:11:31 belaban Exp $
 
 package org.jgroups.tests;
 

@@ -20,7 +20,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.18 2009/11/10 08:26:09 belaban Exp $
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {

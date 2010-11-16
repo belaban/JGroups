@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version  $Id: AckSenderWindowTest.java,v 1.10 2010/07/19 09:40:59 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckSenderWindowTest {

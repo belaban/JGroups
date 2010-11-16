@@ -18,7 +18,6 @@ import java.util.LinkedList;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.16 2010/03/02 08:17:48 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckReceiverWindowTest {

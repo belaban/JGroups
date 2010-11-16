@@ -12,7 +12,6 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.15 2009/12/17 16:37:23 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;

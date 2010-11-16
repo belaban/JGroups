@@ -1,4 +1,3 @@
-// $Id: Bsh.java,v 1.10 2010/03/05 11:55:35 belaban Exp $
 
 
 package org.jgroups.tests;

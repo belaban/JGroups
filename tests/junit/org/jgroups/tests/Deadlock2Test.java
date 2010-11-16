@@ -1,4 +1,3 @@
-// $Id: Deadlock2Test.java,v 1.23 2010/01/11 08:20:00 belaban Exp $
 
 package org.jgroups.tests;
 

@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * for details. This will only work 100% correctly with FLUSH support.<br/>
  * [1] http://jira.jboss.com/jira/browse/JGRP-236
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.61 2009/10/12 19:45:16 vlada Exp $
  */
 
 @Test(groups={Global.FLUSH},sequential=true)

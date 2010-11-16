@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
  * Tests concurrent and partial flushes
  * @author Manik Surtani
  * @author Bela Ban
- * @version $Id: ConcurrentFlushTest.java,v 1.14 2009/08/20 12:32:36 belaban Exp $
  */
 @Test(groups=Global.FLUSH, sequential=true)
 public class ConcurrentFlushTest extends ChannelTestBase {

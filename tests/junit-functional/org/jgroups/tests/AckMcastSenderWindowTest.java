@@ -1,4 +1,3 @@
-// $Id: AckMcastSenderWindowTest.java,v 1.5 2008/04/08 12:17:07 belaban Exp $
 package org.jgroups.tests;
 
 

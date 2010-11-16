@@ -5,7 +5,6 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: ChannelCallbackTest.java,v 1.2 2009/06/17 16:20:14 belaban Exp $
  */
 public class ChannelCallbackTest extends ReceiverAdapter implements ChannelListener {
     JChannel channel;

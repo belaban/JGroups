@@ -10,7 +10,6 @@ import java.util.TreeSet;
 
 /**
  * @author Bela Ban
- * @version $Id: FixedSizeBitSetTest.java,v 1.2 2009/11/25 08:48:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class FixedSizeBitSetTest {

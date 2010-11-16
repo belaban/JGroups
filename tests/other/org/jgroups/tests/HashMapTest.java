@@ -10,7 +10,6 @@ import java.util.TreeMap;
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.6 2006/12/31 12:52:50 belaban Exp $
  */
 public class HashMapTest {
 

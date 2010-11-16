@@ -11,7 +11,6 @@ import org.testng.annotations.Test;
  * Test cases for AgeOutCache
  * 
  * @author Bela Ban
- * @version $Id: AgeOutCacheTest.java,v 1.13 2010/07/19 07:06:29 belaban Exp $
  */
 @Test(groups = Global.FUNCTIONAL,sequential=true)
 public class AgeOutCacheTest {

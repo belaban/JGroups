@@ -10,7 +10,6 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ExponentialIntervalTest.java,v 1.4 2008/04/08 08:29:39 belaban Exp $
  */
 public class ExponentialIntervalTest {
 

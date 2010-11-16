@@ -9,7 +9,6 @@ import java.io.Serializable;
  * Simple test for multicast discovery. Use with ./conf/bare-bones.xml (without the UNICAST protocol).
  * Has no error checking and only rudimentary tracing (System.err :-))
  * @author Bela Ban
- * @version $Id: DiscoveryTest.java,v 1.2 2009/04/09 09:11:20 belaban Exp $
  */
 public class DiscoveryTest {
     Channel ch;

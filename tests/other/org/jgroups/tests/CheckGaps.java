@@ -7,7 +7,6 @@ import java.util.HashSet;
 
 /** Reads a sequence of numbers from stdin and verifies that they are in order
  * @author Bela Ban
- * @version $Id: CheckGaps.java,v 1.1 2009/11/16 10:24:13 belaban Exp $
  */
 public class CheckGaps {
 

@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests contention in TP.Bundler
  * @author Bela Ban
- * @version $Id: BundlerTest.java,v 1.6 2010/02/10 17:28:03 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class BundlerTest {

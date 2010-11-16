@@ -20,7 +20,6 @@ import org.testng.annotations.Test;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.22 2009/04/09 09:11:16 belaban Exp $
  */
 @Test(groups={Global.STACK_DEPENDENT},sequential=false)
 public class AddDataTest extends ChannelTestBase {

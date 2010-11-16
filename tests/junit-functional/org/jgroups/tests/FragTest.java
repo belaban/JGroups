@@ -1,4 +1,3 @@
-// $Id: FragTest.java,v 1.6 2009/09/06 13:51:11 belaban Exp $
 
 package org.jgroups.tests;
 

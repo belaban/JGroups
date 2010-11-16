@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.9 2010/03/05 09:05:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {

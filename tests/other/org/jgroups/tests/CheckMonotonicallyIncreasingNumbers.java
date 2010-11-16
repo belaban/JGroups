@@ -11,7 +11,6 @@ import java.io.*;
  * 4
  * </pre>
  * @author Bela Ban
- * @version $Id: CheckMonotonicallyIncreasingNumbers.java,v 1.2 2006/01/16 13:01:26 belaban Exp $
  */
 public class CheckMonotonicallyIncreasingNumbers {
 

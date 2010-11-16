@@ -18,7 +18,6 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: DigestTest.java,v 1.5 2009/05/06 06:05:12 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class DigestTest {

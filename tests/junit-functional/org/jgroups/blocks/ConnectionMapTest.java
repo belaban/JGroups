@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionMap
  * @author Bela Ban
- * @version $Id: ConnectionMapTest.java,v 1.4 2010/07/29 14:17:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapTest {

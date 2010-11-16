@@ -5,7 +5,6 @@ import java.net.InetAddress;
 /**
  * Captures all config for IPerf
  * @author Bela Ban
- * @version $Id: Configuration.java,v 1.4 2008/09/12 15:10:52 belaban Exp $
  */
 public class Configuration {
     private int size=10 * 1000 * 1000;
