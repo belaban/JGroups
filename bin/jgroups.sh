@@ -1,5 +1,4 @@
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.18 2010/01/18 07:24:22 belaban Exp $
 
 #!/bin/bash
 

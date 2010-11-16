@@ -6,7 +6,6 @@
 # the next step
 
 # Author: Bela Ban
-# version: $Id: release_to_nexus.sh,v 1.6 2010/04/30 12:29:51 belaban Exp $
 
 
 DIST=../dist

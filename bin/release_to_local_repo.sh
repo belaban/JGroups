@@ -6,7 +6,6 @@
 
 
 # Author: Bela Ban
-# version: $Id: release_to_local_repo.sh,v 1.1 2010/09/30 14:07:10 belaban Exp $
 
 
 DIST=../dist

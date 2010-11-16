@@ -1,6 +1,5 @@
 
 # Author: Bela Ban
-# version: $Id: debug.sh,v 1.1 2009/04/28 09:42:44 belaban Exp $
 
 #!/bin/bash
 
