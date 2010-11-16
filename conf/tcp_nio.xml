@@ -7,7 +7,6 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: tcp_nio.xml,v 1.9 2006/09/22 12:46:54 belaban Exp $
 -->
 <config>
     <TCP_NIO

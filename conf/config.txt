@@ -1,6 +1,5 @@
 #
 # This file contains configuration for the JGroups performance tests (org.jgroups.tests.perf package)
-# $Id: config.txt,v 1.12 2006/12/11 10:16:54 belaban Exp $
 #
 
 # Class implementing the org.jgroups.tests.perf.Transport interface

@@ -1,5 +1,4 @@
 
-// $Id: Announcement-2.4.txt,v 1.2 2006/10/31 12:44:45 belaban Exp $
 
 
 Finally, after almost 5 months, JGroups 2.4 is here !

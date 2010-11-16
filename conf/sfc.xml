@@ -2,7 +2,6 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.16 2010/09/20 14:29:08 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"

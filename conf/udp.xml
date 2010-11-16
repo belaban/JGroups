@@ -3,7 +3,6 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.48 2010/09/20 14:29:08 belaban Exp $
 -->
 
 <config xmlns="urn:org:jgroups"

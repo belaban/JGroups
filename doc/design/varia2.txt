@@ -1,4 +1,3 @@
-$Id: varia2.txt,v 1.1 2006/05/22 06:34:43 belaban Exp $
 
 			    Design Issues
 			    =============

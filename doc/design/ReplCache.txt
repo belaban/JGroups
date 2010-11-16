@@ -4,7 +4,6 @@ Replicated Cache
 ================
 
 Author: Bela Ban
-Id: $Id: ReplCache.txt,v 1.13 2009/01/08 11:02:10 belaban Exp $
 
 
 Idea
