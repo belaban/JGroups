@@ -51,7 +51,7 @@ public class RELAY extends Protocol {
     @ManagedAttribute
     protected volatile boolean is_coord=false;
 
-    protected JChannel ch;
+    protected JChannel bridge;
 
     protected TimeScheduler timer;
 
@@ -68,7 +68,7 @@ public class RELAY extends Protocol {
     }
 
     public void stop() {
-        Util.close(ch);
+        Util.close(bridge);
     }
 
     public Object down(Event evt) {
@@ -78,7 +78,7 @@ public class RELAY extends Protocol {
                 break;
 
             case Event.DISCONNECT:
-                Util.close(ch);
+                Util.close(bridge);
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -92,15 +92,41 @@ public class RELAY extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                if(is_coord && relay && ch != null) {
-                    Message msg=(Message)evt.getArg();
-                    Address dest=msg.getDest();
-                    RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
-                    boolean multicast=dest == null || dest.isMulticastAddress();
-                    if(multicast && hdr == null)
-                        relay(msg);
+                if(!is_coord || !relay || bridge == null)
+                    break;
+                Message msg=(Message)evt.getArg();
+                Address dest=msg.getDest();
+                RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
+                if(hdr != null) {
+                    switch(hdr.type) {
+                        case DISSEMINATE:
+                            return up_prot.up(evt); // pass up
+                        case FORWARD:
+                            forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                            return null;
+                        case VIEW:
+                            handleView((View)evt.getArg());
+                            return up_prot.up(evt);
+                        default:
+                            throw new IllegalArgumentException(hdr.type + " is not a valid type");
+                    }
+                }
+
+
+                boolean multicast=dest == null || dest.isMulticastAddress();
+                if(multicast) {
+                    Message tmp=msg.copy(true, false);
+                    byte[] buf=new byte[0];
+                    try {
+                        buf=Util.streamableToByteBuffer(tmp);
+                        forward(buf, 0, buf.length);
+                    }
+                    catch(Exception e) {
+                        log.warn("failed serializing relay message", e);
+                    }
                 }
                 break;
+
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
@@ -116,8 +142,8 @@ public class RELAY extends Protocol {
             if(!Util.isCoordinator(view, local_addr)) {
                 if(log.isTraceEnabled())
                     log.trace("I'm not coordinator anymore, closing the channel");
-                Util.close(ch);
-                ch=null;
+                Util.close(bridge);
+                bridge=null;
             }
         }
         else {
@@ -126,10 +152,10 @@ public class RELAY extends Protocol {
                 try {
                     if(log.isTraceEnabled())
                         log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
-                    ch=new JChannel(props);
-                    ch.setOpt(Channel.LOCAL, false); // don't receive my own messages
-                    ch.connect(cluster_name);
-                    ch.setReceiver(new Receiver());
+                    bridge=new JChannel(props);
+                    bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+                    bridge.connect(cluster_name);
+                    bridge.setReceiver(new Receiver());
                 }
                 catch(ChannelException e) {
                     log.error("failed creating channel (props=" + props + ")", e);
@@ -138,7 +164,14 @@ public class RELAY extends Protocol {
         }
     }
 
-    protected void relay(Message msg) {
+
+
+    protected void forward(byte[] buffer, int offset, int length) {
+        
+    }
+
+
+    /*protected void relay(Message msg) {
         final Message copy=msg.copy(true, false);
         if(async) {
             timer.execute(new Runnable() {
@@ -147,9 +180,8 @@ public class RELAY extends Protocol {
                 }
             });
         }
-        else {
+        else
             _relay(copy);
-        }
     }
 
 
@@ -157,18 +189,20 @@ public class RELAY extends Protocol {
         try {
             if(log.isTraceEnabled())
                 log.trace("relaying message from " + msg.getSrc());
-            ch.send(msg);
+
+            byte[] buf=Util.streamableToByteBuffer(msg);
+            bridge.send(null, null, buf);
         }
         catch(Throwable e) {
             log.error("failed relaying message " + msg, e);
         }
-    }
+    }*/
 
 
     protected class Receiver extends ReceiverAdapter {
         public void receive(Message msg) {
             Message copy=msg.copy(true, false); // copy the payload and everything else but the headers
-            copy.putHeader(getId(), new RelayHeader());
+            copy.putHeader(getId(), new RelayHeader(RelayHeader.Type.DISSEMINATE));
             copy.setSrc(local_addr);
             if(log.isTraceEnabled())
                 log.trace("received msg from " + msg.getSrc() + ", passing down the stack with dest=" +
@@ -179,18 +213,33 @@ public class RELAY extends Protocol {
 
 
     public static class RelayHeader extends Header {
+        public static enum Type {DISSEMINATE, FORWARD, VIEW};
+        protected Type type;
 
         public RelayHeader() {
         }
 
+        public RelayHeader(Type type) {
+            this.type=type;
+        }
+
         public int size() {
-            return 0;
+            return Global.BYTE_SIZE; // type
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
+            out.writeByte(type.ordinal());
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            type=Type.values()[in.readByte()];
+        }
+
+        public String toString() {
+            return type.toString();
         }
     }
+
+
+    
 }

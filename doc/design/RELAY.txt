@@ -109,7 +109,6 @@ RELAY.up(msg):
 - Else:
   - If multicast message:
     - Copy msg to M (don't copy headers)
-    - Remove all headers from M
     - Serialize M into a buffer buf
     - forward(buf)
   - Pass up // unicast or multicast messages
