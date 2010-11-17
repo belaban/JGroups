@@ -1185,7 +1185,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         StringBuilder sb=new StringBuilder("\n[overwriteDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
-        boolean set_own_seqno=false;
         for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
             Address sender=entry.getKey();
             Digest.Entry val=entry.getValue();
@@ -1197,25 +1196,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
+                if(local_addr.equals(sender)) {
+                    win.setHighestDelivered(highest_delivered_seqno);
+                    continue; // don't destroy my onw window
+                }
                 win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
-                if(sender.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
-                    seqno_lock.lock();
-                    try {
-                        seqno=highest_delivered_seqno;
-                        set_own_seqno=true;
-                    }
-                    finally {
-                        seqno_lock.unlock();
-                    }
-                }
             }
             win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
             xmit_table.put(sender, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
-        if(set_own_seqno)
-            sb.append("\nnew seqno for " + local_addr + ": " + seqno);
         digest_history.add(sb.toString());
         if(log.isDebugEnabled())
             log.debug(sb.toString());

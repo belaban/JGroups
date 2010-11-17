@@ -559,6 +559,17 @@ public class NakReceiverWindow {
     }
 
 
+    public long setHighestDelivered(long new_val) {
+        lock.writeLock().lock();
+        try {
+            long retval=highest_delivered;
+            highest_delivered=new_val;
+            return retval;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
 
 
     /**
