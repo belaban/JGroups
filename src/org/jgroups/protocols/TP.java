@@ -54,13 +54,13 @@ import java.util.concurrent.locks.ReentrantLock;
         "start_port", "end_port", "use_local_host", "marshaller_pool_size", "num_timer_threads", "timer.num_threads"})
 public abstract class TP extends Protocol {
 
-    private static final byte LIST=1; // we have a list of messages rather than a single message when set
-    private static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
-    private static final byte OOB=4; // message has OOB flag set (Message.OOB)
+    protected static final byte LIST=1; // we have a list of messages rather than a single message when set
+    protected static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
+    protected static final byte OOB=4; // message has OOB flag set (Message.OOB)
 
     protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
-    private static NumberFormat f;
+    protected static NumberFormat f;
 
     static {
         can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
@@ -217,7 +217,7 @@ public abstract class TP extends Protocol {
 
     /** Whether or not warnings about messages from different groups are logged - private flag, not for common use */
     @Property(description="whether or not warnings about messages from different groups are logged")
-    private boolean log_discard_msgs=true;
+    protected boolean log_discard_msgs=true;
 
 
 
@@ -448,10 +448,10 @@ public abstract class TP extends Protocol {
     // ================================= Default SocketFactory ========================
     protected SocketFactory socket_factory=new DefaultSocketFactory();
 
-    private Bundler bundler=null;
+    protected Bundler bundler=null;
 
-    private DiagnosticsHandler diag_handler=null;
-    private final List<ProbeHandler> preregistered_probe_handlers=new LinkedList<ProbeHandler>();
+    protected DiagnosticsHandler diag_handler=null;
+    protected final List<ProbeHandler> preregistered_probe_handlers=new LinkedList<ProbeHandler>();
 
     /**
      * If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their cluster
@@ -475,7 +475,7 @@ public abstract class TP extends Protocol {
 
     Future<?> logical_addr_cache_reaper=null;
 
-    private static final LazyRemovalCache.Printable<Address,PhysicalAddress> print_function=new LazyRemovalCache.Printable<Address,PhysicalAddress>() {
+    protected static final LazyRemovalCache.Printable<Address,PhysicalAddress> print_function=new LazyRemovalCache.Printable<Address,PhysicalAddress>() {
         public java.lang.String print(final Address logical_addr, final PhysicalAddress physical_addr) {
             StringBuilder sb=new StringBuilder();
             String tmp_logical_name=UUID.get(logical_addr);
@@ -1053,13 +1053,13 @@ public abstract class TP extends Protocol {
      * retransmission, when the original sender has crashed, or in a FLUSH protocol when we
      * have to return all unstable messages with the FLUSH_OK response.
      */
-    private void setSourceAddress(Message msg) {
+    protected void setSourceAddress(Message msg) {
         if(msg.getSrc() == null && local_addr != null) // should already be set by TP.ProtocolAdapter in shared transport case !
             msg.setSrc(local_addr);
     }
 
 
-    private void passMessageUp(Message msg, boolean perform_cluster_name_matching, boolean multicast, boolean discard_own_mcast) {
+    protected void passMessageUp(Message msg, boolean perform_cluster_name_matching, boolean multicast, boolean discard_own_mcast) {
         TpHeader hdr=(TpHeader)msg.getHeader(this.id);
         if(hdr == null) {
             if(log.isErrorEnabled())
@@ -1129,7 +1129,7 @@ public abstract class TP extends Protocol {
 
 
 
-    private void dispatchToThreadPool(Executor pool, Address sender, byte[] data, int offset, int length) {
+    protected void dispatchToThreadPool(Executor pool, Address sender, byte[] data, int offset, int length) {
         if(pool instanceof DirectExecutor) {
             // we don't make a copy of the buffer if we execute on this thread
             pool.execute(new IncomingPacket(sender, data, offset, length));
@@ -1253,7 +1253,7 @@ public abstract class TP extends Protocol {
      * @param multicast
      * @throws Exception
      */
-    private static void writeMessageList(Address dest, Address src,
+    protected static void writeMessageList(Address dest, Address src,
                                          List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
         dos.writeShort(Version.version);
 
@@ -1279,7 +1279,7 @@ public abstract class TP extends Protocol {
 
 
 
-    private static List<Message> readMessageList(DataInputStream in) throws Exception {
+    protected static List<Message> readMessageList(DataInputStream in) throws Exception {
         List<Message> list=new LinkedList<Message>();
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
@@ -1440,7 +1440,7 @@ public abstract class TP extends Protocol {
         }
     }
 
-    private void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
+    protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
         ThreadFactory[] factories= {timer_thread_factory,
                                     default_thread_factory,
                                     oob_thread_factory,
@@ -1474,7 +1474,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private static void shutdownThreadPool(Executor thread_pool) {
+    protected static void shutdownThreadPool(Executor thread_pool) {
         if(thread_pool instanceof ExecutorService) {
             ExecutorService service=(ExecutorService)thread_pool;
             service.shutdownNow();
@@ -1486,7 +1486,7 @@ public abstract class TP extends Protocol {
         }
     }
 
-    private void verifyRejectionPolicy(String str) throws Exception{
+    protected void verifyRejectionPolicy(String str) throws Exception{
         if(!(str.equalsIgnoreCase("run") || str.equalsIgnoreCase("abort")|| str.equalsIgnoreCase("discard")|| str.equalsIgnoreCase("discardoldest"))) {
             log.error("rejection policy of " + str + " is unknown");
             throw new Exception("Unknown rejection policy " + str);
