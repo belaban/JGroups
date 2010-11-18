@@ -102,7 +102,11 @@ public class RELAY extends Protocol {
                 if(hdr != null) {
                     switch(hdr.type) {
                         case DISSEMINATE:
-                            return up_prot.up(evt); // pass up
+                            Message copy=msg.copy();
+                            if(hdr.original_sender != null)
+                                copy.setSrc(hdr.original_sender);
+                            return up_prot.up(new Event(Event.MSG, copy));
+
                         case FORWARD:
                             if(is_coord) {
                                 try {
@@ -238,7 +242,7 @@ public class RELAY extends Protocol {
         Address sender=msg.getSrc();
         ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
         msg.setSrc(proxy_sender);
-        msg.putHeader(id, new RelayHeader(RelayHeader.Type.DISSEMINATE));
+        msg.putHeader(id, new RelayHeader(RelayHeader.Type.DISSEMINATE, proxy_sender));
 
         if(log.isTraceEnabled())
             log.trace("received msg from " + sender + ", passing down the stack with dest=" +
@@ -252,6 +256,7 @@ public class RELAY extends Protocol {
     public static class RelayHeader extends Header {
         public static enum Type {DISSEMINATE, FORWARD, VIEW};
         protected Type type;
+        protected Address original_sender;
         
 
         public RelayHeader() {
@@ -261,16 +266,26 @@ public class RELAY extends Protocol {
             this.type=type;
         }
 
+        public RelayHeader(Type type, Address original_sender) {
+            this(type);
+            this.original_sender=original_sender;
+        }
+
         public int size() {
-            return Global.BYTE_SIZE; // type
+            int retval=Global.BYTE_SIZE; // type
+            if(original_sender != null)
+                retval+=Util.size(original_sender);
+            return retval;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type.ordinal());
+            Util.writeAddress(original_sender, out);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
+            original_sender=Util.readAddress(in);
         }
 
         public String toString() {
