@@ -23,8 +23,10 @@ import java.util.Vector;
  * application programmers do not have to provide their own channel. 
  *
  * @author Bela Ban
+ * @deprecated Will be pulled in 3.0, use a JChannel directly instead
  */
 @Unsupported(comment="provided as an example, use at your own risk")
+@Deprecated
 public class NotificationBus implements Receiver {
     final Vector members=new Vector();
     Channel channel=null;

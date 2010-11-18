@@ -56,38 +56,38 @@ public class UDP extends TP {
      * </UL>
      */
     @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
-    private int tos=8; // valid values: 2, 4, 8 (default), 16
+    protected int tos=8; // valid values: 2, 4, 8 (default), 16
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8",
     		defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
             systemProperty=Global.UDP_MCAST_ADDR,writable=false)
-    private InetAddress mcast_group_addr=null;
+    protected InetAddress mcast_group_addr=null;
 
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600",
               systemProperty=Global.UDP_MCAST_PORT, writable=false)
-    private int mcast_port=7600;
+    protected int mcast_port=7600;
 
     @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. " +
             "Default is true", writable=false)
-    private boolean ip_mcast=true;
+    protected boolean ip_mcast=true;
 
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8",systemProperty=Global.UDP_IP_TTL)
-    private int ip_ttl=8;
+    protected int ip_ttl=8;
 
     @Property(description="Send buffer size of the multicast datagram socket. Default is 100'000 bytes")
-    private int mcast_send_buf_size=100000;
+    protected int mcast_send_buf_size=100000;
 
     @Property(description="Receive buffer size of the multicast datagram socket. Default is 500'000 bytes")
-    private int mcast_recv_buf_size=500000;
+    protected int mcast_recv_buf_size=500000;
 
     @Property(description="Send buffer size of the unicast datagram socket. Default is 100'000 bytes")
-    private int ucast_send_buf_size=100000;
+    protected int ucast_send_buf_size=100000;
 
     @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
-    private int ucast_recv_buf_size=64000;
+    protected int ucast_recv_buf_size=64000;
 
     @Property
-    boolean disable_loopback=false;
+    protected boolean disable_loopback=false;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -95,7 +95,7 @@ public class UDP extends TP {
 
 
     /** The multicast address (mcast address and port) this member uses */
-    private IpAddress mcast_addr=null;
+    protected IpAddress mcast_addr=null;
 
     /**
      * Socket used for
@@ -105,16 +105,16 @@ public class UDP extends TP {
      * </ol>
      * The address of this socket will be our local address (<tt>local_addr</tt>)
      */
-    private DatagramSocket sock=null;
+    protected DatagramSocket sock=null;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
-    private MulticastSocket mcast_sock=null;
+    protected MulticastSocket mcast_sock=null;
 
     /** Runnable to receive multicast packets */
-    private PacketReceiver mcast_receiver=null;
+    protected PacketReceiver mcast_receiver=null;
 
     /** Runnable to receive unicast packets */
-    private PacketReceiver ucast_receiver=null;
+    protected PacketReceiver ucast_receiver=null;
 
 
     /**
@@ -184,7 +184,7 @@ public class UDP extends TP {
     }
 
 
-    private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
+    protected void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
             if(mcast) {
@@ -287,7 +287,7 @@ public class UDP extends TP {
      * (sending and receiving). This is due to Linux's non-BSD compatibility
      * in the JDK port (see DESIGN).
      */
-    private void createSockets() throws Exception {
+    protected void createSockets() throws Exception {
         // bind_addr not set, try to assign one by default. This is needed on Windows
 
         // changed by bela Feb 12 2003: by default multicast sockets will be bound to all network interfaces
@@ -412,7 +412,7 @@ public class UDP extends TP {
      * @param mcastAddr
      * @throws IOException
      */
-    private void bindToInterfaces(List<NetworkInterface> interfaces,
+    protected void bindToInterfaces(List<NetworkInterface> interfaces,
                                   MulticastSocket s,
                                   InetAddress mcastAddr) {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
@@ -488,7 +488,7 @@ public class UDP extends TP {
     }
 
 
-    private String dumpSocketInfo() throws Exception {
+    protected String dumpSocketInfo() throws Exception {
         StringBuilder sb=new StringBuilder(128);
         sb.append(", mcast_addr=").append(mcast_addr);
         sb.append(", bind_addr=").append(bind_addr);
@@ -519,7 +519,7 @@ public class UDP extends TP {
             setBufferSize(mcast_sock, mcast_send_buf_size, mcast_recv_buf_size);
     }
 
-    private void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
+    protected void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
         try {
             sock.setSendBufferSize(send_buf_size);
             int actual_size=sock.getSendBufferSize();
@@ -568,7 +568,7 @@ public class UDP extends TP {
     }
 
 
-    private void closeUnicastSocket() {
+    protected void closeUnicastSocket() {
         getSocketFactory().close(sock);
     }
 
