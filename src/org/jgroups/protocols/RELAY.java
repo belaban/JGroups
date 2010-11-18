@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.ProxyAddress;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -92,8 +93,6 @@ public class RELAY extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                if(!is_coord || !relay || bridge == null)
-                    break;
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
@@ -102,27 +101,34 @@ public class RELAY extends Protocol {
                         case DISSEMINATE:
                             return up_prot.up(evt); // pass up
                         case FORWARD:
-                            forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                            return null;
+                            if(is_coord) {
+                                try {
+                                    forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                                }
+                                catch(Exception e) {
+                                    log.error("failed forwarding message", e);
+                                }
+                            }
+                            else
+                                log.warn("Cannot forward message as I'm not coordinator");
+                            break;
                         case VIEW:
-                            handleView((View)evt.getArg());
-                            return up_prot.up(evt);
+                            // todo: handle RELAY view, probably needs to invoke viewAccepted on the app...
+                            break;
                         default:
                             throw new IllegalArgumentException(hdr.type + " is not a valid type");
                     }
+                    return null;
                 }
 
-
-                boolean multicast=dest == null || dest.isMulticastAddress();
-                if(multicast) {
+                if(is_coord && relay && (dest == null || dest.isMulticastAddress())) {
                     Message tmp=msg.copy(true, false);
-                    byte[] buf=new byte[0];
                     try {
-                        buf=Util.streamableToByteBuffer(tmp);
+                        byte[] buf=Util.streamableToByteBuffer(tmp);
                         forward(buf, 0, buf.length);
                     }
                     catch(Exception e) {
-                        log.warn("failed serializing relay message", e);
+                        log.warn("failed relaying message", e);
                     }
                 }
                 break;
@@ -166,49 +172,65 @@ public class RELAY extends Protocol {
 
 
 
-    protected void forward(byte[] buffer, int offset, int length) {
-        
+    protected void forward(byte[] buffer, int offset, int length) throws Exception {
+        Message msg=new Message(null, null, buffer, offset, length);
+        msg.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+        if(bridge != null)
+            bridge.send(msg);
     }
 
-
-    /*protected void relay(Message msg) {
-        final Message copy=msg.copy(true, false);
-        if(async) {
-            timer.execute(new Runnable() {
-                public void run() {
-                    _relay(copy);
-                }
-            });
-        }
-        else
-            _relay(copy);
-    }
-
-
-    protected void _relay(Message msg) {
-        try {
-            if(log.isTraceEnabled())
-                log.trace("relaying message from " + msg.getSrc());
-
-            byte[] buf=Util.streamableToByteBuffer(msg);
-            bridge.send(null, null, buf);
-        }
-        catch(Throwable e) {
-            log.error("failed relaying message " + msg, e);
-        }
-    }*/
 
 
     protected class Receiver extends ReceiverAdapter {
         public void receive(Message msg) {
-            Message copy=msg.copy(true, false); // copy the payload and everything else but the headers
-            copy.putHeader(getId(), new RelayHeader(RelayHeader.Type.DISSEMINATE));
-            copy.setSrc(local_addr);
-            if(log.isTraceEnabled())
-                log.trace("received msg from " + msg.getSrc() + ", passing down the stack with dest=" +
-                        copy.getDest() + " and src=" + local_addr);
-            down_prot.down(new Event(Event.MSG, copy));
+            Address sender=msg.getSrc();
+            if(bridge.getAddress().equals(sender)) // discard my own messages
+                return;
+            RelayHeader hdr=(RelayHeader)msg.getHeader(id);
+            switch(hdr.type) {
+                case DISSEMINATE:
+                    // should not occur here, but we'll ignore it anyway
+                    break;
+                case FORWARD:
+                    try {
+                        Message tmp=(Message)Util.streamableFromByteBuffer(Message.class, msg.getRawBuffer(),
+                                                                           msg.getOffset(), msg.getLength());
+                        putOnLocalCluster(tmp);
+                    }
+                    catch(Exception e) {
+                        log.error("failed unserializing forwarded message", e);
+                    }
+                    break;
+                case VIEW:
+                    // todo: somehow send the view around in this local cluster
+                    break;
+                default:
+                    throw new IllegalArgumentException(hdr.type + " is not a valid type");
+            }
+
+
+//            Message copy=msg.copy(true, false); // copy the payload and everything else but the headers
+//            copy.putHeader(getId(), new RelayHeader(RelayHeader.Type.DISSEMINATE));
+//            copy.setSrc(local_addr);
+//            if(log.isTraceEnabled())
+//                log.trace("received msg from " + msg.getSrc() + ", passing down the stack with dest=" +
+//                        copy.getDest() + " and src=" + local_addr);
+//            down_prot.down(new Event(Event.MSG, copy));
         }
+    }
+
+    protected void putOnLocalCluster(Message msg) {
+        Address sender=msg.getSrc();
+
+        ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
+        msg.setSrc(proxy_sender);
+        msg.putHeader(id, new RelayHeader(RelayHeader.Type.DISSEMINATE));
+
+        if(log.isTraceEnabled())
+            log.trace("received msg from " + sender + ", passing down the stack with dest=" +
+                    msg.getDest() + " and src=" + msg.getSrc());
+
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
 

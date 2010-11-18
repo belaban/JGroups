@@ -100,14 +100,13 @@ Ceasing to be coordinator:
 
 
 RELAY.up(msg):
-- If not coord: pass up and return
 - If RelayHeader present:  // coord
-  - If FORWARD: forward(msg.buf); return
+  - If FORWARD && coordinator: forward(msg.buf); return
   - If DISSEMINATE: pass up and return
   - If VIEW: todo
   - Return
 - Else:
-  - If multicast message:
+  - If multicast message && coordinator:
     - Copy msg to M (don't copy headers)
     - Serialize M into a buffer buf
     - forward(buf)
