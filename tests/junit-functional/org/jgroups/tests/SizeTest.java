@@ -519,6 +519,9 @@ public class SizeTest {
     public static void testRelayHeader() throws Exception {
         RELAY.RelayHeader hdr=new RELAY.RelayHeader(RELAY.RelayHeader.Type.DISSEMINATE);
         _testSize(hdr);
+
+        hdr=new RELAY.RelayHeader(RELAY.RelayHeader.Type.DISSEMINATE, Util.createRandomAddress("A"));
+        _testSize(hdr);
     }
 
     public static void testStateHeader() throws Exception {
@@ -581,27 +584,36 @@ public class SizeTest {
     }
 
 
+
     public static void testIpAddressWithAdditionalData() throws Exception {
         IpAddress addr=new IpAddress(5555, false);
         addr.setAdditionalData("bela".getBytes());
         _testSize(addr);
     }
 
+    public static void testProxyAddress() throws Exception {
+        ProxyAddress addr=new ProxyAddress(Util.createRandomAddress("A"), Util.createRandomAddress("B"));
+        _testSize(addr);
+    }
+
    
     public static void testWriteAddress() throws IOException, IllegalAccessException, InstantiationException {
-        UUID uuid=UUID.randomUUID();
+        Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
 
-        uuid.setAdditionalData("Bela Ban".getBytes());
+        ((UUID)uuid).setAdditionalData("Bela Ban".getBytes());
         _testWriteAddress(uuid);
 
-        IpAddress addr=new IpAddress(7500);
+        Address addr=new IpAddress(7500);
         _testWriteAddress(addr);
 
         addr=new IpAddress("127.0.0.1", 5678);
         _testWriteAddress(addr);
 
-        addr.setAdditionalData("Bela Ban".getBytes());
+        ((IpAddress)addr).setAdditionalData("Bela Ban".getBytes());
+        _testWriteAddress(addr);
+        
+        addr=new ProxyAddress(Util.createRandomAddress("A"), Util.createRandomAddress("B"));
         _testWriteAddress(addr);
     }
 
@@ -771,11 +783,11 @@ public class SizeTest {
 
 
 
-     private static void _testSize(Address addr) throws Exception {
+    private static void _testSize(Address addr) throws Exception {
         long size=addr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(addr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-         Assert.assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
 

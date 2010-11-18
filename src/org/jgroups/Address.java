@@ -14,9 +14,11 @@ import java.io.Externalizable;
  */
 public interface Address extends Externalizable, Streamable, Comparable<Address>, Cloneable { // todo: remove Externalizable
     // flags used for marshalling
-    public static final byte NULL      = 1 << 0;
-    public static final byte UUID_ADDR = 1 << 1;
-    public static final byte IP_ADDR   = 1 << 2;
+    public static final byte NULL       = 1 << 0;
+    public static final byte UUID_ADDR  = 1 << 1;
+    public static final byte IP_ADDR    = 1 << 2;
+    public static final byte PROXY_ADDR = 1 << 3;
+
 
     /**
      * Checks whether this is an address that represents multiple destinations;
