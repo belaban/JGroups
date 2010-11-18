@@ -5,62 +5,83 @@ import org.jgroups.Address;
 import java.io.*;
 
 /**
- * Used by RELAY to ship original sender (proxy_addr) of a message. Behaves like an Addess, but forwards all methods
+ * Used by RELAY to ship original sender (original_addr) of a message. Behaves like an Addess, but forwards all methods
  * to addr. Both addresses have to be non-null !
  * @author Bela Ban
  */
 public class ProxyAddress implements Address {
     private static final long serialVersionUID=1571765837965342563L;
 
-    protected Address addr;
-    protected Address proxy_addr=null;
+    protected Address proxy_addr;
+    protected Address original_addr=null;
 
 
     public ProxyAddress() {
     }
 
-    public ProxyAddress(Address addr, Address proxy_addr) {
-        this.addr=addr;
+    public ProxyAddress(Address proxy_addr, Address original_addr) {
         this.proxy_addr=proxy_addr;
+        this.original_addr=original_addr;
     }
 
 
+    public Address getProxyAddress() {
+        return proxy_addr;
+    }
+
+    public Address getOriginalAddress() {
+        return original_addr;
+    }
 
     public boolean isMulticastAddress() {
-        return addr.isMulticastAddress();
+        return false; // ProxyAddresses always only proxy unicast destinations
     }
 
     public int size() {
-        return Util.size(addr) + Util.size(proxy_addr);
+        return Util.size(proxy_addr) + Util.size(original_addr);
     }
 
     public int compareTo(Address o) {
-        ProxyAddress other=(ProxyAddress)o;
-        return addr.compareTo(other.addr);
+        if(o instanceof ProxyAddress)
+            return proxy_addr.compareTo(((ProxyAddress)o).proxy_addr);
+        return proxy_addr.compareTo(o);
+    }
+
+
+    protected Object clone() throws CloneNotSupportedException {
+        return new ProxyAddress(proxy_addr, original_addr);
+    }
+
+    public boolean equals(Object obj) {
+        return compareTo((Address)obj) == 0;
+    }
+
+    public int hashCode() {
+        return proxy_addr.hashCode();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
-        Util.writeAddress(addr, out);
         Util.writeAddress(proxy_addr, out);
+        Util.writeAddress(original_addr, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        addr=Util.readAddress(in);
         proxy_addr=Util.readAddress(in);
+        original_addr=Util.readAddress(in);
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(addr);
         out.writeObject(proxy_addr);
+        out.writeObject(original_addr);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        addr=(Address)in.readObject();
         proxy_addr=(Address)in.readObject();
+        original_addr=(Address)in.readObject();
     }
 
     public String toString() {
-        return addr + " | " + proxy_addr;
+        return proxy_addr + " | " + original_addr;
     }
 
 }
