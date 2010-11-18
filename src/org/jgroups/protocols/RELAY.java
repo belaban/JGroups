@@ -273,8 +273,7 @@ public class RELAY extends Protocol {
 
         public int size() {
             int retval=Global.BYTE_SIZE; // type
-            if(original_sender != null)
-                retval+=Util.size(original_sender);
+            retval+=Util.size(original_sender);
             return retval;
         }
 
