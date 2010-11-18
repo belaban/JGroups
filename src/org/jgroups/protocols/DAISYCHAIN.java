@@ -105,7 +105,8 @@ public class DAISYCHAIN extends Protocol {
 
                 if(loopback) {
                     if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(msg));
-                    msg.setSrc(local_addr);
+                    if(msg.getSrc() == null)
+                        msg.setSrc(local_addr);
 
                     Executor pool=msg.isFlagSet(Message.OOB)? oob_pool : default_pool;
                     pool.execute(new Runnable() {

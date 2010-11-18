@@ -50,7 +50,8 @@ public class HTOTAL extends Protocol {
                     if(coord == null)
                         log.error("coordinator is null, cannot send message to coordinator");
                     else {
-                        msg.setSrc(local_addr);
+                        if(msg.getSrc() == null)
+                            msg.setSrc(local_addr);
                         forwardTo(coord, msg);
                     }
                     return null; // handled here, don't pass down by default

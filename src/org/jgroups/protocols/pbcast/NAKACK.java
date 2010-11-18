@@ -742,7 +742,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 log.warn(local_addr + ": discarded message from " + local_addr + " with no window, my view is " + view);
             return;
         }
-        msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         seqno_lock.lock();
         try {
