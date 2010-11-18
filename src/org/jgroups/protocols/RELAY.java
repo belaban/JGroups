@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ProxyAddress;
-import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -47,14 +46,12 @@ public class RELAY extends Protocol {
 
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
-    protected Address local_addr;
-
+    protected Address          local_addr;
     @ManagedAttribute
     protected volatile boolean is_coord=false;
+    protected volatile Address coord=null;
+    protected JChannel         bridge;
 
-    protected JChannel bridge;
-
-    protected TimeScheduler timer;
 
 
 
@@ -64,9 +61,6 @@ public class RELAY extends Protocol {
         this.relay=relay;
     }
 
-    public void init() throws Exception {
-        timer=getTransport().getTimer();
-    }
 
     public void stop() {
         Util.close(bridge);
@@ -74,6 +68,15 @@ public class RELAY extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
+
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                if(msg.getDest() instanceof ProxyAddress) {
+                    forwardToCoord(msg);
+                    return null;
+                }
+                break;
+
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
@@ -168,10 +171,12 @@ public class RELAY extends Protocol {
                 }
             }
         }
+
+        coord=view.getMembers().firstElement();
     }
 
 
-
+    /** Forwards the message across the TCP link to the other local cluster */
     protected void forward(byte[] buffer, int offset, int length) throws Exception {
         Message msg=new Message(null, null, buffer, offset, length);
         msg.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
@@ -179,6 +184,25 @@ public class RELAY extends Protocol {
             bridge.send(msg);
     }
 
+    /** Wraps the message annd sends it to the current coordinator */
+    protected void forwardToCoord(Message msg) {
+        Message tmp=msg.copy(true, false); // don't copy headers
+        if(tmp.getSrc() == null)
+            tmp.setSrc(local_addr);
+        ProxyAddress dst=(ProxyAddress)tmp.getDest();
+        tmp.setDest(dst.getOriginalAddress());
+        try {
+            byte[] buf=Util.streamableToByteBuffer(tmp);
+            if(coord != null) {
+                tmp=new Message(coord, null, buf, 0, buf.length); // reusing tmp is OK here ...
+                tmp.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+                down_prot.down(new Event(Event.MSG, tmp));
+            }
+        }
+        catch(Exception e) {
+            log.error("failed forwarding unicast message to coord", e);
+        }
+    }
 
 
     protected class Receiver extends ReceiverAdapter {
@@ -207,21 +231,11 @@ public class RELAY extends Protocol {
                 default:
                     throw new IllegalArgumentException(hdr.type + " is not a valid type");
             }
-
-
-//            Message copy=msg.copy(true, false); // copy the payload and everything else but the headers
-//            copy.putHeader(getId(), new RelayHeader(RelayHeader.Type.DISSEMINATE));
-//            copy.setSrc(local_addr);
-//            if(log.isTraceEnabled())
-//                log.trace("received msg from " + msg.getSrc() + ", passing down the stack with dest=" +
-//                        copy.getDest() + " and src=" + local_addr);
-//            down_prot.down(new Event(Event.MSG, copy));
         }
     }
 
     protected void putOnLocalCluster(Message msg) {
         Address sender=msg.getSrc();
-
         ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
         msg.setSrc(proxy_sender);
         msg.putHeader(id, new RelayHeader(RelayHeader.Type.DISSEMINATE));
@@ -233,10 +247,12 @@ public class RELAY extends Protocol {
         down_prot.down(new Event(Event.MSG, msg));
     }
 
+    
 
     public static class RelayHeader extends Header {
         public static enum Type {DISSEMINATE, FORWARD, VIEW};
         protected Type type;
+        
 
         public RelayHeader() {
         }

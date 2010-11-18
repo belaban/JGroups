@@ -114,14 +114,8 @@ RELAY.up(msg):
 
 
 RELAY.down(msg):
-- If not coordinator or msg is a multicast or msg.dest is not a ProxyUUID: pass down, break
-- Copy msg to M (don't copy headers)
-- Set M.dst=msg.dst.original, M.src=local_addr
-- Remove all headers from M
-- Serialize M into a buffer buf
-- Create message M2 (M2.buf=buf)
-- Add RelayHeader.FORWARD to M2
-- Send M2 to the current relay (coordinator)
+- If msg.dest is not a ProxyUUID: pass down, return
+- forwardToCoord(msg)
 - Return // don't pass down !
 
 
@@ -139,6 +133,13 @@ forward(buf): // buf is the serialized message to be forwarded
 - Put M onto the TCP channel
 
 
+forwardToCoord(msg):
+- Copy msg to M (don't copy headers)
+- Set M.dst=msg.dst.original, M.src=local_addr
+- Serialize M into a buffer buf
+- Create message M2 (M2.buf=buf)
+- Add RelayHeader.FORWARD to M2
+- Send M2 to the current relay (coordinator)
 
 putOnLocalCluster(M):
 - Set M.src=ProxyUUID(local_addr,M.src)
@@ -149,3 +150,4 @@ putOnLocalCluster(M):
 
 Issues:
 - Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
+- Should we pass logical name information between the clusters ? Or should this be part of ProxyAddress ?
