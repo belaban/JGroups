@@ -151,3 +151,9 @@ putOnLocalCluster(M):
 Issues:
 - Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
 - Should we pass logical name information between the clusters ? Or should this be part of ProxyAddress ?
+
+Todo:
+#1 UUID information - logical names
+#2 Views - global view of the two local clusters
+#3 Handling temp coordinator outage - how do we prevent message loss ?
+#4 State transfer - replication across clusters, to bootstrap initial coords in a local cluster
