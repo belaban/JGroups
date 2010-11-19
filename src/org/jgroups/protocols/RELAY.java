@@ -330,7 +330,7 @@ public class RELAY extends Protocol {
                     // todo: somehow send the view around in this local cluster
                     break;
                 case UUIDS:
-                    Message uuid_msg=new Message();
+                    Message uuid_msg=new Message(null, null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                     uuid_msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, uuid_msg));
                     break;
