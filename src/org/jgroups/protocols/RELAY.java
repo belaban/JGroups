@@ -4,11 +4,14 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ProxyAddress;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
+import java.io.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
@@ -51,6 +54,7 @@ public class RELAY extends Protocol {
     protected volatile boolean is_coord=false;
     protected volatile Address coord=null;
     protected JChannel         bridge;
+    protected View             local_view, remote_view;
 
 
 
@@ -59,6 +63,21 @@ public class RELAY extends Protocol {
     @ManagedOperation
     public void setRelay(boolean relay) {
         this.relay=relay;
+    }
+
+    @ManagedAttribute
+    public String getLocalView() {
+        return local_view != null? local_view.toString() : "n/a";
+    }
+
+    @ManagedAttribute
+    public String getRemoteView() {
+        return remote_view != null? remote_view.toString() : "n/a";
+    }
+
+    @ManagedAttribute
+    public String getGlobalView() {
+        return "n/a";
     }
 
 
@@ -122,6 +141,16 @@ public class RELAY extends Protocol {
                         case VIEW:
                             // todo: handle RELAY view, probably needs to invoke viewAccepted on the app...
                             break;
+                        case UUIDS:
+                            try {
+                                Map<Address,String> uuids=uuidsFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                                UUID.add(uuids);
+                            }
+                            catch(Exception e) {
+                                log.error("failed reading UUID information from message", e);
+                            }
+
+                            break;
                         default:
                             throw new IllegalArgumentException(hdr.type + " is not a valid type");
                     }
@@ -169,6 +198,7 @@ public class RELAY extends Protocol {
                     bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
                     bridge.connect(cluster_name);
                     bridge.setReceiver(new Receiver());
+                    sendUUIDs(true);
                 }
                 catch(ChannelException e) {
                     log.error("failed creating channel (props=" + props + ")", e);
@@ -177,6 +207,14 @@ public class RELAY extends Protocol {
         }
 
         coord=view.getMembers().firstElement();
+
+        // Set view
+        if(local_view == null || !local_view.getVid().equals(view.getViewId())) {
+            local_view=view;
+            if(is_coord) {
+                sendUUIDs(true);
+            }
+        }
     }
 
 
@@ -209,7 +247,66 @@ public class RELAY extends Protocol {
     }
 
 
+    protected void sendUUIDs(boolean remote) {
+        Map<Address,String> contents=UUID.getContents();
+        RelayHeader hdr=RelayHeader.create(RelayHeader.Type.UUIDS);
+        Message msg=new Message();
+        msg.putHeader(id, hdr);
+        try {
+            byte[] buf=uuidsToBuffer(contents);
+            msg.setBuffer(buf);
+            if(remote) {
+                if(bridge != null) {
+                    bridge.send(msg);
+                }
+            }
+            else {
+                down_prot.down(new Event(Event.MSG, msg));
+            }
+        }
+        catch(Exception e) {
+            log.error("failed sending UUID information", e);
+        }
+    }
+
+    protected static byte[] uuidsToBuffer(Map<Address,String> uuids) throws IOException {
+        ByteArrayOutputStream output=null;
+        DataOutputStream out=null;
+
+        output=new ByteArrayOutputStream();
+        out=new DataOutputStream(output);
+        if(uuids == null)
+            out.writeInt(0);
+        else {
+            out.writeInt(uuids.size());
+            for(Map.Entry<Address,String> entry: uuids.entrySet()) {
+                Util.writeAddress(entry.getKey(), out);
+                out.writeUTF(entry.getValue());
+            }
+        }
+        return output.toByteArray();
+    }
+
+    protected static Map<Address,String> uuidsFromBuffer(byte[] buf, int offset, int length) throws Exception {
+        ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
+        DataInputStream in=new DataInputStream(input);
+        Map<Address,String> retval=new HashMap<Address,String>();
+
+        int size=in.readInt();
+        if(size == 0)
+            return retval;
+
+        for(int i=0; i < size; i++) {
+            Address addr=Util.readAddress(in);
+            String name=in.readUTF();
+            retval.put(addr, name);
+        }
+        return retval;
+    }
+
+
     protected class Receiver extends ReceiverAdapter {
+
         public void receive(Message msg) {
             Address sender=msg.getSrc();
             if(bridge.getAddress().equals(sender)) // discard my own messages
@@ -232,8 +329,21 @@ public class RELAY extends Protocol {
                 case VIEW:
                     // todo: somehow send the view around in this local cluster
                     break;
+                case UUIDS:
+                    Message uuid_msg=new Message();
+                    uuid_msg.putHeader(id, hdr);
+                    down_prot.down(new Event(Event.MSG, uuid_msg));
+                    break;
                 default:
                     throw new IllegalArgumentException(hdr.type + " is not a valid type");
+            }
+        }
+
+        public void viewAccepted(View view) {
+            if(remote_view == null || !remote_view.getVid().equals(view.getViewId())) {
+                remote_view=view;
+                sendUUIDs(true);
+                sendUUIDs(false);
             }
         }
     }
@@ -242,7 +352,7 @@ public class RELAY extends Protocol {
         Address sender=msg.getSrc();
         ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
         msg.setSrc(proxy_sender);
-        msg.putHeader(id, new RelayHeader(RelayHeader.Type.DISSEMINATE, proxy_sender));
+        msg.putHeader(id, RelayHeader.createDisseminateHeader(proxy_sender));
 
         if(log.isTraceEnabled())
             log.trace("received msg from " + sender + ", passing down the stack with dest=" +
@@ -254,41 +364,88 @@ public class RELAY extends Protocol {
     
 
     public static class RelayHeader extends Header {
-        public static enum Type {DISSEMINATE, FORWARD, VIEW};
-        protected Type type;
-        protected Address original_sender;
-        
+        public static enum Type {DISSEMINATE, FORWARD, VIEW, UUIDS};
+        protected Type                type;
+        protected Address             original_sender; // with DISSEMINATE
+
 
         public RelayHeader() {
         }
 
-        public RelayHeader(Type type) {
+        private RelayHeader(Type type) {
             this.type=type;
         }
 
-        public RelayHeader(Type type, Address original_sender) {
-            this(type);
-            this.original_sender=original_sender;
+
+        public static RelayHeader create(Type type) {
+            return new RelayHeader(type);
         }
+
+        public static RelayHeader createDisseminateHeader(Address original_sender) {
+            RelayHeader retval=new RelayHeader(Type.DISSEMINATE);
+            retval.original_sender=original_sender;
+            return retval;
+        }
+
+
 
         public int size() {
             int retval=Global.BYTE_SIZE; // type
-            retval+=Util.size(original_sender);
+            switch(type) {
+                case DISSEMINATE:
+                    retval+=Util.size(original_sender);
+                    break;
+                case FORWARD:
+                    break;
+                case VIEW:
+                    break;
+                case UUIDS:
+                    break;
+            }
             return retval;
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type.ordinal());
-            Util.writeAddress(original_sender, out);
+            switch(type) {
+                case DISSEMINATE:
+                    Util.writeAddress(original_sender, out);
+                    break;
+                case FORWARD:
+                case VIEW:
+                    break;
+                case UUIDS:
+                    break;
+            }
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
-            original_sender=Util.readAddress(in);
+            switch(type) {
+                case DISSEMINATE:
+                    original_sender=Util.readAddress(in);
+                    break;
+                case FORWARD:
+                case VIEW:
+                    break;
+                case UUIDS:
+                    break;
+            }
         }
 
         public String toString() {
-            return type.toString();
+            StringBuilder sb=new StringBuilder(type.toString());
+            switch(type) {
+                case DISSEMINATE:
+                    sb.append(" (original sender=" + original_sender + ")");
+                    break;
+                case FORWARD:
+                case VIEW:
+                    break;
+                case UUIDS:
+                    break;
+            }
+            return sb.toString();
         }
     }
 
