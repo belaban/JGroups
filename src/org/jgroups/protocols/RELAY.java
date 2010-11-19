@@ -4,14 +4,14 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ProxyAddress;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
@@ -47,14 +47,34 @@ public class RELAY extends Protocol {
             "unidirectional replication from one cluster to another, but not back. Can be changed at runtime")
     protected boolean relay=true;
 
+    @Property(description="Drops views received from below and instead generates global views and passes them up. " +
+            "A global view consists of the local view and the remote view, ordered by view ID. If true, no protocol" +
+            "which requires (local) views can sit on top of RELAY")
+    protected boolean present_global_views=true;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
     @ManagedAttribute
     protected volatile boolean is_coord=false;
     protected volatile Address coord=null;
+
+    /** The bridge between the two local clusters, usually based on a TCP config */
     protected JChannel         bridge;
-    protected View             local_view, remote_view;
+
+    /** The view of the local cluster */
+    protected View             local_view;
+
+    /** The view of the bridge cluster, usually consists of max 2 nodes */
+    protected View             bridge_view;
+
+    /** The view of the remote cluster, typically all members are ProxyAddresses */
+    protected View             remote_view;
+
+    /** The combined view of local and remote cluster */
+    protected View             global_view;
+
+    protected TimeScheduler    timer;
 
 
 
@@ -71,15 +91,25 @@ public class RELAY extends Protocol {
     }
 
     @ManagedAttribute
+    public String getBridgeView() {
+        return bridge_view != null? bridge_view.toString() : "n/a";
+    }
+
+    @ManagedAttribute
     public String getRemoteView() {
         return remote_view != null? remote_view.toString() : "n/a";
     }
 
     @ManagedAttribute
     public String getGlobalView() {
-        return "n/a";
+        return global_view != null? global_view.toString() : "n/a";
     }
 
+
+    public void init() throws Exception {
+        super.init();
+        timer=getTransport().getTimer();
+    }
 
     public void stop() {
         Util.close(bridge);
@@ -171,7 +201,10 @@ public class RELAY extends Protocol {
 
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
-                break;
+                if(present_global_views)
+                    return up_prot.up(new Event(Event.VIEW_CHANGE, global_view));
+                else
+                    break;
         }
         return up_prot.up(evt);
     }
@@ -179,7 +212,7 @@ public class RELAY extends Protocol {
 
 
 
-    protected void handleView(View view) {
+    protected void handleView(final View view) {
         if(is_coord) {
             if(!Util.isCoordinator(view, local_addr)) {
                 if(log.isTraceEnabled())
@@ -196,8 +229,8 @@ public class RELAY extends Protocol {
                         log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
                     bridge=new JChannel(props);
                     bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
-                    bridge.connect(cluster_name);
                     bridge.setReceiver(new Receiver());
+                    bridge.connect(cluster_name);
                     sendUUIDs(true);
                 }
                 catch(ChannelException e) {
@@ -213,8 +246,18 @@ public class RELAY extends Protocol {
             local_view=view;
             if(is_coord) {
                 sendUUIDs(true);
+                timer.execute(new Runnable() {
+                    public void run() {
+                        sendUUIDs(false);
+                    }
+                });
             }
         }
+
+        // Generate global view
+        View tmp=generateGlobalView();
+        if(global_view == null || !global_view.equals(tmp))
+            global_view=tmp;
     }
 
 
@@ -252,11 +295,12 @@ public class RELAY extends Protocol {
         RelayHeader hdr=RelayHeader.create(RelayHeader.Type.UUIDS);
         Message msg=new Message();
         msg.putHeader(id, hdr);
+
         try {
             byte[] buf=uuidsToBuffer(contents);
             msg.setBuffer(buf);
             if(remote) {
-                if(bridge != null) {
+                if(bridge != null && bridge.isConnected()) {
                     bridge.send(msg);
                 }
             }
@@ -304,6 +348,23 @@ public class RELAY extends Protocol {
         return retval;
     }
 
+    protected View generateGlobalView() {
+        List<View> views=new ArrayList<View>(2);
+        if(local_view != null) views.add(local_view);
+        if(remote_view != null) views.add(remote_view);
+        Collections.sort(views, new Comparator<View>() {
+
+            public int compare(View v1, View v2) {
+                return v1.getViewId().compare(v2.getViewId());
+            }
+        });
+
+        Collection<Address> combined_members=new LinkedList<Address>();
+        for(View view: views)
+            combined_members.addAll(view.getMembers());
+        return new View(views.get(0).getViewId(), combined_members);
+    }
+
 
     protected class Receiver extends ReceiverAdapter {
 
@@ -340,10 +401,9 @@ public class RELAY extends Protocol {
         }
 
         public void viewAccepted(View view) {
-            if(remote_view == null || !remote_view.getVid().equals(view.getViewId())) {
-                remote_view=view;
+            if(bridge_view == null || !bridge_view.getVid().equals(view.getViewId()) && view.size() > 1) {
+                bridge_view=view;
                 sendUUIDs(true);
-                sendUUIDs(false);
             }
         }
     }
