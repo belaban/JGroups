@@ -14,34 +14,33 @@
 		       belaban@yahoo.com
 
 
-JGroups is a Java package for reliable group communication. It
+JGroups is a Java library for reliable group communication. It
 consists of 3 parts: (1) a socket-like API for application
 development, (2) a protocol stack, which implements reliable
 communication, and (3) a set of building blocks, which give the
-application/protocol programmer high-level abstractions
-(e.g. DistributedHashtable, derived from java.util.Hashtable, which is
-similar to Linda/JavaSpaces).
+developer high-level abstractions (e.g. ReplicatedHashMap, an
+implementation of java.util.Map.
 
-The API (a channel) looks like a socket: there a methods for joining
-and leaving groups, sending and receiving messages to/from members,
+The API (a channel) looks like a socket: there are methods for joining
+and leaving groups, sending and receiving messages,
 getting the shared group state, and registering for notifications when
 a member joins, or an existing member leaves or crashes.
 
-The protocol stack is a linked list of protocols, through which each
-message has to be passed. Each protocol implements an up() and down()
-method, and may modify, reorder, encrypt, fragment/unfragment, drop a
-message, or pass it up/down unchanged. The protocol stack is created
+The protocol stack is a list of protocols, through which each
+message passes. Each protocol implements an up() and down()
+method, and may modify, reorder, encrypt, fragment/unfragment, drop,
+or pass a message up/down. The protocol stack is created
 according to a specification given when a channel is created. New
 protocols can be plugged into the stack easily.
 
-Building blocks hide the channel and provide a higher
-abstraction. Example: DistributedHashtable is a subclass of
-java.util.Hashtable and overrides all methods that change the
-hashtable (clear, put, remove). Those methods are invoked on all
-hashtables in the same group simultaneously, so that all hashtables
-have the same state. A new hashtable uses a state transfer protocol to
-initially obtain the shared group state from an existing member. This
-enables replication of data structures across process boundaries.
+Building blocks hide the channel and provide a higher abstraction.
+Example: ReplicatedHashMap implements java.util.Mapand implements
+all methods that change the map (clear(), put(), remove()).
+Those methods are invoked on all hashmap instances in the same group
+simultaneously, so that all hashmaps have the same state.
+A new hashmap uses a state transfer protocol to initially obtain
+the shared group state from an existing member. This allows for 
+replication of data structures across processes.
 
 
 
@@ -58,8 +57,8 @@ Group communication is important in the following situations:
 
  - Notification service / push technology: receivers subscribe to a
    channel, senders send data to the channels, channels distribute
-   data to all receivers subscribed to the channel (see iBus, CastaNet
-   etc.).  Used for example for video distribution, videoconferencing
+   data to all receivers subscribed to the channel.
+   Used for example for video distribution, videoconferencing
 	
 	
 JGroups deliberately models a rather low-level message-oriented
@@ -71,13 +70,6 @@ Providing low level Java classes allows the programmer to
 extend/replace classes at will, as the granularity of the system is
 finer.
 
-JGroups can also be used for the construction of higher level
-toolkits/frameworks. Such frameworks should provide a certain
-transparency, without, however, preventing extensions to be made. The
-principle of creating partly 'opened-up' black boxes is called Open
-Implementation (OI, http://www.parc.xerox.com/spl/projects/oi/) and
-will be applied both to JGroups and to a further higher level
-toolkit.
 
 
 
