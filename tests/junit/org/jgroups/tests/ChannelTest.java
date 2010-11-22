@@ -132,7 +132,7 @@ public class ChannelTest extends ChannelTestBase {
         try {
             ch1.connect("testIsConnectedOnFirstViewChange");
             ch2.connect("testIsConnectedOnFirstViewChange");
-            assertFalse(tmp.isConnected());            
+            assert tmp.isConnected();
         }
         finally {
             Util.close(ch1,ch2);
@@ -142,7 +142,7 @@ public class ChannelTest extends ChannelTestBase {
 
 
     @Test
-    public void testNoViewIsReceivedAferDisconnect() throws Exception {
+    public void testNoViewIsReceivedAfterDisconnect() throws Exception {
         JChannel ch1 = createChannel(true,2);        
         Channel ch2=createChannel(ch1);
         MyViewChecker ra = new MyViewChecker(ch2);
@@ -162,7 +162,7 @@ public class ChannelTest extends ChannelTestBase {
     }
     
     @Test
-    public void testNoViewIsReceivedAferClose() throws Exception {
+    public void testNoViewIsReceivedAfterClose() throws Exception {
         JChannel ch1 = createChannel(true,2);        
         Channel ch2=createChannel(ch1);
         MyViewChecker ra = new MyViewChecker(ch2);
