@@ -147,6 +147,42 @@ putOnLocalCluster(M):
 - Put M on the local channel
 
 
+View changes
+------------
+
+Local view changed:
+- If coordinator:
+  - Broadcast local and remote view to local cluster
+  - Send local view to remote cluster
+- Every node (on reception):
+  - Update(LV, RV)
+
+Remote view (RV) changed:
+- Broadcast local and remote view to local cluster
+- Every node (on reception):
+  - Update(LV, RV)
+
+
+Update(LV,RV):
+- Update local view from LV if needed
+- Update remote view from RV if needed
+- Compute new global view V from local and remote view
+- If V != current global view: set current view = V and viewAccepted(V)
+
+
+Bridge view changed:
+- If coordinator: send local view to remote
+- If remote coordinator ('creator of remote view') crashed:
+  - Generate empty remote view V and send it to local cluster
+  - Every node will then generate a new global view (excluding the remote nodes)
+    and install it locally
+    
+
+
+
+
+
+
 
 Issues:
 - Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
