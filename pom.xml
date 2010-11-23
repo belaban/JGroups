@@ -193,22 +193,25 @@
                 <configuration>
                     <instructions>
                         <Export-Package>
-                            schema;version=${pom.version},
-                            org.jgroups;version=${pom.version},
-                            org.jgroups.annotations;version=${pom.version},
-                            org.jgroups.auth;version=${pom.version},
-                            org.jgroups.blocks;version=${pom.version},
-                            org.jgroups.conf;version=${pom.version},
-                            org.jgroups.debug;version=${pom.version},
-                            org.jgroups.jmx;version=${pom.version},
-                            org.jgroups.logging;version=${pom.version},
-                            org.jgroups.mux;version=${pom.version},
-                            org.jgroups.persistence;version=${pom.version},
-                            org.jgroups.protocols;version=${pom.version},
-                            org.jgroups.protocols.pbcast;version=${pom.version},
-                            org.jgroups.stack;version=${pom.version},
-                            org.jgroups.util;version=${pom.version},
+                            schema;version=${project.version},
+                            org.jgroups;version=${project.version},
+                            org.jgroups.annotations;version=${project.version},
+                            org.jgroups.auth;version=${project.version},
+                            org.jgroups.blocks;version=${project.version},
+                            org.jgroups.conf;version=${project.version},
+                            org.jgroups.debug;version=${project.version},
+                            org.jgroups.jmx;version=${project.version},
+                            org.jgroups.logging;version=${project.version},
+                            org.jgroups.mux;version=${project.version},
+                            org.jgroups.persistence;version=${project.version},
+                            org.jgroups.protocols;version=${project.version},
+                            org.jgroups.protocols.pbcast;version=${project.version},
+                            org.jgroups.stack;version=${project.version},
+                            org.jgroups.util;version=${project.version}
                         </Export-Package>
+                        <Import-Package>
+                            !bsh.*,*
+                        </Import-Package>
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
