@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jgroups</groupId>
     <artifactId>jgroups</artifactId>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
     <name>JGroups</name>
     <version>2.12.0.Alpha1</version>
     <url>http://www.jgroups.org</url>
