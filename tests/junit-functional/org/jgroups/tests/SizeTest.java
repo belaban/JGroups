@@ -527,8 +527,8 @@ public class SizeTest {
         uuid_cache.put(Util.createRandomAddress("A"), "A");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
-        hdr=RELAY.RelayHeader.create(RELAY.RelayHeader.Type.UUIDS);
-        _testSize(hdr);
+        // hdr=RELAY.RelayHeader.create(RELAY.RelayHeader.Type.UUIDS);
+        // _testSize(hdr);
     }
 
     public static void testStateHeader() throws Exception {
