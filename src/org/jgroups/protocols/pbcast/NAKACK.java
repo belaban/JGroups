@@ -662,7 +662,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             if(!is_server) { // discard messages while not yet server (i.e., until JOIN has returned)
                 if(log.isTraceEnabled())
-                    log.trace("message was discarded (not yet server)");
+                    log.trace("message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
                 return null;
             }
 
