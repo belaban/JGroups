@@ -188,15 +188,14 @@ public class RELAY extends Protocol {
                                     UUID.add(view_data.uuids);
 
                                 boolean generate_global_view=false;
-                                if(local_view == null || !local_view.equals(view_data.local_view)) {
+                                if(view_data.local_view != null && (local_view == null || !local_view.equals(view_data.local_view))) {
                                     generate_global_view=true;
                                     local_view=view_data.local_view;
                                 }
 
-                                if(remote_view == null || !remote_view.equals(view_data.remote_view)) {
+                                if(view_data.remote_view != null && (remote_view == null || !remote_view.equals(view_data.remote_view))) {
                                     remote_view=view_data.remote_view;
                                     generate_global_view=true;
-
                                 }
 
                                 if(generate_global_view) {
@@ -262,6 +261,8 @@ public class RELAY extends Protocol {
         if(local_view == null || !local_view.getVid().equals(view.getViewId())) {
             // local_view=view; // set later
 
+            boolean create_bridge=false;
+
             if(is_coord) {
                 if(!Util.isCoordinator(view, local_addr)) {
                     if(log.isTraceEnabled())
@@ -273,17 +274,7 @@ public class RELAY extends Protocol {
             else {
                 if(Util.isCoordinator(view, local_addr)) {
                     is_coord=true;
-                    try {
-                        if(log.isTraceEnabled())
-                            log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
-                        bridge=new JChannel(props);
-                        bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
-                        bridge.setReceiver(new Receiver());
-                        bridge.connect(cluster_name);
-                    }
-                    catch(ChannelException e) {
-                        log.error("failed creating channel (props=" + props + ")", e);
-                    }
+                    create_bridge=true;
                 }
             }
 
@@ -303,6 +294,19 @@ public class RELAY extends Protocol {
                 catch(Throwable e) {
                     log.error("failed sending view data to local cluster", e);
                 }
+
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
+                    bridge=new JChannel(props);
+                    bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+                    bridge.setReceiver(new Receiver());
+                    bridge.connect(cluster_name);
+                }
+                catch(ChannelException e) {
+                    log.error("failed creating channel (props=" + props + ")", e);
+                }
+
                 if(view_data != null)
                     sendViewToRemote(view_data);
             }
@@ -402,7 +406,17 @@ public class RELAY extends Protocol {
                     break;
                 case VIEW:
                     try {
-                        final Message view_msg=new Message(null, null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                                                                              msg.getOffset(), msg.getLength());
+
+                        UUID.add(data.uuids); // todo: remove
+
+                        // swap local and remote views
+                        data.remote_view=data.local_view;
+                        data.local_view=null;
+                        System.out.println("received view from remote: " + data);
+
+                        Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
                         view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                         down_prot.down(new Event(Event.MSG, view_msg));
                     }
