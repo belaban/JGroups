@@ -1200,7 +1200,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(win != null) {
                 if(local_addr.equals(sender)) {
                     win.setHighestDelivered(highest_delivered_seqno);
-                    continue; // don't destroy my onw window
+                    continue; // don't destroy my own window
                 }
                 win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
