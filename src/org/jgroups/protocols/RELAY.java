@@ -3,14 +3,12 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.ProxyAddress;
-import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.*;
 import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
 
-import java.io.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -130,6 +128,19 @@ public class RELAY extends Protocol {
                 handleView((View)evt.getArg());
                 break;
 
+            case Event.CONNECT:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                Object retval=down_prot.down(evt);
+
+                if(coord != null) {
+                    Message broadcast_view_req=new Message(coord, null, null);
+                    broadcast_view_req.putHeader(id, RelayHeader.create(RelayHeader.Type.BROADCAST_VIEW));
+                    down_prot.down(new Event(Event.MSG, broadcast_view_req));
+                }
+                return retval;
+
             case Event.DISCONNECT:
                 Util.close(bridge);
                 break;
@@ -169,18 +180,50 @@ public class RELAY extends Protocol {
                                 log.warn("Cannot forward message as I'm not coordinator");
                             break;
                         case VIEW:
-                            // todo: handle RELAY view, probably needs to invoke viewAccepted on the app...
-                            break;
-                        case UUIDS:
                             try {
-                                Map<Address,String> uuids=uuidsFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                                UUID.add(uuids);
+                                ViewData view_data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                                                                                           msg.getOffset(), msg.getLength());
+                                // add UUID info:
+                                if(view_data.uuids != null)
+                                    UUID.add(view_data.uuids);
+
+                                boolean generate_global_view=false;
+                                if(local_view == null || !local_view.equals(view_data.local_view)) {
+                                    generate_global_view=true;
+                                    local_view=view_data.local_view;
+                                }
+
+                                if(remote_view == null || !remote_view.equals(view_data.remote_view)) {
+                                    remote_view=view_data.remote_view;
+                                    generate_global_view=true;
+
+                                }
+
+                                if(generate_global_view) {
+                                    global_view=generateGlobalView();
+                                    if(present_global_views)
+                                        return up_prot.up(new Event(Event.VIEW_CHANGE, global_view));
+                                }
                             }
                             catch(Exception e) {
-                                log.error("failed reading UUID information from message", e);
+                                log.error("failed unmarshalling VIEW", e);
                             }
-
                             break;
+
+                        case BROADCAST_VIEW:
+                            ViewData view_data=null;
+                            final Address sender=msg.getSrc();
+                            try {
+                                view_data=ViewData.create(local_view, remote_view);
+                                final Message view_msg=new Message(sender, null, Util.streamableToByteBuffer(view_data));
+                                view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                                down_prot.down(new Event(Event.MSG, view_msg));
+                            }
+                            catch(Throwable e) {
+                                log.error("failed sending view data to " + sender, e);
+                            }
+                            break;
+
                         default:
                             throw new IllegalArgumentException(hdr.type + " is not a valid type");
                     }
@@ -200,9 +243,9 @@ public class RELAY extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                handleView((View)evt.getArg());
+                handleView((View)evt.getArg()); // already sends up new view if needed
                 if(present_global_views)
-                    return up_prot.up(new Event(Event.VIEW_CHANGE, global_view));
+                    return null;
                 else
                     break;
         }
@@ -213,51 +256,57 @@ public class RELAY extends Protocol {
 
 
     protected void handleView(final View view) {
-        if(is_coord) {
-            if(!Util.isCoordinator(view, local_addr)) {
-                if(log.isTraceEnabled())
-                    log.trace("I'm not coordinator anymore, closing the channel");
-                Util.close(bridge);
-                bridge=null;
-            }
-        }
-        else {
-            if(Util.isCoordinator(view, local_addr)) {
-                is_coord=true;
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
-                    bridge=new JChannel(props);
-                    bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
-                    bridge.setReceiver(new Receiver());
-                    bridge.connect(cluster_name);
-                    sendUUIDs(true);
-                }
-                catch(ChannelException e) {
-                    log.error("failed creating channel (props=" + props + ")", e);
-                }
-            }
-        }
-
         coord=view.getMembers().firstElement();
 
         // Set view
         if(local_view == null || !local_view.getVid().equals(view.getViewId())) {
-            local_view=view;
+            // local_view=view; // set later
+
             if(is_coord) {
-                sendUUIDs(true);
-                timer.execute(new Runnable() {
-                    public void run() {
-                        sendUUIDs(false);
+                if(!Util.isCoordinator(view, local_addr)) {
+                    if(log.isTraceEnabled())
+                        log.trace("I'm not coordinator anymore, closing the channel");
+                    Util.close(bridge);
+                    bridge=null;
+                }
+            }
+            else {
+                if(Util.isCoordinator(view, local_addr)) {
+                    is_coord=true;
+                    try {
+                        if(log.isTraceEnabled())
+                            log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
+                        bridge=new JChannel(props);
+                        bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+                        bridge.setReceiver(new Receiver());
+                        bridge.connect(cluster_name);
                     }
-                });
+                    catch(ChannelException e) {
+                        log.error("failed creating channel (props=" + props + ")", e);
+                    }
+                }
+            }
+
+
+            if(is_coord) {
+                ViewData view_data=null;
+                try {
+                    view_data=ViewData.create(view, remote_view);
+                    final Message view_msg=new Message(null, null, Util.streamableToByteBuffer(view_data));
+                    view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                    timer.execute(new Runnable() {
+                        public void run() {
+                            down_prot.down(new Event(Event.MSG, view_msg));
+                        }
+                    });
+                }
+                catch(Throwable e) {
+                    log.error("failed sending view data to local cluster", e);
+                }
+                if(view_data != null)
+                    sendViewToRemote(view_data);
             }
         }
-
-        // Generate global view
-        View tmp=generateGlobalView();
-        if(global_view == null || !global_view.equals(tmp))
-            global_view=tmp;
     }
 
 
@@ -290,72 +339,36 @@ public class RELAY extends Protocol {
     }
 
 
-    protected void sendUUIDs(boolean remote) {
-        Map<Address,String> contents=UUID.getContents();
-        RelayHeader hdr=RelayHeader.create(RelayHeader.Type.UUIDS);
-        Message msg=new Message();
-        msg.putHeader(id, hdr);
 
+    protected void sendViewToRemote(ViewData view_data) {
         try {
-            byte[] buf=uuidsToBuffer(contents);
-            msg.setBuffer(buf);
-            if(remote) {
-                if(bridge != null && bridge.isConnected()) {
-                    bridge.send(msg);
-                }
-            }
-            else {
-                down_prot.down(new Event(Event.MSG, msg));
+            byte[] buf=Util.streamableToByteBuffer(view_data);
+            final Message msg=new Message(null, null, buf);
+            msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+            if(bridge != null && bridge.isConnected()) {
+                bridge.send(msg);
             }
         }
         catch(Exception e) {
-            log.error("failed sending UUID information", e);
+            log.error("failed sending view to remote", e);
         }
     }
 
-    protected static byte[] uuidsToBuffer(Map<Address,String> uuids) throws IOException {
-        ByteArrayOutputStream output=null;
-        DataOutputStream out=null;
 
-        output=new ByteArrayOutputStream();
-        out=new DataOutputStream(output);
-        if(uuids == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(uuids.size());
-            for(Map.Entry<Address,String> entry: uuids.entrySet()) {
-                Util.writeAddress(entry.getKey(), out);
-                out.writeUTF(entry.getValue());
-            }
-        }
-        return output.toByteArray();
-    }
-
-    protected static Map<Address,String> uuidsFromBuffer(byte[] buf, int offset, int length) throws Exception {
-        ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
-        DataInputStream in=new DataInputStream(input);
-        Map<Address,String> retval=new HashMap<Address,String>();
-
-        int size=in.readInt();
-        if(size == 0)
-            return retval;
-
-        for(int i=0; i < size; i++) {
-            Address addr=Util.readAddress(in);
-            String name=in.readUTF();
-            retval.put(addr, name);
-        }
-        return retval;
-    }
 
     protected View generateGlobalView() {
         List<View> views=new ArrayList<View>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
         Collections.sort(views, new Comparator<View>() {
-
             public int compare(View v1, View v2) {
-                return v1.getViewId().compare(v2.getViewId());
+                ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
+                Address creator1=vid1.getCoordAddress(), creator2=vid2.getCoordAddress();
+                int rc=creator1.compareTo(creator2);
+                if(rc != 0)
+                    return rc;
+                long id1=vid1.getId(), id2=vid2.getId();
+                return id1 > id2 ? 1 : id1 < id2? -1 : 0;
             }
         });
 
@@ -388,12 +401,17 @@ public class RELAY extends Protocol {
                     }
                     break;
                 case VIEW:
-                    // todo: somehow send the view around in this local cluster
+                    try {
+                        final Message view_msg=new Message(null, null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                        down_prot.down(new Event(Event.MSG, view_msg));
+                    }
+                    catch(Exception e) {
+                        log.error("failed unmarshalling view from remote cluster", e);
+                    }
                     break;
-                case UUIDS:
-                    Message uuid_msg=new Message(null, null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    uuid_msg.putHeader(id, hdr);
-                    down_prot.down(new Event(Event.MSG, uuid_msg));
+                case BROADCAST_VIEW:
+                    // no-op
                     break;
                 default:
                     throw new IllegalArgumentException(hdr.type + " is not a valid type");
@@ -403,7 +421,7 @@ public class RELAY extends Protocol {
         public void viewAccepted(View view) {
             if(bridge_view == null || !bridge_view.getVid().equals(view.getViewId()) && view.size() > 1) {
                 bridge_view=view;
-                sendUUIDs(true);
+                sendViewToRemote(ViewData.create(local_view, remote_view));
             }
         }
     }
@@ -416,7 +434,7 @@ public class RELAY extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace("received msg from " + sender + ", passing down the stack with dest=" +
-                    msg.getDest() + " and src=" + msg.getSrc());
+                              msg.getDest() + " and src=" + msg.getSrc());
 
         down_prot.down(new Event(Event.MSG, msg));
     }
@@ -424,7 +442,7 @@ public class RELAY extends Protocol {
     
 
     public static class RelayHeader extends Header {
-        public static enum Type {DISSEMINATE, FORWARD, VIEW, UUIDS};
+        public static enum Type {DISSEMINATE, FORWARD, VIEW, BROADCAST_VIEW};
         protected Type                type;
         protected Address             original_sender; // with DISSEMINATE
 
@@ -456,10 +474,8 @@ public class RELAY extends Protocol {
                     retval+=Util.size(original_sender);
                     break;
                 case FORWARD:
-                    break;
                 case VIEW:
-                    break;
-                case UUIDS:
+                case BROADCAST_VIEW:
                     break;
             }
             return retval;
@@ -473,8 +489,7 @@ public class RELAY extends Protocol {
                     break;
                 case FORWARD:
                 case VIEW:
-                    break;
-                case UUIDS:
+                case BROADCAST_VIEW:
                     break;
             }
         }
@@ -487,8 +502,7 @@ public class RELAY extends Protocol {
                     break;
                 case FORWARD:
                 case VIEW:
-                    break;
-                case UUIDS:
+                case BROADCAST_VIEW:
                     break;
             }
         }
@@ -501,14 +515,65 @@ public class RELAY extends Protocol {
                     break;
                 case FORWARD:
                 case VIEW:
-                    break;
-                case UUIDS:
+                case BROADCAST_VIEW:
                     break;
             }
             return sb.toString();
         }
     }
 
+    /** Contains local and remote views, and UUID information */
+    protected static class ViewData implements Streamable {
+        protected View                local_view;
+        protected View                remote_view;
+        protected Map<Address,String> uuids;
 
-    
+        public ViewData() {
+        }
+
+        private ViewData(View local_view, View remote_view, Map<Address,String> uuids) {
+            this.local_view=local_view;
+            this.remote_view=remote_view;
+            this.uuids=uuids;
+        }
+
+        public static ViewData create(View local_view, View remote_view) {
+            Map<Address,String> tmp=UUID.getContents();
+            View lv=local_view != null? local_view.copy() : null;
+            View rv=remote_view != null? remote_view.copy() : null;
+            return new ViewData(lv, rv, tmp);
+        }
+
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeStreamable(local_view, out);
+            Util.writeStreamable(remote_view, out);
+            out.writeInt(uuids.size());
+            for(Map.Entry<Address,String> entry: uuids.entrySet()) {
+                Util.writeAddress(entry.getKey(), out);
+                out.writeUTF(entry.getValue());
+            }
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            local_view=(View)Util.readStreamable(View.class, in);
+            remote_view=(View)Util.readStreamable(View.class, in);
+            int size=in.readInt();
+            uuids=new HashMap<Address,String>();
+            for(int i=0; i < size; i++) {
+                Address addr=Util.readAddress(in);
+                String name=in.readUTF();
+                uuids.put(addr, name);
+            }
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append("local view: " + local_view).append(", remote_view: ").append(remote_view);
+            return sb.toString();
+        }
+    }
+
+
+
 }
