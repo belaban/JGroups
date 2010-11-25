@@ -413,6 +413,15 @@ public class RELAY extends Protocol {
                         data.remote_view=data.local_view;
                         data.local_view=null;
 
+                        // replace addrs with proxies
+                        if(data.remote_view != null) {
+                            List<Address> mbrs=new LinkedList<Address>();
+                            for(Address mbr: data.remote_view.getMembers()) {
+                                mbrs.add(new ProxyAddress(local_addr, mbr));
+                            }
+                            data.remote_view=new View(data.remote_view.getViewId(), mbrs);
+                        }
+
                         UUID.add(data.uuids); // todo: remove
                         System.out.println("received view from remote: " + data);
 
@@ -438,9 +447,29 @@ public class RELAY extends Protocol {
 
                 System.out.println("-- bridge_view: " + bridge_view + ", view: " + view);
 
-                if(!bridge_view.getVid().equals(view.getViewId()) && view.size() > 1) {
+                if(!bridge_view.getVid().equals(view.getViewId())) {
                     bridge_view=view;
-                    sendViewToRemote(ViewData.create(local_view, remote_view));
+
+                    if(view.size() == 1 && bridge != null && bridge.isConnected()
+                      && view.getMembers().firstElement().equals(bridge.getAddress())) {
+                        try {
+                            remote_view=null;
+                            ViewData data=ViewData.create(local_view, null);
+                            Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
+                            view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                            down_prot.down(new Event(Event.MSG, view_msg));
+                        }
+                        catch(Exception e) {
+                            log.error("failed sending view to local cluster", e);
+                        }
+                    }
+                    else {
+                        timer.execute(new Runnable() {
+                            public void run() {
+                                sendViewToRemote(ViewData.create(local_view, remote_view));
+                            }
+                        });
+                    }
                 }
             }
         }
