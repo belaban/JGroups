@@ -184,8 +184,6 @@ public class RELAY extends Protocol {
                                 if(data.uuids != null)
                                     UUID.add(data.uuids);
 
-                                if(data.local_view != null)
-                                    local_view=data.local_view;
                                 remote_view=data.remote_view;
                                 if(global_view == null || !global_view.equals(data.global_view)) {
                                     global_view=data.global_view;
@@ -248,6 +246,7 @@ public class RELAY extends Protocol {
 
 
     protected void handleView(final View view) {
+        local_view=view;
         coord=view.getMembers().firstElement();
         boolean create_bridge=false;
 
