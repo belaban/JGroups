@@ -342,14 +342,27 @@ public class UDP extends TP implements Runnable {
                         try {
                             s.send(packet);
                         }
+                        // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
+                        catch(NoRouteToHostException e){
+                            log.warn(e.getMessage() +", reset interface");
+                            s.setInterface(s.getInterface());
+                        }
                         catch(Exception e) {
                             log.error("failed sending packet on socket " + s);
                         }
                     }
                 }
                 else { // DEFAULT path
-                    if(mcast_sock != null)
-                        mcast_sock.send(packet);
+                    if(mcast_sock != null) {
+                        try {
+                            mcast_sock.send(packet);
+                        }
+                        // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
+                        catch(NoRouteToHostException e){
+                            log.warn(e.getMessage() +", reset interface");
+                            mcast_sock.setInterface(mcast_sock.getInterface());
+                        }
+                    }
                 }
             }
             else {
