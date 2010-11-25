@@ -127,7 +127,7 @@
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
-         manifest="${conf.dir}/manifest.mf"
+         manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
          includes="org/jgroups/**,schema/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
     </jar>    	
@@ -138,7 +138,7 @@
 	    <mkdir dir="${dist.dir}"/>	
 	    <jar jarfile="${dist.dir}/jgroups-core.jar"
 	         basedir="${compile.dir}"
-	         manifest="${conf.dir}/manifest.mf"
+	         manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
 	         includes="org/jgroups/**,schema/**"
 	         excludes="org/jgroups/demos/**,
 	                  org/jgroups/tests/**,
@@ -153,7 +153,7 @@
         <mkdir dir="${dist.dir}"/>
         <jar jarfile="${dist.dir}/jgroups-sources.jar"
              basedir="${src.dir}"
-             manifest="${conf.dir}/manifest.mf"
+             manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
              includes="org/jgroups/**"
              excludes="org/jgroups/demos/**">
         </jar>
