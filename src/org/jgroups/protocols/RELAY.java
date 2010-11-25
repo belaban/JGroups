@@ -204,7 +204,7 @@ public class RELAY extends Protocol {
                             ViewData view_data=null;
                             final Address sender=msg.getSrc();
                             try {
-                                view_data=ViewData.create(local_view, remote_view, global_view);
+                                view_data=ViewData.create(remote_view, global_view);
                                 final Message view_msg=new Message(sender, null, Util.streamableToByteBuffer(view_data));
                                 view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                                 down_prot.down(new Event(Event.MSG, view_msg));
@@ -269,7 +269,7 @@ public class RELAY extends Protocol {
         if(is_coord) {
             ViewData view_data=null;
             try {
-                view_data=ViewData.create(view, remote_view, generateGlobalView(view, remote_view));
+                view_data=ViewData.create(remote_view, generateGlobalView(view, remote_view));
                 final Message view_msg=new Message(null, null, Util.streamableToByteBuffer(view_data));
                 view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                 timer.execute(new Runnable() {
@@ -297,7 +297,7 @@ public class RELAY extends Protocol {
                 }
             }
             if(view_data != null)
-                sendViewToRemote(view_data);
+                sendViewToRemote(ViewData.create(local_view, null));
         }
     }
 
@@ -407,10 +407,6 @@ public class RELAY extends Protocol {
                     try {
                         ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
                                                                               msg.getOffset(), msg.getLength());
-                        // swap local and remote views and null remote view
-                        data.remote_view=data.local_view;
-                        data.local_view=remote_view;
-
                         // replace addrs with proxies
                         if(data.remote_view != null) {
                             List<Address> mbrs=new LinkedList<Address>();
@@ -439,9 +435,6 @@ public class RELAY extends Protocol {
             if(bridge_view == null)
                 bridge_view=view;
             else {
-
-                System.out.println("-- bridge_view: " + bridge_view + ", view: " + view);
-
                 if(!bridge_view.getVid().equals(view.getViewId())) {
                     bridge_view=view;
 
@@ -449,7 +442,7 @@ public class RELAY extends Protocol {
                       && view.getMembers().firstElement().equals(bridge.getAddress())) {
                         try {
                             remote_view=null;
-                            ViewData data=ViewData.create(local_view, null, generateGlobalView(local_view, null));
+                            ViewData data=ViewData.create(null, generateGlobalView(local_view, null));
                             Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
                             view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                             down_prot.down(new Event(Event.MSG, view_msg));
@@ -461,7 +454,8 @@ public class RELAY extends Protocol {
                     else {
                         timer.execute(new Runnable() {
                             public void run() {
-                                sendViewToRemote(ViewData.create(local_view, remote_view, null));
+                                // our local view is seen as the remote view on the other side !
+                                sendViewToRemote(ViewData.create(local_view, null));
                             }
                         });
                     }
@@ -566,7 +560,6 @@ public class RELAY extends Protocol {
 
     /** Contains local and remote views, and UUID information */
     protected static class ViewData implements Streamable {
-        protected View                local_view;
         protected View                remote_view;
         protected View                global_view;
         protected Map<Address,String> uuids;
@@ -574,24 +567,21 @@ public class RELAY extends Protocol {
         public ViewData() {
         }
 
-        private ViewData(View local_view, View remote_view, View global_view, Map<Address,String> uuids) {
-            this.local_view=local_view;
+        private ViewData(View remote_view, View global_view, Map<Address,String> uuids) {
             this.remote_view=remote_view;
             this.global_view=global_view;
             this.uuids=uuids;
         }
 
-        public static ViewData create(View local_view, View remote_view, View global_view) {
+        public static ViewData create(View remote_view, View global_view) {
             Map<Address,String> tmp=UUID.getContents();
-            View lv=local_view != null? local_view.copy() : null;
             View rv=remote_view != null? remote_view.copy() : null;
             View gv=global_view != null? global_view.copy() : null;
-            return new ViewData(lv, rv, gv, tmp);
+            return new ViewData(rv, gv, tmp);
         }
 
 
         public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeStreamable(local_view, out);
             Util.writeStreamable(remote_view, out);
             Util.writeStreamable(global_view, out);
             out.writeInt(uuids.size());
@@ -602,7 +592,6 @@ public class RELAY extends Protocol {
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            local_view=(View)Util.readStreamable(View.class, in);
             remote_view=(View)Util.readStreamable(View.class, in);
             global_view=(View)Util.readStreamable(View.class, in);
             int size=in.readInt();
@@ -616,7 +605,7 @@ public class RELAY extends Protocol {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append("global_view: " + global_view + ", local view: " + local_view).append(", remote_view: ").append(remote_view);
+            sb.append("global_view: " + global_view).append(", remote_view: ").append(remote_view);
             return sb.toString();
         }
     }
