@@ -554,7 +554,7 @@ public abstract class TP extends Protocol {
         sb.append(ch.getLocalAddress()).append(" (").append(ch.getClusterName()).append(") ").append("\n");
         sb.append("local_addr=").append(ch.getLocalAddress()).append("\n");
         sb.append("group_name=").append(ch.getClusterName()).append("\n");
-        sb.append("version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
+        sb.append("version=").append(Version.description);
         sb.append("view: ").append(ch.getView()).append('\n');
         sb.append(getInfo());
         return sb;

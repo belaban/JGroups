@@ -1953,7 +1953,7 @@ public class JChannel extends Channel {
                 }
             }
 
-            map.put("version", Version.description + ", cvs=\"" +  Version.cvs + "\"");
+            map.put("version", Version.description);
             if(my_view != null && !map.containsKey("view"))
                 map.put("view", my_view.toString());
             map.put("local_addr", local_addr != null? local_addr.toString() : "null");
