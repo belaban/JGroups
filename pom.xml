@@ -116,11 +116,11 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
+                    <source>1.6</source>
+                    <target>1.6</target>
                     <excludes>
                         <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
-                        <exclude>org/jgroups/demos/**</exclude>
+                        <!--<exclude>org/jgroups/demos/**</exclude>-->
                     </excludes>
                 </configuration>
             </plugin>
@@ -212,7 +212,7 @@
                         <Import-Package>
                             !bsh.*,*
                         </Import-Package>
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+                        <Bundle-RequiredExecutionEnvironment>J2SE-1.6</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
             </plugin>
