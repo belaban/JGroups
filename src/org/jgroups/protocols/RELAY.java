@@ -185,7 +185,7 @@ public class RELAY extends Protocol {
                                     UUID.add(data.uuids);
 
                                 remote_view=data.remote_view;
-                                if(global_view == null || !global_view.equals(data.global_view)) {
+                                if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
                                     global_view=data.global_view;
                                     synchronized(this) {
                                         if(data.global_view.getVid().getId() > global_view_id)
@@ -420,10 +420,6 @@ public class RELAY extends Protocol {
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
                         data.global_view=generateGlobalView(local_view, data.remote_view);
-
-                        UUID.add(data.uuids); // todo: remove
-                        System.out.println("received view from remote: " + data);
-
                         Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
                         view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                         down_prot.down(new Event(Event.MSG, view_msg));
