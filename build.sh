@@ -50,6 +50,7 @@ else
     echo "  to the installation directory of java."
 fi
 
+mvn package
 if [ -n "$JAVA_HOME" ]; then
 	${JAVA_HOME}/bin/java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
 else
