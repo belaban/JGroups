@@ -38,8 +38,8 @@ public class RELAY extends Protocol {
     @Property(description="Name of the bridge cluster")
     protected String bridge_name="bridge-cluster";
 
-    @Property(description="If true, messages are relayed asynchronously, ie. via submission of a task to the timer thread pool")
-    protected boolean async=false;
+    // @Property(description="If true, messages are relayed asynchronously, ie. via submission of a task to the timer thread pool")
+    // protected boolean async=false;
 
     @Property(description="If set to false, don't perform relaying. Used e.g. for backup clusters; " +
             "unidirectional replication from one cluster to another, but not back. Can be changed at runtime")
