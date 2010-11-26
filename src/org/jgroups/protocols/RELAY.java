@@ -33,10 +33,10 @@ public class RELAY extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Properties of the bridge cluster (e.g. tcp.xml)")
-    protected String props=null;
+    protected String bridge_props=null;
 
     @Property(description="Name of the bridge cluster")
-    protected String cluster_name="bridge-cluster";
+    protected String bridge_name="bridge-cluster";
 
     @Property(description="If true, messages are relayed asynchronously, ie. via submission of a task to the timer thread pool")
     protected boolean async=false;
@@ -136,7 +136,6 @@ public class RELAY extends Protocol {
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 Object retval=down_prot.down(evt);
-
                 if(coord != null) {
                     Message broadcast_view_req=new Message(coord, null, null);
                     broadcast_view_req.putHeader(id, RelayHeader.create(RelayHeader.Type.BROADCAST_VIEW));
@@ -173,45 +172,13 @@ public class RELAY extends Protocol {
                         case FORWARD:
                             if(is_coord)
                                 forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                            else
-                                log.warn("Cannot forward message as I'm not coordinator");
                             break;
-                        case VIEW:
-                            try {
-                                ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
-                                                                                           msg.getOffset(), msg.getLength());
-                                // add UUID info:
-                                if(data.uuids != null)
-                                    UUID.add(data.uuids);
 
-                                remote_view=data.remote_view;
-                                if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
-                                    global_view=data.global_view;
-                                    synchronized(this) {
-                                        if(data.global_view.getVid().getId() > global_view_id)
-                                            global_view_id=data.global_view.getViewId().getId();
-                                    }
-                                    if(present_global_views)
-                                        return up_prot.up(new Event(Event.VIEW_CHANGE, global_view));
-                                }
-                            }
-                            catch(Exception e) {
-                                log.error("failed installing view", e);
-                            }
-                            break;
+                        case VIEW:
+                            return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
 
                         case BROADCAST_VIEW:
-                            ViewData view_data=null;
-                            final Address sender=msg.getSrc();
-                            try {
-                                view_data=ViewData.create(remote_view, global_view);
-                                final Message view_msg=new Message(sender, null, Util.streamableToByteBuffer(view_data));
-                                view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
-                                down_prot.down(new Event(Event.MSG, view_msg));
-                            }
-                            catch(Throwable e) {
-                                log.error("failed sending view data to " + sender, e);
-                            }
+                            sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
                             break;
 
                         default:
@@ -250,55 +217,55 @@ public class RELAY extends Protocol {
         coord=view.getMembers().firstElement();
         boolean create_bridge=false;
 
+        boolean is_new_coord=Util.isCoordinator(view, local_addr);
+
         if(is_coord) {
-            if(!Util.isCoordinator(view, local_addr)) {
+            if(!is_new_coord) {
                 if(log.isTraceEnabled())
                     log.trace("I'm not coordinator anymore, closing the channel");
                 Util.close(bridge);
+                is_coord=false;
                 bridge=null;
             }
         }
         else {
-            if(Util.isCoordinator(view, local_addr)) {
-                is_coord=true;
-                create_bridge=true;
-            }
+            if(is_new_coord)
+                is_coord=create_bridge=true;
         }
 
 
         if(is_coord) {
-            ViewData view_data=null;
-            try {
-                view_data=ViewData.create(remote_view, generateGlobalView(view, remote_view));
-                final Message view_msg=new Message(null, null, Util.streamableToByteBuffer(view_data));
-                view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
-                timer.execute(new Runnable() {
-                    public void run() {
-                        down_prot.down(new Event(Event.MSG, view_msg));
-                    }
-                });
-            }
-            catch(Throwable e) {
-                log.error("failed sending view data to local cluster", e);
-            }
+            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
 
-            if(create_bridge) {
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace("I'm the coordinator, creating a channel (props=" + props + ", cluster_name=" + cluster_name + ")");
-                    bridge=new JChannel(props);
-                    bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
-                    bridge.setReceiver(new Receiver());
-                    bridge.connect(cluster_name);
-
-                }
-                catch(ChannelException e) {
-                    log.error("failed creating channel (props=" + props + ")", e);
-                }
-            }
-            if(view_data != null)
-                sendViewToRemote(ViewData.create(local_view, null));
+            if(create_bridge)
+                createBridge();
+            
+            sendViewToRemote(ViewData.create(view, null), false);
         }
+    }
+
+
+    protected Object installView(byte[] buf, int offset, int length) {
+        try {
+            ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
+            if(data.uuids != null)
+                UUID.add(data.uuids);
+
+            remote_view=data.remote_view;
+            if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
+                global_view=data.global_view;
+                synchronized(this) {
+                    if(data.global_view.getVid().getId() > global_view_id)
+                        global_view_id=data.global_view.getViewId().getId();
+                }
+                if(present_global_views)
+                    return up_prot.up(new Event(Event.VIEW_CHANGE, global_view));
+            }
+        }
+        catch(Exception e) {
+            log.error("failed installing view", e);
+        }
+        return null;
     }
 
 
@@ -338,13 +305,26 @@ public class RELAY extends Protocol {
 
 
 
-    protected void sendViewToRemote(ViewData view_data) {
+    protected void sendViewToRemote(ViewData view_data, boolean use_seperate_thread) {
         try {
             byte[] buf=Util.streamableToByteBuffer(view_data);
             final Message msg=new Message(null, null, buf);
             msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
             if(bridge != null && bridge.isConnected()) {
-                bridge.send(msg);
+                if(use_seperate_thread) {
+                    timer.execute(new Runnable() {
+                        public void run() {
+                            try {
+                                bridge.send(msg);
+                            }
+                            catch(Exception e) {
+                                log.error("failed sending view to remote", e);
+                            }
+                        }
+                    });
+                }
+                else
+                    bridge.send(msg);
             }
         }
         catch(Exception e) {
@@ -382,6 +362,21 @@ public class RELAY extends Protocol {
         return new View(local_addr, new_view_id, combined_members);
     }
 
+    protected void createBridge() {
+        try {
+            if(log.isTraceEnabled())
+                log.trace("I'm the coordinator, creating a channel (props=" + bridge_props + ", cluster_name=" + bridge_name + ")");
+            bridge=new JChannel(bridge_props);
+            bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+            bridge.setReceiver(new Receiver());
+            bridge.connect(bridge_name);
+
+        }
+        catch(ChannelException e) {
+            log.error("failed creating bridge channel (props=" + bridge_props + ")", e);
+        }
+    }
+
 
     protected class Receiver extends ReceiverAdapter {
 
@@ -391,17 +386,10 @@ public class RELAY extends Protocol {
                 return;
             RelayHeader hdr=(RelayHeader)msg.getHeader(id);
             switch(hdr.type) {
-                case DISSEMINATE:
-                    // should not occur here, but we'll ignore it anyway
+                case DISSEMINATE: // should not occur here, but we'll ignore it anyway
                     break;
                 case FORWARD:
-                    try {
-                        putOnLocalCluster((Message)Util.streamableFromByteBuffer(Message.class, msg.getRawBuffer(),
-                                                                                 msg.getOffset(), msg.getLength()));
-                    }
-                    catch(Exception e) {
-                        log.error("failed unserializing forwarded message", e);
-                    }
+                    sendOnLocalCluster(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                     break;
                 case VIEW:
                     try {
@@ -416,9 +404,7 @@ public class RELAY extends Protocol {
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
                         data.global_view=generateGlobalView(local_view, data.remote_view);
-                        Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
-                        view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
-                        down_prot.down(new Event(Event.MSG, view_msg));
+                        sendViewOnLocalCluster(null, data, false);
                     }
                     catch(Exception e) {
                         log.error("failed unmarshalling view from remote cluster", e);
@@ -438,42 +424,63 @@ public class RELAY extends Protocol {
                 if(!bridge_view.getVid().equals(view.getViewId())) {
                     bridge_view=view;
 
-                    if(view.size() == 1 && bridge != null && bridge.isConnected()
-                      && view.getMembers().firstElement().equals(bridge.getAddress())) {
-                        try {
-                            remote_view=null;
-                            ViewData data=ViewData.create(null, generateGlobalView(local_view, null));
-                            Message view_msg=new Message(null, null, Util.streamableToByteBuffer(data));
-                            view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
-                            down_prot.down(new Event(Event.MSG, view_msg));
-                        }
-                        catch(Exception e) {
-                            log.error("failed sending view to local cluster", e);
-                        }
+                    if(view.size() == 1 && bridge != null && bridge.isConnected() &&
+                       view.getMembers().firstElement().equals(bridge.getAddress())) {
+                       remote_view=null;
+                       sendViewOnLocalCluster(null, local_view, null, false);
                     }
                     else {
-                        timer.execute(new Runnable() {
-                            public void run() {
-                                // our local view is seen as the remote view on the other side !
-                                sendViewToRemote(ViewData.create(local_view, null));
-                            }
-                        });
+                        // our local view is seen as the remote view on the other side !
+                        sendViewToRemote(ViewData.create(local_view, null), true);
                     }
                 }
             }
         }
     }
 
-    protected void putOnLocalCluster(Message msg) {
-        Address sender=msg.getSrc();
-        ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
-        msg.setSrc(proxy_sender);
-        msg.putHeader(id, RelayHeader.createDisseminateHeader(proxy_sender));
 
-        if(log.isTraceEnabled())
-            log.trace("received msg from " + sender + ", passing down the stack with dest=" +
-                      msg.getDest() + " and src=" + msg.getSrc());
-        down_prot.down(new Event(Event.MSG, msg));
+
+    protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
+        try {
+            Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
+            Address sender=msg.getSrc();
+            ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
+            msg.setSrc(proxy_sender);
+            msg.putHeader(id, RelayHeader.createDisseminateHeader(proxy_sender));
+
+            if(log.isTraceEnabled())
+                log.trace("received msg from " + sender + ", passing down the stack with dest=" +
+                            msg.getDest() + " and src=" + msg.getSrc());
+            down_prot.down(new Event(Event.MSG, msg));
+        }
+        catch(Exception e) {
+            log.error("failed sending on local cluster", e);
+        }
+    }
+
+
+    protected void sendViewOnLocalCluster(Address dest, View remote_view, View global_view, boolean use_seperate_thread) {
+        sendViewOnLocalCluster(dest, ViewData.create(remote_view, global_view), use_seperate_thread);
+    }
+
+
+    protected void sendViewOnLocalCluster(Address dest, ViewData data, boolean use_seperate_thread) {
+        try {
+            final Message view_msg=new Message(dest, null, Util.streamableToByteBuffer(data));
+            view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+            if(use_seperate_thread) {
+                timer.execute(new Runnable() {
+                    public void run() {
+                        down_prot.down(new Event(Event.MSG, view_msg));
+                    }
+                });
+            }
+            else
+                down_prot.down(new Event(Event.MSG, view_msg));
+        }
+        catch(Exception e) {
+            log.error("failed sending view to local cluster", e);
+        }
     }
 
     
