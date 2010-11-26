@@ -103,7 +103,7 @@ RELAY.up(msg):
 - If RelayHeader present:  // coord
   - If FORWARD && coordinator: forward(msg.buf); return
   - If DISSEMINATE: pass up and return
-  - If VIEW: todo
+  - If VIEW: // see below
   - Return
 - Else:
   - If multicast message && coordinator:
@@ -124,7 +124,7 @@ Receive message M from TCP channel:
   - Case FORWARD:
     - If sender = self: discard
     - Else: deserialize M.buf into message M2 and putOnLocalCluster(M2)
-  - Case VIEW:  // todo
+  - Case VIEW:  // see below
 
 
 forward(buf): // buf is the serialized message to be forwarded 
@@ -151,34 +151,29 @@ View changes
 ------------
 
 Local view changed:
+- Set local view
 - If coordinator:
-  - Broadcast local and remote view to local cluster
-  - Send local view to remote cluster
+  - Broadcast remote and global view to local cluster
+  - Send remote view to remote cluster
 - Every node (on reception):
-  - Update(LV, RV)
+  - Update(RV, GV)
 
 Remote view (RV) changed:
-- Broadcast local and remote view to local cluster
+- Broadcast remote and global view to local cluster
 - Every node (on reception):
-  - Update(LV, RV)
+  - Update(RV, GV)
 
 
-Update(LV,RV):
-- Update local view from LV if needed
+Update(RV,GV):
 - Update remote view from RV if needed
-- Compute new global view V from local and remote view
-- If V != current global view: set current view = V and viewAccepted(V)
+- Install GV:
+  - If GV != current global view: set current view = GV and viewAccepted(GV)
 
 
 Bridge view changed:
 - If coordinator: send local view to remote
 - If remote coordinator ('creator of remote view') crashed:
-  - Generate empty remote view V and send it to local cluster
-  - Every node will then generate a new global view (excluding the remote nodes)
-    and install it locally
-    
-
-
+  - Generate empty remote view V, generate global view and send RV and GV to local cluster
 
 
 
@@ -189,7 +184,5 @@ Issues:
 - Should we pass logical name information between the clusters ? Or should this be part of ProxyAddress ?
 
 Todo:
-#1 UUID information - logical names
-#2 Views - global view of the two local clusters
 #3 Handling temp coordinator outage - how do we prevent message loss ?
 #4 State transfer - replication across clusters, to bootstrap initial coords in a local cluster
