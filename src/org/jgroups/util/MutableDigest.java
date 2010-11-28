@@ -139,15 +139,19 @@ public class MutableDigest extends Digest {
 
 
 
-    /**
-     * Increments the sender's high_seqno by 1.
-     */
+    /** Increments the sender's highest delivered seqno by 1 */
     public void incrementHighestDeliveredSeqno(Address sender) {
         Entry entry=senders.get(sender);
         if(entry == null)
             return;
         checkSealed();
-        Entry new_entry=new Entry(entry.getLow(), entry.getHighestDeliveredSeqno() +1, entry.getHighestReceivedSeqno());
+
+        long new_highest_delivered=entry.getHighestDeliveredSeqno() +1;
+        
+        // highest_received must be >= highest_delivered, but not smaller !
+        long new_highest_received=Math.max(entry.getHighestReceivedSeqno(), new_highest_delivered);
+
+        Entry new_entry=new Entry(entry.getLow(), new_highest_delivered, new_highest_received);
         senders.put(sender, new_entry);
     }
 

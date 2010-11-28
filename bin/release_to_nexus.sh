@@ -15,12 +15,14 @@ JAR=`find $DIST -name "jgroups-*.jar" | grep -v source`
 SRC_JAR=`find $DIST -name "jgroups-*.jar" | grep source`
 
 REPO=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2
+FLAGS="-Dpackaging=jar -DrepositoryId=jboss-releases-repository"
 
 
 echo "Deploying $JAR to $REPO"
-mvn deploy:deploy-file -Dfile=$JAR -Durl=$REPO -DpomFile=$POM -DrepositoryId=jboss-releases-repository
+mvn deploy:deploy-file -Dfile=$JAR -Durl=$REPO -DpomFile=$POM $FLAGS
 
 
 echo "Deploying $SRC_JAR to $REPO"
-mvn deploy:deploy-file -Dfile=$SRC_JAR -Durl=$REPO -DpomFile=$POM -Dclassifier=sources -DrepositoryId=jboss-releases-repository
+mvn deploy:deploy-file -Dfile=$SRC_JAR -Durl=$REPO -DpomFile=$POM -Dclassifier=sources $FLAGS
+
 
