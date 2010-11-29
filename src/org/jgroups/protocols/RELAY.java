@@ -418,7 +418,6 @@ public class RELAY extends Protocol {
         }
 
         public void viewAccepted(View view) {
-            System.out.println("bridge view = " + view);
             if(bridge_view == null)
                 bridge_view=view;
             else {
