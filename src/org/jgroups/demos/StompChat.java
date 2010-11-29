@@ -199,6 +199,12 @@ public class StompChat implements StompConnection.Listener {
         sendButton=new JButton("Send");
         sendButton.setPreferredSize(new Dimension(150, 30));
         buttons.add(sendButton);
+        sendButton.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                send(txtField.getText());
+                txtField.selectAll();
+            }
+        });
 
         clearButton=new JButton("Clear");
         clearButton.setPreferredSize(new Dimension(150, 30));
