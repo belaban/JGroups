@@ -51,9 +51,9 @@ public class Message implements Streamable {
 
 
 
-    static final byte DEST_SET         =  1;
-    static final byte SRC_SET          =  2;
-    static final byte BUF_SET          =  4;
+    static final byte DEST_SET         =  1 << 0;
+    static final byte SRC_SET          =  1 << 1;
+    static final byte BUF_SET          =  1 << 2;
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
 
 

@@ -26,15 +26,15 @@ public class ViewTest {
 
     @BeforeClass
     public void setUp() throws Exception {
-        a=Util.createRandomAddress();
+        a=Util.createRandomAddress("A");
         b=a;
         c=b;
-        d=Util.createRandomAddress();
-        e=Util.createRandomAddress();
-        f=Util.createRandomAddress();
-        g=Util.createRandomAddress();
-        h=Util.createRandomAddress();
-        i=Util.createRandomAddress();
+        d=Util.createRandomAddress("D");
+        e=Util.createRandomAddress("E");
+        f=Util.createRandomAddress("F");
+        g=Util.createRandomAddress("G");
+        h=Util.createRandomAddress("H");
+        i=Util.createRandomAddress("I");
         ViewId id=new ViewId(a, 34);
         members=Arrays.asList(a, b, d, e, f, g, h);
         view=new View(id, members);
@@ -67,11 +67,18 @@ public class ViewTest {
         View v3=new View(a, 12543, new Vector<Address>(members));
         assert !v1.equals(v3);
     }
-
+ 
 
     public static void testEquals3() {
         View v1=new View(), v2=new View();
         assert v1.equals(v2);
+    }
+
+    public void testCopy() {
+        View view2=view.copy();
+        System.out.println("view = " + view);
+        System.out.println("view2 = " + view2);
+        assert view.equals(view2);
     }
 
 

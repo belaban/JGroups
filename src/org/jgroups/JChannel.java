@@ -1353,9 +1353,11 @@ public class JChannel extends Channel {
              */
 
                 // not good: we are only connected when we returned from connect() - bela June 22 2007
-                //            if(connected == false) {
-                //                connected=true;
-                //            }
+                // Changed: when a channel gets a view of which it is a member then it should be
+                // connected even if connect() hasn't returned yet ! (bela Noc 2010)
+                if(connected == false) {
+                    connected=true;
+                }
                 break;
 
             case Event.CONFIG:

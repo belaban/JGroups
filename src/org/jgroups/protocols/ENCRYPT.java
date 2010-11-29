@@ -911,7 +911,8 @@ public class ENCRYPT extends Protocol {
                                                 serialized_msg.length);
             Message tmp=msg.copy(false); // we need to preserve headers which may already be present
             tmp.setBuffer(encrypted_msg);
-            tmp.setSrc(local_addr);
+            if(tmp.getSrc() == null)
+                tmp.setSrc(local_addr);
             tmp.putHeader(this.id, hdr);
             passItDown(new Event(Event.MSG, tmp));
             return;

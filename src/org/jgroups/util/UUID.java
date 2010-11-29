@@ -7,6 +7,7 @@ import org.jgroups.blocks.LazyRemovalCache;
 import java.io.*;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.Map;
 
 /** Logical address which is unique over space and time.
  * <br/>
@@ -98,12 +99,23 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     }
 
 
-    public static void add(UUID uuid, String logical_name) {
+    public static void add(Address uuid, String logical_name) {
         cache.add(uuid, logical_name); // overwrite existing entry
+    }
+
+    public static void add(Map<Address,String> map) {
+        if(map == null) return;
+        for(Map.Entry<Address,String> entry: map.entrySet())
+            add(entry.getKey(), entry.getValue());
     }
 
     public static String get(Address logical_addr) {
         return cache.get(logical_addr);
+    }
+
+    /** Returns a <em>copy</em> of the cache's contents */
+    public static Map<Address,String> getContents() {
+        return cache.contents();
     }
 
     public static void remove(UUID uuid) {
