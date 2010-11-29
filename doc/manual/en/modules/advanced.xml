@@ -1590,16 +1590,33 @@
             </section>
 
         </section>
+    </section>
 
-        <section>
-            <title>Ergonomics</title>
-            <para>
-                Ergonomics is similar to the dynamic setting of optimal values for the JVM, e.g. garbage collection,
-                memory sizes etc. In JGroups, ergonomics means that we try to dynamically determine and set optimal
-                values for protocol properties. Examples are thread pool size, flow control credits, heartbeat
-                frequency and so on.
+    <section>
+        <title>Bridging remote clusters</title>
+        <para>
+            In 2.12, the RELAY protocol was added to JGroups. It allows for bridging of remote clusters. For example, if
+            we have a cluster in New York (NYC) and another one in San Francisco (SFO), then RELAY allows us to bridge
+            NYC and SFO, so that multicast messages sent in NYC will be forwarded to SFO and vice versa.
+        </para>
+        <para>
+            The NYC and SFO clusters could for example use IP multicasting (UDP as transport), and the bridge could use
+            TCP as transport. The SFO and NYC clusters don't even need to be named the same.
+        </para>
+        <para>
+            <figure id="RelayFig"><title>Relaying between different clusters</title>
+                <graphic fileref="images/RELAY.png" format="PNG" align="left" width="15cm"/>
+            </figure>
             </para>
-        </section>
+    </section>
 
+    <section>
+        <title>Ergonomics</title>
+        <para>
+            Ergonomics is similar to the dynamic setting of optimal values for the JVM, e.g. garbage collection,
+            memory sizes etc. In JGroups, ergonomics means that we try to dynamically determine and set optimal
+            values for protocol properties. Examples are thread pool size, flow control credits, heartbeat
+            frequency and so on.
+        </para>
     </section>
 </chapter>
