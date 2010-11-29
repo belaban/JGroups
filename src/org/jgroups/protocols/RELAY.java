@@ -418,6 +418,7 @@ public class RELAY extends Protocol {
         }
 
         public void viewAccepted(View view) {
+            System.out.println("bridge view = " + view);
             if(bridge_view == null)
                 bridge_view=view;
             else {
@@ -425,9 +426,10 @@ public class RELAY extends Protocol {
                     bridge_view=view;
 
                     if(view.size() == 1 && bridge != null && bridge.isConnected() &&
-                       view.getMembers().firstElement().equals(bridge.getAddress())) {
-                       remote_view=null;
-                       sendViewOnLocalCluster(null, local_view, null, false);
+                      view.getMembers().firstElement().equals(bridge.getAddress())) {
+                        remote_view=null;
+                        View new_global_view=generateGlobalView(local_view, null);
+                        sendViewOnLocalCluster(null, null, new_global_view, false);
                     }
                     else {
                         // our local view is seen as the remote view on the other side !
