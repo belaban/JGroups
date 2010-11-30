@@ -94,9 +94,9 @@
 
     <target name="compile"
             depends="prepare"
-            description="Compiles are Java files">
+            description="Compiles all Java files">
         <javac destdir="${compile.dir}"
-               source="1.5"
+               source="1.6"
                classpathref="jg.classpath"
                debug="on"
                deprecation="off"
@@ -114,16 +114,34 @@
     </target>
 
 
+    <target name="compile-no-unittests"
+            depends="prepare"
+            description="Compiles all Java files">
+        <javac destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**"
+               excludes="org/jgroups/tests/junit/,org/jgroups/tests/junit-functional/,org/jgroups/tests/stress">
+            <exclude name="**/obsolete/**"/>
+            <src path="${src.dir}"/>
+            <src path="${other.dir}"/>
+            <src path="${perf.dir}"/>
+        </javac>
+    </target>
+
+
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
-            depends="compile,
-                jgroups.jar,
-    			jgroups-sources.jar">
+            depends="jgroups.jar,jgroups-sources.jar">
     </target>
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile,create-schema">
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests,create-schema">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
@@ -154,8 +172,7 @@
         <jar jarfile="${dist.dir}/jgroups-sources.jar"
              basedir="${src.dir}"
              manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**">
+             includes="org/jgroups/**">
         </jar>
     </target>
 
@@ -318,7 +335,7 @@
     </target>
 
 
-	<target name="create-schema" description="creates XML schema for this version of JGroups" depends="compile">
+	<target name="create-schema" description="creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
