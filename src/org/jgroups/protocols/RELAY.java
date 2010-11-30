@@ -28,7 +28,7 @@ import java.util.*;
  * @author Bela Ban
  * @since 2.12
  */
-@Experimental @Unsupported
+@Experimental
 @MBean(description="RELAY protocol")
 public class RELAY extends Protocol {
 
