@@ -156,9 +156,15 @@ public class View implements Externalizable, Cloneable, Streamable {
     }
 
 
+    public View copy() {
+        ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
+        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
+        return new View(vid2, members2);
+    }
+
+
     /**
      * creates a copy of this view
-     *
      * @return a copy of this view
      */
     public Object clone() {
@@ -240,7 +246,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
     }
 
-
+    @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vid=(ViewId)in.readObject();
         members=(Vector<Address>)in.readObject();
@@ -277,7 +283,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
     }
 
-
+    @SuppressWarnings("unchecked") 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         boolean b;
         // vid:

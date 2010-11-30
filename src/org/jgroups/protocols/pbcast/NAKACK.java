@@ -662,7 +662,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             if(!is_server) { // discard messages while not yet server (i.e., until JOIN has returned)
                 if(log.isTraceEnabled())
-                    log.trace("message was discarded (not yet server)");
+                    log.trace("message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
                 return null;
             }
 
@@ -742,7 +742,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 log.warn(local_addr + ": discarded message from " + local_addr + " with no window, my view is " + view);
             return;
         }
-        msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         seqno_lock.lock();
         try {

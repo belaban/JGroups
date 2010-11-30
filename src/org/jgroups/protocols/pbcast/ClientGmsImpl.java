@@ -170,7 +170,7 @@ public class ClientGmsImpl extends GmsImpl {
                         throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
                                 gms.local_addr + "): join response: " + rsp);
                     }
-                    tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
+                    tmp_digest.incrementHighestDeliveredSeqno(coord); // see doc/design/varia2.txt for details
                     tmp_digest.seal();
                     gms.setDigest(tmp_digest);
 

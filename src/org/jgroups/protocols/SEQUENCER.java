@@ -236,7 +236,8 @@ public class SEQUENCER extends Protocol {
 
 
     private void forwardToCoord(final Message msg, long seqno) {
-        msg.setSrc(local_addr);
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr);
         if(log.isTraceEnabled())
             log.trace("forwarding msg " + msg + " (seqno " + seqno + ") to coord (" + coord + ")");
 

@@ -20,7 +20,7 @@ the coordinator returns its own digest, which contains the highest
 seqnos from all current members (including itself) seen so far. It
 also includes the new member, with a seqno of 0 (starting
 seqno). Let's assume the coordinator has a seqno of 35. Now, the new
-view is mcast before the call (HandleJoin) returns to the client
+view is mcast before the call (handleJoin()) returns to the client
 (containing the digest). The client therefore gets a wrong seqno for
 the coordinator. The 2 scenarios are described below:
 

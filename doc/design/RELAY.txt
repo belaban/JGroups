@@ -100,14 +100,13 @@ Ceasing to be coordinator:
 
 
 RELAY.up(msg):
-- If not coord: pass up and return
 - If RelayHeader present:  // coord
-  - If FORWARD: forward(msg.buf); return
+  - If FORWARD && coordinator: forward(msg.buf); return
   - If DISSEMINATE: pass up and return
-  - If VIEW: todo
+  - If VIEW: // see below
   - Return
 - Else:
-  - If multicast message:
+  - If multicast message && coordinator:
     - Copy msg to M (don't copy headers)
     - Serialize M into a buffer buf
     - forward(buf)
@@ -115,14 +114,8 @@ RELAY.up(msg):
 
 
 RELAY.down(msg):
-- If not coordinator or msg is a multicast or msg.dest is not a ProxyUUID: pass down, break
-- Copy msg to M (don't copy headers)
-- Set M.dst=msg.dst.original, M.src=local_addr
-- Remove all headers from M
-- Serialize M into a buffer buf
-- Create message M2 (M2.buf=buf)
-- Add RelayHeader.FORWARD to M2
-- Send M2 to the current relay (coordinator)
+- If msg.dest is not a ProxyUUID: pass down, return
+- forwardToCoord(msg)
 - Return // don't pass down !
 
 
@@ -131,7 +124,7 @@ Receive message M from TCP channel:
   - Case FORWARD:
     - If sender = self: discard
     - Else: deserialize M.buf into message M2 and putOnLocalCluster(M2)
-  - Case VIEW:  // todo
+  - Case VIEW:  // see below
 
 
 forward(buf): // buf is the serialized message to be forwarded 
@@ -140,6 +133,13 @@ forward(buf): // buf is the serialized message to be forwarded
 - Put M onto the TCP channel
 
 
+forwardToCoord(msg):
+- Copy msg to M (don't copy headers)
+- Set M.dst=msg.dst.original, M.src=local_addr
+- Serialize M into a buffer buf
+- Create message M2 (M2.buf=buf)
+- Add RelayHeader.FORWARD to M2
+- Send M2 to the current relay (coordinator)
 
 putOnLocalCluster(M):
 - Set M.src=ProxyUUID(local_addr,M.src)
@@ -147,6 +147,42 @@ putOnLocalCluster(M):
 - Put M on the local channel
 
 
+View changes
+------------
+
+Local view changed:
+- Set local view
+- If coordinator:
+  - Broadcast remote and global view to local cluster
+  - Send remote view to remote cluster
+- Every node (on reception):
+  - Update(RV, GV)
+
+Remote view (RV) changed:
+- Broadcast remote and global view to local cluster
+- Every node (on reception):
+  - Update(RV, GV)
+
+
+Update(RV,GV):
+- Update remote view from RV if needed
+- Install GV:
+  - If GV != current global view: set current view = GV and viewAccepted(GV)
+
+
+Bridge view changed:
+- If coordinator: send local view to remote
+- If remote coordinator ('creator of remote view') crashed:
+  - Generate empty remote view V, generate global view and send RV and GV to local cluster
+
+
+
+
 
 Issues:
 - Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
+- Should we pass logical name information between the clusters ? Or should this be part of ProxyAddress ?
+
+Todo:
+#3 Handling temp coordinator outage - how do we prevent message loss ?
+#4 State transfer - replication across clusters, to bootstrap initial coords in a local cluster

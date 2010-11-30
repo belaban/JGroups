@@ -132,6 +132,22 @@
         <para>
             Note that block() should be brief, or else the entire FLUSH protocol is blocked.
         </para>
+        <note>
+            <title>Sending messages in callbacks</title>
+            <para>
+                Note that anything that could block should <emphasis>not</emphasis> be done in a callback.
+                This includes sending of messages;
+                if we have FLUSH on the stack, and send a message in a viewAccepted() callback, then the following
+                happens: the FLUSH protocol blocks all (multicast) messages before installing a view, then installs
+                the view, then unblocks. However, because installation of the view triggers the viewAccepted() callback,
+                sending of messages inside of viewAccepted() will block. This in turn blocks the viewAccepted() thread,
+                so the flush will never return !
+            </para>
+            <para>
+                If we need to send a message in a callback, the sending should be done on a separate thread, or a timer
+                task should be submitted to the timer.
+            </para>
+        </note>
     </section>
 
 
