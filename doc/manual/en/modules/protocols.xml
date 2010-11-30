@@ -961,6 +961,14 @@
             ${SCOPE} 
         </section>
 
+        <section id="RELAY">
+            <title>RELAY</title>
+            <para>
+                RELAY bridges traffic between seperate clusters, see <xref linkend="RelayAdvanced"/> for details.
+            </para>
+            ${RELAY}
+        </section>
+
         <section id="STOMP">
             <title>STOMP</title>
             <para>
