@@ -188,8 +188,16 @@ public class UDP extends TP {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
             if(mcast) {
-                if(mcast_sock != null && !mcast_sock.isClosed())
-                    mcast_sock.send(packet);
+                if(mcast_sock != null && !mcast_sock.isClosed()) {
+                    try {
+                        mcast_sock.send(packet);
+                    }
+                    // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
+                    catch(NoRouteToHostException e) {
+                        log.warn(e.getMessage() +", reset interface");
+                        mcast_sock.setInterface(mcast_sock.getInterface());
+                    }
+                }
             }
             else {
                 if(sock != null && !sock.isClosed())
