@@ -158,24 +158,6 @@ public class UDP extends TP {
         }
         else {
             sendToAllPhysicalAddresses(data, offset, length);
-//            List<Address> mbrs;
-//            synchronized(members) {
-//                mbrs=new ArrayList<Address>(members);
-//            }
-//            for(Address mbr: mbrs) {
-//                Address physical_dest=getPhysicalAddressFromCache(mbr);
-//                if(physical_dest == null) {
-//                    if(log.isWarnEnabled())
-//                        log.warn("no physical address for " + mbr + ", dropping message");
-//                    if(System.currentTimeMillis() - last_who_has_request >= 5000) { // send only every 5 secs max
-//                        up_prot.up(new Event(Event.GET_PHYSICAL_ADDRESS, mbr));
-//                        last_who_has_request=System.currentTimeMillis();
-//                    }
-//                    return;
-//                }
-//                _send(((IpAddress)physical_dest).getIpAddress(), ((IpAddress)physical_dest).getPort(),
-//                      false, data, offset, length);
-//            }
         }
     }
 
