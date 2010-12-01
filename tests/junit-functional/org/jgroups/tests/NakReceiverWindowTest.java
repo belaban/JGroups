@@ -212,7 +212,7 @@ public class NakReceiverWindowTest {
             assert win.size() == NUM;
             List<Message> list=win.removeMany(flag, 200);
             System.out.println("list = " + list);
-            assert list.size() == 20 : "list: " + list;
+            assert list.size() == NUM : "list: " + list;
         }
         finally {
             timer.stop();

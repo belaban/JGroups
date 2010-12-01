@@ -388,11 +388,15 @@ public class NakReceiverWindow {
 
                 // message has not yet been received (gap in the message sequence stream)
                 // drop all messages that have not been received
-                if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
-                    highest_delivered=next_to_remove;
-                    retransmitter.remove(next_to_remove);
-                    continue;
+                long current=low;
+                while(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size && current <= highest_received) {
+                    xmit_table.remove(current);
+                    retransmitter.remove(current);
+                    if(current > highest_delivered)
+                        highest_delivered=next_to_remove;
+                    current++;
                 }
+
                 if((retval == null || retval.isEmpty()) && processing != null)
                     processing.set(false);
                 return retval;
