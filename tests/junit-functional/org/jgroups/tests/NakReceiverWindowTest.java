@@ -14,6 +14,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -184,6 +185,34 @@ public class NakReceiverWindowTest {
             win.stable(103);
             System.out.println("win: " + win);
             check(win, 103, 103, 103);
+        }
+        finally {
+            timer.stop();
+        }
+    }
+
+    /**
+     * Test for https://jira.jboss.org/browse/JGRP-1256
+     * @param timer
+     */
+    @Test(dataProvider="createTimer")
+    public void testMaxXmitSize(TimeScheduler timer) {
+        final int NUM=15;
+        try {
+            NakReceiverWindow win=new NakReceiverWindow(Util.createRandomAddress("local"), sender, cmd, 0, 0, timer);
+            win.setMaxXmitBufSize(10);
+
+            for(long i=0; i <= NUM; i++)
+                win.add(i, new Message(null, sender, "hello-" + i));
+
+            System.out.println("win = " + win);
+
+            final AtomicBoolean flag=new AtomicBoolean(false);
+
+            assert win.size() == NUM;
+            List<Message> list=win.removeMany(flag, 200);
+            System.out.println("list = " + list);
+            assert list.size() == 20 : "list: " + list;
         }
         finally {
             timer.stop();
