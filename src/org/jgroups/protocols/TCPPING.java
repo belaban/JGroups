@@ -147,6 +147,7 @@ public class TCPPING extends Discovery {
                         dynamic_hosts.addIfAbsent(physical_addr);
                     }
                 }
+                return_entire_cache=true;
                 break;
         }
         return retval;
