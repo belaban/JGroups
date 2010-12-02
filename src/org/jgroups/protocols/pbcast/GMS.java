@@ -1065,6 +1065,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             this.merge_id=merge_id;
         }
 
+        public boolean isMergeRejected() {
+            return merge_rejected;
+        }
+
+        public void setMergeRejected(boolean merge_rejected) {
+            this.merge_rejected=merge_rejected;
+        }
+
         public String toString() {
             StringBuilder sb=new StringBuilder("GmsHeader");
             sb.append('[' + type2String(type) + ']');
