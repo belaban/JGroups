@@ -191,68 +191,6 @@ public class NakReceiverWindowTest {
         }
     }
 
-    /**
-     * Test for https://jira.jboss.org/browse/JGRP-1256
-     * @param timer
-     */
-    @Test(dataProvider="createTimer")
-    public void testMaxXmitSize(TimeScheduler timer) {
-        final int NUM=15;
-        try {
-            NakReceiverWindow win=new NakReceiverWindow(Util.createRandomAddress("local"), sender, cmd, 0, 0, timer);
-            win.setMaxXmitBufSize(10);
-
-            for(long i=0; i <= NUM; i++)
-                win.add(i, new Message(null, sender, "hello-" + i));
-
-            System.out.println("win = " + win);
-
-            final AtomicBoolean flag=new AtomicBoolean(false);
-
-            assert win.size() == NUM;
-            List<Message> list=win.removeMany(flag, 200);
-            System.out.println("list = " + list);
-            assert list.size() == NUM : "list: " + list;
-        }
-        finally {
-            timer.stop();
-        }
-    }
-
-    /**
-     * Test for https://jira.jboss.org/browse/JGRP-1256
-     * @param timer
-     */
-    @Test(dataProvider="createTimer")
-    public void testMaxXmitSize2(TimeScheduler timer) {
-        final int NUM=20;
-        try {
-            NakReceiverWindow win=new NakReceiverWindow(Util.createRandomAddress("local"), sender, cmd, 0, 0, timer);
-            win.setMaxXmitBufSize(10);
-
-            for(long i=0; i <= NUM; i++) {
-                if(i == 4 || i == 6)
-                    ;
-                else
-                    win.add(i, new Message(null, sender, "hello-" + i));
-            }
-
-            System.out.println("win = " + win);
-
-            final AtomicBoolean flag=new AtomicBoolean(false);
-
-            assert win.size() == NUM - 2;
-            List<Message> list=win.removeMany(flag, 200);
-            System.out.println("list = " + list);
-            assert list.size() == NUM-2-10 : "list: " + list;
-
-            for(Message msg: list)
-                System.out.println(msg.getObject());
-        }
-        finally {
-            timer.stop();
-        }
-    }
 
 
     @Test(dataProvider="createTimer")

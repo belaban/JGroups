@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size"})
+@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size", "max_xmit_buf_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
 
     /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
@@ -114,15 +114,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Should messages delivered to application be discarded")
     private boolean discard_delivered_msgs=false;
-
-
-    /**
-     * If value is > 0, the retransmit buffer is bounded: only the
-     * max_xmit_buf_size latest messages are kept, older ones are discarded when
-     * the buffer size is exceeded. A value <= 0 means unbounded buffers
-     */
-    @Property(description="If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used. Default is 0")
-    private int max_xmit_buf_size=0;
 
     @Property(description="Size of retransmission history. Default is 50 entries")
     private int xmit_history_max_size=50;
@@ -377,12 +368,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
+    @Deprecated
     public int getMaxXmitBufSize() {
-        return max_xmit_buf_size;
+        return 0;
     }
 
+    @Deprecated
     public void setMaxXmitBufSize(int max_xmit_buf_size) {
-        this.max_xmit_buf_size=max_xmit_buf_size;
+        ;
     }
 
     /**
@@ -1290,7 +1283,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
-        win.setMaxXmitBufSize(this.max_xmit_buf_size);
         if(stats)
             win.setListener(this);
         return win;

@@ -92,11 +92,6 @@ public class NakReceiverWindow {
 
     private final AtomicBoolean processing=new AtomicBoolean(false);
 
-    /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
-     * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
-     */
-    private int max_xmit_buf_size=0;
-
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
     private Retransmitter retransmitter=null;
@@ -179,12 +174,13 @@ public class NakReceiverWindow {
         this.discard_delivered_msgs=flag;
     }
 
+    @Deprecated
     public int getMaxXmitBufSize() {
-        return max_xmit_buf_size;
+        return 0;
     }
 
+    @Deprecated
     public void setMaxXmitBufSize(int max_xmit_buf_size) {
-        this.max_xmit_buf_size=max_xmit_buf_size;
     }
 
     public void setListener(Listener l) {
@@ -326,13 +322,6 @@ public class NakReceiverWindow {
                 highest_delivered=next_to_remove;
                 return retval;
             }
-
-            // message has not yet been received (gap in the message sequence stream)
-            // drop all messages that have not been received
-            if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
-                highest_delivered=next_to_remove;
-                retransmitter.remove(next_to_remove);
-            }
             return null;
         }
         finally {
@@ -384,22 +373,6 @@ public class NakReceiverWindow {
                     retval.add(msg);
                     if(max_results <= 0 || ++num_results < max_results)
                         continue;
-                }
-
-                // message has not yet been received (gap in the message sequence stream)
-                // drop all messages that have not been received
-                long current=low;
-                while(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size && current <= highest_received) {
-                    Message tmp=xmit_table.remove(current);
-                    retransmitter.remove(current);
-                    if(current > highest_delivered) {
-                        highest_delivered=next_to_remove;
-                        if(retval == null)
-                            retval=new LinkedList<Message>();
-                        if(tmp != null)
-                            retval.add(tmp);
-                    }
-                    current++;
                 }
 
                 if((retval == null || retval.isEmpty()) && processing != null)
