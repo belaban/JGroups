@@ -14,7 +14,6 @@ import org.jgroups.util.Util;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -46,8 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Example:
  * 1,2,3,5,6,8: low=1, highest_delivered=2 (or 3, depending on whether remove() was called !), highest_received=8
  * 
- * @author Bela Ban May 27 1999, May 2004, Jan 2007
- * @author John Georgiadis May 8 2001
+ * @author Bela Ban
  */
 public class NakReceiverWindow {
 
@@ -79,7 +77,7 @@ public class NakReceiverWindow {
     /**
      * ConcurrentMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers
      */
-    private final ConcurrentMap<Long, Message> xmit_table=Util.createConcurrentMap();
+    private final Map<Long,Message> xmit_table=Util.createHashMap();
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
@@ -262,16 +260,13 @@ public class NakReceiverWindow {
             // Case #3: we finally received a missing message. Case #2 handled seqno <= highest_delivered, so this
             // seqno *must* be between highest_delivered and next_to_add 
             if(seqno < next_to_add) {
-                Message tmp=xmit_table.putIfAbsent(seqno, msg); // only set message if not yet received (bela July 23 2003)
-                if(tmp == null) { // key/value was not present
-                    num_xmits=retransmitter.remove(seqno);
-                    if(log.isTraceEnabled())
-                        log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
-                    return true;
-                }
-                else { // key/value was present
-                    return false;
-                }
+                if(xmit_table.containsKey(seqno))
+                    return false; // key/value was present
+                xmit_table.put(seqno, msg); // only set message if not yet received (bela July 23 2003)
+                num_xmits=retransmitter.remove(seqno);
+                if(log.isTraceEnabled())
+                    log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
+                return true;
             }
 
             // Case #4: we received a seqno higher than expected: add to Retransmitter
@@ -382,56 +377,6 @@ public class NakReceiverWindow {
         }
         finally {
             lock.writeLock().unlock();
-        }
-    }
-
-
-    public Message removeOOBMessage() {
-        lock.writeLock().lock();
-        try {
-            Message retval=xmit_table.get(highest_delivered +1);
-            if(retval != null && retval.isFlagSet(Message.OOB)) {
-                return remove(false);
-            }
-            return null;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /** Removes as many OOB messages as possible */
-    public List<Message> removeOOBMessages() {
-        final List<Message> retval=new LinkedList<Message>();
-
-        lock.writeLock().lock();
-        try {
-            while(true) {
-                Message msg=xmit_table.get(highest_delivered +1);
-                if(msg != null && msg.isFlagSet(Message.OOB)) {
-                    msg=remove(false);
-                    if(msg != null)
-                        retval.add(msg);
-                }
-                else
-                    break;
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-
-        return retval;
-    }
-
-
-    public boolean hasMessagesToRemove() {
-        lock.readLock().lock();
-        try {
-            return xmit_table.get(highest_delivered + 1) != null;
-        }
-        finally {
-            lock.readLock().unlock();
         }
     }
 
@@ -577,12 +522,24 @@ public class NakReceiverWindow {
      * @return Message from xmit_table
      */
     public Message get(long seqno) {
-        return xmit_table.get(seqno);
+        lock.readLock().lock();
+        try {
+            return xmit_table.get(seqno);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
 
     public int size() {
-        return xmit_table.size();
+        lock.readLock().lock();
+        try {
+            return xmit_table.size();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
 
@@ -598,26 +555,31 @@ public class NakReceiverWindow {
 
 
 
-
     /**
      * Prints xmit_table. Requires read lock to be present
      * @return String
      */
     protected String printMessages() {
         StringBuilder sb=new StringBuilder();
-        sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
-        if(xmit_table != null && !xmit_table.isEmpty()) {
-            int non_received=0;
+        lock.readLock().lock();
+        try {
+            sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
+            if(xmit_table != null && !xmit_table.isEmpty()) {
+                int non_received=0;
 
-            for(Map.Entry<Long,Message> entry: xmit_table.entrySet()) {
-                if(entry.getValue() == null)
-                    non_received++;
+                for(Map.Entry<Long,Message> entry: xmit_table.entrySet()) {
+                    if(entry.getValue() == null)
+                        non_received++;
+                }
+                sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
+                  append(", highest stability=").append(highest_stability_seqno).append(')');
             }
-            sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
-                    append(", highest stability=").append(highest_stability_seqno).append(')');
+            sb.append(']');
+            return sb.toString();
         }
-        sb.append(']');
-        return sb.toString();
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public String printLossRate() {

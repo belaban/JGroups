@@ -14,7 +14,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -632,74 +631,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @Test(dataProvider="createTimer")
-    public void testHasMessagesToRemove(TimeScheduler timer) {
-        try {
-            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
-            assert !win.hasMessagesToRemove();
-            win.add(2, new Message());
-            assert !win.hasMessagesToRemove();
-            win.add(1, oob());
-            assert win.hasMessagesToRemove();
-            win.remove();
 
-            assert win.hasMessagesToRemove();
-            win.remove();
-            assert ! win.hasMessagesToRemove();
-        }
-        finally {
-            timer.stop();
-        }
-    }
-
-
-    @Test(dataProvider="createTimer")
-    public void testRemoveOOBMessage(TimeScheduler timer) {
-        try {
-            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
-            System.out.println("win = " + win);
-            win.add(2, msg());
-            System.out.println("win = " + win);
-            assert win.removeOOBMessage() == null;
-            assert win.remove() == null;
-            win.add(1, oob());
-            System.out.println("win = " + win);
-            assert win.removeOOBMessage() != null;
-            System.out.println("win = " + win);
-            assert win.removeOOBMessage() == null;
-            assert win.remove() != null;
-            assert win.remove() == null;
-            assert win.removeOOBMessage() == null;
-        }
-        finally {
-            timer.stop();
-        }
-    }
-
-
-    @Test(dataProvider="createTimer")
-    public void testRemoveOOBMessages(TimeScheduler timer) {
-        try {
-            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
-            win.add(0, msg());
-            List<Message> list=win.removeOOBMessages();
-            assert list.isEmpty();
-            win.add(1, oob());
-            win.add(2, oob());
-            win.add(3, msg());
-            win.add(4, oob());
-            list=win.removeOOBMessages();
-            assert list.size() == 2;
-            list=win.removeOOBMessages();
-            assert list.isEmpty();
-            win.remove();
-            list=win.removeOOBMessages();
-            assert list.size() == 1;
-        }
-        finally {
-            timer.stop();
-        }
-    }
 
 
     @Test(dataProvider="createTimer")
@@ -718,10 +650,9 @@ public class NakReceiverWindowTest {
             assert win.getHighestDelivered() == 1;
 
             win.add(2, oob());
-            win.removeOOBMessage();
             System.out.println("win = " + win);
 
-            assert win.getHighestDelivered() == 2;
+            assert win.getHighestDelivered() == 1 : "highest_delivered should be 2, but is " + win.getHighestDelivered();
         }
         finally {
             timer.stop();
