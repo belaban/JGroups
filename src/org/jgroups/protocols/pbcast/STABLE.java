@@ -64,7 +64,7 @@ public class STABLE extends Protocol {
      * well
      */
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered. Default is 0 (disabled)")
-    private long max_bytes=0;
+    private long max_bytes=500000;
 
     
     /* --------------------------------------------- JMX  ---------------------------------------------- */
