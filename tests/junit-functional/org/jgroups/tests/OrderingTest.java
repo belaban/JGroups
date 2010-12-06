@@ -241,10 +241,10 @@ public class OrderingTest {
     }
 
 
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
         OrderingTest test=new OrderingTest();
         test.init();
         test.testFIFOOrdering();
         test.destroy();
-    }
+    }*/
 }
