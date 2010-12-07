@@ -191,6 +191,27 @@ public class UDP extends TP {
         }
     }
 
+   /**
+     * Set the ttl for multicast socket
+     * @param ttl the time to live for the socket.
+     * @throws IOException
+     */
+    public void setMulticastTTL( int ttl )
+        throws IOException
+    {
+        this.ip_ttl = ttl;
+        mcast_sock.setTimeToLive( (byte) ttl );
+    }
+
+    /**
+     * Getter for current multicast TTL
+     * @return
+     */
+    public int getMulticastTTL()
+    {
+        return this.ip_ttl;
+    }
+
 
     /* ------------------------------------------------------------------------------- */
 
