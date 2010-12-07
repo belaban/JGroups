@@ -15,7 +15,9 @@ import org.jgroups.Message;
  * @author Bela Ban
  */
 public class RetransmitTable {
-    protected int msgs_per_row;
+    protected final int num_rows;
+    protected final int msgs_per_row;
+    protected final long original_offset;
 
     protected Message[][] matrix;
 
@@ -30,8 +32,9 @@ public class RetransmitTable {
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
+        this.num_rows=num_rows;
         this.msgs_per_row=msgs_per_row;
-        this.offset=offset;
+        this.offset=this.original_offset=offset;
         matrix=new Message[num_rows][];
     }
 
@@ -45,7 +48,13 @@ public class RetransmitTable {
         return putIfAbsent(seqno, msg) == null;
     }
 
-
+    /**
+     * Adds a message if the element at the given index is null. Returns null if no message existed at the given index,
+     * else returns the existing message and doesn't set the element.
+     * @param seqno
+     * @param msg
+     * @return The existing message, or null if there wasn't any
+     */
     public Message putIfAbsent(long seqno, Message msg) {
         int[] row_and_index=computeRowAndIndex(seqno);
         Message[] row=getRow(row_and_index[0]);
@@ -66,7 +75,8 @@ public class RetransmitTable {
     }
 
 
-    public Message remove(long seqno) {
+    /** Removes the message with seqno from the table, nulls the index */
+    public Message remove(long seqno) { // todo: purge if we can !
         int[] row_and_index=computeRowAndIndex(seqno);
         Message[] row=getRow(row_and_index[0]);
         Message existing_msg=row[row_and_index[1]];
@@ -75,6 +85,12 @@ public class RetransmitTable {
             size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
         }
         return existing_msg;
+    }
+
+    public void clear() {
+        matrix=new Message[num_rows][];
+        size=0;
+        offset=original_offset;
     }
 
 
@@ -120,6 +136,18 @@ public class RetransmitTable {
                 if(row[j] != null)
                     retval++;
             }
+        }
+        return retval;
+    }
+
+    /** Returns the number of null elements in range [start .. end] */
+    public int getNullMessages(long start, long end) {
+        int retval=0;
+        for(long i=start; i <= end; i++) {
+            int[] row_and_index=computeRowAndIndex(i);
+            Message[] row=matrix[row_and_index[0]];
+            if(row != null && row[row_and_index[1]] == null)
+                retval++;
         }
         return retval;
     }

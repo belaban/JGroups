@@ -8,12 +8,11 @@ import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.RetransmitTable;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -77,7 +76,7 @@ public class NakReceiverWindow {
     /**
      * ConcurrentMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers
      */
-    private final Map<Long,Message> xmit_table=Util.createHashMap();
+    private final RetransmitTable xmit_table=new RetransmitTable(20, 50000, 1);
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
@@ -260,9 +259,9 @@ public class NakReceiverWindow {
             // Case #3: we finally received a missing message. Case #2 handled seqno <= highest_delivered, so this
             // seqno *must* be between highest_delivered and next_to_add 
             if(seqno < next_to_add) {
-                if(xmit_table.containsKey(seqno))
+                Message existing=xmit_table.putIfAbsent(seqno, msg);
+                if(existing != null)
                     return false; // key/value was present
-                xmit_table.put(seqno, msg); // only set message if not yet received (bela July 23 2003)
                 num_xmits=retransmitter.remove(seqno);
                 if(log.isTraceEnabled())
                     log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
@@ -396,11 +395,9 @@ public class NakReceiverWindow {
             }
 
             // we need to remove all seqnos *including* seqno
-            if(!xmit_table.isEmpty()) {
-                for(long i=low; i <= seqno; i++) {
-                    xmit_table.remove(i);
-                }
-            }
+            if(!xmit_table.isEmpty())
+                xmit_table.purge(seqno);
+            
             // remove all seqnos below seqno from retransmission
             for(long i=low; i <= seqno; i++) {
                 retransmitter.remove(i);
@@ -565,12 +562,7 @@ public class NakReceiverWindow {
         try {
             sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
             if(xmit_table != null && !xmit_table.isEmpty()) {
-                int non_received=0;
-
-                for(Map.Entry<Long,Message> entry: xmit_table.entrySet()) {
-                    if(entry.getValue() == null)
-                        non_received++;
-                }
+                int non_received=xmit_table.getNullMessages(highest_delivered, highest_received);
                 sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
                   append(", highest stability=").append(highest_stability_seqno).append(')');
             }
