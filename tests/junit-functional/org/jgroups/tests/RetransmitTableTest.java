@@ -100,19 +100,22 @@ public class RetransmitTableTest {
 
     public static void testPurge() {
         RetransmitTable table=new RetransmitTable(5, 10, 0);
-        for(long seqno=0; seqno <= 20; seqno++)
+        for(long seqno=0; seqno < 25; seqno++)
             table.put(seqno, MSG);
-        table.put(40, MSG); table.put(45, MSG);
-        assert table.size() == 23;
 
-        for(long seqno=0; seqno <= 15; seqno++)
+        long[] seqnos={30,31,32,37,38,39, 40,41,42,47,48,49};
+        for(long seqno: seqnos)
+            table.put(seqno, MSG);
+
+        System.out.println("table (before remove):\n" + table.dumpMatrix());
+        for(long seqno=0; seqno <= 22; seqno++)
             table.remove(seqno);
 
-        System.out.println("table: " + table.dump());
-        table.purge(15);
-        System.out.println("table: " + table.dump());
+        System.out.println("table (after remove, before purge):\n" + table.dumpMatrix());
+        table.purge(22);
+        System.out.println("table: (after purge):\n" + table.dumpMatrix());
 
-        assert table.size() == 7;
+        assert table.size() == 2 + seqnos.length;
     }
 
 
