@@ -20,17 +20,18 @@ public class RetransmitTable {
     protected Message[][] matrix;
 
     /** The first seqno, at matrix[0][0] */
-    protected int offset;
+    protected long offset;
 
     protected volatile int size=0;
 
 
     public RetransmitTable() {
-        this(10, 50000);
+        this(10, 50000, 0);
     }
 
-    public RetransmitTable(int num_rows, int msgs_per_row) {
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
         this.msgs_per_row=msgs_per_row;
+        this.offset=offset;
         matrix=new Message[num_rows][];
     }
 
@@ -40,36 +41,139 @@ public class RetransmitTable {
      * @param msg
      * @return True if the element at the computed index was null, else false
      */
-    public boolean add(long seqno, Message msg) {
+    public boolean put(long seqno, Message msg) {
+        return putIfAbsent(seqno, msg) == null;
+    }
+
+
+    public Message putIfAbsent(long seqno, Message msg) {
         int[] row_and_index=computeRowAndIndex(seqno);
-        if(row_and_index == null)
-            return false;
         Message[] row=getRow(row_and_index[0]);
-        if(row[row_and_index[1]] == null) {
+        Message existing_msg=row[row_and_index[1]];
+        if(existing_msg == null) {
             row[row_and_index[1]]=msg;
             size++;
-            return true;
+            return null;
         }
-        return false;
+        else
+            return existing_msg;
     }
 
     public Message get(long seqno) {
         int[] row_and_index=computeRowAndIndex(seqno);
-        if(row_and_index == null)
-            return null;
         Message[] row=getRow(row_and_index[0]);
-        return row[row_and_index[1]]; // todo: what do we do when we have an index out of bound exception ?
+        return row[row_and_index[1]];
     }
+
+
+    public Message remove(long seqno) {
+        int[] row_and_index=computeRowAndIndex(seqno);
+        Message[] row=getRow(row_and_index[0]);
+        Message existing_msg=row[row_and_index[1]];
+        if(existing_msg != null) {
+            row[row_and_index[1]]=null;
+            size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
+        }
+        return existing_msg;
+    }
+
+
+    /**
+     * Removes all messages less than or equal to seqno from the table. Adjusts offset and moves rows down by the
+     * number of removed rows. This method should be used when a number of messages can be removed at once, instead
+     * of individually removing them with remove().
+     * @param seqno
+     */
+    public void purge(long seqno) {
+        long diff=seqno - offset;
+        if(diff < msgs_per_row)
+            return;
+        int num_rows_to_remove=(int)(diff / msgs_per_row);
+        System.arraycopy(matrix, num_rows_to_remove, matrix, 0, matrix.length - num_rows_to_remove);
+        for(int i=matrix.length - num_rows_to_remove; i < matrix.length; i++)
+            matrix[i]=null;
+
+        offset+=(num_rows_to_remove * msgs_per_row); // todo: is this correct ?
+        size=computeSize();
+    }
+
+
+    @Deprecated
+    public boolean containsKey(long seqno) {return get(seqno) != null;}
 
     /** Returns the total capacity in the matrix */
-    public int capacity() {
-        return matrix.length * msgs_per_row;
-    }
+    public int capacity() {return matrix.length * msgs_per_row;}
 
     /** Returns the numbers of messages in the table */
-    public int size() {
-        return size;
+    public int size() {return size;}
+
+    public boolean isEmpty() {return size <= 0;}
+
+    /** A more expensive way to compute the size, done by iterating through the entire table and adding up non-null values */
+    public int computeSize() {
+        int retval=0;
+        for(int i=0; i < matrix.length; i++) {
+            Message[] row=matrix[i];
+            if(row == null)
+                continue;
+            for(int j=0; j < row.length; j++) {
+                if(row[j] != null)
+                    retval++;
+            }
+        }
+        return retval;
     }
+
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("size=" + size + ", capacity=" + capacity());
+        return sb.toString();
+    }
+
+    /** Dumps the seqnos in the table as a list */
+    public String dump() {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        for(int i=0; i < matrix.length; i++) {
+            Message[] row=matrix[i];
+            if(row == null)
+                continue;
+            for(int j=0; j < row.length; j++) {
+                if(row[j] != null) {
+                    long seqno=offset + (i * msgs_per_row) + j;
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(", ");
+                    sb.append(seqno);
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+     /** Dumps the non-null in the table in a pseudo graphic way */
+    public String dumpMatrix() {
+        StringBuilder sb=new StringBuilder();
+        for(int i=0; i < matrix.length; i++) {
+            Message[] row=matrix[i];
+            sb.append(i + ": ");
+            if(row == null) {
+                sb.append("\n");
+                continue;
+            }
+            for(int j=0; j < row.length; j++) {
+                if(row[j] != null)
+                    sb.append("* ");
+                else
+                    sb.append("  ");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
 
 
     /**
@@ -97,8 +201,7 @@ public class RetransmitTable {
 
     /** Computes and returns the row index and the index within that row for seqno */
     protected int[] computeRowAndIndex(long seqno) {
-        if(seqno < offset)
-            return null;
+        assert seqno >= offset;
         int[] retval=new int[2];
         int row_index=(int)(((seqno- offset) / msgs_per_row));
         int index=(int)(seqno - offset) % msgs_per_row;
@@ -106,6 +209,8 @@ public class RetransmitTable {
         retval[1]=index;
         return retval;
     }
+
+
 
     
 
