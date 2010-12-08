@@ -109,7 +109,7 @@ public class RetransmitTable {
         for(int i=matrix.length - num_rows_to_remove; i < matrix.length; i++)
             matrix[i]=null;
 
-        offset+=(num_rows_to_remove * msgs_per_row); // todo: is this correct ?
+        offset+=(num_rows_to_remove * msgs_per_row);
         size=computeSize();
     }
 
@@ -229,7 +229,7 @@ public class RetransmitTable {
 
     /** Computes and returns the row index and the index within that row for seqno */
     protected int[] computeRowAndIndex(long seqno) {
-        assert seqno >= offset;
+        assert seqno >= offset : "seqno=" + seqno + ", offset=" + offset;
         int[] retval=new int[2];
         int row_index=(int)(((seqno- offset) / msgs_per_row));
         int index=(int)(seqno - offset) % msgs_per_row;
