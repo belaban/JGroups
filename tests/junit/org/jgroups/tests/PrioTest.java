@@ -1,6 +1,9 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PRIO;
 import org.jgroups.protocols.PrioHeader;
@@ -13,6 +16,7 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
@@ -41,16 +45,104 @@ public class PrioTest extends ChannelTestBase {
     } 
 
 
-    public void testPrioritizedMessages() throws ChannelNotConnectedException, ChannelClosedException {
-        byte[] prios={120,110,100,90,80,70,60,50,40,30,20,10,9,8,7,6,5,4,3,2,1};
-        for(byte prio: prios) {
+    public void testPrioritizedMessages() throws Exception {
+        byte[] prios={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30};
+        PrioSender[] senders=new PrioSender[prios.length];
+        final CyclicBarrier barrier=new CyclicBarrier(prios.length +1);
+        for(int i=0; i < prios.length; i++) {
+            senders[i]=new PrioSender(c1, prios[i], barrier);
+            senders[i].start();
+        }
+        Util.sleep(500);
+        barrier.await(); // starts the senders
+
+        for(PrioSender sender: senders)
+            sender.join();
+
+        List<Integer> list1=r1.getMsgs(), list2=r2.getMsgs();
+        for(int i=0; i < 20; i++) {
+            if(list1.size() == prios.length && list2.size() == prios.length)
+                break;
+            Util.sleep(1000);
+        }
+
+        System.out.println("R1: " + Util.print(list1) + "\nR2: " + Util.print(list2));
+        assert list1.size() == prios.length;
+        assert list2.size() == prios.length;
+        
+        // Mike: how can we test this ? It seems this is not deterministic... which is fine, I guess, but hard to test !
+        checkOrdering(list1, list2);
+    }
+
+    /**
+     * Verifies that the messages are predominantly in prioritized order.
+     * The latter means that messages with higher prio should be mostly delivered before messages with lower prio.
+     * 'Mostly' is needed because we cannot guarantee that all messages with higher prio are delivered before messages
+     * with lower prio. 
+     * @param list1
+     * @param list2
+     */
+    protected void checkOrdering(List<Integer> list1, List<Integer> list2) {
+        // check that the left half of the messages have a higher prio than the right half
+        System.out.print("checking the ordering of list1: ");
+        _check(list1);
+
+        System.out.print("checking the ordering of list2: ");
+        _check(list2);
+    }
+
+    protected void _check(List<Integer> list) {
+        int middle=list.size() / 2;
+
+        int sum=0;
+        for(int num: list)
+          sum+=num;
+
+        double median_val=sum / list.size();
+
+
+        // make sure the values [0 .. middle] have smaller values than list[middle]
+        int correct=0;
+        for(int i=0; i <= middle; i++) {
+            if(list.get(i) <= median_val)
+                correct++;
+        }
+
+        // make sure the values [middle+1 .. list.size() -1] have bigger values than list[middle+1]
+        for(int i=middle+1; i < list.size() -1; i++) {
+            if(list.get(i) >= median_val)
+                correct++;
+        }
+
+        double correct_percentage=correct / (double)list.size();
+        System.out.println("OK. The percentage of correct values is " + (correct_percentage * 100) + "%");
+        assert correct_percentage >= 0.7 : "FAIL. The percentage of correct values is " + (correct_percentage * 100) + "%";
+    }
+
+
+    protected static class PrioSender extends Thread {
+        protected final JChannel ch;
+        protected final byte prio;
+        protected final CyclicBarrier barrier;
+
+        public PrioSender(JChannel ch, byte prio, CyclicBarrier barrier) {
+            this.ch=ch;
+            this.prio=prio;
+            this.barrier=barrier;
+        }
+
+        public void run() {
             Message msg=new Message(null, null, new Integer(prio));
             PrioHeader hdr=new PrioHeader(prio);
             msg.putHeader(PRIO_ID, hdr);
-            c1.send(msg);
+            try {
+                barrier.await();
+                ch.send(msg);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
         }
-
-        // Mike: how can we test this ? It seems this is not deterministic... which is fine, I guess, but hard to test !
     }
 
     
@@ -63,8 +155,6 @@ public class PrioTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             msgs.add((Integer)msg.getObject());
-            PrioHeader hdr=(PrioHeader)msg.getHeader(PRIO_ID);
-            System.out.println("<< " + msg.getSrc() + ": " + msg.getObject() + " (prio=" + hdr.getPriority() + ")");
         }
     }
 }
