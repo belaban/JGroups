@@ -140,10 +140,10 @@ public class RetransmitTable {
         return retval;
     }
 
-    /** Returns the number of null elements in range [start .. end] */
-    public int getNullMessages(long start, long end) {
+    /** Returns the number of null elements up to 'to' */
+    public int getNullMessages(long to) {
         int retval=0;
-        for(long i=start; i <= end; i++) {
+        for(long i=offset; i <= to; i++) {
             int[] row_and_index=computeRowAndIndex(i);
             Message[] row=matrix[row_and_index[0]];
             if(row != null && row[row_and_index[1]] == null)
