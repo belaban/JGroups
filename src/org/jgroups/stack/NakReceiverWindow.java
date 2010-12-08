@@ -76,7 +76,7 @@ public class NakReceiverWindow {
     /**
      * ConcurrentMap<Long,Message>. Maintains messages keyed by (sorted) sequence numbers
      */
-    private final RetransmitTable xmit_table=new RetransmitTable(20, 50000, 1);
+    private final RetransmitTable xmit_table;
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
@@ -139,6 +139,8 @@ public class NakReceiverWindow {
             retransmitter=use_range_based_retransmitter?
                     new RangeBasedRetransmitter(sender, cmd, sched) :
                     new DefaultRetransmitter(sender, cmd, sched);
+
+        xmit_table=new RetransmitTable(5, 10000, highest_delivered +1);
     }
 
 
@@ -562,7 +564,7 @@ public class NakReceiverWindow {
         try {
             sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
             if(xmit_table != null && !xmit_table.isEmpty()) {
-                int non_received=xmit_table.getNullMessages(highest_delivered, highest_received);
+                int non_received=xmit_table.getNullMessages(highest_received);
                 sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
                   append(", highest stability=").append(highest_stability_seqno).append(')');
             }
