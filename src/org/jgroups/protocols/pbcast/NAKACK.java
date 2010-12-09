@@ -1082,7 +1082,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(my_entry == null)
                     continue;
                 their_high=their_entry.getHighest();
-                my_high=my_entry.getHighest();
+
+                // cannot ask for 0 to be retransmitted because the first seqno in NAKACK and UNICAST(2) is always 1 !
+                my_high=Math.max(1, my_entry.getHighest());
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
                         log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
