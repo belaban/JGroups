@@ -213,14 +213,8 @@ public class ChannelTestBase {
 
         public Channel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
-            if (unique) {
+            if(unique)
                 makeUnique(c, num);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("Modifying channel resources:");
-                logChannelResources(c);
-            }
             return c;
         }
 
@@ -236,13 +230,9 @@ public class ChannelTestBase {
                 Object value = entry.getValue();
                 retval.setOpt(key, value);
             }
-            if (useFlush())
+            if(useFlush())
                 Util.addFlush(retval, new FLUSH());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Creating cloned channel with resources:");
-                logChannelResources(retval);
-            }
             return retval;
         }
 
@@ -257,13 +247,9 @@ public class ChannelTestBase {
                 Object value = entry.getValue();
                 ch.setOpt(key, value);
             }
-            if (useFlush())
+            if(useFlush())
                 Util.addFlush(ch, new FLUSH());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Creating channel with resources:");
-                logChannelResources(ch);
-            }
             return ch;
         }
 
@@ -312,24 +298,7 @@ public class ChannelTestBase {
         }
     }
 
-    /*
-     * Writes the shared channel resources used by this channel to the log (debugging).
-     */
-    protected void logChannelResources(Channel ch) {
-
-        ProtocolStack stack = ch.getProtocolStack();
-        Protocol transport = stack.getTransport();
-        if (transport instanceof UDP) {
-            log.debug("(udp.mcast_addr, udp.mcast_port) = ("
-                            + ((UDP) transport).getMulticastAddress() + ", "
-                            + ((UDP) transport).getMulticastPort() + ")");
-        } else if (transport instanceof BasicTCP) {
-            log.debug("(tcp.bind_port, tcp.port_range) = (" + ((TP) transport).getBindPort() + ", "
-                            + ((TP) transport).getPortRange() + ")");
-        } else {
-            throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
-        }
-    }
+  
 
     interface EventSequence {
         List<Object> getEvents();
