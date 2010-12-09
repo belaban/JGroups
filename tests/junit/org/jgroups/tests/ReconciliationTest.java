@@ -127,6 +127,17 @@ public class ReconciliationTest extends ChannelTestBase {
         reconciliationHelper(apps, t);
     }
 
+
+    /**
+     * Tests reconciliation. Creates N channels, based on 'names'. Say we have A, B and C. Then we have the second but
+     * last node (B) discard all messages from the last node (C). Then the last node (C) multicasts 5 messages. We check
+     * that the 5 messages have been received correctly by all nodes but the second-but-last node (B). Then we remove
+     * DISCARD from B and trigger a manual flush. After the flush, B should also have received the 5 messages sent
+     * by C.
+     * @param names
+     * @param ft
+     * @throws Exception
+     */
     private void reconciliationHelper(String[] names, FlushTrigger ft) throws Exception {
 
         // create channels and setup receivers
@@ -146,9 +157,15 @@ public class ReconciliationTest extends ChannelTestBase {
             channel.connect("ReconciliationTest");
             Util.sleep(250);
         }
+
+        View view=channels.get(channels.size() -1).getView();
+        System.out.println("view: " + view);
+        assert view.size() == channels.size();
+
         JChannel last=channels.get(channels.size() - 1);
         JChannel nextToLast=channels.get(channels.size() - 2);
 
+        System.out.println(nextToLast.getAddress() + " is now discarding messages from " + last.getAddress());
         insertDISCARD(nextToLast, last.getAddress());
 
         String lastsName=names[names.length - 1];
@@ -156,15 +173,11 @@ public class ReconciliationTest extends ChannelTestBase {
         printDigests(channels, "\nDigests before " + lastsName + " sends any messages:");
 
         // now last sends 5 messages:
-        log.info("\n" + lastsName
-                 + " sending 5 messages;"
-                 + nextToLastName
-                 + " will ignore them, but others will receive them");
-        for(int i=1;i <= 5;i++) {
+        log.info("\n" + lastsName + " sending 5 messages; " + nextToLastName + " will ignore them, but others will receive them");
+        for(int i=1;i <= 5;i++)
             last.send(null, null, new Integer(i));
-        }
-        Util.sleep(1000); // until al messages have been received, this is
-        // asynchronous so we need to wait a bit
+
+        Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 
         printDigests(channels, "\nDigests after " + lastsName + " sent messages:");
 
@@ -201,15 +214,15 @@ public class ReconciliationTest extends ChannelTestBase {
         Address address=last.getAddress();
         ft.triggerFlush();
 
-        int cnt=1000;
+        int cnt=20;
         View v;
         while((v=channels.get(0).getView()) != null && cnt > 0) {
             cnt--;
             if(v.size() == channels.size())
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
-
+        assert channels.get(0).getView().size() == channels.size();
         printDigests(channels, "");
 
         // check that member with discard (should have received all missing
@@ -224,7 +237,7 @@ public class ReconciliationTest extends ChannelTestBase {
     private void printDigests(List<JChannel> channels, String message) {
         log.info(message);
         for(JChannel channel:channels) {
-            log.info(channel.downcall(Event.GET_DIGEST_EVT).toString());
+            log.info("[" + channel.getAddress() + "] " + channel.downcall(Event.GET_DIGEST_EVT).toString());
         }
     }
 
@@ -279,10 +292,6 @@ public class ReconciliationTest extends ChannelTestBase {
                                + msg.getSrc()
                                + ": "
                                + msg.getObject());
-        }
-
-        public void viewAccepted(View new_view) {
-            log.debug("[" + name + " / " + channel.getLocalAddress() + "]: " + new_view);
         }
     }
 
