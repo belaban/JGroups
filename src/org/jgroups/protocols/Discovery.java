@@ -324,7 +324,7 @@ public abstract class Discovery extends Protocol {
                             if(logical_addr != null && physical_addr != null)
                                 down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                             if(logical_addr != null && data.getLogicalName() != null)
-                                UUID.add((UUID)logical_addr, data.getLogicalName());
+                                UUID.add(logical_addr, data.getLogicalName());
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
                         }
 
