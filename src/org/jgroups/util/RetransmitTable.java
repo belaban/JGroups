@@ -15,14 +15,12 @@ import org.jgroups.Message;
  * @author Bela Ban
  */
 public class RetransmitTable {
-    protected final int num_rows;
-    protected final int msgs_per_row;
-    protected final long original_offset;
-
-    protected Message[][] matrix;
+    protected final int    num_rows;
+    protected final int    msgs_per_row;
+    protected Message[][]  matrix;
 
     /** The first seqno, at matrix[0][0] */
-    protected long offset;
+    protected long         offset;
 
     protected volatile int size=0;
 
@@ -34,7 +32,7 @@ public class RetransmitTable {
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
         this.num_rows=num_rows;
         this.msgs_per_row=msgs_per_row;
-        this.offset=this.original_offset=offset;
+        this.offset=offset;
         matrix=new Message[num_rows][];
     }
 
@@ -87,10 +85,12 @@ public class RetransmitTable {
         return existing_msg;
     }
 
+    /** Removes all elements. This method is usually called just before removing a retransmit table, so typically
+     * it is not used anymore after returning */
     public void clear() {
         matrix=new Message[num_rows][];
         size=0;
-        offset=original_offset;
+        offset=1;
     }
 
 
