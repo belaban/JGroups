@@ -136,9 +136,9 @@ public class ReconciliationTest extends ChannelTestBase {
         for(int i=0;i < channelCount;i++) {
             JChannel channel;
             if(i == 0)
-                channel=createChannel(true, names.length+2);
+                channel=createChannel(true, names.length+2, names[i]);
             else
-                channel=createChannel(channels.get(0));
+                channel=createChannel(channels.get(0), names[i]);
             MyReceiver r=new MyReceiver(channel, names[i]);
             receivers.add(r);
             channels.add(channel);
