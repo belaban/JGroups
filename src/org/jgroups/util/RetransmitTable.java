@@ -26,7 +26,7 @@ public class RetransmitTable {
 
 
     public RetransmitTable() {
-        this(10, 50000, 0);
+        this(5, 10000, 0);
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
