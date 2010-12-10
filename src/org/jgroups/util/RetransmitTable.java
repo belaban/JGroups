@@ -54,11 +54,12 @@ public class RetransmitTable {
      * @return The existing message, or null if there wasn't any
      */
     public Message putIfAbsent(long seqno, Message msg) {
-        int[] row_and_index=computeRowAndIndex(seqno);
-        Message[] row=getRow(row_and_index[0]);
-        Message existing_msg=row[row_and_index[1]];
+        int row_index=computeRow(seqno);
+        Message[] row=getRow(row_index);
+        int index=computeIndex(seqno);
+        Message existing_msg=row[index];
         if(existing_msg == null) {
-            row[row_and_index[1]]=msg;
+            row[index]=msg;
             size++;
             return null;
         }
@@ -67,23 +68,29 @@ public class RetransmitTable {
     }
 
     public Message get(long seqno) {
-        int[] row_and_index=computeRowAndIndex(seqno, true);
-        if(row_and_index == null)
+        int row_index=computeRow(seqno);
+        if(row_index < 0 || row_index >= matrix.length)
             return null;
-        Message[] row=getRow(row_and_index[0]);
-        return row[row_and_index[1]];
+        Message[] row=matrix[row_index];
+        if(row == null)
+            return null;
+        int index=computeIndex(seqno);
+        return row[index];
     }
 
 
     /** Removes the message with seqno from the table, nulls the index */
-    public Message remove(long seqno) { // todo: purge if we can !
-        int[] row_and_index=computeRowAndIndex(seqno, true);
-        if(row_and_index == null)
+    public Message remove(long seqno) {
+        int row_index=computeRow(seqno);
+        if(row_index < 0 || row_index >= matrix.length)
             return null;
-        Message[] row=getRow(row_and_index[0]);
-        Message existing_msg=row[row_and_index[1]];
+        Message[] row=matrix[row_index];
+        if(row == null)
+            return null;
+        int index=computeIndex(seqno);
+        Message existing_msg=row[index];
         if(existing_msg != null) {
-            row[row_and_index[1]]=null;
+            row[index]=null;
             size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
         }
         return existing_msg;
@@ -118,9 +125,6 @@ public class RetransmitTable {
     }
 
 
-    @Deprecated
-    public boolean containsKey(long seqno) {return get(seqno) != null;}
-
     /** Returns the total capacity in the matrix */
     public int capacity() {return matrix.length * msgs_per_row;}
 
@@ -148,11 +152,11 @@ public class RetransmitTable {
     public int getNullMessages(long to) {
         int retval=0;
         for(long i=offset; i <= to; i++) {
-            int[] row_and_index=computeRowAndIndex(i, true);
-            if(row_and_index == null)
+            int row_index=computeRow(i);
+            if(row_index < 0 || row_index >= matrix.length)
                 continue;
-            Message[] row=matrix[row_and_index[0]];
-            if(row != null && row[row_and_index[1]] == null)
+            Message[] row=matrix[row_index];
+            if(row != null && row[computeIndex(i)] == null)
                 retval++;
         }
         return retval;
@@ -233,25 +237,18 @@ public class RetransmitTable {
         matrix=new_matrix;
     }
 
-    /** Computes and returns the row index and the index within that row for seqno */
-    protected int[] computeRowAndIndex(long seqno) {
-        return computeRowAndIndex(seqno, false);
+
+
+    /** Computes and returns the row index for seqno */
+    protected int computeRow(long seqno) {
+        return (int)(((seqno- offset) / msgs_per_row));
     }
 
 
-    /** Computes and returns the row index and the index within that row for seqno */
-    protected int[] computeRowAndIndex(long seqno, boolean return_null_if_index_out_of_bounds) {
-        if(return_null_if_index_out_of_bounds && seqno < offset)
-            return null;
-        assert seqno >= offset : "seqno=" + seqno + ", offset=" + offset;
-        int[] retval=new int[2];
-        int row_index=(int)(((seqno- offset) / msgs_per_row));
-        int index=(int)(seqno - offset) % msgs_per_row;
-        retval[0]=row_index;
-        retval[1]=index;
-        return retval;
+    /** Computes and returns the index within a row for seqno */
+    protected int computeIndex(long seqno) {
+        return (int)(seqno - offset) % msgs_per_row;
     }
-
 
     
 
