@@ -473,6 +473,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="Returns the sizes of all NakReceiverWindow.RetransmitTables")
+    public String printRetransmitTableSizes() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue();
+            sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
+              .append(" (capacity=" + win.getRetransmitTableCapacity() + ")\n");
+        }
+        return sb.toString();
+    }
+
+
     @ManagedAttribute
     public double getAverageLossRate() {
         double retval=0.0;
