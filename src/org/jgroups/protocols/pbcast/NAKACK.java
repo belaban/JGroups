@@ -1083,11 +1083,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     continue;
                 their_high=their_entry.getHighest();
 
-                // cannot ask for 0 to be retransmitted because the first seqno in NAKACK and UNICAST(2) is always 1 !
-                my_high=Math.max(1, my_entry.getHighest());
+                // Cannot ask for 0 to be retransmitted because the first seqno in NAKACK and UNICAST(2) is always 1 !
+                // Also, we need to ask for retransmission of my_high+1, because we already *have* my_high, and don't
+                // need it, so the retransmission range is [my_high+1 .. their_high]: *exclude* my_high, but *include*
+                // their_high
+                my_high=Math.max(1, my_entry.getHighest() +1);
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
-                        log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
+                        log.trace("[" + local_addr + "] fetching " + my_high + "-" + their_high + " from " + sender);
                     retransmit(my_high, their_high, sender, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
@@ -1199,8 +1202,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     win.setHighestDelivered(highest_delivered_seqno);
                     continue; // don't destroy my own window
                 }
-                win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
+                win.destroy(); // stops retransmission
             }
             win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
             xmit_table.put(sender, win);
@@ -1245,8 +1248,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         || win.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
                     continue;
 
-                win.destroy(); // stops retransmission
                 xmit_table.remove(sender);
+                win.destroy(); // stops retransmission
                 if(sender.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
                     seqno_lock.lock();
                     try {
