@@ -140,7 +140,7 @@ public class NakReceiverWindow {
                     new RangeBasedRetransmitter(sender, cmd, sched) :
                     new DefaultRetransmitter(sender, cmd, sched);
 
-        xmit_table=new RetransmitTable(5, 10000, highest_delivered +1);
+        xmit_table=new RetransmitTable(5, 10000, low);
     }
 
 
