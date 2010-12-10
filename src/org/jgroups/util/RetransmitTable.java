@@ -17,6 +17,7 @@ import org.jgroups.Message;
 public class RetransmitTable {
     protected final int    num_rows;
     protected final int    msgs_per_row;
+    protected final double resize_factor;
     protected Message[][]  matrix;
 
     /** The first seqno, at matrix[0][0] */
@@ -26,14 +27,21 @@ public class RetransmitTable {
 
 
     public RetransmitTable() {
-        this(5, 10000, 0);
+        this(5, 10000, 0, 1.2);
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
+        this(num_rows, msgs_per_row, offset, 1.2);
+    }
+
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor) {
         this.num_rows=num_rows;
         this.msgs_per_row=msgs_per_row;
+        this.resize_factor=resize_factor;
         this.offset=offset;
         matrix=new Message[num_rows][];
+        if(resize_factor <= 1)
+            throw new IllegalArgumentException("resize_factor needs to be > 1");
     }
 
     /**
@@ -232,7 +240,8 @@ public class RetransmitTable {
 
     /** Resizes the matrix to the new size */
     protected void resize(int new_capacity) {
-        Message[][] new_matrix=new Message[new_capacity][];
+        int new_size=(int)Math.max(new_capacity, matrix.length * resize_factor);
+        Message[][] new_matrix=new Message[new_size][];
         System.arraycopy(matrix, 0, new_matrix, 0, matrix.length);
         matrix=new_matrix;
     }
