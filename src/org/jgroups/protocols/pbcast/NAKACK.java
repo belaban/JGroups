@@ -827,11 +827,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
+        boolean remove_msgs=discard_delivered_msgs && !loopback;
         boolean released_processing=false;
         try {
             while(true) {
                 // we're removing a msg and set processing to false (if null) *atomically* (wrt to add())
-                List<Message> msgs=win.removeMany(processing, max_msg_batch_size);
+                List<Message> msgs=win.removeMany(processing, remove_msgs, max_msg_batch_size);
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
                     return;
@@ -1286,8 +1287,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
-        NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer, 
-                                                    use_range_based_retransmitter);
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, lowest_seqno, timer, true);
 
         if(use_stats_for_retransmission) {
             win.setRetransmitTimeouts(new ActualInterval(sender));
