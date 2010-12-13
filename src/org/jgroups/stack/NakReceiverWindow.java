@@ -55,8 +55,6 @@ public class NakReceiverWindow {
 
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
 
-    Address local_addr=null;
-
     private volatile boolean running=true;
 
     /** Lowest seqno, modified on stable(). On stable(), we purge msgs [low digest.highest_delivered] */
@@ -78,14 +76,6 @@ public class NakReceiverWindow {
      */
     private final RetransmitTable xmit_table;
 
-    /**
-     * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
-     * messages are removed from NakReceiverWindow.xmit_table and moved to NakReceiverWindow.delivered_msgs, where
-     * they are later garbage collected (by STABLE). Since we do retransmits only from sent messages, never
-     * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
-     * around, and don't need to wait for garbage collection to remove them.
-     */
-    private boolean discard_delivered_msgs=false;
 
     private final AtomicBoolean processing=new AtomicBoolean(false);
 
@@ -117,19 +107,14 @@ public class NakReceiverWindow {
      */
     public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno,
                              long lowest_seqno, TimeScheduler sched) {
-        this(null, sender, cmd, highest_delivered_seqno, lowest_seqno, sched);
+        this(sender, cmd, highest_delivered_seqno, lowest_seqno, sched, true);
     }
 
 
-    public NakReceiverWindow(Address local_addr, Address sender, Retransmitter.RetransmitCommand cmd, 
-                             long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched) {
-        this(local_addr, sender, cmd, highest_delivered_seqno, lowest_seqno, sched, true);
-    }
 
-    public NakReceiverWindow(Address local_addr, Address sender, Retransmitter.RetransmitCommand cmd,
+    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter) {
-        this.local_addr=local_addr;
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
         low=Math.min(lowest_seqno, highest_delivered);
@@ -168,9 +153,8 @@ public class NakReceiverWindow {
         retransmitter.setRetransmitTimeouts(timeouts);
     }
 
-
+    @Deprecated
     public void setDiscardDeliveredMessages(boolean flag) {
-        this.discard_delivered_msgs=flag;
     }
 
     @Deprecated
@@ -300,27 +284,21 @@ public class NakReceiverWindow {
 
 
     public Message remove() {
-        return remove(true);
+        return remove(true, false);
     }
 
 
-    public Message remove(boolean acquire_lock) {
+    public Message remove(boolean acquire_lock, boolean remove_msg) {
         Message retval;
 
         if(acquire_lock)
             lock.writeLock().lock();
         try {
-            long next_to_remove=highest_delivered +1;
-            retval=xmit_table.get(next_to_remove);
+            long next=highest_delivered +1;
+            retval=remove_msg? xmit_table.remove(next) : xmit_table.get(next);
 
             if(retval != null) { // message exists and is ready for delivery
-                if(discard_delivered_msgs) {
-                    Address sender=retval.getSrc();
-                    if(!local_addr.equals(sender)) { // don't remove if we sent the message !
-                        xmit_table.remove(next_to_remove);
-                    }
-                }
-                highest_delivered=next_to_remove;
+                highest_delivered=next;
                 return retval;
             }
             return null;
@@ -337,38 +315,27 @@ public class NakReceiverWindow {
      * @return List<Message> A list of messages, or null if no available messages were found
      */
     public List<Message> removeMany(final AtomicBoolean processing) {
-        return removeMany(processing, 0);
+        return removeMany(processing, false, 0);
     }
 
-
-    public List<Message> removeMany(final AtomicBoolean processing, int max_results) {
-        return removeMany(processing, false, max_results);
-    }
 
     /**
      * Removes as many messages as possible
-     * @param discard_own_msgs Removes messages from xmit_table even if we sent it
+     * @param remove_msgs Removes messages from xmit_table
      * @param max_results Max number of messages to remove in one batch
      * @return List<Message> A list of messages, or null if no available messages were found
      */
-    public List<Message> removeMany(final AtomicBoolean processing, boolean discard_own_msgs, int max_results) {
+    public List<Message> removeMany(final AtomicBoolean processing, boolean remove_msgs, int max_results) {
         List<Message> retval=null;
         int num_results=0;
 
         lock.writeLock().lock();
         try {
             while(true) {
-                long next_to_remove=highest_delivered +1;
-                Message msg=xmit_table.get(next_to_remove);
-
+                long next=highest_delivered +1;
+                Message msg=remove_msgs? xmit_table.remove(next) : xmit_table.get(next);
                 if(msg != null) { // message exists and is ready for delivery
-                    if(discard_delivered_msgs) {
-                        Address sender=msg.getSrc();
-                        if(discard_own_msgs || !local_addr.equals(sender)) { // don't remove if we sent the message !
-                            xmit_table.remove(next_to_remove);
-                        }
-                    }
-                    highest_delivered=next_to_remove;
+                    highest_delivered=next;
                     if(retval == null)
                         retval=new LinkedList<Message>();
                     retval.add(msg);
