@@ -78,6 +78,13 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     private int                 sock_conn_timeout=3000;    // max time in millis to wait for Socket.connect() to return
 
+    // Start port for client socket. Default value of 0 picks a random port
+    protected int client_bind_port=0;
+
+    // Number of ports to probe for start_port and client_bind_port
+    protected int port_range=50;
+
+
     private volatile boolean    running=false;
 
 
@@ -125,6 +132,20 @@ public class FD_SOCK extends Protocol implements Runnable {
             start_port=Integer.parseInt(str);
             props.remove("start_port");
         }
+
+        str=props.getProperty("client_bind_port");
+        if(str != null) {
+            client_bind_port=Integer.parseInt(str);
+            props.remove("client_bind_port");
+        }
+
+
+        str=props.getProperty("port_range");
+        if(str != null) {
+            port_range=Integer.parseInt(str);
+            props.remove("port_range");
+        }
+
 
         str=props.getProperty("keep_alive");
         if(str != null) {
@@ -571,6 +592,23 @@ public class FD_SOCK extends Protocol implements Runnable {
             try {
                 SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
                 ping_sock=new Socket();
+
+                int num_bind_attempts=0;
+                int port=client_bind_port;
+                for(;;) {
+                    try {
+                        ping_sock.bind(new InetSocketAddress(bind_addr, port));
+                        break;
+                    }
+                    catch(IOException e) {
+                        if(num_bind_attempts++ > port_range) {
+                            log.error("failed creating client socket to " + dest, e);
+                            throw e;
+                        }
+                        port++;
+                    }
+                }
+                
                 ping_sock.setSoLinger(true, 1);
                 ping_sock.setKeepAlive(keep_alive);
                 ping_sock.connect(destAddr, sock_conn_timeout);
