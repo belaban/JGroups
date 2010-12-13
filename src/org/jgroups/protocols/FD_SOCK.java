@@ -62,6 +62,12 @@ public class FD_SOCK extends Protocol implements Runnable {
     
     @Property(description="Start port for server socket. Default value of 0 picks a random port")
     int start_port=0;
+
+    @Property(description="Start port for client socket. Default value of 0 picks a random port")
+    int client_bind_port=0;
+
+    @Property(description="Number of ports to probe for start_port and client_bind_port")
+    int port_range=50;
     
     @Property(description="Whether to use KEEP_ALIVE on the ping socket or not. Default is true")
     private boolean keep_alive=true;
@@ -571,6 +577,23 @@ public class FD_SOCK extends Protocol implements Runnable {
             try {
                 SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
                 ping_sock=new Socket();
+
+                int num_bind_attempts=0;
+                int port=client_bind_port;
+                for(;;) {
+                    try {
+                        ping_sock.bind(new InetSocketAddress(bind_addr, port));
+                        break;
+                    }
+                    catch(IOException e) {
+                        if(num_bind_attempts++ > port_range) {
+                            log.error("failed creating client socket to " + dest, e);
+                            throw e;
+                        }
+                        port++;
+                    }
+                }
+
                 ping_sock.setSoLinger(true, 1);
                 ping_sock.setKeepAlive(keep_alive);
                 Util.connect(ping_sock, destAddr, sock_conn_timeout);

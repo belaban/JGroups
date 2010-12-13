@@ -8,9 +8,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -86,17 +84,7 @@ public class FifoOrderTest extends ChannelTestBase {
     }
 
     private void checkFIFO(MyReceiver r) {
-        List<Pair<Address,Integer>> msgs=r.getMessages();
-        Map<Address,List<Integer>> map=new HashMap<Address,List<Integer>>();
-        for(Pair<Address,Integer> p: msgs) {
-            Address sender=p.key;
-            List<Integer> list=map.get(sender);
-            if(list == null) {
-                list=new LinkedList<Integer>();
-                map.put(sender, list);
-            }
-            list.add(p.val);
-        }
+        Map<Address,List<Integer>> map=r.getMessages();
 
         boolean fifo=true;
         List<Address> incorrect_receivers=new LinkedList<Address>();
@@ -190,7 +178,8 @@ public class FifoOrderTest extends ChannelTestBase {
 
     private class MyReceiver extends ReceiverAdapter {
         String name;
-        final List<Pair<Address,Integer>> msgs=new LinkedList<Pair<Address,Integer>>();
+        final ConcurrentMap<Address,List<Integer>> msgs=new ConcurrentHashMap<Address,List<Integer>>();
+
         AtomicInteger count=new AtomicInteger(0);
 
         public MyReceiver(String name) {
@@ -199,10 +188,18 @@ public class FifoOrderTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Util.sleep(SLEEPTIME);
-            Pair<Address,Integer> pair=new Pair<Address,Integer>(msg.getSrc(), (Integer)msg.getObject());           
-            synchronized(msgs) {
-                msgs.add(pair);
+
+            Address sender=msg.getSrc();
+            List<Integer> list=msgs.get(sender);
+            if(list == null) {
+                list=new LinkedList<Integer>();
+                List<Integer> tmp=msgs.putIfAbsent(sender, list);
+                if(tmp != null)
+                    list=tmp;
             }
+            Integer num=(Integer)msg.getObject();
+            list.add(num); // no concurrent access: FIFO per sender ! (No need to synchronize on list)
+
             if(count.incrementAndGet() >= EXPECTED) {
                 System.out.println("[" + name + "]: received all messages (" + count.get() + ")");
                 try {
@@ -214,7 +211,7 @@ public class FifoOrderTest extends ChannelTestBase {
             }
         }
 
-        public List<Pair<Address,Integer>> getMessages() {return msgs;}
+        public ConcurrentMap<Address,List<Integer>> getMessages() {return msgs;}
 
         public String getName() {
             return name;
