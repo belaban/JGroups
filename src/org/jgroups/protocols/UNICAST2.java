@@ -650,8 +650,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
-        NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, seqno-1, seqno-1, timer);
-        win.setDiscardDeliveredMessages(true);
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer);
         ReceiverEntry entry=new ReceiverEntry(win, conn_id, max_stable_msgs);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
         if(entry2 != null)
