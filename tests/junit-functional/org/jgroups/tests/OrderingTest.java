@@ -111,7 +111,7 @@ public class OrderingTest {
 
         System.out.println("\nwaiting for message reception by all receivers:");
         boolean done;
-        for(int i=0; i < 30; i++) {
+        for(int i=0; i < 50; i++) {
             done=true;
             for(JChannel ch: channels) {
                 MyReceiver receiver=(MyReceiver)ch.getReceiver();
