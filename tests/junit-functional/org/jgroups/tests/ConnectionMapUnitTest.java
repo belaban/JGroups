@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapUnitTest {
     TCPConnectionMap ct1, ct2;
-    static final int port1=5555, port2=6666;
+    static final int port1=15555, port2=16666;
 
 
 
