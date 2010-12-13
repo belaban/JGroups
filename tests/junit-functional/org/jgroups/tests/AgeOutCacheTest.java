@@ -34,7 +34,12 @@ public class AgeOutCacheTest {
         System.out.println("cache:\n" + cache);
         int size=cache.size();
         assert size == 5 : "size is " + size;
-        Util.sleep(1500);
+
+        for(int i=0; i < 30; i++) {
+            if(cache.size() == 0)
+                break;
+            Util.sleep(1000);
+        }
         System.out.println("cache:\n" + cache);
         size=cache.size();
         assert size == 0 : "size is " + size;
