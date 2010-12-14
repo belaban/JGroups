@@ -347,7 +347,7 @@ public class AckReceiverWindowTest {
                 e.printStackTrace();
             }
 
-            int cnt=5;
+            int cnt=10;
             while(true) {
                 Message msg=win.remove();
                 if(msg != null) {
