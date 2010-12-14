@@ -14,6 +14,7 @@ import org.testng.annotations.AfterMethod;
 import java.util.concurrent.CountDownLatch;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -230,9 +231,10 @@ public class AckReceiverWindowTest {
             adders[i].start();
         }
 
+        final AtomicInteger count=new AtomicInteger(NUM);
         final Remover[] removers=new Remover[NUM_THREADS];
         for(int i=0; i < removers.length; i++) {
-            removers[i]=new Remover(win, latch);
+            removers[i]=new Remover(win, latch, count);
             removers[i].start();
         }
 
@@ -241,10 +243,8 @@ public class AckReceiverWindowTest {
         for(Adder adder: adders)
             adder.join();
 
-        System.out.println("win = " + win);
-
         int total=0;
-        int index=0;
+        int index=1;
         for(Remover remover: removers) {
             remover.join();
             List<Message> list=remover.getList();
@@ -252,7 +252,7 @@ public class AckReceiverWindowTest {
             total+=list.size();
         }
 
-        System.out.println("total = " + total);
+        System.out.println("total = " + total + "\n");
         if(total != NUM) {
             for(Remover remover: removers) {
                 System.out.println(remover + ": " + print(remover.getList()));
@@ -328,10 +328,12 @@ public class AckReceiverWindowTest {
         private final AckReceiverWindow win;
         private final CountDownLatch latch;
         private final List<Message> list=new LinkedList<Message>();
+        private final AtomicInteger count;
 
-        public Remover(AckReceiverWindow win, CountDownLatch latch) {
+        public Remover(AckReceiverWindow win, CountDownLatch latch, final AtomicInteger count) {
             this.win=win;
             this.latch=latch;
+            this.count=count;
             setName("Remover");
         }
 
@@ -345,22 +347,19 @@ public class AckReceiverWindowTest {
             }
             catch(InterruptedException e) {
                 e.printStackTrace();
+                return;
             }
 
-            int cnt=10;
-            while(true) {
+            while(count.get() > 0) {
                 Message msg=win.remove();
                 if(msg != null) {
+                    count.decrementAndGet();
                     list.add(msg);
                 }
                 else {
-                    if(cnt-- <= 0)
-                        break;
-                    else
-                        Util.sleep(100);
+                    Util.sleep(100);
                 }
             }
-            
         }
     }
 
