@@ -208,6 +208,10 @@ public class NakReceiverWindow {
 
     public int getRetransmitTableCapacity() {return xmit_table.capacity();}
 
+    public int getRetransmitTableResizings() {return xmit_table.getResizings();}
+
+    public int getRetransmitTablePurges() {return xmit_table.getPurges();}
+
 
     /**
      * Adds a message according to its seqno (sequence number).

@@ -24,6 +24,22 @@ public class RetransmitTable {
     protected long         offset;
 
     protected volatile int size=0;
+    protected volatile int num_resizes=0;
+    protected volatile int num_purges=0;
+
+
+    /** Returns the total capacity in the matrix */
+    public int capacity() {return matrix.length * msgs_per_row;}
+
+    /** Returns the numbers of messages in the table */
+    public int size() {return size;}
+
+    public int getResizings() {return num_resizes;}
+
+    public int getPurges() {return num_purges;}
+
+    public boolean isEmpty() {return size <= 0;}
+
 
 
     public RetransmitTable() {
@@ -63,6 +79,8 @@ public class RetransmitTable {
      */
     public Message putIfAbsent(long seqno, Message msg) {
         int row_index=computeRow(seqno);
+        if(row_index >= matrix.length)
+            resize(row_index +1);
         Message[] row=getRow(row_index);
         int index=computeIndex(seqno);
         Message existing_msg=row[index];
@@ -108,7 +126,7 @@ public class RetransmitTable {
      * it is not used anymore after returning */
     public void clear() {
         matrix=new Message[num_rows][];
-        size=0;
+        size=num_resizes=num_purges=0;
         offset=1;
     }
 
@@ -130,16 +148,9 @@ public class RetransmitTable {
 
         offset+=(num_rows_to_remove * msgs_per_row);
         size=computeSize();
+        num_purges++;
     }
 
-
-    /** Returns the total capacity in the matrix */
-    public int capacity() {return matrix.length * msgs_per_row;}
-
-    /** Returns the numbers of messages in the table */
-    public int size() {return size;}
-
-    public boolean isEmpty() {return size <= 0;}
 
     /** A more expensive way to compute the size, done by iterating through the entire table and adding up non-null values */
     public int computeSize() {
@@ -228,8 +239,6 @@ public class RetransmitTable {
      * @return A row
      */
     protected Message[] getRow(int index) {
-        if(index >= matrix.length)
-            resize(index +1);
         Message[] row=matrix[index];
         if(row == null) {
             row=new Message[msgs_per_row];
@@ -244,6 +253,7 @@ public class RetransmitTable {
         Message[][] new_matrix=new Message[new_size][];
         System.arraycopy(matrix, 0, new_matrix, 0, matrix.length);
         matrix=new_matrix;
+        num_resizes++;
     }
 
 
