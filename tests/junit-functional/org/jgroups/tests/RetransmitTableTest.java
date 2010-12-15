@@ -86,7 +86,7 @@ public class RetransmitTableTest {
             table.put(i, MSG);
         System.out.println("table = " + table);
         assert table.size() == NUM_MSGS;
-        assert table.capacity() == 11110;
+        assert table.capacity() == 10010;
     }
 
     public static void testResize() {
@@ -99,7 +99,7 @@ public class RetransmitTableTest {
         assert table.capacity() == 510;
 
         addAndGet(table, 515, "515");
-        assert table.capacity() == 610;
+        assert table.capacity() == 520;
     }
 
 
