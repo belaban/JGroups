@@ -479,8 +479,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             NakReceiverWindow win=entry.getValue();
             sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
-              .append(" (capacity=" + win.getRetransmitTableCapacity() + ", purges=" + win.getRetransmitTablePurges() +
-                        ", resizes=" + win.getRetransmitTableResizings() + "\n");
+              .append(" (capacity=" + win.getRetransmitTableCapacity() + ")");
         }
         return sb.toString();
     }
