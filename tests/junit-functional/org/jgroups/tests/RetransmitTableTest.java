@@ -190,6 +190,18 @@ public class RetransmitTableTest {
     }
 
 
+    public static void testMove() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        for(long i=0; i < 50; i++)
+            addAndGet(table, i, "hello-" + i);
+        table.purge(49);
+        assert table.isEmpty();
+        addAndGet(table, 50, "50");
+        assert table.size() == 1;
+        assert table.capacity() == 50;
+    }
+
+
     public static void testPurge() {
         RetransmitTable table=new RetransmitTable(5, 10, 0);
         for(long seqno=0; seqno < 25; seqno++)
