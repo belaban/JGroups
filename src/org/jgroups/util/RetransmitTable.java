@@ -285,10 +285,12 @@ public class RetransmitTable {
     }
 
 
-    /** A more expensive way to compute the size, done by iterating through the entire table and adding up non-null values */
+
+    /** Iterate from highest_seqno_purged to highest_seqno and add up non-null values */
     public int computeSize() {
         int retval=0;
-        for(int i=0; i < matrix.length; i++) {
+        int from=computeRow(highest_seqno_purged), to=computeRow(highest_seqno);
+        for(int i=from; i <= to; i++) {
             Message[] row=matrix[i];
             if(row == null)
                 continue;
@@ -299,6 +301,7 @@ public class RetransmitTable {
         }
         return retval;
     }
+
 
     /** Returns the number of null elements up to 'to' */
     public int getNullMessages(long to) {
