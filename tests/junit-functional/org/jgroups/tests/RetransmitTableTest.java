@@ -163,6 +163,21 @@ public class RetransmitTableTest {
     }
 
 
+    public void testResizeWithPurge2() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        for(long i=0; i < 50; i++)
+            addAndGet(table, i, "hello-" + i);
+        System.out.println("table = " + table);
+        assert table.size() == 50;
+        assert table.capacity() == 50;
+        assert table.getHighestPurged() == 0;
+        assert table.getHighest() == 49;
+
+        table.purge(43);
+        addAndGet(table, 52, "hello-52");
+    }
+
+
     public static void testPurge() {
         RetransmitTable table=new RetransmitTable(5, 10, 0);
         for(long seqno=0; seqno < 25; seqno++)
