@@ -500,16 +500,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     @ManagedAttribute
     public double getAverageSmoothedLossRate() {
-            double retval=0.0;
-            int count=0;
-            if(xmit_table.isEmpty())
-                return 0.0;
-            for(NakReceiverWindow win: xmit_table.values()) {
-                retval+=win.getSmoothedLossRate();
-                count++;
-            }
-            return retval / (double)count;
+        double retval=0.0;
+        int count=0;
+        if(xmit_table.isEmpty())
+            return 0.0;
+        for(NakReceiverWindow win: xmit_table.values()) {
+            retval+=win.getSmoothedLossRate();
+            count++;
         }
+        return retval / (double)count;
+    }
 
 
     public Vector<Integer> providedUpServices() {

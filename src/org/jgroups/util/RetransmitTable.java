@@ -32,14 +32,20 @@ public class RetransmitTable {
     protected long         highest_seqno;
 
     /** Time (in ms) after which a compaction should take place. 0 disables compaction */
-    protected long         max_compaction_time=2 * 60 * 1000L;
+    protected long         max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
 
     /** The time when the last compaction took place. If a {@link #compact(long)} takes place and sees that the
      * last compaction is more than max_compaction_time ms ago, a compaction will take place */
     protected long         last_compaction_timestamp=0;
     
+    protected static final long DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
 
+    protected static final double DEFAULT_RESIZE_FACTOR=1.2;
 
+    
+    public long getOffset() {
+        return offset;
+    }
 
     /** Returns the total capacity in the matrix */
     public int capacity() {return matrix.length * msgs_per_row;}
@@ -52,17 +58,22 @@ public class RetransmitTable {
 
 
     public RetransmitTable() {
-        this(5, 10000, 0, 1.2);
+        this(5, 10000, 0, DEFAULT_RESIZE_FACTOR);
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
-        this(num_rows, msgs_per_row, offset, 1.2);
+        this(num_rows, msgs_per_row, offset, DEFAULT_RESIZE_FACTOR);
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor) {
+        this(num_rows, msgs_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME);
+    }
+
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
         this.msgs_per_row=msgs_per_row;
         this.resize_factor=resize_factor;
+        this.max_compaction_time=max_compaction_time;
         this.offset=this.highest_seqno_purged=this.highest_seqno=offset;
         matrix=new Message[num_rows][];
         if(resize_factor <= 1)
@@ -171,7 +182,7 @@ public class RetransmitTable {
      * @param seqno
      */
     public void purge(long seqno) {
-        int num_rows_to_remove=(int)(seqno - offset / msgs_per_row);
+        int num_rows_to_remove=(int)(seqno - offset) / msgs_per_row;
         for(int i=0; i < num_rows_to_remove; i++) // Null all rows which can be fully removed
             matrix[i]=null;
 
@@ -211,6 +222,8 @@ public class RetransmitTable {
     protected void resize(long seqno) {
         int num_rows_to_purge=(int)((highest_seqno_purged - offset) / msgs_per_row);
         int row_index=computeRow(seqno) - num_rows_to_purge;
+        if(row_index < 0)
+            return;
 
         int new_size=Math.max(row_index +1, matrix.length);
 
@@ -220,12 +233,29 @@ public class RetransmitTable {
             matrix=new_matrix;
         }
         else if(num_rows_to_purge > 0) {
-            System.arraycopy(matrix, num_rows_to_purge, matrix, 0, matrix.length - num_rows_to_purge);
+            // System.arraycopy(matrix, num_rows_to_purge, matrix, 0, matrix.length - num_rows_to_purge);
+            move(num_rows_to_purge);
         }
 
         offset+=(num_rows_to_purge * msgs_per_row);
         size=computeSize();
     }
+
+
+    /** Moves contents of matrix num_rows down. Doesn't need System.arraycopy */
+    protected void move(int num_rows) {
+        if(num_rows <= 0 || num_rows > matrix.length)
+            return;
+
+        int target_index=0;
+        for(int i=num_rows; i < matrix.length; i++) {
+            matrix[target_index++]=matrix[i];
+        }
+
+        for(int i=matrix.length - num_rows; i < matrix.length; i++)
+            matrix[i]=null;
+    }
+
 
     /**
      * Moves the contents of matrix down by the number of purged rows and resizes the matrix accordingly. The
@@ -282,7 +312,7 @@ public class RetransmitTable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("size=" + size + ", capacity=" + capacity());
+        sb.append("size=" + size + ", capacity=" + capacity() + ", highest_purged=" + highest_seqno_purged + ", highest=" + highest_seqno);
         return sb.toString();
     }
 
@@ -360,12 +390,17 @@ public class RetransmitTable {
 
     /** Computes and returns the row index for seqno */
     protected int computeRow(long seqno) {
-        return (int)(((seqno- offset) / msgs_per_row));
+        int diff=(int)(seqno-offset);
+        if(diff < 0) return diff;
+        return diff / msgs_per_row;
     }
 
 
     /** Computes and returns the index within a row for seqno */
     protected int computeIndex(long seqno) {
+        int diff=(int)(seqno - offset);
+        if(diff < 0)
+            return diff;
         return (int)(seqno - offset) % msgs_per_row;
     }
 

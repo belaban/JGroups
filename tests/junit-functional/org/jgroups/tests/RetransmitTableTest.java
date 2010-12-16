@@ -3,7 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.RetransmitTable;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Tests {@link org.jgroups.util.RetransmitTable}
  * @author Bela Ban
@@ -102,6 +106,62 @@ public class RetransmitTableTest {
         assert table.capacity() == 520;
     }
 
+    public void testResizeWithPurge() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        for(long i=1; i <= 100; i++)
+            addAndGet(table, i, "hello-" + i);
+        System.out.println("table: " + table);
+        
+        // now remove 60 messages
+        for(long i=1; i <= 60; i++) {
+            Message msg=table.remove(i);
+            assert msg.getObject().equals("hello-" + i);
+        }
+        System.out.println("table after removal of seqno 60: " + table);
+
+        table.purge(50);
+        System.out.println("now triggering a resize() by addition of seqno=120");
+        addAndGet(table, 120, "120");
+        
+    }
+
+
+    public void testResizeWithPurgeAndGetOfNonExistingElement() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        for(long i=0; i < 50; i++)
+            addAndGet(table, i, "hello-" + i);
+        System.out.println("table: " + table);
+
+        // now remove 15 messages
+        for(long i=0; i <= 15; i++) {
+            Message msg=table.remove(i);
+            assert msg.getObject().equals("hello-" + i);
+        }
+        System.out.println("table after removal of seqno 15: " + table);
+
+        table.purge(15);
+        System.out.println("now triggering a resize() by addition of seqno=55");
+        addAndGet(table, 55, "hello-55");
+
+        // now we have elements 40-49 in row 1 and 55 in row 2:
+        List<String> list=new ArrayList<String>(20);
+        for(int i=16; i < 50; i++)
+            list.add("hello-" + i);
+        list.add("hello-55");
+
+        for(long i=table.getOffset(); i < table.capacity() + table.getOffset(); i++) {
+            Message msg=table.get(i);
+            if(msg != null) {
+                String message=(String)msg.getObject();
+                System.out.println(i + ": " + message);
+                list.remove(message);
+            }
+        }
+
+        System.out.println("table:\n" + table.dumpMatrix());
+        assert list.isEmpty() : " list: " + Util.print(list);
+    }
+
 
     public static void testPurge() {
         RetransmitTable table=new RetransmitTable(5, 10, 0);
@@ -112,14 +172,13 @@ public class RetransmitTableTest {
         for(long seqno: seqnos)
             table.put(seqno, MSG);
 
-        System.out.println("table (before remove):\n" + table.dumpMatrix());
+        System.out.println("table (before remove):\n" + table.dump());
         for(long seqno=0; seqno <= 22; seqno++)
             table.remove(seqno);
 
-        System.out.println("table (after remove, before purge):\n" + table.dumpMatrix());
+        System.out.println("\ntable (after remove 22, before purge):\n" + table.dump());
         table.purge(22);
-        System.out.println("table: (after purge):\n" + table.dumpMatrix());
-
+        System.out.println("\ntable: (after purge 22):\n" + table.dump());
         assert table.size() == 2 + seqnos.length;
     }
 
