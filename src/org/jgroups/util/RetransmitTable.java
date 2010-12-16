@@ -42,18 +42,7 @@ public class RetransmitTable {
 
     protected static final double DEFAULT_RESIZE_FACTOR=1.2;
 
-    
-    public long getOffset() {
-        return offset;
-    }
 
-    /** Returns the total capacity in the matrix */
-    public int capacity() {return matrix.length * msgs_per_row;}
-
-    /** Returns the numbers of messages in the table */
-    public int size() {return size;}
-
-    public boolean isEmpty() {return size <= 0;}
 
 
 
@@ -78,6 +67,38 @@ public class RetransmitTable {
         matrix=new Message[num_rows][];
         if(resize_factor <= 1)
             throw new IllegalArgumentException("resize_factor needs to be > 1");
+    }
+
+
+    public long getOffset() {
+        return offset;
+    }
+
+    /** Returns the total capacity in the matrix */
+    public int capacity() {return matrix.length * msgs_per_row;}
+
+    /** Returns the numbers of messages in the table */
+    public int size() {return size;}
+
+
+    public boolean isEmpty() {return size <= 0;}
+
+
+    public long getHighest() {
+        return highest_seqno;
+    }
+
+    public long getHighestPurged() {
+        return highest_seqno_purged;
+    }
+
+
+    public long getMaxCompactionTime() {
+        return max_compaction_time;
+    }
+
+    public void setMaxCompactionTime(long max_compaction_time) {
+        this.max_compaction_time=max_compaction_time;
     }
 
     /**
@@ -233,7 +254,6 @@ public class RetransmitTable {
             matrix=new_matrix;
         }
         else if(num_rows_to_purge > 0) {
-            // System.arraycopy(matrix, num_rows_to_purge, matrix, 0, matrix.length - num_rows_to_purge);
             move(num_rows_to_purge);
         }
 
@@ -242,15 +262,14 @@ public class RetransmitTable {
     }
 
 
-    /** Moves contents of matrix num_rows down. Doesn't need System.arraycopy */
+    /** Moves contents of matrix num_rows down. Avoids a System.arraycopy() */
     protected void move(int num_rows) {
         if(num_rows <= 0 || num_rows > matrix.length)
             return;
 
         int target_index=0;
-        for(int i=num_rows; i < matrix.length; i++) {
+        for(int i=num_rows; i < matrix.length; i++)
             matrix[target_index++]=matrix[i];
-        }
 
         for(int i=matrix.length - num_rows; i < matrix.length; i++)
             matrix[i]=null;
