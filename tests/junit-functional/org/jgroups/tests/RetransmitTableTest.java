@@ -175,6 +175,18 @@ public class RetransmitTableTest {
 
         table.purge(43);
         addAndGet(table, 52, "hello-52");
+        assert table.get(43) == null;
+
+        for(long i=44; i < 50; i++) {
+            Message msg=table.get(i);
+            assert msg != null && msg.getObject().equals("hello-" + i);
+        }
+
+        assert table.get(50) == null;
+        assert table.get(51) == null;
+        Message msg=table.get(52);
+        assert msg != null && msg.getObject().equals("hello-52");
+        assert table.get(53) == null;
     }
 
 

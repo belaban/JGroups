@@ -420,7 +420,7 @@ public class RetransmitTable {
         int diff=(int)(seqno - offset);
         if(diff < 0)
             return diff;
-        return (int)(seqno - offset) % msgs_per_row;
+        return diff % msgs_per_row;
     }
 
     
