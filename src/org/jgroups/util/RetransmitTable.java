@@ -71,6 +71,10 @@ public class RetransmitTable {
         matrix=new Message[num_rows][];
         if(resize_factor <= 1)
             throw new IllegalArgumentException("resize_factor needs to be > 1");
+
+        if(log.isTraceEnabled())
+            log.trace("num_rows=" + num_rows + ", msgs_per_row=" + msgs_per_row + ", resize_factor=" + resize_factor +
+                        ", max_compaction_size=" + max_compaction_time + ", capacity=" + capacity());
     }
 
 
