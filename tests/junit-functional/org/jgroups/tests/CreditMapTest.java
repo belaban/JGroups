@@ -174,19 +174,28 @@ public class CreditMapTest {
         assert alive == 3;
 
         replenishAll(400); // the 300 credit decr will succeed now
-        Util.sleep(500);
-        alive=countAliveThreads(decrementers);
-        assert alive == 2;
+        for(int i=0; i < 10; i++) {
+            if(countAliveThreads(decrementers) == 2)
+                break;
+            Util.sleep(500);
+        }
+        assert countAliveThreads(decrementers) == 2;
 
         replenishAll(700); // one of the two 500 creds will succeed
-        Util.sleep(500);
-        alive=countAliveThreads(decrementers);
-        assert alive == 1;
+        for(int i=0; i < 10; i++) {
+            if(countAliveThreads(decrementers) == 1)
+                break;
+            Util.sleep(500);
+        }
+        assert countAliveThreads(decrementers) == 1;
 
         replenishAll(300); // the other one of the 500 creds will succeed
-        Util.sleep(500);
-        alive=countAliveThreads(decrementers);
-        assert alive == 0;
+        for(int i=0; i < 10; i++) {
+            if(countAliveThreads(decrementers) == 0)
+                break;
+            Util.sleep(500);
+        }
+        assert countAliveThreads(decrementers) == 0;
     }
 
     public void testClear() {
