@@ -275,7 +275,7 @@ public class RetransmitTable {
         new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
 
         if(new_size < matrix.length) {
-            // System.out.println("<<< compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
+            System.out.println("<<< compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
             Message[][] new_matrix=new Message[new_size][];
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
