@@ -223,7 +223,7 @@ public class RetransmitTableTest {
 
 
     public void testCompact() {
-        RetransmitTable table=new RetransmitTable(10, 10, 0);
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
         for(long i=0; i < 80; i++)
             addAndGet(table, i, "hello-" + i);
         assert table.size() == 80;
@@ -231,7 +231,7 @@ public class RetransmitTableTest {
         assert table.size() == 20;
         table.compact();
         assert table.size() == 20;
-        assert table.capacity() == 30;
+        assert table.capacity() == 40;
     }
 
 
