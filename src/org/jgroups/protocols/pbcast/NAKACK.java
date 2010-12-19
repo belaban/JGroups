@@ -486,6 +486,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    @ManagedOperation(description="Compacts the retransmission tables")
+    public void compact() {
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue();
+            win.compact();
+        }
+    }
+
+
     @ManagedAttribute
     public double getAverageLossRate() {
         double retval=0.0;
