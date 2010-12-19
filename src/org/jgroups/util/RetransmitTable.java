@@ -34,7 +34,7 @@ public class RetransmitTable {
     /** Time (in ms) after which a compaction should take place. 0 disables compaction */
     protected long         max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
 
-    /** The time when the last compaction took place. If a {@link #compact(long)} takes place and sees that the
+    /** The time when the last compaction took place. If a {@link #compact()} takes place and sees that the
      * last compaction is more than max_compaction_time ms ago, a compaction will take place */
     protected long         last_compaction_timestamp=0;
     
@@ -267,20 +267,20 @@ public class RetransmitTable {
      * capacity of the matrix should be size * resize_factor
      */
     public void compact() {
-        int num_rows_to_purge=(int)((highest_seqno_purged - offset) / msgs_per_row);
+        // This is the range we need to copy into the new matrix (including from and to)
+        int from=computeRow(highest_seqno_purged), to=computeRow(highest_seqno);
+        int range=to - from +1;  // e.g. from=3, to=5, new_size has to be [3 .. 5] (=3)
 
-        int num_unused_rows=(int)((highest_seqno - highest_seqno_purged) / msgs_per_row);
-
-        int new_size=(int)((matrix.length - num_rows_to_purge - num_unused_rows) * resize_factor);
-
-        int alt_new_size=(int)(size * resize_factor); // ???
-
-        assert new_size == alt_new_size;
+        int new_size=(int)Math.max(range * resize_factor, range +1);
+        new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
 
         if(new_size < matrix.length) {
+            // System.out.println("<<< compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
             Message[][] new_matrix=new Message[new_size][];
-            System.arraycopy(matrix, num_rows_to_purge, new_matrix, 0, matrix.length - num_rows_to_purge - num_unused_rows);
+            System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
+            offset+=from * msgs_per_row;
+            size=computeSize();
         }
     }
 
