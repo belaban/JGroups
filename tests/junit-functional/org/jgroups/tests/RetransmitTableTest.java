@@ -222,6 +222,19 @@ public class RetransmitTableTest {
     }
 
 
+    public void testCompact() {
+        RetransmitTable table=new RetransmitTable(10, 10, 0);
+        for(long i=0; i < 80; i++)
+            addAndGet(table, i, "hello-" + i);
+        assert table.size() == 80;
+        table.purge(59);
+        assert table.size() == 20;
+        table.compact();
+        assert table.size() == 20;
+        assert table.capacity() == 30;
+    }
+
+
     protected static void addAndGet(RetransmitTable table, long seqno, String message) {
         boolean added=table.put(seqno, new Message(null, null, message));
         assert added;
