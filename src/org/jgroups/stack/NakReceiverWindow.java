@@ -115,6 +115,15 @@ public class NakReceiverWindow {
     public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter) {
+        this(sender, cmd, highest_delivered_seqno, lowest_seqno, sched, use_range_based_retransmitter,
+             5, 10000, 1.2, 5 * 60 * 1000);
+    }
+
+
+    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
+                             long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
+                             boolean use_range_based_retransmitter,
+                             int num_rows, int msgs_per_row, double resize_factor, long max_compaction_time) {
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
         low=Math.min(lowest_seqno, highest_delivered);
@@ -125,7 +134,7 @@ public class NakReceiverWindow {
                     new RangeBasedRetransmitter(sender, cmd, sched) :
                     new DefaultRetransmitter(sender, cmd, sched);
 
-        xmit_table=new RetransmitTable(5, 10000, low);
+        xmit_table=new RetransmitTable(num_rows, msgs_per_row, low, resize_factor, max_compaction_time);
     }
 
 
