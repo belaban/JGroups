@@ -1,6 +1,8 @@
 package org.jgroups.util;
 
 import org.jgroups.Message;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 /**
  * A store for messages to be retransmitted or delivered. Used on sender and receiver side, as a replacement for
@@ -41,6 +43,8 @@ public class RetransmitTable {
     protected static final long DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
 
     protected static final double DEFAULT_RESIZE_FACTOR=1.2;
+
+    protected static final Log log=LogFactory.getLog(RetransmitTable.class);
 
 
 
@@ -273,9 +277,9 @@ public class RetransmitTable {
 
         int new_size=(int)Math.max(range * resize_factor, range +1);
         new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
-
         if(new_size < matrix.length) {
-            System.out.println("<<< compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
+            if(log.isTraceEnabled())
+                log.trace("compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
             Message[][] new_matrix=new Message[new_size][];
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
