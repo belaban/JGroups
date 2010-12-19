@@ -58,6 +58,20 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     @Property(description="Max number of STABLE messages sent for the same highest_received seqno. A value < 1 is invalid")
     protected int max_stable_msgs=5;
 
+    @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
+    int xmit_table_num_rows=5;
+
+    @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
+      "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
+    int xmit_table_msgs_per_row=10000;
+
+    @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
+    double xmit_table_resize_factor=1.2;
+
+    @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
+      "is compacted (only for experts)",writable=false)
+    long xmit_table_max_compaction_time=10 * 60 * 1000;
+
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -650,7 +664,9 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer);
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer, true,
+                                                    xmit_table_num_rows, xmit_table_msgs_per_row,
+                                                    xmit_table_resize_factor, xmit_table_max_compaction_time);
         ReceiverEntry entry=new ReceiverEntry(win, conn_id, max_stable_msgs);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
         if(entry2 != null)
