@@ -384,8 +384,7 @@ public class NakReceiverWindow {
             }
 
             // we need to remove all seqnos *including* seqno
-            if(!xmit_table.isEmpty())
-                xmit_table.purge(seqno);
+            xmit_table.purge(seqno);
             
             // remove all seqnos below seqno from retransmission
             for(long i=low; i <= seqno; i++) {
