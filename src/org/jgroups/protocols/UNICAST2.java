@@ -229,9 +229,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     public void purgeAndCompact() {
         for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
             NakReceiverWindow win=entry.getValue().received_msgs;
-            System.out.println("-- purgeAndCompact("+entry.getKey()+"): hd=" + win.getHighestDelivered() + ", hr=" + win.getHighestReceived());
             win.stable(win.getHighestDelivered());
-            System.out.println("-- after purgeAndCompact("+entry.getKey()+"): hd=" + win.getHighestDelivered() + ", hr=" + win.getHighestReceived());
             win.compact();
         }
     }
