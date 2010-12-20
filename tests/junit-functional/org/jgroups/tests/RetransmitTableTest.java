@@ -235,6 +235,22 @@ public class RetransmitTableTest {
     }
 
 
+    public void testCompactWithAutomaticPurging() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        table.setAutomaticPurging(true);
+        for(long i=0; i < 80; i++)
+             addAndGet(table, i, "hello-" + i);
+        assert table.size() == 80;
+        for(long i=0; i <= 59; i++)
+            table.remove(i);
+
+        assert table.size() == 20;
+        table.compact();
+        assert table.size() == 20;
+        assert table.capacity() == 40;
+    }
+
+
     protected static void addAndGet(RetransmitTable table, long seqno, String message) {
         boolean added=table.put(seqno, new Message(null, null, message));
         assert added;
