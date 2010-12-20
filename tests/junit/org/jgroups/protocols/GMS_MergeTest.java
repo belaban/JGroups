@@ -143,7 +143,10 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "A", "A", "B");
             checkViews(channels, "B", "A", "B");
             checkViews(channels, "C", "C", "D");
-            checkViews(channels, "D", "C", "D");
+            checkViews(channels, "C", "C", "D");
+
+            System.out.println("\ndigests:");
+            printDigests(channels);
 
             Address leader=determineLeader(channels, "A", "C");
             long end_time=System.currentTimeMillis() + 30000;
@@ -151,14 +154,17 @@ public class GMS_MergeTest extends ChannelTestBase {
                 System.out.println("\n==== injecting merge events into " + leader + " ====");
                 injectMergeEvent(channels, leader, "A", "C");
                 Util.sleep(1000);
-                if(allChannelsHaveViewOf(channels, 4))
+                if(allChannelsHaveViewOf(channels, channels.length))
                     break;
             }
             while(end_time > System.currentTimeMillis());
             
             System.out.println("\n");
             print(channels);
-            assertAllChannelsHaveViewOf(channels, 4);
+            assertAllChannelsHaveViewOf(channels, channels.length);
+
+            System.out.println("\ndigests:");
+            printDigests(channels);
         }
         finally {
             System.out.println("closing channels");
@@ -640,6 +646,14 @@ public class GMS_MergeTest extends ChannelTestBase {
     private static void print(JChannel[] channels) {
         for(JChannel ch: channels) {
             System.out.println(ch.getName() + ": " + ch.getView());
+        }
+    }
+
+    private static void printDigests(JChannel[] channels) {
+        for(JChannel ch: channels) {
+            NAKACK nak=(NAKACK)ch.getProtocolStack().findProtocol(NAKACK.class);
+            Digest digest=nak.getDigest();
+            System.out.println(ch.getName() + ": " + digest.toStringSorted());
         }
     }
 

@@ -684,6 +684,32 @@ public class NakReceiverWindowTest {
         }
     }
 
+    @Test(dataProvider="createTimer")
+    public void testRemoveMany2(TimeScheduler timer) {
+        try {
+            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 4, timer);
+            win.add(5, msg());
+            win.add(6, msg());
+            win.add(7, msg());
+            win.add(9, msg());
+            win.add(10, msg());
+            System.out.println("win = " + win);
+            List<Message> msgs=win.removeMany(null);
+            System.out.println("msgs = " + msgs);
+            assert msgs.size() == 3;
+
+            win.add(8, msg());
+            msgs=win.removeMany(null);
+            System.out.println("msgs = " + msgs);
+            assert msgs.size() == 3;
+        }
+        finally {
+            timer.stop();
+        }
+    }
+
+
+
 
     @Test(dataProvider="createTimer")
     public void testRetransmitter(TimeScheduler timer) {

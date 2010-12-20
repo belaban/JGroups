@@ -6,6 +6,7 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -27,7 +28,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
     // todo: when JDK 6 is the baseline, convert the TreeMap to a TreeSet or ConcurrentSkipListSet and use ceiling()
     /** Sorted hashmap storing the ranges */
-    private final Map<Seqno,Seqno> ranges=Collections.synchronizedSortedMap(new TreeMap<Seqno,Seqno>(new SeqnoComparator()));
+    private final Map<Seqno,Seqno> ranges=new ConcurrentSkipListMap<Seqno,Seqno>(new SeqnoComparator());
 
     /** Association between ranges and retransmission tasks */
     private final Map<Seqno,Task> tasks=new ConcurrentHashMap<Seqno,Task>();
@@ -149,11 +150,8 @@ public class RangeBasedRetransmitter extends Retransmitter {
     public String toString() {
         int missing_msgs=0;
 
-        synchronized(ranges) {
-            for(Seqno range: ranges.keySet()) {
-                missing_msgs+=range.getNumberOfMissingMessages();
-            }
-        }
+        for(Seqno range: ranges.keySet())
+            missing_msgs+=range.getNumberOfMissingMessages();
 
         StringBuilder sb=new StringBuilder();
         sb.append(missing_msgs).append(" messages to retransmit");
@@ -171,11 +169,8 @@ public class RangeBasedRetransmitter extends Retransmitter {
     public int size() {
         int retval=0;
 
-        synchronized(ranges) {
-            for(Seqno range: ranges.keySet()) {
-                retval+=range.getNumberOfMissingMessages();
-            }
-        }
+        for(Seqno range: ranges.keySet())
+            retval+=range.getNumberOfMissingMessages();
         return retval;
     }
 
