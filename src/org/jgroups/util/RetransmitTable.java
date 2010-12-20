@@ -39,6 +39,11 @@ public class RetransmitTable {
     /** The time when the last compaction took place. If a {@link #compact()} takes place and sees that the
      * last compaction is more than max_compaction_time ms ago, a compaction will take place */
     protected long         last_compaction_timestamp=0;
+
+    /** By default, rows are only nulled and highest_seqno_purged is adjusted when {@link #purge(long)} is called.
+     * When automatic_purging is enabled (default is off), rows are purged and highest_seqno_purged is adjusted
+     * on {@link #remove(long)} */
+    protected boolean      automatic_purging;
     
     protected static final long DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
 
@@ -59,14 +64,16 @@ public class RetransmitTable {
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor) {
-        this(num_rows, msgs_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME);
+        this(num_rows, msgs_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME, false);
     }
 
-    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor, long max_compaction_time) {
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor, long max_compaction_time,
+                           boolean automatic_purging) {
         this.num_rows=num_rows;
         this.msgs_per_row=msgs_per_row;
         this.resize_factor=resize_factor;
         this.max_compaction_time=max_compaction_time;
+        this.automatic_purging=automatic_purging;
         this.offset=this.highest_seqno_purged=this.highest_seqno=offset;
         matrix=new Message[num_rows][];
         if(resize_factor <= 1)
@@ -102,6 +109,14 @@ public class RetransmitTable {
 
     public void setMaxCompactionTime(long max_compaction_time) {
         this.max_compaction_time=max_compaction_time;
+    }
+
+    public boolean isAutomaticPurging() {
+        return automatic_purging;
+    }
+
+    public void setAutomaticPurging(boolean automatic_purging) {
+        this.automatic_purging=automatic_purging;
     }
 
     /** Returns the ratio between size and capacity, as a percentage */
@@ -174,6 +189,10 @@ public class RetransmitTable {
         if(existing_msg != null) {
             row[index]=null;
             size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
+            if(automatic_purging) {
+                if(seqno > highest_seqno_purged)
+                    highest_seqno_purged=seqno;
+            }
         }
         return existing_msg;
     }
