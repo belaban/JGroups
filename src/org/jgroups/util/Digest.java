@@ -282,6 +282,28 @@ public class Digest implements Externalizable, Streamable {
         return sb.toString();
     }
 
+    public String toStringSorted() {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        if(senders.isEmpty()) return "[]";
+
+        TreeMap<Address,Entry> copy=new TreeMap<Address,Entry>(senders);
+        for(Map.Entry<Address,Entry> entry: copy.entrySet()) {
+            Address key=entry.getKey();
+            Entry val=entry.getValue();
+            if(!first)
+                sb.append(", ");
+            else
+                first=false;
+            sb.append(key).append(": ").append('[').append(val.low_seqno).append(" : ");
+            sb.append(val.highest_delivered_seqno);
+            if(val.highest_received_seqno >= 0)
+                sb.append(" (").append(val.highest_received_seqno).append(")");
+            sb.append("]");
+        }
+        return sb.toString();
+    }
+
 
     public String printHighestDeliveredSeqnos() {
         StringBuilder sb=new StringBuilder("[");

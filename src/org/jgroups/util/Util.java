@@ -2911,6 +2911,10 @@ public class Util {
         return new ConcurrentHashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR, CCHM_CONCURRENCY_LEVEL);
     }
 
+    public static <K,V> Map<K,V> createHashMap() {
+        return new HashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR);
+    }
+
 
     /** Finds first available port starting at start_port and returns server socket */
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, int start_port) {

@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
@@ -50,6 +51,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     @AfterMethod
     void tearDown() throws Exception {
+        removeDUPL(c3, c2, c1);
         Util.close(c3, c2, c1);
     }
 
@@ -57,7 +59,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     public void testRegularUnicastsToSelf() throws Exception {
         send(c1, c1.getAddress(), false, 10);
-        sendStableMessages(c1,c2, c3);
+        sendStableMessages(c1, c2, c3);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
@@ -161,6 +163,25 @@ public class DuplicateTest extends ChannelTestBase {
             STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
                 stable.runMessageGarbageCollection();
+        }
+    }
+
+    protected static void removeDUPL(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            DUPL dupl=(DUPL)ch.getProtocolStack().findProtocol(DUPL.class);
+            if(dupl != null) {
+                dupl.setCopyMulticastMsgs(false);
+                dupl.setCopyUnicastMsgs(false);
+            }
+        }
+    }
+
+
+    private static void sendUnicastStableMessages(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
+            if(unicast != null)
+                unicast.sendStableMessages();
         }
     }
 

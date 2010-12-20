@@ -213,68 +213,34 @@ public class ChannelTestBase {
 
         public Channel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
-            if (unique) {
+            if(unique)
                 makeUnique(c, num);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("Modifying channel resources:");
-                logChannelResources(c);
-            }
             return c;
         }
 
         public Channel createChannel(final JChannel ch) throws Exception {
-            Map<Integer, Object> channelOptions = new HashMap<Integer, Object>();
-            boolean useBlocking = (Boolean) ch.getOpt(Channel.BLOCK);
-            channelOptions.put(Channel.BLOCK, useBlocking);
-
-            log.info("Using configuration file " + channel_conf);
             JChannel retval = new JChannel(ch);
-            for (Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
-                Integer key = entry.getKey();
-                Object value = entry.getValue();
-                retval.setOpt(key, value);
-            }
-            if (useFlush())
+            retval.setOpt(Channel.BLOCK, ch.getOpt(Channel.BLOCK));
+            if(useFlush())
                 Util.addFlush(retval, new FLUSH());
-
-            if (log.isDebugEnabled()) {
-                log.debug("Creating cloned channel with resources:");
-                logChannelResources(retval);
-            }
             return retval;
         }
 
         private JChannel createChannel(String configFile) throws Exception {
-            Map<Integer, Object> channelOptions = new HashMap<Integer, Object>();
-            channelOptions.put(Channel.BLOCK, useBlocking());
-
-            log.info("Using configuration file " + configFile);
             JChannel ch = new JChannel(configFile);
-            for (Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
-                Integer key = entry.getKey();
-                Object value = entry.getValue();
-                ch.setOpt(key, value);
-            }
-            if (useFlush())
+            ch.setOpt(Channel.BLOCK, useBlocking());
+            if(useFlush())
                 Util.addFlush(ch, new FLUSH());
-
-            if (log.isDebugEnabled()) {
-                log.debug("Creating channel with resources:");
-                logChannelResources(ch);
-            }
             return ch;
         }
 
         protected void makeUnique(Channel channel, int num) throws Exception {
-            String str = Util.getProperty(new String[] { Global.UDP_MCAST_ADDR,
-                            "jboss.partition.udpGroup" }, null, "mcast_addr", false, null);
+            String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
+                                          null, "mcast_addr", false, null);
             if (str != null)
                 makeUnique(channel, num, str);
             else
                 makeUnique(channel, num, null);
-
         }
 
         protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
@@ -312,36 +278,17 @@ public class ChannelTestBase {
         }
     }
 
-    /*
-     * Writes the shared channel resources used by this channel to the log (debugging).
-     */
-    protected void logChannelResources(Channel ch) {
-
-        ProtocolStack stack = ch.getProtocolStack();
-        Protocol transport = stack.getTransport();
-        if (transport instanceof UDP) {
-            log.debug("(udp.mcast_addr, udp.mcast_port) = ("
-                            + ((UDP) transport).getMulticastAddress() + ", "
-                            + ((UDP) transport).getMulticastPort() + ")");
-        } else if (transport instanceof BasicTCP) {
-            log.debug("(tcp.bind_port, tcp.port_range) = (" + ((TP) transport).getBindPort() + ", "
-                            + ((TP) transport).getPortRange() + ")");
-        } else {
-            throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
-        }
-    }
+  
 
     interface EventSequence {
         List<Object> getEvents();
-
         String getName();
     }
 
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication extends ExtendedReceiverAdapter implements
-                    EventSequence, Runnable {
+    protected abstract class ChannelApplication extends ExtendedReceiverAdapter implements EventSequence, Runnable {
         protected Channel channel;
         protected Thread thread;
         protected Throwable exception;

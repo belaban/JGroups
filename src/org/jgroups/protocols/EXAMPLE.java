@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
@@ -29,6 +30,7 @@ class ExampleHeader implements Serializable {
  * Example of a protocol layer. Contains no real functionality, can be used as a template.
  */
 @Unsupported
+@MBean(description="Sample protocol")
 public class EXAMPLE extends Protocol {
     final Vector<Address> members=new Vector<Address>();
 
