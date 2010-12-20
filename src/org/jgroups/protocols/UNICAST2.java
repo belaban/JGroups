@@ -53,7 +53,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     protected long max_bytes=10000000;
 
     @Property(description="Max number of milliseconds before a stability message is sent to the sender(s)")
-    protected long stable_interval=10000L;
+    protected long stable_interval=60000L;
 
     @Property(description="Max number of STABLE messages sent for the same highest_received seqno. A value < 1 is invalid")
     protected int max_stable_msgs=5;
@@ -71,6 +71,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
     long xmit_table_max_compaction_time=10 * 60 * 1000;
+
+    @Property(description="If enabled, the removal of a message from the retransmission table causes an " +
+      "automatic purge (only for experts)",writable=false)
+    boolean xmit_table_automatic_purging=true;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
@@ -199,6 +203,40 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         return num;
     }
 
+
+    @ManagedOperation(description="Returns the sizes of all NakReceiverWindow.RetransmitTables")
+    public String printRetransmitTableSizes() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue().received_msgs;
+            sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
+              .append(" (capacity=" + win.getRetransmitTableCapacity())
+              .append(", fill factor=" + win.getRetransmitTableFillFactor() + "%)\n");
+        }
+        return sb.toString();
+    }
+
+
+    @ManagedOperation(description="Compacts the retransmission tables")
+    public void compact() {
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue().received_msgs;
+            win.compact();
+        }
+    }
+
+    @ManagedOperation(description="Purges highes delivered messages and compacts the retransmission tables")
+    public void purgeAndCompact() {
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue().received_msgs;
+            System.out.println("-- purgeAndCompact("+entry.getKey()+"): hd=" + win.getHighestDelivered() + ", hr=" + win.getHighestReceived());
+            win.stable(win.getHighestDelivered());
+            System.out.println("-- after purgeAndCompact("+entry.getKey()+"): hd=" + win.getHighestDelivered() + ", hr=" + win.getHighestReceived());
+            win.compact();
+        }
+    }
+
+
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=num_xmits=0;
     }
@@ -232,6 +270,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         super.init();
         if(max_stable_msgs < 1)
             throw new IllegalArgumentException("max_stable_msgs ( " + max_stable_msgs + ") must be > 0");
+        if(max_bytes <= 0)
+            throw new IllegalArgumentException("max_bytes has to be > 0");
     }
 
     public void start() throws Exception {
@@ -462,6 +502,14 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             log.trace(sb.toString());
         }
         down_prot.down(new Event(Event.MSG, stable_msg));
+
+        ReceiverEntry entry=recv_table.get(dest);
+        NakReceiverWindow win=entry != null? entry.received_msgs : null;
+        if(win != null) {
+            //System.out.println("[" + local_addr + "] stable(" + dest + ", hd=" + win.getHighestDelivered() + "): " +
+              //                   "win: " + win);
+            win.stable(win.getHighestDelivered());
+        }
     }
 
 
@@ -599,7 +647,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
-        if(added && max_bytes > 0) {
+        if(added) {
             int bytes=entry.received_bytes.addAndGet(msg.getLength());
             if(bytes >= max_bytes) {
                 entry.received_bytes_lock.lock();
@@ -666,7 +714,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
         NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer, true,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
-                                                    xmit_table_resize_factor, xmit_table_max_compaction_time);
+                                                    xmit_table_resize_factor, xmit_table_max_compaction_time,
+                                                    xmit_table_automatic_purging);
         ReceiverEntry entry=new ReceiverEntry(win, conn_id, max_stable_msgs);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
         if(entry2 != null)
