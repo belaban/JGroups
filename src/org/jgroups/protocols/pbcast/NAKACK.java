@@ -136,6 +136,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
     private boolean log_not_found_msgs=true;
 
+    @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
+    int xmit_table_num_rows=5;
+
+    @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
+      "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
+    int xmit_table_msgs_per_row=10000;
+
+    @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
+    double xmit_table_resize_factor=1.2;
+
+    @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
+      "is compacted (only for experts)",writable=false)
+    long xmit_table_max_compaction_time=10 * 60 * 1000;
+
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -479,10 +493,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             NakReceiverWindow win=entry.getValue();
             sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
-              .append(" (capacity=" + win.getRetransmitTableCapacity() + ", purges=" + win.getRetransmitTablePurges() +
-                        ", resizes=" + win.getRetransmitTableResizings() + "\n");
+              .append(" (capacity=" + win.getRetransmitTableCapacity())
+              .append(", fill factor=" + win.getRetransmitTableFillFactor() + "%)\n");
         }
         return sb.toString();
+    }
+
+
+    @ManagedOperation(description="Compacts the retransmission tables")
+    public void compact() {
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            NakReceiverWindow win=entry.getValue();
+            win.compact();
+        }
     }
 
 
@@ -501,16 +524,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     @ManagedAttribute
     public double getAverageSmoothedLossRate() {
-            double retval=0.0;
-            int count=0;
-            if(xmit_table.isEmpty())
-                return 0.0;
-            for(NakReceiverWindow win: xmit_table.values()) {
-                retval+=win.getSmoothedLossRate();
-                count++;
-            }
-            return retval / (double)count;
+        double retval=0.0;
+        int count=0;
+        if(xmit_table.isEmpty())
+            return 0.0;
+        for(NakReceiverWindow win: xmit_table.values()) {
+            retval+=win.getSmoothedLossRate();
+            count++;
         }
+        return retval / (double)count;
+    }
 
 
     public Vector<Integer> providedUpServices() {
@@ -1288,7 +1311,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, lowest_seqno, timer, true);
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, lowest_seqno, timer, true,
+                                                    xmit_table_num_rows, xmit_table_msgs_per_row,
+                                                    xmit_table_resize_factor, xmit_table_max_compaction_time, false);
 
         if(use_stats_for_retransmission) {
             win.setRetransmitTimeouts(new ActualInterval(sender));

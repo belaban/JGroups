@@ -115,6 +115,16 @@ public class NakReceiverWindow {
     public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter) {
+        this(sender, cmd, highest_delivered_seqno, lowest_seqno, sched, use_range_based_retransmitter,
+             5, 10000, 1.2, 5 * 60 * 1000, false);
+    }
+
+
+    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
+                             long highest_delivered_seqno, long lowest_seqno, TimeScheduler sched,
+                             boolean use_range_based_retransmitter,
+                             int num_rows, int msgs_per_row, double resize_factor, long max_compaction_time,
+                             boolean automatic_purging) {
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
         low=Math.min(lowest_seqno, highest_delivered);
@@ -125,7 +135,7 @@ public class NakReceiverWindow {
                     new RangeBasedRetransmitter(sender, cmd, sched) :
                     new DefaultRetransmitter(sender, cmd, sched);
 
-        xmit_table=new RetransmitTable(5, 10000, low);
+        xmit_table=new RetransmitTable(num_rows, msgs_per_row, low, resize_factor, max_compaction_time, automatic_purging);
     }
 
 
@@ -208,9 +218,11 @@ public class NakReceiverWindow {
 
     public int getRetransmitTableCapacity() {return xmit_table.capacity();}
 
-    public int getRetransmitTableResizings() {return xmit_table.getResizings();}
+    public double getRetransmitTableFillFactor() {return xmit_table.getFillFactor();}
 
-    public int getRetransmitTablePurges() {return xmit_table.getPurges();}
+    public void compact() {
+        xmit_table.compact();
+    }
 
 
     /**
@@ -373,8 +385,7 @@ public class NakReceiverWindow {
             }
 
             // we need to remove all seqnos *including* seqno
-            if(!xmit_table.isEmpty())
-                xmit_table.purge(seqno);
+            xmit_table.purge(seqno);
             
             // remove all seqnos below seqno from retransmission
             for(long i=low; i <= seqno; i++) {

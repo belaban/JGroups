@@ -1,6 +1,8 @@
 package org.jgroups.util;
 
 import org.jgroups.Message;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 
 /**
  * A store for messages to be retransmitted or delivered. Used on sender and receiver side, as a replacement for
@@ -23,10 +25,65 @@ public class RetransmitTable {
     /** The first seqno, at matrix[0][0] */
     protected long         offset;
 
-    protected volatile int size=0;
-    protected volatile int num_resizes=0;
-    protected volatile int num_purges=0;
+    protected int          size=0;
 
+    /** The highest seqno purged */
+    protected long         highest_seqno_purged;
+
+    /** The highest seqno in the table */
+    protected long         highest_seqno;
+
+    /** Time (in ms) after which a compaction should take place. 0 disables compaction */
+    protected long         max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
+
+    /** The time when the last compaction took place. If a {@link #compact()} takes place and sees that the
+     * last compaction is more than max_compaction_time ms ago, a compaction will take place */
+    protected long         last_compaction_timestamp=0;
+
+    /** By default, rows are only nulled and highest_seqno_purged is adjusted when {@link #purge(long)} is called.
+     * When automatic_purging is enabled (default is off), rows are purged and highest_seqno_purged is adjusted
+     * on {@link #remove(long)} */
+    protected boolean      automatic_purging;
+    
+    protected static final long DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
+
+    protected static final double DEFAULT_RESIZE_FACTOR=1.2;
+
+    protected static final Log log=LogFactory.getLog(RetransmitTable.class);
+
+
+
+
+
+    public RetransmitTable() {
+        this(5, 10000, 0, DEFAULT_RESIZE_FACTOR);
+    }
+
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
+        this(num_rows, msgs_per_row, offset, DEFAULT_RESIZE_FACTOR);
+    }
+
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor) {
+        this(num_rows, msgs_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME, false);
+    }
+
+    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor, long max_compaction_time,
+                           boolean automatic_purging) {
+        this.num_rows=num_rows;
+        this.msgs_per_row=msgs_per_row;
+        this.resize_factor=resize_factor;
+        this.max_compaction_time=max_compaction_time;
+        this.automatic_purging=automatic_purging;
+        this.offset=this.highest_seqno_purged=this.highest_seqno=offset;
+        matrix=new Message[num_rows][];
+        if(resize_factor <= 1)
+            throw new IllegalArgumentException("resize_factor needs to be > 1");
+    }
+
+
+    public long getOffset() {
+        return offset;
+    }
 
     /** Returns the total capacity in the matrix */
     public int capacity() {return matrix.length * msgs_per_row;}
@@ -34,31 +91,39 @@ public class RetransmitTable {
     /** Returns the numbers of messages in the table */
     public int size() {return size;}
 
-    public int getResizings() {return num_resizes;}
-
-    public int getPurges() {return num_purges;}
 
     public boolean isEmpty() {return size <= 0;}
 
 
-
-    public RetransmitTable() {
-        this(5, 10000, 0, 1.2);
+    public long getHighest() {
+        return highest_seqno;
     }
 
-    public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
-        this(num_rows, msgs_per_row, offset, 1.2);
+    public long getHighestPurged() {
+        return highest_seqno_purged;
     }
 
-    public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor) {
-        this.num_rows=num_rows;
-        this.msgs_per_row=msgs_per_row;
-        this.resize_factor=resize_factor;
-        this.offset=offset;
-        matrix=new Message[num_rows][];
-        if(resize_factor <= 1)
-            throw new IllegalArgumentException("resize_factor needs to be > 1");
+    public long getMaxCompactionTime() {
+        return max_compaction_time;
     }
+
+    public void setMaxCompactionTime(long max_compaction_time) {
+        this.max_compaction_time=max_compaction_time;
+    }
+
+    public boolean isAutomaticPurging() {
+        return automatic_purging;
+    }
+
+    public void setAutomaticPurging(boolean automatic_purging) {
+        this.automatic_purging=automatic_purging;
+    }
+
+    /** Returns the ratio between size and capacity, as a percentage */
+    public double getFillFactor() {
+        return size == 0? 0.0 : (int)(((double)size / capacity()) * 100);
+    }
+
 
     /**
      * Adds a new message to the index computed as a function of seqno
@@ -79,14 +144,18 @@ public class RetransmitTable {
      */
     public Message putIfAbsent(long seqno, Message msg) {
         int row_index=computeRow(seqno);
-        if(row_index >= matrix.length)
-            resize(row_index +1);
+        if(row_index >= matrix.length) {
+            resize(seqno);
+            row_index=computeRow(seqno);
+        }
         Message[] row=getRow(row_index);
         int index=computeIndex(seqno);
         Message existing_msg=row[index];
         if(existing_msg == null) {
             row[index]=msg;
             size++;
+            if(seqno > highest_seqno)
+                highest_seqno=seqno;
             return null;
         }
         else
@@ -101,7 +170,7 @@ public class RetransmitTable {
         if(row == null)
             return null;
         int index=computeIndex(seqno);
-        return row[index];
+        return index >= 0? row[index] : null;
     }
 
 
@@ -114,10 +183,16 @@ public class RetransmitTable {
         if(row == null)
             return null;
         int index=computeIndex(seqno);
+        if(index < 0)
+            return null;
         Message existing_msg=row[index];
         if(existing_msg != null) {
             row[index]=null;
             size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
+            if(automatic_purging) {
+                if(seqno > highest_seqno_purged)
+                    highest_seqno_purged=seqno;
+            }
         }
         return existing_msg;
     }
@@ -126,36 +201,119 @@ public class RetransmitTable {
      * it is not used anymore after returning */
     public void clear() {
         matrix=new Message[num_rows][];
-        size=num_resizes=num_purges=0;
-        offset=1;
+        size=0;
+        offset=highest_seqno_purged=highest_seqno=0;
+    }
+
+
+
+    /**
+     * Removes all messages less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
+     * and nulling all elements < index(seqno) of the first row that cannot be removed
+     * @param seqno
+     */
+    public void purge(long seqno) {
+        int num_rows_to_remove=(int)(seqno - offset) / msgs_per_row;
+        for(int i=0; i < num_rows_to_remove; i++) // Null all rows which can be fully removed
+            matrix[i]=null;
+
+        int row_index=computeRow(seqno);
+        if(row_index < 0 || row_index >= matrix.length)
+            return;
+
+        Message[] row=matrix[row_index];
+        if(row != null) {
+            int index=computeIndex(seqno);
+            for(int i=0; i <= index; i++) // null all messages up to and including seqno in the given row
+                row[i]=null;
+        }
+        size=computeSize();
+        if(seqno > highest_seqno_purged)
+            highest_seqno_purged=seqno;
+
+        // see if compaction should be triggered
+        if(max_compaction_time <= 0)
+            return;
+
+        long current_time=System.currentTimeMillis();
+        if(last_compaction_timestamp > 0) {
+            if(current_time - last_compaction_timestamp >= max_compaction_time) {
+                compact();
+                last_compaction_timestamp=current_time;
+            }
+        }
+        else
+            last_compaction_timestamp=current_time;
+    }
+
+
+
+    /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes
+     * a new size. Then either moves existing rows down, or copies them into a new array (if resizing took place) */
+    protected void resize(long seqno) {
+        int num_rows_to_purge=(int)((highest_seqno_purged - offset) / msgs_per_row);
+        int row_index=computeRow(seqno) - num_rows_to_purge;
+        if(row_index < 0)
+            return;
+
+        int new_size=Math.max(row_index +1, matrix.length);
+        if(new_size > matrix.length) {
+            Message[][] new_matrix=new Message[new_size][];
+            System.arraycopy(matrix, num_rows_to_purge, new_matrix, 0, matrix.length - num_rows_to_purge);
+            matrix=new_matrix;
+        }
+        else if(num_rows_to_purge > 0) {
+            move(num_rows_to_purge);
+        }
+
+        offset+=(num_rows_to_purge * msgs_per_row);
+        size=computeSize();
+    }
+
+
+    /** Moves contents of matrix num_rows down. Avoids a System.arraycopy() */
+    protected void move(int num_rows) {
+        if(num_rows <= 0 || num_rows > matrix.length)
+            return;
+
+        int target_index=0;
+        for(int i=num_rows; i < matrix.length; i++)
+            matrix[target_index++]=matrix[i];
+
+        for(int i=matrix.length - num_rows; i < matrix.length; i++)
+            matrix[i]=null;
     }
 
 
     /**
-     * Removes all messages less than or equal to seqno from the table. Adjusts offset and moves rows down by the
-     * number of removed rows. This method should be used when a number of messages can be removed at once, instead
-     * of individually removing them with remove().
-     * @param seqno
+     * Moves the contents of matrix down by the number of purged rows and resizes the matrix accordingly. The
+     * capacity of the matrix should be size * resize_factor
      */
-    public void purge(long seqno) {
-        long diff=seqno - offset;
-        if(diff < msgs_per_row)
-            return;
-        int num_rows_to_remove=(int)(diff / msgs_per_row);
-        System.arraycopy(matrix, num_rows_to_remove, matrix, 0, matrix.length - num_rows_to_remove);
-        for(int i=matrix.length - num_rows_to_remove; i < matrix.length; i++)
-            matrix[i]=null;
+    public void compact() {
+        // This is the range we need to copy into the new matrix (including from and to)
+        int from=computeRow(highest_seqno_purged), to=computeRow(highest_seqno);
+        int range=to - from +1;  // e.g. from=3, to=5, new_size has to be [3 .. 5] (=3)
 
-        offset+=(num_rows_to_remove * msgs_per_row);
-        size=computeSize();
-        num_purges++;
+        int new_size=(int)Math.max(range * resize_factor, range +1);
+        new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
+        if(new_size < matrix.length) {
+            if(log.isTraceEnabled())
+                log.trace("compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
+            Message[][] new_matrix=new Message[new_size][];
+            System.arraycopy(matrix, from, new_matrix, 0, range);
+            matrix=new_matrix;
+            offset+=from * msgs_per_row;
+            size=computeSize();
+        }
     }
 
 
-    /** A more expensive way to compute the size, done by iterating through the entire table and adding up non-null values */
+
+    /** Iterate from highest_seqno_purged to highest_seqno and add up non-null values */
     public int computeSize() {
         int retval=0;
-        for(int i=0; i < matrix.length; i++) {
+        int from=computeRow(highest_seqno_purged), to=computeRow(highest_seqno);
+        for(int i=from; i <= to; i++) {
             Message[] row=matrix[i];
             if(row == null)
                 continue;
@@ -166,6 +324,7 @@ public class RetransmitTable {
         }
         return retval;
     }
+
 
     /** Returns the number of null elements up to 'to' */
     public int getNullMessages(long to) {
@@ -184,7 +343,7 @@ public class RetransmitTable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("size=" + size + ", capacity=" + capacity());
+        sb.append("size=" + size + ", capacity=" + capacity() + ", highest_purged=" + highest_seqno_purged + ", highest=" + highest_seqno);
         return sb.toString();
     }
 
@@ -247,26 +406,21 @@ public class RetransmitTable {
         return row;
     }
 
-    /** Resizes the matrix to the new size */
-    protected void resize(int new_capacity) {
-        int new_size=(int)Math.max(new_capacity, matrix.length * resize_factor);
-        Message[][] new_matrix=new Message[new_size][];
-        System.arraycopy(matrix, 0, new_matrix, 0, matrix.length);
-        matrix=new_matrix;
-        num_resizes++;
-    }
-
-
 
     /** Computes and returns the row index for seqno */
     protected int computeRow(long seqno) {
-        return (int)(((seqno- offset) / msgs_per_row));
+        int diff=(int)(seqno-offset);
+        if(diff < 0) return diff;
+        return diff / msgs_per_row;
     }
 
 
     /** Computes and returns the index within a row for seqno */
     protected int computeIndex(long seqno) {
-        return (int)(seqno - offset) % msgs_per_row;
+        int diff=(int)(seqno - offset);
+        if(diff < 0)
+            return diff;
+        return diff % msgs_per_row;
     }
 
     
