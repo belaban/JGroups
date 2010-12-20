@@ -1313,7 +1313,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
         NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, lowest_seqno, timer, true,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
-                                                    xmit_table_resize_factor, xmit_table_max_compaction_time);
+                                                    xmit_table_resize_factor, xmit_table_max_compaction_time, false);
 
         if(use_stats_for_retransmission) {
             win.setRetransmitTimeouts(new ActualInterval(sender));
