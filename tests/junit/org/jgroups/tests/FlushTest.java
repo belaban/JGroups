@@ -292,26 +292,26 @@ public class FlushTest extends ChannelTestBase {
 
     /** Tests the emition of block/unblock/get|set state events */
     @Test
-    public void testBlockingNoStateTransfer() {
+    public void testBlockingNoStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_ONLY);
     }
 
     /** Tests the emition of block/unblock/get|set state events */
     @Test
-    public void testBlockingWithStateTransfer() {
+    public void testBlockingWithStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
     }
 
     /** Tests the emition of block/unblock/get|set state events */
     @Test
-    public void testBlockingWithConnectAndStateTransfer() {
+    public void testBlockingWithConnectAndStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
     }
 
-    private void _testChannels(String names[], int connectType) {
+    private void _testChannels(String names[], int connectType) throws Exception {
         int count = names.length;
 
         List<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
@@ -351,23 +351,21 @@ public class FlushTest extends ChannelTestBase {
             // we know the threads are done
             semaphore.tryAcquire(count, 40, TimeUnit.SECONDS);
 
-        } catch (Exception ex) {
-            log.warn("Exception encountered during test", ex);
-            assert false : "Exception encountered during test execution: " + ex;
-        } finally {
-            //let all events propagate...
-            Util.sleep(1000);
+            Util.sleep(1000); //let all events propagate...
             for (FlushTestReceiver app : channels)
                 app.getChannel().setReceiver(null);
             for (FlushTestReceiver app : channels)
                 app.cleanup();
-                        
 
             // verify block/unblock/view/get|set state sequences for all members
             for (FlushTestReceiver receiver : channels) {
                 checkEventStateTransferSequence(receiver);
                 System.out.println("event sequence is OK");
             }
+        }
+        finally {
+            for (FlushTestReceiver app : channels)
+                app.cleanup();
         }
     }
 
