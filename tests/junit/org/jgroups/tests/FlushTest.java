@@ -345,7 +345,7 @@ public class FlushTest extends ChannelTestBase {
             int cnt = 0;
             for (FlushTestReceiver receiver : channels)
                 tmp[cnt++] = receiver.getChannel();
-            Util.blockUntilViewsReceived(10000, 1000, tmp);
+            Util.blockUntilViewsReceived(30000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -366,8 +366,7 @@ public class FlushTest extends ChannelTestBase {
             // verify block/unblock/view/get|set state sequences for all members
             for (FlushTestReceiver receiver : channels) {
                 checkEventStateTransferSequence(receiver);
-                System.out.println("event sequence for " + receiver.getChannel().getAddress()
-                                + " is OK");
+                System.out.println("event sequence is OK");
             }
         }
     }
