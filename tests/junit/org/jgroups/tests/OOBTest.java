@@ -36,8 +36,8 @@ public class OOBTest extends ChannelTestBase {
         c2.setName("C2");
         setOOBPoolSize(c1, c2);
         setStableGossip(c1, c2);
-        c1.connect("OOBMcastTest");
-        c2.connect("OOBMcastTest");
+        c1.connect("OOBTest");
+        c2.connect("OOBTest");
         View view=c2.getView();
         log.info("view = " + view);
         assert view.size() == 2 : "view is " + view;
@@ -337,40 +337,43 @@ public class OOBTest extends ChannelTestBase {
         final int NUM=10;
         c2.setReceiver(receiver);
 
-
+        System.out.println("[" + Thread.currentThread().getName() + "]: locking lock");
         lock.lock();
-        c1.send(new Message(dest, null, 1L));
-        Util.sleep(1000); // this (regular) message needs to be received first
-
+        c1.send(new Message(dest, null, 1));
         for(int i=2; i <= NUM; i++) {
-            Message msg=new Message(dest, null, (long)i);
+            Message msg=new Message(dest, null, i);
             msg.setFlag(Message.OOB);
             c1.send(msg);
         }
-        sendStableMessages(c1,c2);
-        Util.sleep(500); // sleep some time to receive all messages
-        List<Long> list=receiver.getMsgs();
+        sendStableMessages(c1, c2);
+        Util.sleep(500);
+
+        List<Integer> list=receiver.getMsgs();
         for(int i=0; i < 10; i++) {
-            log.info("list = " + list);
             if(list.size() == NUM-1)
                 break;
+            System.out.println("list = " + list);
             Util.sleep(1000); // give the asynchronous msgs some time to be received
         }
 
         System.out.println("list = " + list);
 
         assert list.size() == NUM-1 : "list is " + list;
-        assert list.contains(2L);
+        assert list.contains(2) && list.contains(10);
 
-        log.info("[" + Thread.currentThread().getName() + "]: unlocking lock");
-        if(lock.isHeldByCurrentThread())
-            lock.unlock();
-        Util.sleep(10);
+        System.out.println("[" + Thread.currentThread().getName() + "]: unlocking lock");
+        lock.unlock();
 
-        list=receiver.getMsgs();
+        for(int i=0; i < 10; i++) {
+            if(list.size() == NUM)
+                break;
+            System.out.println("list = " + list);
+            Util.sleep(1000); // give the asynchronous msgs some time to be received
+        }
+
         System.out.println("list = " + list);
         assert list.size() == NUM : "list is " + list;
-        for(long i=1; i <= NUM; i++)
+        for(int i=1; i <= NUM; i++)
             assert list.contains(i);
     }
 
@@ -421,13 +424,13 @@ public class OOBTest extends ChannelTestBase {
 
     private static class BlockingReceiver extends ReceiverAdapter {
         final Lock lock;
-        final List<Long> msgs=Collections.synchronizedList(new LinkedList<Long>());
+        final List<Integer> msgs=Collections.synchronizedList(new LinkedList<Integer>());
 
         public BlockingReceiver(Lock lock) {
             this.lock=lock;
         }
 
-        public List<Long> getMsgs() {
+        public List<Integer> getMsgs() {
             return msgs;
         }
 
@@ -437,7 +440,7 @@ public class OOBTest extends ChannelTestBase {
                 lock.unlock();
             }
 
-            msgs.add((Long)msg.getObject());
+            msgs.add((Integer)msg.getObject());
         }
     }
 
