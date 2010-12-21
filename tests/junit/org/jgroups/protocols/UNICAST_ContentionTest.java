@@ -101,6 +101,12 @@ public class UNICAST_ContentionTest {
             if(r1.getNum() == NUM_EXPECTED_MSGS && r2.getNum() == NUM_EXPECTED_MSGS)
                 break;
             Util.sleep(500);
+            UNICAST2 unicast2=(UNICAST2)c1.getProtocolStack().findProtocol(UNICAST2.class);
+            if(unicast2 != null)
+                unicast2.sendStableMessages();
+            unicast2=(UNICAST2)c2.getProtocolStack().findProtocol(UNICAST2.class);
+            if(unicast2 != null)
+                unicast2.sendStableMessages();
         }
 
         System.out.println("c1 received " + r1.getNum() + " msgs, " + getNumberOfRetransmissions(c1) + " retransmissions");
