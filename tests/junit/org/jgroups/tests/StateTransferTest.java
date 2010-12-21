@@ -22,7 +22,7 @@ public class StateTransferTest extends ChannelTestBase {
     static final String[] names= { "A", "B", "C", "D"};
     static final int APP_COUNT=names.length;
 
-    @Test
+    
     public void testStateTransferFromSelfWithRegularChannel() throws Exception {
         Channel ch=createChannel(true);
         ch.connect("StateTransferTest");
@@ -37,7 +37,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
     }
 
-    @Test
+
     public void testStateTransferWhileSending() throws Exception {
 
         StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
