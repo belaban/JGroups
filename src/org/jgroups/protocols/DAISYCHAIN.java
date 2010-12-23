@@ -21,6 +21,7 @@ import java.util.concurrent.Executor;
  * Should be inserted just above MERGE2, in TCP based configurations.
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
+ * @since 2.11
  */
 @Experimental
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
