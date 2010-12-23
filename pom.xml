@@ -198,8 +198,12 @@
                             org.jgroups.annotations;version=${project.version},
                             org.jgroups.auth;version=${project.version},
                             org.jgroups.blocks;version=${project.version},
+                            org.jgroups.blocks.mux;version=${project.version},
+                            org.jgroups.client;version=${project.version},
                             org.jgroups.conf;version=${project.version},
                             org.jgroups.debug;version=${project.version},
+                            org.jgroups.demos;version=${project.version},
+                            org.jgroups.demos.wb;version=${project.version},
                             org.jgroups.jmx;version=${project.version},
                             org.jgroups.logging;version=${project.version},
                             org.jgroups.mux;version=${project.version},
@@ -207,7 +211,8 @@
                             org.jgroups.protocols;version=${project.version},
                             org.jgroups.protocols.pbcast;version=${project.version},
                             org.jgroups.stack;version=${project.version},
-                            org.jgroups.util;version=${project.version}
+                            org.jgroups.util;version=${project.version},
+                            org.jgroups.tests;version=${project.version}
                         </Export-Package>
                         <Import-Package>
                             !bsh.*,*
