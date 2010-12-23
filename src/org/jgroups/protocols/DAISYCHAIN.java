@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
  */
-@Experimental @Unsupported
+@Experimental
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
 public class DAISYCHAIN extends Protocol {
 
@@ -31,10 +31,12 @@ public class DAISYCHAIN extends Protocol {
     @Property(description="Loop back multicast messages")
     boolean loopback=true;
 
-    @Property
+    @Property(description="The number of messages in the forward queue. This queue is used to host messages that " +
+      "need to be forwarded by us on behalf of our neighbor")
     int forward_queue_size=10000;
 
-    @Property
+    @Property(description="The number of messages in the send queue. This queue is used to host messages that need " +
+      "to be sent")
     int send_queue_size=10000;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
