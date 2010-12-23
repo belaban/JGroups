@@ -1060,6 +1060,18 @@
             </para>
             ${STOMP}
         </section>
+
+
+        <section id="DAISYCHAIN">
+            <title>DAISYCHAIN</title>
+            <para>
+                The DAISYCHAIN protocol is discussed in <xref linkend="DaisyChaining"/>.
+            </para>
+
+            ${DAISYCHAIN}
+
+        </section>
+
     </section>
 
    
