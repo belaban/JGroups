@@ -1,0 +1,19 @@
+
+JGroups ships as a single JAR file: jgroups-x.y.z.jar. Simply add it to your classpath and start coding !
+
+The JGroups version can be printed with java -jar jgroups-x.y.z.jar.
+
+There's a simple draw demo, start 2 or more instances: java -cp jgroups-x.y.z.jar org.jgroups.demos.Draw, and see if
+the members find each other.
+
+The sources for the core classes are in jgroups-sources.jar.
+
+If you want the complete sources, including unit tests, go to http://www.github.com/belaban/jgroups.
+
+JGroups is hosted at www.jgroups.org.
+
+For questions use either the dev or users mailing list.
+
+Enjoy,
+
+Bela Ban
