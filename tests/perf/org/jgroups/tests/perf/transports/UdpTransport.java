@@ -51,7 +51,7 @@ public class UdpTransport implements Transport {
         this.config=properties;
         String mcast_addr_str=System.getProperty("udp.mcast_addr", config.getProperty("mcast_addr"));
         if(mcast_addr_str == null)
-            mcast_addr_str="233.3.4.5";
+            mcast_addr_str="239.3.4.5";
         mcast_addr=InetAddress.getByName(mcast_addr_str);
 
         String bind_addr_str=System.getProperty("udp.bind_addr", config.getProperty("bind_addr"));
@@ -186,10 +186,10 @@ public class UdpTransport implements Transport {
                 new InetSocketAddress(mcast_addr, mcast_port) :
                 new InetSocketAddress(((IpAddress)destination).getIpAddress(), ((IpAddress)destination).getPort());
         p=new DatagramPacket(payload, offset, length, dest);
-        if(destination == null)
-            mcast_sock.send(p);
-        else
-            ucast_sock.send(p);
+        //if(destination == null)
+          //  mcast_sock.send(p);
+        //else
+        ucast_sock.send(p);
     }
 
 
