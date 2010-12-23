@@ -150,6 +150,15 @@
          manifest="${conf.dir}/manifest.mf"
          includes="org/jgroups/**,schema/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+        <fileset dir="${root.dir}">
+            <include name="CREDITS"/>
+            <include name="INSTALL.html"/>
+            <include name="LICENSE"/>
+            <include name="EULA"/>
+        </fileset>
+        <fileset dir="${lib.dir}">
+            <include name="licenses/*"/>
+        </fileset>
     </jar>    	
     </target>
 
@@ -178,60 +187,6 @@
         </jar>
     </target>
 
-    <target name="dist" description="Creates the distribution ZIP files in ./dist">
-        <antcall target="src-dist"/>
-        <antcall target="bin-dist"/>
-    </target>
-
-
-    <target name="src-dist" depends="clean">
-        <echo message="Creating source distribution ${dist.dir}/JGroups-${version}.src.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.src"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.src">
-            <fileset dir="${root.dir}">
-                <exclude name="*CVS*"/>
-                <exclude name="doc/progguide/**"/>
-                <exclude name="doc/usersguide/**"/>
-            </fileset>
-        </copy>
-
-        <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.src.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
-
-    <target name="bin-dist" depends="jar">
-        <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.bin">
-            <fileset dir="${root.dir}">
-                <include name="CREDITS"/>
-                <include name="INSTALL.html"/>
-                <include name="LICENSE"/>
-                <include name="EULA"/>
-            </fileset>
-            <fileset dir="${lib.dir}">
-                <include name="licenses/*"/>
-            </fileset>
-            <fileset dir="${dist.dir}">
-                <include name="jgroups-${version}*.jar"/>
-            </fileset>
-            <fileset dir="${conf.dir}">
-                <include name="config.txt"/>
-                <include name="udp.xml"/>
-                <include name="flush-*.xml"/>
-                <include name="tcp*.xml"/>
-                <include name="mping.xml"/>
-                <include name="sfc.xml"/>
-            </fileset>
-            <fileset dir="${bin.dir}">
-                <include name="jgroups*"/>
-            </fileset>
-        </copy>
-        <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
 
     <target name="gossip-service"
             description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
