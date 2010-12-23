@@ -139,6 +139,8 @@
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
             depends="jgroups.jar,jgroups-sources.jar">
+        <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
+
     </target>
 
 
@@ -162,20 +164,6 @@
     </jar>    	
     </target>
 
-    <target name="jgroups-core.jar"
-            description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile,create-schema">
-	    <mkdir dir="${dist.dir}"/>	
-	    <jar jarfile="${dist.dir}/jgroups-core.jar"
-	         basedir="${compile.dir}"
-	         manifest="${conf.dir}/manifest.mf"
-	         includes="org/jgroups/**,schema/**"
-	         excludes="org/jgroups/demos/**,
-	                  org/jgroups/tests/**,
-	                  org/jgroups/**/*Test.class,
-	                  org/jgroups/**/*Test\$*.class">
-	        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-	    </jar>	   
-    </target>
 
     <target name="jgroups-sources.jar"
             description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
@@ -188,35 +176,6 @@
     </target>
 
 
-    <target name="gossip-service"
-            description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
-            depends="compile">
-        <mkdir dir="${dist.dir}/gossiptemp"/>
-        <copy file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
-        <jar jarfile="${dist.dir}/gossip-router.sar"
-             basedir="${compile.dir}"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
-            <metainf dir="${dist.dir}/gossiptemp"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
-        </jar>
-        <delete dir="${dist.dir}/gossiptemp"/>
-    </target>
-
-
-    <target name="jgroups-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-service.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <metainf dir="${conf.dir}"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
-        </jar>
-    </target>
 
     <!-- generate java doc -->
     <target name="javadoc"
