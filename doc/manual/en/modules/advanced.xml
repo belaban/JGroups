@@ -1693,6 +1693,127 @@
 
     </section>
 
+    <section id="DaisyChaining">
+        <title>Daisychaining</title>
+        <para>
+            Daisychaining refers to a way of disseminating messages sent to the entire cluster.
+        </para>
+        <para>
+            The idea behind it is that it is inefficient to broadcast a message in clusters where IP multicasting is
+            not available. For example, if we only have TCP available (as is the case in most clouds today), then we
+            have to send a broadcast (or group) message N-1 times. If we want to broadcast M to a cluster of 10,
+            we send the same message 9 times.
+        </para>
+        <para>
+            Example: if we have {A,B,C,D,E,F}, and A broadcasts M, then it sends it to B, then to C, then to D etc.
+            If we have a 1 GB switch, and M is 1GB, then sending a broadcast to 9 members takes 9 seconds, even if we
+            parallelize the sending of M. This is due to the fact that the link to the switch only sustains 1GB / sec.
+            (Note that I'm conveniently ignoring the fact that the switch will start dropping packets if it is
+            overloaded, causing TCP to retransmit, slowing things down)...
+        </para>
+        <para>
+            Let's introduce the concept of a round. A round is the time it takes to send or receive a message.
+            In the above example, a round takes 1 second if we send 1 GB messages.
+            In the existing N-1 approach, it takes X * (N-1) rounds to send X messages to a cluster of N nodes.
+            So to broadcast 10 messages a the cluster of 10, it takes 90 rounds.
+        </para>
+        <para>
+            Enter DAISYCHAIN.
+        </para>
+
+        <para>
+            The idea is that, instead of sending a message to N-1 members, we only send it to our neighbor, which
+            forwards it to its neighbor, and so on. For example, in {A,B,C,D,E}, D would broadcast a message by
+            forwarding it to E, E forwards it to A, A to B, B to C and C to D. We use a time-to-live field,
+            which gets decremented on every forward, and a message gets discarded when the time-to-live is 0.
+        </para>
+        <para>
+            The advantage is that, instead of taxing the link between a member and the switch to send N-1 messages,
+            we distribute the traffic more evenly across the links between the nodes and the switch.
+            Let's take a look at an example, where A broadcasts messages m1 and m2 in
+            cluster {A,B,C,D}, '-->' means sending:
+        </para>
+
+        <section>
+            <title>Traditional N-1 approach</title>
+            <para>
+                <itemizedlist mark='opencircle'>
+                    <listitem>Round 1: A(m1) --> B</listitem>
+                    <listitem>Round 2: A(m1) --> C</listitem>
+                    <listitem>Round 3: A(m1) --> D</listitem>
+                    <listitem>Round 4: A(m2) --> B</listitem>
+                    <listitem>Round 5: A(m2) --> C</listitem>
+                    <listitem>Round 6: A(m2) --> D</listitem>
+                </itemizedlist>
+
+                It takes 6 rounds to broadcast m1 and m2 to the cluster.
+            </para>
+        </section>
+
+        <section>
+            <title>Daisychaining approach</title>
+            <para>
+                <itemizedlist mark='opencircle'>
+                    <listitem>Round 1: A(m1) --> B</listitem>
+                    <listitem>Round 2: A(m2) --> B || B(m1) --> C</listitem>
+                    <listitem>Round 3: B(m2) --> C || C(m1) --> D</listitem>
+                    <listitem>Round 4: C(m2) --> D</listitem>
+                </itemizedlist>
+                <para>In round 1, A send m1 to B.</para>
+                <para>In round 2, A sends m2 to B, but B also forwards m1 (received in round 1) to C.</para>
+                <para>In round 3, A is done. B forwards m2 to C and C forwards m1 to D (in parallel, denoted by '||').</para>
+                <para>In round 4, C forwards m2 to D.</para>
+            </para>
+        </section>
+
+        <section>
+            <title>Switch usage</title>
+            <para>
+                Let's take a look at this in terms of switch usage: in the N-1 approach, A can only send 125MB/sec,
+                no matter how many members there are in the cluster, so it is constrained by the link capacity to the
+                switch. (Note that A can also receive 125MB/sec in parallel with today's full duplex links).
+            </para>
+            <para>
+                So the link between A and the switch gets hot.
+            </para>
+            <para>
+                In the daisychaining approach, link usage is more even: if we look for example at round 2, A sending
+                to B and B sending to C uses 2 different links, so there are no constraints regarding capacity of a
+                link. The same goes for B sending to C and C sending to D.
+            </para>
+            <para>
+                In terms of rounds, the daisy chaining approach uses X + (N-2) rounds, so for a cluster size of 10 and
+                broadcasting 10 messages, it requires only 18 rounds, compared to 90 for the N-1 approach !
+            </para>
+        </section>
+
+        <section>
+            <title>Performance</title>
+            <para>
+                To measure performance of DAISYCHAIN, a performance test (test.Perf) was run, with 4 nodes connected
+                to a 1 GB switch; and every node sending 1 million 8K messages, for a total of 32GB received by
+                every node. The config used was tcp.xml.
+            </para>
+            <para>
+                The N-1 approach yielded a throughput of 73 MB/node/sec, and the daisy chaining approach 107MB/node/sec !
+            </para>
+
+        </section>
+
+        <section>
+            <title>Configuration</title>
+            <para>
+                DAISYCHAIN can be placed directly on top of the transport, regardless of whether it is UDP or TCP, e.g.
+                <screen>
+                    &lt;TCP .../&gt;
+                    &lt;DAISYCHAIN .../&gt;
+                    &lt;TCPPING .../&gt;
+                </screen>
+            </para>
+        </section>
+
+    </section>
+
     <section>
         <title>Ergonomics</title>
         <para>
