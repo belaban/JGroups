@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * e.g. FC or SFC (same position in the stack)
  * @author Bela Ban
  */
-@Experimental @Unsupported
+@Experimental
 @MBean(description="Limits the sending rate to max_bytes per time_period")
 public class RATE_LIMITER extends Protocol {
 
