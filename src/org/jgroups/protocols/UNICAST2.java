@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * message. Instead, it sends 'acks' after receiving max_bytes and/ or periodically (stable_interval).
  * @author Bela Ban
  */
-@Experimental @Unsupported
+@Experimental
 @MBean(description="Reliable unicast layer")
 public class UNICAST2 extends Protocol implements Retransmitter.RetransmitCommand, AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;

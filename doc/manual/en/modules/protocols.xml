@@ -363,7 +363,18 @@
 
 			${UNICAST}
 
-         </section>       
+         </section>
+
+        <section>
+            <title>UNICAST2</title>
+            <para>
+                UNICAST2 provides lossless, ordered, communication between 2 members. Contrary to UNICAST, it
+                uses negative acks (similar to NAKACK) rather than positive acks. This reduces the communication
+                overhead required for sending an ack for every message.
+            </para>
+
+            ${UNICAST2}
+        </section>
     </section>
 
     <section>
