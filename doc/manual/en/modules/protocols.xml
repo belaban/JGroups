@@ -1072,6 +1072,17 @@
 
         </section>
 
+        <section id="RATE_LIMITER">
+            <title>RATE_LIMITER</title>
+            <para>
+                RATE_LIMITER can be used to set a limit on the data sent per time unit. When sending data, only
+                max_bytes can be sent per time_period milliseconds. E.g. if max_bytes="50M" and time_period="1000", then
+                a sender can only send 50MBytes / sec max.
+            </para>
+
+            ${RATE_LIMITER}
+        </section>
+
     </section>
 
    
