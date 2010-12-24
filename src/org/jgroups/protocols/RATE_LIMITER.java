@@ -16,6 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @Experimental @Unsupported
+@MBean(description="Limits the sending rate to max_bytes per time_period")
 public class RATE_LIMITER extends Protocol {
 
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
