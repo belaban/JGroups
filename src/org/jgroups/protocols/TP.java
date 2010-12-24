@@ -1032,7 +1032,8 @@ public abstract class TP extends Protocol {
         }
         catch(Throwable e) {
             if(log.isErrorEnabled()) {
-                log.error("failed sending message to " + dest + " (" + msg.size() + " bytes): " + e);
+                log.error("failed sending message to " + (dest == null? "cluster" : dest) +
+                            " (" + msg.size() + " bytes): " + e + ", cause: " + e.getCause());
             }
         }
         return null;
@@ -1959,7 +1960,7 @@ public abstract class TP extends Protocol {
                     doSend(buf, dest, multicast);
                 }
                 catch(Throwable e) {
-                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs: " + e.getMessage());
+                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs: " + e + ":, cause: " + e.getCause());
                 }
             }
         }
