@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -70,7 +71,7 @@ public class Seqno {
     }
 
     public Collection<Range> getMessagesToRetransmit() {
-        final Collection<Range> retval=new LinkedList<Range>();
+        final Collection<Range> retval=new ArrayList<Range>(1);
         if(!received())
             retval.add(new Range(low, low));
         return retval;
