@@ -83,6 +83,55 @@ public class SeqnoTest {
         assert xmits.equals(cleared_bits);
     }
 
+    public static void testGetBits() {
+        SeqnoRange range=new SeqnoRange(1, 100);
+        System.out.println("range = " + range);
+        assert range.size() == 100;
+
+        Collection<Range> bits=range.getBits(false);
+        assert bits.size() == 1;
+        Range tmp=bits.iterator().next();
+        assert tmp.low == 1 && tmp.high == 100;
+
+        range.set(1,2);
+        assert range.size() == 100;
+
+        bits=range.getBits(true);
+        assert bits != null && bits.size() == 1; // 1 range: [1-2]
+        tmp=bits.iterator().next();
+        assert tmp.low == 1 && tmp.high == 2;
+
+        for(int i=1; i < 100; i++)
+            range.set(i);
+
+        bits=range.getBits(false);
+        assert bits.size() == 1;
+        tmp=bits.iterator().next();
+        assert tmp.low == 100 && tmp.high == 100;
+
+        for(int i=1; i <= range.size(); i++)
+            range.clear(i);
+
+        for(int i=2; i <= 99; i++)
+            range.set(i);
+
+        bits=range.getBits(true);
+        assert bits.size() == 1;
+        tmp=bits.iterator().next();
+        assert tmp.low == 2 && tmp.high == 99;
+
+        bits=range.getBits(false);
+        assert bits.size() == 2;
+
+        tmp=bits.iterator().next();
+        assert tmp.low == 1 && tmp.high == 1;
+
+        Iterator<Range> it=bits.iterator();
+        it.next();
+        tmp=it.next();
+        assert tmp.low == 100 && tmp.high == 100;
+    }
+
 
     public static void testSet() {
         SeqnoRange range=new SeqnoRange(10, 15);
