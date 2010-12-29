@@ -1671,6 +1671,12 @@ public class Util {
         return sb.toString();
     }
 
+
+    /**
+     * MByte nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
+     * @param bytes
+     * @return
+     */
     public static String printBytes(long bytes) {
         double tmp;
 
