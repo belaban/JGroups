@@ -518,6 +518,23 @@ public class NakReceiverWindow {
     }
 
 
+    /**
+     * Returns a list of messages in the range [from .. to], including from and to
+     * @param from
+     * @param to
+     * @return A list of messages, or null if none in range [from .. to] was found
+     */
+    public List<Message> get(long from, long to) {
+        lock.readLock().lock();
+        try {
+            return xmit_table.get(from, to);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+
     public int size() {
         lock.readLock().lock();
         try {

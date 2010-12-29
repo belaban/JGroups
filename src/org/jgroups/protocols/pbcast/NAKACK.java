@@ -895,9 +895,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param last_seqno  The last sequence number to be retransmitted (>= first_seqno)
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
-   private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
-        Message msg;
-
+    private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
@@ -943,22 +941,33 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             return;
         }
-        for(long i=first_seqno; i <= last_seqno; i++) {
-            msg=win.get(i);
-            if(msg == null) {
-                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester)) {
-                    StringBuilder sb=new StringBuilder();
-                    sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                    sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
-                    if(print_stability_history_on_failed_xmit) {
-                        sb.append(" (stability history:\n").append(printStabilityHistory());
-                    }
-                    log.warn(sb.toString());
-                }
-                continue;
+
+        long diff=last_seqno - first_seqno +1;
+        if(diff >= 10) {
+            List<Message> msgs=win.get(first_seqno, last_seqno);
+            if(msgs != null) {
+                for(Message msg: msgs)
+                    sendXmitRsp(xmit_requester, msg);
             }
-            sendXmitRsp(xmit_requester, msg);
+        }
+        else {
+            for(long i=first_seqno; i <= last_seqno; i++) {
+                Message msg=win.get(i);
+                if(msg == null) {
+                    if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester)) {
+                        StringBuilder sb=new StringBuilder();
+                        sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
+                        sb.append(") message ").append(original_sender).append("::").append(i);
+                        sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
+                        if(print_stability_history_on_failed_xmit) {
+                            sb.append(" (stability history:\n").append(printStabilityHistory());
+                        }
+                        log.warn(sb.toString());
+                    }
+                    continue;
+                }
+                sendXmitRsp(xmit_requester, msg);
+            }
         }
     }
 
