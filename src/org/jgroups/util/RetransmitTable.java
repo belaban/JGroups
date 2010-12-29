@@ -4,6 +4,9 @@ import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * A store for messages to be retransmitted or delivered. Used on sender and receiver side, as a replacement for
  * HashMap. RetransmitTable should use less memory than HashMap, as HashMap.Entry has 4 fields, plus arrays for storage.
@@ -171,6 +174,20 @@ public class RetransmitTable {
             return null;
         int index=computeIndex(seqno);
         return index >= 0? row[index] : null;
+    }
+
+
+    public List<Message> get(long from, long to) {
+        List<Message> retval=null;
+        for(long seqno=from; seqno <= to; seqno++) {
+            Message msg=get(seqno);
+            if(msg != null) {
+                if(retval == null)
+                    retval=new LinkedList<Message>();
+                retval.add(msg);
+            }
+        }
+        return retval;
     }
 
 
