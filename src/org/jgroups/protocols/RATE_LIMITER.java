@@ -102,19 +102,18 @@ public class RATE_LIMITER extends Protocol {
 
     public void stop() {
         super.stop();
-        reset();
-    }
-
-    protected void reset() {
         lock.lock();
         try {
-            // blocking=false;
-            num_bytes_sent=0L;
-            end_of_current_period=System.currentTimeMillis() + time_period;
-            block.signalAll();
+            reset();
         }
         finally {
             lock.unlock();
         }
+    }
+
+    protected void reset() {
+        num_bytes_sent=0L;
+        end_of_current_period=System.currentTimeMillis() + time_period;
+        block.signalAll();
     }
 }
