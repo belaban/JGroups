@@ -1,7 +1,7 @@
 package org.jgroups.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 
 
 /**
@@ -114,7 +114,7 @@ public class SeqnoRange extends Seqno {
         int index=0;
         int start_range=0, end_range=0;
         int size=(int)((high - low) + 1);
-        final Collection<Range> retval=new LinkedList<Range>();
+        final Collection<Range> retval=new ArrayList<Range>(size);
 
         while(index < size) {
             start_range=value? bits.nextSetBit(index) : bits.nextClearBit(index);
