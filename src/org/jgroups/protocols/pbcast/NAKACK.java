@@ -715,7 +715,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return null;
 
             case NakAckHeader.XMIT_RSP:
-                handleXmitRsp(msg);
+                handleXmitRsp(msg, hdr);
                 return null;
 
             default:
@@ -817,9 +817,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        if(log.isTraceEnabled())
-            log.trace(new StringBuilder().append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno));
-
         NakReceiverWindow win=xmit_table.get(sender);
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
@@ -831,6 +828,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || win.add(hdr.seqno, msg);
+
+        if(added && log.isTraceEnabled())
+            log.trace(new StringBuilder().append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno));
+
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && msg.isFlagSet(Message.OOB)) {
@@ -859,6 +860,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 List<Message> msgs=win.removeMany(processing, remove_msgs, max_msg_batch_size);
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
+                    if(rebroadcasting)
+                        checkForRebroadcasts();
                     return;
                 }
 
@@ -896,15 +899,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
     private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
+        if(first_seqno > last_seqno)
+            return;
+
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
             sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
             log.trace(sb.toString());
         }
-
-        if(first_seqno > last_seqno)
-            return;
 
         if(stats) {
             xmit_reqs_received+=last_seqno - first_seqno +1;
@@ -921,7 +924,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     stat=stat2;
             }
             stat.xmit_reqs_received.addAndGet((int)(last_seqno - first_seqno +1));
-            stat.xmit_rsps_sent.addAndGet((int)(last_seqno - first_seqno +1));
+            stat.xmit_rsps_sent.addAndGet((int)(last_seqno - first_seqno + 1));
         }
 
         NakReceiverWindow win=xmit_table.get(original_sender);
@@ -1007,7 +1010,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param msg
      */
     private void sendXmitRsp(Address dest, Message msg) {
-        Buffer buf;
         if(msg == null) {
             if(log.isErrorEnabled())
                 log.error("message is null, cannot send retransmission");
@@ -1019,39 +1021,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             updateStats(sent, dest, 0, 1, 0);
         }
 
-        if(use_mcast_xmit)
-            dest=null;
-
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
-        try {
-            buf=Util.messageToByteBuffer(msg);
-            Message xmit_msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
-            // changed Bela Jan 4 2007: we should not use OOB for retransmitted messages, otherwise we tax the
-            // OOB thread pool too much
-            // xmit_msg.setFlag(Message.OOB);
 
-            if(msg.isFlagSet(Message.OOB)) // set OOB for the wrapping message if the wrapped message is OOB, too
-                xmit_msg.setFlag(Message.OOB);
-
-            xmit_msg.putHeader(this.id, NakAckHeader.createXmitResponseHeader());
-            down_prot.down(new Event(Event.MSG, xmit_msg));
-        }
-        catch(IOException ex) {
-            log.error("failed marshalling xmit list", ex);
-        }
-    }
-
-
-    private void handleXmitRsp(Message msg) {
-        if(msg == null) {
-            if(log.isWarnEnabled())
-                log.warn("message is null");
+        if(use_mcast_xmit) { // we simply send the original multicast message
+            down_prot.down(new Event(Event.MSG, msg));
             return;
         }
 
+        Message xmit_msg=msg.copy(true, true); // copy payload and headers
+        xmit_msg.setDest(dest);
+        NakAckHeader hdr=(NakAckHeader)xmit_msg.getHeader(id);
+        hdr.type=NakAckHeader.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
+        down_prot.down(new Event(Event.MSG, xmit_msg));
+    }
+
+
+    private void handleXmitRsp(Message msg, NakAckHeader hdr) {
+        if(msg == null)
+            return;
+
         try {
-            Message wrapped_msg=Util.byteBufferToMessage(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             if(xmit_time_stats != null) {
                 long key=(System.currentTimeMillis() - xmit_time_stats_start) / 1000;
                 XmitTimeStat stat=xmit_time_stats.get(key);
@@ -1069,22 +1059,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 updateStats(received, msg.getSrc(), 0, 1, 0);
             }
 
-            up(new Event(Event.MSG, wrapped_msg));
-
-            if(rebroadcasting) {
-                Digest tmp=getDigest();
-                boolean cancel_rebroadcasting;
-                rebroadcast_digest_lock.lock();
-                try {
-                    cancel_rebroadcasting=tmp.isGreaterThanOrEqual(rebroadcast_digest);
-                }
-                finally {
-                    rebroadcast_digest_lock.unlock();
-                }
-                if(cancel_rebroadcasting) {
-                    cancelRebroadcasting();
-                }
-            }
+            msg.setDest(null);
+            hdr.type=NakAckHeader.MSG; // change the type back from XMIT_RSP --> MSG
+            up(new Event(Event.MSG, msg));
+            if(rebroadcasting)
+                checkForRebroadcasts();
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) {
@@ -1165,6 +1144,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             finally {
                 rebroadcast_lock.unlock();
             }
+        }
+    }
+
+    protected void checkForRebroadcasts() {
+        Digest tmp=getDigest();
+        boolean cancel_rebroadcasting;
+        rebroadcast_digest_lock.lock();
+        try {
+            cancel_rebroadcasting=tmp.isGreaterThanOrEqual(rebroadcast_digest);
+        }
+        finally {
+            rebroadcast_digest_lock.unlock();
+        }
+        if(cancel_rebroadcasting) {
+            cancelRebroadcasting();
         }
     }
 

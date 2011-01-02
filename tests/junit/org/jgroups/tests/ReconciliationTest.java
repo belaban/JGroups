@@ -10,10 +10,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Various tests for the FLUSH protocol
@@ -304,6 +301,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
     }
 
+    // @Test(invocationCount=10)
     public void testVirtualSynchrony() throws Exception {
         JChannel c1 = createChannel(true,2);
         Cache cache_1 = new Cache(c1, "cache-1");
@@ -318,27 +316,24 @@ public class ReconciliationTest extends ChannelTestBase {
         flush(c1, 5000); // flush all pending message out of the system so
         // everyone receives them
 
-        for(int i = 1;i <= 20;i++){
-            if(i % 2 == 0){
-                cache_1.put("key-" + i, Boolean.TRUE); // even numbers
-            }else{
-                cache_2.put("key-" + i, Boolean.TRUE); // odd numbers
-            }
+        for(int i = 1;i <= 20;i++) {
+            if(i % 2 == 0)
+                cache_1.put(i, true); // even numbers
+            else
+                cache_2.put(i, true); // odd numbers
         }
 
         flush(c1, 5000);
-        log.debug("cache_1 (" + cache_1.size()
-                           + " elements): "
-                           + cache_1
-                           + "\ncache_2 ("
-                           + cache_2.size()
-                           + " elements): "
-                           + cache_2);
-        Assert.assertEquals(cache_1.size(), cache_2.size());
-        Assert.assertEquals(20, cache_1.size());
-
-        Util.close(c1,c2);
-
+        System.out.println("cache_1 (" + cache_1.size()
+                             + " elements): "
+                             + cache_1
+                             + "\ncache_2 ("
+                             + cache_2.size()
+                             + " elements): "
+                             + cache_2);
+        Assert.assertEquals(cache_1.size(), cache_2.size(), "cache 1: " + cache_1 + "\ncache 2: " + cache_2);
+        Assert.assertEquals(20, cache_1.size(), "cache 1: " + cache_1 + "\ncache 2: " + cache_2);
+        Util.close(c2,c1);
     }
 
     private void flush(Channel channel, long timeout) {
@@ -416,6 +411,7 @@ public class ReconciliationTest extends ChannelTestBase {
             return getState();
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(byte[] state) {
             Map<Object,Object> m;
             try {
@@ -460,6 +456,7 @@ public class ReconciliationTest extends ChannelTestBase {
             getState(ostream);
         }
 
+        @SuppressWarnings("unchecked")
         public void setState(InputStream istream) {
             ObjectInputStream ois=null;
             try {
@@ -500,7 +497,8 @@ public class ReconciliationTest extends ChannelTestBase {
 
         public String toString() {
             synchronized(data) {
-                return data.toString();
+                TreeMap<Object,Object> map=new TreeMap<Object,Object>(data);
+                return map.keySet().toString();
             }
         }
 
