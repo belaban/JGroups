@@ -6,9 +6,9 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.DefaultTimeScheduler;
-import org.jgroups.util.Util;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler2;
+import org.jgroups.util.Util;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -71,8 +71,11 @@ public class UNICAST2_StressTest {
 //        });
 
         if(timer == null)
-            timer=new DefaultTimeScheduler();
+            timer=new TimeScheduler2();
         unicast.setTimer(timer);
+
+        System.out.println("timer is a " + timer.getClass());
+
 
         unicast.setDownProtocol(new Protocol() {
             public Object down(Event evt) {
@@ -105,6 +108,7 @@ public class UNICAST2_StressTest {
         unicast.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
 
         unicast.setMaxMessageBatchSize(max_msg_batch_size);
+        unicast.setValue("max_bytes", 20000);
 
         // send the first message manually, to initialize the AckReceiverWindow tables
         Message msg=createMessage(local_addr, sender, 1L, oob, true);
