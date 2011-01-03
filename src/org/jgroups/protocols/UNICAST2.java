@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @version $Id: UNICAST2.java,v 1.11 2010/09/17 12:05:09 belaban Exp $
  */
-@Experimental @Unsupported
+@Experimental
 @MBean(description="Reliable unicast layer")
 public class UNICAST2 extends Protocol implements Retransmitter.RetransmitCommand, AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
@@ -54,7 +54,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     protected long max_bytes=10000000;
 
     @Property(description="Max number of milliseconds before a stability message is sent to the sender(s)")
-    protected long stable_interval=10000L;
+    protected long stable_interval=60000L;
 
     @Property(description="Max number of STABLE messages sent for the same highest_received seqno. A value < 1 is invalid")
     protected int max_stable_msgs=5;
@@ -219,6 +219,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         super.init();
         if(max_stable_msgs < 1)
             throw new IllegalArgumentException("max_stable_msgs ( " + max_stable_msgs + ") must be > 0");
+        if(max_bytes <= 0)
+            throw new IllegalArgumentException("max_bytes has to be > 0");
     }
 
     public void start() throws Exception {
@@ -450,6 +452,12 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             log.trace(sb.toString());
         }
         down_prot.down(new Event(Event.MSG, stable_msg));
+
+        ReceiverEntry entry=recv_table.get(dest);
+        NakReceiverWindow win=entry != null? entry.received_msgs : null;
+        if(win != null) {
+            win.stable(win.getHighestDelivered());
+        }
     }
 
 
@@ -587,7 +595,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
-        if(added && max_bytes > 0) {
+        if(added) {
             int bytes=entry.received_bytes.addAndGet(msg.getLength());
             if(bytes >= max_bytes) {
                 entry.received_bytes_lock.lock();
@@ -626,11 +634,14 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
+        boolean released_processing=false;
         try {
             while(true) {
                 List<Message> msgs=win.removeMany(processing, true, max_msg_batch_size); // remove my own messages
-                if(msgs == null || msgs.isEmpty())
+                if(msgs == null || msgs.isEmpty()) {
+                    released_processing=true;
                     return;
+                }
 
                 for(Message m: msgs) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
@@ -646,7 +657,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             }
         }
         finally {
-            processing.set(false);
+            // processing is always set in win.remove(processing) above and never here ! This code is just a
+            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
+            if(!released_processing)
+                processing.set(false);
         }
     }
 
