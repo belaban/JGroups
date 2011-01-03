@@ -210,7 +210,7 @@ public class CreditMapTest {
         Util.sleep(500);
         map.clear();
 
-        for(int i=0; i < 5; i++) {
+        for(int i=0; i < 20; i++) {
             if(!decr1.isAlive() && !decr2.isAlive())
                 break;
             else
