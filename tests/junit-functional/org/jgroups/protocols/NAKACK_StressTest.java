@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NAKACK_StressTest {
     static final int NUM_MSGS=1000000;
     static final int NUM_THREADS=50;
-    static final int MAX_MSG_BATCH_SIZE=50000;
 
     static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK.class);
 
@@ -42,15 +41,15 @@ public class NAKACK_StressTest {
 
     @Test(dataProvider="createTimer")
     public static void stressTest(TimeScheduler timer) {
-        start(NUM_THREADS, NUM_MSGS, false, MAX_MSG_BATCH_SIZE, timer);
+        start(NUM_THREADS, NUM_MSGS, false, timer);
     }
 
     @Test(dataProvider="createTimer")
     public static void stressTestOOB(TimeScheduler timer) {
-        start(NUM_THREADS, NUM_MSGS, true, MAX_MSG_BATCH_SIZE, timer);
+        start(NUM_THREADS, NUM_MSGS, true, timer);
     }
 
-    private static void start(final int num_threads, final int num_msgs, boolean oob, int max_msg_batch_size, TimeScheduler timer) {
+    private static void start(final int num_threads, final int num_msgs, boolean oob, TimeScheduler timer) {
         final NAKACK nak=new NAKACK();
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
@@ -67,11 +66,7 @@ public class NAKACK_StressTest {
         nak.setTimer(timer);
         System.out.println("timer is a " + timer.getClass());
 
-        nak.setDownProtocol(new Protocol() {
-            public Object down(Event evt) {
-                return null;
-            }
-        });
+        nak.setDownProtocol(new Protocol() {public Object down(Event evt) {return null;}});
 
         nak.setUpProtocol(new Protocol() {
             public Object up(Event evt) {
@@ -95,6 +90,7 @@ public class NAKACK_StressTest {
             }
         });
 
+        nak.setDiscardDeliveredMsgs(true);
         nak.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         nak.down(new Event(Event.BECOME_SERVER));
         View view=new View(local_addr, 1, Arrays.asList(local_addr, sender));
@@ -104,14 +100,6 @@ public class NAKACK_StressTest {
         digest.add(local_addr, 0, 0, 0);
         digest.add(sender, 0, 0, 0);
         nak.down(new Event(Event.SET_DIGEST, digest));
-
-
-
-        // send the first message manually, to initialize the AckReceiverWindow tables
-        Message msg=createMessage(null, sender, 1L, oob);
-        nak.up(new Event(Event.MSG, msg));
-        Util.sleep(500);
-
 
         final CountDownLatch latch=new CountDownLatch(1);
         Sender[] adders=new Sender[num_threads];
@@ -129,10 +117,6 @@ public class NAKACK_StressTest {
                 try {
                     all_msgs_delivered.await(1000, TimeUnit.MILLISECONDS);
                     System.out.println("received " + delivered_msgs.get() + " msgs");
-
-                    // send a spurious message to trigger removal of pending messages in AckReceiverWindow
-                    msg=createMessage(null, sender, 1L, oob);
-                    nak.up(new Event(Event.MSG, msg));
                 }
                 catch(InterruptedException e) {
                     e.printStackTrace();
@@ -224,7 +208,6 @@ public class NAKACK_StressTest {
     public static void main(String[] args) {
         int num_threads=10;
         int num_msgs=1000000;
-        int max=20000;
         boolean oob=false;
 
         for(int i=0; i < args.length; i++) {
@@ -240,14 +223,9 @@ public class NAKACK_StressTest {
                 oob=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            if(args[i].equals("-max")) {
-                max=Integer.parseInt(args[++i]);
-                continue;
-            }
-            System.out.println("NAKACK_StressTest [-num_msgs msgs] [-num_threads threads] " +
-                    "[-oob <true | false>] [-max <batch size>]");
+            System.out.println("NAKACK_StressTest [-num_msgs msgs] [-num_threads threads] [-oob <true | false>]");
             return;
         }
-        start(num_threads, num_msgs, oob, max, null);
+        start(num_threads, num_msgs, oob, null);
     }
 }
