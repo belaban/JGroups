@@ -684,11 +684,14 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
+        boolean released_processing=false;
         try {
             while(true) {
                 List<Message> msgs=win.removeMany(processing, true, max_msg_batch_size); // remove my own messages
-                if(msgs == null || msgs.isEmpty())
+                if(msgs == null || msgs.isEmpty()) {
+                    released_processing=true;
                     return;
+                }
 
                 for(Message m: msgs) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
@@ -704,7 +707,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             }
         }
         finally {
-            processing.set(false);
+            // processing is always set in win.remove(processing) above and never here ! This code is just a
+            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
+            if(!released_processing)
+                processing.set(false);
         }
     }
 
