@@ -43,7 +43,7 @@ public class UNICAST2_StressTest {
         return Util.createTimer();
     }
 
-    @Test(dataProvider="createTimer",invocationCount=20)
+    @Test(dataProvider="createTimer")
     public static void stressTest(TimeScheduler timer) {
         start(NUM_THREADS, NUM_MSGS, false, MAX_MSG_BATCH_SIZE, timer);
     }
