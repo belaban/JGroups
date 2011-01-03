@@ -301,6 +301,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    /**
+     * Only used for unit tests, don't use !
+     * @param timer
+     */
+    public void setTimer(TimeScheduler timer) {
+        this.timer=timer;
+    }
+
     public void resetStats() {
         xmit_reqs_received=xmit_reqs_sent=xmit_rsps_received=xmit_rsps_sent=missing_msgs_received=0;
         sent.clear();
