@@ -52,15 +52,8 @@ public class UNICAST_StressTest {
         final Lock lock=new ReentrantLock();
         final Condition all_msgs_delivered=lock.newCondition();
         final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<Long>();
-        final Address local_addr=Util.createRandomAddress();
-        final Address sender=Util.createRandomAddress();
-
-//        Runtime.getRuntime().addShutdownHook(new Thread() {
-//            public void run() {
-//                System.out.println("\ndelivered_msgs=" + delivered_msgs);
-//                System.out.println("stats:\n" + unicast.dumpStats());
-//            }
-//        });
+        final Address local_addr=Util.createRandomAddress("A");
+        final Address sender=Util.createRandomAddress("B");
 
         unicast.setDownProtocol(new Protocol() {
             public Object down(Event evt) {
@@ -91,8 +84,8 @@ public class UNICAST_StressTest {
         });
 
         unicast.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-
         unicast.setMaxMessageBatchSize(max_msg_batch_size);
+        unicast.setValue("max_bytes", 20000);
 
         // send the first message manually, to initialize the AckReceiverWindow tables
         Message msg=createMessage(local_addr, sender, 1L, oob, true);
