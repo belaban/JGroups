@@ -63,24 +63,14 @@ public class UNICAST2_StressTest {
         final Address local_addr=Util.createRandomAddress();
         final Address sender=Util.createRandomAddress();
 
-//        Runtime.getRuntime().addShutdownHook(new Thread() {
-//            public void run() {
-//                System.out.println("\ndelivered_msgs=" + delivered_msgs);
-//                System.out.println("stats:\n" + unicast.dumpStats());
-//            }
-//        });
-
         if(timer == null)
             timer=new TimeScheduler2();
         unicast.setTimer(timer);
-
         System.out.println("timer is a " + timer.getClass());
 
 
         unicast.setDownProtocol(new Protocol() {
-            public Object down(Event evt) {
-                return null;
-            }
+            public Object down(Event evt) {return null;}
         });
 
         unicast.setUpProtocol(new Protocol() {
@@ -117,9 +107,9 @@ public class UNICAST2_StressTest {
 
 
         final CountDownLatch latch=new CountDownLatch(1);
-        Adder[] adders=new Adder[num_threads];
+        Sender[] adders=new Sender[num_threads];
         for(int i=0; i < adders.length; i++) {
-            adders[i]=new Adder(unicast, latch, counter, seqno, oob, local_addr, sender);
+            adders[i]=new Sender(unicast, latch, counter, seqno, oob, local_addr, sender);
             adders[i].start();
         }
 
@@ -132,10 +122,6 @@ public class UNICAST2_StressTest {
                 try {
                     all_msgs_delivered.await(1000, TimeUnit.MILLISECONDS);
                     System.out.println("received " + delivered_msgs.get() + " msgs");
-
-                    // send a spurious message to trigger removal of pending messages in AckReceiverWindow
-                    msg=createMessage(local_addr, sender, 1L, oob, false);
-                    unicast.up(new Event(Event.MSG, msg));
                 }
                 catch(InterruptedException e) {
                     e.printStackTrace();
@@ -185,7 +171,7 @@ public class UNICAST2_StressTest {
     }
 
 
-    static class Adder extends Thread {
+    static class Sender extends Thread {
         final UNICAST2 unicast;
         final CountDownLatch latch;
         final AtomicInteger num_msgs;
@@ -194,8 +180,8 @@ public class UNICAST2_StressTest {
         final Address dest;
         final Address sender;
 
-        public Adder(UNICAST2 unicast, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno,
-                     boolean oob, final Address dest, final Address sender) {
+        public Sender(UNICAST2 unicast, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno,
+                      boolean oob, final Address dest, final Address sender) {
             this.unicast=unicast;
             this.latch=latch;
             this.num_msgs=num_msgs;
