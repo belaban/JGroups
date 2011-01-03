@@ -78,7 +78,7 @@ public class OrderingTest {
           .addProtocol(new VERIFY_SUSPECT())
           .addProtocol(new BARRIER())
           .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST2().setValue("stable_interval", 3000))
+          .addProtocol(new UNICAST2().setValue("stable_interval", 3000).setValue("max_bytes", 20000))
           .addProtocol(new STABLE())
           .addProtocol(new GMS().setValue("print_local_addr", false))
           .addProtocol(new UFC().setValue("max_credits", 2000000))
