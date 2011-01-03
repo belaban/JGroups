@@ -48,4 +48,5 @@
     <class id="77" name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="78" name="org.jgroups.protocols.STOMP$StompHeader"/>
     <class id="79" name="org.jgroups.util.ProxyAddress"/>
+    <class id="80" name="org.jgroups.protocols.PrioHeader"/>
 </magic-number-class-mapping>
