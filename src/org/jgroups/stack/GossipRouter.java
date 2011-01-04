@@ -526,9 +526,7 @@ public class GossipRouter {
         }
 
         address_mappings.remove(addr);
-
-        if(addr instanceof UUID)
-            UUID.remove((UUID)addr);
+        UUID.remove(addr);
     }
 
     /**

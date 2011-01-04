@@ -719,7 +719,7 @@ public class GMS_MergeTest extends ChannelTestBase {
         }
 
         protected void setAddress() {
-            org.jgroups.util.UUID old_addr=local_addr;
+            Address old_addr=local_addr;
             local_addr=new org.jgroups.util.UUID(id, id);
 
             if(old_addr != null)

@@ -481,7 +481,11 @@ public abstract class TP extends Protocol {
             String tmp_logical_name=UUID.get(logical_addr);
             if(tmp_logical_name != null)
                 sb.append(tmp_logical_name).append(": ");
-            sb.append(((UUID)logical_addr).toStringLong()).append(": ").append(physical_addr).append("\n");
+            if(logical_addr instanceof UUID)
+                sb.append(((UUID)logical_addr).toStringLong());
+            else
+                sb.append(logical_addr);
+            sb.append(": ").append(physical_addr).append("\n");
             return sb.toString();
         }
     };
@@ -1363,18 +1367,18 @@ public abstract class TP extends Protocol {
                 break;
 
             case Event.GET_PHYSICAL_ADDRESS:
-                return getPhysicalAddressFromCache((UUID)evt.getArg());
+                return getPhysicalAddressFromCache((Address)evt.getArg());
 
             case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
                 return logical_addr_cache.contents();
 
             case Event.SET_PHYSICAL_ADDRESS:
-                Tuple<UUID,PhysicalAddress> tuple=(Tuple<UUID,PhysicalAddress>)evt.getArg();
+                Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
                 addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
                 break;
 
             case Event.REMOVE_ADDRESS:
-                removeLogicalAddressFromCache((UUID)evt.getArg());
+                removeLogicalAddressFromCache((Address)evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -1998,7 +2002,7 @@ public abstract class TP extends Protocol {
 //    }
 
 
-    private class DiagnosticsHandler implements Runnable {
+    protected class DiagnosticsHandler implements Runnable {
     	public static final String THREAD_NAME = "DiagnosticsHandler";
         private Thread thread=null;
         private MulticastSocket diag_sock=null;
