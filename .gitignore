@@ -10,3 +10,4 @@ dist/
 atlassian*
 keystore/
 tmp/
+bla*.java
