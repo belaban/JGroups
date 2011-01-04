@@ -58,22 +58,18 @@ public class ResourceManager {
 	}
 
 	public static synchronized short getNextMulticastPort(InetAddress bind_addr) throws Exception {
-		short port = mcast_port++;
+		short port = mcast_port;
 		try {
 			DatagramSocket sock = Util.createDatagramSocket(socket_factory, "jgroups.temp.resourcemgr.mcast_sock", bind_addr, port);
 			port = (short) sock.getLocalPort();
 			socket_factory.close(sock);
-			ServerSocket srv_sock = Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
-			port = (short) srv_sock.getLocalPort();
-			socket_factory.close(srv_sock);
 			return port;
 		} finally {
 			mcast_port = (short) (port + 1);
 		}
 	}
 
-	public static synchronized List<Short> getNextTcpPorts(
-			InetAddress bind_addr, int num_requested_ports) throws Exception {
+	public static synchronized List<Short> getNextTcpPorts(InetAddress bind_addr, int num_requested_ports) throws Exception {
 		short port = tcp_port++;
 		List<Short> retval = new ArrayList<Short>(num_requested_ports);
 
@@ -97,8 +93,7 @@ public class ResourceManager {
 	}
 
 	public static void main(String[] args) throws Exception {
-		List<Short> ports = getNextTcpPorts(InetAddress
-				.getByName("192.168.1.5"), 15);
+		List<Short> ports = getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 15);
 		System.out.println("ports = " + ports);
 
 		ports = getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 5);
