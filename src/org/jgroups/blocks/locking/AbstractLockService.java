@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -29,7 +30,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     protected final ConcurrentMap<String,LockQueue> server_locks=Util.createConcurrentMap(20);
 
     // client side locks
-    protected final ConcurrentMap<String,LockImpl> client_locks=Util.createConcurrentMap(20);
+    protected final Map<String,LockImpl> client_locks=Util.createHashMap();
 
     protected static enum Type {GRANT_LOCK, LOCK_GRANTED, RELEASE_LOCK}
 
@@ -53,7 +54,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     }
 
     public Lock getLock(String name) {
-        return new LockImpl(name);
+        synchronized(client_locks) {
+            LockImpl lock=client_locks.get(name);
+            if(lock == null) {
+                lock=new LockImpl(name);
+                client_locks.put(name, lock);
+            }
+            return lock;
+        }
     }
 
 
@@ -65,7 +73,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 handleLockRequest(req);
                 break;
             case LOCK_GRANTED:
-                handleLockGrantedResponse(req.lock_name, req.owner);
+                handleLockGrantedResponse(req.lock_name);
                 break;
             default:
                 log.error("Request of type " + req.type + " not known");
@@ -80,7 +88,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     
     abstract protected void sendGrantLockRequest(String lock_name, Address owner, long timeout);
-    abstract protected void sendReleaseLockRequest(String lock_name, Address owner);
+    abstract protected void sendReleaseLockRequest(String lock_name);
 
 
     protected void sendLockResponse(Type type, Address dest, String lock_name) {
@@ -106,7 +114,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         queue.handleRequest(req);
     }
 
-    abstract protected void handleLockGrantedResponse(String lock_name, Address owner);
+    protected void handleLockGrantedResponse(String lock_name) {
+        LockImpl lock;
+        synchronized(client_locks) {
+            lock=client_locks.get(lock_name);
+        }
+        if(lock != null)
+            lock.lockGranted();
+    }
 
 
 
@@ -122,16 +137,20 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         protected final List<Request> queue=new ArrayList<Request>();
 
         public void handleRequest(Request req) {
-
+            sendLockResponse(Type.LOCK_GRANTED, req.owner, req.lock_name);
         }
     }
 
 
-    protected class Request implements Streamable {
+    protected static class Request implements Streamable {
         protected Type    type;
         protected String  lock_name;
         protected Address owner;
         protected long    timeout=0;
+
+
+        public Request() {
+        }
 
         public Request(Type type, String lock_name, Address owner, long timeout) {
             this.type=type;
@@ -161,8 +180,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     protected class LockImpl implements Lock {
         protected final String    name;
-        protected final Lock      lock=new ReentrantLock();
-        protected final Condition granted=lock.newCondition();
         protected short           count=0; // incremented on lock(), decremented on unlock()
 
         public LockImpl(String name) {
@@ -170,20 +187,40 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public void lock() {
+            try {
+                acquire();
+            }
+            catch(InterruptedException e) {
+            }
         }
 
         public void lockInterruptibly() throws InterruptedException {
+            acquire();
         }
 
         public boolean tryLock() {
-            return false;
+            try {
+                return tryLock(100, TimeUnit.MILLISECONDS);
+            }
+            catch(InterruptedException e) {
+                return false;
+            }
         }
 
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             return false;
         }
 
-        public void unlock() {
+        public synchronized void unlock() {
+            boolean send_release_msg=count == 1;
+            count=(short)Math.max(0, count-1);
+            if(send_release_msg)
+                sendReleaseLockRequest(name);
+            if(count == 0) {
+                synchronized(client_locks) {
+                    client_locks.remove(name);
+                }
+            }
         }
 
         public Condition newCondition() {
@@ -191,16 +228,21 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public String toString() {
-            return name;
+            return name + " (count=" + count + ")";
         }
 
-        protected void acquire() {
-
+        protected synchronized void lockGranted() {
+            if(count++ == 0)
+                this.notifyAll();
         }
 
-        protected void release() {
-            
+        protected synchronized void acquire() throws InterruptedException {
+            if(count == 0) {
+                sendGrantLockRequest(name, ch.getAddress(), 0);
+                this.wait();
+            }
         }
+
     }
 
 }

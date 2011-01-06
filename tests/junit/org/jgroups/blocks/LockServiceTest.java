@@ -19,7 +19,7 @@ import java.util.concurrent.locks.Lock;
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class LockServiceTest extends ChannelTestBase {
     protected JChannel c1, c2, c3, c4;
-    protected static final String LOCK="lock";
+    protected static final String LOCK="sample-lock";
 
 
     @BeforeTest
