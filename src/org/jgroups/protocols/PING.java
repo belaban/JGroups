@@ -20,8 +20,8 @@ import java.util.List;
  * response.
  * @author Bela Ban
  */
-@DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "port_range", "socket_conn_timeout",
-        "socket_read_timeout", "discovery_timeout"})
+@DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "socket_conn_timeout",
+                           "socket_read_timeout", "discovery_timeout"})
 public class PING extends Discovery {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */

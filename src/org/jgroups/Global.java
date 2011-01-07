@@ -44,6 +44,8 @@ public class Global {
     public static final String MPING_MCAST_PORT="jgroups.mping.mcast_port";
     public static final String MPING_IP_TTL="jgroups.mping.ip_ttl";
 
+    public static final String BPING_BIND_PORT="jgroups.bping.bind_port";
+
     public static final String STOMP_BIND_ADDR="jgroups.stomp.bind_addr";
     public static final String STOMP_ENDPOINT_ADDR="jgroups.stomp.endpoint_addr";
 
@@ -94,6 +96,7 @@ public class Global {
     public static final String TCP_SRV_SOCK="jgroups.tcp.srv_sock";
     public static final String TUNNEL_UCAST_SOCK="jgroups.tunnel.ucast_sock";
     public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
+    public static final String BPING_SOCK="jgroups.bping.sock";
     public static final String TP_DIAG_MCAST_SOCK="jgroups.tp.diag.mcast_sock";
     public static final String STREAMING_STATE_TRANSFER_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
     public static final String FD_SOCK_SRV_SOCK="jgroups.fd_sock.srv_sock";
