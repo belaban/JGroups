@@ -406,7 +406,8 @@ public class Message implements Streamable {
 
     public Header getHeader(short id) {
         if(id <= 0)
-            throw new IllegalArgumentException("An ID of " + id + " is invalid");
+            throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
+                                                 "getHeader() to jg-protocol-ids.xml");
         return headers.getHeader(id);
     }
     /*---------------------------------------------------------------------*/
