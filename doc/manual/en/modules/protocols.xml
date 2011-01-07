@@ -112,6 +112,17 @@
         </section>
 
         <section>
+            <title>BPING</title>
+            <para>
+                BPING uses UDP broadcasts to discover other nodes. The default broadcast address (dest) is
+                255.255.255.255, and should be replaced with a subnet specific broadcast, e.g. 192.168.1.255.
+            </para>
+
+            ${BPING}
+            <para></para>
+        </section>
+
+        <section>
             <title>S3_PING</title>
             This uses an Amazon S3 bucket into which all members write their addresses. New joiners read all addresses
             from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
