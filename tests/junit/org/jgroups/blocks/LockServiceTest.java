@@ -45,14 +45,17 @@ public class LockServiceTest extends ChannelTestBase {
     @DataProvider(name="createLockService")
     AbstractLockService[][] createLockService() {
         return new AbstractLockService[][] {
-          {new PeerLockService(), new PeerLockService()}
+          {new PeerLockService(), new PeerLockService(), new PeerLockService(), new PeerLockService()}
         };
     }
 
     @Test(dataProvider="createLockService")
-    public void testSimpleLock(AbstractLockService s1, AbstractLockService s2) {
+    public void testSimpleLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) {
         s1.setChannel(c1);
         s2.setChannel(c2);
+        s3.setChannel(c3);
+        s4.setChannel(c4);
+
         
         Lock lock=s1.getLock(LOCK);
 
@@ -67,5 +70,45 @@ public class LockServiceTest extends ChannelTestBase {
             lock.unlock();
             System.out.println("OK");
         }
+    }
+
+    @Test(dataProvider="createLockService")
+    public void testBlockingLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) {
+        s1.setChannel(c1);
+        s2.setChannel(c2);
+        s3.setChannel(c3);
+        s4.setChannel(c4);
+
+
+        final Lock l1=s1.getLock(LOCK);
+        System.out.println("locking l1");
+        l1.lock();
+        System.out.println("locked l1");
+
+         new Thread() {
+            public void run() {
+                Util.sleep(5000);
+                System.out.println("thread is unlocking l1");
+                l1.unlock();
+            }
+        }.start();
+
+        try {
+            Lock l2=s2.getLock(LOCK);
+            System.out.println("locking l2");
+            l2.lock();
+            System.out.println("locked l2");
+            try {
+                ;
+            }
+            finally {
+                l2.unlock();
+                System.out.println("unlocked l2");
+            }
+        }
+        finally {
+            l1.unlock();
+        }
+
     }
 }
