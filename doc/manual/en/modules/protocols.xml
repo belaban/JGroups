@@ -834,10 +834,34 @@
                 until it has processed all messages worth max_credits bytes, the senders will block. This in turn allows STABLE to
                 progress and eventually garbage collect most messages from all senders. Therefore, SFC and STABLE complement each other,
                 with SFC blocking senders so that STABLE can catch up.
+            </para>
 
+            <para>
+                SFC is currently experimental, we recommend to use MFC and UFC (see below) instead.
             </para>
 			
 			${SFC}
+        </section>
+
+        <section>
+            <title>MFC and UFC</title>
+            <para>
+                In 2.10, FC was separated into MFC (Multicast Flow Control) and Unicast Flow Control (UFC). The reason
+                was that multicast flow control should not be impeded by unicast flow control, and vice versa. Also,
+                performance for the separate implementations could be increased, plus they can be individually omitted.
+                For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
+            </para>
+
+            <section>
+                <title>MFC</title>
+                ${MFC}
+            </section>
+
+            <section>
+                <title>UFC</title>
+                ${UFC}
+            </section>
+
         </section>
         
     </section>
