@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * unicast flow control is required.</em>
  * @author Bela Ban
  */
+@Experimental
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
