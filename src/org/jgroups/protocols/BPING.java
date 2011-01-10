@@ -32,13 +32,13 @@ public class BPING extends PING implements Runnable {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Target address for broadcasts. This should be restricted to the local subnet, e.g. 192.168.1.255")
-    String dest="255.255.255.255";
+    protected String dest="255.255.255.255";
 
     @Property(description="Port for discovery packets", systemProperty=Global.BPING_BIND_PORT)
-    int bind_port=8555;
+    protected int bind_port=8555;
 
     @Property(description="Sends discovery packets to ports 8555 to (8555+port_range)")
-    int port_range=5;
+    protected int port_range=5;
 
 
 
