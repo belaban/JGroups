@@ -53,7 +53,8 @@ public abstract class Protocol {
     /** The name of the protocol. Is by default set to the protocol's classname. This property should rarely need to
      * be set, e.g. only in cases where we want to create more than 1 protocol of the same class in the same stack */
     @Property(name="name",description="Give the protocol a different name if needed so we can have multiple " +
-            "instances of it in the same stack",writable=false)
+            "instances of it in the same stack (deprecated)",writable=false)
+    @Deprecated
     protected String           name=getClass().getSimpleName();
 
     @Property(description="Give the protocol a different ID if needed so we can have multiple " +
@@ -360,7 +361,7 @@ public abstract class Protocol {
 
     /** All protocol names have to be unique ! */
     public String getName() {
-        return name;
+        return getClass().getSimpleName();
     }
 
     public short getId() {
