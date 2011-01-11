@@ -32,9 +32,9 @@ public class UUID implements Address, Streamable, Comparable<Address> {
 
     private static final int SIZE=Global.LONG_SIZE * 2 + Global.BYTE_SIZE;
 
-    private static final LazyRemovalCache.Printable<UUID,String> print_function=new LazyRemovalCache.Printable<UUID,String>() {
-        public java.lang.String print(UUID key, java.lang.String val) {
-            return val + ": " + key.toStringLong() + "\n";
+    private static final LazyRemovalCache.Printable<Address,String> print_function=new LazyRemovalCache.Printable<Address,String>() {
+        public java.lang.String print(Address key, String val) {
+            return val + ": " + (key instanceof UUID? ((UUID)key).toStringLong() : key) + "\n";
         }
     };
     
@@ -118,8 +118,8 @@ public class UUID implements Address, Streamable, Comparable<Address> {
         return cache.contents();
     }
 
-    public static void remove(UUID uuid) {
-        cache.remove(uuid);
+    public static void remove(Address addr) {
+        cache.remove(addr);
     }
 
     public static void removeAll(Collection<Address> mbrs) {
@@ -162,12 +162,11 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      * @return  A randomly generated {@code UUID}
      */
     public static UUID randomUUID() {
-        SecureRandom ng = numberGenerator;
-        if (ng == null) {
+        SecureRandom ng=numberGenerator;
+        if(ng == null)
             numberGenerator=ng=new SecureRandom();
-        }
 
-        byte[] randomBytes = new byte[16];
+        byte[] randomBytes=new byte[16];
         ng.nextBytes(randomBytes);
         return new UUID(randomBytes);
     }

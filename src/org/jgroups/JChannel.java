@@ -89,7 +89,7 @@ public class JChannel extends Channel {
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 
     /*the address of this JChannel instance*/
-    protected UUID local_addr=null;
+    protected Address local_addr=null;
 
     protected String name=null;
 
@@ -870,7 +870,7 @@ public class JChannel extends Channel {
 
     @ManagedAttribute(name="Address (UUID)")
     public String getAddressAsUUID() {
-        return local_addr != null? local_addr.toStringLong() : null;
+        return local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null;
     }
 
     public String getName() {
@@ -1622,8 +1622,8 @@ public class JChannel extends Channel {
                         additional_data.putAll(m);
                         if(m.containsKey("additional_data")) {
                             byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr != null)
-                                local_addr.setAdditionalData(tmp);
+                            if(local_addr instanceof UUID)
+                                ((UUID)local_addr).setAdditionalData(tmp);
                         }
                     }
                 }
@@ -1648,8 +1648,8 @@ public class JChannel extends Channel {
                         additional_data.putAll(m);
                         if(m.containsKey("additional_data")) {
                             byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr != null)
-                                local_addr.setAdditionalData(tmp);
+                            if(local_addr instanceof UUID)
+                                ((UUID)local_addr).setAdditionalData(tmp);
                         }
                     }
                 }
@@ -1785,12 +1785,12 @@ public class JChannel extends Channel {
      * a SET_LOCAL_ADDRESS
      */
     protected void setAddress() {
-        UUID old_addr=local_addr;
+        Address old_addr=local_addr;
         local_addr=UUID.randomUUID();
 
         byte[] buf=(byte[])additional_data.get("additional_data");
         if(buf != null)
-            local_addr.setAdditionalData(buf);
+            ((UUID)local_addr).setAdditionalData(buf);
 
         if(old_addr != null)
             down(new Event(Event.REMOVE_ADDRESS, old_addr));
@@ -1888,7 +1888,7 @@ public class JChannel extends Channel {
      * </ol>
      */
     protected void _close(boolean disconnect, boolean close_mq) {
-        UUID old_addr=local_addr;
+        Address old_addr=local_addr;
         if(closed)
             return;
 
