@@ -322,7 +322,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     String val=entry.getValue();
                     key=trim(key);
                     val=trim(val);
-                    sb.append(key).append("=\"").append(val).append("\"");
+                    sb.append(key).append("=\"").append(val).append("\" ");
                 }
                 sb.append(" />\n");
             }
