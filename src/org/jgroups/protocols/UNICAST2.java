@@ -76,6 +76,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
       "automatic purge (only for experts)",writable=false)
     boolean xmit_table_automatic_purging=true;
 
+    @Property(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
+      "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
+      "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
+    private boolean use_range_based_retransmitter=true;
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -716,7 +720,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer, true,
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer, use_range_based_retransmitter,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time,
                                                     xmit_table_automatic_purging);

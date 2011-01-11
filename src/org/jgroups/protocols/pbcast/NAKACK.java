@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size", "max_xmit_buf_size",
-                           "enable_xmit_time_stats", "use_range_based_retransmitter"})
+                           "enable_xmit_time_stats"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
 
     /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
