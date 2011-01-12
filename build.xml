@@ -71,10 +71,6 @@
     </patternset>
 
 
-    <patternset id="one.test">
-        <include name="**/*${test}*"/>
-    </patternset>
-
     <patternset id="all.tests">
         <include name="org/jgroups/tests/**Test**"/>
         <include name="org/jgroups/blocks/**Test**"/>
