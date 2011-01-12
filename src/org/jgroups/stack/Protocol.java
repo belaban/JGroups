@@ -138,9 +138,9 @@ public abstract class Protocol {
         if(name == null || value == null)
             return this;
         Field field=Util.getField(getClass(), name);
-        if(field != null) {
-            Configurator.setField(field, this, value);
-        }
+        if(field == null)
+            throw new IllegalArgumentException("field \"" + name + "\n not found");
+        Configurator.setField(field, this, value);
         return this;
     }
 
