@@ -99,7 +99,7 @@ public abstract class TP extends Protocol {
     protected List<NetworkInterface> receive_interfaces=null;
 
     @Property(description="Max number of elements in the logical address cache before eviction starts")
-    protected int logical_addr_cache_max_size=20;
+    protected int logical_addr_cache_max_size=200;
 
     @Property(description="Time (in ms) after which entries in the logical address cache marked as removable are removed")
     protected long logical_addr_cache_expiration=120000;
@@ -473,6 +473,9 @@ public abstract class TP extends Protocol {
      */
     protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache=null;
 
+    // last time we sent a discovery request
+    protected long last_discovery_request=0;
+
     Future<?> logical_addr_cache_reaper=null;
 
     protected static final LazyRemovalCache.Printable<Address,PhysicalAddress> print_function=new LazyRemovalCache.Printable<Address,PhysicalAddress>() {
@@ -740,8 +743,9 @@ public abstract class TP extends Protocol {
     }
 
     @ManagedOperation(description="Evicts elements in the logical address cache which have expired")
-    public void evictLogicalAddressCache(boolean force) {
-        logical_addr_cache.removeMarkedElements(force); 
+    public void evictLogicalAddressCache() {
+        logical_addr_cache.removeMarkedElements();
+        fetchLocalAddresses();
     }
 
     /**
@@ -860,6 +864,7 @@ public abstract class TP extends Protocol {
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
                     logical_addr_cache.removeMarkedElements();
+                    fetchLocalAddresses();
                 }
 
                 public String toString() {
@@ -1205,6 +1210,18 @@ public abstract class TP extends Protocol {
 
     protected void sendToAllPhysicalAddresses(byte[] buf, int offset, int length) throws Exception {
         Set<PhysicalAddress> dests=new HashSet<PhysicalAddress>(logical_addr_cache.values());
+        if(!logical_addr_cache.containsKeys(members)) {
+            long current_time=0;
+            synchronized(this) {
+                if(last_discovery_request == 0 || (current_time=System.currentTimeMillis()) - last_discovery_request >= 10000) {
+                    last_discovery_request=current_time == 0? System.currentTimeMillis() : current_time;
+                    if(log.isWarnEnabled())
+                        log.warn("logical address cache didn't contain all physical address, sending up a discovery request");
+                    up_prot.up(new Event(Event.FIND_INITIAL_MBRS));
+                }
+            }
+        }
+
         for(PhysicalAddress dest: dests) {
             try {
                 sendUnicast(dest, buf, offset, length);
@@ -1328,6 +1345,7 @@ public abstract class TP extends Protocol {
 
                     // fix for https://jira.jboss.org/jira/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
+                    fetchLocalAddresses();
                     UUID.retainAll(members);
                 }
 
@@ -1537,13 +1555,16 @@ public abstract class TP extends Protocol {
     }
 
     protected void removeLogicalAddressFromCache(Address logical_addr) {
-        if(logical_addr != null)
+        if(logical_addr != null) {
             logical_addr_cache.remove(logical_addr);
+            fetchLocalAddresses();
+        }
     }
 
-    @ManagedOperation
+    /** Clears the cache. <em>Do not use, this is only for unit testing !</em> */
     public void clearLogicalAddressCache() {
         logical_addr_cache.clear(true);
+        fetchLocalAddresses();
     }
 
 
