@@ -68,7 +68,8 @@ public class ConnectStressTest extends ChannelTestBase {
 
         for(MyThread thread: threads) {
             View view=thread.getChannel().getView();
-            System.out.println(thread.getName() + ": size=" + view.size() + ", view-id: " + view.getViewId());
+            if(view != null)
+                System.out.println(thread.getName() + ": size=" + view.size() + ", view-id: " + view.getViewId());
         }
 
         for(MyThread thread: threads) {
