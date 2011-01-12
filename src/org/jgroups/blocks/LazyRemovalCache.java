@@ -41,6 +41,19 @@ public class LazyRemovalCache<K,V> {
         checkMaxSizeExceeded();
     }
 
+    public boolean containsKey(K key) {
+        return map.containsKey(key);
+    }
+
+    /** Returns true if all of the keys in keys are present. Returns false if one or more of the keys are absent */
+    public boolean containsKeys(Collection<K> keys) {
+        for(K key: keys)
+            if(!map.containsKey(key))
+                return false;
+        return true;
+    }
+    
+
     public V get(K key) {
         if(key == null)
             return null;
