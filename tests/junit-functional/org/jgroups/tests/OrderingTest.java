@@ -11,7 +11,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,15 +70,17 @@ public class OrderingTest {
         JChannel ch=new JChannel(false);
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);
-        stack.addProtocol(new SHARED_LOOPBACK())
+        stack.addProtocol(new SHARED_LOOPBACK().setValue("oob_thread_pool_rejection_policy", "run")
+                            .setValue("thread_pool_rejection_policy", "run")
+                            .setValue("thread_pool_queue_max_size", 100000))
           .addProtocol(new PING())
           .addProtocol(new MERGE2())
           .addProtocol(new FD_SOCK())
           .addProtocol(new VERIFY_SUSPECT())
           .addProtocol(new BARRIER())
-          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST2().setValue("stable_interval", 3000).setValue("max_bytes", 20000))
-          .addProtocol(new STABLE())
+          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true))
+          .addProtocol(new UNICAST2().setValue("stable_interval", 10000).setValue("max_bytes", 50000))
+          .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))
           .addProtocol(new UFC().setValue("max_credits", 2000000))
           .addProtocol(new MFC().setValue("max_credits", 2000000))
@@ -88,15 +89,13 @@ public class OrderingTest {
         return ch;
     }
 
-    /*protected static JChannel createChannel() throws Exception {
-        JChannel ch=new JChannel("/home/bela/fast.xml");
-
-        return ch;
+    /*protected static JChannel createChannel() throws ChannelException {
+        return new JChannel("/home/bela/fast.xml");
     }*/
 
 
-    public void testFIFOOrdering() throws Exception {
 
+    public void testFIFOOrdering() throws Exception {
         assert channels[0].getView().size() == NUM_SENDERS : "view[0] is " + channels[0].getView().size();
         System.out.println("done, view is " + channels[0].getView());
 
@@ -115,11 +114,11 @@ public class OrderingTest {
             done=true;
             for(JChannel ch: channels) {
                 MyReceiver receiver=(MyReceiver)ch.getReceiver();
-                int size=receiver.size();
-                System.out.println(ch.getAddress() + ": " + size);
+                int received=receiver.getReceived();
+                System.out.println(ch.getAddress() + ": " + received);
                 STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
                 stable.runMessageGarbageCollection(); 
-                if(size != TOTAL_NUM_MSGS) {
+                if(received != TOTAL_NUM_MSGS) {
                     done=false;
                     break;
                 }
@@ -131,42 +130,31 @@ public class OrderingTest {
         }
         for(JChannel ch: channels) {
             MyReceiver receiver=(MyReceiver)ch.getReceiver();
-            System.out.println(ch.getAddress() + ": " + receiver.size());
+            System.out.println(ch.getAddress() + ": " + receiver.getReceived());
         }
 
         for(JChannel ch: channels) {
             MyReceiver receiver=(MyReceiver)ch.getReceiver();
-            assert receiver.size() == TOTAL_NUM_MSGS : "receiver had " + receiver.size() +
+            assert receiver.getReceived() == TOTAL_NUM_MSGS : "receiver had " + receiver.getReceived() +
               " messages (expected=" + TOTAL_NUM_MSGS + ")";
         }
         System.out.println("done");
 
         System.out.println("\nchecking message order");
 
-        boolean detected_incorrect_order=false;
         for(JChannel ch: channels) {
             MyReceiver receiver=(MyReceiver)ch.getReceiver();
             System.out.print(ch.getAddress() + ": ");
-            boolean ok=checkOrder(receiver.getMap(), false);
-            System.out.println(ok? "OK" : "FAIL");
-            if(!ok)
-                detected_incorrect_order=true;
+            boolean ok=receiver.getNumberOfErrors() == 0;
+            System.out.println(ok? "OK" : "FAIL (" + receiver.getNumberOfErrors() + " errors)");
+            assert ok : receiver.getNumberOfErrors() + " errors";
         }
 
-        if(detected_incorrect_order) {
-            System.out.println("incorrect elements:");
-            for(JChannel ch: channels) {
-                MyReceiver receiver=(MyReceiver)ch.getReceiver();
-                System.out.print(ch.getAddress() + ": ");
-                checkOrder(receiver.getMap(), true);
-            }
-        }
-        assert !detected_incorrect_order : "test failed because of incorrect order (see information above)";
         System.out.println("done");
     }
 
 
-    private static boolean checkOrder(ConcurrentMap<Address,List<Integer>> map, boolean print_incorrect_elements) {
+   /* private static boolean checkOrder(ConcurrentMap<Address,List<Integer>> map, boolean print_incorrect_elements) {
         boolean retval=true;
         for(Map.Entry<Address,List<Integer>> entry: map.entrySet()) {
             Address sender=entry.getKey();
@@ -184,7 +172,7 @@ public class OrderingTest {
         }
 
         return retval;
-    }
+    }*/
 
 
     protected static class MySender extends Thread {
@@ -210,31 +198,35 @@ public class OrderingTest {
     }
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final ConcurrentMap<Address,List<Integer>> map=new ConcurrentHashMap<Address,List<Integer>>();
+        protected final ConcurrentMap<Address,Integer> map=new ConcurrentHashMap<Address,Integer>();
         final AtomicInteger received=new AtomicInteger(0);
+        protected int num_errors=0;
 
-        public ConcurrentMap<Address,List<Integer>> getMap() {
-            return map;
+        public int getNumberOfErrors() {
+            return num_errors;
         }
 
-        public int size() {
-            int size=0;
-            for(List<Integer> list: map.values())
-                size+=list.size();
-            return size;
+        public int getReceived() {
+            return received.intValue();
         }
 
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();
             Address sender=msg.getSrc();
-            List<Integer> list=map.get(sender);
-            if(list == null) {
-                list=new LinkedList<Integer>();
-                List<Integer> tmp=map.putIfAbsent(sender, list);
+
+            Integer current_seqno=map.get(sender);
+            if(current_seqno == null) {
+                current_seqno=new Integer(1);
+                Integer tmp=map.putIfAbsent(sender, current_seqno);
                 if(tmp != null)
-                    list=tmp;
+                    current_seqno=tmp;
             }
-            list.add(num);
+
+            if(current_seqno.intValue() == num)
+                map.put(sender, current_seqno + 1);
+            else
+                num_errors++;
+
             if(received.incrementAndGet() % 100000 == 0)
                 System.out.println("received " + received);
         }
