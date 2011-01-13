@@ -98,6 +98,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     public void viewAccepted(View view) {
         this.view=view;
+        List<Address> members=view.getMembers();
+        for(Map.Entry<String,LockQueue> entry: server_locks.entrySet()) {
+            entry.getValue().handleView(members);
+        }
     }
 
     public String printLocks() {
