@@ -9,7 +9,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementation of a lock service which acquires locks by contacting all (or the majority) of the nodes of a cluster.
+ * Implementation of a lock service which acquires locks by contacting all of the nodes of a cluster.</p> Unless a total
+ * order configuration is used (e.g. {@link org.jgroups.protocols.SEQUENCER} based), lock requests for the same resource
+ * from different senders may be received in different order, so deadlocks can occur. Example:
+ * <pre>
+ * - Nodes A and B
+ * - A and B call lock(X) at the same time
+ * - A receives L(X,A) followed by L(X,B): locks X(A), queues L(X,B)
+ * - B receives L(X,B) followed by L(X,A): locks X(B), queues L(X,A)
+ * </pre>
+ * To acquire a lock, we need lock grants from both A and B, but this will never happen here. To fix this, either
+ * add SEQUENCER to the configuration, so that all lock requests are received in the same global order at both A and B,
+ * or use {@link java.util.concurrent.locks.Lock#tryLock(long,java.util.concurrent.TimeUnit)} with retries if a lock
+ * cannot be acquired.<p/>
+ * An alternative is also the {@link CentralLockService}.
  * @author Bela Ban
  */
 public class PeerLockService extends AbstractLockService {
@@ -46,10 +59,8 @@ public class PeerLockService extends AbstractLockService {
         synchronized(client_locks) {
             lock=(PeerLock)client_locks.get(lock_name);
         }
-        if(lock != null) {
-            System.out.println("<< lock-grant(" + lock_name + ") by " + sender);
+        if(lock != null)
             lock.handleLockGrantedResponse(sender);
-        }
     }
 
     public void viewAccepted(View view) {
@@ -85,8 +96,10 @@ public class PeerLockService extends AbstractLockService {
             if(grants.isEmpty())
                 return;
             grants.remove(sender);
-            if(grants.isEmpty())
+            if(grants.isEmpty()) {
                 lockGranted();
+                notifyLocked(this.name, sender);
+            }
         }
     }
 

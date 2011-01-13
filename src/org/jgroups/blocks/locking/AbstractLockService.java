@@ -78,6 +78,15 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
     }
 
+    public void unlockAll() {
+        List<Lock> locks;
+        synchronized(client_locks) {
+            locks=new ArrayList<Lock>(client_locks.values());
+        }
+        for(Lock lock: locks)
+            lock.unlock();
+    }
+
 
     public void receive(Message msg) {
         Request req=(Request)msg.getObject();
@@ -101,6 +110,11 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         List<Address> members=view.getMembers();
         for(Map.Entry<String,LockQueue> entry: server_locks.entrySet()) {
             entry.getValue().handleView(members);
+        }
+        for(Map.Entry<String,LockQueue> entry: server_locks.entrySet()) {
+            LockQueue queue=entry.getValue();
+            if(queue.isEmpty() && queue.current_owner == null)
+                server_locks.remove(entry.getKey());
         }
     }
 
@@ -153,6 +167,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 notifyLockCreated(req.lock_name);
         }
         queue.handleRequest(req);
+        if(queue.isEmpty() && queue.current_owner == null)
+            server_locks.remove(req.lock_name);
     }
 
     protected void handleLockGrantedResponse(String lock_name, Address sender) {
@@ -230,7 +246,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                     if(current_owner == null) {
                         current_owner=req.owner;
                         sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
-                        notifyLocked(req.lock_name, req.owner);
                     }
                     else {
                         if(!current_owner.equals(req.owner))
@@ -277,7 +292,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                     if(req.type == AbstractLockService.Type.GRANT_LOCK) {
                         current_owner=req.owner;
                         sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
-                        notifyLocked(req.lock_name, req.owner);
                         break;
                     }
                 }
@@ -298,6 +312,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 }
             }
         }
+
+        public boolean isEmpty() {return queue.isEmpty();}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
@@ -423,8 +439,9 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         protected synchronized void lockGranted() {
-            if(count == 0)
+            if(count == 0) {
                 this.notifyAll();
+            }
         }
 
         protected synchronized void acquire() throws InterruptedException {
