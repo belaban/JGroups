@@ -35,16 +35,16 @@ public class PeerLockService extends AbstractLockService {
         super(ch);
     }
 
-    protected void sendGrantLockRequest(String lock_name, Address owner, long timeout) {
-        sendRequest(Type.GRANT_LOCK, lock_name, owner, timeout);
+    protected void sendGrantLockRequest(String lock_name, Address owner, long timeout, boolean is_trylock) {
+        sendRequest(Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Address owner) {
-        sendRequest(Type.RELEASE_LOCK, lock_name, owner, 0);
+        sendRequest(Type.RELEASE_LOCK, lock_name, owner, 0, false);
     }
 
-    protected void sendRequest(Type type, String lock_name, Address owner, long timeout) {
-        Request req=new Request(type, lock_name, owner, timeout);
+    protected void sendRequest(Type type, String lock_name, Address owner, long timeout, boolean is_trylock) {
+        Request req=new Request(type, lock_name, owner, timeout, is_trylock);
         Message msg=new Message(null, null, req);
         try {
             ch.send(msg);
