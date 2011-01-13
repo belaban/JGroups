@@ -30,7 +30,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     protected final ConcurrentMap<String,LockQueue> server_locks=Util.createConcurrentMap(20);
 
     // client side locks
-    protected final Map<String,LockImpl> client_locks=Util.createHashMap();
+    protected final Map<String,ClientLock> client_locks=Util.createHashMap();
 
     protected final List<LockNotification> lock_listeners=new ArrayList<LockNotification>();
 
@@ -69,7 +69,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     public Lock getLock(String name) {
         synchronized(client_locks) {
-            LockImpl lock=client_locks.get(name);
+            ClientLock lock=client_locks.get(name);
             if(lock == null) {
                 lock=createLock(name);
                 client_locks.put(name, lock);
@@ -79,12 +79,15 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     }
 
     public void unlockAll() {
-        List<Lock> locks;
+        List<ClientLock> locks;
         synchronized(client_locks) {
-            locks=new ArrayList<Lock>(client_locks.values());
+            locks=new ArrayList<ClientLock>(client_locks.values());
         }
-        for(Lock lock: locks)
-            lock.unlock();
+        for(ClientLock lock: locks) {
+            int count=lock.count;
+            for(int i=0; i < count; i++)
+                lock.unlock();
+        }
     }
 
 
@@ -126,7 +129,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         sb.append("\nclient locks:\n");
-        for(Map.Entry<String,LockImpl> entry: client_locks.entrySet()) {
+        for(Map.Entry<String,ClientLock> entry: client_locks.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
@@ -136,8 +139,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         return printLocks();
     }
 
-    protected LockImpl createLock(String lock_name) {
-        return new LockImpl(lock_name);
+    protected ClientLock createLock(String lock_name) {
+        return new ClientLock(lock_name);
     }
 
     abstract protected void sendGrantLockRequest(String lock_name, Address owner, long timeout);
@@ -172,7 +175,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     }
 
     protected void handleLockGrantedResponse(String lock_name, Address sender) {
-        LockImpl lock;
+        ClientLock lock;
         synchronized(client_locks) {
             lock=client_locks.get(lock_name);
         }
@@ -385,11 +388,12 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
     }
 
-    protected class LockImpl implements Lock {
-        protected final String    name;
-        protected short           count=0; // incremented on lock(), decremented on unlock()
+    protected class ClientLock implements Lock {
+        protected final String      name;
+        protected short             count=0; // incremented on lock(), decremented on unlock()
+        protected volatile boolean  acquired;
 
-        public LockImpl(String name) {
+        public ClientLock(String name) {
             this.name=name;
         }
 
@@ -421,12 +425,15 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         public synchronized void unlock() {
             boolean send_release_msg=count == 1;
             count=(short)Math.max(0, count-1);
-            if(send_release_msg)
+            if(send_release_msg) {
                 sendReleaseLockRequest(name, ch.getAddress());
+                acquired=false;
+            }
             if(count == 0) {
                 synchronized(client_locks) {
                     client_locks.remove(name);
                 }
+                notifyLockDeleted(name);
             }
         }
 
@@ -435,11 +442,12 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public String toString() {
-            return name + " (count=" + count + ")";
+            return name + " (acquired=" + acquired + ", count=" + count + ")";
         }
 
         protected synchronized void lockGranted() {
             if(count == 0) {
+                acquired=true;
                 this.notifyAll();
             }
         }
@@ -447,7 +455,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         protected synchronized void acquire() throws InterruptedException {
             if(count == 0) {
                 sendGrantLockRequest(name, ch.getAddress(), 0);
-                this.wait();
+                while(!acquired)
+                    this.wait();
             }
             count++;
         }

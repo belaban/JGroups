@@ -46,11 +46,11 @@ public class LockServiceDemo implements LockNotification {
     }
 
     public void lockCreated(String name) {
-        System.out.println("lock \"" + name + "\" was created");
+        // System.out.println("lock \"" + name + "\" was created");
     }
 
     public void lockDeleted(String name) {
-        System.out.println("lock \"" + name + "\" was deleted");
+        // System.out.println("lock \"" + name + "\" was deleted");
     }
 
     public void locked(String lock_name, Address owner) {

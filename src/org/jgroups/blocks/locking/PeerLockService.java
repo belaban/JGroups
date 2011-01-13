@@ -66,18 +66,18 @@ public class PeerLockService extends AbstractLockService {
     public void viewAccepted(View view) {
         super.viewAccepted(view);
         List<Address> members=view.getMembers();
-        for(LockImpl lock: client_locks.values())
+        for(ClientLock lock: client_locks.values())
             ((PeerLock)lock).retainAll(members);
     }
 
-    protected LockImpl createLock(String lock_name) {
+    protected ClientLock createLock(String lock_name) {
         return new PeerLock(lock_name);
     }
 
     /**
      * Lock implementation which grants a lock when all cluster members OK it.
      */
-    protected class PeerLock extends LockImpl {
+    protected class PeerLock extends ClientLock {
         protected final List<Address> grants=new ArrayList<Address>(ch.getView().getMembers());
 
         public PeerLock(String name) {
