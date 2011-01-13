@@ -100,6 +100,23 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         this.view=view;
     }
 
+    public String printLocks() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("server locks:\n");
+        for(Map.Entry<String,LockQueue> entry: server_locks.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+
+        sb.append("\nclient locks:\n");
+        for(Map.Entry<String,LockImpl> entry: client_locks.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    public String toString() {
+        return printLocks();
+    }
 
     protected LockImpl createLock(String lock_name) {
         return new LockImpl(lock_name);
@@ -277,6 +294,18 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 }
             }
         }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append("owner=" + current_owner);
+            if(!queue.isEmpty()) {
+                sb.append(", queue: ");
+                for(Request req: queue) {
+                    sb.append(req.toStringShort()).append(" ");
+                }
+            }
+            return sb.toString();
+        }
     }
 
 
@@ -313,6 +342,26 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
         public String toString() {
             return type.name() + lock_name + ", owner=" + owner + (timeout > 0? " (timeout=" + timeout + ")" : "");
+        }
+
+        public String toStringShort() {
+            StringBuilder sb=new StringBuilder();
+            switch(type) {
+                case RELEASE_LOCK:
+                    sb.append("U");
+                    break;
+                case GRANT_LOCK:
+                    sb.append("L");
+                    break;
+                default:
+                    sb.append("N/A");
+                    break;
+            }
+            sb.append("(").append(lock_name).append(",").append(owner);
+            if(timeout > 0)
+                sb.append(",").append(timeout);
+            sb.append(")");
+            return sb.toString();
         }
     }
 
@@ -370,7 +419,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         protected synchronized void lockGranted() {
-            if(count++ == 0)
+            if(count == 0)
                 this.notifyAll();
         }
 
@@ -379,6 +428,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 sendGrantLockRequest(name, ch.getAddress(), 0);
                 this.wait();
             }
+            count++;
         }
 
     }
