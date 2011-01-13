@@ -5,6 +5,7 @@ import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.AbstractLockService;
 import org.jgroups.blocks.locking.LockNotification;
+import org.jgroups.blocks.locking.Owner;
 import org.jgroups.blocks.locking.PeerLockService;
 import org.jgroups.util.Util;
 
@@ -53,11 +54,11 @@ public class LockServiceDemo implements LockNotification {
         // System.out.println("lock \"" + name + "\" was deleted");
     }
 
-    public void locked(String lock_name, Address owner) {
+    public void locked(String lock_name, Owner owner) {
         System.out.println("\"" + lock_name + "\" locked by " + owner);
     }
 
-    public void unlocked(String lock_name, Address owner) {
+    public void unlocked(String lock_name, Owner owner) {
         System.out.println("\"" + lock_name + "\" unlocked by " + owner);
     }
     

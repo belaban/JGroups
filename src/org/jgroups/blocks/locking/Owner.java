@@ -27,6 +27,14 @@ public class Owner implements Streamable {
         this.thread_id=thread_id;
     }
 
+    public Address getAddress() {
+        return address;
+    }
+
+    public long getThreadId() {
+        return thread_id;
+    }
+
     public void writeTo(DataOutputStream out) throws IOException {
         Util.writeAddress(address, out);
         out.writeLong(thread_id);
