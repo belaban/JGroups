@@ -137,14 +137,25 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
 
-        sb.append("\nclient locks:\n");
+        sb.append("\nmy locks: ");
         synchronized(client_locks) {
+            boolean first_element=true;
             for(Map.Entry<String,Map<Owner,ClientLock>> entry: client_locks.entrySet()) {
-                sb.append(entry.getKey()).append(": ");
+                if(first_element)
+                    first_element=false;
+                else
+                    sb.append(", ");
+                sb.append(entry.getKey()).append(" (");
                 Map<Owner,ClientLock> owners=entry.getValue();
-                for(Map.Entry<Owner,ClientLock> entry2: owners.entrySet())
-                    sb.append(entry2.getKey()).append(" ");
-                sb.append("\n");
+                boolean first=true;
+                for(Map.Entry<Owner,ClientLock> entry2: owners.entrySet()) {
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(", ");
+                    sb.append(entry2.getKey());
+                }
+                sb.append(")");
             }
         }
         return sb.toString();
@@ -381,7 +392,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append("owner=" + current_owner);
+            sb.append(current_owner);
             if(!queue.isEmpty()) {
                 sb.append(", queue: ");
                 for(Request req: queue) {
