@@ -321,7 +321,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                     }
                     else {
                         if(!current_owner.equals(req.owner))
-                            queue.add(req);
+                            addToQueue(req);
                     }
                     break;
                 case RELEASE_LOCK:
@@ -332,12 +332,12 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                         notifyUnlocked(req.lock_name, req.owner);
                     }
                     else
-                        queue.add(req);
+                        addToQueue(req);
                     break;
                 default:
                     throw new IllegalArgumentException("type " + req.type + " is invalid here");
             }
-
+            
             processQueue();
         }
 
@@ -360,6 +360,47 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
 
+        protected void addToQueue(Request req) {
+            if(queue.isEmpty()) {
+                if(req.type == AbstractLockService.Type.GRANT_LOCK)
+                    queue.add(req);
+                return; // RELEASE_LOCK is discarded on an empty queue
+            }
+
+            // at this point the queue is not empty
+            switch(req.type) {
+
+                // If there is already a lock request from the same owner, discard the new lock request
+                case GRANT_LOCK:
+                    if(!isRequestPresent(AbstractLockService.Type.GRANT_LOCK, req.owner))
+                        queue.add(req);
+                    break;
+
+                case RELEASE_LOCK:
+                    // Release the lock request from the same owner already in the queue
+                    // If there is no lock request, discard the unlock request
+                    removeRequest(AbstractLockService.Type.GRANT_LOCK, req.owner);
+                    break;
+            }
+        }
+
+        /** Checks if a certain request from a given owner is already in the queue */
+        protected boolean isRequestPresent(Type type, Owner owner) {
+            for(Request req: queue)
+                if(req.type == type && req.owner.equals(owner))
+                    return true;
+            return false;
+        }
+
+        protected void removeRequest(Type type, Owner owner) {
+            for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
+                Request req=it.next();
+                if(req.type == type && req.owner.equals(owner))
+                    it.remove();
+            }
+        }
+
+
         protected void processQueue() {
             if(current_owner == null) {
                 while(!queue.isEmpty()) {
@@ -371,7 +412,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                     }
                 }
             }
-            else {
+            /*else {
                 for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
                     Request req=it.next();
                     if(current_owner.equals(req.owner)) {
@@ -385,7 +426,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                         }
                     }
                 }
-            }
+            }*/
         }
 
         public boolean isEmpty() {return queue.isEmpty();}
@@ -409,6 +450,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     protected class ClientLock implements Lock {
         protected final String      name;
         protected volatile boolean  acquired;
+        protected volatile boolean  denied;
 
         public ClientLock(String name) {
             this.name=name;
@@ -428,7 +470,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
         public boolean tryLock() {
             try {
-                return tryLock(0, TimeUnit.MILLISECONDS);
+                return acquireTryLock(0, true);
             }
             catch(InterruptedException e) {
                 return false;
@@ -436,7 +478,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-            return acquireTryLock(unit.convert(time, TimeUnit.MILLISECONDS));
+            return acquireTryLock(unit.convert(time, TimeUnit.MILLISECONDS), true);
         }
 
         public synchronized void unlock() {
@@ -463,6 +505,11 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             this.notifyAll();
         }
 
+        protected synchronized void lockDenied() {
+            denied=true;
+            this.notifyAll();
+        }
+
         protected synchronized void acquire() throws InterruptedException {
             if(!acquired) {
                 sendGrantLockRequest(name, getOwner(), 0, false);
@@ -471,11 +518,26 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             }
         }
 
-        protected synchronized boolean acquireTryLock(long timeout) throws InterruptedException {
+        protected synchronized boolean acquireTryLock(long timeout, boolean use_timeout) throws InterruptedException {
+            if(denied)
+                return false;
             if(!acquired) {
                 sendGrantLockRequest(name, getOwner(), timeout, true);
-                while(!acquired)
-                    this.wait();  // todo: wait for timeout ms
+
+                long target_time=use_timeout? System.currentTimeMillis() + timeout : 0;
+                while(!acquired && !denied) {
+                    if(use_timeout) {
+                        long wait_time=target_time - System.currentTimeMillis();
+                        if(wait_time <= 0)
+                            return false;
+                        else {
+                            System.out.println("waiting for " + wait_time + " ms");
+                            this.wait(wait_time);
+                        }
+                    }
+                    else
+                        this.wait();
+                }
             }
             return true;
         }

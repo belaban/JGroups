@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -74,6 +75,31 @@ public class LockServiceDemo implements LockNotification {
                     lock.lock();
                 }
             }
+            else  if(line.startsWith("trylock")) {
+                lock_names=parseLockNames(line.substring("trylock".length()).trim());
+
+                String tmp=lock_names.get(lock_names.size() -1);
+                Long timeout=new Long(-1);
+                try {
+                    timeout=Long.parseLong(tmp);
+                    lock_names.remove(lock_names.size() -1);
+                }
+                catch(NumberFormatException e) {
+                }
+
+                for(String lock_name: lock_names) {
+                    Lock lock=lock_service.getLock(lock_name);
+                    boolean rc;
+                    if(timeout.longValue() < 0)
+                        rc=lock.tryLock();
+                    else
+                        rc=lock.tryLock(timeout.longValue(), TimeUnit.MILLISECONDS);
+                    if(!rc) {
+                        System.err.println("Failed locking \"" + lock_name + "\"");
+                        lock.unlock();
+                    }
+                }
+            }
             else if(line.startsWith("unlock")) {
                 lock_names=parseLockNames(line.substring("unlock".length()).trim());
                 for(String lock_name: lock_names) {
@@ -130,11 +156,12 @@ public class LockServiceDemo implements LockNotification {
     }
 
     protected static void help() {
-        System.out.println("LockServiceDemo [-props properties] [-name name]\n" +
-                             "Valid commands:\n" +
-                             "lock (<lock name>)+" +
-                             "unlock (<lock name> | \"ALL\")+");
-        System.out.println("\nExample:\nlock lock lock2 lock3\nunlock all");
+        System.out.println("\nLockServiceDemo [-props properties] [-name name]\n" +
+                             "Valid commands:\n\n" +
+                             "lock (<lock name>)+\n" +
+                             "unlock (<lock name> | \"ALL\")+\n" +
+                             "trylock (<lock name>)+ [<timeout>]\n");
+        System.out.println("Example:\nlock lock lock2 lock3\nunlock all\ntrylock bela michelle 300");
     }
 
 
