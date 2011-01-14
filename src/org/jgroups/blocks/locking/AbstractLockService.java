@@ -9,10 +9,7 @@ import org.jgroups.util.Util;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -30,7 +27,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     protected final ConcurrentMap<String,ServerLock> server_locks=Util.createConcurrentMap(20);
 
     // client side locks
-    protected final Map<String,ClientLock> client_locks=Util.createHashMap();
+    protected final Map<String,Map<Owner,ClientLock>> client_locks=new HashMap<String,Map<Owner,ClientLock>>();
 
     protected final List<LockNotification> lock_listeners=new ArrayList<LockNotification>();
 
@@ -68,26 +65,20 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     }
 
     public Lock getLock(String name) {
-        synchronized(client_locks) {
-            ClientLock lock=client_locks.get(name);
-            if(lock == null) {
-                lock=createLock(name);
-                client_locks.put(name, lock);
-            }
-            return lock;
-        }
+        return getLock(name, getOwner(), true);
     }
 
     public void unlockAll() {
-        List<ClientLock> locks;
+        List<ClientLock> locks=new ArrayList<ClientLock>();
         synchronized(client_locks) {
-            locks=new ArrayList<ClientLock>(client_locks.values());
+            Collection<Map<Owner,ClientLock>> maps=client_locks.values();
+            for(Map<Owner,ClientLock> map: maps) {
+                locks.addAll(map.values());
+            }
         }
-        for(ClientLock lock: locks) {
-            int count=lock.count;
-            for(int i=0; i < count; i++)
-                lock.unlock();
-        }
+
+        for(ClientLock lock: locks)
+            lock.unlock();
     }
 
 
@@ -99,10 +90,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 handleLockRequest(req);
                 break;
             case LOCK_GRANTED:
-                handleLockGrantedResponse(req.lock_name, msg.getSrc());
+                handleLockGrantedResponse(req.lock_name, req.owner, msg.getSrc());
                 break;
             case LOCK_DENIED:
-                handleLockDeniedResponse(req.lock_name, msg.getSrc());
+                handleLockDeniedResponse(req.lock_name, req.owner, msg.getSrc());
                 break;
             default:
                 log.error("Request of type " + req.type + " not known");
@@ -132,8 +123,15 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         sb.append("\nclient locks:\n");
-        for(Map.Entry<String,ClientLock> entry: client_locks.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        synchronized(client_locks) {
+            for(Map.Entry<String,Map<Owner,ClientLock>> entry: client_locks.entrySet()) {
+                sb.append(entry.getKey()).append(": ");
+                Map<Owner,ClientLock> owners=entry.getValue();
+                for(Map.Entry<Owner,ClientLock> entry2: owners.entrySet()) {
+                    sb.append(entry2.getKey()).append(" (locked=").append(entry2.getValue().acquired).append(") ");
+                }
+                sb.append("\n");
+            }
         }
         return sb.toString();
     }
@@ -146,13 +144,17 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         return new ClientLock(lock_name);
     }
 
-    abstract protected void sendGrantLockRequest(String lock_name, Address owner, long timeout, boolean is_trylock);
-    abstract protected void sendReleaseLockRequest(String lock_name, Address owner);
+    protected Owner getOwner() {
+        return new Owner(ch.getAddress(), Thread.currentThread().getId());
+    }
+
+    abstract protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock);
+    abstract protected void sendReleaseLockRequest(String lock_name, Owner owner);
 
 
-    protected void sendLockResponse(Type type, Address dest, String lock_name) {
+    protected void sendLockResponse(Type type, Owner dest, String lock_name) {
         Request rsp=new Request(type, lock_name, dest, 0);
-        Message lock_granted_rsp=new Message(dest, null, rsp);
+        Message lock_granted_rsp=new Message(dest.address, null, rsp);
         try {
             ch.send(lock_granted_rsp);
         }
@@ -163,32 +165,52 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
 
     protected void handleLockRequest(Request req) {
-        ServerLock queue=server_locks.get(req.lock_name);
-        if(queue == null) {
-            queue=new ServerLock(req.lock_name);
-            ServerLock tmp=server_locks.putIfAbsent(req.lock_name, queue);
+        ServerLock lock=server_locks.get(req.lock_name);
+        if(lock == null) {
+            lock=new ServerLock(req.lock_name);
+            ServerLock tmp=server_locks.putIfAbsent(req.lock_name, lock);
             if(tmp != null)
-                queue=tmp;
+                lock=tmp;
             else
                 notifyLockCreated(req.lock_name);
         }
-        queue.handleRequest(req);
-        if(queue.isEmpty() && queue.current_owner == null)
+        lock.handleRequest(req);
+        if(lock.isEmpty() && lock.current_owner == null)
             server_locks.remove(req.lock_name);
     }
 
-    protected void handleLockGrantedResponse(String lock_name, Address sender) {
-        ClientLock lock;
-        synchronized(client_locks) {
-            lock=client_locks.get(lock_name);
-        }
+    protected void handleLockGrantedResponse(String lock_name, Owner owner, Address sender) {
+        ClientLock lock=getLock(lock_name, owner, false);
         if(lock != null)
             lock.lockGranted();
     }
 
-    protected void handleLockDeniedResponse(String lock_name, Address sender) {
+     protected void handleLockDeniedResponse(String lock_name, Owner owner, Address sender) {
         throw new UnsupportedOperationException();
     }
+
+    protected ClientLock getLock(String name, Owner owner, boolean create_if_absent) {
+        synchronized(client_locks) {
+            Map<Owner,ClientLock> owners=client_locks.get(name);
+            if(owners == null) {
+                if(!create_if_absent)
+                    return null;
+                owners=new HashMap<Owner,ClientLock>();
+                client_locks.put(name, owners);
+            }
+            ClientLock lock=owners.get(owner);
+            if(lock == null) {
+                if(!create_if_absent)
+                    return null;
+                lock=createLock(name);
+                owners.put(owner, lock);
+            }
+            return lock;
+        }
+    }
+    
+
+
 
     protected void notifyLockCreated(String lock_name) {
         for(LockNotification listener: lock_listeners) {
@@ -212,7 +234,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
     }
 
-    protected void notifyLocked(String lock_name, Address owner) {
+    protected void notifyLocked(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
                 listener.locked(lock_name, owner);
@@ -223,7 +245,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
     }
 
-    protected void notifyUnlocked(String lock_name, Address owner) {
+    protected void notifyUnlocked(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
                 listener.unlocked(lock_name, owner);
@@ -243,7 +265,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
      */
     protected class ServerLock {
         protected final String lock_name;
-        protected Address current_owner;
+        protected Owner current_owner;
         protected final List<Request> queue=new ArrayList<Request>();
 
         public ServerLock(String lock_name) {
@@ -280,14 +302,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         protected synchronized void handleView(List<Address> members) {
-            if(!members.contains(current_owner)) {
+            if(current_owner != null && !members.contains(current_owner.address)) {
                 notifyUnlocked(lock_name, current_owner);
                 current_owner=null;
             }
 
             for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
                 Request req=it.next();
-                if(!members.contains(req.owner))
+                if(!members.contains(req.owner.address))
                     it.remove();
             }
 
@@ -343,7 +365,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     protected class ClientLock implements Lock {
         protected final String      name;
-        protected short             count=0; // incremented on lock(), decremented on unlock()
         protected volatile boolean  acquired;
 
         public ClientLock(String name) {
@@ -376,18 +397,15 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public synchronized void unlock() {
-            boolean send_release_msg=count == 1;
-            count=(short)Math.max(0, count-1);
-            if(send_release_msg) {
-                sendReleaseLockRequest(name, ch.getAddress());
-                acquired=false;
+            if(!acquired)
+                return;
+            sendReleaseLockRequest(name, getOwner());
+            acquired=false;
+            
+            synchronized(client_locks) {
+                client_locks.remove(name);
             }
-            if(count == 0) {
-                synchronized(client_locks) {
-                    client_locks.remove(name);
-                }
-                notifyLockDeleted(name);
-            }
+            notifyLockDeleted(name);
         }
 
         public Condition newCondition() {
@@ -395,42 +413,37 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
 
         public String toString() {
-            return name + " (acquired=" + acquired + ", count=" + count + ")";
+            return name + " (acquired=" + acquired +")";
         }
 
         protected synchronized void lockGranted() {
-            if(count == 0) {
-                acquired=true;
-                this.notifyAll();
-            }
+            acquired=true;
+            this.notifyAll();
         }
 
         protected synchronized void acquire() throws InterruptedException {
-            if(count == 0) {
-                sendGrantLockRequest(name, ch.getAddress(), 0, false);
+            if(!acquired) {
+                sendGrantLockRequest(name, getOwner(), 0, false);
                 while(!acquired)
                     this.wait();
             }
-            count++;
         }
 
         protected synchronized boolean acquireTryLock(long timeout) throws InterruptedException {
-            if(count == 0) {
-                sendGrantLockRequest(name, ch.getAddress(), timeout, true);
+            if(!acquired) {
+                sendGrantLockRequest(name, getOwner(), timeout, true);
                 while(!acquired)
                     this.wait();  // todo: wait for timeout ms
             }
-            count++;
             return true;
         }
-
     }
 
 
     protected static class Request implements Streamable {
         protected Type    type;
         protected String  lock_name;
-        protected Address owner;
+        protected Owner   owner;
         protected long    timeout=0;
         protected boolean is_trylock;
 
@@ -438,14 +451,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         public Request() {
         }
 
-        public Request(Type type, String lock_name, Address owner, long timeout) {
+        public Request(Type type, String lock_name, Owner owner, long timeout) {
             this.type=type;
             this.lock_name=lock_name;
             this.owner=owner;
             this.timeout=timeout;
         }
 
-        public Request(Type type, String lock_name, Address owner, long timeout, boolean is_trylock) {
+        public Request(Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
             this(type, lock_name, owner, timeout);
             this.is_trylock=is_trylock;
         }
@@ -453,7 +466,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type.ordinal());
             Util.writeString(lock_name, out);
-            Util.writeAddress(owner, out);
+            Util.writeStreamable(owner, out);
             out.writeLong(timeout);
             out.writeBoolean(is_trylock);
         }
@@ -461,7 +474,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
             lock_name=Util.readString(in);
-            owner=Util.readAddress(in);
+            owner=(Owner)Util.readStreamable(Owner.class, in);
             timeout=in.readLong();
             is_trylock=in.readBoolean();
         }
@@ -492,41 +505,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         }
     }
 
-    /** Represents the owner of a lock. Wraps address and thread ID */
-    protected static class Owner implements Streamable {
-        protected Address address;
-        protected long    thread_id;
 
-        public Owner() {
-        }
-
-        public Owner(Address address, long thread_id) {
-            this.address=address;
-            this.thread_id=thread_id;
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeAddress(address, out);
-            out.writeLong(thread_id);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            address=Util.readAddress(in);
-            thread_id=in.readLong();
-        }
-
-        public boolean equals(Object obj) {
-            Owner other=(Owner)obj;
-            return address.equals(other.address) && thread_id == other.thread_id;
-        }
-
-        public int hashCode() {
-            return (int)(address.hashCode() + thread_id);
-        }
-
-        public String toString() {
-            return address + "::" + thread_id;
-        }
-    }
 
 }

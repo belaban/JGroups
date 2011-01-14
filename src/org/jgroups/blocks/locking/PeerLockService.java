@@ -7,6 +7,7 @@ import org.jgroups.View;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of a lock service which acquires locks by contacting all of the nodes of a cluster.</p> Unless a total
@@ -35,15 +36,15 @@ public class PeerLockService extends AbstractLockService {
         super(ch);
     }
 
-    protected void sendGrantLockRequest(String lock_name, Address owner, long timeout, boolean is_trylock) {
+    protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
         sendRequest(Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
     }
 
-    protected void sendReleaseLockRequest(String lock_name, Address owner) {
+    protected void sendReleaseLockRequest(String lock_name, Owner owner) {
         sendRequest(Type.RELEASE_LOCK, lock_name, owner, 0, false);
     }
 
-    protected void sendRequest(Type type, String lock_name, Address owner, long timeout, boolean is_trylock) {
+    protected void sendRequest(Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
         Request req=new Request(type, lock_name, owner, timeout, is_trylock);
         Message msg=new Message(null, null, req);
         try {
@@ -54,20 +55,19 @@ public class PeerLockService extends AbstractLockService {
         }
     }
 
-    protected void handleLockGrantedResponse(String lock_name, Address sender) {
-        PeerLock lock;
-        synchronized(client_locks) {
-            lock=(PeerLock)client_locks.get(lock_name);
-        }
+    protected void handleLockGrantedResponse(String lock_name, Owner owner, Address sender) {
+        PeerLock lock=(PeerLock)getLock(lock_name, owner, false);
         if(lock != null)
-            lock.handleLockGrantedResponse(sender);
+            lock.handleLockGrantedResponse(owner, sender);
     }
 
     public void viewAccepted(View view) {
         super.viewAccepted(view);
         List<Address> members=view.getMembers();
-        for(ClientLock lock: client_locks.values())
-            ((PeerLock)lock).retainAll(members);
+        for(Map<Owner,ClientLock> map: client_locks.values()) {
+            for(ClientLock lock: map.values())
+                ((PeerLock)lock).retainAll(members);
+        }
     }
 
     protected ClientLock createLock(String lock_name) {
@@ -92,13 +92,13 @@ public class PeerLockService extends AbstractLockService {
                 lockGranted();
         }
 
-        protected synchronized void handleLockGrantedResponse(Address sender) {
+        protected synchronized void handleLockGrantedResponse(Owner owner, Address sender) {
             if(grants.isEmpty())
                 return;
             grants.remove(sender);
             if(grants.isEmpty()) {
                 lockGranted();
-                notifyLocked(this.name, sender);
+                notifyLocked(this.name, owner);
             }
         }
     }
