@@ -1,6 +1,5 @@
 package org.jgroups.demos;
 
-import org.jgroups.Address;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.AbstractLockService;
@@ -47,11 +46,9 @@ public class LockServiceDemo implements LockNotification {
     }
 
     public void lockCreated(String name) {
-        // System.out.println("lock \"" + name + "\" was created");
     }
 
     public void lockDeleted(String name) {
-        // System.out.println("lock \"" + name + "\" was deleted");
     }
 
     public void locked(String lock_name, Owner owner) {
@@ -90,9 +87,10 @@ public class LockServiceDemo implements LockNotification {
                     }
                 }
             }
-            else if(line.startsWith("view")) {
+            else if(line.startsWith("view"))
                 System.out.println("View: " + ch.getView());
-            }
+            else if(line.startsWith("help"))
+                help();
             printLocks();
         }
     }
