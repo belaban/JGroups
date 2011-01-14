@@ -90,6 +90,9 @@ public class LockServiceDemo implements LockNotification {
                     }
                 }
             }
+            else if(line.startsWith("view")) {
+                System.out.println("View: " + ch.getView());
+            }
             printLocks();
         }
     }
@@ -105,7 +108,7 @@ public class LockServiceDemo implements LockNotification {
     }
 
     protected void printLocks() {
-        System.out.println("\n" + lock_service);
+        System.out.println("\n" + lock_service.printLocks());
     }
 
     public static void main(String[] args) throws ChannelException {

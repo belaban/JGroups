@@ -47,6 +47,10 @@ public class PeerLockService extends AbstractLockService {
     protected void sendRequest(Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
         Request req=new Request(type, lock_name, owner, timeout, is_trylock);
         Message msg=new Message(null, null, req);
+        if(bypass_bundling)
+            msg.setFlag(Message.DONT_BUNDLE);
+        if(log.isTraceEnabled())
+            log.trace("[" + ch.getAddress() + "] --> [ALL] " + req);
         try {
             ch.send(msg);
         }
