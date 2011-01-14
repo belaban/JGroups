@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.AbstractLockService;
+import org.jgroups.blocks.locking.LockService;
 import org.jgroups.blocks.locking.PeerLockService;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
@@ -73,42 +74,51 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
     @Test(dataProvider="createLockService")
-    public void testBlockingLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) {
+    public void testBlockingLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) throws InterruptedException {
         s1.setChannel(c1);
         s2.setChannel(c2);
         s3.setChannel(c3);
         s4.setChannel(c4);
 
+        // todo: revisit test
 
-        final Lock l1=s1.getLock(LOCK);
-        System.out.println("locking l1");
-        l1.lock();
-        System.out.println("locked l1");
+//        final LockService lock_service=s1;
+//        Thread other=new Thread() {
+//            public void run() {
+//                Lock l2=lock_service.getLock(LOCK);
+//                lock(l2, LOCK);
+//                Util.sleep(2000);
+//                unlock(l2, LOCK);
+//            }
+//        };
+//        other.start();
+//
+//        Util.sleep(500);
+//
+//        System.out.println("Locks on S1:\n" + s1.printLocks());
+//
+//        final Lock l1=s1.getLock(LOCK);
+//        lock(l1, LOCK);
+//        try {
+//            ;
+//        }
+//        finally {
+//            unlock(l1, LOCK);
+//        }
+//
+//        other.join();
+    }
 
-         new Thread() {
-            public void run() {
-                Util.sleep(5000);
-                System.out.println("thread is unlocking l1");
-                l1.unlock();
-            }
-        }.start();
 
-        try {
-            Lock l2=s2.getLock(LOCK);
-            System.out.println("locking l2");
-            l2.lock();
-            System.out.println("locked l2");
-            try {
-                ;
-            }
-            finally {
-                l2.unlock();
-                System.out.println("unlocked l2");
-            }
-        }
-        finally {
-            l1.unlock();
-        }
+    protected static void lock(Lock lock, String name) {
+        System.out.println("[" + Thread.currentThread().getId() + "] locking " + name);
+        lock.lock();
+        System.out.println("[" + Thread.currentThread().getId() + "] locked " + name);
+    }
 
+    protected static void unlock(Lock lock, String name) {
+        System.out.println("[" + Thread.currentThread().getId() + "] releasing " + name);
+        lock.unlock();
+        System.out.println("[" + Thread.currentThread().getId() + "] released " + name);
     }
 }
