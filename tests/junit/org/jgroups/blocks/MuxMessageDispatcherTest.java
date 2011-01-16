@@ -69,7 +69,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         Message message = new Message();
         
         // Validate normal dispatchers
-        Map<Address, Rsp> responses = dispatchers[0].castMessage(null, message, RequestOptions.SYNC);
+        Map<Address, Rsp> responses = dispatchers[0].castMessage(null, message, RequestOptions.SYNC());
 
         Assert.assertEquals(responses.size(), 2);
         
@@ -81,7 +81,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         // Validate muxed dispatchers
         for (int j = 0; j < muxDispatchers[0].length; ++j) {
             
-            responses = muxDispatchers[0][j].castMessage(null, message, RequestOptions.SYNC);
+            responses = muxDispatchers[0][j].castMessage(null, message, RequestOptions.SYNC());
 
             Assert.assertEquals(responses.size(), 2);
             
@@ -105,7 +105,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         };
         
         // Validate muxed rpc dispatchers w/filter
-        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC.setRspFilter(filter));
+        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC().setRspFilter(filter));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], null);
@@ -114,14 +114,14 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         muxDispatchers[1][0].stop();
         
         // Validate stopped mux dispatcher response is auto-filtered
-        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC.setRspFilter(null));
+        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC().setRspFilter(null));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
         verifyResponse(responses, channels[1], null);
         
         // Validate stopped mux dispatcher response is auto-filtered and custom filter is applied
-        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC.setRspFilter(filter));
+        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC().setRspFilter(filter));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], null);
@@ -130,7 +130,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         muxDispatchers[1][0].start();
         
         // Validate restarted mux dispatcher functions normally
-        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC.setRspFilter(null));
+        responses = muxDispatchers[0][0].castMessage(null, message, RequestOptions.SYNC().setRspFilter(null));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
@@ -143,14 +143,14 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         Message message = new Message(address);
         
         // Validate normal dispatchers
-        Object response = dispatchers[0].sendMessage(message, RequestOptions.SYNC);
+        Object response = dispatchers[0].sendMessage(message, RequestOptions.SYNC());
 
         Assert.assertEquals(response, "dispatcher[1]");
 
         // Validate muxed dispatchers
         for (int j = 0; j < muxDispatchers[0].length; ++j) {
             
-            response = muxDispatchers[0][j].sendMessage(message, RequestOptions.SYNC);
+            response = muxDispatchers[0][j].sendMessage(message, RequestOptions.SYNC());
 
             Assert.assertEquals(response, "muxDispatcher[1][" + j + "]");
         }
