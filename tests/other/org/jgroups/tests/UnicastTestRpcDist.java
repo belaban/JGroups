@@ -275,11 +275,11 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                     break;
                 case 'o':
                     boolean new_value=!oob;
-                    disp.callRemoteMethods(null, new MethodCall(SET_OOB, new_value), RequestOptions.SYNC);
+                    disp.callRemoteMethods(null, new MethodCall(SET_OOB, new_value), RequestOptions.SYNC());
                     break;
                 case 's':
                     boolean new_val=!sync;
-                    disp.callRemoteMethods(null, new MethodCall(SET_SYNC, new_val), RequestOptions.SYNC);
+                    disp.callRemoteMethods(null, new MethodCall(SET_SYNC, new_val), RequestOptions.SYNC());
                     break;
                 case 'r':
                     setReadPercentage();
@@ -356,17 +356,17 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     void setSenderThreads() throws Exception {
         int threads=Util.readIntFromStdin("Number of sender threads: ");
-        disp.callRemoteMethods(null, new MethodCall(SET_NUM_THREADS, threads), RequestOptions.SYNC);
+        disp.callRemoteMethods(null, new MethodCall(SET_NUM_THREADS, threads), RequestOptions.SYNC());
     }
 
     void setNumMessages() throws Exception {
         int tmp=Util.readIntFromStdin("Number of RPCs: ");
-        disp.callRemoteMethods(null, new MethodCall(SET_NUM_MSGS, tmp), RequestOptions.SYNC);
+        disp.callRemoteMethods(null, new MethodCall(SET_NUM_MSGS, tmp), RequestOptions.SYNC());
     }
 
     void setMessageSize() throws Exception {
         int tmp=Util.readIntFromStdin("Message size: ");
-        disp.callRemoteMethods(null, new MethodCall(SET_MSG_SIZE, tmp), RequestOptions.SYNC);
+        disp.callRemoteMethods(null, new MethodCall(SET_MSG_SIZE, tmp), RequestOptions.SYNC());
     }
 
     void setReadPercentage() throws Exception {
@@ -375,7 +375,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             System.err.println("read percentage must be >= 0 or <= 1.0");
             return;
         }
-        disp.callRemoteMethods(null, new MethodCall(SET_READ_PERCENTAGE, tmp), RequestOptions.SYNC);
+        disp.callRemoteMethods(null, new MethodCall(SET_READ_PERCENTAGE, tmp), RequestOptions.SYNC());
     }
 
     void setAnycastCount() throws Exception {
@@ -385,7 +385,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             System.err.println("anycast count must be smaller or equal to the view size (" + view + ")\n");
             return;
         }
-        disp.callRemoteMethods(null, new MethodCall(SET_ANYCAST_COUNT, tmp), RequestOptions.SYNC);
+        disp.callRemoteMethods(null, new MethodCall(SET_ANYCAST_COUNT, tmp), RequestOptions.SYNC());
     }
 
 

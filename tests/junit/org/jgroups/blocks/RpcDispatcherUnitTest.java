@@ -74,14 +74,14 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
 
 
     public void testInvocationOnEntireGroup() {
-        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, RequestOptions.SYNC);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, RequestOptions.SYNC());
         System.out.println("rsps:\n" + rsps);
         assert rsps.size() == 3;
         assert o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
     }
 
     public void testInvocationOnEntireGroupWithTargetList() {
-        RspList rsps=d1.callRemoteMethods(members, "foo", null, null, RequestOptions.SYNC);
+        RspList rsps=d1.callRemoteMethods(members, "foo", null, null, RequestOptions.SYNC());
         System.out.println("rsps:\n" + rsps);
         assert rsps.size() == 3;
         assert o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
