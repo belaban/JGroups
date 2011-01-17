@@ -92,8 +92,8 @@ public class DBPersistenceManager implements PersistenceManager {
 
 
     /**
-     * used to intitiailize complete DB access. THis method will use
-     * existing database to create schema (if it doesnt exist) and
+     * used to initialize complete DB access. This method will use
+     * existing database to create schema (if it doesn't exist) and
      * get PersistenceManager in usable condition
      * @param in
      * @exception Exception;
@@ -519,7 +519,7 @@ public class DBPersistenceManager implements PersistenceManager {
      */
 
     /**
-     * This method will be invoked by defauly by each persistence
+     * This method will be invoked by default by each persistence
      * manager to read from a default location or one provided by
      * the caller.
      * @return void;
