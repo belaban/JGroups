@@ -7,4 +7,5 @@ import java.util.concurrent.locks.Lock;
  */
 public interface LockService {
     Lock getLock(String name);
+    Lock getLock(String name, boolean create_if_absent);
 }

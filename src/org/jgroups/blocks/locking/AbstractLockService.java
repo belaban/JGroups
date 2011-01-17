@@ -19,8 +19,8 @@ import java.util.concurrent.locks.Lock;
  * @author Bela Ban
  */
 abstract public class AbstractLockService extends ReceiverAdapter implements LockService {
-    protected JChannel ch;
-    protected View view;
+    protected JChannel  ch;
+    protected View      view;
     protected final Log log=LogFactory.getLog(getClass());
 
     // server side locks
@@ -79,6 +79,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         return getLock(name, getOwner(), true);
     }
 
+    public Lock getLock(String name, boolean create_if_absent) {
+        return getLock(name, getOwner(), create_if_absent);
+    }
+
     public void unlockAll() {
         List<ClientLock> locks=new ArrayList<ClientLock>();
         synchronized(client_locks) {
@@ -106,7 +110,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 handleLockGrantedResponse(req.lock_name, req.owner, msg.getSrc());
                 break;
             case LOCK_DENIED:
-                handleLockDeniedResponse(req.lock_name, req.owner, msg.getSrc());
+                handleLockDeniedResponse(req.lock_name, req.owner);
                 break;
             default:
                 log.error("Request of type " + req.type + " not known");
@@ -180,7 +184,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     protected void sendRequest(Address dest, Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
         Request req=new Request(type, lock_name, owner, timeout, is_trylock);
-        Message msg=new Message(null, null, req);
+        Message msg=new Message(dest, null, req);
         if(bypass_bundling)
             msg.setFlag(Message.DONT_BUNDLE);
         if(log.isTraceEnabled())
@@ -234,7 +238,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             lock.handleLockGrantedResponse(owner, sender);
     }
 
-    protected void handleLockDeniedResponse(String lock_name, Owner owner, Address sender) {
+    protected void handleLockDeniedResponse(String lock_name, Owner owner) {
          ClientLock lock=getLock(lock_name, owner, false);
          if(lock != null)
              lock.lockDenied();
