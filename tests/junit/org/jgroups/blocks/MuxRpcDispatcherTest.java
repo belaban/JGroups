@@ -67,7 +67,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
         
         // Validate normal dispatchers
-        Map<Address, Rsp> responses = dispatchers[0].callRemoteMethods(null, method, RequestOptions.SYNC);
+        Map<Address, Rsp> responses = dispatchers[0].callRemoteMethods(null, method, RequestOptions.SYNC());
 
         Assert.assertEquals(responses.size(), 2);
         
@@ -79,7 +79,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         // Validate muxed dispatchers
         for (int j = 0; j < muxDispatchers[0].length; ++j) {
             
-            responses = muxDispatchers[0][j].callRemoteMethods(null, method, RequestOptions.SYNC);
+            responses = muxDispatchers[0][j].callRemoteMethods(null, method, RequestOptions.SYNC());
 
             Assert.assertEquals(responses.size(), 2);
             
@@ -103,7 +103,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
             }
         };
         
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC.setRspFilter(filter));
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC().setRspFilter(filter));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], null);
@@ -112,14 +112,14 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         // Validate stopped mux dispatcher response is auto-filtered
         muxDispatchers[1][0].stop();
         
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC.setRspFilter(null));
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC().setRspFilter(null));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
         verifyResponse(responses, channels[1], null);
         
         // Validate stopped mux dispatcher response is auto-filtered and custom filter is applied
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC.setRspFilter(filter));
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC().setRspFilter(filter));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], null);
@@ -128,7 +128,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         // Validate restarted mux dispatcher functions normally
         muxDispatchers[1][0].start();
         
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC.setRspFilter(null));
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, RequestOptions.SYNC().setRspFilter(null));
 
         Assert.assertEquals(responses.size(), 2);
         verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
@@ -142,14 +142,14 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         final Address address = channels[1].getAddress();
         
         // Validate normal dispatchers
-        Object response = dispatchers[0].callRemoteMethod(address, method, RequestOptions.SYNC);
+        Object response = dispatchers[0].callRemoteMethod(address, method, RequestOptions.SYNC());
 
         Assert.assertEquals(response, "dispatcher[1]");
 
         // Validate muxed dispatchers
         for (int j = 0; j < muxDispatchers[0].length; ++j) {
             
-            response = muxDispatchers[0][j].callRemoteMethod(address, method, RequestOptions.SYNC);
+            response = muxDispatchers[0][j].callRemoteMethod(address, method, RequestOptions.SYNC());
 
             Assert.assertEquals(response, "muxDispatcher[1][" + j + "]");
         }
@@ -190,7 +190,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
 //        Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
 
-    private void verifyResponse(Map<Address, Rsp> responses, Channel channel, Object expected) {
+    private static void verifyResponse(Map<Address,Rsp> responses, Channel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
         String address = channel.getAddress().toString();
         Assert.assertNotNull(response, address);
