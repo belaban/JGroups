@@ -33,7 +33,7 @@ public class FILE_PING extends Discovery {
     @Property(description="The absolute path of the shared file")
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
-    @Property(description="Interval (in milliseconds) at which the own address is written to the file system. 0 disables it.")
+    @Property(description="Interval (in milliseconds) at which the own Address is written. 0 disables it.")
     protected long interval=60000;
 
 
@@ -222,7 +222,7 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        String filename=local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : local_addr.toString();
+        String filename=addressAsString(local_addr);
         File file=new File(dir, filename + SUFFIX);
         file.deleteOnExit();
 
@@ -244,6 +244,16 @@ public class FILE_PING extends Discovery {
             List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
             PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
             writeToFile(data, group_addr);
+        }
+    }
+    
+    protected String addressAsString(Address address) {
+        if (address == null) {
+            return "";
+        } else if (address instanceof UUID) {
+            return ((UUID) address).toStringLong();
+        } else {
+            return address.toString();
         }
     }
 

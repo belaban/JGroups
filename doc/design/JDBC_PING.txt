@@ -1,0 +1,71 @@
+
+
+Design of JDBC_PING
+===================
+
+Author: Sanne Ginovero
+
+
+Goal
+----
+
+JDBC_PING is a discovery protocol making use of a shared database; during the discovery process,
+new nodes read the addresses of existing members from a JDBC connection.
+
+The design is derived from FILE_PING, and the implementation extends it as there are many similarities.
+As with FILE_PING, also with JDBC_PING members write their addresses to the store and remove them on leaving the cluster.
+
+
+Usage
+------
+
+A database is needed, and a single table will be used. Something like the following is expected:
+
+CREATE TABLE JGROUPSPING (
+   own_addr varchar(200) NOT NULL,
+   cluster_name varchar(200) NOT NULL,
+   ping_data varbinary(5000) DEFAULT NULL,
+   PRIMARY KEY (own_addr, cluster_name)
+   )
+
+It's possible to change the table definitions, make sure to update the three SQL statements accordingly using the appropriate
+configuration properties:
+
+ initialize_sql - to customize the table creation SQL instructions
+ insert_single_sql - to insert a new row
+ delete_single_sql - to delete a single row
+ select_all_pingdata_sql - to load all ping_data having a specific cluster_name
+ 
+Connection properties to be set are either:
+
+1) JDBC direct connection
+
+ connection_url
+ connection_username
+ connection_password
+ connection_driver
+ 
+2) via a JNDI registered DataSource
+
+ datasource_jndi_name
+
+
+Design
+------
+
+Each node connects to the same database, and reads all Addresses related to his same cluster to find it's peers,
+and adds himself to the list.
+
+At stop(), a node attempts to cleanup the table by removing himself.
+
+Members who crashed should be removed by the same strategy of FILE_PING, actually it should inherit each eventual
+improvement.
+
+Warning:
+While the node stores the PingData instance of himself, to be retrieved by other nodes, it will nullify the View,
+as there's no interest in restoring the View instance and this could potentially not fit in the fixed column dimension
+allocated for a serialized PingData, or at least this variable is not fixed so storing View might make it hard to
+select a proper size.
+So consider that a restored PingData will have lost the information about the original View.
+
+

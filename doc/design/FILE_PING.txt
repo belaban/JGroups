@@ -36,6 +36,6 @@ Notes
 -----
 
 In 2.6.x, we don't have logical addresses, therefore we don't need the discovery messages to ship logical-physical
-address mappings around. As an optimzation, we could read all files and see if we have an element tagged as
+address mappings around. As an optimization, we could read all files and see if we have an element tagged as
 coordinator. If so, we could directly send a JOIN request to the coord, rather than sending discovery messages.
 If there is no coordinator, we go through the regular discovery message sending process.
