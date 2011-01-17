@@ -94,10 +94,8 @@ public class LockServiceDemo implements LockNotification {
                         rc=lock.tryLock();
                     else
                         rc=lock.tryLock(timeout.longValue(), TimeUnit.MILLISECONDS);
-                    if(!rc) {
+                    if(!rc)
                         System.err.println("Failed locking \"" + lock_name + "\"");
-                        lock.unlock();
-                    }
                 }
             }
             else if(line.startsWith("unlock")) {

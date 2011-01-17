@@ -37,33 +37,13 @@ public class PeerLockService extends AbstractLockService {
     }
 
     protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
-        sendRequest(Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
+        sendRequest(null, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
-        sendRequest(Type.RELEASE_LOCK, lock_name, owner, 0, false);
+        sendRequest(null, Type.RELEASE_LOCK, lock_name, owner, 0, false);
     }
 
-    protected void sendRequest(Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
-        Request req=new Request(type, lock_name, owner, timeout, is_trylock);
-        Message msg=new Message(null, null, req);
-        if(bypass_bundling)
-            msg.setFlag(Message.DONT_BUNDLE);
-        if(log.isTraceEnabled())
-            log.trace("[" + ch.getAddress() + "] --> [ALL] " + req);
-        try {
-            ch.send(msg);
-        }
-        catch(Exception ex) {
-            log.error("failed sending " + type + " request: " + ex);
-        }
-    }
-
-    protected void handleLockGrantedResponse(String lock_name, Owner owner, Address sender) {
-        PeerLock lock=(PeerLock)getLock(lock_name, owner, false);
-        if(lock != null)
-            lock.handleLockGrantedResponse(owner, sender);
-    }
 
     public void viewAccepted(View view) {
         super.viewAccepted(view);
