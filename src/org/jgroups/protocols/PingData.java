@@ -12,7 +12,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
 
 /**
@@ -39,7 +38,7 @@ public class PingData implements Streamable {
 
 
     public PingData(Address own_addr, View view, boolean is_server,
-                    String logical_name, List<PhysicalAddress> physical_addrs) {
+                    String logical_name, Collection<PhysicalAddress> physical_addrs) {
         this(own_addr, view, is_server);
         this.logical_name=logical_name;
         if(physical_addrs != null) {

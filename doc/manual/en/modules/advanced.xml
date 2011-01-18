@@ -512,6 +512,10 @@
             </footnote> . The only difference is that TCPGOSSIP allows for
           multiple GossipRouters instead of only one.</para>
         </listitem>
+        
+        <listitem>
+          <para>JDBC_PING: using a shared database via JDBC or DataSource.</para>
+        </listitem>
       </itemizedlist>
 
       <para>The next two section illustrate the use of TCP with both TCPPING
