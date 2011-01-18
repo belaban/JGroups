@@ -87,6 +87,19 @@
 			${PING}
             <para></para>
         </section>
+        
+        <section>
+            <title>JDBC_PING</title>
+            This uses a shared Database into which all members write their addresses. New joiners read all addresses
+            from this Database and ping each of the elements of the resulting set of members. When a member leaves,
+            it deletes its corresponding record.
+            <para>
+                JDBC_PING is an alternative to S3_PING by using Amazon RDS instead of S3.
+            </para>
+
+			${JDBC_PING}
+            <para></para>
+        </section>
 
         <section>
             <title>TCPPING</title>
@@ -126,10 +139,11 @@
             <title>S3_PING</title>
             This uses an Amazon S3 bucket into which all members write their addresses. New joiners read all addresses
             from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
-            delets its corresponding file.
+            deletes its corresponding file.
             <para>
               S3_PING is primarily meant to be used on Amazon EC2 where multicast traffic is not allowed and
-              no external process (GossipRouter) is desired.
+              no external process (GossipRouter) is desired. When Amazon RDS is preferred over S3, or if a shared
+              database is used, an alternative is to use JDBC_PING.
             </para>
 
 			${S3_PING}
@@ -198,7 +212,7 @@
                 Example: &lt;FD_ALL interval="3000" timeout="10000"/&gt;
             </para>
             <para>
-                In the exampe above, we send a heartbeat every 3 seconds and suspect members if we haven't received a
+                In the example above, we send a heartbeat every 3 seconds and suspect members if we haven't received a
                 heartbeat (or traffic) for more than 10 seconds. Note that since we check the timestamps every
                 'interval'
                 milliseconds, we will suspect a member after roughly 4 * 3s == 12 seconds. If we set the timeout to
