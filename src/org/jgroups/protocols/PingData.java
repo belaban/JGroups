@@ -14,10 +14,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collection;
-import java.util.Vector;
 
 /**
- * Encapsulates information about a cluster node, e.g. local address, coordinator's addresss, logical name and
+ * Encapsulates information about a cluster node, e.g. local address, coordinator's address, logical name and
  * physical address(es)
  * @author Bela Ban
  */

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * The TCPPING protocol layer retrieves the initial membership in answer to the
  * GMS's FIND_INITIAL_MBRS event. The initial membership is retrieved by
- * directly contacting other group members, sending point-to-point mebership
+ * directly contacting other group members, sending point-to-point membership
  * requests. The responses should allow us to determine the coordinator whom we
  * have to contact in case we want to join the group. When we are a server
  * (after having received the BECOME_SERVER event), we'll respond to TCPPING
@@ -26,7 +26,7 @@ import java.util.*;
  * The FIND_INITIAL_MBRS event will eventually be answered with a
  * FIND_INITIAL_MBRS_OK event up the stack.
  * <p>
- * The TCPPING protocol requires a static conifiguration, which assumes that you
+ * The TCPPING protocol requires a static configuration, which assumes that you
  * to know in advance where to find other members of your group. For dynamic
  * discovery, use the PING protocol, which uses multicast discovery, or the
  * TCPGOSSIP protocol, which contacts a Gossip Router to acquire the initial

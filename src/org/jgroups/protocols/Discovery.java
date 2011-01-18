@@ -77,7 +77,7 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute(description="Total number of discovery requests sent ")
     int num_discovery_requests=0;
 
-    /** The largest cluster size foudn so far (gets reset on stop()) */
+    /** The largest cluster size found so far (gets reset on stop()) */
     @ManagedAttribute
     private volatile int max_found_members=0;
 
