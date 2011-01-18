@@ -34,7 +34,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
     /** Bypasses message bundling if set */
     protected boolean bypass_bundling=true;
 
-    protected static enum Type {GRANT_LOCK, LOCK_GRANTED, LOCK_DENIED, RELEASE_LOCK}
+    protected static enum Type {
+        GRANT_LOCK,    // request to acquire a lock
+        LOCK_GRANTED,  // response to sender of GRANT_LOCK on succcessful lock acquisition
+        LOCK_DENIED,   // response to sender of GRANT_LOCK on unsuccessful lock acquisition (e.g. on tryLock())
+        RELEASE_LOCK,  // request to release a lock
+        CREATE_LOCK,   // request to create a server lock (sent by coordinator to backups). Used by CentralLockService
+        DELETE_LOCK    // request to delete a server lock (sent by coordinator to backups). Used by CentralLockService
+    }
 
 
 
@@ -188,7 +195,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         if(bypass_bundling)
             msg.setFlag(Message.DONT_BUNDLE);
         if(log.isTraceEnabled())
-            log.trace("[" + ch.getAddress() + "] --> [ALL] " + req);
+            log.trace("[" + ch.getAddress() + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
         try {
             ch.send(msg);
         }
@@ -346,7 +353,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                         sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
                     }
                     else {
-                        if(!current_owner.equals(req.owner)) {
+                        if(current_owner.equals(req.owner)) {
+                            sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
+                        }
+                        else {
                             if(req.is_trylock && req.timeout <= 0)
                                 sendLockResponse(AbstractLockService.Type.LOCK_DENIED, req.owner, req.lock_name);
                             else

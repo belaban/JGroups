@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.Experimental;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Map;
  * An alternative is also the {@link CentralLockService}.
  * @author Bela Ban
  */
+@Experimental
 public class PeerLockService extends AbstractLockService {
 
     public PeerLockService() {
