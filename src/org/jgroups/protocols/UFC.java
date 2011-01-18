@@ -112,7 +112,7 @@ public class UFC extends FlowControl {
 
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         
-        while(running) {
+        while(running && sent.containsKey(dest)) {
             boolean rc=cred.decrementIfEnoughCredits(length, block_time);
             if(rc || !running || max_block_times != null)
                 break;
