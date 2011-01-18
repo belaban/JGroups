@@ -2177,6 +2177,22 @@ public class Util {
         return null;
     }
 
+    /** Returns the next min(N,list.size()) elements after obj */ 
+    public static <T> List<T> pickNext(List<T> list, T obj, int num) {
+        List<T> retval=new ArrayList<T>();
+        if(list == null || list.size() < 2)
+            return retval;
+        int index=list.indexOf(obj);
+        if(index != -1) {
+            for(int i=1; i <= num && i < list.size(); i++) {
+                T tmp=list.get((index +i) % list.size());
+                if(!retval.contains(tmp))
+                    retval.add(tmp);
+            }
+        }
+        return retval;
+    }
+
 
     public static View createView(Address coord, long id, Address ... members) {
         Vector<Address> mbrs=new Vector<Address>();
