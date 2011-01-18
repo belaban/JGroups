@@ -119,11 +119,18 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             case LOCK_DENIED:
                 handleLockDeniedResponse(req.lock_name, req.owner);
                 break;
+            case CREATE_LOCK:
+                handleCreateLockRequest(req.lock_name, req.owner, msg.getSrc());
+                break;
+            case DELETE_LOCK:
+                handleDeleteLockRequest(req.lock_name, msg.getSrc());
+                break;
             default:
                 log.error("Request of type " + req.type + " not known");
                 break;
         }
     }
+
 
 
     public void viewAccepted(View view) {
@@ -135,8 +142,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             entry.getValue().handleView(members);
         }
         for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
-            ServerLock queue=entry.getValue();
-            if(queue.isEmpty() && queue.current_owner == null)
+            ServerLock lock=entry.getValue();
+            if(lock.isEmpty() && lock.current_owner == null)
                 server_locks.remove(entry.getKey());
         }
     }
@@ -251,6 +258,20 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
              lock.lockDenied();
     }
 
+    protected void handleCreateLockRequest(String lock_name, Owner owner, Address sender) {
+        synchronized(server_locks) {
+            server_locks.put(lock_name, new ServerLock(lock_name, owner));
+        }
+    }
+
+
+    protected void handleDeleteLockRequest(String lock_name, Address sender) {
+        synchronized(server_locks) {
+            server_locks.remove(lock_name);
+        }
+    }
+
+
     protected ClientLock getLock(String name, Owner owner, boolean create_if_absent) {
         synchronized(client_locks) {
             Map<Owner,ClientLock> owners=client_locks.get(name);
@@ -345,11 +366,16 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             this.lock_name=lock_name;
         }
 
+        protected ServerLock(String lock_name, Owner owner) {
+            this.lock_name=lock_name;
+            this.current_owner=owner;
+        }
+
         protected synchronized void handleRequest(Request req) {
             switch(req.type) {
                 case GRANT_LOCK:
                     if(current_owner == null) {
-                        current_owner=req.owner;
+                        setOwner(req.owner);
                         sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
                     }
                     else {
@@ -367,10 +393,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 case RELEASE_LOCK:
                     if(current_owner == null)
                         break;
-                    if(current_owner.equals(req.owner)) {
-                        current_owner=null;
-                        notifyUnlocked(req.lock_name, req.owner);
-                    }
+                    if(current_owner.equals(req.owner))
+                        setOwner(null);
                     else
                         addToQueue(req);
                     break;
@@ -384,8 +408,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         protected synchronized void handleView(List<Address> members) {
             if(current_owner != null && !members.contains(current_owner.address)) {
                 Owner tmp=current_owner;
-                current_owner=null;
-                notifyUnlocked(lock_name, tmp);
+                setOwner(null);
                 if(log.isDebugEnabled())
                     log.debug("unlocked \"" + lock_name + "\" because owner " + tmp + " left");
             }
@@ -446,11 +469,25 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 while(!queue.isEmpty()) {
                     Request req=queue.remove(0);
                     if(req.type == AbstractLockService.Type.GRANT_LOCK) {
-                        current_owner=req.owner;
+                        setOwner(req.owner);
                         sendLockResponse(AbstractLockService.Type.LOCK_GRANTED, req.owner, req.lock_name);
                         break;
                     }
                 }
+            }
+        }
+
+        protected void setOwner(Owner owner) {
+            if(owner == null) {
+                if(current_owner != null) {
+                    Owner tmp=current_owner;
+                    current_owner=null;
+                    notifyUnlocked(lock_name, tmp);
+                }
+            }
+            else {
+                current_owner=owner;
+                notifyLocked(lock_name, owner);
             }
         }
 
