@@ -2223,19 +2223,32 @@ public class Util {
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
      * new_mbrs are returned.
      */
-    public static Vector<Address> determineLeftMembers(Vector<Address> old_mbrs, Vector<Address> new_mbrs) {
-        Vector<Address> retval=new Vector<Address>();
-        Address mbr;
-
+    public static List<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
+        List<Address> retval=new ArrayList<Address>();
         if(old_mbrs == null || new_mbrs == null)
             return retval;
 
         for(int i=0; i < old_mbrs.size(); i++) {
-            mbr=old_mbrs.elementAt(i);
+            Address mbr=old_mbrs.get(i);
             if(!new_mbrs.contains(mbr))
-                retval.addElement(mbr);
+                retval.add(mbr);
         }
+        return retval;
+    }
 
+
+    /**
+     * Returns the members which joined between 2 subsequent views
+     * @param old_mbrs
+     * @param new_mbrs
+     * @return
+     */
+    public static List<Address> determineNewMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
+        if(old_mbrs == null || new_mbrs == null)
+            return new ArrayList<Address>();
+
+        List<Address> retval=new ArrayList<Address>(new_mbrs);
+        retval.removeAll(old_mbrs);
         return retval;
     }
 
