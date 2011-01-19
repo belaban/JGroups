@@ -6,10 +6,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implementation of a lock service which acquires locks by contacting the coordinator.</p> Because the central
@@ -75,6 +72,7 @@ public class CentralLockService extends AbstractLockService implements LockNotif
 
     public void viewAccepted(View view) {
         super.viewAccepted(view);
+        Address old_coord=coord;
         if(view.size() > 0) {
             coord=view.getMembers().firstElement();
             is_coord=coord.equals(ch.getAddress());
@@ -82,17 +80,36 @@ public class CentralLockService extends AbstractLockService implements LockNotif
                 log.debug("local_addr=" + ch.getAddress() + ", coord=" + coord + ", is_coord=" + is_coord);
         }
 
-        if(num_backups > 0) {
-            List<Address> new_joiners=null;
+        if(is_coord && num_backups > 0) {
+            List<Address> new_backups=Util.pickNext(view.getMembers(), ch.getAddress(), num_backups);
+            List<Address> copy_locks_list=null;
             synchronized(backups) {
-                List<Address> tmp=Util.pickNext(view.getMembers(), ch.getAddress(), num_backups);
-                if(!tmp.isEmpty() && !tmp.equals(backups))
-                    new_joiners=determineNewJoiners();
-                backups.clear();
-                backups.addAll(tmp);
+                if(!backups.equals(new_backups)) {
+                    copy_locks_list=new ArrayList<Address>(new_backups);
+                    copy_locks_list.removeAll(backups);
+                    backups.clear();
+                    backups.addAll(new_backups);
+                }
             }
-            if(new_joiners != null && !new_joiners.isEmpty())
-                copyLocksTo(new_joiners);
+
+            if(copy_locks_list != null && !copy_locks_list.isEmpty())
+                copyLocksTo(copy_locks_list);
+        }
+
+        // For all non-acquired client locks, send the GRANT_LOCK request to the new coordinator (if changed)
+        if(old_coord != null && !old_coord.equals(coord)) {
+            Map<String,Map<Owner,ClientLock>> copy;
+            synchronized(client_locks) {
+                copy=new HashMap<String,Map<Owner,ClientLock>>(client_locks);
+            }
+            if(!copy.isEmpty()) {
+                for(Map<Owner,ClientLock> map: copy.values()) {
+                    for(ClientLock lock: map.values()) {
+                        if(!lock.acquired && !lock.denied)
+                            sendGrantLockRequest(lock.name, lock.owner, lock.timeout, lock.is_trylock);
+                    }
+                }
+            }
         }
     }
 
@@ -103,11 +120,13 @@ public class CentralLockService extends AbstractLockService implements LockNotif
     }
 
     public void locked(String lock_name, Owner owner) {
-        updateBackups(Type.CREATE_LOCK, lock_name, owner);
+        if(is_coord)
+            updateBackups(Type.CREATE_LOCK, lock_name, owner);
     }
 
     public void unlocked(String lock_name, Owner owner) {
-        updateBackups(Type.DELETE_LOCK, lock_name, owner);
+        if(is_coord)
+            updateBackups(Type.DELETE_LOCK, lock_name, owner);
     }
 
     protected void updateBackups(Type type, String lock_name, Owner owner) {
@@ -119,10 +138,6 @@ public class CentralLockService extends AbstractLockService implements LockNotif
 
 
 
-    protected List<Address> determineNewJoiners() {
-        return null;
-    }
-
     protected void copyLocksTo(List<Address> new_joiners) {
         Map<String,ServerLock> copy;
 
@@ -130,7 +145,9 @@ public class CentralLockService extends AbstractLockService implements LockNotif
             copy=new HashMap<String,ServerLock>(server_locks);
         }
 
-        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
+        if(log.isTraceEnabled())
+            log.trace("copying locks to " + new_joiners);
+        for(Map.Entry<String,ServerLock> entry: copy.entrySet()) {
             for(Address joiner: new_joiners)
                 sendCreateLockRequest(joiner, entry.getKey(), entry.getValue().current_owner);
         }

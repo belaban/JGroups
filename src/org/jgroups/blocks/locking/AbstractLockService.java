@@ -120,10 +120,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                 handleLockDeniedResponse(req.lock_name, req.owner);
                 break;
             case CREATE_LOCK:
-                handleCreateLockRequest(req.lock_name, req.owner, msg.getSrc());
+                handleCreateLockRequest(req.lock_name, req.owner);
                 break;
             case DELETE_LOCK:
-                handleDeleteLockRequest(req.lock_name, msg.getSrc());
+                handleDeleteLockRequest(req.lock_name);
                 break;
             default:
                 log.error("Request of type " + req.type + " not known");
@@ -258,14 +258,14 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
              lock.lockDenied();
     }
 
-    protected void handleCreateLockRequest(String lock_name, Owner owner, Address sender) {
+    protected void handleCreateLockRequest(String lock_name, Owner owner) {
         synchronized(server_locks) {
             server_locks.put(lock_name, new ServerLock(lock_name, owner));
         }
     }
 
 
-    protected void handleDeleteLockRequest(String lock_name, Address sender) {
+    protected void handleDeleteLockRequest(String lock_name) {
         synchronized(server_locks) {
             server_locks.remove(lock_name);
         }
@@ -511,8 +511,11 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
     protected class ClientLock implements Lock {
         protected final String      name;
+        protected Owner             owner;
         protected volatile boolean  acquired;
         protected volatile boolean  denied;
+        protected volatile boolean  is_trylock;
+        protected long              timeout;
 
         public ClientLock(String name) {
             this.name=name;
@@ -571,7 +574,8 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
 
         protected synchronized void acquire() throws InterruptedException {
             if(!acquired) {
-                sendGrantLockRequest(name, getOwner(), 0, false);
+                owner=getOwner();
+                sendGrantLockRequest(name, owner, 0, false);
                 while(!acquired)
                     this.wait();
             }
@@ -580,7 +584,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
         protected synchronized void _unlock(boolean force) {
             if(!acquired && !denied && !force)
                 return;
+            this.timeout=0;
+            this.is_trylock=false;
             sendReleaseLockRequest(name, getOwner());
+            owner=null;
             acquired=denied=false;
             notifyAll();
 
@@ -592,7 +599,10 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             if(denied)
                 return false;
             if(!acquired) {
-                sendGrantLockRequest(name, getOwner(), timeout, true);
+                is_trylock=true;
+                this.timeout=timeout;
+                owner=getOwner();
+                sendGrantLockRequest(name, owner, timeout, true);
 
                 long target_time=use_timeout? System.currentTimeMillis() + timeout : 0;
                 while(!acquired && !denied) {
@@ -601,6 +611,7 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
                         if(wait_time <= 0)
                             break;
                         else {
+                            this.timeout=wait_time;
                             this.wait(wait_time);
                         }
                     }
@@ -610,7 +621,6 @@ abstract public class AbstractLockService extends ReceiverAdapter implements Loc
             }
             if(!acquired || denied)
                 _unlock(true);
-
             return acquired && !denied;
         }
     }
