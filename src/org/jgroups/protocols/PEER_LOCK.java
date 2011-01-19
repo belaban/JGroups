@@ -1,10 +1,13 @@
-package org.jgroups.blocks.locking;
+package org.jgroups.protocols;
+
+/**
+ * @author Bela Ban
+ */
 
 import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.blocks.locking.Owner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,19 +27,16 @@ import java.util.Map;
  * add SEQUENCER to the configuration, so that all lock requests are received in the same global order at both A and B,
  * or use {@link java.util.concurrent.locks.Lock#tryLock(long,java.util.concurrent.TimeUnit)} with retries if a lock
  * cannot be acquired.<p/>
- * An alternative is also the {@link CentralLockService}.
+ * An alternative is also the {@link org.jgroups.blocks.locking.CentralLockService}.
  * @author Bela Ban
  */
 @Experimental
-public class PeerLockService extends AbstractLockService {
+public class PEER_LOCK extends Locking {
 
-    public PeerLockService() {
+    public PEER_LOCK() {
         super();
     }
 
-    public PeerLockService(JChannel ch) {
-        super(ch);
-    }
 
     protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
         sendRequest(null, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
@@ -47,8 +47,8 @@ public class PeerLockService extends AbstractLockService {
     }
 
 
-    public void viewAccepted(View view) {
-        super.viewAccepted(view);
+    public void handleView(View view) {
+        super.handleView(view);
         List<Address> members=view.getMembers();
         synchronized(client_locks) {
             for(Map<Owner,ClientLock> map: client_locks.values()) {
@@ -66,7 +66,7 @@ public class PeerLockService extends AbstractLockService {
      * Lock implementation which grants a lock when all non faulty cluster members OK it.
      */
     protected class PeerLock extends ClientLock {
-        protected final List<Address> grants=new ArrayList<Address>(ch.getView().getMembers());
+        protected final List<Address> grants=new ArrayList<Address>(view.getMembers());
 
         public PeerLock(String name) {
             super(name);
@@ -86,7 +86,7 @@ public class PeerLockService extends AbstractLockService {
             grants.remove(sender);
             if(grants.isEmpty()) {
                 lockGranted();
-                notifyLocked(this.name, owner);
+                // notifyLocked(this.name, owner);
             }
         }
     }

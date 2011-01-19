@@ -1,37 +1,44 @@
-package org.jgroups.blocks.locking;
+package org.jgroups.protocols;
 
 import org.jgroups.Address;
-import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
+import org.jgroups.blocks.locking.LockNotification;
+import org.jgroups.blocks.locking.Owner;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * Implementation of a lock service which acquires locks by contacting the coordinator.</p> Because the central
  * coordinator maintains all locks, no total order configuration is required.
- * An alternative is also the {@link PeerLockService}.
+ * An alternative is also the {@link org.jgroups.blocks.locking.PeerLockService}.
  * @author Bela Ban
  */
 @Experimental
-public class CentralLockService extends AbstractLockService implements LockNotification {
-    protected Address coord;
-    protected boolean is_coord;
+public class CENTRAL_LOCK extends Locking implements LockNotification {
 
-    /** Number of backups to the coordinator. Server locks get replicated to these nodes as well */
+    @Property(description="umber of backups to the coordinator. Server locks get replicated to these nodes as well")
     protected int num_backups=1;
 
+    @ManagedAttribute
+    protected Address coord;
+
+    @ManagedAttribute
+    protected boolean is_coord;
+
+    @ManagedAttribute
     protected final List<Address> backups=new ArrayList<Address>();
 
 
-    public CentralLockService() {
+    public CENTRAL_LOCK() {
         super();
-        addLockListener(this);
-    }
-
-    public CentralLockService(JChannel ch) {
-        super(ch);
         addLockListener(this);
     }
 
@@ -62,26 +69,26 @@ public class CentralLockService extends AbstractLockService implements LockNotif
     }
 
     protected void sendCreateLockRequest(Address dest, String lock_name, Owner owner) {
-        sendRequest(dest, AbstractLockService.Type.CREATE_LOCK, lock_name, owner, 0, false);
+        sendRequest(dest, Type.CREATE_LOCK, lock_name, owner, 0, false);
     }
 
     protected void sendDeleteLockRequest(Address dest, String lock_name) {
-        sendRequest(dest, AbstractLockService.Type.DELETE_LOCK, lock_name, null, 0, false);
+        sendRequest(dest, Type.DELETE_LOCK, lock_name, null, 0, false);
     }
 
 
-    public void viewAccepted(View view) {
-        super.viewAccepted(view);
+    public void handleView(View view) {
+        super.handleView(view);
         Address old_coord=coord;
         if(view.size() > 0) {
             coord=view.getMembers().firstElement();
-            is_coord=coord.equals(ch.getAddress());
+            is_coord=coord.equals(local_addr);
             if(log.isDebugEnabled())
-                log.debug("local_addr=" + ch.getAddress() + ", coord=" + coord + ", is_coord=" + is_coord);
+                log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);
         }
 
         if(is_coord && num_backups > 0) {
-            List<Address> new_backups=Util.pickNext(view.getMembers(), ch.getAddress(), num_backups);
+            List<Address> new_backups=Util.pickNext(view.getMembers(), local_addr, num_backups);
             List<Address> copy_locks_list=null;
             synchronized(backups) {
                 if(!backups.equals(new_backups)) {
@@ -155,3 +162,4 @@ public class CentralLockService extends AbstractLockService implements LockNotif
 
 
 }
+

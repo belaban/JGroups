@@ -52,6 +52,11 @@ public class Event {
     public static final int CONNECT_USE_FLUSH			       = 92;
     public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH = 93;
     public static final int SUSPEND_BUT_FAIL                        = 94; // used in FLUSH testing, no args
+    public static final int LOCK                               = 95; // arg=LockInfo
+    public static final int UNLOCK                             = 96; // arg=LockInfo
+    public static final int UNLOCK_ALL                         = 97; // arg=null
+
+
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
 
@@ -122,7 +127,7 @@ public class Event {
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case SUSPEND:        		 return "SUSPEND";
-            case SUSPEND_BUT_FAIL:        return "SUSPEND_BUT_FAIL";
+            case SUSPEND_BUT_FAIL:       return "SUSPEND_BUT_FAIL";
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
@@ -138,9 +143,12 @@ public class Event {
             case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
             case SET_PHYSICAL_ADDRESS:   return "SET_PHYSICAL_ADDRESS";
             case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
-            case GET_LOCAL_ADDRESS: return "GET_LOCAL_ADDRESS";
+            case GET_LOCAL_ADDRESS:      return "GET_LOCAL_ADDRESS";
             case CONNECT_USE_FLUSH: return "CONNECT_USE_FLUSH";
             case CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: return "CONNECT_WITH_STATE_TRANSFER_USE_FLUSH";
+            case LOCK:                   return "LOCK";
+            case UNLOCK:                 return "UNLOCK";
+            case UNLOCK_ALL:             return "UNLOCK_ALL";
             
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

@@ -17,7 +17,7 @@ import java.util.concurrent.locks.Lock;
 public class LockServiceDemo implements LockNotification {
     protected String props;
     protected JChannel ch;
-    protected AbstractLockService lock_service;
+    protected LockService lock_service;
     protected String name;
 
     public LockServiceDemo(String props, String name) {
@@ -25,11 +25,11 @@ public class LockServiceDemo implements LockNotification {
         this.name=name;
     }
 
-    public void start(boolean peer) throws ChannelException {
+    public void start() throws ChannelException {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
-        lock_service=peer? new PeerLockService(ch) : new CentralLockService(ch);
+        lock_service=new LockService(ch);
         lock_service.addLockListener(this);
         ch.connect("lock-cluster");
         try {
@@ -56,7 +56,7 @@ public class LockServiceDemo implements LockNotification {
     public void unlocked(String lock_name, Owner owner) {
         System.out.println("\"" + lock_name + "\" unlocked by " + owner);
     }
-    
+
 
     protected void loop() throws Exception {
         List<String> lock_names;
@@ -103,7 +103,7 @@ public class LockServiceDemo implements LockNotification {
                         break;
                     }
                     else {
-                        Lock lock=lock_service.getLock(lock_name, false);
+                        Lock lock=lock_service.getLock(lock_name);
                         if(lock != null)
                             lock.unlock();
                     }
@@ -131,10 +131,11 @@ public class LockServiceDemo implements LockNotification {
         System.out.println("\n" + lock_service.printLocks());
     }
 
+
+
     public static void main(String[] args) throws ChannelException {
         String props=null;
         String name=null;
-        boolean peer=false;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
@@ -145,20 +146,17 @@ public class LockServiceDemo implements LockNotification {
                 name=args[++i];
                 continue;
             }
-            if(args[i].equals("-peer")) {
-                peer=true;
-                continue;
-            }
+
             help();
             return;
         }
 
         LockServiceDemo demo=new LockServiceDemo(props, name);
-        demo.start(peer);
+        demo.start();
     }
 
     protected static void help() {
-        System.out.println("\nLockServiceDemo [-props properties] [-name name] [-peer]\n" +
+        System.out.println("\nLockServiceDemo [-props properties] [-name name]\n" +
                              "Valid commands:\n\n" +
                              "lock (<lock name>)+\n" +
                              "unlock (<lock name> | \"ALL\")+\n" +
