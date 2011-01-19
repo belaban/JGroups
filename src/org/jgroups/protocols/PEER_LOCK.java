@@ -86,7 +86,7 @@ public class PEER_LOCK extends Locking {
             grants.remove(sender);
             if(grants.isEmpty()) {
                 lockGranted();
-                notifyLocked(this.name, owner);
+                // notifyLocked(this.name, owner);
             }
         }
     }

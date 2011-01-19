@@ -15,6 +15,7 @@ public class LockService {
     protected JChannel ch;
     protected Locking lock_prot;
 
+
     public LockService() {
         
     }
@@ -39,6 +40,14 @@ public class LockService {
         ch.down(new Event(Event.UNLOCK_ALL));
     }
 
+    public void addLockListener(LockNotification listener) {
+        lock_prot.addLockListener(listener);
+    }
+
+    public void removeLockListener(LockNotification listener) {
+        lock_prot.removeLockListener(listener);
+    }
+    
     public String printLocks() {
         return lock_prot.printLocks();
     }

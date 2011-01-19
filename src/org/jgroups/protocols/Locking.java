@@ -39,7 +39,7 @@ abstract public class Locking extends Protocol {
     // client side locks
     protected final Map<String,Map<Owner,ClientLock>> client_locks=new HashMap<String,Map<Owner,ClientLock>>();
 
-    protected final List<LockNotification> lock_listeners=new ArrayList<LockNotification>();
+    protected final Set<LockNotification> lock_listeners=new HashSet<LockNotification>();
 
 
 

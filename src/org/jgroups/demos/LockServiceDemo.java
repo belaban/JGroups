@@ -14,7 +14,7 @@ import java.util.concurrent.locks.Lock;
 /**
  * Demos the LockService
  */
-public class LockServiceDemo {
+public class LockServiceDemo implements LockNotification {
     protected String props;
     protected JChannel ch;
     protected LockService lock_service;
@@ -30,6 +30,7 @@ public class LockServiceDemo {
         if(name != null)
             ch.setName(name);
         lock_service=new LockService(ch);
+        lock_service.addLockListener(this);
         ch.connect("lock-cluster");
         try {
             loop();
@@ -42,7 +43,19 @@ public class LockServiceDemo {
         }
     }
 
+    public void lockCreated(String name) {
+    }
 
+    public void lockDeleted(String name) {
+    }
+
+    public void locked(String lock_name, Owner owner) {
+        System.out.println("\"" + lock_name + "\" locked by " + owner);
+    }
+
+    public void unlocked(String lock_name, Owner owner) {
+        System.out.println("\"" + lock_name + "\" unlocked by " + owner);
+    }
 
 
     protected void loop() throws Exception {
