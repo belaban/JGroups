@@ -2223,8 +2223,8 @@ public class Util {
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
      * new_mbrs are returned.
      */
-    public static List<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
-        List<Address> retval=new ArrayList<Address>();
+    public static Vector<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
+        Vector<Address> retval=new Vector<Address>();
         if(old_mbrs == null || new_mbrs == null)
             return retval;
 
