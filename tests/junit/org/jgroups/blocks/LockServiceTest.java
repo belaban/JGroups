@@ -2,9 +2,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.blocks.locking.AbstractLockService;
 import org.jgroups.blocks.locking.LockService;
-import org.jgroups.blocks.locking.PeerLockService;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterTest;
@@ -44,14 +42,14 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
     @DataProvider(name="createLockService")
-    AbstractLockService[][] createLockService() {
-        return new AbstractLockService[][] {
-          {new PeerLockService(), new PeerLockService(), new PeerLockService(), new PeerLockService()}
+    LockService[][] createLockService() {
+        return new LockService[][] {
+          {new LockService(), new LockService(), new LockService(), new LockService()}
         };
     }
 
     @Test(dataProvider="createLockService")
-    public void testSimpleLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) {
+    public void testSimpleLock(LockService s1, LockService s2, LockService s3, LockService s4) {
         s1.setChannel(c1);
         s2.setChannel(c2);
         s3.setChannel(c3);
@@ -74,7 +72,7 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
     @Test(dataProvider="createLockService")
-    public void testBlockingLock(AbstractLockService s1, AbstractLockService s2, AbstractLockService s3, AbstractLockService s4) throws InterruptedException {
+    public void testBlockingLock(LockService s1, LockService s2, LockService s3, LockService s4) throws InterruptedException {
         s1.setChannel(c1);
         s2.setChannel(c2);
         s3.setChannel(c3);
