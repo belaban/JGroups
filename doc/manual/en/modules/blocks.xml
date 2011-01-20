@@ -681,6 +681,22 @@
     
   </section>
 
+
+    <section>
+        <title>Distributed locking</title>
+        <para>
+            In 2.12, a new distributed locking service was added, replacing DistributedLockManager. The new service is
+            implemented as a protocol and is used via org.jgroups.blocks.locking.LockService.
+        </para>
+        <para>
+            LockService talks to the locking protocol via events. The main abstraction of a distributed lock is an
+            implementation of java.util.concurrent.locks.Lock. All lock methods are supported, however, conditions
+            are not yet supported.
+        </para>
+        <para>
+            
+        </para>
+    </section>
   
     
 </chapter>
