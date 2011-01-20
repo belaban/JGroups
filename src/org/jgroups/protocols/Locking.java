@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.LockInfo;
 import org.jgroups.blocks.locking.LockNotification;
@@ -182,6 +183,7 @@ abstract public class Locking extends Protocol {
         return getLock(name, getOwner(), create_if_absent);
     }
 
+    @ManagedOperation(description="Unlocks all currently held locks")
     public void unlockAll() {
         List<ClientLock> locks=new ArrayList<ClientLock>();
         synchronized(client_locks) {
@@ -196,50 +198,7 @@ abstract public class Locking extends Protocol {
     }
 
 
-    public void receive(Message msg) {
-        Request req=(Request)msg.getObject();
-        if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
-        switch(req.type) {
-            case GRANT_LOCK:
-            case RELEASE_LOCK:
-                handleLockRequest(req);
-                break;
-            case LOCK_GRANTED:
-                handleLockGrantedResponse(req.lock_name, req.owner, msg.getSrc());
-                break;
-            case LOCK_DENIED:
-                handleLockDeniedResponse(req.lock_name, req.owner);
-                break;
-            case CREATE_LOCK:
-                handleCreateLockRequest(req.lock_name, req.owner);
-                break;
-            case DELETE_LOCK:
-                handleDeleteLockRequest(req.lock_name);
-                break;
-            default:
-                log.error("Request of type " + req.type + " not known");
-                break;
-        }
-    }
-
-
-
-    public void handleView(View view) {
-        this.view=view;
-        if(log.isDebugEnabled())
-            log.debug("view=" + view);
-        List<Address> members=view.getMembers();
-        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
-            entry.getValue().handleView(members);
-        }
-        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
-            ServerLock lock=entry.getValue();
-            if(lock.isEmpty() && lock.current_owner == null)
-                server_locks.remove(entry.getKey());
-        }
-    }
-
+    @ManagedOperation(description="Dumps all locks")
     public String printLocks() {
         StringBuilder sb=new StringBuilder();
         sb.append("server locks:\n");
@@ -272,6 +231,21 @@ abstract public class Locking extends Protocol {
             }
         }
         return sb.toString();
+    }
+
+    protected void handleView(View view) {
+        this.view=view;
+        if(log.isDebugEnabled())
+            log.debug("view=" + view);
+        List<Address> members=view.getMembers();
+        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
+            entry.getValue().handleView(members);
+        }
+        for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
+            ServerLock lock=entry.getValue();
+            if(lock.isEmpty() && lock.current_owner == null)
+                server_locks.remove(entry.getKey());
+        }
     }
 
 
@@ -680,13 +654,13 @@ abstract public class Locking extends Protocol {
                 return;
             this.timeout=0;
             this.is_trylock=false;
-            sendReleaseLockRequest(name, getOwner());
-            owner=null;
+            sendReleaseLockRequest(name, owner);
             acquired=denied=false;
             notifyAll();
 
-            removeClientLock(name, getOwner());
+            removeClientLock(name, owner);
             notifyLockDeleted(name);
+            owner=null;
         }
 
         protected synchronized boolean acquireTryLock(long timeout, boolean use_timeout) throws InterruptedException {
@@ -760,8 +734,8 @@ abstract public class Locking extends Protocol {
         }
 
         public String toString() {
-            return type.name() + " [" + lock_name + ", owner=" + owner + (is_trylock? ", trylock " : "") +
-              (timeout > 0? " (timeout=" + timeout + ")" : "" + "]");
+            return type.name() + " [" + lock_name + ", owner=" + owner + (is_trylock? ", trylock " : " ") +
+              (timeout > 0? "(timeout=" + timeout + ")" : "" + "]");
         }
 
         public String toStringShort() {
