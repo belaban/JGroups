@@ -37,7 +37,7 @@ import java.util.Map;
 @Experimental
 public class CENTRAL_LOCK extends Locking implements LockNotification {
 
-    @Property(description="umber of backups to the coordinator. Server locks get replicated to these nodes as well")
+    @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")
     protected int num_backups=1;
 
     @ManagedAttribute
