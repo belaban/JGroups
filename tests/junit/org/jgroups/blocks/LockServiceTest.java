@@ -105,7 +105,30 @@ public class LockServiceTest extends ChannelTestBase {
         final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
         TryLocker[] lockers=new TryLocker[NUM];
         for(int i=0; i < lockers.length; i++) {
-            lockers[i]=new TryLocker(barrier, 500);
+            lockers[i]=new TryLocker(lock, barrier, 500);
+            lockers[i].start();
+        }
+        barrier.await();
+        for(TryLocker locker: lockers)
+            locker.join();
+        int num_acquired=0;
+        for(TryLocker locker: lockers) {
+            if(locker.acquired) {
+                num_acquired++;
+            }
+        }
+        assert num_acquired == 1;
+    }
+
+    public void testConcurrentLockRequestsFromDifferentMembers() throws Exception {
+        int NUM=10;
+        final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
+        TryLocker[] lockers=new TryLocker[NUM];
+        LockService[] services=new LockService[]{s1, s2, s3};
+
+        for(int i=0; i < lockers.length; i++) {
+            Lock mylock=services[i % services.length].getLock(LOCK);
+            lockers[i]=new TryLocker(mylock, barrier, 500);
             lockers[i].start();
         }
         barrier.await();
@@ -144,12 +167,14 @@ public class LockServiceTest extends ChannelTestBase {
         }
     }
 
-    protected class TryLocker extends Thread {
+    protected static class TryLocker extends Thread {
+        protected final Lock mylock;
         protected final CyclicBarrier barrier;
         protected final long timeout;
         protected boolean acquired;
 
-        public TryLocker(CyclicBarrier barrier, long timeout) {
+        public TryLocker(Lock mylock, CyclicBarrier barrier, long timeout) {
+            this.mylock=mylock;
             this.barrier=barrier;
             this.timeout=timeout;
         }
@@ -167,14 +192,14 @@ public class LockServiceTest extends ChannelTestBase {
             }
 
             try {
-                acquired=tryLock(lock, timeout, LOCK);
+                acquired=tryLock(mylock, timeout, LOCK);
                 Util.sleep(timeout * 2);
             }
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
             finally {
-                unlock(lock, LOCK);
+                unlock(mylock, LOCK);
             }
         }
     }
