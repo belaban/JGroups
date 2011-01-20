@@ -640,6 +640,28 @@ public class UtilTest {
     }
 
 
+    public static void testPickNextN() {
+        List<Integer> list=Arrays.asList(1,2,3,4);
+        List<Integer> result=Util.pickNext(list, 0, 1);
+        assert result.isEmpty();
+
+        result=Util.pickNext(list, 1, 1);
+        System.out.println("result = " + result);
+        assert result.size() == 1;
+        assert result.contains(2);
+
+        result=Util.pickNext(list, 3, 2);
+        System.out.println("result = " + result);
+        assert result.size() == 2;
+        assert result.contains(4) && result.contains(1);
+
+        result=Util.pickNext(list, 4, 5);
+        System.out.println("result = " + result);
+        assert result.size() == 3;
+        assert result.contains(1) && result.contains(2) && result.contains(3);
+    }
+
+
     public static void testAll() {
         List<String> l=new ArrayList<String>();
         l.add("one"); l.add("two"); l.add("one");

@@ -49,7 +49,9 @@
     <class id="47" name="org.jgroups.protocols.STOMP"/>
     <class id="48" name="org.jgroups.protocols.PRIO"/>
     <class id="49" name="org.jgroups.protocols.BPING"/>
-
+    <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
+    <class id="51" name="org.jgroups.protocols.PEER_LOCK"/>
+    
 
     <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
     <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>

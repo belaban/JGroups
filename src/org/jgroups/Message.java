@@ -126,13 +126,12 @@ public class Message implements Streamable {
      *  @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
      *              Otherwise, it contains a single destination and is sent to that member.<p>
      *  @param src  Address of sender
-     *  @param obj  The object will be serialized into the byte buffer. <em>Object
-     *              has to be serializable </em>! The resulting buffer must not be modified
+     *  @param obj  The object will be marshalled into the byte buffer. <em>Obj to be serializable (e.g. implementing
+     *              Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).</em>!
+     *              The resulting buffer must not be modified
      *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().<p/>
-     *              Note that this is a convenience method and JGroups will use default Java serialization to
-     *              serialize <code>obj</code> into a byte buffer.
      */
-    public Message(Address dest, Address src, Serializable obj) {
+    public Message(Address dest, Address src, Object obj) {
         this(dest);
         setSrc(src);
         setObject(obj);
@@ -263,9 +262,11 @@ public class Message implements Streamable {
     }
 
     /**
-     * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the message.
+     * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the message. Parameter
+     * 'obj' has to be serializable (e.g. implementing Serializable, Externalizable or Streamable, or be a basic
+     * type (e.g. Integer, Short etc)).
      */
-    final public void setObject(Serializable obj) {
+    final public void setObject(Object obj) {
         if(obj == null) return;
         try {
             byte[] tmp=Util.objectToByteBuffer(obj);
@@ -277,7 +278,7 @@ public class Message implements Streamable {
     }
 
     /**
-     * Uses Java serialization to create an object from the buffer of the message. Note that this is dangerous when
+     * Uses custom serialization to create an object from the buffer of the message. Note that this is dangerous when
      * using your own classloader, e.g. inside of an application server ! Most likely, JGroups will use the system
      * classloader to deserialize the buffer into an object, whereas (for example) a web application will want to
      * use the webapp's classloader, resulting in a ClassCastException. The recommended way is for the application to

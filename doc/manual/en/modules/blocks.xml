@@ -525,9 +525,9 @@
                 A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
                 <screen>
-                    public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                                  MethodCall method_call, RequestOptions options);
-                    public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+        public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                           MethodCall method_call, RequestOptions options);
+        public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
                                                                   RequestOptions options);
                 </screen>
             </para>
@@ -681,6 +681,54 @@
     
   </section>
 
+
+    <section>
+        <title>Distributed locking</title>
+        <para>
+            In 2.12, a new distributed locking service was added, replacing DistributedLockManager. The new service is
+            implemented as a protocol and is used via org.jgroups.blocks.locking.LockService.
+        </para>
+        <para>
+            LockService talks to the locking protocol via events. The main abstraction of a distributed lock is an
+            implementation of java.util.concurrent.locks.Lock. All lock methods are supported, however, conditions
+            are not yet supported. (Based on feedback, they might be added later).
+        </para>
+        <para>
+            Below is an example of how LockService is typically used:
+            <screen>
+            JChannel ch=new JChannel("/home/bela/locking.xml"); // needs to have a locking protocol
+            LockService lock_service=new LockService(ch);
+            ch.connect("lock-cluster");
+            Lock lock=lock_service.getLock("mylock");
+            lock.lock();
+            try {
+                // do something with the locked resource
+            }
+            finally {
+                lock.unlock();
+            }
+            </screen>
+        </para>
+        <para>
+            In the example, we create a channel, then a LockService, then connect the channel. Then we grab a lock
+            named "mylock", which we lock and subsequently unlock.
+        </para>
+        <para>
+            Note that the owner of a lock is always a given thread in a cluster, so the owner is the JGroups address and
+            the thread ID. This means that different threads inside the same JVM trying to access the same named lock
+            will compete for it. If thread-22 grabs the lock first, then thread-5 will block until thread-23
+            releases the lock.
+        </para>
+        <para>
+            JGroups includes a demo (org.jgroups.demos.LockServiceDemo), which can be used to interactively experiment
+            with distributed locks. LockServiceDemo -h dumps all command line options.
+        </para>
+        <para>
+            Currently (Jan 2011), there are 2 protocols which provide locking:
+            <xref linkend="PEER_LOCK">PEER_LOCK</xref> and <xref linkend="CENTRAL_LOCK">CENTRAL_LOCK</xref>. The locking
+            protocol has to be placed at or towards the top of the stack (close to the channel).
+        </para>
+    </section>
   
     
 </chapter>

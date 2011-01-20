@@ -852,6 +852,7 @@ public class JChannel extends Channel {
         return Version.printDescription();
     }
 
+    @Deprecated
     public Address getLocalAddress() {
         return getAddress();
     }
