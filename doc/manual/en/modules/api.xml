@@ -49,15 +49,15 @@
       the entity to be notified of message reception needs to provide a
       callback to be invoked whenever a message has been received. The
       <classname>MessageListener</classname> interface below provides a method
-      to do so:</para>
-
-      <screen>
-                public interface MessageListener {
-                    public void receive(Message msg);
-                    byte[] getState();
-                    void setState(byte[] state);
-                }
-            </screen>
+      to do so:
+          <screen>
+          public interface MessageListener {
+              public void receive(Message msg);
+              byte[] getState();
+              void setState(byte[] state);
+          }
+          </screen>
+      </para>
 
       <para>Method <methodname>receive()</methodname> will be called when a
       message is received. The <methodname>getState()</methodname> and
@@ -69,42 +69,44 @@
     <section>
       <title>ExtendedMessageListener</title>
 
-      <para>JGroups release 2.3 introduced ExtendedMessageListener enabling
-      partial state transfer (refer to <xref linkend="PartialStateTransfer" />
-      ) while release 2.4 further expands ExtendedMessageListener with
-      streaming state transfer callbacks:</para>
+      <para>
+          JGroups release 2.3 introduced ExtendedMessageListener enabling
+          partial state transfer (refer to <xref linkend="PartialStateTransfer" />
+          ) while release 2.4 further expands ExtendedMessageListener with
+          streaming state transfer callbacks:
 
       <screen>
-                public interface ExtendedMessageListener extends MessageListener {
-                    byte[] getState(String state_id);
-                    void setState(String state_id, byte[] state);
+         public interface ExtendedMessageListener extends MessageListener {
+             byte[] getState(String state_id);
+             void setState(String state_id, byte[] state);
                       
-                    /*** since JGroups 2.4 *****/
-                    void getState(OutputStream ostream);
-                    void getState(String state_id, OutputStream ostream);
-                    void setState(InputStream istream);
-                    void setState(String state_id, InputStream istream);
-                }
-            </screen>
+             /*** since JGroups 2.4 *****/
+             void getState(OutputStream ostream);
+             void getState(String state_id, OutputStream ostream);
+             void setState(InputStream istream);
+             void setState(String state_id, InputStream istream);
+          }
+       </screen>
+      </para>
 
     </section>
 
     <section id="MembershipListener">
       <title>MembershipListener</title>
 
-      <para>The <classname>MembershipListener</classname> interface is similar
-      to the <classname>MessageListener</classname> interface above: every
-      time a new view, a suspicion message, or a block event is received, the
-      corresponding method of the class implementing
-      <classname>MembershipListener</classname> will be called.</para>
+      <para>
+          The <classname>MembershipListener</classname> interface is similar to the <classname>MessageListener</classname>
+          interface above: every time a new view, a suspicion message, or a block event is received, the corresponding
+          method of the class implementing <classname>MembershipListener</classname> will be called.
 
-      <screen>
-                public interface MembershipListener {
-                    public void viewAccepted(View new_view);
-                    public void suspect(Object suspected_mbr);
-                    public void block();
-                }
-            </screen>
+          <screen>
+            public interface MembershipListener {
+                public void viewAccepted(View new_view);
+                public void suspect(Object suspected_mbr);
+                public void block();
+            }
+          </screen>
+      </para>
 
         <para>Oftentimes the only method containing any functionality will be
             <methodname>viewAccepted()</methodname> which notifies the receiver that
@@ -154,14 +156,16 @@
       <section id="ExtendedMembershipListener">
           <title>ExtendedMembershipListener</title>
 
-          <para>The <classname>ExtendedMembershipListener</classname> interface extends
-              <classname>MembershipListener</classname>:</para>
+          <para>
+              The <classname>ExtendedMembershipListener</classname> interface extends
+              <classname>MembershipListener</classname>:
 
           <screen>
               public interface ExtendedMembershipListener extends MembershipListener {
                   public void unblock();
               }
           </screen>
+          </para>
 
           <para>
               The <methodname>unblock()</methodname> method is called
@@ -176,16 +180,17 @@
 
     <section>
       <title>ChannelListener</title>
-
+        <para>
         <screen>
-              public interface ChannelListener {
-                  void channelConnected(Channel channel);
-                  void channelDisconnected(Channel channel);
-                  void channelClosed(Channel channel);
-                  void channelShunned(); // deprecated in 2.8
-                  void channelReconnected(Address addr); // deprecated in 2.8
-              }
-            </screen>
+           public interface ChannelListener {
+               void channelConnected(Channel channel);
+               void channelDisconnected(Channel channel);
+               void channelClosed(Channel channel);
+               void channelShunned(); // deprecated in 2.8
+               void channelReconnected(Address addr); // deprecated in 2.8
+           }
+        </screen>
+        </para>
 
       <para>A class implementing <classname>ChannelListener</classname> can
       use the <methodname>Channel.setChannelListener()</methodname> method to
@@ -196,11 +201,12 @@
 
     <section>
       <title>Receiver</title>
-
+        <para>
       <screen>
-              public interface Receiver extends MessageListener, MembershipListener {
-              }
-            </screen>
+         public interface Receiver extends MessageListener, MembershipListener {
+         }
+      </screen>
+        </para>
 
       <para>A Receiver can be used to receive messages and view
       changes in push-style; rather than having to pull these events from a
@@ -215,11 +221,12 @@
 
     <section>
       <title>ExtendedReceiver</title>
-
+        <para>
       <screen>
-              public interface ExtendedReceiver extends ExtendedMessageListener, MembershipListener {
-              }
-            </screen>
+      public interface ExtendedReceiver extends ExtendedMessageListener, MembershipListener {
+      }
+      </screen>
+         </para>
 
       <para>This is a receiver who will be able to handle partial state transfer</para>
     </section>
@@ -249,14 +256,15 @@
     member. The interface for such an address is Address, which requires
     concrete implementations to provide methods for comparison and sorting of
     addresses, and for determination whether the address is a multicast
-    address. JGroups addresses have to implement the following interface:</para>
+    address. JGroups addresses have to implement the following interface:
 
     <screen>
-            public interface Address extends Externalizable, Comparable, Cloneable {
-                boolean isMulticastAddress();
-                int size();
-            }
-        </screen>
+       public interface Address extends Externalizable, Comparable, Cloneable {
+           boolean isMulticastAddress();
+           int size();
+       }
+    </screen>
+    </para>
 
     <para>
         <emphasis>Please never use implementations of Address directly; Address should always be used
@@ -371,13 +379,15 @@
     or it can be <literal>null</literal> , which means that the message will
     be sent to all members of the group. A typical multicast message, sending
     string <literal>"Hello"</literal> to all members would look like
-    this:</para>
+    this:
 
-    <screen>
-            Message msg=new Message(null, null, "Hello");
-            channel.send(msg);
-        </screen>
+      <screen>
+         Message msg=new Message(null, null, "Hello");
+         channel.send(msg);
+      </screen>
+      </para>
   </section>
+
 
   <section>
     <title>View</title>
@@ -396,14 +406,15 @@
     coordinator easily and without having to contact other members.</para>
 
     <para>The code below shows how to send a (unicast) message to the first
-    member of a view (error checking code omitted):</para>
+    member of a view (error checking code omitted):
 
     <screen>
-            View view=channel.getView();
-            Address first=view.getMembers().first();
-            Message msg=new Message(first, null, "Hello world");
-            channel.send(msg);
-        </screen>
+       View view=channel.getView();
+       Address first=view.getMembers().first();
+       Message msg=new Message(first, null, "Hello world");
+       channel.send(msg);
+    </screen>
+    </para>
 
     <para>Whenever an application is notified that a new view has been
     installed (e.g. by
@@ -496,7 +507,7 @@
         </para>
 
       <screen>
-                public JChannel(String props) throws ChannelException {}
+          public JChannel(String props) throws ChannelException {}
       </screen>
 
         <para>It creates an instance of <classname>JChannel</classname> . The
@@ -514,14 +525,14 @@
         <para>For example, the Draw demo can be launched as follows:</para>
 
         <screen>
-                java org.javagroups.demos.Draw -props file:/home/bela/udp.xml
-                </screen>
+          java org.javagroups.demos.Draw -props file:/home/bela/udp.xml
+        </screen>
 
         <para>or</para>
 
         <screen>
-                java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
-                </screen>
+          java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
+        </screen>
 
         <para>
             In the latter case, an application downloads its protocol stack
@@ -628,42 +639,41 @@
             <para>
                 An example of how to programmatically create a channel is shown below (copied from ProgrammaticChat):
                 <screen>
-        JChannel ch=new JChannel(false);         // 1
-        ProtocolStack stack=new ProtocolStack(); // 2
-        ch.setProtocolStack(stack);              // 3
-        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
-                .addProtocol(new PING())
-                .addProtocol(new MERGE2())
-                .addProtocol(new FD_SOCK())
-                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
-                .addProtocol(new VERIFY_SUSPECT())
-                .addProtocol(new BARRIER())
-                .addProtocol(new NAKACK())
-                .addProtocol(new UNICAST2())
-                .addProtocol(new STABLE())
-                .addProtocol(new GMS())
-                .addProtocol(new UFC())
-                .addProtocol(new MFC())
-                .addProtocol(new FRAG2());       // 4
-        stack.init();                            // 5
+     JChannel ch=new JChannel(false);         // 1
+     ProtocolStack stack=new ProtocolStack(); // 2
+     ch.setProtocolStack(stack);              // 3
+     stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+             .addProtocol(new PING())
+             .addProtocol(new MERGE2())
+             .addProtocol(new FD_SOCK())
+             .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+             .addProtocol(new VERIFY_SUSPECT())
+             .addProtocol(new BARRIER())
+             .addProtocol(new NAKACK())
+             .addProtocol(new UNICAST2())
+             .addProtocol(new STABLE())
+             .addProtocol(new GMS())
+             .addProtocol(new UFC())
+             .addProtocol(new MFC())
+             .addProtocol(new FRAG2());       // 4
+     stack.init();                            // 5
 
-        ch.setReceiver(new ReceiverAdapter() {
-            public void viewAccepted(View new_view) {
-                System.out.println("view: " + new_view);
-            }
+     ch.setReceiver(new ReceiverAdapter() {
+         public void viewAccepted(View new_view) {
+             System.out.println("view: " + new_view);
+         }
 
-            public void receive(Message msg) {
-                System.out.println(msg.getObject() + " [" + msg.getSrc() + "]");
-            }
-        });
+         public void receive(Message msg) {
+             System.out.println(msg.getObject() + " [" + msg.getSrc() + "]");
+         }
+     });
 
-        ch.connect("ChatCluster");
+     ch.connect("ChatCluster");
 
-
-        for(;;) {
-            String line=Util.readStringFromStdin(": ");
-            ch.send(null, null, line);
-        }
+     for(;;) {
+         String line=Util.readStringFromStdin(": ");
+         ch.send(null, null, line);
+     }
                 </screen>
             </para>
             <para>
@@ -695,12 +705,12 @@
       <section id="SettingOptions">
           <title>Setting options</title>
 
-          <para>A number of options can be set in a channel. To do so, the
-              following method is used:</para>
-
-          <screen>
+          <para>
+              A number of options can be set in a channel. To do so, the following method is used:
+              <screen>
               public void setOpt(int option, Object value);
-          </screen>
+              </screen>
+          </para>
 
       <para>Arguments are the options number and a value. The following
       options are currently recognized:</para>
@@ -750,11 +760,12 @@
       </variablelist>
 
       <para>The equivalent method to get options is
-      <methodname>getOpt()</methodname> :</para>
+      <methodname>getOpt()</methodname>:
 
       <screen>
-                public Object getOpt(int option);
-            </screen>
+          public Object getOpt(int option);
+      </screen>
+      </para>
 
       <para>Given an option, the current value of the option is
       returned.</para>
@@ -787,7 +798,7 @@
         <para>
             The logical name can be set using:
             <screen>
-                public void setName(String logical_name);
+               public void setName(String logical_name);
             </screen>
         </para>
         <para>
@@ -798,10 +809,10 @@
         <para>
             When JGroups starts, it prints the logical name and the associated physical address(es):
             <screen>
-                -------------------------------------------------------------------
-                GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
-                -------------------------------------------------------------------
-                ** View=[mac-53465|0] [mac-53465]
+            -------------------------------------------------------------------
+            GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
+            -------------------------------------------------------------------
+            ** View=[mac-53465|0] [mac-53465]
             </screen>
 
             The logical name is mac-53465 and the physical address is 192.168.1.3:49932. The UUID is not shown here.
@@ -855,7 +866,9 @@
 		      </para>  
 		      
 		      <screen>
-		      	public void connect(string cluster_name, address target, string state_id, long timeout) throws channelexception;
+		      public void connect(string cluster_name, address target,
+                                  string state_id, long timeout)
+                          throws ChannelException;
 		      </screen>
 		      
 		      <para>
@@ -881,7 +894,7 @@
       state.</para>
 
       <screen>
-          public Address getLocalAddress(); // use getAddress() with 2.8.0 and higher
+         public Address getLocalAddress(); // use getAddress() with 2.8.0+
       </screen>
 
       <para>Method <methodname>getClusterName()</methodname> returns the name
@@ -902,8 +915,8 @@
       channel:</para>
 
       <screen>
-                public View getView();
-            </screen>
+         public View getView();
+      </screen>
 
       <para>This method does <emphasis>not</emphasis> retrieve a new view
       (message) from the channel, but only returns the current view of the
@@ -924,8 +937,9 @@
       <methodname>send()</methodname> methods:</para>
 
       <screen>
-          public void send(Message msg) throws ChannelNotConnected, ChannelClosed;
-          public void send(Address dst, Address src, Object obj) throws ChannelNotConnected, ChannelClosed;
+         public void send(Message msg) throws ChannelNotConnected, ChannelClosed;
+         public void send(Address dst, Address src, Object obj)
+                          throws ChannelNotConnected, ChannelClosed;
       </screen>
 
       <para>The first <methodname>send()</methodname> method has only one
@@ -945,17 +959,18 @@
       be thrown upon attempting to send a message.</para>
 
       <para>Here's an example of sending a (multicast) message to all members
-      of a group:</para>
+      of a group:
 
       <screen>
-                Map data; // any serializable data
-                try {
-                    channel.send(null, null, data);
-                }
-                catch(Exception ex) {
-                    // handle errors
-                }
-            </screen>
+          Map data; // any serializable data
+          try {
+              channel.send(null, null, data);
+          }
+          catch(Exception ex) {
+              // handle errors
+          }
+      </screen>
+      </para>
 
       <para>The null value as destination address means that the message will
       be sent to all members in the group. The sender's address will be filled
@@ -966,18 +981,19 @@
       Message.setBuffer()) would also work.</para>
 
       <para>Here's an example of sending a (unicast) message to the first
-      member (coordinator) of a group:</para>
+      member (coordinator) of a group:
 
       <screen>
-                HashMap data;
-                try {
-                    Address receiver=channel.getView().getMembers().first();
-                    channel.send(receiver, null, data);
-                }
-                catch(Exception ex) {
-                    // handle errors
-                }
-            </screen>
+          Map data;
+          try {
+              Address receiver=channel.getView().getMembers().first();
+              channel.send(receiver, null, data);
+          }
+          catch(Exception ex) {
+              // handle errors
+          }
+      </screen>
+      </para>
 
       <para>It creates a Message with a specific address for the receiver (the
       first member of the group). Again, the sender's address can be left null
@@ -991,7 +1007,8 @@
       messages, views, suspicions and blocks:</para>
 
       <screen>
-          public Object receive(long timeout) throws ChannelNotConnected, ChannelClosed, Timeout;
+         public Object receive(long timeout) throws ChannelNotConnected,
+                                                  ChannelClosed, Timeout;
       </screen>
 
       <para>A channel receives messages asynchronously from the network and
@@ -1131,17 +1148,17 @@
 
       <para>The caller has to check the type of the object returned. This can
       be done using the <methodname>instanceof</methodname> operator, as
-      follows:</para>
-
+      follows:
       <screen>
-                Object obj=channel.receive(0); // wait forever
-                if(obj instanceof Message)
-                    Message msg=(Message)obj;
-                else if(obj instanceof View)
-                    View v=(View)obj;
-                else
-                    ; // don't handle suspicions or blocks
-            </screen>
+          Object obj=channel.receive(0); // wait forever
+          if(obj instanceof Message)
+              Message msg=(Message)obj;
+          else if(obj instanceof View)
+              View v=(View)obj;
+          else
+              ; // don't handle suspicions or blocks
+      </screen>
+      </para>
 
       <para>If for example views, suspicions and blocks are disabled, then the
       caller is guaranteed to only receive return values of type
@@ -1153,18 +1170,18 @@
       exception will be thrown.</para>
 
       <para>The example below shows how to retrieve the "Hello world" string
-      from a message:</para>
-
+      from a message:
       <screen>
-                Message msg; // received above
-                try {
-                    String s=(String)msg.getObject(); // error if object not Serializable
-                    // alternative: s=new String(msg.getBuffer());
-                }
-                catch(Exception ex) {
-                    // handle errors, e.g. casting error above)
-                }
-            </screen>
+          Message msg; // received above
+          try {
+              String s=(String)msg.getObject(); // error if obj not Serializable
+              // alternative: s=new String(msg.getBuffer());
+          }
+          catch(Exception ex) {
+              // handle errors, e.g. casting error above)
+          }
+      </screen>
+      </para>
 
       <para>The Message.getObject() method retrieves the message's byte
       buffer, converts it into a (serializable) object and returns the
@@ -1178,20 +1195,20 @@
           thread, a Receiver can be registered with a channel. This is the preferred and recommended way of receiving
           messages. In 3.0, the receive() method will be removed from JChannel.
           All received messages, view changes and state transfer requests will invoke callbacks
-          on the registered Receiver:</para>
-
+          on the registered Receiver:
       <screen>
-                JChannel ch=new JChannel();
-                ch.setReceiver(new ExtendedReceiverAdapter() {
-                    public void receive(Message msg) {
-                        System.out.println("received message " + msg);
-                    }
-                    public void viewAccepted(View new_view) {
-                        System.out.println("received view " + new_view);
-                    }
-                });
-                ch.connect("bla");
-            </screen>
+          JChannel ch=new JChannel();
+          ch.setReceiver(new ExtendedReceiverAdapter() {
+              public void receive(Message msg) {
+                  System.out.println("received message " + msg);
+              }
+              public void viewAccepted(View new_view) {
+                  System.out.println("received view " + new_view);
+              }
+          });
+          ch.connect("bla");
+      </screen>
+        </para>
 
       <para>The <classname>ExtendedReceiverAdapter</classname> class
       implements all callbacks of ExtendedReceiver with no-ops, in the example
@@ -1256,28 +1273,29 @@
       transfer would not be correct.</para>
 
       <para>The following code fragment shows how a group member participates
-      in state transfers:</para>
-
+      in state transfers:
       <screen>
-                channel=new JChannel();
-                channel.connect("TestChannel");
-                boolean rc=channel.getState(null, 5000);
+          channel=new JChannel();
+          channel.connect("TestChannel");
+          boolean rc=channel.getState(null, 5000);
 
-                ...
+          ...
 
-                Object state, copy;
-                Object ret=channel.receive(0);
-                if(ret instanceof Message)
-                    ;
-                else if(ret instanceof GetStateEvent) {
-                    copy=copyState(state); // make a copy so that other msgs don't change the state
-                    channel.returnState(Util.objectToByteBuffer(copy));
-                }
-                else if(ret instanceof SetStateEvent) {
-                    SetStateEvent e=(SetStateEvent)ret;
-                    state=e.getArg();
-                }
-            </screen>
+          Object state, copy;
+          Object ret=channel.receive(0);
+          if(ret instanceof Message)
+              ;
+          else if(ret instanceof GetStateEvent) {
+              // make a copy so that other msgs don't change the state
+              copy=copyState(state);
+              channel.returnState(Util.objectToByteBuffer(copy));
+          }
+          else if(ret instanceof SetStateEvent) {
+              SetStateEvent e=(SetStateEvent)ret;
+              state=e.getArg();
+          }
+      </screen>
+      </para>
 
 
       <para>A JChannel has to be created whose stack includes the
@@ -1310,13 +1328,13 @@
 
       <para>As an alternative to handling the GetStateEvent and SetStateEvent
       events, and calling Channel.returnState(), a Receiver could be used. The
-      example above would look like this:</para>
-
+      example above would look like this:
       <screen>
           class MyReceiver extends ReceiverAdapter {
               final Map m=new HashMap();
               public byte[] getState() {
-                  synchronized(m) { // so nobody else can modify the map while we serialize it
+                  // so nobody else can modify the map while we serialize it
+                  synchronized(m) {
                       byte[] state=Util.objectToByteBuffer(m);
                       return state;
                   }
@@ -1330,12 +1348,13 @@
                   }
               }
           }
-
-          channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
+          // use default props (has to include STATE_TRANSFER)
+          channel=new JChannel();
           channel.setReceiver(new MyReceiver());
           channel.connect("TestChannel");
           boolean rc=channel.getState(null, 5000);
       </screen>
+      </para>
 
       <para>In a group consisting of A,B and C, with D joining the group and
       calling Channel.getState(), the following sequence of callbacks happens:
@@ -1371,56 +1390,58 @@
       the pull model, GetStateEvent and SetStateEvent have an additional
       member, state_id, and in the push model, there are 2 additional
       getState() and setState() callbacks. The example below shows partial
-      state transfer for the push model:</para>
-
+      state transfer for the push model:
       <screen>
-                class MyReceiver extends ExtendedReceiverAdapter {
-                    final Map m=new HashMap();
+          class MyReceiver extends ExtendedReceiverAdapter {
+              final Map m=new HashMap();
 
-                    public byte[] getState() {
-                        return getState(null);
-                    }
+              public byte[] getState() {
+                  return getState(null);
+              }
 
-                    public byte[] getState(String substate_id) {
-                        synchronized(m) { // so nobody else can modify the map while we serialize it
-                            byte[] state=null;
-                            if(substate_id == null) {
-                                state=Util.objectToByteBuffer(m);
-                            }
-                            else {
-                                Object value=m.get(substate_id);
-                                if(value != null) {
-                                    return Util.objectToByteBuffer(value);
-                                }
-                            }
-                            return state;
-                        }
-                    }
+              public byte[] getState(String substate_id) {
+                  // so nobody can modify the map while we serialize it
+                  synchronized(m) {
+                      byte[] state=null;
+                      if(substate_id == null) {
+                          state=Util.objectToByteBuffer(m);
+                      }
+                      else {
+                          Object value=m.get(substate_id);
+                          if(value != null) {
+                              return Util.objectToByteBuffer(value);
+                          }
+                      }
+                      return state;
+                  }
+              }
 
-                    public void setState(byte[] state) {
-                        setState(null, state);
-                    }
+              public void setState(byte[] state) {
+                  setState(null, state);
+              }
 
-                    public void setState(String substate_id, byte[] state) {
-                        synchronized(m) {
-                            if(substate_id != null) {
-                                Object value=Util.objectFromByteBuffer(state);
-                                m.put(substate_id, value);
-                            }
-                            else {
-                                Map new_m=(Map)Util.objectFromByteBuffer(state);
-                                m.clear();
-                                m.addAll(new_m);
-                            }
-                        }
-                    }
-                }
+              public void setState(String substate_id, byte[] state) {
+                  synchronized(m) {
+                      if(substate_id != null) {
+                          Object value=Util.objectFromByteBuffer(state);
+                          m.put(substate_id, value);
+                      }
+                      else {
+                          Map new_m=(Map)Util.objectFromByteBuffer(state);
+                          m.clear();
+                          m.addAll(new_m);
+                      }
+                  }
+              }
+          }
 
-                channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
-                channel.setReceiver(new MyReceiver());
-                channel.connect("TestChannel");
-                boolean rc=channel.getState(null, "MyID", 5000);
-            </screen>
+          // use default props (has to include pbcast.STATE_TRANSFER)
+          channel=new JChannel();
+          channel.setReceiver(new MyReceiver());
+          channel.connect("TestChannel");
+          boolean rc=channel.getState(null, "MyID", 5000);
+      </screen>
+      </para>
 
       <para>The example shows that the Channel.getState() method specifies the
       ID of the substate, in this case "MyID". The
@@ -1455,19 +1476,19 @@
       receiving/reading state through a provided InputStream reference. In
       order to use streaming state transfer in a push mode, existing
       ExtendedMessageListener has been expanded to include additional four
-      methods:</para>
-
+      methods:
       <screen>
-public interface ExtendedMessageListener { 
+         public interface ExtendedMessageListener {
 
-      /*non-streaming callback methods ommitted for clarity*/
+             /*non-streaming callback methods ommitted for clarity*/
  
-       void getState(OutputStream ostream);
-       void getState(String state_id, OutputStream ostream);
-       void setState(InputStream istream);
-       void setState(String state_id, InputStream istream);
-
-}            </screen>
+             void getState(OutputStream ostream);
+             void getState(String state_id, OutputStream ostream);
+             void setState(InputStream istream);
+             void setState(String state_id, InputStream istream);
+          }
+      </screen>
+      </para>
 
       <para>For a pull mode (when application uses channel.receive() to fetch
       events) two new event classes will be introduced:</para>
@@ -1488,29 +1509,30 @@ public interface ExtendedMessageListener {
       <para>The following code snippet demonstrates how to pull events from a
       channel, processing StreamingGetStateEvent and sending hypothetical
       state through a provided OutputStream reference. Handling of
-      StreamingSetStateEvent is analogous to this example:</para>
-
-      <screen>   ...
-   Object obj=channel.receive(0);
-   if(obj instanceof StreamingGetStateEvent) {
-     StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
-     OutputStream oos = null;
-     try {
-         oos = new ObjectOutputStream(evt.getArg());
-         oos.writeObject(state);
-         oos.flush();
-     }
-     catch (Exception e) {}
-     finally {
-         try {
-             oos.close();
-         }
-         catch (IOException e) {
-             System.err.println(e);
-         }
-    }
-  }                
-  ...</screen>
+      StreamingSetStateEvent is analogous to this example:
+          <screen>
+          ...
+          Object obj=channel.receive(0);
+          if(obj instanceof StreamingGetStateEvent) {
+              StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
+              OutputStream oos = null;
+              try {
+                  oos=new ObjectOutputStream(evt.getArg());
+                  oos.writeObject(state);
+                  oos.flush();
+              }
+              catch (Exception e) {}
+              finally {
+                  try {
+                      oos.close();
+                  }
+                  catch (IOException e) {
+                      System.err.println(e);
+                  }
+              }
+          }                 
+          </screen>
+      </para>
 
       <para>JGroups has a great flexibility with state transfer methodology by
       allowing application developers to implement both byte based and
@@ -1526,11 +1548,11 @@ public interface ExtendedMessageListener {
       <title>Disconnecting from a channel</title>
 
       <para>Disconnecting from a channel is done using the following
-      method:</para>
-
-      <screen>
-                public void disconnect();
-            </screen>
+      method:
+          <screen>
+          public void disconnect();
+          </screen>
+      </para>
 
       <para>It will have no effect if the channel is already in the
       disconnected or closed state. If connected, it will remove itself from
@@ -1548,11 +1570,11 @@ public interface ExtendedMessageListener {
 
       <para>To destroy a channel instance (destroy the associated protocol
       stack, and release all resources), method
-      <methodname>close()</methodname> is used:</para>
-
-      <screen>
-                public void close();
-            </screen>
+      <methodname>close()</methodname> is used:
+        <screen>
+         public void close();
+        </screen>
+        </para>
 
       <para>It moves the channel to the closed state, in which no further
       operations are allowed (most throw an exception when invoked on a closed

@@ -369,14 +369,14 @@
         <para>The following example shows how to disable the use of IP
         multicasting and use a GossipRouter instead. Only the bottom two
         protocols are shown, the rest of the stack is the same as in the
-        previous example:</para>
-
+        previous example:
         <screen>
-                    &lt;UDP ip_mcast="false" mcast_addr="224.0.0.35" mcast_port="45566" ip_ttl="32"
-                         mcast_send_buf_size="150000" mcast_recv_buf_size="80000"/&gt;
-                    &lt;PING gossip_host="localhost" gossip_port="5555" gossip_refresh="15000"
-                          timeout="2000" num_initial_members="3"/&gt;
-                </screen>
+            &lt;UDP ip_mcast="false" mcast_addr="224.0.0.35" mcast_port="45566" ip_ttl="32"
+                mcast_send_buf_size="150000" mcast_recv_buf_size="80000"/&gt;
+            &lt;PING gossip_host="localhost" gossip_port="5555" gossip_refresh="15000"
+                timeout="2000" num_initial_members="3"/&gt;
+        </screen>
+        </para>
 
         <para>The property <parameter>ip_mcast</parameter> is set to
         <literal>false</literal> in <classname>UDP</classname> and the gossip
@@ -408,8 +408,7 @@
       WANs.</para>
 
       <para>The properties for a typical stack based on TCP might look like
-      this (edited/protocols removed for brevity):</para>
-
+      this (edited/protocols removed for brevity):
       <screen>
     &lt;TCP start_port="7800" /&gt;
     &lt;TCPPING timeout="3000"
@@ -426,7 +425,8 @@
     &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
                 shun="true"
                 view_bundling="true"/&gt;
-            </screen>
+      </screen>
+      </para>
 
       <variablelist>
         <varlistentry>
@@ -525,13 +525,13 @@
         <title>Using TCP and TCPPING</title>
 
         <para>A protocol stack using TCP and TCPPING looks like this (other
-        protocols omitted):</para>
-
+          protocols omitted):
         <screen>
-                    &lt;TCP start_port="7800" /&gt; +
-                    &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="5"
-                             timeout="3000" num_initial_members="3" /&gt;
-                </screen>
+            &lt;TCP start_port="7800" /&gt; +
+            &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="5"
+            timeout="3000" num_initial_members="3" /&gt;
+        </screen>
+        </para>
 
         <para>The concept behind TCPPING is that no external daemon such as
         GossipRouter is needed. Instead some selected group members assume the
@@ -566,13 +566,13 @@
         <parameter>gossip_port</parameter> and
         <parameter>gossip_refresh</parameter> set. However, in TCPGOSSIP these
         properties are called differently as shown below (only the bottom two
-        protocols are shown):</para>
-
-        <screen>
-                    &lt;TCP /&gt;
-                    &lt;TCPGOSSIP initial_hosts="localhost[5555],localhost[5556]" gossip_refresh_rate="10000"
-                               num_initial_members="3" /&gt;
-                </screen>
+        protocols are shown):
+          <screen>
+              &lt;TCP /&gt;
+              &lt;TCPGOSSIP initial_hosts="localhost[5555],localhost[5556]" gossip_refresh_rate="10000"
+              num_initial_members="3" /&gt;
+          </screen>
+          </para>
 
         <para>The <parameter>initial_hosts</parameter> properties combines
         both the host and port of a GossipRouter, and it is possible to
@@ -620,12 +620,12 @@
         <para>The solution works as follows. A channel inside a firewall has
         to use protocol TUNNEL instead of UDP or TCP as bottommost layer. Recommended 
         discovery protocol is PING, starting with 2.8 release, you do not have to specify 
-        any gossip routers in PING. </para>
-
-        <screen>
-                    &lt;TUNNEL gossip_router_hosts="127.0.0.1[12001]" /&gt;
-                    &lt;PING /&gt;
-                </screen>
+        any gossip routers in PING.
+          <screen>
+              &lt;TUNNEL gossip_router_hosts="127.0.0.1[12001]" /&gt;
+              &lt;PING /&gt;
+          </screen>
+          </para>
 
         <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
         the firewall) at port <literal>12001</literal> to register its address
@@ -701,11 +701,11 @@
           </listitem>
 
           <listitem>
-            <para>Start the GossipRouter:</para>
-
-            <screen>
-                            start org.jgroups.stack.GossipRouter -port 12001
-                        </screen>
+            <para>Start the GossipRouter:
+              <screen>
+                  start org.jgroups.stack.GossipRouter -port 12001
+              </screen>
+              </para>
           </listitem>
 
 
@@ -1373,7 +1373,8 @@
                 private static void handleView(JChannel ch, View new_view) {
                     if(new_view instanceof MergeView) {
                         ViewHandler handler=new ViewHandler(ch, (MergeView)new_view);
-                        handler.start(); // requires separate thread as we don't want to block JGroups
+                        // requires separate thread as we don't want to block JGroups
+                        handler.start();
                     }
                 }
 
@@ -1391,8 +1392,8 @@
                         View tmp_view=subgroups.firstElement(); // picks the first
                         Address local_addr=ch.getLocalAddress();
                         if(!tmp_view.getMembers().contains(local_addr)) {
-                            System.out.println("I (" + local_addr + ") am not member of the new primary partition (" + tmp_view +
-                                    "), will re-acquire the state");
+                            System.out.println("Not member of the new primary partition ("
+                                         + tmp_view + "), will re-acquire the state");
                             try {
                                 ch.getState(null, 30000);
                             }
@@ -1400,8 +1401,8 @@
                             }
                         }
                         else {
-                            System.out.println("I (" + local_addr + ") am member of the new primary partition (" + tmp_view +
-                                    "), will do nothing");
+                            System.out.println("Not member of the new primary partition ("
+                                       + tmp_view + "), will do nothing");
                         }
                     }
                 }
@@ -1455,7 +1456,7 @@
                     
                     On view change V:
                         - If V has >= N members:
-                            - If not read-write: get state from coordinator and switch to read-write
+                            - If not read-write: get state from coord and switch to read-write
                         - Else: switch to read-only
                 </screen>
             </para>

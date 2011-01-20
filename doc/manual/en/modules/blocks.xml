@@ -386,9 +386,11 @@
 
     <screen>
     public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout);
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, int mode, long timeout);
+    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, int mode,
+                                     long timeout);
     public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout);
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode, long timeout);
+    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode,
+                                   long timeout);
     </screen>
 
     <para>The family of <methodname>callRemoteMethods()</methodname>
@@ -494,13 +496,13 @@
                 All calls with individual parameters have been deprecated in 2.9 and the new calls with RequestOptions
                 are:
       <screen>
-        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
-                                         Class[] types, RequestOptions options);
-        public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
-                                         RequestOptions options);
-        public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                       Class[] types, RequestOptions options);
-        public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
+      public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name,
+                                       Object[] args,Class[] types, RequestOptions options);
+      public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
+                                       RequestOptions options);
+      public Object callRemoteMethod(Address dest, String method_name, Object[] args,
+                                     Class[] types, RequestOptions options);
+      public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
       </screen>
             </para>
 
@@ -508,7 +510,8 @@
                 An example of how to use RequestOptions is:
       <screen>
         RpcDispatcher disp;
-        RequestOptions opts=new RequestOptions(Request.GET_ALL).setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+        RequestOptions opts=new RequestOptions(Request.GET_ALL)
+                                .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
         Object val=disp.callRemoteMethod(target, method_call, opts);
       </screen>
             </para>
@@ -526,9 +529,9 @@
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
                 <screen>
         public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                           MethodCall method_call, RequestOptions options);
+                                                   MethodCall method_call, RequestOptions options);
         public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                                                  RequestOptions options);
+                                                     RequestOptions options);
                 </screen>
             </para>
 
@@ -696,7 +699,8 @@
         <para>
             Below is an example of how LockService is typically used:
             <screen>
-            JChannel ch=new JChannel("/home/bela/locking.xml"); // needs to have a locking protocol
+            // locking.xml needs to have a locking protocol
+            JChannel ch=new JChannel("/home/bela/locking.xml");
             LockService lock_service=new LockService(ch);
             ch.connect("lock-cluster");
             Lock lock=lock_service.getLock("mylock");
