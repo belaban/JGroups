@@ -78,6 +78,8 @@ public class LockService {
 
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             Boolean retval=(Boolean)ch.downcall(new Event(Event.LOCK, new LockInfo(name, true, true, true, time, unit)));
+            if(Thread.currentThread().isInterrupted())
+                throw new InterruptedException();
             return retval.booleanValue();
         }
 
