@@ -87,7 +87,7 @@ abstract public class Locking extends Protocol {
                         try {
                             lock.lockInterruptibly();
                         }
-                        catch(InterruptedException e) { // todo: make sure the caller runs the check below !
+                        catch(InterruptedException e) {
                             Thread.currentThread().interrupt(); // has to be checked by caller who has to rethrow ...
                         }
                     }
