@@ -92,13 +92,35 @@ public class LockServiceTest extends ChannelTestBase {
 
     public void testSuccessfulTryLockTimeout() throws InterruptedException, BrokenBarrierException {
         final CyclicBarrier barrier=new CyclicBarrier(2);
-
         Thread locker=new Locker(barrier);
         locker.start();
         barrier.await();
         boolean rc=tryLock(lock, 10000, LOCK);
         assert rc;
     }
+
+
+    public void testConcurrentLockRequests() throws Exception {
+        int NUM=10;
+        final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
+        TryLocker[] lockers=new TryLocker[NUM];
+        for(int i=0; i < lockers.length; i++) {
+            lockers[i]=new TryLocker(barrier, 500);
+            lockers[i].start();
+        }
+        barrier.await();
+        for(TryLocker locker: lockers)
+            locker.join();
+        int num_acquired=0;
+        for(TryLocker locker: lockers) {
+            if(locker.acquired) {
+                num_acquired++;
+            }
+        }
+        assert num_acquired == 1;
+    }
+
+
 
     
     protected class Locker extends Thread {
@@ -122,6 +144,41 @@ public class LockServiceTest extends ChannelTestBase {
         }
     }
 
+    protected class TryLocker extends Thread {
+        protected final CyclicBarrier barrier;
+        protected final long timeout;
+        protected boolean acquired;
+
+        public TryLocker(CyclicBarrier barrier, long timeout) {
+            this.barrier=barrier;
+            this.timeout=timeout;
+        }
+
+        public boolean isAcquired() {
+            return acquired;
+        }
+
+        public void run() {
+            try {
+                barrier.await();
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                acquired=tryLock(lock, timeout, LOCK);
+                Util.sleep(timeout * 2);
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+        }
+    }
+
 
     protected static void lock(Lock lock, String name) {
         System.out.println("[" + Thread.currentThread().getId() + "] locking " + name);
@@ -132,14 +189,14 @@ public class LockServiceTest extends ChannelTestBase {
     protected static boolean tryLock(Lock lock, String name) {
         System.out.println("[" + Thread.currentThread().getId() + "] tryLocking " + name);
         boolean rc=lock.tryLock();
-        System.out.println("[" + Thread.currentThread().getId() + "] locked " + name);
+        System.out.println("[" + Thread.currentThread().getId() + "] " + (rc? "locked " : "failed locking") + name);
         return rc;
     }
 
     protected static boolean tryLock(Lock lock, long timeout, String name) throws InterruptedException {
         System.out.println("[" + Thread.currentThread().getId() + "] tryLocking " + name);
         boolean rc=lock.tryLock(timeout, TimeUnit.MILLISECONDS);
-        System.out.println("[" + Thread.currentThread().getId() + "] locked " + name);
+        System.out.println("[" + Thread.currentThread().getId() + "] " + (rc? "locked " : "failed locking ") + name);
         return rc;
     }
 
