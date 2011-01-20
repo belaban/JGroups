@@ -370,7 +370,7 @@
             the receiver as follows:</para>
 
         <screen>
-            java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces
+        java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces
         </screen>
 
         <para>The multicast receiver uses the 1.4 functionality to list
@@ -382,7 +382,7 @@
         </para>
 
         <screen>
-            java org.jgroups.tests.McastSenderTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces
+        java org.jgroups.tests.McastSenderTest1_4 -mcast_addr 228.8.8.8 -use_all_interfaces
         </screen>
 
         <para>The sender will also determine the available network
@@ -392,13 +392,13 @@
             bind to when previously no packets were received. E.g. when you
             see the following output in the receiver:</para>
 
-        <screen>
-            bash-2.03$ java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -bind_addr 192.168.168.4
-            Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4
-            dd [sender=192.168.168.4:5555]
-            dd [sender=192.168.168.1:5555]
-            dd [sender=192.168.168.2:5555]
-        </screen>
+      <screen>
+      bash-2.03$ java org.jgroups.tests.McastReceiverTest1_4 -mcast_addr 228.8.8.8 -bind_addr 192.168.168.4
+      Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4
+      dd [sender=192.168.168.4:5555]
+      dd [sender=192.168.168.1:5555]
+      dd [sender=192.168.168.2:5555]
+      </screen>
 
         <para>you know that you can bind to any of the 192.168.168.{1,2,4}
             interfaces to receive your multicast packets. In this case you
@@ -424,7 +424,7 @@
         </para>
 
         <screen>
-            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props file:/home/bela/udp.xml
+        java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/udp.xml
         </screen>
 
         <para>JDK 1.4.1 uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.

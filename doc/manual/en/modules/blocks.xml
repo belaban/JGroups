@@ -525,9 +525,9 @@
                 A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
                 <screen>
-                    public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                                  MethodCall method_call, RequestOptions options);
-                    public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+        public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                           MethodCall method_call, RequestOptions options);
+        public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
                                                                   RequestOptions options);
                 </screen>
             </para>
@@ -696,17 +696,17 @@
         <para>
             Below is an example of how LockService is typically used:
             <screen>
-                JChannel ch=new JChannel("/home/bela/locking.xml"); // config needs to have a locking protocol on top
-                LockService lock_service=new LockService(ch);
-                ch.connect("lock-cluster");
-                Lock lock=lock_service.getLock("mylock");
-                lock.lock();
-                try {
-                    // do something with the locked resource
-                }
-                finally {
-                    lock.unlock();
-                }
+            JChannel ch=new JChannel("/home/bela/locking.xml"); // needs to have a locking protocol
+            LockService lock_service=new LockService(ch);
+            ch.connect("lock-cluster");
+            Lock lock=lock_service.getLock("mylock");
+            lock.lock();
+            try {
+                // do something with the locked resource
+            }
+            finally {
+                lock.unlock();
+            }
             </screen>
         </para>
         <para>

@@ -14,8 +14,7 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2010/04/30 14:27:36 $</pubdate>
-        <releaseinfo>$Revision: 1.15 $</releaseinfo>
+        <pubdate>Jan 2011</pubdate>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -35,7 +34,7 @@
             <holder>Bela Ban</holder>
         </copyright>
          <copyright>
-            <year>2006-2010</year>
+            <year>2006-2011</year>
             <holder>Red Hat Inc</holder>
         </copyright>
         <legalnotice>
