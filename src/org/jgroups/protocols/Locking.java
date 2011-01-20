@@ -22,7 +22,13 @@ import java.util.concurrent.locks.Lock;
 
 
 /**
+ * Base locking protocol, handling most of the protocol communication with other instances. To use distributed locking,
+ * {@link org.jgroups.blocks.locking.LockService} is placed on a channel. LockService talks to a subclass of Locking
+ * via events.
  * @author Bela Ban
+ * @since 2.12
+ * @see org.jgroups.protocols.CENTRAL_LOCK
+ * @see org.jgroups.protocols.PEER_LOCK
  */
 abstract public class Locking extends Protocol {
 
@@ -164,8 +170,6 @@ abstract public class Locking extends Protocol {
                         log.error("Request of type " + req.type + " not known");
                         break;
                 }
-
-
                 return null;
 
             case Event.VIEW_CHANGE:
@@ -192,7 +196,6 @@ abstract public class Locking extends Protocol {
                 locks.addAll(map.values());
             }
         }
-
         for(ClientLock lock: locks)
             lock.unlock();
     }

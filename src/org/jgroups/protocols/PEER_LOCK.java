@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Implementation of a lock service which acquires locks by contacting all of the nodes of a cluster.</p> Unless a total
- * order configuration is used (e.g. {@link org.jgroups.protocols.SEQUENCER} based), lock requests for the same resource
- * from different senders may be received in different order, so deadlocks can occur. Example:
+ * Implementation of a locking protocol which acquires locks by contacting <em>all</em> of the nodes of a cluster.</p>
+ * Unless a total order configuration is used (e.g. {@link org.jgroups.protocols.SEQUENCER} based), lock requests for
+ * the same resource from different senders may be received in different order, so deadlocks can occur. Example:
  * <pre>
  * - Nodes A and B
  * - A and B call lock(X) at the same time
@@ -27,8 +27,11 @@ import java.util.Map;
  * add SEQUENCER to the configuration, so that all lock requests are received in the same global order at both A and B,
  * or use {@link java.util.concurrent.locks.Lock#tryLock(long,java.util.concurrent.TimeUnit)} with retries if a lock
  * cannot be acquired.<p/>
- * An alternative is also the {@link org.jgroups.blocks.locking.CentralLockService}.
+ * An alternative is also the {@link org.jgroups.protocols.CENTRAL_LOCK} protocol.
  * @author Bela Ban
+ * @since 2.12
+ * @see Locking
+ * @see CENTRAL_LOCK
  */
 @Experimental
 public class PEER_LOCK extends Locking {
@@ -84,10 +87,8 @@ public class PEER_LOCK extends Locking {
             if(grants.isEmpty())
                 return;
             grants.remove(sender);
-            if(grants.isEmpty()) {
+            if(grants.isEmpty())
                 lockGranted();
-                // notifyLocked(this.name, owner);
-            }
         }
     }
 

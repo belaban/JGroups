@@ -2,6 +2,7 @@ package org.jgroups.blocks.locking;
 
 import org.jgroups.Event;
 import org.jgroups.JChannel;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.protocols.Locking;
 
 import java.util.concurrent.TimeUnit;
@@ -9,8 +10,29 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
+ * LockService is the main class for to use for distributed locking functionality. LockService needs access to a
+ * {@link JChannel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
+ * When no locking protocol is seen on the channel's stack, LockService will throw an exception at startup. An example
+ * of using LockService is:
+ * <pre>
+   JChannel ch=new JChannel("/home/bela/locking.xml); // locking.xml needs to have a locking protocol towards the top
+   LockService lock_service=new LockService(ch);
+   ch.connect("lock-cluster");
+   Lock lock=lock_service.getLock("mylock");
+   lock.lock();
+   try {
+      // do something with the lock acquired
+   }
+   finally {
+      lock.unlock();
+   }
+ * </pre>
+ * Note that, contrary to the semantics of {@link java.util.concurrent.locks.Lock}, unlock() can be called multiple
+ * times; after a lock has been released, future calls to unlock() have no effect.
  * @author Bela Ban
+ * @since 2.12
  */
+@Experimental
 public class LockService {
     protected JChannel ch;
     protected Locking lock_prot;
