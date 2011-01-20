@@ -46,10 +46,14 @@ public class LockServiceTest extends ChannelTestBase {
 
     @AfterClass
     protected void cleanup() {
+        Util.close(c3,c2,c1);
+    }
+
+    @BeforeMethod
+    protected void unlockAll() {
         s3.unlockAll();
         s2.unlockAll();
         s1.unlockAll();
-        Util.close(c3,c2,c1);
     }
 
 
@@ -65,6 +69,11 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
     public void testUnsuccessfulTryLock() {
+        System.out.println("s1:\n" + s1.printLocks() +
+                             "\ns2:\n" + s2.printLocks() +
+                             "\ns3:\n" + s3.printLocks());
+
+
         Lock lock2=s2.getLock(LOCK);
         lock(lock2, LOCK);
         try {
@@ -83,7 +92,6 @@ public class LockServiceTest extends ChannelTestBase {
         try {
             boolean rc=tryLock(lock, 1000, LOCK);
             assert !rc;
-            unlock(lock, LOCK);
         }
         finally {
             unlock(lock2, LOCK);
@@ -97,6 +105,7 @@ public class LockServiceTest extends ChannelTestBase {
         barrier.await();
         boolean rc=tryLock(lock, 10000, LOCK);
         assert rc;
+        unlock(lock, LOCK);
     }
 
 
