@@ -53,19 +53,18 @@ public class Message implements Streamable {
     static final byte DEST_SET         =  1 << 0;
     static final byte SRC_SET          =  1 << 1;
     static final byte BUF_SET          =  1 << 2;
-    // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
 
 
     // =============================== Flags ====================================
-    public static final byte OOB               =  1 << 0;
-    public static final byte LOOPBACK          =  1 << 1; // if message was sent to self
-    public static final byte DONT_BUNDLE       =  1 << 2; // don't bundle message at the transport
-    public static final byte NO_FC             =  1 << 3; // bypass flow control
-    public static final byte SCOPED            =  1 << 4; // when a message has a scope
+    public static final byte OOB               =  1 << 0; // message is out-of-band
+    public static final byte DONT_BUNDLE       =  1 << 1; // don't bundle message at the transport
+    public static final byte NO_FC             =  1 << 2; // bypass flow control
+    public static final byte SCOPED            =  1 << 3; // when a message has a scope
 
-    // the following 2 flags will be removed in 3.x, when https://jira.jboss.org/browse/JGRP-1250 has been resolved
-    public static final byte NO_RELIABILITY    =  1 << 5; // bypass UNICAST(2) and NAKACK
-    public static final byte NO_TOTAL_ORDER    =  1 << 6; // bypass total order (e.g. SEQUENCER)
+    // the following 2 flags might get removed in 3.x, when https://jira.jboss.org/browse/JGRP-1250 is resolved
+    public static final byte NO_RELIABILITY    =  1 << 4; // bypass UNICAST(2) and NAKACK
+    public static final byte NO_TOTAL_ORDER    =  1 << 5; // bypass total order (e.g. SEQUENCER)
+    public static final byte NO_RELAY          =  1 << 6; // bypass relaying (RELAY)
 
 
     // =========================== Transient flags ==============================
@@ -689,13 +688,6 @@ public class Message implements Streamable {
         if(isFlagSet(flags, OOB)) {
             first=false;
             sb.append("OOB");
-        }
-        if(isFlagSet(flags, LOOPBACK)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("LOOPBACK");
         }
         if(isFlagSet(flags, DONT_BUNDLE)) {
             if(!first)
