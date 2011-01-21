@@ -724,20 +724,21 @@ public class Message implements Streamable {
                 first=false;
             sb.append("NO_TOTAL_ORDER");
         }
+        if(isFlagSet(flags, NO_RELAY)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("NO_RELAY");
+        }
         return sb.toString();
     }
 
 
     public static String transientFlagsToString(byte flags) {
         StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        if(isFlagSet(flags, OOB_DELIVERED)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
+        if(isFlagSet(flags, OOB_DELIVERED))
             sb.append("OOB_DELIVERED");
-        }
         return sb.toString();
     }
 
