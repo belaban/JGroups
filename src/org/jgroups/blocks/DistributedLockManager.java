@@ -21,8 +21,10 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
+ * @deprecated Succeessor is {@link org.jgroups.blocks.locking.LockService}.
  */
 @Unsupported
+@Deprecated
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
      * Definitions for the implementation of the VoteResponseProcessor
