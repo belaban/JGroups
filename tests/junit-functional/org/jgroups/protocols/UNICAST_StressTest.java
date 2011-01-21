@@ -85,7 +85,6 @@ public class UNICAST_StressTest {
 
         unicast.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         unicast.setMaxMessageBatchSize(max_msg_batch_size);
-        unicast.setValue("max_bytes", 20000);
 
         // send the first message manually, to initialize the AckReceiverWindow tables
         Message msg=createMessage(local_addr, sender, 1L, oob, true);
