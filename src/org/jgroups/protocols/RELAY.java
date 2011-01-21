@@ -188,7 +188,7 @@ public class RELAY extends Protocol {
                     return null;
                 }
 
-                if(is_coord && relay && (dest == null || dest.isMulticastAddress())) {
+                if(is_coord && relay && (dest == null || dest.isMulticastAddress()) && !msg.isFlagSet(Message.NO_RELAY)) {
                     Message tmp=msg.copy(true, false);
                     try {
                         byte[] buf=Util.streamableToByteBuffer(tmp);
