@@ -269,7 +269,7 @@
     <target name="checkout-docbook-support">
         <exec executable="svn">
             <arg value="co"/>
-            <arg value="http://anonsvn.labs.jboss.com/labs/jbosslabs/trunk/doc/docbook-support/"/>
+            <arg value="http://anonsvn.jboss.org/repos/jbossas/projects/docs/docbook-support/"/>
             <arg value="${root.dir}/../docbook-support"/>
         </exec>
     </target>
