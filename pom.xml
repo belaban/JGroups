@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>2.11.1.GA</version>
+    <version>2.11.1.FINAL</version>
     <url>http://www.jgroups.org</url>
     <description>
         Reliable cluster communication toolkit

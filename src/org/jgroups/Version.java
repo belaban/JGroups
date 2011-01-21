@@ -27,7 +27,7 @@ public class Version {
     public static final short major = 2;
     public static final short minor = 11;
     public static final short micro = 1;
-    public static final String description="2.11.1.GA";
+    public static final String description="2.11.1.FINAL";
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
