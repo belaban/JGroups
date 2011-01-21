@@ -732,6 +732,44 @@
             <xref linkend="PEER_LOCK">PEER_LOCK</xref> and <xref linkend="CENTRAL_LOCK">CENTRAL_LOCK</xref>. The locking
             protocol has to be placed at or towards the top of the stack (close to the channel).
         </para>
+        <section>
+            <title>Locking and merges</title>
+            <para>
+                The following scenario is susceptible to merging: we have a cluster view of {A,B,C,D} and then the cluster
+                splits into {A,B} and {C,D}. Assume that B and D now acquire a lock "mylock".
+                This is what happens (with the locking protocol being CENTRAL_LOCK):
+                <itemizedlist>
+                    <listitem>There are 2 coordinators: A for {A,B} and C for {C,D}</listitem>
+                    <listitem>B successfully acquires "mylock" from A</listitem>
+                    <listitem>D successfully acquires "mylock" from C</listitem>
+                    <listitem>The partitions merge back into {A,B,C,D}. Now, only A is the coordinator, but C ceases
+                    to be a coordinator</listitem>
+                    <listitem>Problem: D still holds a lock which should actually be invalid !</listitem>
+                </itemizedlist>
+                There is no easy way (via the Lock API) to 'remove' the lock from D. We could for example simply release
+                D's lock on "mylock", but then there's no way telling D that the lock it holds is actually stale !
+            </para>
+            <para>
+                Therefore the recommended solution here is for nodes to listen to MergeView changes if they expect
+                merging to occur, and re-acquire all of their locks after a merge, e.g.:
+                <screen>
+                    Lock l1, l2, l3;
+                    LockService lock_service;
+                    ...
+                    public void viewAccepted(View view) {
+                        if(view instanceof MergeView) {
+                            new Thread() {
+                                public void run() {
+                                    lock_service.unlockAll();
+                                    // stop all access to resources protected by l1, l2 or l3
+                                    // every thread needs to re-acquire the locks it holds
+                                }
+                            }.start
+                        }
+                    }
+                </screen>
+            </para>
+        </section>
     </section>
   
     
