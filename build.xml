@@ -70,10 +70,6 @@
     </patternset>
 
 
-    <patternset id="one.test">
-        <include name="**/*${test}*"/>
-    </patternset>
-
     <patternset id="all.tests">
         <include name="org/jgroups/tests/**Test**"/>
         <include name="org/jgroups/blocks/**Test**"/>
@@ -93,10 +89,11 @@
 
     <target name="compile"
             depends="prepare"
-            description="Compiles are Java files">
+            description="Compiles all Java files">
         <javac destdir="${compile.dir}"
-               source="1.5"
+               source="1.6"
                classpathref="jg.classpath"
+               includeantruntime="false"
                debug="on"
                deprecation="off"
                optimize="off"
@@ -113,77 +110,43 @@
     </target>
 
 
+    <target name="compile-no-unittests"
+            depends="prepare"
+            description="Compiles all Java files">
+        <javac destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**"
+               excludes="org/jgroups/tests/junit/,org/jgroups/tests/junit-functional/,org/jgroups/tests/stress">
+            <exclude name="**/obsolete/**"/>
+            <src path="${src.dir}"/>
+            <src path="${other.dir}"/>
+            <src path="${perf.dir}"/>
+        </javac>
+    </target>
+
+
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
-            depends="compile,
-                jgroups.jar,
-    			jgroups-sources.jar">
+            depends="jgroups.jar,jgroups-sources.jar">
+        <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
+
     </target>
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile,create-schema">
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests,create-schema">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
          manifest="${conf.dir}/manifest.mf"
          includes="org/jgroups/**,schema/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-    </jar>    	
-    </target>
-
-    <target name="jgroups-core.jar"
-            description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile,create-schema">
-	    <mkdir dir="${dist.dir}"/>	
-	    <jar jarfile="${dist.dir}/jgroups-core.jar"
-	         basedir="${compile.dir}"
-	         manifest="${conf.dir}/manifest.mf"
-	         includes="org/jgroups/**,schema/**"
-	         excludes="org/jgroups/demos/**,
-	                  org/jgroups/tests/**,
-	                  org/jgroups/**/*Test.class,
-	                  org/jgroups/**/*Test\$*.class">
-	        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-	    </jar>	   
-    </target>
-
-    <target name="jgroups-sources.jar"
-            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
-        <mkdir dir="${dist.dir}"/>
-        <jar jarfile="${dist.dir}/jgroups-sources.jar"
-             basedir="${src.dir}"
-             manifest="${conf.dir}/manifest.mf"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**">
-        </jar>
-    </target>
-
-    <target name="dist" description="Creates the distribution ZIP files in ./dist">
-        <antcall target="src-dist"/>
-        <antcall target="bin-dist"/>
-    </target>
-
-
-    <target name="src-dist" depends="clean">
-        <echo message="Creating source distribution ${dist.dir}/JGroups-${version}.src.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.src"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.src">
-            <fileset dir="${root.dir}">
-                <exclude name="*CVS*"/>
-                <exclude name="doc/progguide/**"/>
-                <exclude name="doc/usersguide/**"/>
-            </fileset>
-        </copy>
-
-        <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.src.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
-
-    <target name="bin-dist" depends="jar">
-        <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.bin">
             <fileset dir="${root.dir}">
                 <include name="CREDITS"/>
                 <include name="INSTALL.html"/>
@@ -193,55 +156,21 @@
             <fileset dir="${lib.dir}">
                 <include name="licenses/*"/>
             </fileset>
-            <fileset dir="${dist.dir}">
-                <include name="jgroups-${version}*.jar"/>
-            </fileset>
-            <fileset dir="${conf.dir}">
-                <include name="config.txt"/>
-                <include name="udp.xml"/>
-                <include name="flush-*.xml"/>
-                <include name="tcp*.xml"/>
-                <include name="mping.xml"/>
-                <include name="sfc.xml"/>
-            </fileset>
-            <fileset dir="${bin.dir}">
-                <include name="jgroups*"/>
-            </fileset>
-        </copy>
+        </jar>
+    </target>
+
+
+    <target name="jgroups-sources.jar"
+            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
         <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
-
-    <target name="gossip-service"
-            description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
-            depends="compile">
-        <mkdir dir="${dist.dir}/gossiptemp"/>
-        <copy file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
-        <jar jarfile="${dist.dir}/gossip-router.sar"
-             basedir="${compile.dir}"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
-            <metainf dir="${dist.dir}/gossiptemp"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
-        </jar>
-        <delete dir="${dist.dir}/gossiptemp"/>
-    </target>
-
-
-    <target name="jgroups-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-service.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <metainf dir="${conf.dir}"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
+        <jar jarfile="${dist.dir}/jgroups-sources.jar"
+             basedir="${src.dir}"
+             manifest="${conf.dir}/manifest.mf"
+             includes="org/jgroups/**">
         </jar>
     </target>
+
+
 
     <!-- generate java doc -->
     <target name="javadoc"
@@ -317,7 +246,7 @@
     </target>
 
 
-	<target name="create-schema" description="creates XML schema for this version of JGroups" depends="compile">
+	<target name="create-schema" description="creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
@@ -339,7 +268,7 @@
     <target name="checkout-docbook-support">
         <exec executable="svn">
             <arg value="co"/>
-            <arg value="http://anonsvn.labs.jboss.com/labs/jbosslabs/trunk/doc/docbook-support/"/>
+            <arg value="http://anonsvn.jboss.org/repos/jbossas/projects/docs/docbook-support/"/>
             <arg value="${root.dir}/../docbook-support"/>
         </exec>
     </target>
