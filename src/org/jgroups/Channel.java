@@ -81,12 +81,10 @@ public abstract class Channel implements Transport {
 
     public void setSocketFactory(SocketFactory factory) {
         socket_factory=factory;
-        if(isConnected()) {
-            ProtocolStack stack=getProtocolStack();
-            Protocol prot=stack != null? stack.getTopProtocol() : null;
-            if(prot != null)
-                prot.setSocketFactory(factory);
-        }
+        ProtocolStack stack=getProtocolStack();
+        Protocol prot=stack != null? stack.getTopProtocol() : null;
+        if(prot != null)
+            prot.setSocketFactory(factory);
     }
 
     /**

@@ -1760,6 +1760,9 @@ public class JChannel extends Channel {
         else
             this.cluster_name=cluster_name;
 
+        if(socket_factory != null)
+            prot_stack.getTopProtocol().setSocketFactory(socket_factory);
+
         try {
             prot_stack.startStack(cluster_name, local_addr); // calls start() in all protocols, from top to bottom
         }
@@ -1767,10 +1770,6 @@ public class JChannel extends Channel {
             throw new ChannelException("failed to start protocol stack", e);
         }
 
-        if(socket_factory != null) {
-            prot_stack.getTopProtocol().setSocketFactory(socket_factory);
-        }
-        
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
         Vector<Address> t=new Vector<Address>(1);
