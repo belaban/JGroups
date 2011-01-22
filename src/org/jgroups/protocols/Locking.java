@@ -1,6 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.LockInfo;
@@ -30,6 +32,7 @@ import java.util.concurrent.locks.Lock;
  * @see org.jgroups.protocols.CENTRAL_LOCK
  * @see org.jgroups.protocols.PEER_LOCK
  */
+@MBean(description="Based class for locking functionality")
 abstract public class Locking extends Protocol {
 
     @Property(description="bypasses message bundling if set")
@@ -82,6 +85,17 @@ abstract public class Locking extends Protocol {
         if(listener != null)
             lock_listeners.remove(listener);
     }
+
+    @ManagedAttribute
+    public String getAddress() {
+        return local_addr != null? local_addr.toString() : null;
+    }
+
+    @ManagedAttribute
+    public String getView() {
+        return view != null? view.toString() : null;
+    }
+   
 
 
     public Object down(Event evt) {
@@ -594,14 +608,15 @@ abstract public class Locking extends Protocol {
 
         public void lock() {
             try {
-                acquire();
+                acquire(false);
             }
             catch(InterruptedException e) {
+                // This should never happen
             }
         }
 
         public void lockInterruptibly() throws InterruptedException {
-            acquire();
+            acquire(true);
         }
 
         public boolean tryLock() {
@@ -643,12 +658,29 @@ abstract public class Locking extends Protocol {
             lockGranted();
         }
 
-        protected synchronized void acquire() throws InterruptedException {
+        protected synchronized void acquire(boolean throwInterrupt) throws InterruptedException {
             if(!acquired) {
                 owner=getOwner();
                 sendGrantLockRequest(name, owner, 0, false);
-                while(!acquired)
-                    this.wait();
+                boolean interrupted=false;
+                while(!acquired) {
+                    try {
+                        this.wait();
+                    }
+                    catch (InterruptedException e) {
+                        // If we haven't acquired the lock yet and were interrupted, then we have to clean up the lock
+                        // request and throw the exception
+                        if (throwInterrupt && !acquired) {
+                            _unlock(true);
+                            throw e;
+                        }
+                        // If we did get the lock then we will return with the lock and interrupt status.
+                        // If we don't throw exceptions then we just set the interrupt flag and let it loop around
+                        interrupted=true;
+                    }
+                }
+                if(interrupted)
+                    Thread.currentThread().interrupt();
             }
         }
 
@@ -676,6 +708,7 @@ abstract public class Locking extends Protocol {
                 sendGrantLockRequest(name, owner, timeout, true);
 
                 long target_time=use_timeout? System.currentTimeMillis() + timeout : 0;
+                boolean interrupted = false;
                 while(!acquired && !denied) {
                     if(use_timeout) {
                         long wait_time=target_time - System.currentTimeMillis();
@@ -683,12 +716,33 @@ abstract public class Locking extends Protocol {
                             break;
                         else {
                             this.timeout=wait_time;
-                            this.wait(wait_time);
+                            try {
+                                this.wait(wait_time);
+                            }
+                            catch (InterruptedException e) {
+                                // If we were interrupted and haven't received a response yet then we try to
+                                // clean up the lock request and throw the exception
+                                if (!acquired && !denied) {
+                                    _unlock(true);
+                                    throw e;
+                                }
+                                // In the case that we were told if we acquired or denied the lock then return that, but
+                                // make sure we set the interrupt status
+                                interrupted = true;
+                            }
                         }
                     }
-                    else
-                        this.wait();
+                    else {
+                        try {
+                            this.wait();
+                        }
+                        catch(InterruptedException e) {
+                            interrupted = true;
+                        }
+                    }
                 }
+                if(interrupted)
+                    Thread.currentThread().interrupt();
             }
             if(!acquired || denied)
                 _unlock(true);

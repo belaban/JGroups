@@ -40,13 +40,11 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")
     protected int num_backups=1;
 
-    @ManagedAttribute
     protected Address coord;
 
     @ManagedAttribute
     protected boolean is_coord;
 
-    @ManagedAttribute
     protected final List<Address> backups=new ArrayList<Address>();
 
 
@@ -63,12 +61,22 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         return is_coord;
     }
 
+    @ManagedAttribute
+    public String getCoordinator() {
+        return coord != null? coord.toString() : "n/a";
+    }
+
     public int getNumberOfBackups() {
         return num_backups;
     }
 
     public void setNumberOfBackups(int num_backups) {
         this.num_backups=num_backups;
+    }
+
+    @ManagedAttribute
+    public String getBackups() {
+        return backups != null? backups.toString() : null;
     }
 
     protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {

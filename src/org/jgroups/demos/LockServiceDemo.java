@@ -3,6 +3,7 @@ package org.jgroups.demos;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import java.util.ArrayList;
@@ -25,13 +26,15 @@ public class LockServiceDemo implements LockNotification {
         this.name=name;
     }
 
-    public void start() throws ChannelException {
+    public void start() throws Exception {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
         lock_service=new LockService(ch);
         lock_service.addLockListener(this);
         ch.connect("lock-cluster");
+        JmxConfigurator.registerChannel(ch, Util.getMBeanServer(), "lock-service", ch.getClusterName(), true);
+
         try {
             loop();
         }
@@ -133,7 +136,7 @@ public class LockServiceDemo implements LockNotification {
 
 
 
-    public static void main(String[] args) throws ChannelException {
+    public static void main(String[] args) throws Exception {
         String props=null;
         String name=null;
 
