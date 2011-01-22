@@ -152,7 +152,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         Future<?> retval=null;
 
-        long key=System.currentTimeMillis() + unit.convert(delay, TimeUnit.MILLISECONDS); // execution time
+        long key=System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(delay, unit); // execution time
         Entry task=new Entry(work);
         while(!isShutdown()) {
             Entry existing=tasks.putIfAbsent(key, task);

@@ -167,8 +167,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
             return null;
 
         MyTask retval=null;
-
-        long time=unit.convert(delay, TimeUnit.MILLISECONDS); // execution time
+        long time=TimeUnit.MILLISECONDS.convert(delay, unit); // execution time
 
         lock.lock();
         try {

@@ -614,7 +614,7 @@ abstract public class Locking extends Protocol {
         }
 
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-            return acquireTryLock(unit.convert(time, TimeUnit.MILLISECONDS), true);
+            return acquireTryLock(TimeUnit.MILLISECONDS.convert(time, unit), true);
         }
 
         public synchronized void unlock() {
