@@ -98,6 +98,66 @@ public class LockServiceTest extends ChannelTestBase {
         }
     }
 
+
+    public void testLockInterrupt() {
+        // Interrupt ourselves before trying to acquire lock
+        Thread.currentThread().interrupt();
+
+        lock.lock();
+        try {
+            System.out.println("Locks we have: " + s1.printLocks());
+            if(Thread.interrupted()) {
+                System.out.println("We still have interrupt flag set, as it should be");
+            }
+            else {
+                assert false : "Interrupt status was lost - we don't want this!";
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+     public void testTryLockInterrupt() {
+        // Interrupt ourselves before trying to acquire lock
+        Thread.currentThread().interrupt();
+
+        lock.tryLock();
+        try {
+            System.out.println("Locks we have: " + s1.printLocks());
+            if(Thread.interrupted()) {
+                System.out.println("We still have interrupt flag set, as it should be");
+            }
+            else {
+                assert false : "Interrupt status was lost - we don't want this!";
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    @Test(expectedExceptions=InterruptedException.class)
+    public void testLockInterruptibly() throws InterruptedException {
+        // Interrupt ourselves before trying to acquire lock
+        Thread.currentThread().interrupt();
+
+        lock.lockInterruptibly();
+        try {
+            System.out.println("Locks we have: " + s1.printLocks());
+            if(Thread.interrupted()) {
+                System.out.println("We still have interrupt flag set, as it should be");
+            }
+            else {
+                assert false : "Interrupt status was lost - we don't want this!";
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
     public void testSuccessfulTryLockTimeout() throws InterruptedException, BrokenBarrierException {
         final CyclicBarrier barrier=new CyclicBarrier(2);
         Thread locker=new Locker(barrier);
