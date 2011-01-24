@@ -356,8 +356,8 @@ public class STABLE extends Protocol {
 
             if(ergonomics && cap > 0) {
                 long max_heap=(long)(memory_manager.getHeapMemoryUsage().getMax() * cap);
-                long size=tmp.size() * original_max_bytes;
-                max_bytes=Math.min(max_heap, size);
+                long new_size=tmp.size() * original_max_bytes;
+                max_bytes=Math.min(max_heap, new_size);
                 if(log.isDebugEnabled())
                     log.debug("[ergonomics] setting max_bytes to " + Util.printBytes(max_bytes) + " (" + tmp.size() + " members)");
             }
