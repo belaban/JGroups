@@ -315,7 +315,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     }
 
     public Object clone() throws CloneNotSupportedException {
-        UUID ret=new UUID(leastSigBits, mostSigBits);
+        UUID ret=new UUID(mostSigBits, leastSigBits);
         if(additional_data != null) {
             ret.additional_data=new byte[additional_data.length];
             System.arraycopy(additional_data, 0, ret.additional_data, 0, additional_data.length);
