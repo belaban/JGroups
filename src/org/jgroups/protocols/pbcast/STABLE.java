@@ -10,6 +10,8 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -63,8 +65,15 @@ public class STABLE extends Protocol {
      * ideally <code>stability_delay</code> should be set to a low number as
      * well
      */
-    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered. Default is 0 (disabled)")
-    private long max_bytes=500000;
+    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered ." +
+      "If ergonomics is enabled, this value is computed as max(MAX_HEAP * cap, N * max_bytes) where N = number of members")
+    protected long max_bytes=2000000;
+
+    protected long original_max_bytes=max_bytes;
+
+    @Property(description="Max percentage of the max heap (-Xmx) to be used for max_bytes. " +
+      "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.")
+    protected double cap=0.10; // 10% of the max heap by default
 
     
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -121,6 +130,8 @@ public class STABLE extends Protocol {
 
     private Future<?> resume_task_future=null;
     private final Object resume_task_mutex=new Object();
+
+    protected final MemoryMXBean memory_manager=ManagementFactory.getMemoryMXBean();
        
     
     
@@ -141,6 +152,7 @@ public class STABLE extends Protocol {
 
     public void setMaxBytes(long max_bytes) {
         this.max_bytes=max_bytes;
+        this.original_max_bytes=max_bytes;
     }
 
     @ManagedAttribute(name="BytesReceived")
@@ -203,6 +215,7 @@ public class STABLE extends Protocol {
     
     public void init() throws Exception {
         super.init();
+        original_max_bytes=max_bytes;
     }
 
     public void start() throws Exception {
@@ -340,6 +353,14 @@ public class STABLE extends Protocol {
             resetDigest();
             if(!initialized)
                 initialized=true;
+
+            if(ergonomics && cap > 0) {
+                long max_heap=(long)(memory_manager.getHeapMemoryUsage().getMax() * cap);
+                long size=tmp.size() * original_max_bytes;
+                max_bytes=Math.min(max_heap, size);
+                if(log.isDebugEnabled())
+                    log.debug("[ergonomics] setting max_bytes to " + Util.printBytes(max_bytes) + " (" + tmp.size() + " members)");
+            }
         }
         finally {
             lock.unlock();
