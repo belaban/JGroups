@@ -4,13 +4,16 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -19,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Tests ConnectionMap
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionMapTest {
     private TCPConnectionMap ct1, ct2;
     static final InetAddress loopback_addr;
@@ -36,9 +39,20 @@ public class ConnectionMapTest {
     }
 
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
-    final static int PORT1=7521, PORT2=8931;
-    static final Address addr1=new IpAddress(loopback_addr, PORT1), addr2=new IpAddress(loopback_addr, PORT2);
 
+
+    protected int PORT1, PORT2;
+    protected Address addr1, addr2;
+
+
+    @BeforeMethod
+    protected void init() throws Exception {
+        List<Short> ports=ResourceManager.getNextTcpPorts(loopback_addr, 2);
+        PORT1=ports.get(0);
+        PORT2=ports.get(1);
+        addr1=new IpAddress(loopback_addr, PORT1);
+        addr2=new IpAddress(loopback_addr, PORT2);
+    }
 
 
 
@@ -170,7 +184,7 @@ public class ConnectionMapTest {
     }*/
 
 
-    private static void _testStop(TCPConnectionMap table1, TCPConnectionMap table2) throws Exception {
+    private void _testStop(TCPConnectionMap table1, TCPConnectionMap table2) throws Exception {
         table1.send(addr1, data, 0, data.length); // send to self
         assert table1.getNumConnections() == 0;
         table1.send(addr2, data, 0, data.length); // send to other
