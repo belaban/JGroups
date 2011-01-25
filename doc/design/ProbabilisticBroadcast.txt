@@ -1,8 +1,8 @@
 
 
 
-		Probabilistic Broadcast for JavaGroups
-		======================================
+		Probabilistic Broadcast for JGroups
+		===================================
 
 
 

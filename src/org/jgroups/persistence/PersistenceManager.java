@@ -13,6 +13,7 @@ import org.jgroups.annotations.Unsupported;
 import java.io.Serializable;
 import java.util.Map;
 
+@Deprecated
 @Unsupported
 public interface PersistenceManager
 {

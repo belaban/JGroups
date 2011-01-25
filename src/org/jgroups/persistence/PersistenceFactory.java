@@ -20,6 +20,7 @@ import java.util.Properties;
 
 
 @Unsupported
+@Deprecated
 public class PersistenceFactory
 {
 

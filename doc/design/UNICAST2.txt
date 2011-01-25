@@ -1,6 +1,6 @@
 
-New UNICAST design
-==================
+UNICAST2 design
+===============
 (see UNICAST.txt for the old design)
 
 Author: Bela Ban

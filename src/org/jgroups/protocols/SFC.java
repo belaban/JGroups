@@ -21,6 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @Experimental
+@Deprecated
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
