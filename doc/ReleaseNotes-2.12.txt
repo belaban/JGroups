@@ -1,14 +1,16 @@
 
 
-Release Notes JGroups 2.11
+Release Notes JGroups 2.12
 ==========================
 
 
 Author: Bela Ban
 
-JGroups 2.11 is API-backwards compatible with previous versions (down to 2.2.7).
+JGroups 2.12 is API-backwards compatible with previous versions (down to 2.2.7).
 
-Below is a summary (with links to the detailed description) of the major new features.
+Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
+
+
 
 
 New features
@@ -16,60 +18,52 @@ New features
 
 
 
-AUTH: pattern matching to prevent unauthorized joiners
-------------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-996]
+LockService: a new distributed locking service
+----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1249]
 
-New plugin for AUTH which can use pattern matching against regular expressions to prevent unauthorized
-IP addresses to join a cluster.
+New distributed lock service, offering a java.util.concurrent.lock.Lock implementation, providing cluster wide locks.
 
-Blog: http://belaban.blogspot.com/2010/09/cluster-authentication-with-pattern.html
-
-
-
-DAISYCHAIN: implementation of daisy chaining
---------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1021]
-
-Daisy chaining sends messages around in a ring, improving throughput for non IP multicast networks.
-
-Blog: http://belaban.blogspot.com/2010/08/daisychaining-in-clouds.html
+Blog: http://belaban.blogspot.com/2011/01/new-distributed-locking-service-in.html
 
 
 
-New flow control protocols for unicast (UFC) and multicast (MFC) messages
--------------------------------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1154]
+BPING (Broadcast Ping): new discovery protocol based on broadcasting
+--------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1269]
 
-MFC and UFC replace FC. They can be used independently, and performance is faster than that of FC only.
+This is mainly used for discovery of JGroups on Android based phones. Apparently, IP multicasting is not correctly
+implemented / supported on Android (2.1), and so we have to resort to UPD broadcasting.
 
-
-
-API for programmatic creation of channel
-----------------------------------------
-[https://jira.jboss.org/browse/JGRP-1245]
-
-Allows for programmatic creation of a JChannel, no need for XML config file.
-
-Blog: http://belaban.blogspot.com/2010/10/programmatic-creation-of-channel.html
+Blog: http://belaban.blogspot.com/2011/01/jgroups-on-android-phones.html
 
 
 
-S3: new features
-----------------
-[https://jira.jboss.org/browse/JGRP-1234] Allow use of public buckets (no credentials need to be sent)
-[https://jira.jboss.org/browse/JGRP-1235] Pre-signed URLs
+RELAY: connecting 2 local (autonomous) clusters into a large virtual cluster
+----------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-747]
+
+A new protocol to connect 2 geographically separate site into 1 large virtual cluster. The local clusters are
+completely autonomous, but RELAY makes them appear as if they were one.
+
+This can for example be used to implement geographic failover
+
+Blog: http://belaban.blogspot.com/2010/11/clustering-between-different-sites.html
 
 
 
-STOMP: new protocol to allows STOMP clients to talk to a JGroups node
----------------------------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1248]
+JDBC_PING: new discovery protocol using a shared database
+---------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1231]
 
-Blog: http://belaban.blogspot.com/2010/10/stomp-for-jgroups.html
+All nodes use a shared DB (e.g. RDS on EC2) to place their location information into, and to read information from.
+Thanks to Sanne for coming up with the idea and for implementing this !
 
 
 
+FD_SOCK: ability to pick the bind address and port for the client socket
+------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1262]
 
 
 
@@ -78,23 +72,23 @@ Optimizations
 =============
 
 
-NAKACK: simplify and optimize handling of OOB messages
-------------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1104]
+NAKACK: retransmitted messages don't need to be wrapped
+-------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1266]
+
+Not serializing retransmitted messages at the retransmitter and deserializing them at the requester saves
+1 serialization and 1 deserialization per retransmitted message.
 
 
-Discovery: reduce number of discovery responses sent in a large cluster
------------------------------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1181]
+Faster NakReceiverWindow
+------------------------
+[https://issues.jboss.org/browse/JGRP-1133]
 
-A new propery (max_rank) determines who will and who won't send discovery responses.
+Various optimizations to reduce locking in NakReceiverWindow:
+- Use of RetransmitTable (array-based matrix) rather than HashMap (reduced memory need, reduced locking, compaction)
+- Removal of double locking
 
 
-New timer implementations
--------------------------
-[https://jira.jboss.org/browse/JGRP-1051]
-
-Way more effecient implementations of the timer (TimeScheduler).
 
 
 
@@ -102,22 +96,47 @@ Way more effecient implementations of the timer (TimeScheduler).
 Bug fixes
 =========
 
-ENCRYPT: encrypt entire message when length=0
+
+NAKACK: incorrect digest on merge and state transfer
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1251]
+
+When calling JChannel.getState() on a merge, the fetched state would overwrite the digest incorrectly.
+
+
+AUTH: merge can bypass authorization
+------------------------------------
+[https://issues.jboss.org/browse/JGRP-1255]
+
+AUTH would not check creds of other members in case of a merge. This allowed an unauthorized node to join
+a cluster by triggering a merge.
+
+
+Custom SocketFactory ignored
+----------------------------
+[https://issues.jboss.org/browse/JGRP-1276]
+
+Despite setting a custom SocketFactory, it was ignored.
+
+
+UFC: crash of depleted member could hang node
 ---------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1242]
+[https://issues.jboss.org/browse/JGRP-1274]
 
-ENCRYPT would not encrypt messages whose length = 0
-
-
-FD_ALL: reduce number of messages sent on suspicion
----------------------------------------------------
-[https://jira.jboss.org/browse/JGRP-1241]
+Causing it to wait forever for credits from the crashed member.
 
 
-FILE_PING: empty files stop discovery
--------------------------------------
-[https://jira.jboss.org/browse/JGRP-1246]
+UNICAST2: incorrect delivery order under stress
+-----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1267]
 
+UNICAST2 could (in rare cases) deliver messages in incorrect order. Fixed by using the same (proven)
+algorithm as NAKACK.
+
+
+Incorrect conversion of TimeUnit if MILLISECONDS were not used
+--------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1277]
 
 
 
@@ -134,6 +153,7 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
+Sanne Grinovero, Newcastle, Great Britain
 
-Nov 2010
+Feb 2011
 
