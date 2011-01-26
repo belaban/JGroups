@@ -460,8 +460,17 @@ public class ENCRYPT extends Protocol {
         if (log.isInfoEnabled())
             log.info(" Initializing symmetric ciphers");
 
-        symEncodingCipher = Cipher.getInstance(algorithm);
-        symDecodingCipher = Cipher.getInstance(algorithm);
+        if (symProvider != null && symProvider.trim().length() > 0) {
+            symEncodingCipher = Cipher.getInstance(algorithm, symProvider);
+            symDecodingCipher = Cipher.getInstance(algorithm, symProvider);
+        }
+        else {
+            symEncodingCipher = Cipher.getInstance(algorithm);
+            symDecodingCipher = Cipher.getInstance(algorithm);
+        }
+
+
+
         symEncodingCipher.init(Cipher.ENCRYPT_MODE, secret);
         symDecodingCipher.init(Cipher.DECRYPT_MODE, secret);
 
@@ -508,7 +517,11 @@ public class ENCRYPT extends Protocol {
 
         // set up the Cipher to decrypt secret key responses encrypted with our key
 
-        asymCipher = Cipher.getInstance(asymAlgorithm);
+        if (asymProvider != null && asymProvider.trim().length() > 0)
+            asymCipher = Cipher.getInstance(asymAlgorithm, asymProvider);
+        else
+            asymCipher = Cipher.getInstance(asymAlgorithm);
+        
         asymCipher.init(Cipher.DECRYPT_MODE,Kpair.getPrivate());
 
         if (log.isInfoEnabled())
