@@ -129,7 +129,8 @@ public class ENCRYPT extends Protocol {
     @Property(name="asym_provider", description="Cryptographic Service Provider. Default is Bouncy Castle Provider")
     String asymProvider=null;
 
-    static final String symProvider=null;
+    @Property(name="sym_provider", description="Cryptographic Service Provider. Default is Bouncy Castle Provider")
+    String symProvider=null;
 
     @Property(name="asym_algorithm", description="Cipher engine transformation for asymmetric algorithm. Default is RSA")
     String asymAlgorithm="RSA";
@@ -1054,7 +1055,7 @@ public class ENCRYPT extends Protocol {
     /**
      * @return Returns the symProvider.
      */
-    protected static String getSymProvider() {
+    protected String getSymProvider() {
         return symProvider;
     }
 
