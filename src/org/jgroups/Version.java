@@ -21,8 +21,8 @@ import org.jgroups.annotations.Immutable;
 public class Version {
     public static final short major = 2;
     public static final short minor = 6;
-    public static final short micro = 18;
-    public static final String description="2.6.18.GA";
+    public static final short micro = 19;
+    public static final String description="2.6.19.Final";
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
