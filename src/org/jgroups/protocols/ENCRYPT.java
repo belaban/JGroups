@@ -110,7 +110,9 @@ public class ENCRYPT extends Protocol {
 
     // encryption properties in no supplied key mode
     String asymProvider = null;
-    static final String symProvider = null;
+
+    String symProvider = null;
+
     String asymAlgorithm = "RSA";
     String symAlgorithm = DEFAULT_SYM_ALGO;
     int asymInit = 512; // initial public/private key length
@@ -252,6 +254,16 @@ public class ENCRYPT extends Protocol {
 
             if (log.isInfoEnabled())
                 log.info("asymProvider used is " + asymProvider);
+        }
+
+        str = props.getProperty("sym_provider");
+        if (str != null)
+        {
+            symProvider = str;
+            props.remove("sym_provider");
+
+            if (log.isInfoEnabled())
+                log.info("symProvider used is " + symProvider);
         }
 
         //symmetric algorithm name
@@ -1246,7 +1258,7 @@ public class ENCRYPT extends Protocol {
     /**
      * @return Returns the symProvider.
      */
-    protected static String getSymProvider()
+    protected String getSymProvider()
     {
         return symProvider;
     }
