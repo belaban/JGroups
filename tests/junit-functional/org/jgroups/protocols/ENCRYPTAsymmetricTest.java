@@ -67,7 +67,7 @@ public class ENCRYPTAsymmetricTest {
         
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.asymAlgorithm = "RSA";
-        encrypt.asymProvider = "BC";
+        // encrypt.asymProvider = "BC";
         encrypt.init();
 
         // test the default asymetric key
