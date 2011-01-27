@@ -72,7 +72,7 @@ public abstract class TP extends Protocol {
     /* ------------------------------------------ JMX and Properties  ------------------------------------------ */
 
 
-
+    @LocalAddress
     @Property(name="bind_addr",
               description="The bind address which should be used by this transport. The following special values " +
                       "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
