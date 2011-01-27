@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -33,7 +34,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
     @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
     private boolean use_icmp=false; 
-    
+
+    @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},

@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -31,6 +32,7 @@ public class FD_ICMP extends FD {
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface intf=null;
 
+    @LocalAddress
     @Property(name="bind_addr",
               description="The NIC on which the ServerSocket should listen on. " +
                       "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK", 

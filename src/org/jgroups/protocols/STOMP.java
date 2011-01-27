@@ -35,6 +35,7 @@ public class STOMP extends Protocol implements Runnable {
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */
 
+    @LocalAddress
     @Property(name="bind_addr",
               description="The bind address which should be used by the server socket. The following special values " +
                       "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",

@@ -3442,6 +3442,17 @@ public class Util {
         return retval;
     }
 
+    public static void checkIfValidAddress(InetAddress bind_addr, String prot_name) throws Exception {
+        Collection<InetAddress> addrs=getAllAvailableAddresses();
+        for(InetAddress addr: addrs) {
+            if(addr.equals(bind_addr))
+                return;
+        }
+        if(!bind_addr.isLoopbackAddress())
+            throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
+    }
+    
+
 
     /**
      * Returns a value associated wither with one or more system properties, or found in the props map
