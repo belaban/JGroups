@@ -6,7 +6,7 @@
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-    <property name="version" value="2.12.0.CR1"/>
+    <property name="version" value="2.12.0.Final"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
