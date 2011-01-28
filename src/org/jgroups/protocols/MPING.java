@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.conf.PropertyConverters;
@@ -34,6 +35,7 @@ public class MPING extends PING implements Runnable {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
+    @LocalAddress
     @Property(description="Bind address for multicast socket. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},

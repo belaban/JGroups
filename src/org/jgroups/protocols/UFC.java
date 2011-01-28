@@ -105,10 +105,8 @@ public class UFC extends FlowControl {
         }
 
         Credit cred=sent.get(dest);
-        if(cred == null) {
-            log.warn("destination " + dest + " not found; passing message down");
+        if(cred == null)
             return down_prot.down(evt);
-        }
 
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         

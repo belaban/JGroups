@@ -4,7 +4,9 @@ package org.jgroups.stack;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
@@ -19,10 +21,7 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.*;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -112,7 +111,8 @@ public class Configurator {
 
 
         // process default values
-        setDefaultValues(protocol_configs, protocols, ip_version) ;
+        setDefaultValues(protocol_configs, protocols, ip_version);
+        ensureValidBindAddresses(protocols);
         
         return connectProtocols(protocols);        
     }
@@ -857,6 +857,30 @@ public class Configurator {
             }
         }
     }
+
+
+    /**
+     * Makes sure that all fields annotated with @LocalAddress is (1) an InetAddress and (2) a valid address on any
+     * local network interface
+     * @param protocols
+     * @throws Exception
+     */
+    public static void ensureValidBindAddresses(List<Protocol> protocols) throws Exception {
+        for(Protocol protocol : protocols) {
+            String protocolName=protocol.getName();
+
+            //traverse class hierarchy and find all annotated fields and add them to the list if annotated
+            Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), LocalAddress.class);
+            for(int i=0; i < fields.length; i++) {
+                Object val=getValueFromProtocol(protocol, fields[i]);
+                if(!(val instanceof InetAddress))
+                    throw new Exception("field " + protocolName + "." + fields[i].getName() + " is not an InetAddress");
+                Util.checkIfValidAddress((InetAddress)val, protocolName);
+            }
+        }
+    }
+
+
 
     public static Object getValueFromProtocol(Protocol protocol, Field field) throws IllegalAccessException {
         if(protocol == null || field == null) return null;
