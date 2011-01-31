@@ -59,6 +59,7 @@ public class NakReceiverWindow {
 
     Address local_addr=null;
 
+    private volatile boolean running=true;
 
     /** Lowest seqno, modified on stable(). On stable(), we purge msgs [low digest.highest_delivered] */
     @GuardedBy("lock")
@@ -239,6 +240,9 @@ public class NakReceiverWindow {
 
         lock.writeLock().lock();
         try {
+            if(!running)
+                return false;
+
             next_to_add=highest_received +1;
             old_next=next_to_add;
 
@@ -494,6 +498,7 @@ public class NakReceiverWindow {
     public void reset() {
         lock.writeLock().lock();
         try {
+            running = false;
             retransmitter.reset();
             _reset();
         }
