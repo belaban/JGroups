@@ -253,7 +253,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      */
     public boolean equals(Object obj) {
         if(obj instanceof ProxyAddress)
-            return equals(((ProxyAddress)obj).proxy_addr);
+            return equals(((ProxyAddress)obj).original_addr);
         if (!(obj instanceof UUID))
             return false;
         UUID id = (UUID)obj;
@@ -270,7 +270,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      */
     public int compareTo(Address other) {
         if(other instanceof ProxyAddress)
-            return compareTo(((ProxyAddress)other).proxy_addr);
+            return compareTo(((ProxyAddress)other).original_addr);
         UUID val=(UUID)other;
         if(this == val)
             return 0;

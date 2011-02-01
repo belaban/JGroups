@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.util.ProxyAddress;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -11,8 +12,18 @@ import java.util.*;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ProxyAddressTest {
+    protected Address local;
+    protected Address proxy_addr1;
+    protected Address proxy_addr2;
+
+    @BeforeClass
+    protected void init() {
+        local=Util.createRandomAddress("A"); // the local address which acts as proxy
+        proxy_addr1=new ProxyAddress(local, Util.createRandomAddress("X"));
+        proxy_addr2=new ProxyAddress(local, Util.createRandomAddress("Y"));
+    }
 
     public static void testSorting() {
         Set<Address> set=new TreeSet<Address>();
@@ -34,13 +45,9 @@ public class ProxyAddressTest {
     }
 
 
-    public static void testEquals() {
-        Address proxy=Util.createRandomAddress("A"); // the local address which acts as proxy
-        Address proxy_addr1=new ProxyAddress(proxy, Util.createRandomAddress("X"));
-        Address proxy_addr2=new ProxyAddress(proxy, Util.createRandomAddress("Y"));
-
+    public void testEquals() {
         Set<Address> set=new HashSet<Address>();
-        set.add(proxy);
+        set.add(local);
         set.add(proxy_addr1);
         set.add(proxy_addr2);
         System.out.println("set = " + set);
@@ -50,45 +57,45 @@ public class ProxyAddressTest {
         set.clear();
         set.add(proxy_addr1);
         set.add(proxy_addr2);
-        set.add(proxy);
-            System.out.println("set = " + set);
-                    assert set.size() == 3 : "set: " + set;
-
-    }
-
-
-    public static void testEqualsInReverseOrder() {
-        Address proxy=Util.createRandomAddress("A"); // the local address which acts as proxy
-        Address proxy_addr1=new ProxyAddress(proxy, Util.createRandomAddress("X"));
-        Address proxy_addr2=new ProxyAddress(proxy, Util.createRandomAddress("Y"));
-
-        Set<Address> set=new HashSet<Address>();
-        set.add(proxy_addr1);
-        set.add(proxy_addr2);
-        set.add(proxy);
+        set.add(local);
         System.out.println("set = " + set);
         assert set.size() == 3 : "set: " + set;
     }
 
 
-    public static void test2() {
-        Address local=Util.createRandomAddress("A");
-        Address remote_1=new ProxyAddress(local, Util.createRandomAddress("X"));
-        Address remote_2=new ProxyAddress(local, Util.createRandomAddress("Y"));
+    public void testEqualsInReverseOrder() {
+        Set<Address> set=new HashSet<Address>();
+        set.add(proxy_addr1);
+        set.add(proxy_addr2);
+        set.add(local);
+        System.out.println("set = " + set);
+        assert set.size() == 3 : "set: " + set;
+    }
 
+
+    public void test2() {
         List<Address> old_list=new LinkedList<Address>(),
           new_list=new LinkedList<Address>();
         old_list.add(local);
-        old_list.add(remote_1);
+        old_list.add(proxy_addr1);
 
         new_list.add(local);
-        new_list.add(remote_1);
-        new_list.add(remote_2);
+        new_list.add(proxy_addr1);
+        new_list.add(proxy_addr2);
 
         Address joiner=getMemberJoined(old_list, new_list);
         System.out.println("joiner = " + joiner);
         assert joiner != null;
-        assert joiner.equals(remote_2);
+        assert joiner.equals(proxy_addr2);
+    }
+
+    public void testWithHashMap() {
+        Map<Address,String> map=new HashMap<Address,String>(5);
+        map.put(local, "local");
+        map.put(proxy_addr1, "proxy1");
+        map.put(proxy_addr2, "proxy2");
+        System.out.println("map = " + map);
+        assert map.size() == 3;
     }
 
 

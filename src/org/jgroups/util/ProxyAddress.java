@@ -43,8 +43,8 @@ public class ProxyAddress implements Address {
 
     public int compareTo(Address o) {
         if(o instanceof ProxyAddress)
-            return proxy_addr.compareTo(((ProxyAddress)o).proxy_addr);
-        return proxy_addr.compareTo(o);
+            return original_addr.compareTo(((ProxyAddress)o).original_addr);
+        return original_addr.compareTo(o);
     }
 
 
@@ -57,7 +57,7 @@ public class ProxyAddress implements Address {
     }
 
     public int hashCode() {
-        return proxy_addr.hashCode();
+        return original_addr.hashCode();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {

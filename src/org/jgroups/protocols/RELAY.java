@@ -151,6 +151,19 @@ public class RELAY extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
+
+            /*case Event.GET_PHYSICAL_ADDRESS:
+                PhysicalAddress addr=(PhysicalAddress)down_prot.down(evt);
+                if(addr == null) {
+                    try {
+                        addr=new IpAddress("127.0.0.5", 6666);
+                    }
+                    catch(UnknownHostException e) {
+                        e.printStackTrace();
+                    }
+                }
+                
+                return addr;*/
         }
         return down_prot.down(evt);
     }
@@ -447,7 +460,12 @@ public class RELAY extends Protocol {
             Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
             Address sender=msg.getSrc();
             ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
-            msg.setSrc(proxy_sender);
+            // msg.setSrc(proxy_sender);
+
+            // set myself to be the sender
+            msg.setSrc(local_addr);
+
+            // later, in RELAY, we'll take the proxy_sender from the header and make it the sender
             msg.putHeader(id, RelayHeader.createDisseminateHeader(proxy_sender));
 
             if(log.isTraceEnabled())
