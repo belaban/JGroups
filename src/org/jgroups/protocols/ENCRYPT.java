@@ -98,7 +98,9 @@ public class ENCRYPT extends Protocol {
 
     // encryption properties in no supplied key mode
     String asymProvider = null;
-    final String symProvider = null;
+
+    String symProvider = null;
+
     String asymAlgorithm = "RSA";
     String symAlgorithm = DEFAULT_SYM_ALGO;
     int asymInit = 512; // initial public/private key length
@@ -233,6 +235,16 @@ public class ENCRYPT extends Protocol {
 
             if (log.isInfoEnabled())
                 log.info("asymProvider used is " + asymProvider);
+        }
+
+        str = props.getProperty("sym_provider");
+        if (str != null)
+        {
+            symProvider = str;
+            props.remove("sym_provider");
+
+            if (log.isInfoEnabled())
+                log.info("symProvider used is " + symProvider);
         }
 
         //symmetric algorithm name
@@ -431,8 +443,17 @@ public class ENCRYPT extends Protocol {
         if (log.isInfoEnabled())
             log.info(" Initializing symmetric ciphers");
 
-        symEncodingCipher = Cipher.getInstance(algorithm);
-        symDecodingCipher = Cipher.getInstance(algorithm);
+        if (symProvider != null && symProvider.trim().length() > 0) {
+            symEncodingCipher = Cipher.getInstance(algorithm, symProvider);
+            symDecodingCipher = Cipher.getInstance(algorithm, symProvider);
+        }
+        else {
+            symEncodingCipher = Cipher.getInstance(algorithm);
+            symDecodingCipher = Cipher.getInstance(algorithm);
+        }
+
+
+
         symEncodingCipher.init(Cipher.ENCRYPT_MODE, secret);
         symDecodingCipher.init(Cipher.DECRYPT_MODE, secret);
 
@@ -479,7 +500,11 @@ public class ENCRYPT extends Protocol {
 
         // set up the Cipher to decrypt secret key responses encrypted with our key
 
-        asymCipher = Cipher.getInstance(asymAlgorithm);
+        if (asymProvider != null && asymProvider.trim().length() > 0)
+            asymCipher = Cipher.getInstance(asymAlgorithm, asymProvider);
+        else
+            asymCipher = Cipher.getInstance(asymAlgorithm);
+        
         asymCipher.init(Cipher.DECRYPT_MODE,Kpair.getPrivate());
 
         if (log.isInfoEnabled())
