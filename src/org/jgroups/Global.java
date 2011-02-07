@@ -69,6 +69,9 @@ public class Global {
     public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
 
     public static final long   DEFAULT_FIRST_UNICAST_SEQNO = 1;
+
+    /** First ID assigned for building blocks (defined in jg-protocols.xml) */
+    public static final short  BLOCKS_START_ID=200;
     
     public static final String SINGLETON_NAME="singleton_name";
     

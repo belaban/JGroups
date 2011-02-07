@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <protocol-ids>
+    <!-- Reserved IDs -->
     <class id="2" name="org.jgroups.protocols.FD"/>
     <class id="3" name="org.jgroups.protocols.FD_SOCK"/>
     <class id="4" name="org.jgroups.protocols.FRAG"/>
@@ -52,13 +53,13 @@
     <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
     <class id="51" name="org.jgroups.protocols.PEER_LOCK"/>
     
-
-    <class id="200" name="org.jgroups.blocks.PullPushAdapter"/>
+    <!-- IDs reserved for building blocks -->
+    <class id="200" name="org.jgroups.blocks.PullPushAdapter"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
     <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>
     <class id="202" name="org.jgroups.mux.MuxChannel"/>
     <class id="203" name="org.jgroups.mux.Multiplexer"/>
     <class id="204" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
 
-    <!-- Reserved IDs -->
+    <!-- User-defined protocols should use IDs >= 1000 -->
 
 </protocol-ids>
