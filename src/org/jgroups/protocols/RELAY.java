@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
@@ -152,18 +153,13 @@ public class RELAY extends Protocol {
                 local_addr=(Address)evt.getArg();
                 break;
 
-            /*case Event.GET_PHYSICAL_ADDRESS:
+            case Event.GET_PHYSICAL_ADDRESS:
+                // fix to prevent exception by JBossAS, which checks whether a physical
+                // address is present and throw an ex if not
                 PhysicalAddress addr=(PhysicalAddress)down_prot.down(evt);
-                if(addr == null) {
-                    try {
-                        addr=new IpAddress("127.0.0.5", 6666);
-                    }
-                    catch(UnknownHostException e) {
-                        e.printStackTrace();
-                    }
-                }
-                
-                return addr;*/
+                if(addr == null)
+                    addr=new IpAddress(6666);
+                return addr;
         }
         return down_prot.down(evt);
     }
@@ -202,7 +198,7 @@ public class RELAY extends Protocol {
                 }
 
                 if(is_coord && relay && (dest == null || dest.isMulticastAddress()) && !msg.isFlagSet(Message.NO_RELAY)) {
-                    Message tmp=msg.copy(true, false);
+                    Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
                     try {
                         byte[] buf=Util.streamableToByteBuffer(tmp);
                         forward(buf, 0, buf.length);
@@ -251,8 +247,16 @@ public class RELAY extends Protocol {
         if(is_coord) {
             sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
 
-            if(create_bridge)
+            if(create_bridge) {
                 createBridge();
+                Message msg=new Message();
+                msg.putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
+                try {
+                    bridge.send(msg);
+                }
+                catch(Exception e) {
+                }
+            }
             
             sendViewToRemote(ViewData.create(view, null), false);
         }
@@ -299,7 +303,7 @@ public class RELAY extends Protocol {
 
     /** Wraps the message annd sends it to the current coordinator */
     protected void forwardToCoord(Message msg) {
-        Message tmp=msg.copy(true, false); // don't copy headers
+        Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
         if(tmp.getSrc() == null)
             tmp.setSrc(local_addr);
         ProxyAddress dst=(ProxyAddress)tmp.getDest();
@@ -425,6 +429,8 @@ public class RELAY extends Protocol {
                     }
                     break;
                 case BROADCAST_VIEW: // no-op
+                    // our local view is seen as the remote view on the other side !
+                    sendViewToRemote(ViewData.create(local_view, null), true);
                     break;
                 default:
                     throw new IllegalArgumentException(hdr.type + " is not a valid type");
@@ -446,7 +452,7 @@ public class RELAY extends Protocol {
                     }
                     else {
                         // our local view is seen as the remote view on the other side !
-                        sendViewToRemote(ViewData.create(local_view, null), true);
+                        // sendViewToRemote(ViewData.create(local_view, null), true);
                     }
                 }
             }
