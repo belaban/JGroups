@@ -449,6 +449,25 @@ public class Message implements Streamable {
         return retval;
     }
 
+    /**
+     * Doesn't copy any headers except for those with ID >= copy_headers_above
+     * @param copy_buffer
+     * @param starting_id
+     * @return A message with headers whose ID are >= starting_id
+     */
+    public Message copy(boolean copy_buffer, short starting_id) {
+        Message retval=copy(copy_buffer, false);
+        if(starting_id > 0) {
+            for(Map.Entry<Short,Header> entry: getHeaders().entrySet()) {
+                short id=entry.getKey();
+                if(id >= starting_id)
+                    retval.putHeader(id, entry.getValue());
+            }
+        }
+
+        return retval;
+    }
+
 
     protected Object clone() throws CloneNotSupportedException {
         return copy();

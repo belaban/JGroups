@@ -2,6 +2,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
@@ -15,6 +16,11 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Bela Ban
@@ -218,6 +224,23 @@ public class MessageTest {
         Assert.assertEquals(3, m4.getBuffer().length);
     }
 
+    public static void testCopyHeaders() {
+        Message m1=new Message(null, null, "hello");
+        for(short id: new short[]{1, 2, 10, Global.BLOCKS_START_ID, Global.BLOCKS_START_ID +10}) {
+            m1.putHeader(id, new DummyHeader(id));
+        }
+        System.out.println("Headers for m1: " + m1.printHeaders());
+
+        Message m2=m1.copy(true, Global.BLOCKS_START_ID);
+        System.out.println("Headers for m2: " + m2.printHeaders());
+        Map<Short,Header> hdrs=m2.getHeaders();
+        assert hdrs.size() == 2;
+        assert hdrs.containsKey(Global.BLOCKS_START_ID);
+
+        short tmp=Global.BLOCKS_START_ID +10;
+        assert hdrs.containsKey(tmp);
+    }
+
 
     public static void testComputeFragOffsets() {
         Range r;
@@ -383,5 +406,31 @@ public class MessageTest {
         Assert.assertEquals(size, serialized_form.length);
     }
 
+
+    protected static class DummyHeader extends Header {
+        protected final short num;
+
+        public DummyHeader(short num) {
+            this.num=num;
+        }
+
+        public short getNum() {
+            return num;
+        }
+
+        public int size() {
+            return 0;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        }
+
+        public String toString() {
+            return "DummyHeader(" + num + ")";
+        }
+    }
 
 }
