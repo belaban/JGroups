@@ -372,7 +372,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#down(org.jgroups.Event, int)
 		 */
-		public boolean down(Event evt)
+		public boolean down(Event evt, int num_evts)
 		{
 			System.out.println("down:"+evt.toString());
 			
@@ -421,8 +421,6 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 	}
 	
 	class MockAddress implements Address{
-
-		private static final long serialVersionUID = -2044466632514705356L;
 
 		/* (non-Javadoc)
 		 * @see org.jgroups.Address#isMulticastAddress()

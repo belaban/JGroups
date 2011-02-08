@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.34 2006/11/17 13:39:18 belaban Exp $
+// $Id: Draw.java,v 1.33 2006/10/27 16:25:58 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -29,6 +29,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     private int                    member_size=1;
     Debugger                       debugger=null;
     final boolean                  first=true;
+    final boolean                  cummulative=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
@@ -41,7 +42,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     boolean                        jmx;
 
 
-    public Draw(String props, boolean debug, boolean no_channel, boolean jmx) throws Exception {
+    public Draw(String props, boolean debug, boolean cummulative, boolean no_channel, boolean jmx) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         if(no_channel)
@@ -50,7 +51,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         channel=new JChannel(props);
         // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         if(debug) {
-            debugger=new Debugger((JChannel)channel);
+            debugger=new Debugger((JChannel)channel, cummulative);
             debugger.start();
         }
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
@@ -80,6 +81,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
        Draw             draw=null;
        String           props=null;
        boolean          debug=false;
+       boolean          cummulative=false;
        boolean          no_channel=false;
        boolean          jmx=false;
        String           group_name=null;
@@ -91,6 +93,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             }
             if("-debug".equals(args[i])) {
                 debug=true;
+                continue;
+            }
+            if("-cummulative".equals(args[i])) {
+                cummulative=true;
                 continue;
             }
             if("-props".equals(args[i])) {
@@ -139,7 +145,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
         try {
-            draw=new Draw(props, debug, no_channel, jmx);
+            draw=new Draw(props, debug, cummulative, no_channel, jmx);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -152,7 +158,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     static void help() {
-        System.out.println("\nDraw [-help] [-debug] [-no_channel] [-props <protocol stack definition>]" +
+        System.out.println("\nDraw [-help] [-debug] [-cummulative] [-no_channel] [-props <protocol stack definition>]" +
                            " [-groupname <name>]");
         System.out.println("-debug: brings up a visual debugger");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +

@@ -1,24 +1,20 @@
 package org.jgroups.tests;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
+
+import java.util.List;
+import java.util.LinkedList;
 
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.3 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.2 2006/10/25 12:23:55 belaban Exp $
  */
-public class JoinTest extends ChannelTestBase {
+public class JoinTest extends TestCase {
     Channel c1, c2;
     static String STACK="udp.xml";
 
@@ -31,17 +27,17 @@ public class JoinTest extends ChannelTestBase {
     public void setUp() throws Exception {
         super.setUp();
         STACK=System.getProperty("stack", STACK);
-        c1=createChannel("A");
-        c2=createChannel("A");
+        c1=new JChannel(STACK);
+        c2=new JChannel(STACK);
     }
 
 
-    public void tearDown() throws Exception {        
+    protected void tearDown() throws Exception {
+        super.tearDown();
         if(c1 != null)
             c1.close();
         if(c2 != null)
             c2.close();
-        super.tearDown();
     }
 
     public void testSingleJoin() throws ChannelException {
@@ -59,10 +55,6 @@ public class JoinTest extends ChannelTestBase {
     public void testJoinsOnTwoChannels() throws ChannelException {
         c1.connect("X");
         c2.connect("X");
-        
-        //no blocking is used, let the view propagate
-        sleepThread(2000);
-        
         View v1=c1.getView(), v2=c2.getView();
         System.out.println("v1=" + v1 + ", v2=" + v2);
         assertNotNull(v1);

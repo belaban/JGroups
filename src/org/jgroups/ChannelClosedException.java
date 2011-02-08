@@ -1,4 +1,4 @@
-// $Id: ChannelClosedException.java,v 1.4 2006/11/13 17:42:11 bstansberry Exp $
+// $Id: ChannelClosedException.java,v 1.3 2005/07/17 11:38:05 chrislott Exp $
 
 package org.jgroups;
 
@@ -7,9 +7,7 @@ package org.jgroups;
  */
 public class ChannelClosedException extends ChannelException {
 
-    private static final long serialVersionUID = -5172168752255182905L;
-
-	public ChannelClosedException() {
+    public ChannelClosedException() {
         super();
     }
 

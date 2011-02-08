@@ -10,8 +10,6 @@ package  org.jgroups.persistence;
 public class CannotPersistException extends Exception
 {
 
-    private static final long serialVersionUID = -5157400778265186170L;
-	
     /**
      * @param t
      * @param reason implementor-specified runtime reason

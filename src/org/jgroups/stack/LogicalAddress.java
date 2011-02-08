@@ -1,4 +1,4 @@
-// $Id: LogicalAddress.java,v 1.10 2006/11/13 17:50:19 bstansberry Exp $
+// $Id: LogicalAddress.java,v 1.9 2005/07/17 11:34:20 chrislott Exp $
 
 package org.jgroups.stack;
 
@@ -30,10 +30,7 @@ import java.util.List;
  * @author Bela Ban, Dec 23 2003
  */
 public class LogicalAddress implements Address {
-
-	private static final long serialVersionUID = 1264428178481495773L;
-	
-	protected static   int count=1;
+    protected static   int count=1;
     protected String   host=null;
     protected long     timestamp=0;
     protected int      id=0;

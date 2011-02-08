@@ -1,138 +1,39 @@
-// $Id: ChannelTest.java,v 1.4 2006/11/22 20:27:53 vlada Exp $
+// $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
+import org.jgroups.*;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.4 2006/11/22 20:27:53 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.2 2006/01/11 15:02:34 belaban Exp $
  */
-public class ChannelTest extends ChannelTestBase {
-    Channel ch;
+public class ChannelTest extends TestCase {
+    JChannel ch;
 
-    private static final String GROUP="DiscardTestGroup";    
+    private static final String GROUP="DiscardTestGroup";
 
 
-    public void setUp() throws Exception {
+    public ChannelTest(String name) {
+        super(name);
+    }
+
+
+    protected void setUp() throws Exception {
         super.setUp();
-        ch=createChannel();
+        ch=new JChannel();
         ch.connect(GROUP);
     }
 
-    public void tearDown() throws Exception {
+    protected void tearDown() throws Exception {
+        super.tearDown();
         ch.close();
-        super.tearDown();        
-    }
-    
-    public void testBasicOperations() throws Exception
-    {
-       String groupName = GROUP;
-       Channel c1 = createChannel("A");
-       c1.connect(groupName);
-       sleepThread(1000);
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
-       
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
-       
-       try{
-         c1.connect(groupName);
-       }
-       catch (Exception e)
-       {
-         fail("Should have NOT generated exception");
-       }
-       
-       c1.disconnect();
-       
-       assertFalse(c1.isConnected());
-       assertTrue(c1.isOpen());
-       assertNull(c1.getLocalAddress());
-       assertNull(c1.getView());
-       
-       assertNull(c1.getClusterName());
-       
-       try{
-          c1.connect(groupName);
-       }
-       catch (Exception e)
-       {
-         fail("Should have NOT generated exception");
-       }
-       
-       c1.close();
-       
-       try{
-          c1.connect(groupName);
-          fail("Should generated exception, and it has NOT");
-       }
-       catch (Exception e)
-       {
-         assertTrue(e instanceof ChannelClosedException);
-       }
-       
-       assertFalse(c1.isConnected());
-       assertFalse(c1.isOpen());
-       assertNull(c1.getLocalAddress());
-       assertNull(c1.getView());
-       
-       assertNull(c1.getClusterName());                       
-       
-       c1 = createChannel("A");
-       c1.connect(groupName);
-       Channel c2 = createChannel("A");
-       c2.connect(groupName);
-       
-       sleepThread(1000);
-       
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
-       
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
-       assertTrue(c1.getView().getMembers().contains(c2.getLocalAddress()));
-       
-       assertTrue(c2.isOpen());
-       assertTrue(c2.isConnected());
-       
-       assertNotNull(c2.getLocalAddress());
-       assertNotNull(c2.getView());
-       assertTrue(c2.getView().getMembers().contains(c2.getLocalAddress()));
-       assertTrue(c2.getView().getMembers().contains(c1.getLocalAddress()));
-       
-       c2.close();
-       sleepThread(1000);
-       
-       assertFalse(c2.isOpen());
-       assertFalse(c2.isConnected());
-       
-       assertNull(c2.getLocalAddress());
-       assertNull(c2.getView());
-       
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
-       
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
-       assertFalse(c1.getView().getMembers().contains(c2.getLocalAddress()));
-       
-       c1.close();       
     }
 
     public void testFirstView() throws Exception {

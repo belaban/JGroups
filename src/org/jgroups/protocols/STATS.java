@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.4 2006/11/17 13:39:19 belaban Exp $
+ * @version $Id: STATS.java,v 1.3 2006/01/14 14:00:38 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -33,6 +33,7 @@ public class STATS extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
+        down_thread=false; // never use a down thread
         up_thread=false;   // never use an up thread
 
         if(props.size() > 0) {

@@ -6,13 +6,11 @@ package org.jgroups.blocks;
  * by multiple DistributedLockManagers. This can happen after a merge for example.
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: LockMultiLockedException.java,v 1.3 2006/11/13 17:42:10 bstansberry Exp $
+ * @version $Id: LockMultiLockedException.java,v 1.2 2005/07/17 11:36:40 chrislott Exp $
  */
 public class LockMultiLockedException extends Exception {
 
-    private static final long serialVersionUID = 3719208228960070835L;
-
-	public LockMultiLockedException() {
+    public LockMultiLockedException() {
         super();
     }
 

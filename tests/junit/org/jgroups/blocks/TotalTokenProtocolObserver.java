@@ -1,4 +1,4 @@
-// $Id: TotalTokenProtocolObserver.java,v 1.7 2006/11/17 13:39:20 belaban Exp $
+// $Id: TotalTokenProtocolObserver.java,v 1.6 2006/08/13 09:05:10 mimbert Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -82,7 +82,7 @@ public class TotalTokenProtocolObserver  implements ProtocolObserver
 		return true;
 	}
 
-	public boolean down(Event evt)
+	public boolean down(Event evt, int num_evts)
 	{
 		Object       obj=null;
 		Message      msg;

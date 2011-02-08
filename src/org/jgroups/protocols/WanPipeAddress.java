@@ -1,4 +1,4 @@
-// $Id: WanPipeAddress.java,v 1.10 2006/11/13 17:50:13 bstansberry Exp $
+// $Id: WanPipeAddress.java,v 1.9 2005/08/08 12:45:46 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -14,10 +14,7 @@ import java.io.*;
  * Logical address for a WAN pipe (logical link)
  */
 public class WanPipeAddress implements Address {
-    
-	private static final long serialVersionUID = -7341271304287013960L;
-	
-	String logical_name=null;
+    String logical_name=null;
     static final Log log=LogFactory.getLog(WanPipeAddress.class);
 
 

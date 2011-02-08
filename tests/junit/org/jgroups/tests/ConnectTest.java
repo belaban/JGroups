@@ -1,9 +1,10 @@
-// $Id: ConnectTest.java,v 1.9 2006/11/22 19:33:07 vlada Exp $
+// $Id: ConnectTest.java,v 1.8 2006/08/08 08:13:10 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import org.jgroups.Channel;
+import junit.framework.TestCase;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.View;
@@ -15,20 +16,37 @@ import org.jgroups.util.Util;
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
  */
-public class ConnectTest extends ChannelTestBase {
-    Channel channel;
-    final int TIMES=10;    
+public class ConnectTest extends TestCase {
+    JChannel channel;
+    final int TIMES=10;
+
+
+    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
+            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
+            "enable_bundling=true;use_incoming_packet_handler=true;loopback=true):" +
+            "PING(timeout=2000;num_initial_members=3):" +
+            "MERGE2(min_interval=5000;max_interval=10000):" +
+            "FD_SOCK:" +
+            "VERIFY_SUSPECT(timeout=1500):" +
+            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
+            "UNICAST(timeout=600,1200,2400):" +
+            "pbcast.STABLE(desired_avg_gossip=20000):" +
+            "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "shun=true;print_local_addr=false)";
+
+
 
     public ConnectTest(String name) {
         super(name);
     }
 
-    public void tearDown() throws Exception {        
+    public void tearDown() throws Exception {
+        super.tearDown();
         if(channel != null) {
             channel.close();
             channel = null;
         }
-        super.tearDown();
     }
 
     void doIt(int times) {
@@ -52,7 +70,7 @@ public class ConnectTest extends ChannelTestBase {
 
     public void testConnectAndDisconnect() throws Exception {
         System.out.print("Creating channel: ");
-        channel=createChannel();
+        channel=new JChannel(props);
         System.out.println("-- created --");
         doIt(TIMES);
         System.out.print("Closing channel: ");
@@ -63,7 +81,7 @@ public class ConnectTest extends ChannelTestBase {
     }
 
     public void testDisconnectConnectOne() throws Exception {
-        channel=createChannel();
+        channel=new JChannel(props);
         channel.connect("testgroup1");
         channel.disconnect();
         channel.connect("testgroup2");
@@ -81,12 +99,12 @@ public class ConnectTest extends ChannelTestBase {
      **/
     public void testDisconnectConnectTwo() throws Exception {
         View     view;
-        Channel coordinator=createChannel("A");
+        JChannel coordinator=new JChannel(props);
         coordinator.connect("testgroup");
         view=coordinator.getView();
         System.out.println("-- view for coordinator: " + view);
 
-        channel=createChannel("A");
+        channel=new JChannel(props);
         channel.connect("testgroup1");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
@@ -116,14 +134,14 @@ public class ConnectTest extends ChannelTestBase {
      **/
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise msgPromise=new Promise();
-        Channel coordinator=createChannel("A");
+        JChannel coordinator=new JChannel(props);
         coordinator.connect("testgroup");
         PullPushAdapter ppa=
                 new PullPushAdapter(coordinator,
                                     new PromisedMessageListener(msgPromise));
         ppa.start();
 
-        channel=createChannel("A");
+        channel=new JChannel(props);
         channel.connect("testgroup1");
         channel.disconnect();
         channel.connect("testgroup");

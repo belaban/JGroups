@@ -11,8 +11,6 @@ package  org.jgroups.persistence;
 public class CannotConnectException extends Exception
 {
 
-    private static final long serialVersionUID = 7472528586067210747L;
-	
     /**
      * @param t
      * @param reason implementor-specified runtime reason

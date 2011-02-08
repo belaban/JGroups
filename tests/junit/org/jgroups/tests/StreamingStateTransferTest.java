@@ -2,365 +2,404 @@ package org.jgroups.tests;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.jgroups.Address;
+import org.jgroups.BlockEvent;
 import org.jgroups.Channel;
-import org.jgroups.JChannelFactory;
+import org.jgroups.ExtendedReceiver;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.StreamingGetStateEvent;
+import org.jgroups.StreamingSetStateEvent;
+import org.jgroups.TimeoutException;
+import org.jgroups.UnblockEvent;
+import org.jgroups.View;
+import org.jgroups.ViewId;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
-
 /**
- * Tests streaming state transfer.
+ * Tests streaming state transfer for both pull and push mode of channel 
+ * operations. Size of the transfer is configurable. Test runner should 
+ * specify "pull" and "size" parameter as JVM parameters when running this 
+ * test. If not specified default values are to use push mode and transfer 
+ * size of 100 MB. 
  * 
+ *  <p>
+ *  
+ *  To specify pull mode and size transfer of 500 MB test runner should pass 
+ *  JVM parameters:
+ *  
+ *  <p>
+ *  -Dpull=true -Dsize=500
+ *
  * 
  * @author Vladimir Blagojevic
  * @version $Id$ 
  *
  */
-public class StreamingStateTransferTest extends ChannelTestBase
-{
-   
-   
-   public void setUp() throws Exception
-   {
-      super.setUp();         
-      CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");      
-   }
-   
-   public boolean useBlocking()
-   {
-      return true;
-   }
-   
-   public void testTransfer()
-   {
-      String channelNames [] = null;
-      //mux applications on top of same channel have to have unique name
-      if(isMuxChannelUsed())
-      {
-         channelNames = createMuxApplicationNames(1);         
-      }
-      else
-      {
-         channelNames = new String[]{"A", "B", "C", "D"};        
-      }
-      transferHelper(channelNames,false);
-   }
-   
-   public void testRpcChannelTransfer()
-   {
-      //do this test for regular channels only
-      if(!isMuxChannelUsed())
-      {
-         String channelNames []= new String[]{"A", "B", "C", "D"};   
-         transferHelper(channelNames,true);
-      }
-   }
-   
-   public void testMultipleServiceMuxChannel()
-   {
-      String channelNames [] = null;
-      //mux applications on top of same channel have to have unique name
-      if(isMuxChannelUsed())
-      {
-         channelNames = createMuxApplicationNames(2);  
-         transferHelper(channelNames,false);
-      }           
-   }
+public class StreamingStateTransferTest extends TestCase{
 
-   public void transferHelper(String channelNames[], boolean useDispatcher)
-   {                 
-      int channelCount = channelNames.length;
-      StreamingStateTransferApplication[] channels = null;
+	private final static String CHANNEL_PROPS="streaming-state-transfer.xml";
+	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
+	private int runningTime = 1000*50; // 50 secs 
+	private Random r = new Random();
+	private boolean usePullMode = false;
+    private boolean useDisp = false;
+	private int size = 100; //100MB
+	
+	private final static int MEGABYTE = 1048576;
+	
+	
+	public StreamingStateTransferTest(String arg0) {
+		super(arg0);
+	}
+	
+	public void testTransfer() throws Exception
+	{
+		long start = System.currentTimeMillis();
+		boolean running=true;
+		List members=new ArrayList();			
+		
+		//first spawn and join
+		for(int i =0;i<INITIAL_NUMBER_OF_MEMBERS;i++)
+		{
+			GroupMember member = new GroupMember(usePullMode,useDisp,size);			
+			members.add(member);
+			Thread t = new Thread(member);
+			t.start();
+			Util.sleep(getRandomDelayInSeconds(10,12)*1000);
+		}
+		
+		for (; running;) {						
+			
+			//and then flip a coin
+			if(r.nextBoolean())
+			{
+				Util.sleep(getRandomDelayInSeconds(10,12)*1000);
+				GroupMember member = new GroupMember(usePullMode,useDisp,size);					
+				members.add(member);				
+				Thread t = new Thread(member);
+				t.start();
+			}
+			else if(members.size()>1)
+			{
+				Util.sleep(getRandomDelayInSeconds(3,8)*1000);
+				GroupMember unluckyBastard = (GroupMember) members.get(r.nextInt(members.size()));
+				if(!unluckyBastard.isCoordinator())
+				{
+					members.remove(unluckyBastard);				
+					unluckyBastard.stopRunning();					
+				}
+				else
+				{
+					System.out.println("Not killing coordinator ");
+				}
+			}				
+			running =System.currentTimeMillis() - start <= runningTime;
+			System.out.println("Running time " + ((System.currentTimeMillis()-start)/1000) + " secs");
+		}
+		System.out.println("Done");
+	}
+	
+	protected int getRandomDelayInSeconds(int from,int to)
+	{
+		return from + r.nextInt(to-from);
+	}
 
-      channels = new StreamingStateTransferApplication[channelCount];
+	protected void setUp() throws Exception {
+		
+		//NOTE use -Ddisp=true|false -Dpull=true|false -Dsize=int (size of transfer)
+       
+        String prop = System.getProperty("disp");
+        if(prop!=null)
+        {
+            useDisp = prop.equalsIgnoreCase("true");
+            System.out.println("Using parameter disp=" + useDisp);
+        }
+		prop = System.getProperty("pull");
+		if(prop!=null)
+		{
+			usePullMode = prop.equalsIgnoreCase("true");
+			System.out.println("Using parameter usePullMode=" + usePullMode);
+		}
+		
+		prop = System.getProperty("size");
+		if(prop!=null)
+		{
+			size = Integer.parseInt(System.getProperty("size"));
+			System.out.println("Using parameter size=" + size);
+		}
+		super.setUp();
+	}
 
-      //Create a semaphore and take all its tickets
-      Semaphore semaphore = new Semaphore(channelCount);
-      
-      try
-      {
+	protected void tearDown() throws Exception {
+		super.tearDown();		
+	}
+	
+	public static Test suite() {		  
+	      return new TestSuite(StreamingStateTransferTest.class);
+	}
+	 
+	public static void main(String[] args) {		
+		 String[] testCaseName={StreamingStateTransferTest.class.getName()};
+	     junit.textui.TestRunner.main(testCaseName);
+	}
+	
+	private static class GroupMember implements Runnable,ExtendedReceiver{
+		JChannel ch = null;		
+		View currentView;		
+		volatile boolean running = true;		
+		private int stateSize;	
+		private int bufferSize = 8*1024;
+		private boolean usePullMode;	
+		private Random ran = new Random();
+        private boolean useDispacher;
 
-         takeAllPermits(semaphore, channelCount);
-         
-         // Create activation threads that will block on the semaphore        
-         for (int i = 0; i < channelCount; i++)
-         {
+		public GroupMember(boolean pullMode, boolean dispMode, int size) {
+			setStateSize(size * MEGABYTE);
+			setUsePullMode(pullMode);
+			setUseDispatcher(dispMode);
+			try {
+				ch = new JChannel(CHANNEL_PROPS);
+				ch.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+				ch.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE);
+				ch.setOpt(Channel.BLOCK, Boolean.TRUE);
+				if (useDispacher) {
+					RpcDispatcher disp = new RpcDispatcher(ch, this, this, this);
+				} else if (!usePullMode) {
+					ch.setReceiver(this);
+				}
+				ch.connect("transfer");				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		public final void setUsePullMode(boolean usePullMode) {
+			this.usePullMode = usePullMode;
+		}
+        
+        public final void setUseDispatcher(boolean useDispacher) {
+            this.useDispacher = useDispacher;
+        }
 
-            if(isMuxChannelUsed())
-            {
-               channels[i] = new StreamingStateTransferApplication(channelNames[i],muxFactory[i%getMuxFactoryCount()],semaphore);  
-            }
-            else
-            {
-               channels[i] = new StreamingStateTransferApplication(channelNames[i],semaphore,useDispatcher);
-            }
+		public String getAddress() {
+			if(ch!=null && ch.isConnected())
+			{
+				return ch.getLocalAddress().toString();
+			}
+			return null;
+		}
 
-            // Start threads and let them join the channel
-            semaphore.release(1);
-            channels[i].start();            
-            sleepThread(2000);            
-         }               
-         
-         if(isMuxChannelUsed())
-         {
-            blockUntilViewsReceived(channels,getMuxFactoryCount(), 60000);
-         }
-         else
-         {
-            blockUntilViewsReceived(channels, 60000);
-         }
-         
+		public void stopRunning() {
+			running=false;	
+			System.out.println("Disconnect " + getAddress());
+			if(ch!=null)ch.close();
+		}	
+		
+		protected boolean isCoordinator() {
+			if (ch == null)
+				return false;
+			Object local_addr = ch.getLocalAddress();
+			if (local_addr == null)
+				return false;
+			View view = ch.getView();
+			if (view == null)
+				return false;
+			ViewId vid = view.getVid();
+			if (vid == null)
+				return false;
+			Object coord = vid.getCoordAddress();
+			if (coord == null)
+				return false;
+			return local_addr.equals(coord);
+		}
 
-         //Reacquire the semaphore tickets; when we have them all
-         // we know the threads are done         
-         acquireSemaphore(semaphore, 60000, channelCount);          
-         
-         int getStateInvokedCount = 0;
-         int setStateInvokedCount = 0;
-         int partialGetStateInvokedCount = 0;
-         int partialSetStateInvokedCount = 0;
-         
-         sleepThread(3000);
-         for (int i = 0; i < channels.length; i++)
-         {
-            if(channels[i].getStateInvoked)
-            {
-               getStateInvokedCount++;
-            }
-            if(channels[i].setStateInvoked)
-            {
-               setStateInvokedCount++;
-            }  
-            if(channels[i].partialGetStateInvoked)
-            {
-               partialGetStateInvokedCount++;
-            } 
-            if(channels[i].partialSetStateInvoked)
-            {
-               partialSetStateInvokedCount++;
-            }
-            Map map = channels[i].getMap();
-            for (int j = 0; j < channels.length; j++)
-            {
-               List l = (List) map.get(channels[j].getLocalAddress());
-               int size = l!=null?l.size():0;
-               assertEquals("Correct element count in map ",StreamingStateTransferApplication.COUNT,size);              
-            }
-         }
-         if(isMuxChannelUsed())
-         {
-            int factor = channelCount/getMuxFactoryCount();
-            assertEquals("Correct invocation count of getState ",1*factor, getStateInvokedCount);
-            assertEquals("Correct invocation count of setState ",(channelCount/factor)-1,setStateInvokedCount/factor);
-            assertEquals("Correct invocation count of partial getState ",1*factor, partialGetStateInvokedCount);
-            assertEquals("Correct invocation count of partial setState ",(channelCount/factor)-1,partialSetStateInvokedCount/factor);
-         }
-         else
-         {
-            assertEquals("Correct invocation count of getState ",1, getStateInvokedCount);
-            assertEquals("Correct invocation count of setState ",channelCount-1,setStateInvokedCount);
-            assertEquals("Correct invocation count of partial getState ",1, partialGetStateInvokedCount);
-            assertEquals("Correct invocation count of partial setState ",channelCount-1,partialSetStateInvokedCount);
-         }
-               
-      }
-      catch (Exception ex)
-      {
-         log.warn(ex);
-      }
-      finally
-      {
-         for (int i = 0; i < channelCount; i++)
-         {
-            sleepThread(500);
-            channels[i].cleanup();
-         }
-      }
-   }
-   
-   protected class StreamingChannelTestFactory extends DefaultChannelTestFactory
-   {
-      public Channel createChannel(Object id) throws Exception
-      {
-         return createChannel(CHANNEL_CONFIG, true);
-      }
-   }
+		public final void setStateSize(int stateSize) {
+			this.stateSize = stateSize;
+		}
 
-   protected class StreamingStateTransferApplication extends PushChannelApplicationWithSemaphore
-   {            
-      private Map stateMap = new HashMap();
-      
-      public static final int COUNT = 25;
+		public void run() {
+			Runnable r = new Runnable() {
+				public void run() {
+					try {
+						if (ran.nextBoolean()) {
+							ch.getState(null, 5000);
+						} else {
+							String randomStateId = Long.toString(Math.abs(ran.nextLong()), 36);
+							ch.getState(null, randomStateId, 5000);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			if (usePullMode) {	
+				
+				//when BLOCK events are turned on, pbcast.FLUSH is used and we use pull channel mode 
+				//we have to getState on a separate thread. Why? Because joining member has to immediatelly 
+				//go into receive and fetch/respond to block event which is received as part of state transfer.
+				new Thread(r).start();
+			}
+			else
+			{
+				r.run();
+			}
+			while (running) {
+				Object msgReceived = null;
+				try {					
+					msgReceived = ch.receive(0);
+                    if (msgReceived instanceof BlockEvent) {
+                       this.block();
+                       ch.blockOk();
+                    } else if (msgReceived instanceof UnblockEvent) {
+                       this.unblock();                           
+                    }
+					if (!running) {
+						// I am not a group member anymore so
+						// I will discard any transient message I
+						// receive
+					} else {
+						if (msgReceived instanceof View) {							
+						} else if (msgReceived instanceof StreamingGetStateEvent) {
+							StreamingGetStateEvent evt = (StreamingGetStateEvent) msgReceived;
+							if(evt.getStateId()!=null)
+							{
+								this.getState(evt.getStateId(),evt.getArg());	
+							}
+							else
+							{
+								this.getState(evt.getArg());
+							}
+						} else if (msgReceived instanceof StreamingSetStateEvent) {
+							StreamingSetStateEvent evt = (StreamingSetStateEvent) msgReceived;
+							if(evt.getStateId()!=null)
+							{
+								this.setState(evt.getStateId(),evt.getArg());
+							}
+							else
+							{
+								this.setState(evt.getArg());
+							}
+						} 
+					}                    
 
-      private Object partialTransferObject = new String("partial");
-      
-      boolean partialSetStateInvoked = false;
+				} catch (TimeoutException e) {					
+				} catch (Exception e) {					
+					ch.close();
+					running = false;
+				}			
+			}					
+		}
+	
+		public void getState(OutputStream ostream) {			
+			InputStream stream = Thread.currentThread().getContextClassLoader()
+					.getResourceAsStream("org/jgroups/JChannel.class");
+			System.out.println(Thread.currentThread() + " at " + getAddress()
+					+ " is sending state of " + (stateSize / MEGABYTE) + " MB");
+			
+			int markSize = 1024*100; //100K should be enough
+			byte buffer [] = new byte[bufferSize];
+			int bytesRead=-1;	
+			int size = stateSize;
+			try {															
+				while(size>0)
+				{
+					stream.mark(markSize);
+					bytesRead=stream.read(buffer);
+					ostream.write(buffer);
+					stream.reset();									
+					size = size-bytesRead;					
+				}					
+			} catch (IOException e) {				
+				e.printStackTrace();
+			}	
+			finally
+			{				
+				try {
+					ostream.flush();
+					ostream.close();
+				} catch (IOException e) {					
+					e.printStackTrace();
+				}				
+			}
+		}
 
-      boolean partialGetStateInvoked = false;
+		public void setState(InputStream istream) {
+			int totalRead=0;
+			byte buffer [] = new byte[bufferSize];
+			int bytesRead=-1;
+			long start = System.currentTimeMillis();
+			try {
+				while((bytesRead=istream.read(buffer))>=0)
+				{					
+					totalRead+=bytesRead;
+				}								
+			} catch (IOException e) {				
+				e.printStackTrace();
+			}
+			finally
+			{
+				try {
+					istream.close();
+				} catch (IOException e) {					
+					e.printStackTrace();
+				}
+			}
+			long readingTime = System.currentTimeMillis()-start;
+			System.out.println(Thread.currentThread() + " at " + getAddress()
+					+ " read state of " + (totalRead / MEGABYTE) + " MB in "
+					+ readingTime + " msec");						
+		}
 
-      boolean setStateInvoked = false;
+		public void receive(Message msg) {		
+		}
 
-      boolean getStateInvoked = false;
+		public void setState(byte[] state) {			
+		}
 
-      public StreamingStateTransferApplication(String name, Semaphore s,boolean useDispatcher) throws Exception
-      {
-         super(name,new StreamingChannelTestFactory(),s,useDispatcher);
-         channel.connect("test");
-      }    
-      
-      public StreamingStateTransferApplication(String name, JChannelFactory factory,Semaphore s) throws Exception
-      {
-         super(name,factory,s);
-         channel.connect("test");
-      } 
+		public void viewAccepted(View new_view) {			
+		}
 
-      public void receive(Message msg)
-      {
-         Address sender = msg.getSrc();
-         synchronized(stateMap)
-         {
-            List list = (List) stateMap.get(sender);
-            if(list == null)
-            {
-               list = new ArrayList();
-               stateMap.put(sender, list);
-            }
-            list.add(msg.getObject());
-         }
-      }
-      
-      public Map getMap()
-      {
-         return stateMap;
-      }
+		public void suspect(Address suspected_mbr) {		
+		}
 
-      public void useChannel() throws Exception
-      {        
-         for(int i = 0;i < COUNT;i++)
-         {
-            channel.send(null,null,new Integer(i));
-         }
-         channel.getState(null, 25000);                         
-         channel.getState(null, name, 25000);
-      }
+		public void block() {	
+           // System.out.println("Block at " + ch.getLocalAddress());
+		}
 
-      public void getState(OutputStream ostream)
-      {
-         super.getState(ostream);
-         ObjectOutputStream oos = null;
-         try
-         {
-            oos = new ObjectOutputStream(ostream);
-            HashMap copy = null;
-            synchronized (stateMap)
-            {
-               copy = new HashMap(stateMap);
-            }              
-            oos.writeObject(copy);                         
-            oos.flush();
-         }
-         catch (IOException e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            getStateInvoked = true;
-            Util.close(oos);
-         }
-      }
+        public void unblock() {
+           // System.out.println("Unblock at " + ch.getLocalAddress());
+        }
 
-      public void setState(InputStream istream)
-      {
-         super.setState(istream);
-         ObjectInputStream ois = null;
-         try
-         {
-            ois = new ObjectInputStream(istream);
-            Map map = (Map) ois.readObject();
-            synchronized (stateMap)
-            {
-               stateMap.clear();
-               stateMap.putAll(map);
-            }           
-         }
-         catch (Exception e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            setStateInvoked = true;
-            Util.close(ois);
-         }
-      }
+        public byte[] getState() {
+			return null;
+		}
+		
+		public byte[] getState(String state_id) {		
+			return null;
+		}
 
-      public void setState(String state_id, InputStream istream)
-      {
-         super.setState(state_id, istream);
-         ObjectInputStream ois = null;
-         try
-         {
-            ois = new ObjectInputStream(istream);            
-            TestCase.assertEquals("Got partial state requested ", ois.readObject(), name);           
-            TestCase.assertEquals("Got partial state ", partialTransferObject, ois.readObject());
-         }
-         catch (Exception e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            partialSetStateInvoked = true;
-            Util.close(ois);
-         }
-      }
+		public void setState(String state_id, byte[] state) {						
+		}
 
-      public void getState(String state_id, OutputStream ostream)
-      {
-         super.getState(state_id, ostream);
-         ObjectOutputStream oos = null;
-         try
-         {
-            oos = new ObjectOutputStream(ostream);
-            oos.writeObject(state_id);
-            oos.writeObject(partialTransferObject);
-            oos.flush();
-         }
-         catch (IOException e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            partialGetStateInvoked  = true;
-            Util.close(oos);
-         }
-      }        
-   }
+		public void getState(String state_id, OutputStream ostream) {
+			System.out.println("Writing partial streaming state transfer for " + state_id);
+			getState(ostream);
+		}
 
-   public static Test suite()
-   {
-      return new TestSuite(StreamingStateTransferTest.class);
-   }
-
-   public static void main(String[] args)
-   {
-      String[] testCaseName = {StreamingStateTransferTest.class.getName()};
-      junit.textui.TestRunner.main(testCaseName);
-   }
+		public void setState(String state_id, InputStream istream) {
+			System.out.println("Reading partial streaming state transfer for " + state_id);
+			setState(istream);			
+		}		
+	}
 }

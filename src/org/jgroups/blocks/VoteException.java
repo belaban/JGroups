@@ -10,7 +10,5 @@ import org.jgroups.ChannelException;
  */
 public class VoteException extends ChannelException {
 
-    private static final long serialVersionUID = -878345689312038489L;
-
-	public VoteException(String msg) { super(msg); }
+    public VoteException(String msg) { super(msg); }
 }

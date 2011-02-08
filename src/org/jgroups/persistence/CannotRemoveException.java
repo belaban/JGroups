@@ -10,9 +10,7 @@ package  org.jgroups.persistence;
 public class CannotRemoveException extends Exception
 {
 
-   private static final long serialVersionUID = -5777024088921236116L;
-	
-   /**
+    /**
      * @param t
      * @param reason implementor-specified runtime reason
      */

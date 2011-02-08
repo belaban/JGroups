@@ -1,4 +1,4 @@
-// $Id: ProtocolObserver.java,v 1.2 2006/11/17 13:39:20 belaban Exp $
+// $Id: ProtocolObserver.java,v 1.1.1.1 2003/09/09 01:24:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -55,12 +55,15 @@ public interface ProtocolObserver {
 	to block indefinitely, and only process single events at a time, e.g. for single-stepping.
 	For example, upon clicking on a button "Step" in the Debugger GUI, the method would unblock
 	(waiting on a mutex, GUI thread notifies mutex).
-     @param evt The event to be processed by the protocol. <em>This is not a copy, so changes
-     to the event will be seen by the protocol !</em>
-     @return boolean If true the event is processed, else it will be discarded (not be given
-     to the protocol layer to process).
+	@param evt The event to be processed by the protocol. <em>This is not a copy, so changes
+	to the event will be seen by the protocol !</em>
+	@param num_evts The number of events currently in the down-queue (including this event).
+	This number may increase while we're in the callback as the down-handler thread in the
+	upper protocol layer puts new events into the down queue.
+	@return boolean If true the event is processed, else it will be discarded (not be given
+	to the protocol layer to process).
     */
-    boolean down(Event evt); 
+    boolean down(Event evt, int num_evts); 
 
 
     

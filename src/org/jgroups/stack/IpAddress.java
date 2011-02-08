@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.37 2006/11/13 17:50:16 bstansberry Exp $
+// $Id: IpAddress.java,v 1.36 2006/09/11 13:57:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -19,10 +19,7 @@ import java.net.UnknownHostException;
  * @author Bela Ban
  */
 public class IpAddress implements Address {
-
-	private static final long serialVersionUID = 2592301708270771474L;
-	
-	private InetAddress             ip_addr=null;
+    private InetAddress             ip_addr=null;
     private int                     port=0;
     private byte[]                  additional_data;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);

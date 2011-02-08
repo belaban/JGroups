@@ -8,9 +8,7 @@ package org.jgroups.blocks;
  */
 public class LockNotReleasedException extends Exception {
 
-    private static final long serialVersionUID = -350403929687059570L;
-
-	public LockNotReleasedException() {
+    public LockNotReleasedException() {
         super();
     }
 

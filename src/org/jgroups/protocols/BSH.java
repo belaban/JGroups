@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.13 2006/11/17 13:39:19 belaban Exp $
+// $Id: BSH.java,v 1.12 2005/08/08 12:45:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -60,6 +60,9 @@ public class BSH extends Protocol {
     public void startUpHandler() {
     }
 
+    /** We have no down handler thread */
+    public void startDownHandler() {
+    }
 
     public void up(Event evt) {
         Header  h;

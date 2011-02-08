@@ -11,8 +11,6 @@ package  org.jgroups.persistence;
 public class CannotCreateSchemaException extends Exception
 {
 
-    private static final long serialVersionUID = 291582260022140141L;
-	
     /**
      * @param t
      * @param reason implementor-specified runtime reason
