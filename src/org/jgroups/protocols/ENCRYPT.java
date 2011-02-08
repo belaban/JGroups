@@ -504,7 +504,7 @@ public class ENCRYPT extends Protocol {
             asymCipher = Cipher.getInstance(asymAlgorithm, asymProvider);
         else
             asymCipher = Cipher.getInstance(asymAlgorithm);
-        
+
         asymCipher.init(Cipher.DECRYPT_MODE,Kpair.getPrivate());
 
         if (log.isInfoEnabled())
