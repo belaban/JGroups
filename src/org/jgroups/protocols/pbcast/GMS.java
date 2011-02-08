@@ -195,6 +195,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
     public void setViewAckCollectionTimeout(long view_ack_collection_timeout) {
+        if(view_ack_collection_timeout <= 0)
+            throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         this.view_ack_collection_timeout=view_ack_collection_timeout;
     }
 
@@ -297,6 +299,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
     public void init() throws Exception {
+        if(view_ack_collection_timeout <= 0)
+            throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         prev_members=new BoundedList<Address>(num_prev_mbrs);
         TP transport=getTransport();
         timer=transport.getTimer();
