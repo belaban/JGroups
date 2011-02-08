@@ -30,9 +30,9 @@
         desired_avg_gossip="20000"
         max_bytes="0"/>
     <FRAG frag_size="8192"
-
+        down_thread="false"
         up_thread="false"/>
-    <VIEW_SYNC avg_send_interval="60000"  up_thread="false" />
+    <VIEW_SYNC avg_send_interval="60000" down_thread="false" up_thread="false" />
     <AUTH auth_class="org.jgroups.auth.X509Token1_5"
         auth_value="chris"
         keystore_path="C\:\Documents and Settings\spare1\.keystore"

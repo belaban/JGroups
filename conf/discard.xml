@@ -2,7 +2,7 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.4 2006/11/17 13:39:14 belaban Exp $
+Version: $Id: discard.xml,v 1.3 2005/11/02 12:07:01 belaban Exp $
  -->
 <config>
     <UDP 
@@ -19,27 +19,27 @@ Version: $Id: discard.xml,v 1.4 2006/11/17 13:39:14 belaban Exp $
          use_incoming_packet_handler="true" 
          use_outgoing_packet_handler="false" 
          ip_ttl="2" 
-          up_thread="false"
+         down_thread="false" up_thread="false"
          enable_bundling="true"/>
     <DISCARD down="0.1"/>
     <PING timeout="2000"
-           up_thread="false" num_initial_members="3"/>
+          down_thread="false" up_thread="false" num_initial_members="3"/>
     <MERGE2 max_interval="10000"
         min_interval="5000"/>
-    <FD_SOCK  up_thread="false"/>
+    <FD_SOCK down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="50" 
                    retransmit_timeout="20,300,600,1200,2400,4800"
-                    up_thread="false"
+                   down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200,2400,3600" 
-              up_thread="false"/>
+             down_thread="false" up_thread="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
-                    up_thread="false"
+                   down_thread="false" up_thread="false"
                    max_bytes="500000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000" 
-                 up_thread="false"
+                down_thread="false" up_thread="false"
                 join_retry_timeout="2000" shun="true"/>
-    <FC max_credits="2000000"  up_thread="false"
+    <FC max_credits="2000000" down_thread="false" up_thread="false"
         min_threshold="0.20"/>
 </config>

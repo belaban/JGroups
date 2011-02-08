@@ -6,7 +6,7 @@
     <!--
     A bunch of JGroups channels which can be used by other services
     Author: Bela Ban
-    Version: $Id: jboss-service.xml,v 1.4 2006/11/17 13:39:14 belaban Exp $
+    Version: $Id: jboss-service.xml,v 1.3 2006/05/02 14:36:27 belaban Exp $
     -->
     <mbean code="org.jgroups.jmx.JChannel" name="jgroups:name=DemoChannel">
         <attribute name="ObjectName">jgroups:name=DemoChannel</attribute>
@@ -28,22 +28,22 @@
                     ucast_send_buf_size="80000" ucast_recv_buf_size="150000"
                     loopback="false"/>
                 <PING timeout="2000" num_initial_members="3"
-                    up_thread="false" />
+                    up_thread="false" down_thread="false"/>
                 <MERGE2 min_interval="10000" max_interval="20000"/>
-                <FD shun="true" up_thread="true" />
+                <FD shun="true" up_thread="true" down_thread="true"/>
                 <VERIFY_SUSPECT timeout="1500"
-                    up_thread="false" />
+                    up_thread="false" down_thread="false"/>
                 <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800"
-                    max_xmit_size="8192" up_thread="false" />
+                    max_xmit_size="8192" up_thread="false" down_thread="false"/>
                 <UNICAST timeout="600,1200,2400" window_size="100" min_threshold="10"
-                    />
+                    down_thread="false"/>
                 <pbcast.STABLE desired_avg_gossip="20000"
-                    up_thread="false" />
+                    up_thread="false" down_thread="false"/>
                 <FRAG frag_size="8192"
-                     up_thread="false"/>
+                    down_thread="false" up_thread="false"/>
                 <pbcast.GMS join_timeout="5000" join_retry_timeout="2000"
                     shun="true" print_local_addr="true"/>
-                <pbcast.STATE_TRANSFER up_thread="false" />
+                <pbcast.STATE_TRANSFER up_thread="false" down_thread="false"/>
             </config>
         </attribute>
     </mbean>

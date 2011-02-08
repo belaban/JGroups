@@ -7,7 +7,7 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: tcp-nio.xml,v 1.2 2006/11/17 13:39:15 belaban Exp $
+    version: $Id: tcp-nio.xml,v 1.1 2006/09/22 12:48:14 belaban Exp $
 -->
 <config>
     <TCP_NIO
@@ -19,7 +19,7 @@
             max_bundle_timeout="30"
             use_incoming_packet_handler="true"
             use_outgoing_packet_handler="false"
-             up_thread="false"
+            down_thread="false" up_thread="false"
             enable_bundling="true"
             start_port="7800"
             use_send_queues="false"
@@ -32,32 +32,32 @@
             processor_queueSize="100"
             processor_keepAliveTime="-1"/>
     <TCPPING timeout="3000"
-              up_thread="false"
+             down_thread="false" up_thread="false"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="1"
              num_initial_members="3"/>
     <MERGE2 max_interval="100000"
-             up_thread="false" min_interval="20000"/>
-    <FD_SOCK  up_thread="false"/>
-    <FD timeout="10000" max_tries="5"  up_thread="false" shun="true"/>
-    <VERIFY_SUSPECT timeout="1500"  up_thread="false"/>
+            down_thread="false" up_thread="false" min_interval="20000"/>
+    <FD_SOCK down_thread="false" up_thread="false"/>
+    <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
+    <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="300,600,1200,2400,4800"
-                    up_thread="false"
+                   down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                    up_thread="false"
+                   down_thread="false" up_thread="false"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                 up_thread="false"
+                down_thread="false" up_thread="false"
                 join_retry_timeout="2000" shun="true"
                 view_bundling="true"/>
-    <FC max_credits="2000000"  up_thread="false"
+    <FC max_credits="2000000" down_thread="false" up_thread="false"
         min_threshold="0.10"/>
-    <FRAG2 frag_size="60000"  up_thread="false"/>
-    <pbcast.STREAMING_STATE_TRANSFER  up_thread="false"
+    <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
+    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
                                      use_flush="true" use_reading_thread="true"/>
-    <!-- pbcast.STATE_TRANSFER  up_thread="false" use_flush="false"/ -->
-    <pbcast.FLUSH  up_thread="false"/>
+    <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
+    <pbcast.FLUSH down_thread="false" up_thread="false"/>
 </config>
