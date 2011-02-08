@@ -33,4 +33,12 @@ Author: Bela Ban
     <pbcast.GMS print_local_addr="true" 
                 join_timeout="5000" 
                 />
+    <UFC max_credits="2M"
+         min_threshold="0.4"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG2 frag_size="60K"  />
+    <!--pbcast.STREAMING_STATE_TRANSFER /-->
+    <pbcast.STATE_TRANSFER  />
+    <!-- pbcast.FLUSH  /-->
 </config>
