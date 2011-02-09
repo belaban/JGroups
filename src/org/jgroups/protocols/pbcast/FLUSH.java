@@ -648,15 +648,20 @@ public class FLUSH extends Protocol {
     private void onSuspend(final List<Address> members) {
         Message msg = null;
         Collection<Address> participantsInFlush = null;
-        synchronized (sharedLock) {
-            // start FLUSH only on group members that we need to flush
-            participantsInFlush = members;
-            participantsInFlush.retainAll(currentView.getMembers());
+      synchronized (sharedLock) {
+         flushCoordinator = localAddress;         
 
-            msg = new Message(null, localAddress, null);
-            msg.putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
-                            participantsInFlush));
-        }
+         // start FLUSH only on group members that we need to flush
+         participantsInFlush = members;
+         participantsInFlush.retainAll(currentView.getMembers());
+         flushMembers.clear();
+         flushMembers.addAll(participantsInFlush);
+         flushMembers.removeAll(suspected);
+         
+         msg = new Message(null, localAddress, null);
+         msg.putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
+                  participantsInFlush));
+      }
         if (participantsInFlush.isEmpty()) {
             flush_promise.setResult(Boolean.TRUE);
         } else {
@@ -704,14 +709,18 @@ public class FLUSH extends Protocol {
             numberOfFlushes += 1;
         }
         boolean proceed = false;
+        boolean amIFlushInitiator = false;        
         synchronized (sharedLock) {
-            flushCoordinator = flushStarter;
-            flushMembers.clear();
-            if (fh.flushParticipants != null) {
-                flushMembers.addAll(fh.flushParticipants);
+            amIFlushInitiator = flushStarter.equals(localAddress);
+            if(!amIFlushInitiator){
+               flushCoordinator = flushStarter;
+               flushMembers.clear();
+               if (fh.flushParticipants != null) {
+                   flushMembers.addAll(fh.flushParticipants);
+               }               
+               flushMembers.removeAll(suspected);
             }
             proceed = flushMembers.contains(localAddress);
-            flushMembers.removeAll(suspected);
         }
 
         if (proceed) {
