@@ -2027,7 +2027,7 @@ public abstract class TP extends Protocol {
     	public static final String THREAD_NAME = "DiagnosticsHandler";
         private Thread thread=null;
         private MulticastSocket diag_sock=null;
-        private final Set<ProbeHandler> handlers=new HashSet<ProbeHandler>();
+        private final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<ProbeHandler>();
 
         DiagnosticsHandler() {
         }
