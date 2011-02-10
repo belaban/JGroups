@@ -119,6 +119,14 @@ public abstract class Protocol {
         throw new UnsupportedOperationException("use a setter instead");
     }
 
+    public Object getValue(String name) {
+        if(name == null) return null;
+        Field field=Util.getField(getClass(), name);
+        if(field == null)
+            throw new IllegalArgumentException("field \"" + name + "\n not found");
+        return Configurator.getField(field, this);
+    }
+
     public Protocol setValues(Map<String,Object> values) {
         if(values == null)
             return this;
