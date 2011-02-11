@@ -58,12 +58,87 @@ public class ProtocolStack extends Protocol implements Transport {
                     map.put("props", tmp);
                     return map;
                 }
+                if(key.startsWith("print-protocols")) {
+                    List<Protocol> prots=getProtocols();
+                    Collections.reverse(prots);
+                    StringBuilder sb=new StringBuilder();
+                    for(Protocol prot: prots)
+                        sb.append(prot.getName()).append("\n");
+                    HashMap<String, String> map=new HashMap<String, String>(1);
+                    map.put("protocols", sb.toString());
+                    return map;
+                }
+                if(key.startsWith("remove-protocol")) {
+                    key=key.substring("remove-protocol".length());
+                    int index=key.indexOf("=");
+                    if(index != -1) {
+                        String prot_name=key.substring(index +1);
+                        if(prot_name != null && prot_name.length() > 0) {
+                            try {
+                                Protocol removed=removeProtocol(prot_name);
+                                if(removed != null)
+                                    log.debug("removed protocol " + prot_name + " from stack");
+                            }
+                            catch(Exception e) {
+                                log.error("failed removing protocol " + prot_name, e);
+                            }
+                        }
+                    }
+                }
+                if(key.startsWith("insert-protocol")) {
+                    key=key.substring("insert-protocol".length()+1);
+                    int index=key.indexOf("=");
+                    if(index == -1) break;
+
+                    // 1. name of the protocol to be inserted
+                    String prot_name=key.substring(0, index).trim();
+                    Protocol prot=null;
+                    try {
+                        prot=createProtocol(prot_name);
+                        prot.init();
+                        prot.start();
+                    }
+                    catch(Exception e) {
+                        log.error("failed creating an instance of " + prot_name, e);
+                        break;
+                    }
+
+                    key=key.substring(index+1);
+
+                    index=key.indexOf('=');
+                    if(index == -1) {
+                        log.error("= missing in insert-protocol command");
+                        break;
+                    }
+
+                    // 2. "above" or "below"
+                    String tmp=key.substring(0, index);
+                    if(!tmp.equalsIgnoreCase("above") && !tmp.equalsIgnoreCase("below")) {
+                        log.error("Missing \"above\" or \"below\" in insert-protocol command");
+                        break;
+                    }
+
+                    key=key.substring(index+1);
+                    String neighbor_prot=key.trim();
+                    Protocol neighbor=findProtocol(neighbor_prot);
+                    if(neighbor == null) {
+                        log.error("Neighbor protocol " + neighbor_prot + " not found in stack");
+                        break;
+                    }
+                    int position=tmp.equalsIgnoreCase("above")? ABOVE : BELOW;
+                    try {
+                        insertProtocol(prot, position, neighbor.getClass());
+                    }
+                    catch(Exception e) {
+                        log.error("failed inserting protocol " + prot_name + " " + tmp + " " + neighbor_prot, e);
+                    }
+                }
             }
             return null;
         }
 
         public String[] supportedKeys() {
-            return new String[]{"props"};
+            return new String[]{"props", "print-protocols", "\nremove-protocol=<name>", "\ninsert-protocol=<name>;above | below=<name>"};
         }
     };
 
@@ -647,6 +722,8 @@ public class ProtocolStack extends Protocol implements Transport {
             below.setUpProtocol(above);
         prot.setUpProtocol(null);
         prot.setDownProtocol(null);
+        prot.stop();
+        prot.destroy();
         return prot;
     }
 
@@ -733,6 +810,38 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return null;
     }
+
+
+
+    protected Protocol createProtocol(String classname) throws Exception {
+        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + classname;
+        Class<?> clazz=null;
+
+        try {
+            clazz=Util.loadClass(defaultProtocolName, getClass());
+        }
+        catch(ClassNotFoundException e) {
+        }
+
+        if(clazz == null) {
+            try {
+                clazz=Util.loadClass(classname, getClass());
+            }
+            catch(ClassNotFoundException e) {
+            }
+            if(clazz == null) {
+                throw new Exception("unable to load class for protocol " + classname + " (either as an absolute - "
+                                      + classname + " - or relative - " + defaultProtocolName + " - package name)");
+            }
+        }
+
+        Protocol retval=(Protocol)clazz.newInstance();
+        if(retval == null)
+            throw new Exception("creation of instance for protocol " + classname + "failed");
+        retval.setProtocolStack(this);
+        return retval;
+    }
+
 
     public void init() throws Exception {
         List<Protocol> protocols=getProtocols();
