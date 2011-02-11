@@ -722,8 +722,18 @@ public class ProtocolStack extends Protocol implements Transport {
             below.setUpProtocol(above);
         prot.setUpProtocol(null);
         prot.setDownProtocol(null);
-        prot.stop();
-        prot.destroy();
+        try {
+            prot.stop();
+        }
+        catch(Throwable t) {
+            log.error("failed stopping " + prot.getName() + ": " + t);
+        }
+        try {
+            prot.destroy();
+        }
+        catch(Throwable t) {
+            log.error("failed destroying " + prot.getName() + ": " + t);
+        }
         return prot;
     }
 
