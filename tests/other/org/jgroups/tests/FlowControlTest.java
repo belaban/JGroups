@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.MFC;
+import org.jgroups.protocols.UFC;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -35,7 +37,8 @@ public class FlowControlTest extends ReceiverAdapter {
 
     protected void loop() {
         for(;;) {
-            int key=Util.keyPress("[1] send multicast message [2] send unicast message [3] set message size [q] quit");
+            int key=Util.keyPress("[1] Send multicast message [2] Send unicast message " +
+                                    "[3] Set message size [4] Print credits MFC [5] Print credits UFC [q] quit");
             switch(key) {
                 case '1':
                     Message msg=new Message(null, null, buf);
@@ -64,6 +67,22 @@ public class FlowControlTest extends ReceiverAdapter {
                     catch(Exception e) {
                         e.printStackTrace();
                     }
+                    break;
+                case '4':
+                    MFC mfc=(MFC)ch.getProtocolStack().findProtocol(MFC.class);
+                    if(mfc == null) {
+                        System.err.println("MFC not found");
+                        break;
+                    }
+                    System.out.println(mfc.printCredits());
+                    break;
+                case '5':
+                    UFC ufc=(UFC)ch.getProtocolStack().findProtocol(UFC.class);
+                    if(ufc == null) {
+                        System.err.println("UFC not found");
+                        break;
+                    }
+                    System.out.println(ufc.printCredits());
                     break;
                 case 'q': case 'Q': case 'x':
                     return;
