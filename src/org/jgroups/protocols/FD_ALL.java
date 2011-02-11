@@ -125,6 +125,16 @@ public class FD_ALL extends Protocol {
     public String printTimestamps() {
         return _printTimestamps();
     }
+
+    @ManagedOperation(description="Stops checking for crashed members")
+    public void stopFailureDetection() {
+        stopTimeoutChecker();
+    }
+
+    @ManagedOperation(description="Resumes checking for crashed members")
+    public void startFailureDetection() {
+        startTimeoutChecker();
+    }
   
 
     public void resetStats() {

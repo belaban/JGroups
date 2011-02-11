@@ -168,6 +168,16 @@ public class FD extends Protocol {
         return new Monitor();
     }
 
+    @ManagedOperation(description="Stops checking for crashed members")
+    public void stopFailureDetection() {
+        stopMonitor();
+    }
+
+    @ManagedOperation(description="Resumes checking for crashed members")
+    public void startFailureDetection() {
+        startMonitor();
+    }
+
     /** Requires lock to held by caller */
     @GuardedBy("lock")
     private void startMonitor() {
