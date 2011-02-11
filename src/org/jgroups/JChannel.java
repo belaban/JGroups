@@ -2102,6 +2102,7 @@ public class JChannel extends Channel {
                         }
                     }
                 }
+
             }
 
             map.put("version", Version.description);
@@ -2116,7 +2117,7 @@ public class JChannel extends Channel {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"jmx", "info", "invoke", "op", "socks"};
+            return new String[]{"jmx", "info", "invoke=<operation>[<args>]", "\nop=<operation>[<args>]", "socks"};
         }
 
         String getOpenSockets() {
