@@ -258,6 +258,13 @@ public class CreditMap {
         return lowest;
     }
 
+    public long computeLowestCreditWithAccumulated() {
+        long lowest=max_credits;
+        for(long cred: credits.values())
+            lowest=Math.min(cred, lowest);
+        return lowest - accumulated_credits;
+    }
+
     /**
      * Decrements credits bytes from all elements and add new_credits to member (if non null).
      * The lowest credit needs to be greater than min_credits. Needs to be called with lock held
