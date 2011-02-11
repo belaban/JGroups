@@ -462,16 +462,14 @@ public abstract class FlowControl extends Protocol {
      * @param requested_credits Number of bytes that the sender has left to send messages to us
      */
     protected void handleCreditRequest(Map<Address,Credit> map, Address sender, long requested_credits) {
-        Credit cred;
-        if(sender == null || (cred=map.get(sender)) == null)
-            return;
-
-        long credit_response=Math.min(max_credits, Math.min(requested_credits, max_credits - cred.get()));
-        if(credit_response > 0) {
+        if(requested_credits > 0 && sender != null) {
+            Credit cred=map.get(sender);
+            if(cred == null)
+                return;
             if(log.isTraceEnabled())
-                log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-            cred.set(max_credits);
-            sendCredit(sender, credit_response);
+                log.trace("received credit request from " + sender + ": sending " + requested_credits + " credits");
+            cred.increment(requested_credits);
+            sendCredit(sender, requested_credits);
         }
     }
 

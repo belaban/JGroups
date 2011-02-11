@@ -154,6 +154,9 @@ public class CreditMap {
 
             long start=System.currentTimeMillis();
             try {
+
+                // System.out.println("^^^^^^ blocking: credits: " + this.credits);
+
                 credits_available.await(timeout, TimeUnit.MILLISECONDS);
             }
             catch(InterruptedException e) {

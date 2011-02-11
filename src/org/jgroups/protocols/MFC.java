@@ -61,7 +61,7 @@ public class MFC extends FlowControl {
 
     @ManagedOperation(description="Print credits")
     public String printCredits() {
-        return super.printCredits() + "\nsenders min credits: " + credits.getMinCredits();
+        return super.printCredits() + "\nsenders min credits: " + credits.computeLowestCreditWithAccumulated();
     }
 
     @ManagedOperation(description="Print sender credits")
