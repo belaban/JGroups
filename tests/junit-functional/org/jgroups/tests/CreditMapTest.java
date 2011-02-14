@@ -169,7 +169,11 @@ public class CreditMapTest {
         for(Decrementer decr: decrementers)
             decr.start();
 
-        Util.sleep(1000);
+        for(int i=0; i < 10; i++) {
+            if(countAliveThreads(decrementers) == 3)
+                break;
+            Util.sleep(500);
+        }
         int alive=countAliveThreads(decrementers);
         assert alive == 3;
 
