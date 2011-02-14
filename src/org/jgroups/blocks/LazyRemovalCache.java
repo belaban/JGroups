@@ -159,7 +159,20 @@ public class LazyRemovalCache<K,V> {
         return retval;
     }
 
-    public Map<K,V >contents() {
+    /**
+     * Adds all value which have not been marked as removable to the returned set
+     * @return
+     */
+    public Set<V> nonRemovedValues() {
+        Set<V> retval=new HashSet<V>();
+        for(Entry<V> entry: map.values()) {
+            if(!entry.removable)
+                retval.add(entry.val);
+        }
+        return retval;
+    }
+
+    public Map<K,V> contents() {
         Map<K,V> retval=new HashMap<K,V>();
         for(Map.Entry<K,Entry<V>> entry: map.entrySet())
             retval.put(entry.getKey(), entry.getValue().val);
