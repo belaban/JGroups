@@ -142,9 +142,6 @@ public class FC extends Protocol {
     private final Set<Address> creditors=new HashSet<Address>(11);
 
     
-    /** Peers who have asked for credit that we didn't have */
-    private final Set<Address> pending_requesters=new HashSet<Address>(11);
-
     /**
      * Whether FC is still running, this is set to false when the protocol terminates (on stop())
      */
@@ -723,49 +720,14 @@ public class FC extends Protocol {
      */
     private void handleCreditRequest(Map<Address,Credit> map, Address sender, long left_credits) {
         if(sender == null) return;
-        long credit_response=0;
         Credit cred=map.get(sender);
+        if(cred == null) return;
+        long credit_response=Math.min(max_credits - left_credits, max_credits);
 
-        long old_credit=cred != null? cred.get() : 0;
-        if(old_credit > 0)
-            credit_response=Math.min(max_credits, max_credits - old_credit);
-
-        if(credit_response > 0) {
-            if(log.isTraceEnabled())
-                log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-            if(cred != null)
-                cred.set(max_credits);
-            else
-                map.put(sender, new Credit(max_credits));
-            pending_requesters.remove(sender);
-        }
-        else {
-            if(pending_requesters.contains(sender)) {
-                // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
-                // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
-                // credits is negative, we simply send max_credits back
-                long credits_left=Math.max(0, left_credits);
-                credit_response=max_credits - credits_left;
-                // credit_response = max_credits;
-                if(cred != null)
-                    cred.set(max_credits);
-                else
-                    map.put(sender, new Credit(max_credits));
-                pending_requesters.remove(sender);
-                if(log.isWarnEnabled())
-                    log.warn("Received two credit requests from " + sender +
-                            " without any intervening messages; sending " + credit_response + " credits");
-            }
-            else {
-                pending_requesters.add(sender);
-                if(log.isTraceEnabled())
-                    log.trace("received credit request from " + sender + " but have no credits available");
-            }
-        }
-
-
-        if(credit_response > 0)
-            sendCredit(sender, credit_response);
+        if(log.isTraceEnabled())
+            log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
+        cred.set(max_credits);
+        sendCredit(sender, credit_response);
     }
 
 
