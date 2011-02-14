@@ -1209,7 +1209,7 @@ public abstract class TP extends Protocol {
 
 
     protected void sendToAllPhysicalAddresses(byte[] buf, int offset, int length) throws Exception {
-        Set<PhysicalAddress> dests=new HashSet<PhysicalAddress>(logical_addr_cache.values());
+        Set<PhysicalAddress> dests=new HashSet<PhysicalAddress>(logical_addr_cache.nonRemovedValues());
         if(!logical_addr_cache.containsKeys(members)) {
             long current_time=0;
             synchronized(this) {
