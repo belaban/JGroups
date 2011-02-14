@@ -2989,6 +2989,42 @@ public class Util {
     }
 
 
+    /**
+     * Finds first available port starting at start_port and returns server
+     * socket. Will not bind to port >end_port. Sets srv_port
+     */
+    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr,
+                                                  int start_port, int end_port) throws Exception {
+        ServerSocket ret=null;
+        int original_start_port=start_port;
+
+        while(true) {
+            try {
+                if(bind_addr == null)
+                    ret=factory.createServerSocket(service_name, start_port);
+                else {
+                    // changed (bela Sept 7 2007): we accept connections on all NICs
+                    ret=factory.createServerSocket(service_name, start_port, 50, bind_addr);
+                }
+            }
+            catch(BindException bind_ex) {
+                if(start_port == end_port)
+                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
+                if(bind_addr != null) {
+                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
+                    if(nic == null)
+                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
+                }
+                start_port++;
+                continue;
+            }
+            break;
+        }
+        return ret;
+    }
+
+
+
 
     /**
      * Creates a DatagramSocket bound to addr. If addr is null, socket won't be bound. If address is already in use,

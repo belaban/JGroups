@@ -287,8 +287,13 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.CONNECT_WITH_STATE_TRANSFER:  
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: 	
-                Object ret=down_prot.down(evt);                
-                startServerSocket();
+                Object ret=down_prot.down(evt);
+                try {
+                    startServerSocket();
+                }
+                catch(Exception e) {
+                    throw new IllegalArgumentException("failed to created server socket", e);
+                }
                 return ret;
 
             case Event.DISCONNECT:                
@@ -552,9 +557,9 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
 
-    void startServerSocket() {
+    void startServerSocket() throws Exception {
         srv_sock=Util.createServerSocket(getSocketFactory(),
-                                         Global.FD_SOCK_SRV_SOCK, bind_addr, start_port); // grab a random unused port above 10000
+                                         Global.FD_SOCK_SRV_SOCK, bind_addr, start_port, start_port+port_range); // grab a random unused port above 10000
         srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         if(srv_sock_handler != null) {
             srv_sock_handler.start(); // won't start if already running            

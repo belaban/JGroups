@@ -84,7 +84,7 @@ public class TCPConnectionMap{
         this.conn_expire_time = conn_expire_time;
         if(socket_factory != null)
             this.socket_factory=socket_factory;
-        this.srv_sock=createServerSocket(service_name, srv_port, max_port);
+        this.srv_sock=Util.createServerSocket(socket_factory, service_name, bind_addr, srv_port, max_port);
 
         if(external_addr != null)
             local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
@@ -191,41 +191,7 @@ public class TCPConnectionMap{
         }
     }
 
-    /**
-     * Finds first available port starting at start_port and returns server
-     * socket. Will not bind to port >end_port. Sets srv_port
-     */
-    protected ServerSocket createServerSocket(String service_name, int start_port, int end_port) throws Exception {
-        ServerSocket ret=null;
 
-        while(true) {
-            try {
-                if(bind_addr == null)
-                    ret=socket_factory.createServerSocket(service_name, start_port);
-                else {
-                    // changed (bela Sept 7 2007): we accept connections on all NICs
-                    ret=socket_factory.createServerSocket(service_name, start_port, 20, bind_addr);
-                }
-            }
-            catch(BindException bind_ex) {
-                if(start_port == end_port)
-                    throw new BindException("No available port to bind to");
-                if(bind_addr != null) {
-                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
-                    if(nic == null)
-                    	log.warn("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
-                }
-                start_port++;
-                continue;
-            }
-            catch(IOException io_ex) {
-                if(log.isErrorEnabled())
-                    log.error("exception binding to " + bind_addr + "::" + start_port + ": " +  io_ex);
-            }           
-            break;
-        }
-        return ret;
-    }
     
     private void setSocketParameters(Socket client_sock) throws SocketException {
         if(log.isTraceEnabled())
