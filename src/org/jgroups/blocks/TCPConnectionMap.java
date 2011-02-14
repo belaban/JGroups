@@ -84,7 +84,7 @@ public class TCPConnectionMap{
         this.conn_expire_time = conn_expire_time;
         if(socket_factory != null)
             this.socket_factory=socket_factory;
-        this.srv_sock=Util.createServerSocket(socket_factory, service_name, bind_addr, srv_port, max_port);
+        this.srv_sock=Util.createServerSocket(this.socket_factory, service_name, bind_addr, srv_port, max_port);
 
         if(external_addr != null)
             local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
