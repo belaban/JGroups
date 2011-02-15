@@ -170,7 +170,7 @@ public class TUNNEL extends TP {
         }
         
         stubManager = RouterStubManager.emptyGossipClientStubManager(this);
-        sock = getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, 0, bind_addr);
+        sock = getSocketFactory().createDatagramSocket(Global.TUNNEL_UCAST_SOCK, bind_port, bind_addr);
         
         // loopback turned on is mandatory
         loopback = true;
