@@ -26,6 +26,7 @@ public class Version {
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
+    public static final String cvs="$Id: Version.java,v 1.59.2.32 2010/08/17 08:05:34 belaban Exp $";
 
     private static final int MAJOR_SHIFT = 11;
     private static final int MINOR_SHIFT = 6;
