@@ -323,7 +323,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                         handleXmitRequest(src, hdr.seqno, hdr.high_seqno);
                         break;
                     case Unicast2Header.SEND_FIRST_SEQNO:
-                        handleResendingOfFirstMessage(src);
+                        handleResendingOfFirstMessage(src, hdr.seqno);
                         break;
                     case Unicast2Header.STABLE:
                         stable(msg.getSrc(), hdr.seqno, hdr.high_seqno);
@@ -640,7 +640,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         }
         else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
             if(win == null || entry.recv_conn_id != conn_id) {
-                sendRequestForFirstSeqno(sender); // drops the message and returns (see below)
+                sendRequestForFirstSeqno(sender, seqno); // drops the message and returns (see below)
                 return;
             }
         }
@@ -765,8 +765,9 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     /**
      * We need to resend our first message with our conn_id
      * @param sender
+     * @param seqno Resend messages in the range [lowest .. seqno]
      */
-    private void handleResendingOfFirstMessage(Address sender) {
+    private void handleResendingOfFirstMessage(Address sender, long seqno) {
         if(log.isTraceEnabled())
             log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + ")");
         SenderEntry entry=send_table.get(sender);
@@ -776,7 +777,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 log.error(local_addr + ": sender window for " + sender + " not found");
             return;
         }
-        Message rsp=win.getLowestMessage();
+        long lowest=win.getLowest();
+        Message rsp=win.get(lowest);
         if(rsp == null)
             return;
 
@@ -797,8 +799,15 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             sb.append(')');
             log.trace(sb);
         }
-
         down_prot.down(new Event(Event.MSG, copy));
+
+        if(++lowest > seqno)
+            return;
+        for(long i=lowest; i <= seqno; i++) {
+            rsp=win.get(i);
+            if(rsp != null)
+                down_prot.down(new Event(Event.MSG, rsp));
+        }
     }
 
 
@@ -816,10 +825,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         }
     }
 
-    private void sendRequestForFirstSeqno(Address dest) {
+    private void sendRequestForFirstSeqno(Address dest, long seqno_received) {
         Message msg=new Message(dest);
         msg.setFlag(Message.OOB);
-        Unicast2Header hdr=Unicast2Header.createSendFirstSeqnoHeader();
+        Unicast2Header hdr=Unicast2Header.createSendFirstSeqnoHeader(seqno_received);
         msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())
             log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + ")");
@@ -832,7 +841,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
      * <pre>
      * | DATA | seqno | conn_id | first |
      * | ACK  | seqno |
-     * | SEND_FIRST_SEQNO |
+     * | SEND_FIRST_SEQNO | seqno |
      * </pre>
      */
     public static class Unicast2Header extends Header {
@@ -866,8 +875,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             return retval;
         }
 
-        public static Unicast2Header createSendFirstSeqnoHeader() {
-            return new Unicast2Header(SEND_FIRST_SEQNO, 0L);
+        public static Unicast2Header createSendFirstSeqnoHeader(long seqno_received) {
+            return new Unicast2Header(SEND_FIRST_SEQNO, seqno_received);
         }
 
         private Unicast2Header(byte type, long seqno) {
@@ -938,6 +947,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     out.writeLong(high_seqno);
                     break;
                 case SEND_FIRST_SEQNO:
+                    out.writeLong(seqno);
                     break;
             }
         }
@@ -956,6 +966,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     high_seqno=in.readLong();
                     break;
                 case SEND_FIRST_SEQNO:
+                    seqno=in.readLong();
                     break;
             }
         }
