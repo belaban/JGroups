@@ -158,4 +158,21 @@ public class LazyRemovalSetTest {
     }
 
 
+    public static void testReAddition() {
+        LazyRemovalSet<String> cache=new LazyRemovalSet<String>(1, 1000);
+        cache.add("one", "two", "three");
+        Util.sleep(1500);
+        System.out.println("cache = " + cache);
+        cache.add("two");
+        System.out.println("cache = " + cache);
+
+        cache.clear(false);
+        cache.removeMarkedElements();
+        System.out.println("cache = " + cache);
+        assert cache.size() == 1;
+        assert cache.contains("two");
+        
+    }
+
+
 }

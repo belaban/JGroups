@@ -1,9 +1,6 @@
 package org.jgroups.blocks;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Hash set which doesn't remove elements on remove(), removeAll() or retainAll(), but only removes elements when a
@@ -46,7 +43,11 @@ public class LazyRemovalSet<V> {
     }
 
     public void add(V ... vals) {
-        if(vals == null || vals.length == 0)
+        add(Arrays.asList(vals));
+    }
+
+    public void add(Collection<V> vals) {
+        if(vals == null || vals.isEmpty())
             return;
         for(V val: vals) {
             Entry<V> entry=find(val);
@@ -173,10 +174,15 @@ public class LazyRemovalSet<V> {
         return sb.toString();
     }
 
-    public String printCache(Printable print_function) {
+    public String printCache(Printable<V> print_function) {
         StringBuilder sb=new StringBuilder();
+        boolean first=true;
         for(Entry<V> entry: set) {
             V val=entry.val;
+            if(first)
+                first=false;
+            else
+                sb.append(", ");
             sb.append(print_function.print(val));
         }
         return sb.toString();
