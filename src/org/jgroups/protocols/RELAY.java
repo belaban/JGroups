@@ -123,7 +123,11 @@ public class RELAY extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.getDest() instanceof ProxyAddress) {
+                Address dest=msg.getDest();
+                
+                // forward non local destinations to the coordinator, to relay to the remote cluster
+                // if(dest instanceof ProxyAddress || !local_view.containsMember(dest)) {
+                if(remote_view != null && remote_view.containsMember(dest)) {
                     forwardToCoord(msg);
                     return null;
                 }
@@ -132,18 +136,6 @@ public class RELAY extends Protocol {
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
-
-            case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                Object retval=down_prot.down(evt);
-                if(coord != null) {
-                    Message broadcast_view_req=new Message(coord, null, null);
-                    broadcast_view_req.putHeader(id, RelayHeader.create(RelayHeader.Type.BROADCAST_VIEW));
-                    down_prot.down(new Event(Event.MSG, broadcast_view_req));
-                }
-                return retval;
 
             case Event.DISCONNECT:
                 Util.close(bridge);
@@ -245,8 +237,6 @@ public class RELAY extends Protocol {
 
 
         if(is_coord) {
-            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
-
             if(create_bridge) {
                 createBridge();
                 Message msg=new Message();
@@ -259,6 +249,13 @@ public class RELAY extends Protocol {
             }
             
             sendViewToRemote(ViewData.create(view, null), false);
+
+            if(create_bridge && bridge.getView().size() > 1) {
+                ;
+            }
+            else {
+                sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
+            }
         }
     }
 
@@ -306,8 +303,13 @@ public class RELAY extends Protocol {
         Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
         if(tmp.getSrc() == null)
             tmp.setSrc(local_addr);
-        ProxyAddress dst=(ProxyAddress)tmp.getDest();
-        tmp.setDest(dst.getOriginalAddress());
+
+        Address dest=tmp.getDest();
+        if(dest instanceof ProxyAddress) {
+            ProxyAddress dst=(ProxyAddress)tmp.getDest();
+            tmp.setDest(dst.getOriginalAddress());
+        }
+
         try {
             byte[] buf=Util.streamableToByteBuffer(tmp);
             if(coord != null) {
@@ -325,10 +327,10 @@ public class RELAY extends Protocol {
 
     protected void sendViewToRemote(ViewData view_data, boolean use_seperate_thread) {
         try {
-            byte[] buf=Util.streamableToByteBuffer(view_data);
-            final Message msg=new Message(null, null, buf);
-            msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
             if(bridge != null && bridge.isConnected()) {
+                byte[] buf=Util.streamableToByteBuffer(view_data);
+                final Message msg=new Message(null, null, buf);
+                msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                 if(use_seperate_thread) {
                     timer.execute(new Runnable() {
                         public void run() {
