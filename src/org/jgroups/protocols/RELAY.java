@@ -401,6 +401,36 @@ public class RELAY extends Protocol {
         return new View(local_addr, new_view_id, combined_members);
     }
 
+    protected View generateGlobalView(View local_view, View remote_view, boolean merge) {
+        Vector<View> views=new Vector<View>(2);
+        if(local_view != null) views.add(local_view);
+        if(remote_view != null) views.add(remote_view);
+        Collections.sort(views, new Comparator<View>() {
+            public int compare(View v1, View v2) {
+                ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
+                Address creator1=vid1.getCoordAddress(), creator2=vid2.getCoordAddress();
+                int rc=creator1.compareTo(creator2);
+                if(rc != 0)
+                    return rc;
+                long id1=vid1.getId(), id2=vid2.getId();
+                return id1 > id2 ? 1 : id1 < id2? -1 : 0;
+            }
+        });
+
+        Vector<Address> combined_members=new Vector<Address>();
+        for(View view: views)
+            combined_members.addAll(view.getMembers());
+
+        long new_view_id;
+        synchronized(this) {
+            new_view_id=global_view_id++;
+        }
+        if(merge)
+            return new MergeView(local_addr, new_view_id, combined_members, views);
+        else
+            return new View(local_addr, new_view_id, combined_members);
+    }
+
     protected void createBridge() {
         try {
             if(log.isTraceEnabled())
@@ -442,7 +472,8 @@ public class RELAY extends Protocol {
                             }
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
-                        data.global_view=generateGlobalView(local_view, data.remote_view);
+                        boolean merge=remote_view == null;
+                        data.global_view=generateGlobalView(local_view, data.remote_view, merge);
                         sendViewOnLocalCluster(null, data, false);
                     }
                     catch(Exception e) {
