@@ -374,31 +374,7 @@ public class RELAY extends Protocol {
 
 
     protected View generateGlobalView(View local_view, View remote_view) {
-        List<View> views=new ArrayList<View>(2);
-        if(local_view != null) views.add(local_view);
-        if(remote_view != null) views.add(remote_view);
-        Collections.sort(views, new Comparator<View>() {
-            public int compare(View v1, View v2) {
-                ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
-                Address creator1=vid1.getCoordAddress(), creator2=vid2.getCoordAddress();
-                int rc=creator1.compareTo(creator2);
-                if(rc != 0)
-                    return rc;
-                long id1=vid1.getId(), id2=vid2.getId();
-                return id1 > id2 ? 1 : id1 < id2? -1 : 0;
-            }
-        });
-
-        Collection<Address> combined_members=new LinkedList<Address>();
-        for(View view: views)
-            combined_members.addAll(view.getMembers());
-
-        long new_view_id;
-        synchronized(this) {
-            new_view_id=global_view_id++;
-        }
-
-        return new View(local_addr, new_view_id, combined_members);
+        return generateGlobalView(local_view, remote_view, false);
     }
 
     protected View generateGlobalView(View local_view, View remote_view, boolean merge) {
@@ -425,10 +401,11 @@ public class RELAY extends Protocol {
         synchronized(this) {
             new_view_id=global_view_id++;
         }
+        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.firstElement();
         if(merge)
-            return new MergeView(local_addr, new_view_id, combined_members, views);
+            return new MergeView(view_creator, new_view_id, combined_members, views);
         else
-            return new View(local_addr, new_view_id, combined_members);
+            return new View(view_creator, new_view_id, combined_members);
     }
 
     protected void createBridge() {
@@ -514,7 +491,6 @@ public class RELAY extends Protocol {
             Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
             Address sender=msg.getSrc();
             ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
-            // msg.setSrc(proxy_sender);
 
             // set myself to be the sender
             msg.setSrc(local_addr);
