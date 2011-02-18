@@ -73,6 +73,10 @@ public class MergeView extends View {
     }
 
 
+    public View copy() {
+        return (MergeView)clone();
+    }
+
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("MergeView::").append(super.toString()).append(", subgroups=").append(subgroups);
