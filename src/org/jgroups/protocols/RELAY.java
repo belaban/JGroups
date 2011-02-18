@@ -147,11 +147,12 @@ public class RELAY extends Protocol {
                 Address dest=msg.getDest();
                 
                 // forward non local destinations to the coordinator, to relay to the remote cluster
-                // if(dest instanceof ProxyAddress || !local_view.containsMember(dest)) {
-                if(remote_cache.contains(dest)) {
+                if(remote_cache.contains(dest)) {  // the message is forwarded to the remote cluster
                     forwardToCoord(msg);
                     return null;
                 }
+                else if(dest instanceof ProxyAddress) // the message is sent to the local cluster
+                    msg.setDest(((ProxyAddress)dest).getOriginalAddress());
                 break;
 
             case Event.VIEW_CHANGE:
@@ -202,7 +203,7 @@ public class RELAY extends Protocol {
                             return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
 
                         case BROADCAST_VIEW:
-                            sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
+                            // sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
                             break;
 
                         default:
@@ -252,13 +253,13 @@ public class RELAY extends Protocol {
                 bridge=null;
             }
         }
-        else {
-            if(is_new_coord)
-                is_coord=create_bridge=true;
-        }
-
+        else if(is_new_coord)
+            is_coord=create_bridge=true;
 
         if(is_coord) {
+            // need to have a local view before JChannel.connect() returns; we don't want to change the viewAccepted() semantics
+            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
+
             if(create_bridge) {
                 createBridge();
                 Message msg=new Message();
@@ -269,15 +270,7 @@ public class RELAY extends Protocol {
                 catch(Exception e) {
                 }
             }
-            
             sendViewToRemote(ViewData.create(view, null), false);
-
-            if(create_bridge && bridge.getView().size() > 1) {
-                ;
-            }
-            else {
-                sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
-            }
         }
     }
 
@@ -478,10 +471,6 @@ public class RELAY extends Protocol {
                         View new_global_view=generateGlobalView(local_view, null);
                         sendViewOnLocalCluster(null, null, new_global_view, false);
                     }
-                    else {
-                        // our local view is seen as the remote view on the other side !
-                        // sendViewToRemote(ViewData.create(local_view, null), true);
-                    }
                 }
             }
         }
@@ -643,8 +632,8 @@ public class RELAY extends Protocol {
 
 
         public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeStreamable(remote_view, out);
-            Util.writeStreamable(global_view, out);
+            Util.writeView(remote_view, out);
+            Util.writeView(global_view, out);
             out.writeInt(uuids.size());
             for(Map.Entry<Address,String> entry: uuids.entrySet()) {
                 Util.writeAddress(entry.getKey(), out);
@@ -653,8 +642,8 @@ public class RELAY extends Protocol {
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            remote_view=(View)Util.readStreamable(View.class, in);
-            global_view=(View)Util.readStreamable(View.class, in);
+            remote_view=Util.readView(in);
+            global_view=Util.readView(in);
             int size=in.readInt();
             uuids=new HashMap<Address,String>();
             for(int i=0; i < size; i++) {
