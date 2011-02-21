@@ -473,6 +473,7 @@ public class RELAY extends Protocol {
                 if(!bridge_view.getVid().equals(view.getViewId())) {
                     bridge_view=view;
 
+                    // the remote cluster disappeared, remove all of its addresses from the view
                     if(view.size() == 1 && bridge != null && bridge.isConnected() &&
                       view.getMembers().firstElement().equals(bridge.getAddress())) {
                         remote_view=null;
