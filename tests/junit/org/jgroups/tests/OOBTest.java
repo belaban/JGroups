@@ -349,7 +349,7 @@ public class OOBTest extends ChannelTestBase {
         Util.sleep(500);
 
         List<Integer> list=receiver.getMsgs();
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(list.size() == NUM-1)
                 break;
             System.out.println("list = " + list);
@@ -364,7 +364,7 @@ public class OOBTest extends ChannelTestBase {
         System.out.println("[" + Thread.currentThread().getName() + "]: unlocking lock");
         lock.unlock();
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(list.size() == NUM)
                 break;
             System.out.println("list = " + list);
