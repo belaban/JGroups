@@ -81,7 +81,7 @@ public class ProxyAddress implements Address {
     }
 
     public String toString() {
-        return original_addr.toString() + "-p";
+        return original_addr.toString() + "-r";
     }
 
     public String toStringDetailed() {

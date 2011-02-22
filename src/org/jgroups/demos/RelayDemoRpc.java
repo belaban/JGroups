@@ -84,7 +84,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
 
 
     public void viewAccepted(View new_view) {
-        System.out.println("view: " + print(new_view));
+        System.out.println(print(new_view));
         view=new_view;
     }
 
@@ -92,7 +92,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
     static String print(View view) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        sb.append(view.getViewId()).append(": ");
+        sb.append(view.getClass().getSimpleName() + ": ").append(view.getViewId()).append(": ");
         for(Address mbr: view.getMembers()) {
             if(first)
                 first=false;

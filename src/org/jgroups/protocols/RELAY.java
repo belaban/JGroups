@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.blocks.LazyRemovalSet;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -53,6 +54,10 @@ public class RELAY extends Protocol {
     protected boolean present_global_views=true;
 
 
+    @Property(description="Max size of the cache for remote addresses")
+    protected int cache_size=200;
+
+
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
     @ManagedAttribute
@@ -79,6 +84,7 @@ public class RELAY extends Protocol {
 
     protected TimeScheduler    timer;
 
+    protected LazyRemovalSet<Address> remote_cache;
 
 
 
@@ -108,10 +114,25 @@ public class RELAY extends Protocol {
         return global_view != null? global_view.toString() : "n/a";
     }
 
+    @ManagedOperation(description="Prints the contents of the remote cache")
+    public String printRemoteCache() {
+        return remote_cache.printCache(new LazyRemovalSet.Printable<Address>() {
+            public String print(Address val) {
+                return val.toString();
+            }
+        });
+    }
+
+    @ManagedOperation(description="Evicts all elements in the remote cache which are marked as removable")
+    public void evictRemoteCache() {
+        remote_cache.removeMarkedElements(false);
+    }
+
 
     public void init() throws Exception {
         super.init();
         timer=getTransport().getTimer();
+        remote_cache=new LazyRemovalSet<Address>(cache_size, 300000);
     }
 
     public void stop() {
@@ -126,11 +147,12 @@ public class RELAY extends Protocol {
                 Address dest=msg.getDest();
                 
                 // forward non local destinations to the coordinator, to relay to the remote cluster
-                // if(dest instanceof ProxyAddress || !local_view.containsMember(dest)) {
-                if(remote_view != null && remote_view.containsMember(dest)) {
+                if(remote_cache.contains(dest)) {  // the message is forwarded to the remote cluster
                     forwardToCoord(msg);
                     return null;
                 }
+                else if(dest instanceof ProxyAddress) // the message is sent to the local cluster
+                    msg.setDest(((ProxyAddress)dest).getOriginalAddress());
                 break;
 
             case Event.VIEW_CHANGE:
@@ -148,6 +170,7 @@ public class RELAY extends Protocol {
             case Event.GET_PHYSICAL_ADDRESS:
                 // fix to prevent exception by JBossAS, which checks whether a physical
                 // address is present and throw an ex if not
+                // Remove this when the AS code removes that check
                 PhysicalAddress addr=(PhysicalAddress)down_prot.down(evt);
                 if(addr == null)
                     addr=new IpAddress(6666);
@@ -180,7 +203,7 @@ public class RELAY extends Protocol {
                             return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
 
                         case BROADCAST_VIEW:
-                            sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
+                            // sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
                             break;
 
                         default:
@@ -230,13 +253,13 @@ public class RELAY extends Protocol {
                 bridge=null;
             }
         }
-        else {
-            if(is_new_coord)
-                is_coord=create_bridge=true;
-        }
-
+        else if(is_new_coord)
+            is_coord=create_bridge=true;
 
         if(is_coord) {
+            // need to have a local view before JChannel.connect() returns; we don't want to change the viewAccepted() semantics
+            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
+
             if(create_bridge) {
                 createBridge();
                 Message msg=new Message();
@@ -247,15 +270,7 @@ public class RELAY extends Protocol {
                 catch(Exception e) {
                 }
             }
-            
             sendViewToRemote(ViewData.create(view, null), false);
-
-            if(create_bridge && bridge.getView().size() > 1) {
-                ;
-            }
-            else {
-                sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
-            }
         }
     }
 
@@ -267,6 +282,10 @@ public class RELAY extends Protocol {
                 UUID.add(data.uuids);
 
             remote_view=data.remote_view;
+            if(data.remote_view != null) {
+                remote_cache.add(data.remote_view.getMembers());
+                remote_cache.retainAll(data.remote_view.getMembers());
+            }
             if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
                 global_view=data.global_view;
                 synchronized(this) {
@@ -355,7 +374,11 @@ public class RELAY extends Protocol {
 
 
     protected View generateGlobalView(View local_view, View remote_view) {
-        List<View> views=new ArrayList<View>(2);
+        return generateGlobalView(local_view, remote_view, false);
+    }
+
+    protected View generateGlobalView(View local_view, View remote_view, boolean merge) {
+        Vector<View> views=new Vector<View>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
         Collections.sort(views, new Comparator<View>() {
@@ -370,7 +393,7 @@ public class RELAY extends Protocol {
             }
         });
 
-        Collection<Address> combined_members=new LinkedList<Address>();
+        Vector<Address> combined_members=new Vector<Address>();
         for(View view: views)
             combined_members.addAll(view.getMembers());
 
@@ -378,8 +401,11 @@ public class RELAY extends Protocol {
         synchronized(this) {
             new_view_id=global_view_id++;
         }
-
-        return new View(local_addr, new_view_id, combined_members);
+        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.firstElement();
+        if(merge)
+            return new MergeView(view_creator, new_view_id, combined_members, views);
+        else
+            return new View(view_creator, new_view_id, combined_members);
     }
 
     protected void createBridge() {
@@ -423,7 +449,8 @@ public class RELAY extends Protocol {
                             }
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }
-                        data.global_view=generateGlobalView(local_view, data.remote_view);
+                        boolean merge=remote_view == null;
+                        data.global_view=generateGlobalView(local_view, data.remote_view, merge);
                         sendViewOnLocalCluster(null, data, false);
                     }
                     catch(Exception e) {
@@ -446,15 +473,12 @@ public class RELAY extends Protocol {
                 if(!bridge_view.getVid().equals(view.getViewId())) {
                     bridge_view=view;
 
+                    // the remote cluster disappeared, remove all of its addresses from the view
                     if(view.size() == 1 && bridge != null && bridge.isConnected() &&
                       view.getMembers().firstElement().equals(bridge.getAddress())) {
                         remote_view=null;
                         View new_global_view=generateGlobalView(local_view, null);
                         sendViewOnLocalCluster(null, null, new_global_view, false);
-                    }
-                    else {
-                        // our local view is seen as the remote view on the other side !
-                        // sendViewToRemote(ViewData.create(local_view, null), true);
                     }
                 }
             }
@@ -468,7 +492,6 @@ public class RELAY extends Protocol {
             Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
             Address sender=msg.getSrc();
             ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
-            // msg.setSrc(proxy_sender);
 
             // set myself to be the sender
             msg.setSrc(local_addr);
@@ -617,8 +640,8 @@ public class RELAY extends Protocol {
 
 
         public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeStreamable(remote_view, out);
-            Util.writeStreamable(global_view, out);
+            Util.writeView(remote_view, out);
+            Util.writeView(global_view, out);
             out.writeInt(uuids.size());
             for(Map.Entry<Address,String> entry: uuids.entrySet()) {
                 Util.writeAddress(entry.getKey(), out);
@@ -627,8 +650,8 @@ public class RELAY extends Protocol {
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            remote_view=(View)Util.readStreamable(View.class, in);
-            global_view=(View)Util.readStreamable(View.class, in);
+            remote_view=Util.readView(in);
+            global_view=Util.readView(in);
             int size=in.readInt();
             uuids=new HashMap<Address,String>();
             for(int i=0; i < size; i++) {
