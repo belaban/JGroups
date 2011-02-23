@@ -59,6 +59,9 @@ public class RELAY extends Protocol {
     @Property(description="Max size of the cache for remote addresses")
     protected int cache_size=200;
 
+    /** We currently only support bridging of 2 clusters */
+    // protected static final int MAX_BRIDGE_SIZE=2;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
@@ -263,11 +266,19 @@ public class RELAY extends Protocol {
 
         if(is_coord) {
             // need to have a local view before JChannel.connect() returns; we don't want to change the viewAccepted() semantics
-            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
+            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view, view instanceof MergeView), true);
 
             if(create_bridge)
                 createBridge();
             sendViewToRemote(ViewData.create(view, null), false);
+
+            // kludge ! Code will be removed
+//            new Thread() {
+//                public void run() {
+//                    Util.sleep(1000);
+//                    sendViewToRemote(ViewData.create(view, null), false);
+//                }
+//            }.start();
         }
     }
 
@@ -393,7 +404,7 @@ public class RELAY extends Protocol {
             }
         });
 
-        Vector<Address> combined_members=new Vector<Address>();
+        Set<Address> combined_members=new HashSet<Address>();
         for(View view: views)
             combined_members.addAll(view.getMembers());
 
@@ -401,9 +412,9 @@ public class RELAY extends Protocol {
         synchronized(this) {
             new_view_id=global_view_id++;
         }
-        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.firstElement();
+        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.iterator().next();
         if(merge)
-            return new MergeView(view_creator, new_view_id, combined_members, views);
+            return new MergeView(view_creator, new_view_id, new Vector<Address>(combined_members), views);
         else
             return new View(view_creator, new_view_id, combined_members);
     }
@@ -486,6 +497,15 @@ public class RELAY extends Protocol {
     }
 
 
+    /*protected List<Address> getValidBridgeSenders() {
+        if(bridge_view == null)
+            return null;
+        List<Address> valid_senders=new ArrayList<Address>(bridge_view.size());
+        Vector<Address> bridge_members=bridge_view.getMembers();
+        for(int i=0; i < Math.min(MAX_BRIDGE_SIZE, bridge_members.size()); i++)
+            valid_senders.add(bridge_members.get(i));
+        return valid_senders;
+    }*/
 
 
     protected class Receiver extends ReceiverAdapter {
@@ -494,6 +514,9 @@ public class RELAY extends Protocol {
             Address sender=msg.getSrc();
             if(bridge.getAddress().equals(sender)) // discard my own messages
                 return;
+
+            // check if the sender is among the first 2 members, if not, ignore message
+
             RelayHeader hdr=(RelayHeader)msg.getHeader(id);
             switch(hdr.type) {
                 case DISSEMINATE: // should not occur here, but we'll ignore it anyway
@@ -532,19 +555,26 @@ public class RELAY extends Protocol {
         }
 
         public void viewAccepted(View view) {
-            if(bridge_view != null && bridge_view.getVid().equals(view.getViewId()))
+            if(bridge_view != null && bridge_view.getViewId().equals(view.getViewId()))
                 return;
             int prev_members=bridge_view != null? bridge_view.size() : 0;
             bridge_view=view;
 
-            // the remote cluster disappeared, remove all of its addresses from the view
-            if(view.size() == 1 && prev_members > 1 && view.getMembers().firstElement().equals(bridge.getAddress())) {
-                remote_view=null;
-                View new_global_view=generateGlobalView(local_view, null);
-                sendViewOnLocalCluster(null, null, new_global_view, false);
-            }
-            else if(view.size() > 1) {
-                startRemoteViewFetcher();
+            switch(view.size()) {
+                case 1:
+                    // the remote cluster disappeared, remove all of its addresses from the view
+                    if(prev_members > 1 && view.getMembers().firstElement().equals(bridge.getAddress())) {
+                        remote_view=null;
+                        View new_global_view=generateGlobalView(local_view, null);
+                        sendViewOnLocalCluster(null, null, new_global_view, false);
+                    }
+                    break;
+                case 2:
+                    startRemoteViewFetcher();
+                    break;
+                default:
+                    // System.err.println("View size of > 2 is invalid: view=" + view);
+                    break;
             }
         }
     }
