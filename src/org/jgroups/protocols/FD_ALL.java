@@ -163,17 +163,16 @@ public class FD_ALL extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address sender=msg.getSrc();
 
-                if(msg_counts_as_heartbeat) {
-                    update(sender); // update when data is received too ? maybe a bit costly
-                    break;
-                }
                 Header hdr=msg.getHeader(this.id);
-                if(hdr == null)
-                    break;  // message did not originate from FD_ALL layer, just pass up
-
-                update(sender); // updates the heartbeat entry for 'sender'
-                num_heartbeats_received++;
-                return null;
+                if(hdr != null) {
+                    update(sender); // updates the heartbeat entry for 'sender'
+                    num_heartbeats_received++;
+                    return null; // consume heartbeat message, do not pass to the layer above
+                } else if(msg_counts_as_heartbeat) {
+                    // message did not originate from FD_ALL layer, but still count as heartbeat
+                    update(sender); // update when data is received too ? maybe a bit costly
+                }
+                break; // pass message to the layer above
         }
         return up_prot.up(evt); // pass up to the layer above us
     }
