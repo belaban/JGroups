@@ -404,7 +404,7 @@ public class RELAY extends Protocol {
             }
         });
 
-        Set<Address> combined_members=new HashSet<Address>();
+        Vector<Address> combined_members=new Vector<Address>();
         for(View view: views)
             combined_members.addAll(view.getMembers());
 
@@ -412,9 +412,9 @@ public class RELAY extends Protocol {
         synchronized(this) {
             new_view_id=global_view_id++;
         }
-        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.iterator().next();
+        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.firstElement();
         if(merge)
-            return new MergeView(view_creator, new_view_id, new Vector<Address>(combined_members), views);
+            return new MergeView(view_creator, new_view_id, combined_members, views);
         else
             return new View(view_creator, new_view_id, combined_members);
     }
