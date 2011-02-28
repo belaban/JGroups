@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalSet;
+import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -37,6 +38,10 @@ import java.util.concurrent.TimeUnit;
 public class RELAY extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
+    @Property(description="Description of the local cluster, e.g. \"nyc\". This is added to every address, so it" +
+      "should be short. This is a mandatory property and must be set",writable=false)
+    protected String site;
+
     @Property(description="Properties of the bridge cluster (e.g. tcp.xml)")
     protected String bridge_props=null;
 
@@ -138,8 +143,19 @@ public class RELAY extends Protocol {
 
     public void init() throws Exception {
         super.init();
+        if(site == null || site.length() == 0)
+            throw new IllegalArgumentException("\"site\" must be set");
         timer=getTransport().getTimer();
         remote_cache=new LazyRemovalSet<Address>(cache_size, 300000);
+
+        JChannel channel=getProtocolStack().getChannel();
+        if(channel == null)
+            throw new IllegalStateException("channel must be set");
+        channel.setAddressGenerator(new AddressGenerator() {
+            public Address generateAddress() {
+                return PayloadUUID.randomUUID(site);
+            }
+        });
     }
 
     public void stop() {
