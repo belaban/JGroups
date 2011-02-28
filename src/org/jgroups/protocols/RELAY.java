@@ -153,14 +153,22 @@ public class RELAY extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                
+                if(dest == null || dest.isMulticastAddress())
+                    break; // don't handle multicast destinations
+
                 // forward non local destinations to the coordinator, to relay to the remote cluster
                 if(remote_cache.contains(dest)) {  // the message is forwarded to the remote cluster
                     forwardToCoord(msg);
                     return null;
                 }
-                else if(dest instanceof ProxyAddress) // the message is sent to the local cluster
-                    msg.setDest(((ProxyAddress)dest).getOriginalAddress());
+                else {
+                    if(local_view.containsMember(dest)) {
+                        break;
+                    }
+                    if(dest instanceof ProxyAddress) { // the message is sent to the local cluster
+                        msg.setDest(((ProxyAddress)dest).getOriginalAddress());
+                    }
+                }
                 break;
 
             case Event.VIEW_CHANGE:
