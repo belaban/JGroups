@@ -12,6 +12,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Simple relaying protocol: RELAY is added to the top of the stack, creates a channel to a bridge cluster,
@@ -57,6 +59,9 @@ public class RELAY extends Protocol {
     @Property(description="Max size of the cache for remote addresses")
     protected int cache_size=200;
 
+    /** We currently only support bridging of 2 clusters */
+    // protected static final int MAX_BRIDGE_SIZE=2;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
@@ -85,6 +90,8 @@ public class RELAY extends Protocol {
     protected TimeScheduler    timer;
 
     protected LazyRemovalSet<Address> remote_cache;
+
+    protected Future<?>        remote_view_fetcher_future;
 
 
 
@@ -136,6 +143,7 @@ public class RELAY extends Protocol {
     }
 
     public void stop() {
+        stopRemoteViewFetcher();
         Util.close(bridge);
     }
 
@@ -145,14 +153,22 @@ public class RELAY extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                
+                if(dest == null || dest.isMulticastAddress())
+                    break; // don't handle multicast destinations
+
                 // forward non local destinations to the coordinator, to relay to the remote cluster
                 if(remote_cache.contains(dest)) {  // the message is forwarded to the remote cluster
                     forwardToCoord(msg);
                     return null;
                 }
-                else if(dest instanceof ProxyAddress) // the message is sent to the local cluster
-                    msg.setDest(((ProxyAddress)dest).getOriginalAddress());
+                else {
+                    if(local_view.containsMember(dest)) {
+                        break;
+                    }
+                    if(dest instanceof ProxyAddress) { // the message is sent to the local cluster
+                        msg.setDest(((ProxyAddress)dest).getOriginalAddress());
+                    }
+                }
                 break;
 
             case Event.VIEW_CHANGE:
@@ -258,19 +274,19 @@ public class RELAY extends Protocol {
 
         if(is_coord) {
             // need to have a local view before JChannel.connect() returns; we don't want to change the viewAccepted() semantics
-            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view), true);
+            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view, view instanceof MergeView), true);
 
-            if(create_bridge) {
+            if(create_bridge)
                 createBridge();
-                Message msg=new Message();
-                msg.putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
-                try {
-                    bridge.send(msg);
-                }
-                catch(Exception e) {
-                }
-            }
             sendViewToRemote(ViewData.create(view, null), false);
+
+            // kludge ! Code will be removed
+//            new Thread() {
+//                public void run() {
+//                    Util.sleep(1000);
+//                    sendViewToRemote(ViewData.create(view, null), false);
+//                }
+//            }.start();
         }
     }
 
@@ -280,6 +296,9 @@ public class RELAY extends Protocol {
             ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
             if(data.uuids != null)
                 UUID.add(data.uuids);
+
+            if(remote_view != null && data.remote_view != null && remote_view.getVid() == data.remote_view.getVid())
+                return null;
 
             remote_view=data.remote_view;
             if(data.remote_view != null) {
@@ -424,69 +443,6 @@ public class RELAY extends Protocol {
     }
 
 
-    protected class Receiver extends ReceiverAdapter {
-
-        public void receive(Message msg) {
-            Address sender=msg.getSrc();
-            if(bridge.getAddress().equals(sender)) // discard my own messages
-                return;
-            RelayHeader hdr=(RelayHeader)msg.getHeader(id);
-            switch(hdr.type) {
-                case DISSEMINATE: // should not occur here, but we'll ignore it anyway
-                    break;
-                case FORWARD:
-                    sendOnLocalCluster(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                    break;
-                case VIEW:
-                    try {
-                        ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
-                                                                              msg.getOffset(), msg.getLength());
-                        // replace addrs with proxies
-                        if(data.remote_view != null) {
-                            List<Address> mbrs=new LinkedList<Address>();
-                            for(Address mbr: data.remote_view.getMembers()) {
-                                mbrs.add(new ProxyAddress(local_addr, mbr));
-                            }
-                            data.remote_view=new View(data.remote_view.getViewId(), mbrs);
-                        }
-                        boolean merge=remote_view == null;
-                        data.global_view=generateGlobalView(local_view, data.remote_view, merge);
-                        sendViewOnLocalCluster(null, data, false);
-                    }
-                    catch(Exception e) {
-                        log.error("failed unmarshalling view from remote cluster", e);
-                    }
-                    break;
-                case BROADCAST_VIEW: // no-op
-                    // our local view is seen as the remote view on the other side !
-                    sendViewToRemote(ViewData.create(local_view, null), true);
-                    break;
-                default:
-                    throw new IllegalArgumentException(hdr.type + " is not a valid type");
-            }
-        }
-
-        public void viewAccepted(View view) {
-            if(bridge_view == null)
-                bridge_view=view;
-            else {
-                if(!bridge_view.getVid().equals(view.getViewId())) {
-                    bridge_view=view;
-
-                    // the remote cluster disappeared, remove all of its addresses from the view
-                    if(view.size() == 1 && bridge != null && bridge.isConnected() &&
-                      view.getMembers().firstElement().equals(bridge.getAddress())) {
-                        remote_view=null;
-                        View new_global_view=generateGlobalView(local_view, null);
-                        sendViewOnLocalCluster(null, null, new_global_view, false);
-                    }
-                }
-            }
-        }
-    }
-
-
-
     protected void sendOnLocalCluster(byte[] buf, int offset, int length) {
         try {
             Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
@@ -534,7 +490,119 @@ public class RELAY extends Protocol {
         }
     }
 
-    
+
+    protected synchronized void startRemoteViewFetcher() {
+        if(remote_view_fetcher_future == null || remote_view_fetcher_future.isDone()) {
+            remote_view_fetcher_future=timer.scheduleWithFixedDelay(new RemoteViewFetcher(), 500, 2000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    protected synchronized void stopRemoteViewFetcher() {
+        if(remote_view_fetcher_future != null) {
+            remote_view_fetcher_future.cancel(false);
+            remote_view_fetcher_future=null;
+        }
+    }
+
+
+    /*protected List<Address> getValidBridgeSenders() {
+        if(bridge_view == null)
+            return null;
+        List<Address> valid_senders=new ArrayList<Address>(bridge_view.size());
+        Vector<Address> bridge_members=bridge_view.getMembers();
+        for(int i=0; i < Math.min(MAX_BRIDGE_SIZE, bridge_members.size()); i++)
+            valid_senders.add(bridge_members.get(i));
+        return valid_senders;
+    }*/
+
+
+    protected class Receiver extends ReceiverAdapter {
+
+        public void receive(Message msg) {
+            Address sender=msg.getSrc();
+            if(bridge.getAddress().equals(sender)) // discard my own messages
+                return;
+
+            // check if the sender is among the first 2 members, if not, ignore message
+
+            RelayHeader hdr=(RelayHeader)msg.getHeader(id);
+            switch(hdr.type) {
+                case DISSEMINATE: // should not occur here, but we'll ignore it anyway
+                    break;
+                case FORWARD:
+                    sendOnLocalCluster(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    break;
+                case VIEW:
+                    try {
+                        ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, msg.getRawBuffer(),
+                                                                              msg.getOffset(), msg.getLength());
+                        // replace addrs with proxies
+                        if(data.remote_view != null) {
+                            List<Address> mbrs=new LinkedList<Address>();
+                            for(Address mbr: data.remote_view.getMembers()) {
+                                mbrs.add(new ProxyAddress(local_addr, mbr));
+                            }
+                            data.remote_view=new View(data.remote_view.getViewId(), mbrs);
+                        }
+                        boolean merge=remote_view == null;
+                        stopRemoteViewFetcher();
+                        data.global_view=generateGlobalView(local_view, data.remote_view, merge);
+                        sendViewOnLocalCluster(null, data, false);
+                    }
+                    catch(Exception e) {
+                        log.error("failed unmarshalling view from remote cluster", e);
+                    }
+                    break;
+                case BROADCAST_VIEW: // no-op
+                    // our local view is seen as the remote view on the other side !
+                    sendViewToRemote(ViewData.create(local_view, null), true);
+                    break;
+                default:
+                    throw new IllegalArgumentException(hdr.type + " is not a valid type");
+            }
+        }
+
+        public void viewAccepted(View view) {
+            if(bridge_view != null && bridge_view.getViewId().equals(view.getViewId()))
+                return;
+            int prev_members=bridge_view != null? bridge_view.size() : 0;
+            bridge_view=view;
+
+            switch(view.size()) {
+                case 1:
+                    // the remote cluster disappeared, remove all of its addresses from the view
+                    if(prev_members > 1 && view.getMembers().firstElement().equals(bridge.getAddress())) {
+                        remote_view=null;
+                        View new_global_view=generateGlobalView(local_view, null);
+                        sendViewOnLocalCluster(null, null, new_global_view, false);
+                    }
+                    break;
+                case 2:
+                    startRemoteViewFetcher();
+                    break;
+                default:
+                    // System.err.println("View size of > 2 is invalid: view=" + view);
+                    break;
+            }
+        }
+    }
+
+
+    protected class RemoteViewFetcher implements Runnable {
+
+        public void run() {
+            if(bridge == null || !bridge.isConnected() || remote_view != null)
+                return;
+            Message msg=new Message();
+            msg.putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
+            try {
+                bridge.send(msg);
+            }
+            catch(Exception e) {
+            }
+        }
+    }
+
 
     public static class RelayHeader extends Header {
         public static enum Type {DISSEMINATE, FORWARD, VIEW, BROADCAST_VIEW};
