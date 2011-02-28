@@ -21,18 +21,18 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     protected byte[] additional_data;
 
     /** The random number generator used by this class to create random based UUIDs */
-    private static volatile SecureRandom numberGenerator=null;
+    protected static volatile SecureRandom numberGenerator=null;
 
     /** Keeps track of associations between logical addresses (UUIDs) and logical names */
-    private static LazyRemovalCache<Address,String> cache;
+    protected static LazyRemovalCache<Address,String> cache;
 
     private static final long serialVersionUID=3972962439975931228L;
 
-    private static boolean print_uuids=false;
+    protected static boolean print_uuids=false;
 
-    private static final int SIZE=Global.LONG_SIZE * 2 + Global.BYTE_SIZE;
+    protected static final int SIZE=Global.LONG_SIZE * 2 + Global.BYTE_SIZE;
 
-    private static final LazyRemovalCache.Printable<Address,String> print_function=new LazyRemovalCache.Printable<Address,String>() {
+    protected static final LazyRemovalCache.Printable<Address,String> print_function=new LazyRemovalCache.Printable<Address,String>() {
         public java.lang.String print(Address key, String val) {
             return val + ": " + (key instanceof UUID? ((UUID)key).toStringLong() : key) + "\n";
         }
@@ -85,7 +85,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     }
 
     /** Private constructor which uses a byte array to construct the new UUID */
-    private UUID(byte[] data) {
+    protected UUID(byte[] data) {
         long msb = 0;
         long lsb = 0;
         if(data.length != 16)
@@ -227,7 +227,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     }
 
     /** Returns val represented by the specified number of hex digits. */
-    private static String digits(long val, int digits) {
+    protected static String digits(long val, int digits) {
         long hi = 1L << (digits * 4);
         return Long.toHexString(hi | (val & (hi - 1))).substring(1);
     }

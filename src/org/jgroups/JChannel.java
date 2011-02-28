@@ -10,10 +10,7 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.stack.*;
 import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
@@ -90,6 +87,8 @@ public class JChannel extends Channel {
 
     /*the address of this JChannel instance*/
     protected Address local_addr=null;
+
+    protected AddressGenerator address_generator=null;
 
     protected String name=null;
 
@@ -912,6 +911,24 @@ public class JChannel extends Channel {
         return closed ? null : !connected ? null : cluster_name;
     }
 
+    /**
+     * Returns the current {@link AddressGenerator}, or null if none is set
+     * @return
+     * @since 2.12
+     */
+    public AddressGenerator getAddressGenerator() {
+        return address_generator;
+    }
+
+    /**
+     * Sets the new {@link AddressGenerator}. New addresses will be generated using the new generator. This
+     * should <em>not</em> be done while a channel is connected, but before connecting.
+     * @param address_generator
+     * @since 2.12
+     */
+    public void setAddressGenerator(AddressGenerator address_generator) {
+        this.address_generator=address_generator;
+    }
 
     /**
      * Sets a channel option.  The options can be one of the following:
@@ -1786,7 +1803,7 @@ public class JChannel extends Channel {
      */
     protected void setAddress() {
         Address old_addr=local_addr;
-        local_addr=UUID.randomUUID();
+        local_addr=address_generator != null? address_generator.generateAddress() : UUID.randomUUID();
 
         byte[] buf=(byte[])additional_data.get("additional_data");
         if(buf != null)
