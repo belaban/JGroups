@@ -827,13 +827,15 @@ public class Util {
             out.writeByte(flags);
             return;
         }
-        if(addr instanceof UUID) {
+
+        Class clazz=addr.getClass();
+        if(clazz.equals(UUID.class)) {
             flags=Util.setFlag(flags, Address.UUID_ADDR);
         }
-        else if(addr instanceof IpAddress) {
+        else if(clazz.equals(IpAddress.class)) {
             flags=Util.setFlag(flags, Address.IP_ADDR);
         }
-        else if(addr instanceof ProxyAddress) {
+        else if(clazz.equals(ProxyAddress.class)) {
             flags=Util.setFlag(flags, Address.PROXY_ADDR);
         }
         else {

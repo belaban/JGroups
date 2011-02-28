@@ -820,6 +820,23 @@
     </section>
 
     <section>
+        <title>Generating custom addresses</title>
+        <para>
+            Since 2.12 address generation is pluggable. This means that an application can determine what kind of
+            addresses it uses. The default address type is UUID, and since some protocols use UUID, it is recommended
+            to provide custom classes as <emphasis>subclasses of UUID</emphasis>.
+        </para>
+        <para>
+            This can be used to for example pass additional data around with an address, for example information about
+            the location of the node to which the address is assigned. Note that methods equals(), hashCode() and
+            compare() of the UUID super class should not be changed.
+        </para>
+        <para>
+            An example of a subclass is org.jgroups.util.PayloadUUID.
+        </para>
+    </section>
+
+    <section>
       <title>Connecting to a channel</title>
 
       <para>When a client wants to join a group, it

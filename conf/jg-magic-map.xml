@@ -50,4 +50,5 @@
     <class id="79" name="org.jgroups.util.ProxyAddress"/>
     <class id="80" name="org.jgroups.protocols.PrioHeader"/>
     <class id="81" name="org.jgroups.protocols.Locking$LockingHeader"/>
+    <class id="82" name="org.jgroups.util.PayloadUUID"/>
 </magic-number-class-mapping>
