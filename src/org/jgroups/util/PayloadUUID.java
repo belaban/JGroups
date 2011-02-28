@@ -70,10 +70,10 @@ public class PayloadUUID extends UUID {
     }
 
     public String toString() {
-        return super.toString() + "-" + payload;
+        return super.toString() + (payload == null? "" : "(" + payload + ")");
     }
 
     public String toStringLong() {
-        return super.toStringLong() + "-" + payload;
+        return super.toStringLong() + (payload == null? "" : "(" + payload + ")");
     }
 }
