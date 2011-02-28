@@ -51,4 +51,5 @@
     <class id="80" name="org.jgroups.protocols.PrioHeader"/>
     <class id="81" name="org.jgroups.protocols.Locking$LockingHeader"/>
     <class id="82" name="org.jgroups.util.PayloadUUID"/>
+    <class id="83" name="org.jgroups.util.AdditionalDataUUID"/>
 </magic-number-class-mapping>
