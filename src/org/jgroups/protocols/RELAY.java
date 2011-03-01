@@ -312,13 +312,7 @@ public class RELAY extends Protocol {
         Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
         if(tmp.getSrc() == null)
             tmp.setSrc(local_addr);
-
-        // Address dest=tmp.getDest();
-//        if(dest instanceof ProxyAddress) {
-//            ProxyAddress dst=(ProxyAddress)tmp.getDest();
-//            tmp.setDest(dst.getOriginalAddress());
-//        }
-
+        
         try {
             byte[] buf=Util.streamableToByteBuffer(tmp);
             if(coord != null) {
