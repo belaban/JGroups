@@ -1,7 +1,6 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.util.ProxyAddress;
 import org.jgroups.util.Util;
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
