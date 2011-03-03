@@ -1045,27 +1045,60 @@ abstract public class Locking extends Protocol {
         
         @Override
         public void await() throws InterruptedException {
-            await(true);
-            lock.lockInterruptibly();
+            InterruptedException ex = null;
+            try {
+                await(true);
+            }
+            catch (InterruptedException e) {
+                ex = e;
+                throw ex;
+            }
+            finally {
+                lock.lock();
+                
+                // If we are throwing an InterruptedException
+                // then clear the interrupt state as well.
+                if (ex != null) {
+                    Thread.interrupted();
+                }
+            }
         }
 
         @Override
         public void awaitUninterruptibly() {
             try {
                 await(false);
-                lock.lock();
             }
             catch(InterruptedException e) {
                 // This should never happen
+            }
+            finally {
+                lock.lock();
             }
         }
 
         @Override
         public long awaitNanos(long nanosTimeout) throws InterruptedException {
-            long value = await(nanosTimeout);
-            long begin = System.nanoTime();
-            lock.lockInterruptibly();
-            return value - System.nanoTime() + begin;
+            InterruptedException ex = null;
+            try {
+                long value = await(nanosTimeout);
+                long begin = System.nanoTime();
+                lock.lock();
+                return value - System.nanoTime() + begin;
+            }
+            catch (InterruptedException e) {
+                ex = e;
+                throw ex;
+            }
+            finally {
+                lock.lock();
+                
+                // If we are throwing an InterruptedException
+                // then clear the interrupt state as well.
+                if (ex != null) {
+                    Thread.interrupted();
+                }
+            }
         }
 
         /**
