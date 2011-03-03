@@ -55,6 +55,8 @@ public class Event {
     public static final int LOCK                               = 95; // arg=LockInfo
     public static final int UNLOCK                             = 96; // arg=LockInfo
     public static final int UNLOCK_ALL                         = 97; // arg=null
+    public static final int LOCK_AWAIT                         = 98; // arg=LockInfo
+    public static final int LOCK_SIGNAL                        = 99; // arg=AwaitInfo
 
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
@@ -149,6 +151,8 @@ public class Event {
             case LOCK:                   return "LOCK";
             case UNLOCK:                 return "UNLOCK";
             case UNLOCK_ALL:             return "UNLOCK_ALL";
+            case LOCK_AWAIT:             return "LOCK_AWAIT";
+            case LOCK_SIGNAL:            return "LOCK_SIGNAL";
             
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

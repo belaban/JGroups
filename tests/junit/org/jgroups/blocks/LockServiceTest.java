@@ -1,18 +1,23 @@
 package org.jgroups.blocks;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
-
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
@@ -158,6 +163,17 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
 
+    public void testSuccessfulSignalAllTimeout() throws InterruptedException, BrokenBarrierException {
+        Lock lock2=s2.getLock(LOCK); 
+        Thread locker=new Signaller(true);
+        boolean rc=tryLock(lock2, 5000, LOCK);
+        assert rc;
+        locker.start();
+        assert awaitNanos(lock2.newCondition(), TimeUnit.SECONDS.toNanos(5), LOCK) > 0 : "Condition was not signalled";
+        unlock(lock2, LOCK);
+    }
+
+
     public void testSuccessfulTryLockTimeout() throws InterruptedException, BrokenBarrierException {
         final CyclicBarrier barrier=new CyclicBarrier(2);
         Thread locker=new Locker(barrier);
@@ -235,6 +251,34 @@ public class LockServiceTest extends ChannelTestBase {
             }
         }
     }
+    
+    protected class Signaller extends Thread {
+        protected final boolean all;
+
+        public Signaller(boolean all) {
+            this.all=all;
+        }
+
+        public void run() {
+            lock(lock, LOCK);
+            try {
+                Util.sleep(500);
+                
+                if (all) {
+                    signallingAll(lock.newCondition(), LOCK);
+                }
+                else {
+                    signalling(lock.newCondition(), LOCK);
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+        }
+    }
 
     protected static class TryLocker extends Thread {
         protected final Lock mylock;
@@ -301,9 +345,31 @@ public class LockServiceTest extends ChannelTestBase {
         lock.unlock();
         System.out.println("[" + Thread.currentThread().getId() + "] released " + name);
     }
+    
+    protected static long awaitNanos(Condition condition, long nanoSeconds, 
+                                     String name) throws InterruptedException {
+        System.out.println("[" + Thread.currentThread().getId() + "] waiting for signal - released lock " + name);
+        long value = condition.awaitNanos(nanoSeconds);
+        System.out.println("[" + Thread.currentThread().getId() + "] waited for signal - obtained lock " + name);
+        return value;
+    }
+    
+    protected static void signalling(Condition condition, String name) {
+        System.out.println("[" + Thread.currentThread().getId() + "] signalling " + name);
+        condition.signal();
+        System.out.println("[" + Thread.currentThread().getId() + "] signalled " + name);
+    }
+    
+    protected static void signallingAll(Condition condition, String name) {
+        System.out.println("[" + Thread.currentThread().getId() + "] signalling all " + name);
+        condition.signalAll();
+        System.out.println("[" + Thread.currentThread().getId() + "] signalled " + name);
+    }
 
     protected void addLockingProtocol(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        stack.insertProtocolAtTop(new CENTRAL_LOCK());
+        Protocol lockprot = new CENTRAL_LOCK();
+        lockprot.setLevel("trace");
+        stack.insertProtocolAtTop(lockprot);
     }
 }
