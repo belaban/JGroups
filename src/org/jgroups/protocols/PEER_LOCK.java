@@ -4,14 +4,14 @@ package org.jgroups.protocols;
  * @author Bela Ban
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.blocks.locking.Owner;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of a locking protocol which acquires locks by contacting <em>all</em> of the nodes of a cluster.</p>
@@ -47,6 +47,25 @@ public class PEER_LOCK extends Locking {
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
         sendRequest(null, Type.RELEASE_LOCK, lock_name, owner, 0, false);
+    }
+
+
+    @Override
+    protected void sendAwaitConditionRequest(String lock_name, Owner owner) {
+        sendRequest(null, Type.LOCK_AWAIT, lock_name, owner, 0, false);
+    }
+
+
+    @Override
+    protected void sendSignalConditionRequest(String lock_name, boolean all) {
+        sendRequest(null, all ? Type.COND_SIG_ALL : Type.COND_SIG, lock_name, 
+                null, 0, false);
+    }
+
+
+    @Override
+    protected void sendDeleteAwaitConditionRequest(String lock_name, Owner owner) {
+        sendRequest(null, Type.DELETE_LOCK_AWAIT, lock_name, owner, 0, false);
     }
 
 
@@ -91,5 +110,4 @@ public class PEER_LOCK extends Locking {
                 lockGranted();
         }
     }
-
 }

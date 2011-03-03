@@ -1,16 +1,17 @@
 package org.jgroups.demos;
 
-import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
-import org.jgroups.blocks.locking.*;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.util.Util;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+
+import org.jgroups.JChannel;
+import org.jgroups.blocks.locking.LockNotification;
+import org.jgroups.blocks.locking.LockService;
+import org.jgroups.blocks.locking.Owner;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.util.Util;
 
 /**
  * Demos the LockService
@@ -60,6 +61,13 @@ public class LockServiceDemo implements LockNotification {
         System.out.println("\"" + lock_name + "\" unlocked by " + owner);
     }
 
+    public void awaiting(String lock_name, Owner owner) {
+        System.out.println("awaiting \"" + lock_name + "\" by " + owner);
+    }
+
+    public void awaited(String lock_name, Owner owner) {
+        System.out.println("awaited \"" + lock_name + "\" by " + owner);
+    }
 
     protected void loop() throws Exception {
         List<String> lock_names;
@@ -166,6 +174,5 @@ public class LockServiceDemo implements LockNotification {
                              "trylock (<lock name>)+ [<timeout>]\n");
         System.out.println("Example:\nlock lock lock2 lock3\nunlock all\ntrylock bela michelle 300");
     }
-
 
 }

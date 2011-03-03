@@ -55,6 +55,8 @@ public class Event {
     public static final int LOCK                               = 95; // arg=LockInfo
     public static final int UNLOCK                             = 96; // arg=LockInfo
     public static final int UNLOCK_ALL                         = 97; // arg=null
+    public static final int LOCK_AWAIT                         = 98; // arg=LockInfo
+    public static final int LOCK_SIGNAL                        = 99; // arg=AwaitInfo
 
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>

@@ -1,5 +1,11 @@
 package org.jgroups.protocols;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.annotations.Experimental;
@@ -8,11 +14,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.LockNotification;
 import org.jgroups.blocks.locking.Owner;
 import org.jgroups.util.Util;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -97,6 +98,20 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         sendRequest(dest, Type.DELETE_LOCK, lock_name, null, 0, false);
     }
 
+    @Override
+    protected void sendAwaitConditionRequest(String lock_name, Owner owner) {
+        sendRequest(coord, Type.LOCK_AWAIT, lock_name, owner, 0, false);
+    }
+
+    @Override
+    protected void sendSignalConditionRequest(String lock_name, boolean all) {
+        sendRequest(coord, all ? Type.COND_SIG_ALL : Type.COND_SIG, lock_name, null, 0, false);
+    }
+    
+    @Override
+    protected void sendDeleteAwaitConditionRequest(String lock_name, Owner owner) {
+        sendRequest(coord, Type.DELETE_LOCK_AWAIT, lock_name, owner, 0, false);
+    }
 
     public void handleView(View view) {
         super.handleView(view);
@@ -156,6 +171,16 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         if(is_coord)
             updateBackups(Type.DELETE_LOCK, lock_name, owner);
     }
+    
+    public void awaiting(String lock_name, Owner owner) {
+        if(is_coord)
+            updateBackups(Type.CREATE_AWAITER, lock_name, owner);
+    }
+
+    public void awaited(String lock_name, Owner owner) {
+        if(is_coord)
+            updateBackups(Type.DELETE_AWAITER, lock_name, owner);
+    }
 
     protected void updateBackups(Type type, String lock_name, Owner owner) {
         synchronized(backups) {
@@ -176,11 +201,20 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         if(log.isTraceEnabled())
             log.trace("copying locks to " + new_joiners);
         for(Map.Entry<String,ServerLock> entry: copy.entrySet()) {
-            for(Address joiner: new_joiners)
-                sendCreateLockRequest(joiner, entry.getKey(), entry.getValue().current_owner);
+            for(Address joiner: new_joiners) {
+                ServerLock lock = entry.getValue();
+                if (lock.current_owner != null) {
+                    sendCreateLockRequest(joiner, entry.getKey(), entry.getValue().current_owner);
+                }
+                ServerCondition serverCondition = lock.condition;
+                synchronized (serverCondition) {
+                    Queue<Owner> queue = serverCondition.queue;
+                    for (Owner owner : queue) {
+                        sendAwaitConditionRequest(lock.lock_name, owner);
+                    }
+                }
+            }
         }
     }
-
-
 }
 
