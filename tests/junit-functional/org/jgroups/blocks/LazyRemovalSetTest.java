@@ -2,7 +2,6 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.util.ProxyAddress;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -139,9 +138,9 @@ public class LazyRemovalSetTest {
     public static void testContains() {
         LazyRemovalSet<Address> cache=new LazyRemovalSet<Address>(5, 0);
         Address a=Util.createRandomAddress("A"),
-          b=new ProxyAddress(Util.createRandomAddress("X"), Util.createRandomAddress("B")),
+          b=Util.createRandomAddress("B"),
           c=Util.createRandomAddress("C"),
-          d=new ProxyAddress(Util.createRandomAddress("Y"), Util.createRandomAddress("D"));
+          d=Util.createRandomAddress("D");
         cache.add(a,b,c,d);
         System.out.println("cache = " + cache);
         assert cache.size() == 4;

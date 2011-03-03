@@ -2,9 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.security.SecureRandom;
 
 /**
@@ -41,6 +39,13 @@ public class PayloadUUID extends UUID {
         return retval;
     }
 
+    public String getPayload() {
+        return payload;
+    }
+
+    public void setPayload(String payload) {
+        this.payload=payload;
+    }
 
     protected static byte[] generateRandomBytes() {
         SecureRandom ng=numberGenerator;
@@ -69,7 +74,19 @@ public class PayloadUUID extends UUID {
         payload=Util.readString(in);
     }
 
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        payload=in.readUTF();
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        out.writeUTF(payload);
+    }
+
     public String toString() {
+        if(print_uuids)
+            return toStringLong();
         return super.toString() + (payload == null? "" : "(" + payload + ")");
     }
 

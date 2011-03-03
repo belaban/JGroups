@@ -161,6 +161,8 @@ public class ProtocolStack extends Protocol implements Transport {
     public ProtocolStack() {
     }
 
+    public JChannel getChannel() {return channel;}
+
     public void setChannel(JChannel ch) {
         this.channel=ch;
     }

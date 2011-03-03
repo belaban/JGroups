@@ -1,7 +1,6 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.util.ProxyAddress;
 import org.jgroups.util.Util;
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
@@ -47,7 +46,7 @@ public class RelayDemo {
             }
 
             public void viewAccepted(View new_view) {
-                System.out.println("view: " + print(new_view));
+                System.out.println(print(new_view));
             }
         });
 
@@ -63,15 +62,13 @@ public class RelayDemo {
     static String print(View view) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        sb.append(view.getViewId()).append(": ");
+        sb.append(view.getClass().getSimpleName() + ": ").append(view.getViewId()).append(": ");
         for(Address mbr: view.getMembers()) {
             if(first)
                 first=false;
             else
                 sb.append(", ");
             sb.append(mbr);
-            if(mbr instanceof ProxyAddress)
-               sb.append("(p)");
         }
         return sb.toString();
     }

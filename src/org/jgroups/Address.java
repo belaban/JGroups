@@ -17,7 +17,6 @@ public interface Address extends Externalizable, Streamable, Comparable<Address>
     public static final byte NULL       = 1 << 0;
     public static final byte UUID_ADDR  = 1 << 1;
     public static final byte IP_ADDR    = 1 << 2;
-    public static final byte PROXY_ADDR = 1 << 3;
 
 
     /**

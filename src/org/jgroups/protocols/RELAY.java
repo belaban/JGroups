@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.blocks.LazyRemovalSet;
+import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -37,6 +37,10 @@ import java.util.concurrent.TimeUnit;
 public class RELAY extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
+    @Property(description="Description of the local cluster, e.g. \"nyc\". This is added to every address, so it" +
+      "should be short. This is a mandatory property and must be set",writable=false)
+    protected String site;
+
     @Property(description="Properties of the bridge cluster (e.g. tcp.xml)")
     protected String bridge_props=null;
 
@@ -56,13 +60,6 @@ public class RELAY extends Protocol {
     protected boolean present_global_views=true;
 
 
-    @Property(description="Max size of the cache for remote addresses")
-    protected int cache_size=200;
-
-    /** We currently only support bridging of 2 clusters */
-    // protected static final int MAX_BRIDGE_SIZE=2;
-
-
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     protected Address          local_addr;
     @ManagedAttribute
@@ -78,7 +75,7 @@ public class RELAY extends Protocol {
     /** The view of the bridge cluster, usually consists of max 2 nodes */
     protected View             bridge_view;
 
-    /** The view of the remote cluster, typically all members are ProxyAddresses */
+    /** The view of the remote cluster */
     protected View             remote_view;
 
     /** The combined view of local and remote cluster */
@@ -88,8 +85,6 @@ public class RELAY extends Protocol {
     protected long             global_view_id=0;
 
     protected TimeScheduler    timer;
-
-    protected LazyRemovalSet<Address> remote_cache;
 
     protected Future<?>        remote_view_fetcher_future;
 
@@ -121,25 +116,21 @@ public class RELAY extends Protocol {
         return global_view != null? global_view.toString() : "n/a";
     }
 
-    @ManagedOperation(description="Prints the contents of the remote cache")
-    public String printRemoteCache() {
-        return remote_cache.printCache(new LazyRemovalSet.Printable<Address>() {
-            public String print(Address val) {
-                return val.toString();
-            }
-        });
-    }
-
-    @ManagedOperation(description="Evicts all elements in the remote cache which are marked as removable")
-    public void evictRemoteCache() {
-        remote_cache.removeMarkedElements(false);
-    }
 
 
     public void init() throws Exception {
         super.init();
+        if(site == null || site.length() == 0)
+            throw new IllegalArgumentException("\"site\" must be set");
         timer=getTransport().getTimer();
-        remote_cache=new LazyRemovalSet<Address>(cache_size, 300000);
+        JChannel channel=getProtocolStack().getChannel();
+        if(channel == null)
+            throw new IllegalStateException("channel must be set");
+        channel.setAddressGenerator(new AddressGenerator() {
+            public Address generateAddress() {
+                return PayloadUUID.randomUUID(site);
+            }
+        });
     }
 
     public void stop() {
@@ -154,20 +145,12 @@ public class RELAY extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest == null || dest.isMulticastAddress())
-                    break; // don't handle multicast destinations
+                    break;
 
                 // forward non local destinations to the coordinator, to relay to the remote cluster
-                if(remote_cache.contains(dest)) {  // the message is forwarded to the remote cluster
+                if(!isLocal(dest)) {
                     forwardToCoord(msg);
                     return null;
-                }
-                else {
-                    if(local_view.containsMember(dest)) {
-                        break;
-                    }
-                    if(dest instanceof ProxyAddress) { // the message is sent to the local cluster
-                        msg.setDest(((ProxyAddress)dest).getOriginalAddress());
-                    }
                 }
                 break;
 
@@ -279,14 +262,6 @@ public class RELAY extends Protocol {
             if(create_bridge)
                 createBridge();
             sendViewToRemote(ViewData.create(view, null), false);
-
-            // kludge ! Code will be removed
-//            new Thread() {
-//                public void run() {
-//                    Util.sleep(1000);
-//                    sendViewToRemote(ViewData.create(view, null), false);
-//                }
-//            }.start();
         }
     }
 
@@ -301,10 +276,6 @@ public class RELAY extends Protocol {
                 return null;
 
             remote_view=data.remote_view;
-            if(data.remote_view != null) {
-                remote_cache.add(data.remote_view.getMembers());
-                remote_cache.retainAll(data.remote_view.getMembers());
-            }
             if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
                 global_view=data.global_view;
                 synchronized(this) {
@@ -341,16 +312,16 @@ public class RELAY extends Protocol {
         Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
         if(tmp.getSrc() == null)
             tmp.setSrc(local_addr);
-
-        Address dest=tmp.getDest();
-        if(dest instanceof ProxyAddress) {
-            ProxyAddress dst=(ProxyAddress)tmp.getDest();
-            tmp.setDest(dst.getOriginalAddress());
-        }
-
+        
         try {
             byte[] buf=Util.streamableToByteBuffer(tmp);
             if(coord != null) {
+                // optimization: if I'm the coord, simply relay to the remote cluster via the bridge
+                if(coord.equals(local_addr)) {
+                    forward(buf, 0, buf.length);
+                    return;
+                }
+
                 tmp=new Message(coord, null, buf, 0, buf.length); // reusing tmp is OK here ...
                 tmp.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
                 down_prot.down(new Event(Event.MSG, tmp));
@@ -447,13 +418,19 @@ public class RELAY extends Protocol {
         try {
             Message msg=(Message)Util.streamableFromByteBuffer(Message.class, buf, offset, length);
             Address sender=msg.getSrc();
-            ProxyAddress proxy_sender=new ProxyAddress(local_addr, sender);
+            Address dest=msg.getDest();
+
+            if(!isLocal(dest)) {
+                if(log.isWarnEnabled())
+                    log.warn("[" + local_addr + "] dest=" + dest + " is not local (site=" + this.site + "); discarding it");
+                return;
+            }
 
             // set myself to be the sender
             msg.setSrc(local_addr);
 
-            // later, in RELAY, we'll take the proxy_sender from the header and make it the sender
-            msg.putHeader(id, RelayHeader.createDisseminateHeader(proxy_sender));
+            // later, in RELAY, we'll take the original sender from the header and make it the sender
+            msg.putHeader(id, RelayHeader.createDisseminateHeader(sender));
 
             if(log.isTraceEnabled())
                 log.trace("received msg from " + sender + ", passing down the stack with dest=" +
@@ -490,6 +467,15 @@ public class RELAY extends Protocol {
         }
     }
 
+    /** Does the payload match the 'site' ID. Checks only unicast destinations (multicast destinations return true) */
+    protected boolean isLocal(Address dest) {
+        if(dest instanceof PayloadUUID) {
+            String tmp=((PayloadUUID)dest).getPayload();
+            return tmp != null && tmp.equals(this.site);
+        }
+        return true;
+    }
+
 
     protected synchronized void startRemoteViewFetcher() {
         if(remote_view_fetcher_future == null || remote_view_fetcher_future.isDone()) {
@@ -505,16 +491,6 @@ public class RELAY extends Protocol {
     }
 
 
-    /*protected List<Address> getValidBridgeSenders() {
-        if(bridge_view == null)
-            return null;
-        List<Address> valid_senders=new ArrayList<Address>(bridge_view.size());
-        Vector<Address> bridge_members=bridge_view.getMembers();
-        for(int i=0; i < Math.min(MAX_BRIDGE_SIZE, bridge_members.size()); i++)
-            valid_senders.add(bridge_members.get(i));
-        return valid_senders;
-    }*/
-
 
     protected class Receiver extends ReceiverAdapter {
 
@@ -522,8 +498,6 @@ public class RELAY extends Protocol {
             Address sender=msg.getSrc();
             if(bridge.getAddress().equals(sender)) // discard my own messages
                 return;
-
-            // check if the sender is among the first 2 members, if not, ignore message
 
             RelayHeader hdr=(RelayHeader)msg.getHeader(id);
             switch(hdr.type) {
@@ -540,7 +514,7 @@ public class RELAY extends Protocol {
                         if(data.remote_view != null) {
                             List<Address> mbrs=new LinkedList<Address>();
                             for(Address mbr: data.remote_view.getMembers()) {
-                                mbrs.add(new ProxyAddress(local_addr, mbr));
+                                mbrs.add(mbr);
                             }
                             data.remote_view=new View(data.remote_view.getViewId(), mbrs);
                         }

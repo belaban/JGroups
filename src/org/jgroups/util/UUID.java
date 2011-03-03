@@ -252,8 +252,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      * @return  {@code true} if the objects are the same; {@code false} otherwise
      */
     public boolean equals(Object obj) {
-        if(obj instanceof ProxyAddress)
-            return equals(((ProxyAddress)obj).original_addr);
         if (!(obj instanceof UUID))
             return false;
         UUID id = (UUID)obj;
@@ -269,8 +267,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
      * @return  -1, 0 or 1 as this {@code UUID} is less than, equal to, or greater than {@code val}
      */
     public int compareTo(Address other) {
-        if(other instanceof ProxyAddress)
-            return compareTo(((ProxyAddress)other).original_addr);
         UUID val=(UUID)other;
         if(this == val)
             return 0;

@@ -598,12 +598,7 @@ public class SizeTest {
         _testSize(addr);
     }
 
-    public static void testProxyAddress() throws Exception {
-        ProxyAddress addr=new ProxyAddress(Util.createRandomAddress("A"), Util.createRandomAddress("B"));
-        _testSize(addr);
-    }
 
-   
     public static void testWriteAddress() throws IOException, IllegalAccessException, InstantiationException {
         Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
@@ -618,9 +613,6 @@ public class SizeTest {
         _testWriteAddress(addr);
 
         ((IpAddress)addr).setAdditionalData("Bela Ban".getBytes());
-        _testWriteAddress(addr);
-        
-        addr=new ProxyAddress(Util.createRandomAddress("A"), Util.createRandomAddress("B"));
         _testWriteAddress(addr);
     }
 

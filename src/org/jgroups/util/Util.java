@@ -835,9 +835,6 @@ public class Util {
         else if(clazz.equals(IpAddress.class)) {
             flags=Util.setFlag(flags, Address.IP_ADDR);
         }
-        else if(clazz.equals(ProxyAddress.class)) {
-            flags=Util.setFlag(flags, Address.PROXY_ADDR);
-        }
         else {
             streamable_addr=false;
         }
@@ -863,10 +860,6 @@ public class Util {
             addr=new IpAddress();
             addr.readFrom(in);
         }
-        else if(Util.isFlagSet(flags, Address.PROXY_ADDR)) {
-            addr=new ProxyAddress();
-            addr.readFrom(in);
-        }
         else {
             addr=readOtherAddress(in);
         }
@@ -876,7 +869,7 @@ public class Util {
     public static int size(Address addr) {
         int retval=Global.BYTE_SIZE; // flags
         if(addr != null) {
-            if(addr instanceof UUID || addr instanceof IpAddress || addr instanceof ProxyAddress)
+            if(addr instanceof UUID || addr instanceof IpAddress)
                 retval+=addr.size();
             else {
                 retval+=Global.SHORT_SIZE; // magic number
