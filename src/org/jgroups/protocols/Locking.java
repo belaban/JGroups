@@ -1083,7 +1083,6 @@ abstract public class Locking extends Protocol {
             try {
                 long value = await(nanosTimeout);
                 long begin = System.nanoTime();
-                lock.lock();
                 return value - System.nanoTime() + begin;
             }
             catch (InterruptedException e) {
