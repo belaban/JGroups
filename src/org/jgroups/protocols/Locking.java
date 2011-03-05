@@ -1079,11 +1079,10 @@ abstract public class Locking extends Protocol {
 
         @Override
         public long awaitNanos(long nanosTimeout) throws InterruptedException {
+            long beforeLock;
             InterruptedException ex = null;
             try {
-                long value = await(nanosTimeout);
-                long begin = System.nanoTime();
-                return value - System.nanoTime() + begin;
+                beforeLock = await(nanosTimeout) + System.nanoTime();
             }
             catch (InterruptedException e) {
                 ex = e;
@@ -1098,6 +1097,8 @@ abstract public class Locking extends Protocol {
                     Thread.interrupted();
                 }
             }
+            
+            return beforeLock - System.nanoTime();
         }
 
         /**
@@ -1162,8 +1163,6 @@ abstract public class Locking extends Protocol {
         protected long await(long nanoSeconds) throws InterruptedException {
             long target_nano=System.nanoTime() + nanoSeconds;
             
-            long wait_nano=0;
-            
             if(!signaled.get()) {
                 // We release the lock at the same time as waiting on the
                 // condition
@@ -1172,7 +1171,7 @@ abstract public class Locking extends Protocol {
                 
                 boolean interrupted = false;
                 while(!signaled.get()) {
-                    wait_nano=target_nano - System.nanoTime();
+                    long wait_nano=target_nano - System.nanoTime();
                     // If we waited max time break out
                     if(wait_nano > 0) {
                         parker.set(Thread.currentThread());
@@ -1206,7 +1205,7 @@ abstract public class Locking extends Protocol {
             if (!signaled.getAndSet(false)) {
                 sendDeleteAwaitConditionRequest(lock.name, lock.owner);
             }
-            return wait_nano;
+            return target_nano - System.nanoTime();
         }
 
         @Override
