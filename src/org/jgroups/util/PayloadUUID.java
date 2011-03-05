@@ -86,11 +86,8 @@ public class PayloadUUID extends UUID {
 
     public String toString() {
         if(print_uuids)
-            return toStringLong();
+            return toStringLong() + (payload == null? "" : "(" + payload + ")");
         return super.toString() + (payload == null? "" : "(" + payload + ")");
     }
 
-    public String toStringLong() {
-        return super.toStringLong() + (payload == null? "" : "(" + payload + ")");
-    }
 }

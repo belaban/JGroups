@@ -88,11 +88,8 @@ public class AdditionalDataUUID extends UUID {
 
     public String toString() {
         if(print_uuids)
-            return toStringLong();
+            return toStringLong() + (payload == null? "" : " (" + payload.length + " bytes)");
         return super.toString() + (payload == null? "" : " (" + payload.length + " bytes)");
     }
 
-    public String toStringLong() {
-        return super.toStringLong() + (payload == null? "" : " (" + payload.length + " bytes)");
-    }
 }
