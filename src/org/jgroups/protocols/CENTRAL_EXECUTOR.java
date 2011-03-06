@@ -167,7 +167,7 @@ public class CENTRAL_EXECUTOR extends Executing {
     @Override
     protected void sendRemoveRunRequest(Address sender) {
         if(is_coord)
-            updateBackups(Type.CREATE_CONSUMER_READY, sender);
+            updateBackups(Type.DELETE_RUN_REQUEST, sender);
     }
 
     // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.Address)
@@ -181,6 +181,6 @@ public class CENTRAL_EXECUTOR extends Executing {
     @Override
     protected void sendRemoveConsumerRequest(Address sender) {
         if(is_coord)
-            updateBackups(Type.CREATE_CONSUMER_READY, sender);
+            updateBackups(Type.DELETE_CONSUMER_READY, sender);
     }
 }

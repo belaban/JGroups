@@ -30,7 +30,7 @@ import org.jgroups.util.Streamable;
 /**
  * This is a jgroups implementation of an ExecutorService, where the consumers
  * are running on any number of nodes.  The nodes should run 
- * {@link JGroupsExecutorRunner} to start picking up requests.
+ * {@link ExecutionRunner} to start picking up requests.
  * 
  * Every future object returned will be a {@link ListenableFuture} which
  * allows for not having to query the future and have a callback instead.  This

@@ -113,6 +113,7 @@ abstract public class Executing extends Protocol {
     protected static enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
         CONSUMER_READY,         // request to coordinator from server to tell of a new consumer ready
+        CONSUMER_UNREADY,       // request to coordinator from server to tell of a consumer stopping
         CONSUMER_FOUND,         // response to client from coordinator of the consumer to send the task to
         RUN_SUBMITTED,          // request to consumer from client the task to run
         RUN_REJECTED,           // response to client from the consumer due to the consumer being gone (usually because the runner was stopped)
@@ -174,9 +175,10 @@ abstract public class Executing extends Protocol {
                     return runnable;
                 }
                 catch (InterruptedException e) {
-                    sendToCoordinator(Type.DELETE_CONSUMER_READY, local_addr);
+                    sendToCoordinator(Type.CONSUMER_UNREADY, local_addr);
                     Thread.currentThread().interrupt();
                 }
+                break;
             case ExecutorEvent.TASK_COMPLETE:
                 Object arg = evt.getArg();
                 Throwable throwable = null;
@@ -339,6 +341,9 @@ abstract public class Executing extends Protocol {
                     case CONSUMER_READY:
                         handleConsumerReadyRequest(msg.getSrc());
                         break;
+                    case CONSUMER_UNREADY:
+                        sendRemoveConsumerRequest(msg.getSrc());
+                        break;
                     case CONSUMER_FOUND:
                         Address consumer = (Address)req.object;
                         handleConsumerFoundResponse(consumer);
@@ -451,6 +456,7 @@ abstract public class Executing extends Protocol {
         
         if (consumer != null) {
             sendRequest(source, Type.CONSUMER_FOUND, (short)-1, consumer);
+            sendRemoveConsumerRequest(consumer);
         }
         else {
             sendNewRunRequest(source);
@@ -472,6 +478,7 @@ abstract public class Executing extends Protocol {
         
         if (requestor != null) {
             sendRequest(requestor, Type.CONSUMER_FOUND, (short)-1, source);
+            sendRemoveRunRequest(requestor);
         }
         else {
             sendNewConsumerRequest(source);
@@ -512,9 +519,6 @@ abstract public class Executing extends Protocol {
         if (!_tasks.offer(runnable)) {
             sendRequest(source, Type.RUN_REJECTED, requestId, null);
             _running.remove(runnable);
-        }
-        else {
-            // TODO: do something here maybe?
         }
     }
     

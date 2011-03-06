@@ -10,11 +10,11 @@ import org.jgroups.protocols.Executing;
  * 
  * @author wburns
  */
-public class JGroupsExecutorRunner implements Runnable {
+public class ExecutionRunner implements Runnable {
     protected JChannel ch;
     protected Executing _execProt;
     
-    public JGroupsExecutorRunner(JChannel channel) {
+    public ExecutionRunner(JChannel channel) {
         setChannel(channel);
     }
     
@@ -34,6 +34,10 @@ public class JGroupsExecutorRunner implements Runnable {
         for (;;) {
             runnable = (Runnable)ch.downcall(new ExecutorEvent(
                 ExecutorEvent.CONSUMER_READY, null));
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                break;
+            }
             Throwable throwable = null;
             try {
                 runnable.run();
@@ -48,7 +52,7 @@ public class JGroupsExecutorRunner implements Runnable {
             
             // If the interrupt status is still set then we treat that as
             // a shutdown.
-            // TODO: there is still a hole that if a runnable is cancelled interrupted at the same time this task is interrupted that we will lose the second interrupt.
+            // TODO: there is still a hole that if a runnable is canceled interrupted at the same time this task is interrupted that we will lose the second interrupt.
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
                 break;
@@ -56,5 +60,5 @@ public class JGroupsExecutorRunner implements Runnable {
         }
     }
     
-    private static final Logger _logger = Logger.getLogger(JGroupsExecutorRunner.class);
+    private static final Logger _logger = Logger.getLogger(ExecutionRunner.class);
 }

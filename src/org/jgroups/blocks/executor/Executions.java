@@ -31,6 +31,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import org.jgroups.util.Streamable;
@@ -182,6 +183,14 @@ public class Executions {
                     throw new IOException("failed to read arg", e);
                 }
             }
+        }
+
+        // @see java.lang.Object#toString()
+        @Override
+        public String toString() {
+            return "StreamableCallable [class=" + _classCallable
+                    + ", constructor=" + _constructorNumber + ", arguments="
+                    + Arrays.toString(_args) + "]";
         }
     }
 }
