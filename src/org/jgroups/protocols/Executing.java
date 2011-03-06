@@ -2,8 +2,11 @@ package org.jgroups.protocols;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -129,9 +132,6 @@ abstract public class Executing extends Protocol {
     public Executing() {
         _awaitingReturn = Collections.synchronizedMap(new HashMap<Owner, Runnable>());
         _running = Collections.synchronizedMap(new HashMap<Runnable, Owner>());
-        
-        // TODO: remove this before committing
-        log.setLevel("TRACE");
     }
 
 
@@ -143,7 +143,7 @@ abstract public class Executing extends Protocol {
         this.bypass_bundling=bypass_bundling;
     }
 
-    public void addExecutorListener(Future<?> future, 
+    public void addExecutorListener(Future<?> future,
                                     ExecutorNotification listener) {
         if(listener != null)
             notifiers.put(future, listener);
@@ -214,14 +214,14 @@ abstract public class Executing extends Protocol {
                 else if (runnable instanceof RunnableFuture<?>) {
                     RunnableFuture<?> future = (RunnableFuture<?>)runnable;
                     
-                    boolean interrupted = true;
+                    boolean interrupted = false;
+                    boolean gotValue = false;
                     
                     // We have the value, before we interrupt at least get it!
-                    while (interrupted) {
-                        interrupted = false;
-                        
+                    while (!gotValue) {
                         try {
                             value = future.get();
+                            gotValue = true;
                         }
                         catch (InterruptedException e) {
                             interrupted = true;
@@ -229,6 +229,7 @@ abstract public class Executing extends Protocol {
                         catch (ExecutionException e) {
                             value = e.getCause();
                             exception = true;
+                            gotValue = true;
                         }
                     }
                     
@@ -238,12 +239,31 @@ abstract public class Executing extends Protocol {
                 }
                 
                 if (owner != null) {
-                    sendRequest(owner.getAddress(), 
-                        exception ? Type.RESULT_EXCEPTION : Type.RESULT_SUCCESS, 
-                                owner.requestId, value);
+                    if (value == null) {
+                        sendRequest(owner.getAddress(), Type.RESULT_SUCCESS, 
+                                    owner.requestId, value);
+                    }
+                    // Both serializable values and exceptions would go in here
+                    else if (value instanceof Serializable || 
+                            value instanceof Externalizable || 
+                            value instanceof Streamable) {
+                        sendRequest(owner.getAddress(), 
+                            exception ? Type.RESULT_EXCEPTION : Type.RESULT_SUCCESS, 
+                                    owner.requestId, value);
+                    }
+                    // This would happen if the value wasn't serializable,
+                    // so we have to send back to the client that the class
+                    // wasn't serializable
+                    else {
+                        sendRequest(owner.getAddress(), Type.RESULT_EXCEPTION,
+                            owner.requestId, new NotSerializableException(value
+                                .getClass().getName()));
+                    }
                 }
                 else {
-                    log.warn("For some reason the owner was null!");
+                    if (log.isTraceEnabled()) {
+                        log.trace("Could not return result - most likely because it was interrupted");
+                    }
                 }
                 break;
             case ExecutorEvent.TASK_CANCEL:
@@ -251,6 +271,8 @@ abstract public class Executing extends Protocol {
                 runnable = (Runnable)array[0];
                 
                 if (_awaitingConsumer.remove(runnable)) {
+                    if (log.isTraceEnabled())
+                        log.trace("Cancelled task " + runnable + " before it was picked up");
                     return Boolean.TRUE;
                 }
                 // This is guaranteed to not be null so don't take cost of auto unboxing
@@ -261,7 +283,8 @@ abstract public class Executing extends Protocol {
                             owner.getRequestId(), null);
                     }
                     else {
-                        log.warn("Couldn't interrupt server task: " + runnable);
+                        if (log.isTraceEnabled())
+                            log.warn("Couldn't interrupt server task: " + runnable);
                     }
                     return Boolean.TRUE;
                 }
@@ -517,6 +540,8 @@ abstract public class Executing extends Protocol {
         // gotten our address when we had a consumer, but
         // they went away between then and now.
         if (!_tasks.offer(runnable)) {
+            // If we couldn't hand off the task we have to tell the client
+            // and also reupdate the coordinator that our consumer is ready
             sendRequest(source, Type.RUN_REJECTED, requestId, null);
             _running.remove(runnable);
         }
@@ -540,7 +565,7 @@ abstract public class Executing extends Protocol {
         // We can only notify of success if it was a future
         if (runnable instanceof RunnableFuture<?>) {
             RunnableFuture<?> future = (RunnableFuture<?>)runnable;
-            ExecutorNotification notifier = notifiers.get(future);
+            ExecutorNotification notifier = notifiers.remove(future);
             if (notifier != null) {
                 notifier.resultReturned(req.object);
             }
@@ -553,7 +578,7 @@ abstract public class Executing extends Protocol {
         // We can only notify of exception if it was a future
         if (runnable instanceof RunnableFuture<?>) {
             RunnableFuture<?> future = (RunnableFuture<?>)runnable;
-            ExecutorNotification notifier = notifiers.get(future);
+            ExecutorNotification notifier = notifiers.remove(future);
             if (notifier != null) {
                 notifier.throwableEncountered((Throwable)req.object);
             }

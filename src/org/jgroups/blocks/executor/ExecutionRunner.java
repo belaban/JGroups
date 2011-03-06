@@ -1,7 +1,8 @@
 package org.jgroups.blocks.executor;
 
-import org.apache.log4j.Logger;
 import org.jgroups.JChannel;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.Executing;
 
 /**
@@ -30,7 +31,7 @@ public class ExecutionRunner implements Runnable {
     @Override
     public void run() {
         Runnable runnable = null;
-        // This task exits by throwing a MocaInterruptedException inside the channel
+        // This task exits by being interrupted when the task isn't running
         for (;;) {
             runnable = (Runnable)ch.downcall(new ExecutorEvent(
                 ExecutorEvent.CONSUMER_READY, null));
@@ -53,6 +54,7 @@ public class ExecutionRunner implements Runnable {
             // If the interrupt status is still set then we treat that as
             // a shutdown.
             // TODO: there is still a hole that if a runnable is canceled interrupted at the same time this task is interrupted that we will lose the second interrupt.
+            // TODO: instead maybe we should spawn a thread to handle the request
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
                 break;
@@ -60,5 +62,5 @@ public class ExecutionRunner implements Runnable {
         }
     }
     
-    private static final Logger _logger = Logger.getLogger(ExecutionRunner.class);
+    protected static final Log _logger = LogFactory.getLog(ExecutionRunner.class);
 }

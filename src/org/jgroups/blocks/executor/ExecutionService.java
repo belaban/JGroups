@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
@@ -35,15 +36,17 @@ import org.jgroups.util.Util;
  * This is a jgroups implementation of an ExecutorService, where the consumers
  * are running on any number of nodes.  The nodes should run 
  * {@link ExecutionRunner} to start picking up requests.
- * 
+ * <p>
  * Every future object returned will be a {@link ListenableFuture} which
  * allows for not having to query the future and have a callback instead.  This
  * can then be used as a workflow to submit other tasks sequentially or also to
  * query the future for the value at that time. 
- * 
- * Copyright (c) 2011 RedPrairie Corporation
- * All Rights Reserved
- * 
+ * <p>
+ * Every callable or runnable submitted must be either {@link Serializable}, 
+ * {@link Externalizable}, or {@link Streamable}.  Also the value returned from
+ * a callable must {@link Serializable}, {@link Externalizable}, or 
+ * {@link Streamable}.  Unfortunately if the value returned is not serializable
+ * then a {@link NotSerializableException} will be thrown as the cause. 
  * @author wburns
  */
 public class ExecutionService extends AbstractExecutorService {
@@ -97,8 +100,6 @@ public class ExecutionService extends AbstractExecutorService {
      */
     protected static class FutureImpl<V> implements RunnableFuture<V>, 
             ExecutorNotification, Streamable, NotifyingFuture<V> {
-        private static final long serialVersionUID = -6137303690718895072L;
-        
         // @see java.lang.Object#toString()
         @Override
         public String toString() {
