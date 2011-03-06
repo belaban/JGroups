@@ -54,7 +54,7 @@ public class ExecutionRunner implements Runnable {
             // If the interrupt status is still set then we treat that as
             // a shutdown.
             // TODO: there is still a hole that if a runnable is canceled interrupted at the same time this task is interrupted that we will lose the second interrupt.
-            // TODO: instead maybe we should spawn a thread to handle the request
+            // TODO: instead maybe we should spawn a thread to handle the requests
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
                 break;

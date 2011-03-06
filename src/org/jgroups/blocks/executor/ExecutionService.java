@@ -224,14 +224,6 @@ public class ExecutionService extends AbstractExecutorService {
          * has been cancelled.
          */
         protected void done() {
-            // We assign the listener to a local variable so we don't have to 
-            // worry about it becoming null inside the if
-            FutureListener<V> listener = _listener;
-            // We don't want this to run on server
-            if (listener != null) {
-                listener.futureDone(this);
-            }
-            
             _unfinishedLock.lock();
             try {
                 _unfinishedFutures.remove(this);
@@ -239,6 +231,13 @@ public class ExecutionService extends AbstractExecutorService {
             }
             finally {
                 _unfinishedLock.unlock();
+            }
+            // We assign the listener to a local variable so we don't have to 
+            // worry about it becoming null inside the if
+            FutureListener<V> listener = _listener;
+            // We don't want this to run on server
+            if (listener != null) {
+                listener.futureDone(this);
             }
         }
 
@@ -523,6 +522,26 @@ public class ExecutionService extends AbstractExecutorService {
         @Override
         public void throwableEncountered(Throwable t) {
             setException(t);
+        }
+        
+        @Override
+        public void interrupted(Runnable runnable) {
+            _unfinishedLock.lock();
+            try {
+                _unfinishedFutures.remove(this);
+                _unfinishedCondition.signalAll();
+            }
+            finally {
+                _unfinishedLock.unlock();
+            }
+            
+            // We assign the listener to a local variable so we don't have to 
+            // worry about it becoming null inside the if
+            FutureListener<V> listener = _listener;
+            // We don't want this to run on server
+            if (listener != null) {
+                listener.futureDone(this);
+            }
         }
 
         @Override

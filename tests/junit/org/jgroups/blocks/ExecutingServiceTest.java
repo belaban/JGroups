@@ -37,6 +37,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
@@ -85,9 +86,6 @@ public class ExecutingServiceTest extends ChannelTestBase {
         c3=createChannel(c1, "C");
         er3=new ExecutionRunner(c3);
         c3.connect("ExecutionServiceTest");
-        
-        // TODO: remove this before committing
-        log.setLevel("TRACE");
     }
     
     @AfterClass
@@ -100,6 +98,11 @@ public class ExecutingServiceTest extends ChannelTestBase {
         e1=new ExecutionService(c1);
         e2=new ExecutionService(c2);
         e3=new ExecutionService(c3);
+        
+        // Clear out the queue, in case if test doesn't clear it
+        SleepingStreamableCallable.canceledThreads.clear();
+        // Reset the barrier in case test failed on the barrier
+        SleepingStreamableCallable.barrier.reset();
     }
     
     public static class ExposedExecutingProtocol extends CENTRAL_EXECUTOR {
@@ -355,6 +358,63 @@ public class ExecutingServiceTest extends ChannelTestBase {
         finally {
             lock.unlock();
         }
+    }
+    
+    @Test
+    public void testExecutorAwaitTerminationNoInterrupt() throws InterruptedException, 
+            BrokenBarrierException, TimeoutException {
+        testExecutorAwaitTermination(false);
+    }
+    
+    @Test
+    public void testExecutorAwaitTerminationInterrupt() throws InterruptedException, 
+            BrokenBarrierException, TimeoutException {
+        testExecutorAwaitTermination(true);
+    }
+    
+    protected void testExecutorAwaitTermination(boolean interrupt) 
+            throws InterruptedException, BrokenBarrierException, TimeoutException {
+        Thread consumer = new Thread(er2);
+        consumer.start();
+        // We send a task that waits for 100 milliseconds and then finishes
+        Callable<Void> callable = new SleepingStreamableCallable(100);
+        e1.submit(callable);
+        
+        // We wait for the thread to start
+        SleepingStreamableCallable.barrier.await(2, TimeUnit.SECONDS);
+        
+        if (interrupt) {
+            if (log.isTraceEnabled())
+                log.trace("Cancelling futures by interrupting");
+            e1.shutdownNow();
+            // We wait for the task to be interrupted.
+            // TODO: this can be removed whenever we change ExecutionRunner
+            // TODO: to decipher between a task interrupt and a consumer stop
+            assert SleepingStreamableCallable.canceledThreads.poll(2, 
+                TimeUnit.SECONDS) != null : 
+                    "Thread wasn't interrupted due to our request";
+        }
+        else {
+            e1.shutdown();
+        }
+        
+        assert e1.awaitTermination(2, TimeUnit.SECONDS) : "Executor didn't terminate fast enough";
+        
+        try {
+            e1.submit(callable);
+            assert false : "Task was submitted, where as it should have been rejected";
+        }
+        catch (RejectedExecutionException e) {
+            // We should have received this exception
+        }
+        
+        if (log.isTraceEnabled())
+            log.trace("Cancelling task by interrupting");
+        // We try to stop the thread.
+        consumer.interrupt();
+        
+        consumer.join(2000);
+        assert !consumer.isAlive() : "Consumer did not stop correctly";
     }
     
     protected void addExecutingProtocol(JChannel ch) {

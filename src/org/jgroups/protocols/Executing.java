@@ -295,6 +295,10 @@ abstract public class Executing extends Protocol {
                         if (log.isTraceEnabled())
                             log.warn("Couldn't interrupt server task: " + runnable);
                     }
+                    ExecutorNotification notification = notifiers.remove(runnable);
+                    if (notification != null) {
+                        notification.interrupted(runnable);
+                    }
                     return Boolean.TRUE;
                 }
                 else {
@@ -313,12 +317,17 @@ abstract public class Executing extends Protocol {
                 for (Runnable cancelRunnable : runnables) {
                     // Removed from the consumer
                     if (!_awaitingConsumer.remove(cancelRunnable) && 
-                            booleanValue == Boolean.FALSE) {
+                            booleanValue == Boolean.TRUE) {
                         synchronized (_awaitingReturn) {
                             owner = removeKeyForValue(_awaitingReturn, cancelRunnable);
                             if (owner != null) {
                                 sendRequest(owner.getAddress(), Type.INTERRUPT_RUN, 
                                     owner.getRequestId(), null);
+                            }
+                            ExecutorNotification notification = notifiers.remove(cancelRunnable);
+                            if (notification != null) {
+                                log.trace("Notifying listener");
+                                notification.interrupted(cancelRunnable);
                             }
                         }
                     }
@@ -621,6 +630,8 @@ abstract public class Executing extends Protocol {
         else {
             // TODO: do we do something here?  This would happen if an 
             // interrupt comes in after the task is finished.
+            if (log.isTraceEnabled())
+                log.trace("Message could not be interrupted due to it already returned");
         }
     }
 
