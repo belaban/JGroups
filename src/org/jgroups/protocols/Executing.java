@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,6 +46,11 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+/**
+ * This is the base protocol used for executions.
+ * @author wburns
+ * @see org.jgroups.protocols.CENTRAL_EXECUTOR
+ */
 @MBean(description="Based class for executor service functionality")
 abstract public class Executing extends Protocol {
 
@@ -164,12 +170,15 @@ abstract public class Executing extends Protocol {
         switch(evt.getType()) {
             case ExecutorEvent.TASK_SUBMIT:
                 Runnable runnable = (Runnable)evt.getArg();
-                sendToCoordinator(Type.RUN_REQUEST, local_addr);
                 _awaitingConsumer.add(runnable);
+                sendToCoordinator(Type.RUN_REQUEST, local_addr);
                 break;
             case ExecutorEvent.CONSUMER_READY:
                 sendToCoordinator(Type.CONSUMER_READY, local_addr);
                 try {
+                    // Unfortunately we can't start taking before we send
+                    // a message, therefore we have to do a timed poll on
+                    // _tasks below to make sure that we have time to call take
                     runnable = _tasks.take();
                     _runnableThreads.put(runnable, Thread.currentThread());
                     return runnable;
@@ -358,18 +367,18 @@ abstract public class Executing extends Protocol {
                     log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
                 switch(req.type) {
                     case RUN_REQUEST:
-                        Address source = msg.getSrc();
-                        handleTaskRequest(source);
+                        handleTaskRequest((Address)req.object);
                         break;
                     case CONSUMER_READY:
-                        handleConsumerReadyRequest(msg.getSrc());
+                        handleConsumerReadyRequest((Address)req.object);
                         break;
                     case CONSUMER_UNREADY:
-                        sendRemoveConsumerRequest(msg.getSrc());
+                        Address consumer = (Address)req.object;
+                        _consumersAvailable.remove(consumer);
+                        sendRemoveConsumerRequest(consumer);
                         break;
                     case CONSUMER_FOUND:
-                        Address consumer = (Address)req.object;
-                        handleConsumerFoundResponse(consumer);
+                        handleConsumerFoundResponse((Address)req.object);
                         break;
                     case RUN_SUBMITTED:
                         Runnable runnable = (Runnable)req.object;
@@ -389,20 +398,16 @@ abstract public class Executing extends Protocol {
                         handleInterruptRequest(msg.getSrc(), req.request);
                         break;
                     case CREATE_CONSUMER_READY:
-                        source = (Address)req.object;
-                        handleNewConsumer(source);
+                        handleNewConsumer((Address)req.object);
                         break;
                     case CREATE_RUN_REQUEST:
-                        source = (Address)req.object;
-                        handleNewRunRequest(source);
+                        handleNewRunRequest((Address)req.object);
                         break;
                     case DELETE_CONSUMER_READY:
-                        source = (Address)req.object;
-                        handleRemoveConsumer(source);
+                        handleRemoveConsumer((Address)req.object);
                         break;
                     case DELETE_RUN_REQUEST:
-                        source = (Address)req.object;
-                        handleRemoveRunRequest(source);
+                        handleRemoveRunRequest((Address)req.object);
                         break;
                     default:
                         log.error("Request of type " + req.type + " not known");
@@ -539,7 +544,20 @@ abstract public class Executing extends Protocol {
         // caller that we can't handle it.  They must have
         // gotten our address when we had a consumer, but
         // they went away between then and now.
-        if (!_tasks.offer(runnable)) {
+        boolean received = false;
+        try {
+            /** 
+             * We offer it a while before rejecting it.  This is required
+             * in case if the _tasks.take() call isn't registered quick
+             * enough after sending the Type.CONSUMER_READY message
+             */
+            received = _tasks.offer(runnable, 100, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        if (!received) {
             // If we couldn't hand off the task we have to tell the client
             // and also reupdate the coordinator that our consumer is ready
             sendRequest(source, Type.RUN_REJECTED, requestId, null);
@@ -601,8 +619,8 @@ abstract public class Executing extends Protocol {
             thread.interrupt();
         }
         else {
-            // TODO: do we do this?
-            sendToCoordinator(Type.DELETE_CONSUMER_READY, local_addr);
+            // TODO: do we do something here?  This would happen if an 
+            // interrupt comes in after the task is finished.
         }
     }
 

@@ -289,15 +289,20 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
     }
     
+    /**
+     * Interrupts can have a lot of timing issues, so we run it a lot to make
+     * sure we find all the issues.
+     * @throws InterruptedException
+     * @throws BrokenBarrierException
+     * @throws TimeoutException
+     */
     @Test
-    public void testInterruptAlot() throws InterruptedException, BrokenBarrierException, TimeoutException {
-        // TODO This exposes an issue with task interrupt we need to fix 
-//        for (int i = 0; i < 1000; ++i)
-//            testInterruptTaskRequestWhileRunning();
+    public void testInterruptWhileRunningAlot() throws InterruptedException, BrokenBarrierException, TimeoutException {
+        for (int i = 0; i < 500; ++i)
+            testInterruptTaskRequestWhileRunning();
     }
     
-    @Test
-    public void testInterruptTaskRequestWhileRunning() 
+    protected void testInterruptTaskRequestWhileRunning() 
             throws InterruptedException, BrokenBarrierException, TimeoutException {
         Callable<Void> callable = new SleepingStreamableCallable(10000);
         Thread consumer = new Thread(er2);
