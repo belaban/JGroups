@@ -1,37 +1,93 @@
 package org.jgroups.util;
 
-import org.jgroups.*;
-import org.jgroups.auth.AuthToken;
-import org.jgroups.blocks.Connection;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.*;
-import org.jgroups.protocols.pbcast.FLUSH;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.ProtocolStack;
-
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.*;
+import java.net.BindException;
+import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Header;
+import org.jgroups.JChannel;
+import org.jgroups.MergeView;
+import org.jgroups.Message;
+import org.jgroups.TimeoutException;
+import org.jgroups.View;
+import org.jgroups.ViewId;
+import org.jgroups.auth.AuthToken;
+import org.jgroups.blocks.Connection;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.FD;
+import org.jgroups.protocols.FD_SOCK;
+import org.jgroups.protocols.PingData;
+import org.jgroups.protocols.PingHeader;
+import org.jgroups.protocols.SCOPE;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
 
 
 /**
@@ -1045,6 +1101,42 @@ public class Util {
         catch(Exception ex) {
             throw new IOException("failed reading object: " + ex.toString());
         }
+    }
+
+    public static void writeClass(Class<?> classObject, DataOutputStream out) 
+            throws IOException {
+        short magic_number=ClassConfigurator.getMagicNumber(classObject);
+        // write the magic number or the class name
+        if(magic_number == -1) {
+            out.writeBoolean(false);
+            out.writeUTF(classObject.getName());
+        }
+        else {
+            out.writeBoolean(true);
+            out.writeShort(magic_number);
+        }
+    }
+
+    public static Class<?> readClass(DataInputStream in) throws IOException, 
+            ClassNotFoundException {
+        Class<?> clazz;
+        boolean use_magic_number = in.readBoolean();
+        if(use_magic_number) {
+            short magic_number=in.readShort();
+            clazz=ClassConfigurator.get(magic_number);
+            if (clazz==null) {
+               throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
+            }
+        }
+        else {
+            String classname=in.readUTF();
+            clazz=ClassConfigurator.get(classname);
+            if (clazz==null) {
+               throw new ClassNotFoundException(classname);
+            }
+        }
+        
+        return clazz;
     }
 
     public static void writeObject(Object obj, DataOutputStream out) throws Exception {
