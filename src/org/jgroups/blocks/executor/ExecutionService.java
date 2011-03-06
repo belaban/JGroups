@@ -1,6 +1,9 @@
 package org.jgroups.blocks.executor;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.Externalizable;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +29,7 @@ import org.jgroups.protocols.Locking;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 /**
  * This is a jgroups implementation of an ExecutorService, where the consumers
@@ -92,7 +96,7 @@ public class ExecutionService extends AbstractExecutorService {
      * @author wburns
      */
     protected static class FutureImpl<V> implements RunnableFuture<V>, 
-            ExecutorNotification, Serializable, NotifyingFuture<V> {
+            ExecutorNotification, Streamable, NotifyingFuture<V> {
         private static final long serialVersionUID = -6137303690718895072L;
         
         // @see java.lang.Object#toString()
@@ -102,7 +106,7 @@ public class ExecutionService extends AbstractExecutorService {
         }
 
         /** Synchronization control for FutureTask */
-        private final Sync sync;
+        private Sync<V> sync;
         
         /** The following values are only used on the client side */
         private final transient JChannel channel;
@@ -110,6 +114,14 @@ public class ExecutionService extends AbstractExecutorService {
         private final transient Lock _unfinishedLock;
         private final transient Condition _unfinishedCondition;
         private volatile transient FutureListener<V> _listener;
+        
+        public FutureImpl() {
+            channel = null;
+            _unfinishedFutures = null;
+            _unfinishedLock = null;
+            _unfinishedCondition = null;
+            _listener = null;
+        }
         
         /**
          * Creates a <tt>FutureTask</tt> that will upon running, execute the
@@ -129,7 +141,7 @@ public class ExecutionService extends AbstractExecutorService {
                           Callable<V> callable) {
             if (callable == null)
                 throw new NullPointerException();
-            sync = new Sync(callable);
+            sync = new Sync<V>(this, callable);
             this.channel = channel;
             // We keep the real copy to update the outside
             _unfinishedFutures = futuresToFinish;
@@ -158,7 +170,7 @@ public class ExecutionService extends AbstractExecutorService {
         public FutureImpl(JChannel channel, Lock unfinishedLock,
                           Condition condition, Set<Future<?>> futuresToFinish, 
                           Runnable runnable, V result) {
-            sync = new Sync(new RunnableAdapter<V>(runnable, result));
+            sync = new Sync<V>(this, new RunnableAdapter<V>(runnable, result));
             this.channel = channel;
             // We keep the real copy to update the outside
             _unfinishedFutures = futuresToFinish;
@@ -294,32 +306,40 @@ public class ExecutionService extends AbstractExecutorService {
          *
          * Uses AQS sync state to represent run status
          */
-        private final class Sync extends AbstractQueuedSynchronizer {
+        protected static final class Sync<V> extends AbstractQueuedSynchronizer 
+                implements Streamable {
             private static final long serialVersionUID = -7828117401763700385L;
 
             /** State value representing that task is running */
-            private static final int RUNNING   = 1;
+            protected static final int RUNNING   = 1;
             /** State value representing that task ran */
-            private static final int RAN       = 2;
+            protected static final int RAN       = 2;
             /** State value representing that task was cancelled */
-            private static final int CANCELLED = 4;
+            protected static final int CANCELLED = 4;
 
+            /** The containing future */
+            protected FutureImpl<V> future;
             /** The underlying callable */
-            private final Callable<V> callable;
+            protected Callable<V> callable;
             /** The result to return from get() */
-            private V result;
+            protected V result;
             /** The exception to throw from get() */
-            private Throwable exception;
+            protected Throwable exception;
 
             /**
              * The thread running task. When nulled after set/cancel, this
              * indicates that the results are accessible.  Must be
              * volatile, to ensure visibility upon completion.
              */
-            private transient volatile Thread runner;
+            protected transient volatile Thread runner;
 
-            Sync(Callable<V> callable) {
+            public Sync(FutureImpl<V> future, Callable<V> callable) {
+                this.future = future;
                 this.callable = callable;
+            }
+            
+            public Sync() {
+                
             }
 
             private boolean ranOrCancelled(int state) {
@@ -384,7 +404,7 @@ public class ExecutionService extends AbstractExecutorService {
                     if (compareAndSetState(s, RAN)) {
                         result = v;
                         releaseShared(0);
-                        done();
+                        future.done();
                         return;
                     }
                 }
@@ -406,7 +426,7 @@ public class ExecutionService extends AbstractExecutorService {
                         exception = t;
                         result = null;
                         releaseShared(0);
-                        done();
+                        future.done();
                         return;
                     }
                 }
@@ -426,7 +446,7 @@ public class ExecutionService extends AbstractExecutorService {
                         r.interrupt();
                 }
                 releaseShared(0);
-                done();
+                future.done();
                 return true;
             }
 
@@ -458,6 +478,37 @@ public class ExecutionService extends AbstractExecutorService {
                     return false;
                 }
             }
+
+            @Override
+            public void writeTo(DataOutputStream out) throws IOException {
+                try {
+                    // We only need to send over the callable.  The results
+                    // are done in a message itself which then sets it on
+                    // the client Sync object
+                    Util.writeLargerObject(callable, out);
+                }
+                catch (IOException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    throw new IOException("Problem writing callable", e);
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public void readFrom(DataInputStream in) throws IOException,
+                    IllegalAccessException, InstantiationException {
+                try {
+                    callable = (Callable<V>) Util.readLargerObject(in);
+                }
+                catch (IOException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    throw new IOException("Problem reading callable", e);
+                }
+            }
         }
 
         // @see com.redprairie.moca.cluster.jgroups.ExecutorNotification#resultReturned(java.lang.Object)
@@ -471,6 +522,18 @@ public class ExecutionService extends AbstractExecutorService {
         @Override
         public void throwableEncountered(Throwable t) {
             setException(t);
+        }
+
+        @Override
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeStreamable(sync, out);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void readFrom(DataInputStream in) throws IOException,
+                IllegalAccessException, InstantiationException {
+            sync = (Sync<V>)Util.readStreamable(Sync.class, in);
         }
     }
     
@@ -568,17 +631,68 @@ public class ExecutionService extends AbstractExecutorService {
      * contains RunnableAdapter.  However that adapter isn't serializable, and
      * is final and package level so we can' reference.
      */
-    static final class RunnableAdapter<T> implements Callable<T>, Serializable {
-        private static final long serialVersionUID = 228162442652528778L;
-        final Runnable task;
-        final T result;
-        RunnableAdapter(Runnable  task, T result) {
+    protected static final class RunnableAdapter<T> implements Callable<T>, Streamable {
+        protected Runnable task;
+        protected T result;
+        
+        protected RunnableAdapter() {
+            
+        }
+        protected RunnableAdapter(Runnable  task, T result) {
             this.task = task;
             this.result = result;
         }
         public T call() {
             task.run();
             return result;
+        }
+        @Override
+        public void writeTo(DataOutputStream out) throws IOException {
+            try {
+                Util.writeLargerObject(task, out);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException("Exception encountered while writing execution runnable", e);
+            }
+            
+            try {
+                Util.writeLargerObject(result, out);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException("Exception encountered while writing execution result", e);
+            }
+        }
+        @SuppressWarnings("unchecked")
+        @Override
+        public void readFrom(DataInputStream in) throws IOException,
+                IllegalAccessException, InstantiationException {
+            // We can't use Util.readObject since it's size is limited to 2^15-1
+            // The runner could be larger than that possibly
+            try {
+                task = (Runnable)Util.readLargerObject(in);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException("Exception encountered while reading execution runnable", e);
+            }
+            
+            try {
+                result = (T)Util.readLargerObject(in);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException("Exception encountered while reading execution result", e);
+            }
         }
     }
 

@@ -1164,6 +1164,71 @@ public class Util {
         }
         return retval;
     }
+    
+    /**
+     * This is the same as {@link Util#writeObject(DataInputStream)} except
+     * that it allows for objects to be 2<sup>63</sup>-1 number of bytes.  The
+     * latter only allows for 2<sup>31</sup>-1 number of bytes.
+     * <p>
+     * This also adds an extra 2 bytes of size to the message when dealing with
+     * non streamable objects
+     * @param obj
+     * @param out
+     * @throws Exception
+     */
+    public static void writeLargerObject(Object obj, DataOutputStream out) throws Exception {
+        if (obj instanceof Streamable) {
+            out.writeShort(-1);
+            Util.writeGenericStreamable((Streamable)obj, out);
+        }
+        else {
+            try {
+                byte[] bytes = Util.objectToByteBuffer(obj);
+                out.writeInt(bytes.length);
+                out.write(bytes);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException("Exception encountered while serializing callable request", e);
+            }
+        }
+    }
+    
+    /**
+     * This is the same as {@link Util#readObject(DataInputStream)} except
+     * that it allows for objects to be 2<sup>63</sup>-1 number of bytes.  The
+     * latter only allows for 2<sup>31</sup>-1 number of bytes.
+     * <p>
+     * This also adds an extra 2 bytes of size to the message when dealing with
+     * non streamable objects
+     * @param in
+     * @return
+     * @throws Exception
+     */
+    public static Object readLargerObject(DataInputStream in) throws Exception {
+        Object obj;
+        // We can't use Util.readObject since it's size is limited to 2^15-1
+        // An exception contained on the callable or result could be
+        // larger than that possibly
+        short first = in.readShort();
+        if (first == -1) {
+            obj = Util.readGenericStreamable(in);
+        }
+        else {
+            ByteBuffer bb = ByteBuffer.allocate(4);
+            bb.putShort(first);
+            bb.putShort(in.readShort());
+            
+            int size = bb.getInt(0);
+            byte[] bytes = new byte[size];
+            in.readFully(bytes, 0, size);
+            obj = Util.objectFromByteBuffer(bytes);
+        }
+        
+        return obj;
+    }
 
 
 
