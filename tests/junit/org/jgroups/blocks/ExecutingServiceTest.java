@@ -28,6 +28,7 @@ package org.jgroups.blocks;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -47,6 +48,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionRunner;
 import org.jgroups.blocks.executor.ExecutionService;
+import org.jgroups.blocks.executor.Executions;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.CENTRAL_EXECUTOR;
@@ -119,22 +121,40 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
     }
 
+    /**
+     * This class is to be used to test to make sure that when a non callable
+     * is to be serialized that it works correctly.
+     * <p>
+     * This class provides a few constructors that shouldn't be used.  They
+     * are just present to possibly poke holes in the constructor array offset.
+     * @param <V> The type that the value can be returned as
+     * @author wburns
+     */
     protected static class SimpleCallable<V> implements Callable<V> {
         final V _object;
         
+        // This constructor shouldn't be used
+        public SimpleCallable(String noUse) {
+            throw new UnsupportedOperationException();
+        }
+        
+        // This constructor shouldn't be used
+        public SimpleCallable(Integer noUse) {
+            throw new UnsupportedOperationException();
+        }
+        
         public SimpleCallable(V object) {
             _object = object;
+        }
+        
+        // This constructor shouldn't be used
+        public SimpleCallable() {
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public V call() throws Exception {
             return _object;
-        }
-
-        // @see java.lang.Object#toString()
-        @Override
-        public String toString() {
-            return "SimpleCallable [value=" + _object + "]";
         }
     }
     
@@ -176,6 +196,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
                 canceledThreads.offer(interruptedThread);
             }
             return null;
+        }
+        
+        // @see java.lang.Object#toString()
+        @Override
+        public String toString() {
+            return "SleepingStreamableCallable [timeout=" + millis + "]";
         }
     }
     
@@ -412,6 +438,33 @@ public class ExecutingServiceTest extends ChannelTestBase {
             log.trace("Cancelling task by interrupting");
         // We try to stop the thread.
         consumer.interrupt();
+        
+        consumer.join(2000);
+        assert !consumer.isAlive() : "Consumer did not stop correctly";
+    }
+    
+    @Test
+    public void testNonSerializableCallable() throws SecurityException, 
+            NoSuchMethodException, InterruptedException, ExecutionException, 
+            TimeoutException {
+        Thread consumer = new Thread(er2);
+        consumer.start();
+        
+        Long value = Long.valueOf(100);
+        
+        @SuppressWarnings("rawtypes")
+        Constructor<SimpleCallable> constructor = 
+            SimpleCallable.class.getConstructor(Object.class);
+        constructor.getGenericParameterTypes();
+        @SuppressWarnings("unchecked")
+        Callable<Long> callable = (Callable<Long>)Executions.serializableCallable(
+            constructor, value);
+        
+        NotifyingFuture<Long> future = e1.submit(callable);
+        Long returnValue = future.get(10L, TimeUnit.SECONDS);
+        // We try to stop the thread.
+        consumer.interrupt();
+        assert value == returnValue : "The value returned doesn't match";
         
         consumer.join(2000);
         assert !consumer.isAlive() : "Consumer did not stop correctly";

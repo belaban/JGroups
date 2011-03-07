@@ -54,6 +54,11 @@ public class Executions {
      * The amount of arguments must match the amount of arguments required
      * by the constructor.  Also the arguments must be compatibile with the
      * types required of the constructor.
+     * <p>
+     * Unfortunately it isn't easy to pass a Constructor<? extends Callable<T>>
+     * so we can't pass back a callable that is properly typed.  Also this
+     * forces the caller to cast their callable or returned value to the correct 
+     * type manually.
      * 
      * @param constructorToUse The constructor to use when creating the callable
      * @param args The arguments to pass to the constructor
@@ -66,12 +71,9 @@ public class Executions {
      *         if too many arguments or the constructor is to high up in the
      *         constructo array returned by the class.
      */
-    public static Callable<?> serializableCallable(
-        Constructor<? extends Callable<?>> constructorToUse, Object... args)
+    public static Callable<?> serializableCallable(@SuppressWarnings("rawtypes") 
+                Constructor<? extends Callable> constructorToUse, Object... args)
             throws IllegalArgumentException {
-        if (!constructorToUse.isAccessible()) {
-            throw new IllegalArgumentException("Constructor is not accessible!");
-        }
         if (args.length > (int)Byte.MAX_VALUE) {
             throw new IllegalArgumentException(
                 "Max number of arguments exceeded: " + Byte.MAX_VALUE);
@@ -100,12 +102,14 @@ public class Executions {
                     "Argument is not serializable, externalizable or streamable: " + arg);
             }
         }
-        Class<? extends Callable<?>> classToUse = constructorToUse.getDeclaringClass();
+        @SuppressWarnings("unchecked")
+        Class<? extends Callable<?>> classToUse = 
+            (Class<? extends Callable<?>>)constructorToUse.getDeclaringClass();
         Constructor<?>[] constructors = classToUse.getConstructors();
         byte constructorPosition = -1;
         for (int i = 0; i < constructors.length; ++i) {
             Constructor<?> constructor = constructors[i];
-            if (constructor == constructorToUse) {
+            if (constructor.equals(constructorToUse)) {
                 if (i > (int)Byte.MAX_VALUE) {
                     throw new IllegalArgumentException(
                         "Constructor position in array cannot be higher than "
@@ -116,17 +120,21 @@ public class Executions {
         }
         if (constructorPosition == -1) {
             throw new IllegalArgumentException(
-                "Constructor was not found in constructor array on class");
+                "Constructor was not found in public constructor array on class");
         }
         return new StreamableCallable(classToUse, constructorPosition, args);
     }
     
-    private static class StreamableCallable implements Callable<Object>, Streamable {
+    protected static class StreamableCallable implements Callable<Object>, Streamable {
         private static final long serialVersionUID = 2415022759152225141L;
         
-        private Class<? extends Callable<?>> _classCallable;
-        private short _constructorNumber;
-        private Object[] _args;
+        protected Class<? extends Callable<?>> _classCallable;
+        protected short _constructorNumber;
+        protected Object[] _args;
+        
+        public StreamableCallable() {
+            
+        }
         
         public StreamableCallable(Class<? extends Callable<?>> classCallable, 
                                     byte constructorNumber, Object... args) {
