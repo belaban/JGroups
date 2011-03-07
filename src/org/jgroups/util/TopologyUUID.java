@@ -62,15 +62,18 @@ public class TopologyUUID extends UUID {
         this.machine_id=machine_id;
     }
 
-    protected static byte[] generateRandomBytes() {
-        SecureRandom ng=numberGenerator;
-        if(ng == null)
-            numberGenerator=ng=new SecureRandom();
-
-        byte[] randomBytes=new byte[16];
-        ng.nextBytes(randomBytes);
-        return randomBytes;
+    public boolean isSameSite(TopologyUUID addr) {
+        return addr != null && site_id != null  && site_id.equals(addr.getSiteId());
     }
+
+    public boolean isSameRack(TopologyUUID addr) {
+        return addr != null && rack_id != null  && rack_id.equals(addr.getRackId());
+    }
+
+    public boolean isSameMachine(TopologyUUID addr) {
+        return addr != null && machine_id != null  && machine_id.equals(addr.getMachineId());
+    }
+
 
     public int size() {
         int retval=super.size() + 3 * Global.BYTE_SIZE;
@@ -117,12 +120,22 @@ public class TopologyUUID extends UUID {
         return super.toString() + (site_id == null? "" : "(" + site_id + ")");
     }
 
-     public String toStringDetailed() {
+    public String toStringDetailed() {
         if(print_uuids)
             return toStringLong() + "(" + printDetails() + ")";
         return super.toString() + "(" + printDetails() + ")";
     }
 
+    
+    protected static byte[] generateRandomBytes() {
+        SecureRandom ng=numberGenerator;
+        if(ng == null)
+            numberGenerator=ng=new SecureRandom();
+
+        byte[] randomBytes=new byte[16];
+        ng.nextBytes(randomBytes);
+        return randomBytes;
+    }
 
     protected String printDetails() {
         StringBuilder sb=new StringBuilder();
