@@ -51,4 +51,5 @@
     <class id="81" name="org.jgroups.protocols.Locking$LockingHeader"/>
     <class id="82" name="org.jgroups.util.PayloadUUID"/>
     <class id="83" name="org.jgroups.util.AdditionalDataUUID"/>
+    <class id="84" name="org.jgroups.util.TopologyUUID"/>
 </magic-number-class-mapping>

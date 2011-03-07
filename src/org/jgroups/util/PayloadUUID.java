@@ -76,12 +76,12 @@ public class PayloadUUID extends UUID {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        payload=in.readUTF();
+        payload=(String)in.readObject();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        out.writeUTF(payload);
+        out.writeObject(payload);
     }
 
     public String toString() {
