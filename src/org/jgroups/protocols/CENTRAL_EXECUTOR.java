@@ -17,9 +17,6 @@ import org.jgroups.util.Util;
  * This is a central executor service where each request is sent to the coordinator
  * for either a task or a current waiting thread.
  * 
- * Copyright (c) 2011 RedPrairie Corporation
- * All Rights Reserved
- * 
  * @author wburns
  */
 @Experimental
@@ -150,7 +147,7 @@ public class CENTRAL_EXECUTOR extends Executing {
         }
     }
 
-    // @see com.redprairie.moca.cluster.jgroups.Executing#sendToCoordinator(com.redprairie.moca.cluster.jgroups.Executing.Type, short, java.lang.Object)
+    // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, java.lang.Object)
     @Override
     protected void sendToCoordinator(Type type, Object value) {
         sendRequest(coord, type, (short)-1, value);

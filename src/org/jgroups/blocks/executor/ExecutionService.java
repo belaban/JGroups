@@ -511,14 +511,14 @@ public class ExecutionService extends AbstractExecutorService {
             }
         }
 
-        // @see com.redprairie.moca.cluster.jgroups.ExecutorNotification#resultReturned(java.lang.Object)
+        // @see org.jgroups.blocks.executor.ExecutorNotification#resultReturned(java.lang.Object)
         @SuppressWarnings("unchecked")
         @Override
         public void resultReturned(Object obj) {
             set((V)obj);
         }
         
-        // @see com.redprairie.moca.cluster.jgroups.ExecutorNotification#throwableEncountered(java.lang.Throwable)
+        // @see org.jgroups.blocks.executor.ExecutorNotification#throwableEncountered(java.lang.Throwable)
         @Override
         public void throwableEncountered(Throwable t) {
             setException(t);
