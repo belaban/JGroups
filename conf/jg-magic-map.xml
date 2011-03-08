@@ -54,7 +54,6 @@
     <class id="84" name="org.jgroups.util.TopologyUUID"/>
     <class id="85" name="org.jgroups.protocols.Executing$ExecutorHeader"/>
     <class id="86" name="org.jgroups.protocols.Executing$Request"/>
-    <class id="87" name="org.jgroups.blocks.executor.ExecutionService$DistributedFuture"/>
-    <class id="88" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
-    <class id="89" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
+    <class id="87" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
+    <class id="88" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
 </magic-number-class-mapping>

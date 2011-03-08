@@ -99,30 +99,22 @@ public class ExecutionService extends AbstractExecutorService {
      * @author wburns
      */
     public static class DistributedFuture<V> implements RunnableFuture<V>, 
-            ExecutorNotification, Streamable, NotifyingFuture<V> {
+            ExecutorNotification, NotifyingFuture<V> {
         // @see java.lang.Object#toString()
         @Override
         public String toString() {
-            return "FutureImpl [callable=" + sync.callable + "]";
+            return "DistributedFuture [callable=" + sync.callable + "]";
         }
 
         /** Synchronization control for FutureTask */
-        protected Sync<V> sync;
+        protected final Sync<V> sync;
         
         /** The following values are only used on the client side */
-        private final transient JChannel channel;
-        private final transient Set<Future<?>> _unfinishedFutures;
-        private final transient Lock _unfinishedLock;
-        private final transient Condition _unfinishedCondition;
-        private volatile transient FutureListener<V> _listener;
-        
-        public DistributedFuture() {
-            channel = null;
-            _unfinishedFutures = null;
-            _unfinishedLock = null;
-            _unfinishedCondition = null;
-            _listener = null;
-        }
+        private final JChannel channel;
+        private final Set<Future<?>> _unfinishedFutures;
+        private final Lock _unfinishedLock;
+        private final Condition _unfinishedCondition;
+        private volatile FutureListener<V> _listener;
         
         /**
          * Creates a <tt>FutureTask</tt> that will upon running, execute the
@@ -310,8 +302,7 @@ public class ExecutionService extends AbstractExecutorService {
          *
          * Uses AQS sync state to represent run status
          */
-        protected static final class Sync<V> extends AbstractQueuedSynchronizer 
-                implements Streamable {
+        protected static final class Sync<V> extends AbstractQueuedSynchronizer {
             private static final long serialVersionUID = -7828117401763700385L;
 
             /** State value representing that task is running */
@@ -322,9 +313,9 @@ public class ExecutionService extends AbstractExecutorService {
             protected static final int CANCELLED = 4;
 
             /** The containing future */
-            protected DistributedFuture<V> future;
+            protected final DistributedFuture<V> future;
             /** The underlying callable */
-            protected Callable<V> callable;
+            protected final Callable<V> callable;
             /** The result to return from get() */
             protected V result;
             /** The exception to throw from get() */
@@ -342,10 +333,6 @@ public class ExecutionService extends AbstractExecutorService {
                 this.callable = callable;
             }
             
-            public Sync() {
-                
-            }
-
             private boolean ranOrCancelled(int state) {
                 return (state & (RAN | CANCELLED)) != 0;
             }
@@ -482,37 +469,6 @@ public class ExecutionService extends AbstractExecutorService {
                     return false;
                 }
             }
-
-            @Override
-            public void writeTo(DataOutputStream out) throws IOException {
-                try {
-                    // We only need to send over the callable.  The results
-                    // are done in a message itself which then sets it on
-                    // the client Sync object
-                    Util.writeLargerObject(callable, out);
-                }
-                catch (IOException e) {
-                    throw e;
-                }
-                catch (Exception e) {
-                    throw new IOException("Problem writing callable", e);
-                }
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public void readFrom(DataInputStream in) throws IOException,
-                    IllegalAccessException, InstantiationException {
-                try {
-                    callable = (Callable<V>) Util.readLargerObject(in);
-                }
-                catch (IOException e) {
-                    throw e;
-                }
-                catch (Exception e) {
-                    throw new IOException("Problem reading callable", e);
-                }
-            }
         }
 
         // @see org.jgroups.blocks.executor.ExecutorNotification#resultReturned(java.lang.Object)
@@ -546,18 +502,6 @@ public class ExecutionService extends AbstractExecutorService {
             if (listener != null) {
                 listener.futureDone(this);
             }
-        }
-
-        @Override
-        public void writeTo(DataOutputStream out) throws IOException {
-            Util.writeStreamable(sync, out);
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void readFrom(DataInputStream in) throws IOException,
-                IllegalAccessException, InstantiationException {
-            sync = (Sync<V>)Util.readStreamable(Sync.class, in);
         }
     }
     
@@ -634,15 +578,28 @@ public class ExecutionService extends AbstractExecutorService {
     @Override
     public void execute(Runnable command) {
         if (!_shutdown.get()) {
-            if (command instanceof Serializable || 
-                    command instanceof Externalizable || 
-                    command instanceof Streamable) {
+            Object serializeCheck;
+            // If it is wrapped by our future, then we have to make sure to 
+            // check the actual callable/runnable given to us for serialization
+            if (command instanceof DistributedFuture) {
+                serializeCheck = ((DistributedFuture<?>)command).getCallable();
+                if (serializeCheck instanceof RunnableAdapter) {
+                    serializeCheck = ((RunnableAdapter<?>)serializeCheck).task;
+                }
+            }
+            else {
+                 serializeCheck = command;
+            }
+            
+            if (serializeCheck instanceof Serializable ||
+                    serializeCheck instanceof Externalizable || 
+                    serializeCheck instanceof Streamable) {
                 ch.down(new ExecutorEvent(ExecutorEvent.TASK_SUBMIT, command));
             }
             else {
                 throw new IllegalArgumentException(
                     "Command was not Serializable, Externalizable, or Streamable - "
-                            + command);
+                            + serializeCheck);
             }
         }
         else {

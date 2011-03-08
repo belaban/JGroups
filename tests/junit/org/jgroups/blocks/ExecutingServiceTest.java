@@ -21,6 +21,7 @@ import java.util.concurrent.locks.Lock;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.blocks.executor.ExecutionCompletionService;
 import org.jgroups.blocks.executor.ExecutionRunner;
 import org.jgroups.blocks.executor.ExecutionService;
 import org.jgroups.blocks.executor.Executions;
@@ -450,6 +451,34 @@ public class ExecutingServiceTest extends ChannelTestBase {
         
         consumer.join(2000);
         assert !consumer.isAlive() : "Consumer did not stop correctly";
+    }
+    
+    @Test
+    public void testExecutionCompletionService() throws InterruptedException {
+        Thread consumer1 = new Thread(er2);
+        consumer1.start();
+        Thread consumer2 = new Thread(er3);
+        consumer2.start();
+        
+        ExecutionCompletionService<Void> service = new ExecutionCompletionService<Void>(e1);
+        
+        // The sleeps will not occur until both threads get there due to barrier
+        // This should result in future2 always ending first since the sleep
+        // is 3 times smaller
+        Future<Void> future1 = service.submit(new SleepingStreamableCallable(300));
+        Future<Void> future2 = service.submit(new SleepingStreamableCallable(100));
+        
+        assert service.poll(2, TimeUnit.SECONDS) == future2 : "The task either didn't come back or was in wrong order";
+        assert service.poll(2, TimeUnit.SECONDS) == future1 : "The task either didn't come back or was in wrong order";
+        
+        // We try to stop the threads.
+        consumer1.interrupt();
+        consumer2.interrupt();
+        
+        consumer1.join(2000);
+        assert !consumer1.isAlive() : "Consumer did not stop correctly";
+        consumer2.join(2000);
+        assert !consumer2.isAlive() : "Consumer did not stop correctly";
     }
     
     protected void addExecutingProtocol(JChannel ch) {
