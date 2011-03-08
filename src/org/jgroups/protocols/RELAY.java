@@ -473,6 +473,10 @@ public class RELAY extends Protocol {
             String tmp=((PayloadUUID)dest).getPayload();
             return tmp != null && tmp.equals(this.site);
         }
+        else if(dest instanceof TopologyUUID) {
+            String tmp=((TopologyUUID)dest).getSiteId();
+            return tmp != null && tmp.equals(this.site);
+        }
         return true;
     }
 
