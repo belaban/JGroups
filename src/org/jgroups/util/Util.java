@@ -30,8 +30,8 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -1047,30 +1047,60 @@ public class Util {
         }
     }
 
+    public static void writeClass(Class<?> classObject, DataOutputStream out) throws IOException {
+        short magic_number=ClassConfigurator.getMagicNumber(classObject);
+        // write the magic number or the class name
+        if(magic_number == -1) {
+            out.writeBoolean(false);
+            out.writeUTF(classObject.getName());
+        }
+        else {
+            out.writeBoolean(true);
+            out.writeShort(magic_number);
+        }
+    }
+
+    public static Class<?> readClass(DataInputStream in) throws IOException, ClassNotFoundException {
+        Class<?> clazz;
+        boolean use_magic_number = in.readBoolean();
+        if(use_magic_number) {
+            short magic_number=in.readShort();
+            clazz=ClassConfigurator.get(magic_number);
+            if (clazz==null) {
+               throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
+            }
+        }
+        else {
+            String classname=in.readUTF();
+            clazz=ClassConfigurator.get(classname);
+            if (clazz==null) {
+               throw new ClassNotFoundException(classname);
+            }
+        }
+
+        return clazz;
+    }
+
     public static void writeObject(Object obj, DataOutputStream out) throws Exception {
-       if(obj == null || !(obj instanceof Streamable)) {
-           byte[] buf=objectToByteBuffer(obj);
-           out.writeShort(buf.length);
-           out.write(buf, 0, buf.length);
-       }
-       else {
-           out.writeShort(-1);
-           writeGenericStreamable((Streamable)obj, out);
-       }
+        if(obj instanceof Streamable) {
+            out.writeInt(-1);
+            writeGenericStreamable((Streamable)obj, out);
+        }
+        else {
+            byte[] buf=objectToByteBuffer(obj);
+            out.writeInt(buf.length);
+            out.write(buf, 0, buf.length);
+        }
     }
 
     public static Object readObject(DataInputStream in) throws Exception {
-        short len=in.readShort();
-        Object retval=null;
-        if(len == -1) {
-            retval=readGenericStreamable(in);
-        }
-        else {
-            byte[] buf=new byte[len];
-            in.readFully(buf, 0, len);
-            retval=objectFromByteBuffer(buf);
-        }
-        return retval;
+        int len=in.readInt();
+        if(len == -1)
+            return readGenericStreamable(in);
+        
+        byte[] buf=new byte[len];
+        in.readFully(buf, 0, len);
+        return objectFromByteBuffer(buf);
     }
 
 

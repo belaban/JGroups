@@ -200,6 +200,7 @@
                             org.jgroups.blocks;version=${project.version},
                             org.jgroups.blocks.mux;version=${project.version},
                             org.jgroups.blocks.locking;version=${project.version},
+                            org.jgroups.blocks.executor;version=${project.version},
                             org.jgroups.client;version=${project.version},
                             org.jgroups.conf;version=${project.version},
                             org.jgroups.debug;version=${project.version},
