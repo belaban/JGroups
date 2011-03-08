@@ -19,11 +19,13 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +41,9 @@ import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.blocks.executor.ExecutionService.DistributedFuture;
 import org.jgroups.blocks.executor.ExecutorEvent;
 import org.jgroups.blocks.executor.ExecutorNotification;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -390,7 +392,22 @@ abstract public class Executing extends Protocol {
                         handleConsumerFoundResponse((Address)req.object);
                         break;
                     case RUN_SUBMITTED:
-                        Runnable runnable = (Runnable)req.object;
+                        Object objectToRun = req.object;
+                        Runnable runnable;
+                        if (objectToRun instanceof Runnable) {
+                            runnable = (Runnable)objectToRun;
+                        }
+                        else if (objectToRun instanceof Callable) {
+                            @SuppressWarnings("unchecked")
+                            Callable<Object> callable = (Callable<Object>)objectToRun;
+                            runnable = new FutureTask<Object>(callable);
+                        }
+                        else {
+                            log.error("Request of type " + req.type + 
+                                " sent an object of " + objectToRun + " which is invalid");
+                            break;
+                        }
+                        
                         handleTaskSubmittedRequest(runnable, msg.getSrc(), 
                             req.request);
                         break;
@@ -538,7 +555,13 @@ abstract public class Executing extends Protocol {
             short requestId = (short)Math.abs(counter.getAndIncrement());
             
             _awaitingReturn.put(new Owner(consumer, requestId), runnable);
-            sendRequest(consumer, Type.RUN_SUBMITTED, requestId, runnable);
+            if (runnable instanceof DistributedFuture) {
+                Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
+                sendRequest(consumer, Type.RUN_SUBMITTED, requestId, callable);
+            }
+            else {
+                sendRequest(consumer, Type.RUN_SUBMITTED, requestId, runnable);
+            }
         }
     }
 
@@ -833,10 +856,4 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    private static final short id = 1280;
-    
-    static {
-        ClassConfigurator.addProtocol(id, Executing.class);
-        ClassConfigurator.add(id, ExecutorHeader.class);
-    }
 }

@@ -52,6 +52,7 @@
     <class id="49" name="org.jgroups.protocols.BPING"/>
     <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
     <class id="51" name="org.jgroups.protocols.PEER_LOCK"/>
+    <class id="52" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
     
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.PullPushAdapter"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

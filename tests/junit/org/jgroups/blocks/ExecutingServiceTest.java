@@ -24,6 +24,7 @@ import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionRunner;
 import org.jgroups.blocks.executor.ExecutionService;
 import org.jgroups.blocks.executor.Executions;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.CENTRAL_EXECUTOR;
@@ -83,6 +84,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
     }
     
     public static class ExposedExecutingProtocol extends CENTRAL_EXECUTOR {
+        
+        public ExposedExecutingProtocol() {
+            // We use the same id as the CENTRAL_EXECUTOR
+            id=ClassConfigurator.getProtocolId(CENTRAL_EXECUTOR.class);
+        }
+        
         public Queue<Runnable> getAwaitingConsumerQueue() {
             return _awaitingConsumer;
         }

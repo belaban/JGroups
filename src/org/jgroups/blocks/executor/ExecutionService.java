@@ -98,7 +98,7 @@ public class ExecutionService extends AbstractExecutorService {
      * @param <V>
      * @author wburns
      */
-    protected static class FutureImpl<V> implements RunnableFuture<V>, 
+    public static class DistributedFuture<V> implements RunnableFuture<V>, 
             ExecutorNotification, Streamable, NotifyingFuture<V> {
         // @see java.lang.Object#toString()
         @Override
@@ -107,7 +107,7 @@ public class ExecutionService extends AbstractExecutorService {
         }
 
         /** Synchronization control for FutureTask */
-        private Sync<V> sync;
+        protected Sync<V> sync;
         
         /** The following values are only used on the client side */
         private final transient JChannel channel;
@@ -116,7 +116,7 @@ public class ExecutionService extends AbstractExecutorService {
         private final transient Condition _unfinishedCondition;
         private volatile transient FutureListener<V> _listener;
         
-        public FutureImpl() {
+        public DistributedFuture() {
             channel = null;
             _unfinishedFutures = null;
             _unfinishedLock = null;
@@ -136,7 +136,7 @@ public class ExecutionService extends AbstractExecutorService {
          *        it is finished. 
          * @param callable The callable to actually run on the server side
          */
-        public FutureImpl(JChannel channel, Lock unfinishedLock,
+        public DistributedFuture(JChannel channel, Lock unfinishedLock,
                           Condition condition,
                           Set<Future<?>> futuresToFinish, 
                           Callable<V> callable) {
@@ -168,7 +168,7 @@ public class ExecutionService extends AbstractExecutorService {
          * <tt>Future&lt;?&gt; f = new FutureTask&lt;Object&gt;(runnable, null)</tt>
          * @throws NullPointerException if runnable is null
          */
-        public FutureImpl(JChannel channel, Lock unfinishedLock,
+        public DistributedFuture(JChannel channel, Lock unfinishedLock,
                           Condition condition, Set<Future<?>> futuresToFinish, 
                           Runnable runnable, V result) {
             sync = new Sync<V>(this, new RunnableAdapter<V>(runnable, result));
@@ -177,6 +177,10 @@ public class ExecutionService extends AbstractExecutorService {
             _unfinishedFutures = futuresToFinish;
             _unfinishedLock = unfinishedLock;
             _unfinishedCondition = condition;
+        }
+        
+        public Callable<V> getCallable() {
+            return sync.callable;
         }
         
         public boolean isCancelled() {
@@ -318,7 +322,7 @@ public class ExecutionService extends AbstractExecutorService {
             protected static final int CANCELLED = 4;
 
             /** The containing future */
-            protected FutureImpl<V> future;
+            protected DistributedFuture<V> future;
             /** The underlying callable */
             protected Callable<V> callable;
             /** The result to return from get() */
@@ -333,7 +337,7 @@ public class ExecutionService extends AbstractExecutorService {
              */
             protected transient volatile Thread runner;
 
-            public Sync(FutureImpl<V> future, Callable<V> callable) {
+            public Sync(DistributedFuture<V> future, Callable<V> callable) {
                 this.future = future;
                 this.callable = callable;
             }
@@ -719,7 +723,7 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.lang.Runnable, java.lang.Object)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-        FutureImpl<T> future = new FutureImpl<T>(ch, _unfinishedLock, 
+        DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
                 _unfinishedCondition, _unfinishedFutures, runnable, value);
         _execProt.addExecutorListener(future, future);
         _unfinishedLock.lock();
@@ -735,7 +739,7 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.util.concurrent.Callable)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-        FutureImpl<T> future = new FutureImpl<T>(ch, _unfinishedLock, 
+        DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
                 _unfinishedCondition, _unfinishedFutures, callable);
         _execProt.addExecutorListener(future, future);
         _unfinishedLock.lock();
