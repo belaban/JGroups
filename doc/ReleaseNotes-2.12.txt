@@ -21,8 +21,10 @@ New features
 LockService: a new distributed locking service
 ----------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1249]
+[https://issues.jboss.org/browse/JGRP-1298]
 
-New distributed lock service, offering a java.util.concurrent.lock.Lock implementation, providing cluster wide locks.
+New distributed lock service, offering a java.util.concurrent.lock.Lock implementation (including conditions)
+providing cluster wide locks.
 
 Blog: http://belaban.blogspot.com/2011/01/new-distributed-locking-service-in.html
 
