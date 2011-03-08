@@ -30,6 +30,14 @@ Blog: http://belaban.blogspot.com/2011/01/new-distributed-locking-service-in.htm
 
 
 
+Distributed ExecutorService
+---------------------------
+[https://issues.jboss.org/browse/JGRP-1300]
+
+New implementation of java.util.concurrent.ExecutorService over JGroups.
+
+
+
 BPING (Broadcast Ping): new discovery protocol based on broadcasting
 --------------------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1269]
@@ -157,5 +165,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-Feb 2011
+March 2011
 
