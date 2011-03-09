@@ -19,7 +19,6 @@ import org.jgroups.blocks.executor.ExecutionCompletionService;
 import org.jgroups.blocks.executor.ExecutionRunner;
 import org.jgroups.blocks.executor.ExecutionService;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.CENTRAL_EXECUTOR;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -84,7 +83,6 @@ public class ExecutionServiceDemo {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
-        ch.getProtocolStack().insertProtocolAtTop(new CENTRAL_EXECUTOR());
         execution_service=new ExecutionService(ch);
         runner=new ExecutionRunner(ch);
         ch.connect("executing-cluster");
