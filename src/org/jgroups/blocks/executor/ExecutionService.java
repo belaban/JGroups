@@ -48,6 +48,7 @@ import org.jgroups.util.Util;
  * {@link Streamable}.  Unfortunately if the value returned is not serializable
  * then a {@link NotSerializableException} will be thrown as the cause. 
  * @author wburns
+ * @since 2.12.0
  */
 public class ExecutionService extends AbstractExecutorService {
     protected JChannel ch;

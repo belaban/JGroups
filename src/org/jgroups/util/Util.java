@@ -30,6 +30,7 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1719,6 +1720,19 @@ public class Util {
             tmp=bytes / 1000000000.0;
             return f.format(tmp) + "GB";
         }
+    }
+
+
+    public static String printTime(long time, TimeUnit unit) {
+        long ns=TimeUnit.NANOSECONDS.convert(time, unit);
+        long us=TimeUnit.MICROSECONDS.convert(time, unit);
+        long ms=TimeUnit.MILLISECONDS.convert(time, unit);
+        long secs=TimeUnit.SECONDS.convert(time, unit);
+
+        if(secs > 0) return secs + "s";
+        if(ms > 0) return ms + "ms";
+        if(us > 0) return us + " us";
+        return ns + "ns";
     }
 
 

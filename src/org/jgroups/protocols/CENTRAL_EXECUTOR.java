@@ -18,6 +18,7 @@ import org.jgroups.util.Util;
  * for either a task or a current waiting thread.
  * 
  * @author wburns
+ * @since 2.12.0
  */
 @Experimental
 public class CENTRAL_EXECUTOR extends Executing {

@@ -771,7 +771,97 @@
             </para>
         </section>
     </section>
-  
+    <section>
+        <title>Distributed ExecutionService</title>
+        <para>
+            In 2.12, a distributed execution service was added. The new service is implemented as a protocol and is used
+            via org.jgroups.blocks.executor.ExecutionService.
+        </para>
+        <para>
+            ExecutionService talks to the executing protocol via events. The main abstraction is an implementation of
+            java.util.concurrent.locks.ExecutorService. All methods are supported. The restrictions are however that
+            the Callable or Runnable must be Serializable, Externalizable or Streamable.  Also the result produced
+            from the future needs to be Serializable, Externalizable or Streamable.  If the Callable or Runnable are not
+            then an IllegalArgumentException is immediately thrown.  If a result is not then a NotSerializableException
+            with the name of the class will be returned to the Future as an exception cause.
+        </para>
+        <para>
+            Below is an example of how ExecutionService is typically used:
+            <screen>
+            // locking.xml needs to have a locking protocol
+            JChannel ch=new JChannel("/home/bela/executing.xml");
+            ExecutionService exec_service =new ExecutionService(ch);
+            ch.connect("exec-cluster");
+            Future&lt;Value&gt; future = exec_service.submit(new MyCallable());
+            try {
+                Value value = future.get();
+                // Do something with value
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            catch (ExecutionException e) {
+                e.getCause().printStackTrace();
+            }
+            </screen>
+        </para>
+        <para>
+            In the example, we create a channel, then an ExecutionService, then connect the channel. Then we submit
+            our callable giving us a Future.  Then we wait for the future to finish returning our value and do something
+            with it.  If any exception occurs we print the stack trace of that exception.
+        </para>
+        <para>
+            JGroups includes a demo (org.jgroups.demos.ExecutionServiceDemo), which can be used to interactively
+            experiment with a distributed sort algorithm and performance.  This is for demonstration purposes and
+            performance should not be assumed to be better than local.
+            ExecutionServiceDemo -h dumps all command line options.
+        </para>
+        <para>
+            Currently (March 2011), there is 1 protocol which provide executions:
+            <xref linkend="CENTRAL_EXECUTOR">CENTRAL_EXECUTOR</xref>. The executing protocol has to be placed at or
+            towards the top of the stack (close to the channel).
+        </para>
+        <!-- TODO: must finish up the merging holes and write next section -->
+        <!--section>
+            <title>Executing and merges</title>
+            <para>
+                The following scenario is susceptible to merging: we have a cluster view of {A,B,C,D} and then the cluster
+                splits into {A,B} and {C,D}. Assume that B and D now acquire a lock "mylock".
+                This is what happens (with the executing protocol being CENTRAL_EXECUTOR):
+                <itemizedlist>
+                    <listitem>There are 2 coordinators: A for {A,B} and C for {C,D}</listitem>
+                    <listitem>B submits task "callable1" to A</listitem>
+                    <listitem>D submits task "callable2" to C</listitem>
+                    <listitem>The partitions merge back into {A,B,C,D}. Now, only A is the coordinator, but C ceases
+                    to be a coordinator</listitem>
+                    <listitem>Problem: D still holds the task which should actually be invalid !</listitem>
+                </itemizedlist>
+                There is no easy way (via the ExecutorService API) to 'remove' the lock from D. We could for example simply cancel
+                D's task of "callable2", but then there's no way telling C that the task it holds is actually stale !
+            </para>
+            <para>
+                Therefore the recommended solution here is for nodes to listen to MergeView changes if they expect
+                merging to occur, and re-submit all of their tasks after a merge, e.g.:
+                <screen>
+                    Future f1, f2, f3;
+                    ExecutionService execution_service;
+                    ...
+                    public void viewAccepted(View view) {
+                        if(view instanceof MergeView) {
+                            new Thread() {
+                                public void run() {
+                                    execution_service.unlockAll();
+                                    // stop all access to resources protected by l1, l2 or l3
+                                    // every thread needs to re-acquire the locks it holds
+                                }
+                            }.start
+                        }
+                    }
+                </screen>
+            </para>
+        </section-->
+    </section>
+ 
     
 </chapter>
 
