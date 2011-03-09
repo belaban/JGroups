@@ -363,8 +363,8 @@ public class FD_ALL extends Protocol {
                 }
                 diff=current_time - val.longValue();
                 if(diff > timeout) {
-                    if(log.isTraceEnabled())
-                        log.trace("haven't received a heartbeat from " + key + " for " + diff +
+                    if(log.isDebugEnabled())
+                        log.debug("haven't received a heartbeat from " + key + " for " + diff +
                                 " ms, adding it to suspect list");
                     suspects.add(key);
                 }
