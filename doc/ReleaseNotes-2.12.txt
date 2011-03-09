@@ -18,10 +18,24 @@ New features
 
 
 
+RELAY: connecting local (autonomous) clusters into a large virtual cluster
+--------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-747]
+
+A new protocol to connect 2 geographically separate sites into 1 large virtual cluster. The local clusters are
+completely autonomous, but RELAY makes them appear as if they were one.
+
+This can for example be used to implement geographic failover
+
+Blog: http://belaban.blogspot.com/2010/11/clustering-between-different-sites.html
+
+
+
 LockService: a new distributed locking service
 ----------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1249]
 [https://issues.jboss.org/browse/JGRP-1298]
+[https://issues.jboss.org/browse/JGRP-1278]
 
 New distributed lock service, offering a java.util.concurrent.lock.Lock implementation (including conditions)
 providing cluster wide locks.
@@ -34,7 +48,8 @@ Distributed ExecutorService
 ---------------------------
 [https://issues.jboss.org/browse/JGRP-1300]
 
-New implementation of java.util.concurrent.ExecutorService over JGroups.
+New implementation of java.util.concurrent.ExecutorService over JGroups (contributed by William Burns).
+Read the documentation at www.jgroups.org for details.
 
 
 
@@ -46,19 +61,6 @@ This is mainly used for discovery of JGroups on Android based phones. Apparently
 implemented / supported on Android (2.1), and so we have to resort to UPD broadcasting.
 
 Blog: http://belaban.blogspot.com/2011/01/jgroups-on-android-phones.html
-
-
-
-RELAY: connecting 2 local (autonomous) clusters into a large virtual cluster
-----------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-747]
-
-A new protocol to connect 2 geographically separate site into 1 large virtual cluster. The local clusters are
-completely autonomous, but RELAY makes them appear as if they were one.
-
-This can for example be used to implement geographic failover
-
-Blog: http://belaban.blogspot.com/2010/11/clustering-between-different-sites.html
 
 
 
@@ -74,6 +76,17 @@ Thanks to Sanne for coming up with the idea and for implementing this !
 FD_SOCK: ability to pick the bind address and port for the client socket
 ------------------------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1262]
+
+
+
+Pluggable address generation
+---------------------------
+[https://issues.jboss.org/browse/JGRP-1297]
+
+Address generation is now pluggable; JChannel.setAddressGenerator(AddressGenerator) allows for generation of
+specific implementations of Address. This can for example be used to pass additional information along with
+every address. Currently used by RELAY to pass the name of the sub cluster around with a UUID.
+
 
 
 
@@ -136,6 +149,16 @@ UFC: crash of depleted member could hang node
 Causing it to wait forever for credits from the crashed member.
 
 
+Flow control: crash of member doesn't unblock sender
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1283]
+[https://issues.jboss.org/browse/JGRP-1287]
+[https://issues.jboss.org/browse/JGRP-1274]
+
+When a sender block on P sending credits, and P crashes before being able to send credits,
+the sender blocks indefinitely.
+
+
 UNICAST2: incorrect delivery order under stress
 -----------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1267]
@@ -147,6 +170,21 @@ algorithm as NAKACK.
 Incorrect conversion of TimeUnit if MILLISECONDS were not used
 --------------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1277]
+
+
+Check if bind_addr is correct
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1280]
+
+JGroups now verifies that the bind address is indeed a valid IP address: it has to be either the wildcard
+address (0.0.0.0) or an address of a network interface that is up.
+
+
+ENCRYPT: sym_provider ignored
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1279]
+
+Property sym_provider is ignored
 
 
 

@@ -1212,6 +1212,14 @@
             </section>
         </section>
 
+        <section id="CENTRAL_EXECUTOR">
+            <title>CENTRAL_EXECUTOR</title>
+            <para>
+                CENTRAL_EXECUTOR is an implementation of Executing which is needed by the ExecutionService.
+            </para>
+            ${CENTRAL_EXECUTOR}
+        </section>
+
     </section>
 
    
