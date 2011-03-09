@@ -70,7 +70,7 @@ JDBC_PING: new discovery protocol using a shared database
 
 All nodes use a shared DB (e.g. RDS on EC2) to place their location information into, and to read information from.
 Thanks to Sanne for coming up with the idea and for implementing this !
-
+Additional infos are on the wiki: community.jboss.org/wiki/JDBCPING
 
 
 FD_SOCK: ability to pick the bind address and port for the client socket
