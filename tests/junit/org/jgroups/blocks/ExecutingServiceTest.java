@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 
-import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionCompletionService;
@@ -95,7 +94,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
             return _awaitingConsumer;
         }
         
-        public Queue<Address> getAvailableConsumers() {
+        public Queue<Owner> getAvailableConsumers() {
             return _consumersAvailable;
         }
         

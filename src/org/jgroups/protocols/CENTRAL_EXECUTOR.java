@@ -72,6 +72,8 @@ public class CENTRAL_EXECUTOR extends Executing {
             if(log.isDebugEnabled())
                 log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);
         }
+        
+        // TODO: need to send consumer/task queue to the new coordinator if they went down
 
         if(num_backups > 0) {
             if (is_coord) {
@@ -115,21 +117,21 @@ public class CENTRAL_EXECUTOR extends Executing {
         }
     }
 
-    protected void updateBackups(Type type, Object obj) {
+    protected void updateBackups(Type type, Owner obj) {
         synchronized(backups) {
             for(Address backup: backups)
-                sendRequest(backup, type, (short)-1, obj);
+                sendRequest(backup, type, obj.getRequestId(), obj.getAddress());
         }
     }
     
     protected void copyQueueTo(List<Address> new_joiners) {
-        Set<Address> copyRequests;
-        Set<Address> copyConsumers;
+        Set<Owner> copyRequests;
+        Set<Owner> copyConsumers;
         
         _consumerLock.lock();
         try {
-            copyRequests = new HashSet<Address>(_runRequests);
-            copyConsumers = new HashSet<Address>(_consumersAvailable);
+            copyRequests = new HashSet<Owner>(_runRequests);
+            copyConsumers = new HashSet<Owner>(_consumersAvailable);
         }
         finally {
             _consumerLock.unlock();
@@ -138,12 +140,14 @@ public class CENTRAL_EXECUTOR extends Executing {
         if(log.isTraceEnabled())
             log.trace("copying queue to " + new_joiners);
         for(Address joiner: new_joiners) {
-            for(Address address: copyRequests) {
-                sendRequest(joiner, Type.CREATE_RUN_REQUEST, (short)-1, address);
+            for(Owner address: copyRequests) {
+                sendRequest(joiner, Type.CREATE_RUN_REQUEST, 
+                    address.getRequestId(), address.getAddress());
             }
             
-            for(Address address: copyConsumers) {
-                sendRequest(joiner, Type.CREATE_CONSUMER_READY, (short)-1, address);
+            for(Owner address: copyConsumers) {
+                sendRequest(joiner, Type.CREATE_CONSUMER_READY, 
+                    address.getRequestId(), address.getAddress());
             }
         }
     }
@@ -156,28 +160,28 @@ public class CENTRAL_EXECUTOR extends Executing {
 
     // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.Address)
     @Override
-    protected void sendNewRunRequest(Address sender) {
+    protected void sendNewRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_RUN_REQUEST, sender);
     }
 
     // @see org.jgroups.protocols.Executing#sendRemoveRunRequest(org.jgroups.Address)
     @Override
-    protected void sendRemoveRunRequest(Address sender) {
+    protected void sendRemoveRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.DELETE_RUN_REQUEST, sender);
     }
 
     // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.Address)
     @Override
-    protected void sendNewConsumerRequest(Address sender) {
+    protected void sendNewConsumerRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_CONSUMER_READY, sender);
     }
 
     // @see org.jgroups.protocols.Executing#sendRemoveConsumerRequest(org.jgroups.Address)
     @Override
-    protected void sendRemoveConsumerRequest(Address sender) {
+    protected void sendRemoveConsumerRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.DELETE_CONSUMER_READY, sender);
     }

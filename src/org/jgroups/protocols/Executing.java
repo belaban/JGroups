@@ -29,7 +29,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -112,14 +112,14 @@ abstract public class Executing extends Protocol {
      * addresses that currently want to run something.  If this queue has
      * elements the consumer queue must be empty.
      */
-    protected Queue<Address> _runRequests = new ArrayDeque<Address>();
+    protected Queue<Owner> _runRequests = new ArrayDeque<Owner>();
     
     /**
      * This is stored on the coordinator side.  This queue holds all of the
      * addresses that currently are able to run something.  If this queue has
      * elements the run request queue must be empty.
      */
-    protected Queue<Address> _consumersAvailable = new ArrayDeque<Address>();
+    protected Queue<Owner> _consumersAvailable = new ArrayDeque<Owner>();
 
     protected static enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
@@ -173,10 +173,17 @@ abstract public class Executing extends Protocol {
             case ExecutorEvent.TASK_SUBMIT:
                 Runnable runnable = (Runnable)evt.getArg();
                 _awaitingConsumer.add(runnable);
-                sendToCoordinator(Type.RUN_REQUEST, local_addr);
+                // We are limited to a number of concurrent request id's
+                // equal to 2^63-1.  This is quite large and if it 
+                // overflows it will still be positive
+                long requestId = Math.abs(counter.getAndIncrement());
+                sendToCoordinator(Type.RUN_REQUEST, new Owner(local_addr, 
+                    requestId));
                 break;
             case ExecutorEvent.CONSUMER_READY:
-                sendToCoordinator(Type.CONSUMER_READY, local_addr);
+                Owner owner = new Owner(local_addr, 
+                    Thread.currentThread().getId());
+                sendToCoordinator(Type.CONSUMER_READY, owner);
                 try {
                     // Unfortunately we can't start taking before we send
                     // a message, therefore we have to do a timed poll on
@@ -186,7 +193,7 @@ abstract public class Executing extends Protocol {
                     return runnable;
                 }
                 catch (InterruptedException e) {
-                    sendToCoordinator(Type.CONSUMER_UNREADY, local_addr);
+                    sendToCoordinator(Type.CONSUMER_UNREADY, owner);
                     Thread.currentThread().interrupt();
                 }
                 break;
@@ -201,7 +208,7 @@ abstract public class Executing extends Protocol {
                 else {
                     runnable = (Runnable)arg;
                 }
-                Owner owner = _running.remove(runnable);
+                owner = _running.remove(runnable);
                 // This won't remove anything if owner doesn't come back
                 _runnableThreads.remove(runnable);
 
@@ -378,18 +385,18 @@ abstract public class Executing extends Protocol {
                     log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
                 switch(req.type) {
                     case RUN_REQUEST:
-                        handleTaskRequest((Address)req.object);
+                        handleTaskRequest((Owner)req.object);
                         break;
                     case CONSUMER_READY:
-                        handleConsumerReadyRequest((Address)req.object);
+                        handleConsumerReadyRequest((Owner)req.object);
                         break;
                     case CONSUMER_UNREADY:
-                        Address consumer = (Address)req.object;
+                        Owner consumer = (Owner)req.object;
                         _consumersAvailable.remove(consumer);
                         sendRemoveConsumerRequest(consumer);
                         break;
                     case CONSUMER_FOUND:
-                        handleConsumerFoundResponse((Address)req.object);
+                        handleConsumerFoundResponse(req);
                         break;
                     case RUN_SUBMITTED:
                         Object objectToRun = req.object;
@@ -424,16 +431,20 @@ abstract public class Executing extends Protocol {
                         handleInterruptRequest(msg.getSrc(), req.request);
                         break;
                     case CREATE_CONSUMER_READY:
-                        handleNewConsumer((Address)req.object);
+                        Owner owner = new Owner((Address)req.object, req.request);
+                        handleNewConsumer(owner);
                         break;
                     case CREATE_RUN_REQUEST:
-                        handleNewRunRequest((Address)req.object);
+                        owner = new Owner((Address)req.object, req.request);
+                        handleNewRunRequest(owner);
                         break;
                     case DELETE_CONSUMER_READY:
-                        handleRemoveConsumer((Address)req.object);
+                        owner = new Owner((Address)req.object, req.request);
+                        handleRemoveConsumer(owner);
                         break;
                     case DELETE_RUN_REQUEST:
-                        handleRemoveRunRequest((Address)req.object);
+                        owner = new Owner((Address)req.object, req.request);
+                        handleRemoveRunRequest(owner);
                         break;
                     default:
                         log.error("Request of type " + req.type + " not known");
@@ -456,9 +467,9 @@ abstract public class Executing extends Protocol {
         
         _consumerLock.lock();
         try {
-            Iterator<Address> iterator = _consumersAvailable.iterator();
+            Iterator<Owner> iterator = _consumersAvailable.iterator();
             while (iterator.hasNext()) {
-                Address address = iterator.next();
+                Owner address = iterator.next();
                 if (!members.contains(address)) {
                     iterator.remove();
                     sendRemoveConsumerRequest(address);
@@ -467,7 +478,7 @@ abstract public class Executing extends Protocol {
             
             iterator = _runRequests.iterator();
             while (iterator.hasNext()) {
-                Address address = iterator.next();
+                Owner address = iterator.next();
                 if (!members.contains(address)) {
                     iterator.remove();
                     sendRemoveRunRequest(address);
@@ -490,13 +501,13 @@ abstract public class Executing extends Protocol {
     }
 
     abstract protected void sendToCoordinator(Type type, Object obj);
-    abstract protected void sendNewRunRequest(Address source);
-    abstract protected void sendRemoveRunRequest(Address source);
-    abstract protected void sendNewConsumerRequest(Address source);
-    abstract protected void sendRemoveConsumerRequest(Address source);
+    abstract protected void sendNewRunRequest(Owner source);
+    abstract protected void sendRemoveRunRequest(Owner source);
+    abstract protected void sendNewConsumerRequest(Owner source);
+    abstract protected void sendRemoveConsumerRequest(Owner source);
 
-    protected void handleTaskRequest(Address source) {
-        Address consumer;
+    protected void handleTaskRequest(Owner source) {
+        Owner consumer;
         _consumerLock.lock();
         try {
             consumer = _consumersAvailable.poll();
@@ -509,7 +520,8 @@ abstract public class Executing extends Protocol {
         }
         
         if (consumer != null) {
-            sendRequest(source, Type.CONSUMER_FOUND, (short)-1, consumer);
+            sendRequest(source.getAddress(), Type.CONSUMER_FOUND, 
+                consumer.getRequestId(), consumer.getAddress());
             sendRemoveConsumerRequest(consumer);
         }
         else {
@@ -517,8 +529,8 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleConsumerReadyRequest(Address source) {
-        Address requestor;
+    protected void handleConsumerReadyRequest(Owner source) {
+        Owner requestor;
         _consumerLock.lock();
         try {
             requestor = _runRequests.poll();
@@ -531,7 +543,8 @@ abstract public class Executing extends Protocol {
         }
         
         if (requestor != null) {
-            sendRequest(requestor, Type.CONSUMER_FOUND, (short)-1, source);
+            sendRequest(requestor.getAddress(), Type.CONSUMER_FOUND, 
+                source.getRequestId(), source.getAddress());
             sendRemoveRunRequest(requestor);
         }
         else {
@@ -539,34 +552,34 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleConsumerFoundResponse(Address consumer) {
+    protected void handleConsumerFoundResponse(Request request) {
         Runnable runnable = _awaitingConsumer.poll();
+        // This is a representation of the server side owner running our task.
+        Owner owner = new Owner((Address)request.object, 
+            request.request);
         if (runnable == null) {
             // For some reason we don't have a runnable anymore
             // so we have to send back to the coordinator that
             // the consumer is still available.  The runnable
             // would be removed on a cancel
-            sendToCoordinator(Type.CONSUMER_READY, consumer);
+            sendToCoordinator(Type.CONSUMER_READY, owner);
         }
         else {
-            // We are limited to a number of concurrent request id's
-            // equal to 2^15-1.  This is quite large and if it 
-            // overflows it will still be positive
-            short requestId = (short)Math.abs(counter.getAndIncrement());
-            
-            _awaitingReturn.put(new Owner(consumer, requestId), runnable);
+            _awaitingReturn.put(owner, runnable);
             if (runnable instanceof DistributedFuture) {
                 Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
-                sendRequest(consumer, Type.RUN_SUBMITTED, requestId, callable);
+                sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
+                    owner.getRequestId(), callable);
             }
             else {
-                sendRequest(consumer, Type.RUN_SUBMITTED, requestId, runnable);
+                sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
+                    owner.getRequestId(), runnable);
             }
         }
     }
 
     protected void handleTaskSubmittedRequest(Runnable runnable, Address source, 
-                                              short requestId) {
+                                              long requestId) {
         // We store in our map so that when that task is
         // finished so that we can send back to the owner
         // with the results
@@ -597,7 +610,7 @@ abstract public class Executing extends Protocol {
         }
     }
     
-    protected void handleTaskRejectedResponse(Address source, short requestId) {
+    protected void handleTaskRejectedResponse(Address source, long requestId) {
         Runnable runnable = _awaitingReturn.remove(new Owner(
             source, requestId));
         if (runnable != null) {
@@ -643,7 +656,7 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleInterruptRequest(Address source, short requestId) {
+    protected void handleInterruptRequest(Address source, long requestId) {
         Owner owner = new Owner(source, requestId);
         Runnable runnable = removeKeyForValue(_running, owner);
         if (runnable != null) {
@@ -658,7 +671,7 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleNewRunRequest(Address sender) {
+    protected void handleNewRunRequest(Owner sender) {
         _consumerLock.lock();
         try {
             _runRequests.add(sender);
@@ -668,7 +681,7 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleRemoveRunRequest(Address sender) {
+    protected void handleRemoveRunRequest(Owner sender) {
         _consumerLock.lock();
         try {
             _runRequests.remove(sender);
@@ -678,7 +691,7 @@ abstract public class Executing extends Protocol {
         }
     }
     
-    protected void handleNewConsumer(Address sender) {
+    protected void handleNewConsumer(Owner sender) {
         _consumerLock.lock();
         try {
             _consumersAvailable.add(sender);
@@ -688,7 +701,7 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleRemoveConsumer(Address sender) {
+    protected void handleRemoveConsumer(Owner sender) {
         _consumerLock.lock();
         try {
             _consumersAvailable.remove(sender);
@@ -698,7 +711,7 @@ abstract public class Executing extends Protocol {
         }
     }
     
-    protected void sendRequest(Address dest, Type type, short requestId, Object object) {
+    protected void sendRequest(Address dest, Type type, long requestId, Object object) {
         Request req=new Request(type, object, requestId);
         Message msg=new Message(dest, null, req);
         msg.putHeader(id, new ExecutorHeader());
@@ -719,17 +732,17 @@ abstract public class Executing extends Protocol {
      * the response doesn't have to send back the future but instead the counter
      * We just let this roll over
      */
-    protected static final AtomicInteger counter = new AtomicInteger();
+    protected static final AtomicLong counter = new AtomicLong();
 
     protected static class Request implements Streamable {
         protected Type    type;
         protected Object  object;
-        protected short   request;
+        protected long   request;
         
         public Request() {
         }
 
-        public Request(Type type, Object object, short request) {
+        public Request(Type type, Object object, long request) {
             this.type=type;
             this.object=object;
             this.request=request;
@@ -755,7 +768,7 @@ abstract public class Executing extends Protocol {
             catch (Exception e) {
                 throw new IOException("Exception encountered while serializing execution request", e);
             }
-            out.writeShort(request);
+            out.writeLong(request);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -783,7 +796,7 @@ abstract public class Executing extends Protocol {
             catch (Exception e) {
                 throw new IOException("Exception encountered while serializing execution request", e);
             }
-            request=in.readShort();
+            request=in.readLong();
         }
 
         public String toString() {
@@ -808,11 +821,15 @@ abstract public class Executing extends Protocol {
         }
     }
     
-    public static class Owner {
-        final protected Address address;
-        final protected short requestId;
+    public static class Owner implements Streamable {
+        protected Address address;
+        protected long requestId;
+        
+        public Owner() {
+            
+        }
 
-        public Owner(Address address, short requestId) {
+        public Owner(Address address, long requestId) {
             this.address=address;
             this.requestId=requestId;
         }
@@ -821,7 +838,7 @@ abstract public class Executing extends Protocol {
             return address;
         }
 
-        public short getRequestId() {
+        public long getRequestId() {
             return requestId;
         }
         
@@ -832,7 +849,7 @@ abstract public class Executing extends Protocol {
             int result = 1;
             result = prime * result
                     + ((address == null) ? 0 : address.hashCode());
-            result = prime * result + requestId;
+            result = prime * result + (int) (requestId ^ (requestId >>> 32));
             return result;
         }
 
@@ -854,6 +871,18 @@ abstract public class Executing extends Protocol {
         public String toString() {
             return address + "::" + requestId;
         }
-    }
 
+        @Override
+        public void writeTo(DataOutputStream out) throws IOException {
+            Util.writeAddress(address, out);
+            out.writeLong(requestId);
+        }
+
+        @Override
+        public void readFrom(DataInputStream in) throws IOException,
+                IllegalAccessException, InstantiationException {
+            address=Util.readAddress(in);
+            requestId=in.readLong();
+        }
+    }
 }

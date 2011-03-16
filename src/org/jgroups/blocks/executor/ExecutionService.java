@@ -2,7 +2,6 @@ package org.jgroups.blocks.executor;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
@@ -26,7 +25,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.JChannel;
 import org.jgroups.protocols.Executing;
-import org.jgroups.protocols.Locking;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
@@ -42,9 +40,9 @@ import org.jgroups.util.Util;
  * can then be used as a workflow to submit other tasks sequentially or also to
  * query the future for the value at that time. 
  * <p>
- * Every callable or runnable submitted must be either {@link Serializable}, 
- * {@link Externalizable}, or {@link Streamable}.  Also the value returned from
- * a callable must {@link Serializable}, {@link Externalizable}, or 
+ * Every callable or runnable submitted must be either {@link Serializable} or 
+ * {@link Streamable}.  Also the value returned from
+ * a callable must {@link Serializable} or 
  * {@link Streamable}.  Unfortunately if the value returned is not serializable
  * then a {@link NotSerializableException} will be thrown as the cause. 
  * @author wburns
@@ -281,18 +279,6 @@ public class ExecutionService extends AbstractExecutorService {
          */
         public void run() {
             sync.innerRun();
-        }
-
-        /**
-         * Executes the computation without setting its result, and then
-         * resets this Future to initial state, failing to do so if the
-         * computation encounters an exception or is cancelled.  This is
-         * designed for use with tasks that intrinsically execute more
-         * than once.
-         * @return true if successfully run and reset
-         */
-        protected boolean runAndReset() {
-            return sync.innerRunAndReset();
         }
 
         /**
@@ -598,7 +584,7 @@ public class ExecutionService extends AbstractExecutorService {
             }
             else {
                 throw new IllegalArgumentException(
-                    "Command was not Serializable, Externalizable, or Streamable - "
+                    "Command was not Serializable or Streamable - "
                             + serializeCheck);
             }
         }
