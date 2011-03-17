@@ -4,6 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
@@ -21,6 +22,7 @@ import java.util.zip.Inflater;
  * 
  * @author Bela Ban
  */
+@MBean(description="Compresses messages to send and uncompresses received messages")
 public class COMPRESS extends Protocol {   
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
