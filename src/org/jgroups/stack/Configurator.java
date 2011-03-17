@@ -6,7 +6,6 @@ import org.jgroups.Global;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
@@ -21,7 +20,10 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.*;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -86,8 +88,7 @@ public class Configurator {
         List<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
-        // basic protocol sanity check
-        sanityCheck(protocols);
+
         
         // check InetAddress related features of stack
         Map<String, Map<String,InetAddressInfo>> inetAddressMap = createInetAddressMap(protocol_configs, protocols) ;
@@ -113,17 +114,13 @@ public class Configurator {
         // process default values
         setDefaultValues(protocol_configs, protocols, ip_version);
         ensureValidBindAddresses(protocols);
-        
-        return connectProtocols(protocols);        
+        return connectProtocols(protocols);
     }
 
 
     public static void setDefaultValues(List<Protocol> protocols) throws Exception {
         if(protocols == null)
             return;
-
-        // basic protocol sanity check
-        sanityCheck(protocols);
 
         // check InetAddress related features of stack
         Collection<InetAddress> addrs=getInetAddresses(protocols);
@@ -187,7 +184,7 @@ public class Configurator {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    public static Protocol connectProtocols(List<Protocol> protocol_list) {
+    public static Protocol connectProtocols(List<Protocol> protocol_list) throws Exception {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
@@ -216,6 +213,10 @@ public class Configurator {
                 }
             }
         }
+
+        // basic protocol sanity check
+        sanityCheck(protocol_list);
+
         return current_layer;
     }
 
@@ -473,23 +474,6 @@ public class Configurator {
      Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol names
      */
     public static void sanityCheck(List<Protocol> protocols) throws Exception {
-        List<String> names=new ArrayList<String>();
-        Protocol prot;
-        String name;       
-        List<ProtocolReq> req_list=new ArrayList<ProtocolReq>();
-
-        // Checks for unique names
-        for(int i=0; i < protocols.size(); i++) {
-            prot=protocols.get(i);
-            name=prot.getName();
-            for(int j=0; j < names.size(); j++) {
-                if(name.equals(names.get(j))) {
-                    throw new Exception("Configurator.sanityCheck(): protocol name " + name +
-                            " has been used more than once; protocol names have to be unique !");
-                }
-            }
-            names.add(name);
-        }
 
         // check for unique IDs
         Set<Short> ids=new HashSet<Short>();
@@ -501,31 +485,72 @@ public class Configurator {
         }
 
 
-        // Checks whether all requirements of all layers are met
-        for(Protocol p:protocols){           
-            req_list.add(new ProtocolReq(p));
-        }    
-        
-        for(ProtocolReq pr:req_list){
-            for(Integer evt_type:pr.up_reqs) {                
-                if(!providesDownServices(req_list, evt_type)) {
-                    throw new Exception("Configurator.sanityCheck(): event " +
-                            Event.type2String(evt_type) + " is required by " +
-                            pr.name + ", but not provided by any of the layers below");
-                }
-            } 
-            
-            for(Integer evt_type:pr.down_reqs) {                
-                if(!providesUpServices(req_list, evt_type)) {
-                    throw new Exception("Configurator.sanityCheck(): event " +
-                            Event.type2String(evt_type) + " is required by " +
-                            pr.name + ", but not provided by any of the layers above");
-                }
-            }                     
-        }            
+        // For each protocol, get its required up and down services and check (if available) if they're satisfied
+        for(Protocol protocol: protocols) {
+            List<Integer> required_down_services=protocol.requiredDownServices();
+            List<Integer> required_up_services=protocol.requiredUpServices();
+
+            if(required_down_services != null && !required_down_services.isEmpty()) {
+
+                // the protocols below 'protocol' have to provide the services listed in required_down_services
+                List<Integer> tmp=new ArrayList<Integer>(required_down_services);
+                removeProvidedUpServices(protocol, tmp);
+                if(!tmp.isEmpty())
+                    throw new Exception("events " + printEvents(tmp) + " are required by " + protocol.getName() +
+                                          ", but not provided by any of the protocols below it");
+            }
+
+            if(required_up_services != null && !required_up_services.isEmpty()) {
+
+                // the protocols above 'protocol' have to provide the services listed in required_up_services
+                List<Integer> tmp=new ArrayList<Integer>(required_up_services);
+                removeProvidedDownServices(protocol, tmp);
+                if(!tmp.isEmpty())
+                    throw new Exception("events " + printEvents(tmp) + " are required by " + protocol.getName() +
+                                          ", but not provided by any of the protocols above it");
+            }
+        }
     }
-    
-    
+
+    protected static String printEvents(List<Integer> events) {
+        StringBuilder sb=new StringBuilder("[");
+        for(int evt: events)
+            sb.append(Event.type2String(evt)).append(" ");
+        sb.append("]");
+        return sb.toString();
+    }
+
+    /**
+     * Removes all events provided by the protocol below protocol from events
+     * @param protocol
+     * @param events
+     */
+    protected static void removeProvidedUpServices(Protocol protocol, List<Integer> events) {
+        if(protocol == null || events == null)
+            return;
+        for(Protocol prot=protocol.getDownProtocol(); prot != null && !events.isEmpty(); prot=prot.getDownProtocol()) {
+            List<Integer> provided_up_services=prot.providedUpServices();
+            if(provided_up_services != null && !provided_up_services.isEmpty())
+                events.removeAll(provided_up_services);
+        }
+    }
+
+      /**
+     * Removes all events provided by the protocol above protocol from events
+     * @param protocol
+     * @param events
+     */
+    protected static void removeProvidedDownServices(Protocol protocol, List<Integer> events) {
+        if(protocol == null || events == null)
+            return;
+        for(Protocol prot=protocol.getUpProtocol(); prot != null && !events.isEmpty(); prot=prot.getUpProtocol()) {
+            List<Integer> provided_down_services=prot.providedDownServices();
+            if(provided_down_services != null && !provided_down_services.isEmpty())
+                events.removeAll(provided_down_services);
+        }
+    }
+
+
     /**
      * Returns all inet addresses found
      */
@@ -897,24 +922,6 @@ public class Configurator {
     }
 
 
-    /** Check whether any of the protocols 'below' provide evt_type */
-    static boolean providesUpServices(List<ProtocolReq> req_list, int evt_type) {
-        for (ProtocolReq pr:req_list){
-            if(pr.providesUpService(evt_type))
-                return true;
-        }
-        return false;              
-    }
-
-
-    /** Checks whether any of the protocols 'above' provide evt_type */
-    static boolean providesDownServices(List<ProtocolReq> req_list, int evt_type) {
-        for(ProtocolReq pr:req_list){
-            if(pr.providesDownService(evt_type))
-                return true;
-        }
-        return false;
-    }
 
     /**
      * This method creates a list of all properties (Field or Method) in dependency order, 
@@ -1233,102 +1240,7 @@ public class Configurator {
 
 
 
-    private static class ProtocolReq {
-        final Vector<Integer> up_reqs=new Vector<Integer>();
-        final Vector<Integer> down_reqs=new Vector<Integer>();
-        final Vector<Integer> up_provides=new Vector<Integer>();
-        final Vector<Integer> down_provides=new Vector<Integer>();
-        final String name;
 
-        ProtocolReq(Protocol p) {
-            this.name=p.getName();
-            if(p.requiredUpServices() != null) {
-                up_reqs.addAll(p.requiredUpServices());
-            }
-            if(p.requiredDownServices() != null) {
-                down_reqs.addAll(p.requiredDownServices());
-            }
-
-            if(p.providedUpServices() != null) {
-                up_provides.addAll(p.providedUpServices());
-            }
-            if(p.providedDownServices() != null) {
-                down_provides.addAll(p.providedDownServices());
-            }
-
-        }
-
-        boolean providesUpService(int evt_type) {
-            for(Integer type:up_provides) {
-                if(type == evt_type)
-                    return true;
-            }
-            return false;
-        }
-
-        boolean providesDownService(int evt_type) {
-
-            for(Integer type:down_provides) {
-                if(type == evt_type)
-                    return true;
-            }
-            return false;
-        }
-
-        public String toString() {
-            StringBuilder ret=new StringBuilder();
-            ret.append('\n' + name + ':');
-            if(!up_reqs.isEmpty())
-                ret.append("\nRequires from above: " + printUpReqs());
-
-            if(!down_reqs.isEmpty())
-                ret.append("\nRequires from below: " + printDownReqs());
-
-            if(!up_provides.isEmpty())
-                ret.append("\nProvides to above: " + printUpProvides());
-
-            if(!down_provides.isEmpty())
-                ret.append("\nProvides to below: ").append(printDownProvides());
-            return ret.toString();
-        }
-
-        String printUpReqs() {
-            StringBuilder ret;
-            ret=new StringBuilder("[");
-            for(Integer type:up_reqs) {
-                ret.append(Event.type2String(type) + ' ');
-            }
-            return ret.toString() + ']';
-        }
-
-        String printDownReqs() {
-            StringBuilder ret=new StringBuilder("[");
-            for(Integer type:down_reqs) {
-                ret.append(Event.type2String(type) + ' ');
-            }
-            return ret.toString() + ']';
-        }
-
-        String printUpProvides() {
-            StringBuilder ret=new StringBuilder("[");
-            for(Integer type:up_provides) {
-                ret.append(Event.type2String(type) + ' ');
-            }
-            return ret.toString() + ']';
-        }
-
-        String printDownProvides() {
-            StringBuilder ret=new StringBuilder("[");
-            for(Integer type:down_provides) {
-                ret.append(Event.type2String(type) + ' ');
-            }
-            return ret.toString() + ']';
-        }
-    }
-
-
-  
-    
     public static class InetAddressInfo {
     	Protocol protocol ;
     	AccessibleObject fieldOrMethod ;
