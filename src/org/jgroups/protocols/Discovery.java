@@ -296,9 +296,6 @@ public abstract class Discovery extends Protocol {
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
-                        if(max_rank > 0 && rank > 0 && rank > max_rank) // https://jira.jboss.org/browse/JGRP-1181
-                            return null;
-
                         if(group_addr == null || hdr.cluster_name == null) {
                             if(log.isWarnEnabled())
                                 log.warn("group_addr (" + group_addr + ") or cluster_name of header (" + hdr.cluster_name
@@ -327,6 +324,9 @@ public abstract class Discovery extends Protocol {
                                 UUID.add(logical_addr, data.getLogicalName());
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
                         }
+
+                        if(max_rank > 0 && rank > 0 && rank > max_rank) // https://jira.jboss.org/browse/JGRP-1181
+                            return null;
 
                         if(return_entire_cache && !hdr.return_view_only && rank != 0) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
