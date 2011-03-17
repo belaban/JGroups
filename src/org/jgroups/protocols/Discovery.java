@@ -328,7 +328,7 @@ public abstract class Discovery extends Protocol {
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
                         }
 
-                        if(return_entire_cache && !hdr.return_view_only) {
+                        if(return_entire_cache && !hdr.return_view_only && rank != 0) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
