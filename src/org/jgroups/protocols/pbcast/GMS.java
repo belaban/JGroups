@@ -915,11 +915,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                             (physical_addr != null? ", physical address=" + physical_addr : "") +
                             "\n-------------------------------------------------------------------");
                 }
-                if(log.isDebugEnabled())
+                if(log.isDebugEnabled()) {
+                    PhysicalAddress physical_addr=print_physical_addrs?
+                      (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
                     log.debug("\n-------------------------------------------------------------------\n" +
-                                      "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
-                                      (physical_addr != null? ", physical address=" + physical_addr : "") +
-                                      "\n-------------------------------------------------------------------")
+                                "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
+                                (physical_addr != null? ", physical address=" + physical_addr : "") +
+                                "\n-------------------------------------------------------------------");
+                }
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
