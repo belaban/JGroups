@@ -157,7 +157,7 @@ public class TCPGOSSIP extends Discovery {
             // 2. Set logical name
             String logical_name = rsp.getLogicalName();
             if (logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
-                org.jgroups.util.UUID.add((org.jgroups.util.UUID) logical_addr, logical_name);
+                org.jgroups.util.UUID.add(logical_addr, logical_name);
         }
 
         if (initial_mbrs.isEmpty()) {
