@@ -565,7 +565,7 @@ public class Configurator {
                 List<InetAddress> addresses=inetAddressInfo.getInetAddresses();
                 for(InetAddress address : addresses) {
                     if(address == null)
-                        throw new RuntimeException("This address should not be null! - something is wrong");
+                        throw new RuntimeException("failed converting address info to IP address: " + inetAddressInfo);
                     addrs.add(address);
                 }
             }
