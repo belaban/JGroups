@@ -61,7 +61,8 @@
                    discard_delivered_msgs="true"/>
     <UNICAST2 timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="2000" desired_avg_gossip="60000"
-                   max_bytes="4M"/>
+                   max_bytes="4M"
+                   cap="0.1"/>
     <pbcast.GMS print_local_addr="true"
                 join_timeout="10000"
                 view_bundling="true"
