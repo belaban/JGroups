@@ -46,9 +46,12 @@
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.rejection_policy="Run"/>
 
+    <!-- Reset ergonomics to true once https://issues.jboss.org/browse/JGRP-1309 is fixed -->
     <PING timeout="2000"
           num_initial_members="100"
-          break_on_coord_rsp="true" />
+          break_on_coord_rsp="true"
+          max_rank="0"
+          ergonomics="false" />
     <MERGE2 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
