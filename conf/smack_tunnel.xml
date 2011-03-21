@@ -6,7 +6,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.8.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.12.xsd">
     <TUNNEL router_port="12001" router_host="localhost"/>
     <FD_SIMPLE timeout="3000"   interval="2000" max_missed_hbs="3"/>
     <UNICAST timeout="1200,2400,3000" />
