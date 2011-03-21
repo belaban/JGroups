@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -11,23 +13,30 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionCompletionService;
 import org.jgroups.blocks.executor.ExecutionRunner;
 import org.jgroups.blocks.executor.ExecutionService;
+import org.jgroups.blocks.executor.ExecutionService.DistributedFuture;
 import org.jgroups.blocks.executor.Executions;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.CENTRAL_EXECUTOR;
+import org.jgroups.protocols.Executing.Owner;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.NotifyingFuture;
@@ -44,11 +53,12 @@ import org.testng.annotations.Test;
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ExecutingServiceTest extends ChannelTestBase {
     protected static Log log = LogFactory.getLog(ExecutingServiceTest.class);
+    protected static AtomicReference<CyclicBarrier> requestBlocker = 
+        new AtomicReference<CyclicBarrier>();
     
     protected JChannel c1, c2, c3;
     protected ExecutionService e1, e2, e3;
     protected ExecutionRunner er1, er2, er3;
-    protected ExposedExecutingProtocol protocol;
     
     @BeforeClass
     protected void init() throws Exception {
@@ -90,12 +100,33 @@ public class ExecutingServiceTest extends ChannelTestBase {
             id=ClassConfigurator.getProtocolId(CENTRAL_EXECUTOR.class);
         }
         
+        
+            // @see org.jgroups.protocols.Executing#sendRequest(org.jgroups.Address, org.jgroups.protocols.Executing.Type, long, java.lang.Object)
+        @Override
+        protected void sendRequest(Address dest, Type type, long requestId,
+                                   Object object) {
+            CyclicBarrier barrier = requestBlocker.get();
+            if (barrier != null) {
+                try {
+                    System.out.println(Thread.currentThread().getId() + ":: Waiting on barrier in coordinator call");
+                    barrier.await();
+                }
+                catch (InterruptedException e) {
+                    assert false : "Exception while waiting: " + e.toString();
+                }
+                catch (BrokenBarrierException e) {
+                    assert false : "Exception while waiting: " + e.toString();
+                }
+            }
+            super.sendRequest(dest, type, requestId, object);
+        }
+        
         public Queue<Runnable> getAwaitingConsumerQueue() {
             return _awaitingConsumer;
         }
         
-        public Queue<Owner> getAvailableConsumers() {
-            return _consumersAvailable;
+        public Queue<Owner> getRequestsFromCoordinator() {
+            return _runRequests;
         }
         
         public Lock getLock() {
@@ -345,6 +376,10 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Callable<Void> callable = new SleepingStreamableCallable(10000);
         NotifyingFuture<Void> future = e1.submit(callable);
         
+        // Now we make sure that 
+        ExposedExecutingProtocol protocol = 
+            (ExposedExecutingProtocol)c1.getProtocolStack().findProtocol(
+                ExposedExecutingProtocol.class);
         Queue<Runnable> queue = protocol.getAwaitingConsumerQueue();
         Lock lock = protocol.getLock();
         
@@ -384,8 +419,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
             throws InterruptedException, BrokenBarrierException, TimeoutException {
         Thread consumer = new Thread(er2);
         consumer.start();
-        // We send a task that waits for 100 milliseconds and then finishes
-        Callable<Void> callable = new SleepingStreamableCallable(100);
+        // We send a task that waits for 101 milliseconds and then finishes
+        Callable<Void> callable = new SleepingStreamableCallable(101);
         e1.submit(callable);
         
         // We wait for the thread to start
@@ -480,9 +515,94 @@ public class ExecutingServiceTest extends ChannelTestBase {
         assert !consumer2.isAlive() : "Consumer did not stop correctly";
     }
     
+    @Test
+    public void testCoordinatorWentDownWhileSendingMessage() throws Exception {
+        // It is 3 calls.
+        // The first is the original message sending to the coordinator
+        // The second is the new message to send the request to the new coordinator
+        // The last is our main method below waiting for others
+        final CyclicBarrier barrier = new CyclicBarrier(3);
+        
+        requestBlocker.set(barrier);
+        
+        final Callable<Integer> callable = new SimpleStreamableCallable<Integer>(23);
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.submit(new Runnable() {
+
+            @Override
+            public void run() {
+                e2.submit(callable);
+            }
+        });
+        
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getId() + ":: Closing channel");
+                // We close the coordinator
+                Util.close(c1);
+            }
+        });
+        
+        barrier.await(2, TimeUnit.MINUTES);
+        
+        requestBlocker.set(null);
+        
+        // We need to reconnect the channel now
+        c1=createChannel(c2, "A");
+        addExecutingProtocol(c1);
+        er1=new ExecutionRunner(c1);
+        c1.connect("ExecutionServiceTest");
+        
+        service.shutdown();
+        service.awaitTermination(2, TimeUnit.SECONDS);
+        
+        // Now we make sure that 
+        ExposedExecutingProtocol protocol = 
+            (ExposedExecutingProtocol)c2.getProtocolStack().findProtocol(
+                ExposedExecutingProtocol.class);
+        Queue<Runnable> runnables = protocol.getAwaitingConsumerQueue();
+        
+        assert runnables.size() == 1 : "There is no runnable in the queue";
+        Runnable task = runnables.iterator().next();
+        assert task instanceof DistributedFuture : "The task wasn't a distributed future like we thought";
+        assert callable == ((DistributedFuture<?>)task).getCallable() : "The inner callable wasn't the same";
+        
+        Queue<Owner> requests = protocol.getRequestsFromCoordinator();
+        assert requests.size() == 1 : "There is no request in the coordinator queue";
+        Owner owner = requests.iterator().next();
+        assert owner.getAddress().equals(c2.getAddress()) : "The request Address doesn't match";
+        assert owner.getRequestId() == 0 : "We only had 1 request so it should be zero still";
+    }
+    
+    @Test
+    public void testInvokeAnyCalls() throws InterruptedException, ExecutionException {
+        Thread consumer1 = new Thread(er2);
+        consumer1.start();
+        Thread consumer2 = new Thread(er3);
+        consumer2.start();
+        
+        Collection<Callable<Long>> callables = new ArrayList<Callable<Long>>();
+        
+        callables.add(new SimpleStreamableCallable<Long>((long)10));
+        callables.add(new SimpleStreamableCallable<Long>((long)100));
+        Long value = e1.invokeAny(callables);
+        
+        assert value == 10 || value == 100 : "The task didn't return the right value";
+        
+        // We try to stop the threads.
+        consumer1.interrupt();
+        consumer2.interrupt();
+        
+        consumer1.join(2000);
+        assert !consumer1.isAlive() : "Consumer did not stop correctly";
+        consumer2.join(2000);
+        assert !consumer2.isAlive() : "Consumer did not stop correctly";
+    }
+    
     protected void addExecutingProtocol(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        protocol = new ExposedExecutingProtocol();
+        Protocol protocol = new ExposedExecutingProtocol();
         protocol.setLevel("trace");
         stack.insertProtocolAtTop(protocol);
     }

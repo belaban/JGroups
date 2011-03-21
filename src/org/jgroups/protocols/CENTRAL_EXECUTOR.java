@@ -66,6 +66,7 @@ public class CENTRAL_EXECUTOR extends Executing {
 
     public void handleView(View view) {
         super.handleView(view);
+        Address oldCoord = coord;
         if(view.size() > 0) {
             coord=view.getMembers().firstElement();
             is_coord=coord.equals(local_addr);
@@ -73,8 +74,20 @@ public class CENTRAL_EXECUTOR extends Executing {
                 log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);
         }
         
-        // TODO: need to send consumer/task queue to the new coordinator if they went down
-
+        // If we got a new coordinator we have to send all the requests for
+        // tasks and consumers again just incase they were missed when 
+        // coordinator went down
+        // TODO: but now we have a race condition if that consumer or run request comes in after it was picked up and returned
+        if (oldCoord != coord) {
+            for (Long requests : _requestId.values()) {
+                sendToCoordinator(Type.RUN_REQUEST, requests, local_addr);
+            }
+            
+            for (Long requests : _consumerId.keySet()) {
+                sendToCoordinator(Type.CONSUMER_READY, requests, local_addr);
+            }
+        }
+        
         if(num_backups > 0) {
             if (is_coord) {
                 List<Address> new_backups=Util.pickNext(view.getMembers(), local_addr, num_backups);
@@ -92,8 +105,9 @@ public class CENTRAL_EXECUTOR extends Executing {
                     copyQueueTo(new_members);
             }
             // We keep what backups we have ourselves, so that when we become
-            // the coordinator we don't update them again since we can't send
-            // updates multiple times
+            // the coordinator we don't update them again.  Technically we can
+            // send multiple requests but don't if to prevent more message being
+            // sent.
             else {
                 List<Address> possiblebackups = Util.pickNext(view.getMembers(), 
                     coord, num_backups);
@@ -152,10 +166,10 @@ public class CENTRAL_EXECUTOR extends Executing {
         }
     }
 
-    // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, java.lang.Object)
+    // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, long, org.jgroups.Address)
     @Override
-    protected void sendToCoordinator(Type type, Object value) {
-        sendRequest(coord, type, (short)-1, value);
+    protected void sendToCoordinator(Type type, long requestId, Address value) {
+        sendRequest(coord, type, requestId, value);
     }
 
     // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.Address)
