@@ -832,6 +832,26 @@
             compare() of the UUID super class should not be changed.
         </para>
         <para>
+            To use custom addresses, the following things have to be done:
+            <itemizedlist>
+                <listitem>Write an implementation of org.jgroups.stack.AddressGenerator</listitem>
+                <listitem>For any class CustomAddress, it will need to get registered with the ClassConfigurator
+                in order to marshal it correctly:
+                    <screen>
+        class CustomAddress extends UUID {
+            static {
+                ClassConfigurator.add((short)8900, CustomAddress.class);
+            }
+        }
+                    </screen>
+                    Note that the ID should be chosen such that it doesn't collide with any IDs defined in
+                    jg-magic-map.xml.
+                </listitem>
+                <listitem>Set the address generator in JChannel: setAddressGenerator(AddressGenerator). This
+                    has to be done <emphasis>before</emphasis> the channel is connected</listitem>
+            </itemizedlist>
+        </para>
+        <para>
             An example of a subclass is org.jgroups.util.PayloadUUID.
         </para>
     </section>
