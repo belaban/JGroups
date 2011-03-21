@@ -675,7 +675,7 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute(description="Number of messages in the OOB thread pool's queue")
     public int getOOBQueueSize() {
-        return oob_thread_pool_queue.size();
+        return oob_thread_pool_queue != null? oob_thread_pool_queue.size() : 0;
     }
 
     public int getOOBMaxQueueSize() {
@@ -701,7 +701,7 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute(description="Number of messages in the default thread pool's queue")
     public int getRegularQueueSize() {
-        return thread_pool_queue.size();
+        return thread_pool_queue != null? thread_pool_queue.size() : 0;
     }
 
     public int getRegularMaxQueueSize() {
@@ -781,18 +781,20 @@ public abstract class TP extends Protocol {
         super.init();
 
         // Create the default thread factory
-        global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+        if(global_thread_factory == null)
+            global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
 
         // Create the timer and the associated thread factory - depends on singleton_name
-        // timer_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
-        timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
-        if(isSingleton()) {
+        if(timer_thread_factory == null)
+            timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
+        if(isSingleton())
             timer_thread_factory.setIncludeClusterName(false);
-        }
 
-        default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
-
-        oob_thread_factory=new DefaultThreadFactory(pool_thread_group, "OOB", false, true);
+        if(default_thread_factory == null)
+            default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
+        
+        if(oob_thread_factory == null)
+            oob_thread_factory=new DefaultThreadFactory(pool_thread_group, "OOB", false, true);
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
@@ -824,30 +826,34 @@ public abstract class TP extends Protocol {
 
         // ========================================== OOB thread pool ==============================
 
-        if(oob_thread_pool_enabled) {
-            if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
-            else
-                oob_thread_pool_queue=new SynchronousQueue<Runnable>();
-            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
-        }
-        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-            oob_thread_pool=new DirectExecutor();
+        if(oob_thread_pool == null) {
+            if(oob_thread_pool_enabled) {
+                if(oob_thread_pool_queue_enabled)
+                    oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
+                else
+                    oob_thread_pool_queue=new SynchronousQueue<Runnable>();
+                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+            }
+            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                oob_thread_pool=new DirectExecutor();
+            }
         }
 
         // ====================================== Regular thread pool ===========================
 
-        if(thread_pool_enabled) {
-            if(thread_pool_queue_enabled)
-                thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
-            else
-                thread_pool_queue=new SynchronousQueue<Runnable>();
-            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
-        }
-        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-            thread_pool=new DirectExecutor();
+        if(thread_pool == null) {
+            if(thread_pool_enabled) {
+                if(thread_pool_queue_enabled)
+                    thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
+                else
+                    thread_pool_queue=new SynchronousQueue<Runnable>();
+                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+            }
+            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                thread_pool=new DirectExecutor();
+            }
         }
 
         if(bind_addr != null) {
