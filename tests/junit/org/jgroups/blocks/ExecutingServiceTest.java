@@ -74,6 +74,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
         c3=createChannel(c1, "C");
         er3=new ExecutionRunner(c3);
         c3.connect("ExecutionServiceTest");
+        
+        LogFactory.getLog(ExecutionRunner.class).setLevel("trace");
     }
     
     @AfterClass
@@ -108,7 +110,6 @@ public class ExecutingServiceTest extends ChannelTestBase {
             CyclicBarrier barrier = requestBlocker.get();
             if (barrier != null) {
                 try {
-                    System.out.println(Thread.currentThread().getId() + ":: Waiting on barrier in coordinator call");
                     barrier.await();
                 }
                 catch (InterruptedException e) {
@@ -340,8 +341,10 @@ public class ExecutingServiceTest extends ChannelTestBase {
      */
     @Test
     public void testInterruptWhileRunningAlot() throws InterruptedException, BrokenBarrierException, TimeoutException {
-        for (int i = 0; i < 500; ++i)
+        for (int i = 0; i < 500; ++i) {
+            System.out.println("Iteration: " + i);
             testInterruptTaskRequestWhileRunning();
+        }
     }
     
     protected void testInterruptTaskRequestWhileRunning() 
@@ -352,7 +355,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         NotifyingFuture<Void> future = e1.submit(callable);
         
         // We wait until it is ready
-        SleepingStreamableCallable.barrier.await(10, TimeUnit.SECONDS);
+        SleepingStreamableCallable.barrier.await(5, TimeUnit.SECONDS);
         if (log.isTraceEnabled())
             log.trace("Cancelling future by interrupting");
         future.cancel(true);
@@ -364,7 +367,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
             log.trace("Cancelling task by interrupting");
         // We try to stop the thread now which should now stop the runner
         consumer.interrupt();
-        assert cancelled == consumer : "The cancelled thread didn't match expected";
+        assert cancelled != null : "There was no cancelled thread";
         
         consumer.join(2000);
         assert !consumer.isAlive() : "Consumer did not stop correctly";
@@ -431,8 +434,6 @@ public class ExecutingServiceTest extends ChannelTestBase {
                 log.trace("Cancelling futures by interrupting");
             e1.shutdownNow();
             // We wait for the task to be interrupted.
-            // TODO: this can be removed whenever we change ExecutionRunner
-            // TODO: to decipher between a task interrupt and a consumer stop
             assert SleepingStreamableCallable.canceledThreads.poll(2, 
                 TimeUnit.SECONDS) != null : 
                     "Thread wasn't interrupted due to our request";
@@ -538,15 +539,14 @@ public class ExecutingServiceTest extends ChannelTestBase {
         service.submit(new Runnable() {
             @Override
             public void run() {
-                System.out.println(Thread.currentThread().getId() + ":: Closing channel");
                 // We close the coordinator
                 Util.close(c1);
             }
         });
         
-        barrier.await(2, TimeUnit.MINUTES);
+        barrier.await(2, TimeUnit.SECONDS);
         
-        requestBlocker.set(null);
+        requestBlocker.getAndSet(null).reset();
         
         // We need to reconnect the channel now
         c1=createChannel(c2, "A");
@@ -557,7 +557,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         service.shutdown();
         service.awaitTermination(2, TimeUnit.SECONDS);
         
-        // Now we make sure that 
+        // Now we make sure that the new coordinator has the requests
         ExposedExecutingProtocol protocol = 
             (ExposedExecutingProtocol)c2.getProtocolStack().findProtocol(
                 ExposedExecutingProtocol.class);
@@ -569,7 +569,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         assert callable == ((DistributedFuture<?>)task).getCallable() : "The inner callable wasn't the same";
         
         Queue<Owner> requests = protocol.getRequestsFromCoordinator();
-        assert requests.size() == 1 : "There is no request in the coordinator queue";
+        assert requests.size() == 1 : "There is no request in the coordinator queue - " + requests.size();
         Owner owner = requests.iterator().next();
         assert owner.getAddress().equals(c2.getAddress()) : "The request Address doesn't match";
         assert owner.getRequestId() == 0 : "We only had 1 request so it should be zero still";

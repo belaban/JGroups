@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -71,9 +70,17 @@ abstract public class Executing extends Protocol {
     protected final Queue<Runnable> _awaitingConsumer = 
         new ConcurrentLinkedQueue<Runnable>();
     
+    /**
+     * This is a map on the client side showing for all of the current pending
+     * requests
+     */
     protected final ConcurrentMap<Runnable, Long> _requestId = 
         new ConcurrentHashMap<Runnable, Long>();
     
+    /**
+     * This is essentially a set on the consumer side of id's of all the threads 
+     * currently running as consumers
+     */
     protected final ConcurrentMap<Long, Object> _consumerId = 
         new ConcurrentHashMap<Long, Object>();
 
@@ -200,9 +207,11 @@ abstract public class Executing extends Protocol {
                     return runnable;
                 }
                 catch (InterruptedException e) {
-                    sendToCoordinator(Type.CONSUMER_UNREADY, currentThread.getId(), 
-                        local_addr);
+                    sendToCoordinator(Type.CONSUMER_UNREADY, id, local_addr);
                     Thread.currentThread().interrupt();
+                }
+                finally {
+                    _consumerId.remove(id);
                 }
                 break;
             case ExecutorEvent.TASK_COMPLETE:
@@ -222,17 +231,13 @@ abstract public class Executing extends Protocol {
 
                 Object value = null;
                 boolean exception = false;
-                // If the owner is gone that means it was interrupted, so we
-                // can't send back to them now
-                boolean runnableInterrupted = owner == null;
-                
                 if (throwable != null) {
-                    if (!runnableInterrupted || 
-                            throwable instanceof InterruptedException ||
-                            throwable instanceof InterruptedIOException) {
-                        // If the task interrupt wasn't present we treat this
-                        // as a shutdown of the task.
-                        Thread.currentThread().interrupt();
+                    // InterruptedException is special telling us that
+                    // we interrupted the thread while waiting but still got
+                    // a task therefore we have to reject it.
+                    if (throwable instanceof InterruptedException) {
+                        sendRequest(owner.address, Type.RUN_REJECTED, owner.requestId, null);
+                        break;
                     }
                     value = throwable;
                     exception = true;
@@ -423,7 +428,6 @@ abstract public class Executing extends Protocol {
                         break;
                     case RUN_SUBMITTED:
                         Object objectToRun = req.object;
-                        _consumerId.remove(Thread.currentThread().getId());
                         Runnable runnable;
                         if (objectToRun instanceof Runnable) {
                             runnable = (Runnable)objectToRun;
@@ -718,8 +722,6 @@ abstract public class Executing extends Protocol {
             thread.interrupt();
         }
         else {
-            // TODO: do we do something here?  This would happen if an 
-            // interrupt comes in after the task is finished.
             if (log.isTraceEnabled())
                 log.trace("Message could not be interrupted due to it already returned");
         }
@@ -728,7 +730,9 @@ abstract public class Executing extends Protocol {
     protected void handleNewRunRequest(Owner sender) {
         _consumerLock.lock();
         try {
-            _runRequests.add(sender);
+            if (!_runRequests.contains(sender)) {
+                _runRequests.add(sender);
+            }
         }
         finally {
             _consumerLock.unlock();
@@ -748,7 +752,9 @@ abstract public class Executing extends Protocol {
     protected void handleNewConsumer(Owner sender) {
         _consumerLock.lock();
         try {
-            _consumersAvailable.add(sender);
+            if (!_consumersAvailable.contains(sender)) {
+                _consumersAvailable.add(sender);
+            }
         }
         finally {
             _consumerLock.unlock();

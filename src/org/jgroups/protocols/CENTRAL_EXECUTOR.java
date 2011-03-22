@@ -65,7 +65,6 @@ public class CENTRAL_EXECUTOR extends Executing {
     }
 
     public void handleView(View view) {
-        super.handleView(view);
         Address oldCoord = coord;
         if(view.size() > 0) {
             coord=view.getMembers().firstElement();
@@ -77,7 +76,11 @@ public class CENTRAL_EXECUTOR extends Executing {
         // If we got a new coordinator we have to send all the requests for
         // tasks and consumers again just incase they were missed when 
         // coordinator went down
-        // TODO: but now we have a race condition if that consumer or run request comes in after it was picked up and returned
+        // We are okay with duplicates since we don't add multiple times.
+        // We also have a problem that if a task/consumer was picked up as the
+        // consumer is changing we may have duplicates.  But this is technically
+        // okay in that an extra consumer will reject and an extra task will just
+        // be ran and return nowhere, but at least we won't lose data.
         if (oldCoord != coord) {
             for (Long requests : _requestId.values()) {
                 sendToCoordinator(Type.RUN_REQUEST, requests, local_addr);
@@ -129,6 +132,9 @@ public class CENTRAL_EXECUTOR extends Executing {
                 }
             }
         }
+        
+        // Need to run this last so the backups are updated
+        super.handleView(view);
     }
 
     protected void updateBackups(Type type, Owner obj) {
