@@ -566,6 +566,8 @@ public class ExecutionService extends AbstractExecutorService {
         return true;
     }
     
+    // @see java.util.concurrent.AbstractExecutorService#invokeAny(java.util.Collection)
+    @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
         try {
@@ -576,6 +578,8 @@ public class ExecutionService extends AbstractExecutorService {
         }
     }
     
+    // @see java.util.concurrent.AbstractExecutorService#invokeAny(java.util.Collection, long, java.util.concurrent.TimeUnit)
+    @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
             long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {

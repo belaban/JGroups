@@ -178,28 +178,28 @@ public class CENTRAL_EXECUTOR extends Executing {
         sendRequest(coord, type, requestId, value);
     }
 
-    // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.protocols.Executing.Owner)
     @Override
     protected void sendNewRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_RUN_REQUEST, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendRemoveRunRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendRemoveRunRequest(org.jgroups.protocols.Executing.Owner)
     @Override
     protected void sendRemoveRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.DELETE_RUN_REQUEST, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.protocols.Executing.Owner)
     @Override
     protected void sendNewConsumerRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_CONSUMER_READY, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendRemoveConsumerRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendRemoveConsumerRequest(org.jgroups.protocols.Executing.Owner)
     @Override
     protected void sendRemoveConsumerRequest(Owner sender) {
         if(is_coord)

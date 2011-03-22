@@ -79,7 +79,8 @@ abstract public class Executing extends Protocol {
     
     /**
      * This is essentially a set on the consumer side of id's of all the threads 
-     * currently running as consumers
+     * currently running as consumers.  This is basically a set, but since
+     * there is no ConcurrentHashSet we use a phoney value
      */
     protected final ConcurrentMap<Long, Object> _consumerId = 
         new ConcurrentHashMap<Long, Object>();

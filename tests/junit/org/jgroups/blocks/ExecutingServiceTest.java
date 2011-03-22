@@ -102,8 +102,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
             id=ClassConfigurator.getProtocolId(CENTRAL_EXECUTOR.class);
         }
         
-        
-            // @see org.jgroups.protocols.Executing#sendRequest(org.jgroups.Address, org.jgroups.protocols.Executing.Type, long, java.lang.Object)
+        // @see org.jgroups.protocols.Executing#sendRequest(org.jgroups.Address, org.jgroups.protocols.Executing.Type, long, java.lang.Object)
         @Override
         protected void sendRequest(Address dest, Type type, long requestId,
                                    Object object) {
@@ -341,10 +340,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
      */
     @Test
     public void testInterruptWhileRunningAlot() throws InterruptedException, BrokenBarrierException, TimeoutException {
-        for (int i = 0; i < 500; ++i) {
-            System.out.println("Iteration: " + i);
+        for (int i = 0; i < 500; ++i)
             testInterruptTaskRequestWhileRunning();
-        }
     }
     
     protected void testInterruptTaskRequestWhileRunning() 
