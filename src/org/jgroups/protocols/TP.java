@@ -244,9 +244,8 @@ public abstract class TP extends Protocol {
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
     public void setMaxBundleSize(int size) {
-        if(size <= 0) {
+        if(size <= 0)
             throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
-        }
         max_bundle_size=size;
     }
 

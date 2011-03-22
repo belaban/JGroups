@@ -163,6 +163,13 @@ public class UDP extends TP {
         return this.ip_ttl;
     }
 
+    @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
+    public void setMaxBundleSize(int size) {
+        super.setMaxBundleSize(size);
+        if(size > Global.MAX_DATAGRAM_PACKET_SIZE)
+            throw new IllegalArgumentException("max_bundle_size (" + size + ") cannot exceed the max datagram " +
+                                                 "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
+    }
 
     public String getInfo() {
         StringBuilder sb=new StringBuilder();

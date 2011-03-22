@@ -17,6 +17,8 @@ public class Global {
     public static final int DOUBLE_SIZE = Double.SIZE  / 8; // 8;
     public static final int FLOAT_SIZE  = Float.SIZE   / 8; // 4;
 
+    public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
+
     public static final Object NULL=new Object();
     public static final Address NULL_ADDR=new UUID();
 
