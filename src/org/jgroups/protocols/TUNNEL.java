@@ -374,7 +374,9 @@ public class TUNNEL extends TP {
               Collections.shuffle(stubs);  // todo: why is this needed ?
          for (RouterStub stub : stubs) {
             try {
-               stub.sendToAllMembers(group, data, offset, length);
+                if(!stub.isConnected())
+                    continue;
+                stub.sendToAllMembers(group, data, offset, length);
                if (log.isTraceEnabled())
                   log.trace("sent a message to all members, GR used " + stub.getGossipRouterAddress());
                sent = true;
@@ -394,7 +396,9 @@ public class TUNNEL extends TP {
               Collections.shuffle(stubs); 
          for (RouterStub stub : stubs) {
             try {
-               stub.sendToMember(group, dest, data, offset, length);
+                if(!stub.isConnected())
+                    continue;
+                stub.sendToMember(group, dest, data, offset, length);
                if (log.isDebugEnabled())
                   log.debug("sent a message to " + dest + ", GR used " + stub.getGossipRouterAddress());
                sent = true;
