@@ -65,14 +65,32 @@ public class CENTRAL_EXECUTOR extends Executing {
     }
 
     public void handleView(View view) {
-        super.handleView(view);
+        Address oldCoord = coord;
         if(view.size() > 0) {
             coord=view.getMembers().firstElement();
             is_coord=coord.equals(local_addr);
             if(log.isDebugEnabled())
                 log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);
         }
-
+        
+        // If we got a new coordinator we have to send all the requests for
+        // tasks and consumers again just incase they were missed when 
+        // coordinator went down
+        // We are okay with duplicates since we don't add multiple times.
+        // We also have a problem that if a task/consumer was picked up as the
+        // consumer is changing we may have duplicates.  But this is technically
+        // okay in that an extra consumer will reject and an extra task will just
+        // be ran and return nowhere, but at least we won't lose data.
+        if (oldCoord != coord) {
+            for (Long requests : _requestId.values()) {
+                sendToCoordinator(Type.RUN_REQUEST, requests, local_addr);
+            }
+            
+            for (Long requests : _consumerId.keySet()) {
+                sendToCoordinator(Type.CONSUMER_READY, requests, local_addr);
+            }
+        }
+        
         if(num_backups > 0) {
             if (is_coord) {
                 List<Address> new_backups=Util.pickNext(view.getMembers(), local_addr, num_backups);
@@ -90,8 +108,9 @@ public class CENTRAL_EXECUTOR extends Executing {
                     copyQueueTo(new_members);
             }
             // We keep what backups we have ourselves, so that when we become
-            // the coordinator we don't update them again since we can't send
-            // updates multiple times
+            // the coordinator we don't update them again.  Technically we can
+            // send multiple requests but don't if to prevent more message being
+            // sent.
             else {
                 List<Address> possiblebackups = Util.pickNext(view.getMembers(), 
                     coord, num_backups);
@@ -113,23 +132,26 @@ public class CENTRAL_EXECUTOR extends Executing {
                 }
             }
         }
+        
+        // Need to run this last so the backups are updated
+        super.handleView(view);
     }
 
-    protected void updateBackups(Type type, Object obj) {
+    protected void updateBackups(Type type, Owner obj) {
         synchronized(backups) {
             for(Address backup: backups)
-                sendRequest(backup, type, (short)-1, obj);
+                sendRequest(backup, type, obj.getRequestId(), obj.getAddress());
         }
     }
     
     protected void copyQueueTo(List<Address> new_joiners) {
-        Set<Address> copyRequests;
-        Set<Address> copyConsumers;
+        Set<Owner> copyRequests;
+        Set<Owner> copyConsumers;
         
         _consumerLock.lock();
         try {
-            copyRequests = new HashSet<Address>(_runRequests);
-            copyConsumers = new HashSet<Address>(_consumersAvailable);
+            copyRequests = new HashSet<Owner>(_runRequests);
+            copyConsumers = new HashSet<Owner>(_consumersAvailable);
         }
         finally {
             _consumerLock.unlock();
@@ -138,46 +160,48 @@ public class CENTRAL_EXECUTOR extends Executing {
         if(log.isTraceEnabled())
             log.trace("copying queue to " + new_joiners);
         for(Address joiner: new_joiners) {
-            for(Address address: copyRequests) {
-                sendRequest(joiner, Type.CREATE_RUN_REQUEST, (short)-1, address);
+            for(Owner address: copyRequests) {
+                sendRequest(joiner, Type.CREATE_RUN_REQUEST, 
+                    address.getRequestId(), address.getAddress());
             }
             
-            for(Address address: copyConsumers) {
-                sendRequest(joiner, Type.CREATE_CONSUMER_READY, (short)-1, address);
+            for(Owner address: copyConsumers) {
+                sendRequest(joiner, Type.CREATE_CONSUMER_READY, 
+                    address.getRequestId(), address.getAddress());
             }
         }
     }
 
-    // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, java.lang.Object)
+    // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, long, org.jgroups.Address)
     @Override
-    protected void sendToCoordinator(Type type, Object value) {
-        sendRequest(coord, type, (short)-1, value);
+    protected void sendToCoordinator(Type type, long requestId, Address value) {
+        sendRequest(coord, type, requestId, value);
     }
 
-    // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.protocols.Executing.Owner)
     @Override
-    protected void sendNewRunRequest(Address sender) {
+    protected void sendNewRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_RUN_REQUEST, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendRemoveRunRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendRemoveRunRequest(org.jgroups.protocols.Executing.Owner)
     @Override
-    protected void sendRemoveRunRequest(Address sender) {
+    protected void sendRemoveRunRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.DELETE_RUN_REQUEST, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendNewConsumerRequest(org.jgroups.protocols.Executing.Owner)
     @Override
-    protected void sendNewConsumerRequest(Address sender) {
+    protected void sendNewConsumerRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.CREATE_CONSUMER_READY, sender);
     }
 
-    // @see org.jgroups.protocols.Executing#sendRemoveConsumerRequest(org.jgroups.Address)
+    // @see org.jgroups.protocols.Executing#sendRemoveConsumerRequest(org.jgroups.protocols.Executing.Owner)
     @Override
-    protected void sendRemoveConsumerRequest(Address sender) {
+    protected void sendRemoveConsumerRequest(Owner sender) {
         if(is_coord)
             updateBackups(Type.DELETE_CONSUMER_READY, sender);
     }

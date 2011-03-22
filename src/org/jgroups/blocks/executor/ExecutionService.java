@@ -2,17 +2,21 @@ package org.jgroups.blocks.executor;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RunnableFuture;
@@ -26,7 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.JChannel;
 import org.jgroups.protocols.Executing;
-import org.jgroups.protocols.Locking;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
@@ -42,9 +45,9 @@ import org.jgroups.util.Util;
  * can then be used as a workflow to submit other tasks sequentially or also to
  * query the future for the value at that time. 
  * <p>
- * Every callable or runnable submitted must be either {@link Serializable}, 
- * {@link Externalizable}, or {@link Streamable}.  Also the value returned from
- * a callable must {@link Serializable}, {@link Externalizable}, or 
+ * Every callable or runnable submitted must be either {@link Serializable} or 
+ * {@link Streamable}.  Also the value returned from
+ * a callable must {@link Serializable} or 
  * {@link Streamable}.  Unfortunately if the value returned is not serializable
  * then a {@link NotSerializableException} will be thrown as the cause. 
  * @author wburns
@@ -281,18 +284,6 @@ public class ExecutionService extends AbstractExecutorService {
          */
         public void run() {
             sync.innerRun();
-        }
-
-        /**
-         * Executes the computation without setting its result, and then
-         * resets this Future to initial state, failing to do so if the
-         * computation encounters an exception or is cancelled.  This is
-         * designed for use with tasks that intrinsically execute more
-         * than once.
-         * @return true if successfully run and reset
-         */
-        protected boolean runAndReset() {
-            return sync.innerRunAndReset();
         }
 
         /**
@@ -574,6 +565,109 @@ public class ExecutionService extends AbstractExecutorService {
 
         return true;
     }
+    
+    // @see java.util.concurrent.AbstractExecutorService#invokeAny(java.util.Collection)
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+        throws InterruptedException, ExecutionException {
+        try {
+            return doInvokeAny(tasks, false, 0);
+        } catch (TimeoutException cannotHappen) {
+            assert false;
+            return null;
+        }
+    }
+    
+    // @see java.util.concurrent.AbstractExecutorService#invokeAny(java.util.Collection, long, java.util.concurrent.TimeUnit)
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
+            long timeout, TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException {
+        return doInvokeAny(tasks, true, unit.toNanos(timeout));
+    }
+    
+    /**
+     * the main mechanics of invokeAny.
+     * This was essentially copied from {@link AbstractExecutorService} 
+     * doInvokeAny except that we replaced the {@link ExecutorCompletionService}
+     * with an {@link ExecutionCompletionService}.
+     */
+    private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,
+                            boolean timed, long nanos)
+        throws InterruptedException, ExecutionException, TimeoutException {
+        if (tasks == null)
+            throw new NullPointerException();
+        int ntasks = tasks.size();
+        if (ntasks == 0)
+            throw new IllegalArgumentException();
+        List<Future<T>> futures= new ArrayList<Future<T>>(ntasks);
+        CompletionService<T> ecs =
+            new ExecutionCompletionService<T>(this);
+
+        // For efficiency, especially in executors with limited
+        // parallelism, check to see if previously submitted tasks are
+        // done before submitting more of them. This interleaving
+        // plus the exception mechanics account for messiness of main
+        // loop.
+
+        try {
+            // Record exceptions so that if we fail to obtain any
+            // result, we can throw the last exception we got.
+            ExecutionException ee = null;
+            long lastTime = (timed)? System.nanoTime() : 0;
+            Iterator<? extends Callable<T>> it = tasks.iterator();
+
+            // Start one task for sure; the rest incrementally
+            futures.add(ecs.submit(it.next()));
+            --ntasks;
+            int active = 1;
+
+            for (;;) {
+                Future<T> f = ecs.poll();
+                if (f == null) {
+                    if (ntasks > 0) {
+                        --ntasks;
+                        futures.add(ecs.submit(it.next()));
+                        ++active;
+                    }
+                    else if (active == 0)
+                        break;
+                    else if (timed) {
+                        f = ecs.poll(nanos, TimeUnit.NANOSECONDS);
+                        if (f == null)
+                            throw new TimeoutException();
+                        long now = System.nanoTime();
+                        nanos -= now - lastTime;
+                        lastTime = now;
+                    }
+                    else
+                        f = ecs.take();
+                }
+                if (f != null) {
+                    --active;
+                    try {
+                        return f.get();
+                    } catch (InterruptedException ie) {
+                        throw ie;
+                    } catch (ExecutionException eex) {
+                        ee = eex;
+                    } catch (RuntimeException rex) {
+                        ee = new ExecutionException(rex);
+                    }
+                }
+            }
+
+            if (ee == null)
+                ee = new ExecutionException() {
+                    private static final long serialVersionUID = 200818694545553992L;
+                };
+            throw ee;
+
+        } finally {
+            for (Future<T> f : futures)
+                f.cancel(true);
+        }
+    }
 
     // @see java.util.concurrent.Executor#execute(java.lang.Runnable)
     @Override
@@ -598,7 +692,7 @@ public class ExecutionService extends AbstractExecutorService {
             }
             else {
                 throw new IllegalArgumentException(
-                    "Command was not Serializable, Externalizable, or Streamable - "
+                    "Command was not Serializable or Streamable - "
                             + serializeCheck);
             }
         }
