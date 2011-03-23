@@ -869,7 +869,7 @@ public class ENCRYPT extends Protocol {
     private void sendSecretKey(SecretKey secret, PublicKey pubKey, Address source)
             throws InvalidKeyException, IllegalStateException,
                    IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException,
-                   NoSuchAlgorithmException
+                   NoSuchAlgorithmException, NoSuchProviderException
     {
         Message newMsg;
 
@@ -877,7 +877,11 @@ public class ENCRYPT extends Protocol {
             log.debug("encoding shared key ");
 
         // create a cipher with peer's public key
-        Cipher tmp = Cipher.getInstance(asymAlgorithm);
+        Cipher tmp;
+        if (asymProvider != null && asymProvider.trim().length() > 0)
+            tmp = Cipher.getInstance(asymAlgorithm, asymProvider);
+        else
+            tmp = Cipher.getInstance(asymAlgorithm);
         tmp.init(Cipher.ENCRYPT_MODE, pubKey);
 
         //encrypt current secret key
@@ -1092,7 +1096,11 @@ public class ENCRYPT extends Protocol {
             keySpec = new SecretKeySpec(keyBytes, getAlgorithm(symAlgorithm));
 
             // test reconstituted key to see if valid
-            Cipher temp = Cipher.getInstance(symAlgorithm);
+            Cipher temp;
+            if (symProvider != null && symProvider.trim().length() > 0)
+                temp = Cipher.getInstance(symAlgorithm, symProvider);
+            else
+                temp = Cipher.getInstance(symAlgorithm);
             temp.init(Cipher.SECRET_KEY, keySpec);
         } catch (Exception e)
         {
