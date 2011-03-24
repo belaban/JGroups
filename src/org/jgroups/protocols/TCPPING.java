@@ -63,6 +63,9 @@ public class TCPPING extends Discovery {
         return_entire_cache=true;
     }
 
+    public boolean isDynamic() {
+        return false;
+    }
 
     /**
      * Returns the list of initial hosts as configured by the user via XML. Note that the returned list is mutable, so

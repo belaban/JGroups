@@ -39,7 +39,10 @@ public class PING extends Discovery {
         super.stop();
         discovery_reception.reset();
     }
-    
+
+    public boolean isDynamic() {
+        return true;
+    }
 
     public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         //  Mcast GET_MBRS_REQ message

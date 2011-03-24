@@ -110,6 +110,8 @@ public abstract class Discovery extends Protocol {
 
     public abstract void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception;
 
+    public abstract boolean isDynamic();
+
 
     public void handleDisconnect() {
     }

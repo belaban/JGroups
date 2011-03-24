@@ -61,6 +61,10 @@ public class TCPGOSSIP extends Discovery {
         return initial_hosts;
     }
 
+    public boolean isDynamic() {
+        return true;
+    }
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
