@@ -117,7 +117,7 @@ public class S3_PING extends FILE_PING {
                 PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
                 clustername = parsedPut.getPrefix();
             }
-            ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
+            ListBucketResponse rsp=conn.listBucket(location, sanitize(clustername), null, null, null);
             if(rsp.entries != null) {
                 for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
                     ListEntry key=it.next();
@@ -150,7 +150,7 @@ public class S3_PING extends FILE_PING {
         if(clustername == null || data == null)
             return;
         String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
-        String key=clustername + "/" + filename;
+        String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
             byte[] buf=Util.objectToByteBuffer(data);
             S3Object val=new S3Object(buf, null);
@@ -175,7 +175,7 @@ public class S3_PING extends FILE_PING {
         if(clustername == null || addr == null)
             return;
         String filename=addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
-        String key=clustername + "/" + filename;
+        String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
             Map headers=new TreeMap();
             headers.put("Content-Type", Arrays.asList("text/plain"));
@@ -208,6 +208,15 @@ public class S3_PING extends FILE_PING {
     
     protected boolean usingPreSignedUrls() {
         return pre_signed_put_url != null;
+    }
+
+
+    /** Sanitizes bucket and folder names according to AWS guidelines */
+    protected static String sanitize(final String name) {
+        String retval=name;
+        retval=retval.replace('/', '-');
+        retval=retval.replace('\\', '-');
+        return retval;
     }
 
 
