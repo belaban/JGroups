@@ -504,8 +504,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                             + ack_collector.printMissing());
                 }
             }
-            }
-        }           
+        }
+    }
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);        
