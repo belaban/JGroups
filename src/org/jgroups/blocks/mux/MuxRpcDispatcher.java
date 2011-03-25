@@ -9,6 +9,7 @@ import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.UpHandler;
 import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodLookup;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
@@ -52,6 +53,18 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         start();
     }
 
+    public MuxRpcDispatcher(short scopeId, Channel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject, MethodLookup method_lookup) {
+        this(scopeId);
+        
+        setMethodLookup(method_lookup);
+        setMessageListener(messageListener);
+        setMembershipListener(membershipListener);
+        setServerObject(serverObject);
+        setChannel(channel);
+        channel.addChannelListener(this);
+        start();
+    }
+    
     private Muxer<UpHandler> getMuxer() {
         UpHandler handler = channel.getUpHandler();
         return ((handler != null) && (handler instanceof MuxUpHandler)) ? (MuxUpHandler) handler : null;
