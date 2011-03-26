@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
@@ -134,6 +136,8 @@ abstract public class Executing extends Protocol {
      * elements the run request queue must be empty.
      */
     protected Queue<Owner> _consumersAvailable = new ArrayDeque<Owner>();
+    
+    protected ExecutorService _executor = Executors.newFixedThreadPool(4);
 
     protected static enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
@@ -271,25 +275,47 @@ abstract public class Executing extends Protocol {
                 }
                 
                 if (owner != null) {
+                    final Type type;
+                    final Object valueToSend;
                     if (value == null) {
-                        sendRequest(owner.getAddress(), Type.RESULT_SUCCESS, 
-                                    owner.requestId, value);
+                        type = Type.RESULT_SUCCESS;
+                        valueToSend = value;
                     }
                     // Both serializable values and exceptions would go in here
                     else if (value instanceof Serializable || 
                             value instanceof Externalizable || 
                             value instanceof Streamable) {
-                        sendRequest(owner.getAddress(), 
-                            exception ? Type.RESULT_EXCEPTION : Type.RESULT_SUCCESS, 
-                                    owner.requestId, value);
+                        type = exception ? Type.RESULT_EXCEPTION : Type.RESULT_SUCCESS;
+                        valueToSend = value;
                     }
                     // This would happen if the value wasn't serializable,
                     // so we have to send back to the client that the class
                     // wasn't serializable
                     else {
-                        sendRequest(owner.getAddress(), Type.RESULT_EXCEPTION,
-                            owner.requestId, new NotSerializableException(value
-                                .getClass().getName()));
+                        type = Type.RESULT_EXCEPTION;
+                        valueToSend = new NotSerializableException(
+                            value.getClass().getName());
+                    }
+                    
+                    if (local_addr.equals(owner.getAddress())) {
+                        final Owner finalOwner = owner;
+                        _executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (type == Type.RESULT_SUCCESS) {
+                                    handleValueResponse(local_addr, 
+                                        finalOwner.requestId, valueToSend);
+                                }
+                                else if (type == Type.RESULT_EXCEPTION){
+                                    handleExceptionResponse(local_addr, 
+                                        finalOwner.requestId, (Throwable)valueToSend);
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        sendRequest(owner.getAddress(), type, owner.requestId, 
+                            valueToSend);
                     }
                 }
                 else {
@@ -414,10 +440,10 @@ abstract public class Executing extends Protocol {
                     log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
                 switch(req.type) {
                     case RUN_REQUEST:
-                        handleTaskRequest(req);
+                        handleTaskRequest(req.request, (Address)req.object);
                         break;
                     case CONSUMER_READY:
-                        handleConsumerReadyRequest(req);
+                        handleConsumerReadyRequest(req.request, (Address)req.object);
                         break;
                     case CONSUMER_UNREADY:
                         Owner consumer = new Owner((Address)req.object, req.request);
@@ -425,7 +451,7 @@ abstract public class Executing extends Protocol {
                         sendRemoveConsumerRequest(consumer);
                         break;
                     case CONSUMER_FOUND:
-                        handleConsumerFoundResponse(req);
+                        handleConsumerFoundResponse(req.request, (Address)req.object);
                         break;
                     case RUN_SUBMITTED:
                         Object objectToRun = req.object;
@@ -448,15 +474,18 @@ abstract public class Executing extends Protocol {
                             req.request);
                         break;
                     case RUN_REJECTED:
+                        // TODO: make this localfied
                         handleTaskRejectedResponse(msg.getSrc(), req.request);
                         break;
                     case RESULT_SUCCESS:
-                        handleValueResponse(msg.getSrc(), req);
+                        handleValueResponse(msg.getSrc(), req.request, req.object);
                         break;
                     case RESULT_EXCEPTION:
-                        handleExceptionResponse(msg.getSrc(), req);
+                        handleExceptionResponse(msg.getSrc(), req.request, 
+                            (Throwable)req.object);
                         break;
                     case INTERRUPT_RUN:
+                        // TODO: make this localfied
                         handleInterruptRequest(msg.getSrc(), req.request);
                         break;
                     case CREATE_CONSUMER_READY:
@@ -541,9 +570,9 @@ abstract public class Executing extends Protocol {
     abstract protected void sendNewConsumerRequest(Owner source);
     abstract protected void sendRemoveConsumerRequest(Owner source);
 
-    protected void handleTaskRequest(Request request) {
-        Owner consumer;
-        Owner source = new Owner((Address)request.object, request.request);
+    protected void handleTaskRequest(long requestId, Address address) {
+        final Owner consumer;
+        Owner source = new Owner(address, requestId);
         _consumerLock.lock();
         try {
             consumer = _consumersAvailable.poll();
@@ -558,8 +587,19 @@ abstract public class Executing extends Protocol {
         }
         
         if (consumer != null) {
-            sendRequest(source.getAddress(), Type.CONSUMER_FOUND, 
-                consumer.getRequestId(), consumer.getAddress());
+            if (local_addr.equals(source.getAddress())) {
+                _executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        handleConsumerFoundResponse(consumer.getRequestId(), 
+                            consumer.getAddress());
+                    }
+                });
+            }
+            else {
+                sendRequest(source.getAddress(), Type.CONSUMER_FOUND, 
+                    consumer.getRequestId(), consumer.getAddress());
+            }
             sendRemoveConsumerRequest(consumer);
         }
         else {
@@ -567,9 +607,9 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleConsumerReadyRequest(Request request) {
+    protected void handleConsumerReadyRequest(long requestId, Address address) {
         Owner requestor;
-        Owner source = new Owner((Address)request.object, request.request);
+        final Owner source = new Owner(address, requestId);
         _consumerLock.lock();
         try {
             requestor = _runRequests.poll();
@@ -584,8 +624,18 @@ abstract public class Executing extends Protocol {
         }
         
         if (requestor != null) {
-            sendRequest(requestor.getAddress(), Type.CONSUMER_FOUND, 
-                source.getRequestId(), source.getAddress());
+            if (local_addr.equals(requestor.getAddress())) {
+                _executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        handleConsumerFoundResponse(source.getRequestId(), source.getAddress());
+                    }
+                });
+            }
+            else {
+                sendRequest(requestor.getAddress(), Type.CONSUMER_FOUND, 
+                    source.getRequestId(), source.getAddress());
+            }
             sendRemoveRunRequest(requestor);
         }
         else {
@@ -593,11 +643,10 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleConsumerFoundResponse(Request request) {
-        Runnable runnable = _awaitingConsumer.poll();
+    protected void handleConsumerFoundResponse(long request, Address address) {
+        final Runnable runnable = _awaitingConsumer.poll();
         // This is a representation of the server side owner running our task.
-        Owner owner = new Owner((Address)request.object, 
-            request.request);
+        Owner owner = new Owner(address, request);
         if (runnable == null) {
             // For some reason we don't have a runnable anymore
             // so we have to send back to the coordinator that
@@ -607,17 +656,28 @@ abstract public class Executing extends Protocol {
                 owner.getAddress());
         }
         else {
-            Long requestId = _requestId.get(runnable);
-            owner = new Owner((Address)request.object, requestId);
+            final Long requestId = _requestId.get(runnable);
+            owner = new Owner(address, requestId);
             _awaitingReturn.put(owner, runnable);
-            if (runnable instanceof DistributedFuture) {
-                Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
-                sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
-                    requestId, callable);
+            // If local we pass along without serializing
+            if (local_addr.equals(owner.getAddress())) {
+                _executor.submit(new Runnable () {
+                    @Override
+                    public void run() {
+                        handleTaskSubmittedRequest(runnable, local_addr, requestId);
+                    }
+                });
             }
             else {
-                sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
-                    requestId, runnable);
+                if (runnable instanceof DistributedFuture) {
+                    Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
+                    sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
+                        requestId, callable);
+                }
+                else {
+                    sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
+                        requestId, runnable);
+                }
             }
         }
     }
@@ -644,6 +704,7 @@ abstract public class Executing extends Protocol {
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            System.out.println("Interrupted while handing off");
         }
         
         if (!received) {
@@ -670,9 +731,9 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleValueResponse(Address source, Request req) {
+    protected void handleValueResponse(Address source, long requestId, Object value) {
         Runnable runnable = _awaitingReturn.remove(
-            new Owner(source, req.request));
+            new Owner(source, requestId));
         
         if (runnable != null) {
             _requestId.remove(runnable);
@@ -682,7 +743,7 @@ abstract public class Executing extends Protocol {
             RunnableFuture<?> future = (RunnableFuture<?>)runnable;
             ExecutorNotification notifier = notifiers.remove(future);
             if (notifier != null) {
-                notifier.resultReturned(req.object);
+                notifier.resultReturned(value);
             }
         }
         else {
@@ -690,9 +751,9 @@ abstract public class Executing extends Protocol {
         }
     }
 
-    protected void handleExceptionResponse(Address source, Request req) {
+    protected void handleExceptionResponse(Address source, long requestId, Throwable throwable) {
         Runnable runnable = _awaitingReturn.remove(
-            new Owner(source, req.request));
+            new Owner(source, requestId));
         
         if (runnable != null) {
             _requestId.remove(runnable);
@@ -702,7 +763,7 @@ abstract public class Executing extends Protocol {
             RunnableFuture<?> future = (RunnableFuture<?>)runnable;
             ExecutorNotification notifier = notifiers.remove(future);
             if (notifier != null) {
-                notifier.throwableEncountered((Throwable)req.object);
+                notifier.throwableEncountered(throwable);
             }
         }
         else {
@@ -711,7 +772,7 @@ abstract public class Executing extends Protocol {
             // have a future object.
             log.error("Runtime Error encountered from "
                     + "Cluster execute(Runnable) method",
-                (Throwable) req.object);
+                    throwable);
         }
     }
 
@@ -785,7 +846,7 @@ abstract public class Executing extends Protocol {
         }
         catch(Exception ex) {
             log.error("failed sending " + type + " request: " + ex);
-        }
+        }  
     }
     
     /**
