@@ -3,11 +3,17 @@ package org.jgroups.demos;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jgroups.JChannel;
@@ -75,6 +81,34 @@ public class ExecutionServiceDemo {
         demo.start();
     }
     
+    protected static class ByteBufferStreamable implements Streamable {
+        
+        protected ByteBuffer buffer;
+        
+        public ByteBufferStreamable() {
+
+        }
+        
+        protected ByteBufferStreamable(ByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void writeTo(DataOutputStream out) throws IOException {
+            int size = buffer.limit() - buffer.position();
+            out.writeInt(size);
+            out.write(buffer.array(), buffer.position(), size);
+        }
+
+        @Override
+        public void readFrom(DataInputStream in) throws IOException,
+                IllegalAccessException, InstantiationException {
+            buffer = ByteBuffer.allocate(in.readInt());
+            in.readFully(buffer.array());
+        }
+        
+    }
+    
     public void start() throws Exception {
         ch=new JChannel(props);
         if(name != null)
@@ -101,42 +135,32 @@ public class ExecutionServiceDemo {
         }
     }
     
-    public static class SortingByteCallable implements Callable<byte[]>, Streamable {
+    public static class SortingByteCallable implements Callable<ByteBufferStreamable>, Streamable {
         public SortingByteCallable() {
         }
         public SortingByteCallable(byte[] bytes, int offset, int size) {
-            this.bytes=bytes;
-            this.offset=offset;
-            this.size=size;
+            buffer = ByteBuffer.wrap(bytes, offset, size);
         }
         
         @Override
-        public byte[] call() throws Exception {
-            Arrays.sort(bytes);
-            return bytes;
+        public ByteBufferStreamable call() throws Exception {
+            Arrays.sort(buffer.array(), buffer.position(), buffer.limit());
+            return new ByteBufferStreamable(buffer);
         }
         
-        protected byte[] bytes;
-        protected int offset = 0;
-        protected int size = 0;
+        protected ByteBuffer buffer;
 
         // We copy over as a single array with no offset
         @Override
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeInt(size);
-            for (int i = 0; i < size; ++i) {
-                out.writeByte(bytes[i + offset]);
-            }
+            Util.writeStreamable(new ByteBufferStreamable(buffer), out);
         }
 
         @Override
         public void readFrom(DataInputStream in) throws IOException,
                 IllegalAccessException, InstantiationException {
-            int size = in.readInt();
-            bytes = new byte[size];
-            for (int i = 0; i < size; ++i) {
-                bytes[i] = in.readByte();
-            }
+            buffer = ((ByteBufferStreamable)Util.readStreamable(
+                ByteBufferStreamable.class, in)).buffer;
         }
     }
     
@@ -145,60 +169,60 @@ public class ExecutionServiceDemo {
      * 
      * @author wburns
      */
-    public static class SortingTwoByteCallable implements Callable<byte[]>, Streamable {
-        protected byte[] bytes1;
-        protected byte[] bytes2;
+    public static class SortingTwoByteCallable implements Callable<ByteBufferStreamable>, Streamable {
+        protected ByteBuffer bytes1;
+        protected ByteBuffer bytes2;
         
         public SortingTwoByteCallable() {
             
         }
-        public SortingTwoByteCallable(byte[] ints1, byte[] ints2) {
-            this.bytes1=ints1;
-            this.bytes2=ints2;
+        public SortingTwoByteCallable(ByteBufferStreamable bytes1, ByteBufferStreamable bytes2) {
+            this.bytes1=bytes1.buffer;
+            this.bytes2=bytes2.buffer;
         }
         
         @Override
-        public byte[] call() throws Exception {
-            byte[] results = new byte[bytes1.length + bytes2.length];
-            int i = 0;
-            int j = 0;
-            while (i < bytes1.length && j < bytes2.length) {
-                if (bytes1[i] < bytes2[j]) {
-                    results[i + j] = bytes1[i++];
+        public ByteBufferStreamable call() throws Exception {
+            ByteBuffer results = ByteBuffer.allocate(bytes1.remaining() + 
+                bytes2.remaining());
+            int i = bytes1.position();
+            int j = bytes2.position();
+            byte[] byteArray1 = bytes1.array();
+            byte[] byteArray2 = bytes2.array();
+            int byte1Max = bytes1.limit();
+            int byte2Max = bytes2.limit();
+            while (i < byte1Max && j < byte2Max) {
+                if (byteArray1[i] < byteArray2[j]) {
+                    results.put(byteArray1[i++]);
                 }
                 else {
-                    results[i + j] = bytes2[j++];
+                    results.put(byteArray2[j++]);
                 }
             }
-            if (i < bytes1.length) {
-                System.arraycopy(bytes1, i, results, i + j, bytes1.length - i);
+            if (i < byte1Max) {
+                results.put(byteArray1, i, byte1Max - i);
             }
-            else if (j < bytes2.length) {
-                System.arraycopy(bytes2, j, results, i + j, bytes2.length - j);
+            else if (j < byte2Max) {
+                results.put(byteArray2, j, byte2Max - j);
             }
-            return results;
+            results.flip();
+            return new ByteBufferStreamable(results);
         }
         
         @Override
         public void writeTo(DataOutputStream out) throws IOException {
-            out.writeInt(bytes1.length);
-            out.write(bytes1);
-            out.writeInt(bytes2.length);
-            out.write(bytes2);
+            Util.writeStreamable(new ByteBufferStreamable(bytes1), out);
+            Util.writeStreamable(new ByteBufferStreamable(bytes2), out);
         }
 
         @Override
         public void readFrom(DataInputStream in) throws IOException,
                 IllegalAccessException, InstantiationException {
-            int size = in.readInt();
-            bytes1 = new byte[size];
+            bytes1 = ((ByteBufferStreamable)Util.readStreamable(
+                ByteBufferStreamable.class, in)).buffer;
             
-            in.readFully(bytes1);
-            
-            size = in.readInt();
-            bytes2 = new byte[size];
-            
-            in.readFully(bytes2);
+            bytes2 = ((ByteBufferStreamable)Util.readStreamable(
+                ByteBufferStreamable.class, in)).buffer;
         }
     }
     
@@ -217,8 +241,12 @@ public class ExecutionServiceDemo {
                     numbers[i] = (byte)random.nextInt(256);
                 }
                 
-                ExecutionCompletionService<byte[]> completion = 
-                    new ExecutionCompletionService<byte[]>(execution_service);
+                if (printValues)
+                    System.out.println("Original Numbers: " + 
+                        Arrays.toString(numbers));
+                
+                ExecutionCompletionService<ByteBufferStreamable> completion = 
+                    new ExecutionCompletionService<ByteBufferStreamable>(execution_service);
                 
                 long beginDistributed = System.nanoTime();
                 int chunks = numbers.length / size;
@@ -233,13 +261,13 @@ public class ExecutionServiceDemo {
                     futureNumber++;
                 }
                 
-                Future<byte[]> finalValue;
+                Future<ByteBufferStreamable> finalValue;
                 if (futureNumber > 1) {
-                    Future<byte[]> result = null;
+                    Future<ByteBufferStreamable> result = null;
                     while (true) {
                         result = completion.take();
                         if (--futureNumber >= 1) {
-                            Future<byte[]> result2 = completion.take();
+                            Future<ByteBufferStreamable> result2 = completion.take();
                             completion.submit(new SortingTwoByteCallable(result.get(), result2.get()));
                         }
                         else {
@@ -253,14 +281,12 @@ public class ExecutionServiceDemo {
                     finalValue = completion.take();
                 }
                 
-                byte[] results = finalValue.get();
+                ByteBufferStreamable results = finalValue.get();
                 
                 long totalDistributed = System.nanoTime() - beginDistributed;
                 if (printValues) {
-                    System.out.println("Original Numbers: "
-                            + Arrays.toString(numbers));
                     System.out.println("Sorted values: " + Arrays.toString(
-                        results));
+                        results.buffer.array()));
                 }
                 System.out.println("Distributed Sort Took: " + Util.printTime(totalDistributed, TimeUnit.NANOSECONDS));
                 

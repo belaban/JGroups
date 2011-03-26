@@ -174,8 +174,46 @@ public class CENTRAL_EXECUTOR extends Executing {
 
     // @see org.jgroups.protocols.Executing#sendToCoordinator(org.jgroups.protocols.Executing.Type, long, org.jgroups.Address)
     @Override
-    protected void sendToCoordinator(Type type, long requestId, Address value) {
-        sendRequest(coord, type, requestId, value);
+    protected void sendToCoordinator(Type type, final long requestId, final Address value) {
+        Runnable runnable = null;
+        if (is_coord) {
+            switch(type) {
+            case RUN_REQUEST:
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        handleTaskRequest(requestId, value);
+                    }
+                };
+                break;
+            case CONSUMER_READY:
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        handleConsumerReadyRequest(requestId, value);
+                    }
+                };
+                break;
+            case CONSUMER_UNREADY:
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        // TODO: make it a handle method instead
+                        Owner consumer = new Owner(value, requestId);
+                        _consumersAvailable.remove(consumer);
+                        sendRemoveConsumerRequest(consumer);
+                    }
+                };
+                break;
+            };
+        }
+        
+        if (runnable != null) {
+            _executor.execute(runnable);
+        }
+        else {
+            sendRequest(coord, type, requestId, value);
+        }
     }
 
     // @see org.jgroups.protocols.Executing#sendNewRunRequest(org.jgroups.protocols.Executing.Owner)
