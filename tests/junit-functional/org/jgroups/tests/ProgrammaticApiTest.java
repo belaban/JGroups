@@ -54,8 +54,7 @@ public class ProgrammaticApiTest {
 
         MyReceiver receiver1=new MyReceiver("A"), receiver2=new MyReceiver("B");
 
-        UDP shared_transport=(UDP)new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5"))
-                .setValue("singleton_name", "shared");
+        UDP shared_transport=(UDP)new UDP().setValue("singleton_name", "shared");
 
         stack1.addProtocol(shared_transport).addProtocols(createProtocols());
         stack2.addProtocol(shared_transport).addProtocols(createProtocols());
