@@ -507,6 +507,8 @@ public abstract class TP extends Protocol {
     /** Whether or not hardware multicasting is supported */
     public abstract boolean supportsMulticasting();
 
+    public boolean isMulticastCapable() {return supportsMulticasting();}
+
     public String toString() {
         if(!isSingleton())
             return local_addr != null? name + "(local address: " + local_addr + ')' : name;
