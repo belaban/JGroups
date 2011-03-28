@@ -237,10 +237,7 @@ public class ChannelTestBase {
         protected void makeUnique(Channel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
                                           null, "mcast_addr", false, null);
-            if (str != null)
-                makeUnique(channel, num, str);
-            else
-                makeUnique(channel, num, null);
+            makeUnique(channel, num, str);
         }
 
         protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
@@ -270,7 +267,7 @@ public class ChannelTestBase {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",");
-                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1);
+                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING) ping).setInitialHosts(init_hosts);
             } else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
