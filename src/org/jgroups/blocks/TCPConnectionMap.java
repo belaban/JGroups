@@ -1,6 +1,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -369,7 +370,7 @@ public class TCPConnectionMap{
             if(peer_addr == null)
                 throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);           
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
-            this.sock=new Socket();
+            this.sock=socket_factory.createSocket(Global.TCP_SOCK);
             this.sock.bind(new InetSocketAddress(bind_addr, 0));
             Util.connect(this.sock, destAddr, sock_conn_timeout);
             setSocketParameters(sock);
@@ -720,7 +721,10 @@ public class TCPConnectionMap{
                 if (isSenderUsed()) {
                     sender.stop();
                 }
-                Util.close(sock);
+                try {
+                    socket_factory.close(sock);
+                }
+                catch(Throwable t) {}
                 Util.close(out);
                 Util.close(in);
             } finally {

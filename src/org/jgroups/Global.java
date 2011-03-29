@@ -99,6 +99,7 @@ public class Global {
     public static final String UDP_MCAST_SOCK="jgroups.udp.mcast_sock";
     public static final String UDP_UCAST_SOCK="jgroups.udp.unicast_sock";
     public static final String TCP_SRV_SOCK="jgroups.tcp.srv_sock";
+    public static final String TCP_SOCK="jgroups.tcp.sock";
     public static final String TUNNEL_UCAST_SOCK="jgroups.tunnel.ucast_sock";
     public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
     public static final String BPING_SOCK="jgroups.bping.sock";
