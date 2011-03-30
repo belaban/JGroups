@@ -3389,7 +3389,7 @@ public class Util {
      * Returns the first non-loopback address on any interface on the current host.
      */
     public static InetAddress getNonLoopbackAddress() throws SocketException {
-        return getAddress(AddressScope.NON_LOOPBACK);
+        return getAddress(AddressScope.NON_LOOPBACK, true);
     }
 
 
@@ -3398,15 +3398,30 @@ public class Util {
      * Returns the first address on any interface of the current host, which satisfies scope
      */
     public static InetAddress getAddress(AddressScope scope) throws SocketException {
+        return getAddress(scope, false);
+    }
+
+
+    /**
+     * Returns the first address on any interface of the current host, which satisfies scope. Ignores any socket
+     * exceptions that may occur while looping through the network interfaces. See, for example:
+     * http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7032558.
+     */
+    public static InetAddress getAddress(AddressScope scope, boolean ignoreException) throws SocketException {
         InetAddress address=null ;
 
         Enumeration intfs=NetworkInterface.getNetworkInterfaces();
         while(intfs.hasMoreElements()) {
             NetworkInterface intf=(NetworkInterface)intfs.nextElement();
-            if(intf.isUp()) {
-                address=getAddress(intf, scope) ;
-                if(address != null)
-                    return address;
+            try {
+                if(intf.isUp()) {
+                    address=getAddress(intf, scope) ;
+                    if(address != null)
+                        return address;
+                }
+            } catch (SocketException e) {
+                if(! ignoreException)
+                    throw e;
             }
         }
         return null ;
