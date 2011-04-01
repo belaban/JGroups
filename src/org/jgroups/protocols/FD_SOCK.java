@@ -292,7 +292,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     startServerSocket();
                 }
                 catch(Exception e) {
-                    throw new IllegalArgumentException("failed to created server socket", e);
+                    throw new IllegalArgumentException("failed to start server socket", e);
                 }
                 return ret;
 
