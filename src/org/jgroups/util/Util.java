@@ -3049,7 +3049,7 @@ public class Util {
             catch(BindException bind_ex) {
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
-                if(bind_addr != null) {
+                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
@@ -3254,8 +3254,10 @@ public class Util {
      * 
      */
     public static InetAddress validateBindAddressFromInterface(InetAddress bind_addr, String bind_interface_str) throws UnknownHostException, SocketException {
-    	
-    	NetworkInterface bind_intf=null ;
+    	NetworkInterface bind_intf=null;
+
+        if(bind_addr != null && bind_addr.isLoopbackAddress())
+            return bind_addr;
 
     	// 1. if bind_interface_str is null, or empty, no constraint on bind_addr
     	if (bind_interface_str == null || bind_interface_str.trim().length() == 0)
@@ -3567,15 +3569,14 @@ public class Util {
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr, String prot_name) throws Exception {
-        if(bind_addr.isAnyLocalAddress())
+        if(bind_addr.isAnyLocalAddress() || bind_addr.isLoopbackAddress())
             return;
         Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr: addrs) {
             if(addr.equals(bind_addr))
                 return;
         }
-        if(!bind_addr.isLoopbackAddress())
-            throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
+        throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
     }
     
 
