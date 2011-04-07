@@ -6,6 +6,7 @@ package org.jgroups.tests;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Util;
 
 
@@ -56,6 +57,16 @@ public class FragTest2 {
         channel=new JChannel(props);
         if(mode == 1) channel.setDiscardOwnMessages(true);
         channel.connect(groupname);
+        channel.setReceiver(new ReceiverAdapter() {
+            public void receive(Message msg) {
+                System.out.println("Received message: " + msg);
+                byte[] buf=msg.getBuffer();
+                for(int i=0; i < (10 < MSG_SIZE ? 10 : MSG_SIZE); i++) {
+                    System.out.print((char)buf[i]);
+                }
+                System.out.println();
+            }
+        });
 
         if(mode == 1) {
             for(int j=0; j < num_msgs; j++) {
@@ -65,32 +76,13 @@ public class FragTest2 {
                 System.out.println("Done Sending msg (" + MSG_SIZE + " bytes)");
                 Util.sleep(timeout);
             }
-            System.out.println("Press [return] to exit");
-            System.in.read();
+
         }
         else {
             System.out.println("Waiting for messages:");
-
-            while(true) {
-                try {
-                    obj=channel.receive(0);
-                    if(obj instanceof Message) {
-                        System.out.println("Received message: " + obj);
-                        Message tmp=(Message)obj;
-                        byte[] buf=tmp.getBuffer();
-                        for(int i=0; i < (10 < MSG_SIZE ? 10 : MSG_SIZE); i++) {
-                            System.out.print((char)buf[i]);
-                        }
-                        System.out.println();
-
-                    }
-                }
-                catch(Exception e) {
-                    System.err.println(e);
-                }
-            }
-
         }
+        System.out.println("Press [return] to exit");
+        System.in.read();
         channel.close();
     }
 

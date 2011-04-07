@@ -181,18 +181,6 @@ public class ChannelTest extends ChannelTestBase {
         }
     }
 
-    @Test(expectedExceptions=TimeoutException.class)
-    public void testReceiveTimeout() throws Exception, TimeoutException {
-        JChannel ch1 = createChannel(true,2);        
-        try{
-            ch1.connect("testReceiveTimeout");
-            ch1.receive(1000); // this one works, because we're expecting a View
-            ch1.receive(2000);// .. but this one doesn't (no msg available) - needs to throw a TimeoutException
-        }
-        finally{
-            Util.close(ch1);
-        }
-    }
 
     @Test(expectedExceptions={NullPointerException.class})
     public void testNullMessage() throws Exception {

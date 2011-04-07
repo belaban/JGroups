@@ -20,8 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  A channel represents a group communication endpoint (like BSD datagram sockets). A
  client joins a group by connecting the channel to a group address and leaves it by
  disconnecting. Messages sent over the channel are received by all group members that
- are connected to the same group (that is, all members that have the same group
- address).<p>
+ are connected to the same group (that is, all members that have the same group address).<p>
 
  The FSM for a channel is roughly as follows: a channel is created
  (<em>unconnected</em>). The channel is connected to a group
@@ -33,23 +32,21 @@ import java.util.concurrent.CopyOnWriteArraySet;
  more than one channel in an application.<p>
 
  Messages can be sent to the group members using the <em>send</em> method and messages
- can be received using <em>receive</em> (pull approach).<p>
+ can be received setting a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the
+ {@link Receiver#receive(Message)} callback.<p>
 
- A channel instance is created using either a <em>ChannelFactory</em> or the public
- constructor. Each implementation of a channel must provide a subclass of
- <code>Channel</code> and an implementation of <code>ChannelFactory</code>.  <p>
+ A channel instance is created using the public constructor.  <p>
  Various degrees of sophistication in message exchange can be achieved using building
  blocks on top of channels; e.g., light-weight groups, synchronous message invocation,
  or remote method calls. Channels are on the same abstraction level as sockets, and
- should really be simple to use. Higher-level abstractions are all built on top of
- channels.
+ should really be simple to use. Higher-level abstractions are all built on top of channels.
 
  @author  Bela Ban
  @see     java.net.DatagramPacket
  @see     java.net.MulticastSocket
  */
 @MBean(description="Channel")
-public abstract class Channel implements Transport {
+public abstract class Channel /* implements Transport */ {
     protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
@@ -131,20 +128,6 @@ public abstract class Channel implements Transport {
     abstract public void close();
 
 
-    /** Shuts down the channel without disconnecting if connected, stops all the threads */
-    @Deprecated
-    abstract public void shutdown();
-
-
-    /**
-     Re-opens a closed channel. Throws an exception if the channel is already open. After this method
-     returns, connect() may be called to join a group. The address of this member will be different from
-     the previous incarnation.
-     */
-    public void open() throws ChannelException {
-        ;
-    }
-
 
     /**
      Determines whether the channel is open; 
@@ -159,22 +142,6 @@ public abstract class Channel implements Transport {
      */
     abstract public boolean isConnected();
 
-
-    /**
-     * Returns the number of messages that are waiting. Those messages can be
-     * removed by {@link #receive(long)}. Note that this number could change after
-     * calling this method and before calling <tt>receive()</tt> (e.g. the latter
-     * method might be called by a different thread).
-     * @return The number of messages on the queue, or -1 if the queue/channel
-     * is closed/disconnected.
-     */
-    public int getNumMessages() {
-        return -1;
-    }
-
-    public String dumpQueue() {
-        return "";
-    }
 
 
     /**
@@ -241,66 +208,6 @@ public abstract class Channel implements Transport {
     public Object downcall(Event evt) {
         return null;
     }
-
-
-    /** Receives a message, a view change or a block event. By using <code>setOpt</code>, the
-     type of objects to be received can be determined (e.g., not views and blocks, just
-     messages).
-
-     The possible types returned can be:
-     <ol>
-     <li><code>Message</code>. Normal message
-     <li><code>Event</code>. All other events (used by JChannel)
-     <li><code>View</code>. A view change.
-     <li><code>BlockEvent</code>. A block event indicating that a flush protocol has been started, and we should not
-     send any more messages. This event should be ack'ed by calling {@link org.jgroups.Channel#blockOk()} .
-     Any messages sent after blockOk() returns might get blocked until the flush protocol has completed.
-     <li><code>UnblockEvent</code>. An unblock event indicating that the flush protocol has completed and we can resume
-     sending messages
-     <li><code>SuspectEvent</code>. A notification of a suspected member.
-     <li><code>GetStateEvent</code>. The current state of the application should be
-     returned using <code>ReturnState</code>.
-     <li><code>SetStateEvent</code>. The state of a single/all members as requested previously
-     by having called <code>Channel.getState(s).
-     <li><code>ExitEvent</code>. Signals that this member was forced to leave the group 
-     (e.g., caused by the member being suspected.) The member can rejoin the group by calling
-     open(). If the AUTO_RECONNECT is set (see setOpt()), the reconnect will be done automatically.
-     </ol>
-     The <code>instanceof</code> operator can be used to discriminate between different types
-     returned.
-     @param timeout Value in milliseconds. Value <= 0 means wait forever
-     @return A Message, View, BlockEvent, SuspectEvent, GetStateEvent, SetStateEvent or
-     ExitEvent, depending on what is on top of the internal queue.
-
-     @exception ChannelNotConnectedException The channel must be connected to receive messages.
-
-     @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
-     A new channel has to be created first.
-
-     @exception TimeoutException Thrown when a timeout has occurred.
-     @deprecated Use a {@link Receiver} instead
-     */
-    abstract public Object receive(long timeout) throws ChannelNotConnectedException,
-                                                        ChannelClosedException, TimeoutException;
-
-
-    /** Returns the next message, view, block, suspect or other event <em>without removing
-     it from the queue</em>.
-     @param timeout Value in milliseconds. Value <= 0 means wait forever
-     @return A Message, View, BlockEvent, SuspectEvent, GetStateEvent or SetStateEvent object,
-     depending on what is on top of the internal queue.
-
-     @exception ChannelNotConnectedException The channel must be connected to receive messages.
-
-     @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
-     A new channel has to be created first.
-
-     @exception TimeoutException Thrown when a timeout has occurred.
-
-     @see #receive(long)
-     @deprecated Use a {@link Receiver} instead, this method will not be available in JGroups 3.0
-     */
-    abstract public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException;
 
 
     /**
@@ -457,14 +364,6 @@ public abstract class Channel implements Transport {
     abstract public void stopFlush(List<Address> flushParticipants);
 
 
-    /** Called to acknowledge a block() (callback in <code>MembershipListener</code> or
-     <code>BlockEvent</code> received from call to <code>Receive</code>).
-     After sending BlockOk, no messages should be sent until a new view has been received.
-     Calling this method on a closed channel has no effect.
-     */
-    abstract public void blockOk();
-
-
     /**
      Retrieve the state of the group. Will usually contact the oldest group member to get
      the state. When the method returns true, a <code>SetStateEvent</code> will have been
@@ -496,36 +395,7 @@ public abstract class Channel implements Transport {
     abstract public boolean getState(Address target, String state_id, long timeout)
             throws ChannelNotConnectedException, ChannelClosedException;
 
-    /**
-     Retrieve all states of the group members. Will contact all group members to get
-     the states. When the method returns true, a <code>SetStateEvent</code> will have been
-     added to the channel's queue, causing <code>Receive</code> to return the states in one of
-     the next invocations. If false, no states will be retrieved by <code>Receive</code>.
-     @param targets A list of members which are contacted for states. If the list is null,
-     all the current members of the group will be contacted.
-     @param timeout Milliseconds to wait for the response (0 = wait indefinitely).
-     @return boolean True if the state was retrieved successfully, otherwise false.
-     @exception ChannelNotConnectedException The channel must be connected to
-     receive messages.
-     @exception ChannelClosedException The channel is closed and therefore cannot be used
-     any longer. A new channel has to be created first.
-     @deprecated Not really needed - we always want to get the state from a single member
-     */
-    abstract public boolean getAllStates(Vector targets, long timeout)
-            throws ChannelNotConnectedException, ChannelClosedException;
 
-
-    /**
-     * Called by the application is response to receiving a
-     * <code>getState()</code> object when calling <code>receive()</code>.
-     * @param state The state of the application as a byte buffer
-     *              (to send over the network).
-     */
-    public abstract void returnState(byte[] state);
-
-    /** Returns a given substate (state_id of null means return entire state) */
-    public abstract void returnState(byte[] state, String state_id);
-    
     public abstract Map<String,Object> getInfo();
     public abstract void setInfo(String key, Object value);
 

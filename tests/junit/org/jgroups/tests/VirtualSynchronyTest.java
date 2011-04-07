@@ -127,43 +127,32 @@ public class VirtualSynchronyTest {
 		public void run() {
 			try {
 				ch = new JChannel(CHANNEL_PROPS);
+                ch.setReceiver(new ReceiverAdapter() {
+                    public void block() {
+                        ;
+                    }
+
+                    public void receive(Message msg) {
+                        gotMessage(msg);
+                    }
+
+                    public void viewAccepted(View view) {
+                        try {
+                            gotView(view);
+                        }
+                        catch(Exception ex) {
+                            ch.close();
+                            running=false;
+                        }
+                    }
+                });
 				ch.connect("vsynchtest");
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			
-			while (running) {
-				Object msgReceived = null;
-				try {
-					msgReceived = ch.receive(0);
-					if (!running) {
-						// I am not a group member anymore so
-						// I will discard any transient message I
-						// receive
-					} else {
-						if (msgReceived instanceof View) {
-							gotView(msgReceived);
-						}
-
-						if (msgReceived instanceof Message) {
-							gotMessage(msgReceived);
-						}
-                        
-                        if (msgReceived instanceof BlockEvent){
-                           ch.blockOk();
-                        }
-					}
-
-				} catch (TimeoutException e) {
-				} catch (Exception e) {
-					ch.close();
-					running = false;
-				}			
-			}					
 		}
 
-		private void gotMessage(Object msgReceived) {
-			Message msg = (Message) msgReceived;
+		private void gotMessage(Message msg) {
 			Object m = msg.getObject();
 
 			if (m instanceof VSynchPayload) {
@@ -194,8 +183,7 @@ public class VirtualSynchronyTest {
 			}
 		}
 
-		private void gotView(Object msg) throws ChannelNotConnectedException, ChannelClosedException {
-			View tmpView = (View) msg;			
+		private void gotView(View tmpView) throws ChannelNotConnectedException, ChannelClosedException {
 			if (currentView != null) {
 				payload = new VSynchPayload(currentView.getVid(),
 						numberOfMessagesInView,ch.getAddress());

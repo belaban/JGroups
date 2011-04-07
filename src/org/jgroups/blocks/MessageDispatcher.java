@@ -743,7 +743,6 @@ public class MessageDispatcher implements RequestHandler {
                     if(membership_listener != null) {
                         membership_listener.block();
                     }
-                    channel.blockOk();
                     break;
                 case Event.UNBLOCK:
                     if(membership_listener instanceof ExtendedMembershipListener) {

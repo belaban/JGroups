@@ -33,13 +33,11 @@ import java.util.concurrent.Exchanger;
 
 /**
  * JChannel is a pure Java implementation of Channel.
- * When a JChannel object is instantiated it automatically sets up the
- * protocol stack.
+ * When a JChannel object is instantiated it automatically sets up the protocol stack.
  * <p>
  * <B>Properties</B>
  * <P>
- * Properties are used to configure a channel, and are accepted in
- * several forms; the String form is described here.
+ * Properties are used to configure a channel, and are accepted in several forms; the String form is described here.
  * A property string consists of a number of properties separated by
  * colons.  For example:
  * <p>
@@ -96,8 +94,6 @@ public class JChannel extends Channel {
     private String cluster_name=null;  // group name
     /*the latest view of the group membership*/
     private View my_view=null;
-    /*the queue that is used to receive messages (events) from the protocol stack*/
-    private final Queue mq=new Queue();
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     private ProtocolStack prot_stack=null;
 
@@ -592,54 +588,11 @@ public class JChannel extends Channel {
      */
     @ManagedOperation(description="Disconnects and destroys the channel")
     public synchronized void close() {
-        _close(true, true); // by default disconnect before closing channel and close mq
+        _close(true); // by default disconnect before closing channel and close mq
     }
 
-    /**
-     * Shuts down a channel without disconnecting. To be used by tests only, don't use for application purposes
-     * @deprecated Use {@link Util#shutdown(Channel)} instead. This method will be removed in 3.0
-     */
-    @ManagedOperation(description="Shuts down the channel without disconnecting")
-    @Deprecated
-    public synchronized void shutdown() {
-        try {
-            Util.shutdown(this);
-        }
-        catch(Exception e) {
-            log.error("failed shutting down channel " + getAddress(), e);
-        }
-    }
 
-    /**
-     * Opens the channel. Note that the channel is only open, but <em>not connected</em>.
-     * This does the following actions:
-     * <ol>
-     * <li> Resets the receiver queue by calling Queue.reset
-     * <li> Sets up the protocol stack by calling ProtocolStack.setup
-     * <li> Sets the closed flag to false
-     * </ol>
-     * @deprecated With the removal of shunning, this method should not be used anymore
-     */
-    @Deprecated
-    public synchronized void open() throws ChannelException {
-        if(!closed)
-            throw new ChannelException("channel is already open");
 
-        try {
-            mq.reset();
-
-            String props=getProperties();
-            List<ProtocolConfiguration> configs=Configurator.parseConfigurations(props);
-
-            // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this);
-            prot_stack.setup(configs);
-            closed=false;
-        }
-        catch(Exception e) {
-            throw new ChannelException("failed to open channel" , e);
-        }
-    }
 
     /**
      * returns true if the Open operation has been called successfully
@@ -658,15 +611,6 @@ public class JChannel extends Channel {
         return connected;
     }
 
-    @ManagedAttribute
-    public int getNumMessages() {
-        return mq.size();
-    }
-
-    @ManagedOperation
-    public String dumpQueue() {
-        return Util.dumpQueue(mq);
-    }
 
     /**
      * Returns a map of statistics of the various protocols and of the channel itself.
@@ -748,75 +692,6 @@ public class JChannel extends Channel {
     public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException, ChannelClosedException {
         send(new Message(dst, src, buf, offset, length));
     }
-
-    /**
-     * Blocking receive method.
-     * This method returns the object that was first received by this JChannel and that has not been
-     * received before. After the object is received, it is removed from the receive queue.<BR>
-     * If you only want to inspect the object received without removing it from the queue call
-     * JChannel.peek<BR>
-     * If no messages are in the receive queue, this method blocks until a message is added or the operation times out<BR>
-     * By specifying a timeout of 0, the operation blocks forever, or until a message has been received.
-     * @param timeout the number of milliseconds to wait if the receive queue is empty. 0 means wait forever
-     * @exception TimeoutException if a timeout occured prior to a new message was received
-     * @exception ChannelNotConnectedException
-     * @exception ChannelClosedException
-     * @see JChannel#peek
-     * @deprecated Use a {@link Receiver} instead
-     */
-    public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-
-        checkClosedOrNotConnected();
-
-        try {
-            Event evt=(timeout <= 0)? (Event)mq.remove() : (Event)mq.remove(timeout);
-            Object retval=getEvent(evt);
-            evt=null;
-            return retval;
-        }
-        catch(QueueClosedException queue_closed) {
-            throw new ChannelClosedException();
-        }
-        catch(TimeoutException t) {
-            throw t;
-        }
-        catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("exception: " + e);
-            return null;
-        }
-    }
-
-
-    /**
-     * Just peeks at the next message, view or block. Does <em>not</em> install
-     * new view if view is received<BR>
-     * Does the same thing as JChannel.receive but doesn't remove the object from the
-     * receiver queue
-     * * @deprecated Use a {@link Receiver} instead
-     */
-    public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
-
-        checkClosedOrNotConnected();
-
-        try {
-            Event evt=(timeout <= 0)? (Event)mq.peek() : (Event)mq.peek(timeout);
-            Object retval=getEvent(evt);
-            evt=null;
-            return retval;
-        }
-        catch(QueueClosedException queue_closed) {
-            if(log.isErrorEnabled()) log.error("exception: " + queue_closed);
-            return null;
-        }
-        catch(TimeoutException t) {
-            return null;
-        }
-        catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("exception: " + e);
-            return null;
-        }
-    }
-
 
 
 
@@ -923,17 +798,6 @@ public class JChannel extends Channel {
 
 
 
-
-
-    /**
-     * Called to acknowledge a block() (callback in <code>MembershipListener</code> or
-     * <code>BlockEvent</code> received from call to <code>receive()</code>).
-     * After sending blockOk(), no messages should be sent until a new view has been received.
-     * Calling this method on a closed channel has no effect.
-     */
-    public void blockOk() {
-        
-    }
 
 
     /**
@@ -1173,74 +1037,21 @@ public class JChannel extends Channel {
     }
 
 
-    /**
-     * Retrieves the current group state. Sends GET_STATE event down to STATE_TRANSFER layer.
-     * Blocks until STATE_TRANSFER sends up a GET_STATE_OK event or until <code>timeout</code>
-     * milliseconds have elapsed. The argument of GET_STATE_OK should be a vector of objects.
-     * @param targets - the target members to receive the state from ( an Address list )
-     * @param timeout - the number of milliseconds to wait for the operation to complete successfully
-     * @return true of the state was received, false if the operation timed out
-     * @deprecated Not really needed - we always want to get the state from a single member,
-     * use {@link #getState(org.jgroups.Address, long)} instead
-     */
-    public boolean getAllStates(Vector targets, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        throw new UnsupportedOperationException("use getState() instead");
-    }
-
-
-    /**
-     * Called by the application is response to receiving a <code>getState()</code> object when
-     * calling <code>receive()</code>.
-     * When the application receives a getState() message on the receive() method,
-     * it should call returnState() to reply with the state of the application
-     * @param state The state of the application as a byte buffer
-     *              (to send over the network).
-     */
-    public void returnState(byte[] state) {
-        try {
-            StateTransferInfo state_info=new StateTransferInfo(null, null, 0L, state);
-            applstate_exchanger.exchange(state_info);
-        }
-        catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Returns a substate as indicated by state_id
-     * @param state
-     * @param state_id
-     */
-    public void returnState(byte[] state, String state_id) {
-        try {
-            StateTransferInfo state_info=new StateTransferInfo(null, state_id, 0L, state);
-            applstate_exchanger.exchange(state_info);
-        }
-        catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-
 
 
 
     /**
      * Callback method <BR>
      * Called by the ProtocolStack when a message is received.
-     * It will be added to the message queue from which subsequent
-     * <code>Receive</code>s will dequeue it.
      * @param evt the event carrying the message from the protocol stack
      */
     public Object up(Event evt) {
         int     type=evt.getType();
-        Message msg;
-
 
         switch(type) {
 
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                Message msg=(Message)evt.getArg();
                 if(stats) {
                     received_msgs++;
                     received_bytes+=msg.getLength();
@@ -1258,12 +1069,8 @@ public class JChannel extends Channel {
                 else
                     my_view=tmp;
 
-                /*
-             * Bela&Vladimir Oct 27th,2006 (JGroups 2.4)- we need to switch to
-             * connected=true because client can invoke channel.getView() in
-             * viewAccepted() callback invoked on this thread
-             * (see Event.VIEW_CHANGE handling below)
-             */
+                // Bela&Vladimir Oct 27th,2006 (JGroups 2.4): we need to set connected=true because a client can
+                // call channel.getView() in viewAccepted() callback invoked on this thread (see Event.VIEW_CHANGE handling below)
 
                 // not good: we are only connected when we returned from connect() - bela June 22 2007
                 // Changed: when a channel gets a view of which it is a member then it should be
@@ -1308,13 +1115,6 @@ public class JChannel extends Channel {
                                     log.warn("failed calling setState() in receiver", t);
                             }
                         }
-                        else {
-                            try {
-                                mq.add(new Event(Event.STATE_RECEIVED, state_info));
-                            }
-                            catch(Exception e) {
-                            }
-                        }
                     }
                 }
                 finally {
@@ -1348,18 +1148,11 @@ public class JChannel extends Channel {
                                 log.warn("failed calling setState() in receiver", t);
                         }
                     }
-                    else if(receiver instanceof Receiver){
+                    else if(receiver instanceof Receiver) {
                         if(log.isWarnEnabled()){
                             log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
                                     " application does not implement ExtendedMessageListener. State is not transfered");
                             Util.close(is);
-                        }
-                    }
-                    else {
-                        try {
-                            mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
-                        }
-                        catch(Exception e) {
                         }
                     }
                 }
@@ -1487,19 +1280,6 @@ public class JChannel extends Channel {
                 break;
         }
 
-        if(type == Event.MSG || type == Event.VIEW_CHANGE || type == Event.SUSPECT ||
-                type == Event.GET_APPLSTATE || type== Event.STATE_TRANSFER_OUTPUTSTREAM
-                || type == Event.BLOCK || type == Event.UNBLOCK) {
-            try {
-                mq.add(evt);
-            }
-            catch(QueueClosedException queue_closed) {
-                ; // ignore
-            }
-            catch(Exception e) {
-                if(log.isWarnEnabled()) log.warn("exception adding event " + evt + " to message queue", e);
-            }
-        }
 
         if(type == Event.GET_APPLSTATE) {
             try {
@@ -1579,7 +1359,6 @@ public class JChannel extends Channel {
         sb.append("my_view=").append(my_view).append('\n');
         sb.append("connected=").append(connected).append('\n');
         sb.append("closed=").append(closed).append('\n');
-        sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
             sb.append("discard_own_messages=").append(discard_own_messages).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
@@ -1792,17 +1571,13 @@ public class JChannel extends Channel {
      * <li>Notifies any channel listener of the channel close operation
      * </ol>
      */
-    protected void _close(boolean disconnect, boolean close_mq) {
+    protected void _close(boolean disconnect) {
         Address old_addr=local_addr;
         if(closed)
             return;
 
         if(disconnect)
             disconnect();                     // leave group if connected
-
-        if(close_mq) 
-            closeMessageQueue(false);       
-
         stopStack(true, true);
         closed=true;
         connected=false;
@@ -1832,10 +1607,6 @@ public class JChannel extends Channel {
         }
     }
 
-
-    public final void closeMessageQueue(boolean flush_entries) {
-        mq.close(flush_entries);
-    }
 
 
     public boolean flushSupported() {

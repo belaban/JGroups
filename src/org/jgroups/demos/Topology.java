@@ -4,7 +4,6 @@ package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.PullPushAdapter;
 
 import java.awt.*;
 import java.awt.event.WindowEvent;
@@ -25,7 +24,7 @@ import java.util.Vector;
  * @todo Needs to be ported to Swing.
  * @author Bela Ban
  */
-public class Topology extends Frame implements WindowListener, MembershipListener {
+public class Topology extends Frame implements WindowListener {
     private final Vector members=new Vector();
     private final Font myFont;
     private final FontMetrics fm;
@@ -33,7 +32,7 @@ public class Topology extends Frame implements WindowListener, MembershipListene
     private boolean coordinator=false;
     private static final int NormalStyle=0;
     private static final int CheckStyle=1;
-    private Channel channel;
+    private JChannel channel;
     private Object my_addr=null;
     private static final String channel_name="FD-Heartbeat";
 
@@ -124,27 +123,6 @@ public class Topology extends Frame implements WindowListener, MembershipListene
     /* ------------ Callbacks ------------- */
 
 
-    public void viewAccepted(View view) {
-        setState(view.getMembers());
-    }
-
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-
-    public void setState(Vector mbrs) {
-        members.removeAllElements();
-        for(int i=0; i < mbrs.size(); i++)
-            addNode(mbrs.elementAt(i));
-        if(mbrs.size() <= 1 || (mbrs.size() > 1 && mbrs.elementAt(0).equals(my_addr)))
-            coordinator=true;
-        else
-            coordinator=false;
-        repaint();
-    }
 
 
     public void coordinatorChosen() {
@@ -178,42 +156,28 @@ public class Topology extends Frame implements WindowListener, MembershipListene
 
 
     public void start() throws Exception {
-
-        //String props="TCP:" +
-        //   "TCPPING(timeout=2000;num_initial_members=1;port_range=3;" +
-        //  "initial_hosts=localhost[8880]):" +
-        //  "FD:STABLE:NAKACK:FLUSH:GMS(join_timeout=12000):VIEW_ENFORCER:QUEUE";
-
-
-        // test for pbcast
-        //String props="UDP:PING:FD:" +
-        //           "pbcast.PBCAST:UNICAST:FRAG:pbcast.GMS:" +
-        //           "STATE_TRANSFER:QUEUE";
-
-
-        // test for pbcast
-        //String props="TCP:TCPPING(port_range=2;initial_hosts=daddy[8880],terrapin[8880]):FD:" +
-        //            "pbcast.PBCAST:UNICAST:FRAG:pbcast.GMS:" +
-        //           "STATE_TRANSFER:QUEUE";
-
-
-        // test2 for pbcast
-        //String props="UDP:PING:FD:" +
-        //   "pbcast.PBCAST:UNICAST:FRAG:pbcast.GMS:" +
-        //  "pbcast.STATE_TRANSFER";
-
-        // String props=null; // default properties
-
         String props="udp.xml";
 
         channel=new JChannel(props);
         channel.connect(channel_name);
-        new PullPushAdapter(channel, this);
+        channel.setReceiver(new ReceiverAdapter() {
+            public void viewAccepted(View view) {
+                setInternalState(view.getMembers());
+            }
+
+            public void setInternalState(Vector mbrs) {
+                members.removeAllElements();
+                for(int i=0; i < mbrs.size(); i++)
+                    addNode(mbrs.elementAt(i));
+                coordinator=mbrs.size() <= 1 || (mbrs.size() > 1 && mbrs.elementAt(0).equals(my_addr));
+                repaint();
+            }
+        });
         my_addr=channel.getAddress();
         if(my_addr != null)
             setTitle(my_addr.toString());
         pack();
-        show();
+        setVisible(true);
     }
 
 

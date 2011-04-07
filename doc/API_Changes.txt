@@ -15,6 +15,15 @@ API changes in 3.0.0
 
 - Removed (J)ChannelFactory. Inject the channel yourself, e.g. through CDI
 
+- Removed JChannel.receive(). Use a Receiver or ReceiverAdapter and JChannel.setReceiver(Receiver) to switch from a
+  pull based approach of receiving messages to a push-based approach
+
+- Removed JChannel.receive(), peek(), shutdown(), open(), returnState(), getAllStates(), blockOK()
+
+- Removed DistributedQueue
+
+
+
 
 
 

@@ -149,7 +149,6 @@ public class CloseTest extends ChannelTestBase {
         assert 1 == members.size();
         assert !members.contains(a1);
         assert members.contains(a2);
-        assert c2.get().getNumMessages() == 0;
     }
 
 

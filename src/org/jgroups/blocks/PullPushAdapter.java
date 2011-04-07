@@ -227,14 +227,6 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
                         log.warn("no listener registered, returning empty state");
                     }
 
-                    if(transport instanceof Channel) {
-                        ((Channel)transport).returnState(retval, state_id);
-                    }
-                    else {
-                        if(log.isErrorEnabled())
-                            log.error("underlying transport is not a Channel, but a " +
-                                    transport.getClass().getName() + ": cannot return state using returnState()");
-                    }
                 }
                 else if(obj instanceof SetStateEvent) {
                     SetStateEvent evt=(SetStateEvent)obj;
@@ -290,9 +282,6 @@ public class PullPushAdapter extends ChannelListenerAdapter implements Runnable 
                 }
                 else if(obj instanceof BlockEvent) {
                     notifyBlock();
-                    if(transport instanceof Channel) {
-                       ((Channel)transport).blockOk();
-                    }
                 }
                 else if(obj instanceof UnblockEvent) {
                    notifyUnblock();
