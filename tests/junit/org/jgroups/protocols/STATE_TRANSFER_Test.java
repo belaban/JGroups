@@ -53,7 +53,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
 
         protected Coordinator() throws Exception {
             channel=createChannel(true);
-            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            channel.setDiscardOwnMessages(true);
             channel.addChannelListener(this);
             channel.connect(GROUP_NAME);
         }
@@ -127,7 +127,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         int counter=0;
         try {
             channel = createChannel(coord.getChannel());
-            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            channel.setDiscardOwnMessages(true);
 
             channel.connect(GROUP_NAME);
 

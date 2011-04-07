@@ -33,7 +33,7 @@ public class SynchronousMessageSpeedTest {
         Object obj;
         Message msg;
         channel=new JChannel(props);
-        channel.setOpt(Channel.LOCAL, Boolean.FALSE); // do *not* receive my own messages
+        channel.setDiscardOwnMessages(true); // do *not* receive my own messages
         channel.connect("MessageDispatcherSpeedTestGroup");
 
         try {

@@ -32,7 +32,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
     public void start(String props, int num_threads, long interval, boolean discard_local) throws Exception {
         channel=new JChannel(props);
         if(discard_local)
-            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            channel.setDiscardOwnMessages(true);
         disp=new RpcDispatcher(channel, null, this, this);
         channel.connect("RpcDispatcherStressTestGroup");
 

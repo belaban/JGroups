@@ -403,7 +403,7 @@ public class RELAY extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("I'm the coordinator, creating a channel (props=" + bridge_props + ", cluster_name=" + bridge_name + ")");
             bridge=new JChannel(bridge_props);
-            bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+            bridge.setDiscardOwnMessages(true); // don't receive my own messages
             bridge.setReceiver(new Receiver());
             bridge.connect(bridge_name);
 

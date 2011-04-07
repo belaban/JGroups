@@ -45,7 +45,6 @@ public final class ViewDeliveryDemo {
         channel=new JChannel(props);
         mr = new MyReceiver();
         channel.setReceiver(mr);
-        channel.setOpt(Channel.BLOCK, true);
         channel.connect("view_test");
 
 
@@ -65,9 +64,6 @@ public final class ViewDeliveryDemo {
                 }
 
                 break;
-            /*case REOPEN:
-                reopen();
-                break;*/
             case RECONNECT:
                 reconnect();
                 break;

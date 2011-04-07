@@ -220,7 +220,6 @@ public class ChannelTestBase {
 
         public Channel createChannel(final JChannel ch) throws Exception {
             JChannel retval = new JChannel(ch);
-            retval.setOpt(Channel.BLOCK, ch.getOpt(Channel.BLOCK));
             if(useFlush())
                 Util.addFlush(retval, new FLUSH());
             return retval;
@@ -228,7 +227,6 @@ public class ChannelTestBase {
 
         private JChannel createChannel(String configFile) throws Exception {
             JChannel ch = new JChannel(configFile);
-            ch.setOpt(Channel.BLOCK, useBlocking());
             if(useFlush())
                 Util.addFlush(ch, new FLUSH());
             return ch;

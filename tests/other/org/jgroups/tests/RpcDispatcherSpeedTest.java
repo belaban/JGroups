@@ -64,7 +64,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
 
     public void start() throws Exception {
         channel=new JChannel(props);
-        channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+        channel.setDiscardOwnMessages(true);
         disp=new RpcDispatcher(channel, null, this, this); // no concurrent processing on incoming method calls
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {

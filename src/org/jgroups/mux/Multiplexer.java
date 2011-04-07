@@ -103,7 +103,6 @@ public class Multiplexer implements UpHandler {
             throw new IllegalArgumentException("Channel " + channel + " cannot be used for Multiplexer");
         this.channel=channel;
         this.channel.setUpHandler(this);
-        this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
 
         //thread pool is enabled by default
         boolean use_thread_pool=Global.getPropertyAsBoolean(Global.MUX_ENABLED, true);

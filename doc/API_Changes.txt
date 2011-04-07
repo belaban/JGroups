@@ -6,4 +6,8 @@ API changes in 3.0.0
 
 - Removed package org.jgroups.persistence and changed dependent demos accordingly (e.g. ReplicatedHashMap)
 
-- 
+- Removed all options except for Channel.LOCAL
+- Removed JChannel.getOpt()/setOpt()
+- Discarding of own messages can now be set via setDiscardOwnMessages(true)
+
+

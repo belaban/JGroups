@@ -2,6 +2,7 @@
 package org.jgroups;
 
 
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.logging.Log;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
@@ -49,26 +50,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @MBean(description="Channel")
 public abstract class Channel implements Transport {
-    @Deprecated
-    public static final int BLOCK=0;
-    @Deprecated
-    public static final int VIEW=1;
-    @Deprecated
-    public static final int SUSPECT=2;
-    public static final int LOCAL=3;
-    @Deprecated
-    public static final int GET_STATE_EVENTS=4;
-    @Deprecated
-    public static final int AUTO_RECONNECT=5;
-    @Deprecated
-    public static final int AUTO_GETSTATE=6;
-
-
     protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
     protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
+    @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
+    protected boolean discard_own_messages=false;
 
     protected abstract Log getLog();
 
@@ -449,31 +437,12 @@ public abstract class Channel implements Transport {
     }
 
     /**
-     Sets an option. The following options are currently recognized:
-     <ol>
-     <li><code>BLOCK</code>. Turn the reception of BLOCK events on/off (value is Boolean).
-     Default is off
-     <li><code>LOCAL</code>. Receive its own broadcast messages to the group
-     (value is Boolean). Default is on.
-     <li><code>AUTO_RECONNECT</code>. Turn auto-reconnection on/off. If on, when a member if forced out
-     of a group (EXIT event), then we will reconnect.
-     <li><code>AUTO_GETSTATE</code>. Turn automatic fetching of state after an auto-reconnect on/off.
-     This also sets AUTO_RECONNECT to true (if not yet set).
-     </ol>
-     This method can be called on an unconnected channel. Calling this method on a
-     closed channel has no effect.
+     * When set to true, all messages sent a member A will be discarded by A.
+     * @param flag
      */
-    abstract public void setOpt(int option, Object value);
-
-
-    /**
-     Gets an option. This method can be called on an unconnected channel.  Calling this
-     method on a closed channel returns <code>null</code>.
-
-     @param option  The option to be returned.
-     @return The object associated with an option.
-     */
-    abstract public Object getOpt(int option);
+    public void setDiscardOwnMessages(boolean flag) {discard_own_messages=flag;}
+    
+    public boolean getDiscardOwnMessages() {return discard_own_messages;}
 
     abstract public boolean flushSupported();
     
@@ -561,26 +530,6 @@ public abstract class Channel implements Transport {
     public abstract void setInfo(String key, Object value);
 
 
-    public static String option2String(int option) {
-        switch(option) {
-            case BLOCK:
-                return "BLOCK";
-            case VIEW:
-                return "VIEW";
-            case SUSPECT:
-                return "SUSPECT";
-            case LOCAL:
-                return "LOCAL";
-            case GET_STATE_EVENTS:
-                return "GET_STATE_EVENTS";
-            case AUTO_RECONNECT:
-                return "AUTO_RECONNECT";
-            case AUTO_GETSTATE:
-                return "AUTO_GETSTATE";
-            default:
-                return "unknown (" + option + ')';
-        }
-    }
 
     protected void notifyChannelConnected(Channel c) {
         if(channel_listeners == null) return;

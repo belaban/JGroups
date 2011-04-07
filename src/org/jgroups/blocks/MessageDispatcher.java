@@ -492,13 +492,11 @@ public class MessageDispatcher implements RequestHandler {
             }
         }
 
-        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
-            if(local_addr == null) {
+        if(tmp != null && tmp.getDiscardOwnMessages()) {
+            if(local_addr == null)
                 local_addr=tmp.getAddress();
-            }
-            if(local_addr != null) {
+            if(local_addr != null)
                 real_dests.remove(local_addr);
-            }
         }
 
         if(options != null && options.hasExclusionList()) {

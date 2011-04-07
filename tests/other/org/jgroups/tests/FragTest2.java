@@ -54,7 +54,7 @@ public class FragTest2 {
     public void start() throws Exception {
 
         channel=new JChannel(props);
-        if(mode == 1) channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+        if(mode == 1) channel.setDiscardOwnMessages(true);
         channel.connect(groupname);
 
         if(mode == 1) {

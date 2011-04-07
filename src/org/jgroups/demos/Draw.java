@@ -43,7 +43,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
-                boolean use_blocking, boolean use_unicasts, String name) throws Exception {
+                boolean use_unicasts, String name) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
@@ -55,8 +55,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
-        if(use_blocking)
-            channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
     }
@@ -150,7 +148,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_blocking, use_unicasts, name);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();

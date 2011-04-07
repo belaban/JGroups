@@ -105,15 +105,7 @@ public class JChannel extends Channel {
 
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
     
-    /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
-    @ManagedAttribute(description="Flag indicating whether to receive blocks",writable=true)
-    private boolean receive_blocks=false;
-    
-    /*flag to indicate whether to receive local messages
-     *if this is set to false, the JChannel will not receive messages sent by itself*/
-    @ManagedAttribute(description="Flag indicating whether to receive this channel's own messages",writable=true)
-    private boolean receive_local_msgs=true;
-    
+
     /*channel connected flag*/
     protected volatile boolean connected=false;
 
@@ -289,8 +281,7 @@ public class JChannel extends Channel {
      */
     public JChannel(JChannel ch) throws ChannelException {
         init(ch);
-        receive_blocks=ch.receive_blocks;
-        receive_local_msgs=ch.receive_local_msgs;
+        discard_own_messages=ch.discard_own_messages;
     }
 
 
@@ -930,102 +921,8 @@ public class JChannel extends Channel {
         this.address_generator=address_generator;
     }
 
-    /**
-     * Sets a channel option.  The options can be one of the following:
-     * <UL>
-     * <LI>    Channel.BLOCK
-     * <LI>    Channel.LOCAL
-     * <LI>    Channel.AUTO_RECONNECT
-     * <LI>    Channel.AUTO_GETSTATE
-     * </UL>
-     * <P>
-     * There are certain dependencies between the options that you can set,
-     * I will try to describe them here.
-     * <P>
-     * Option: Channel.BLOCK<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true will set setOpt(VIEW, true) and the JChannel will receive BLOCKS and VIEW events<BR>
-     *<BR>
-     * Option: LOCAL<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true the JChannel will receive messages that it self sent out.<BR>
-     *<BR>
-     * Option: AUTO_RECONNECT<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true and the JChannel will try to reconnect when it is being closed<BR>
-     *<BR>
-     * Option: AUTO_GETSTATE<BR>
-     * Value:  java.lang.Boolean<BR>
-     * Result: set to true, the AUTO_RECONNECT will be set to true and the JChannel will try to get the state after a close and reconnect happens<BR>
-     * <BR>
-     *
-     * @param option the parameter option Channel.VIEW, Channel.SUSPECT, etc
-     * @param value the value to set for this option
-     *
-     */
-    public void setOpt(int option, Object value) {
-        if(closed) {
-            if(log.isWarnEnabled()) log.warn("channel is closed; option not set !");
-            return;
-        }
-
-        switch(option) {
-            case VIEW:
-            case SUSPECT:
-            case GET_STATE_EVENTS:
-            case AUTO_RECONNECT:
-            case AUTO_GETSTATE:
-                break;
-            case BLOCK:
-                if(value instanceof Boolean)
-                    receive_blocks=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                            " (" + value + "): value has to be Boolean");
-                break;
-
-            case LOCAL:
-                if(value instanceof Boolean)
-                    receive_local_msgs=((Boolean)value).booleanValue();
-                else
-                    if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) +
-                            " (" + value + "): value has to be Boolean");
-                break;
-
-            default:
-                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
-                break;
-        }
-    }
 
 
-    /**
-     * returns the value of an option.
-     * @param option the option you want to see the value for
-     * @return the object value, in most cases java.lang.Boolean
-     * @see JChannel#setOpt
-     */
-    public Object getOpt(int option) {
-        switch(option) {
-            case VIEW:
-            	return Boolean.TRUE;
-            case BLOCK:
-            	return receive_blocks;
-            case SUSPECT:
-            	return Boolean.TRUE;
-            case AUTO_RECONNECT:
-                return false;
-            case AUTO_GETSTATE:
-                return false;
-            case GET_STATE_EVENTS:
-                return Boolean.TRUE;
-            case LOCAL:
-            	return receive_local_msgs ? Boolean.TRUE : Boolean.FALSE;
-            default:
-                if(log.isErrorEnabled()) log.error("option " + Channel.option2String(option) + " not known");
-                return null;
-        }
-    }
 
 
     /**
@@ -1139,7 +1036,7 @@ public class JChannel extends Channel {
      * state to a state receiver. Upon successful installation of a state at
      * state receiver this method returns true.
      * 
-     * 
+     *
      * @param target
      *                State provider. If null, coordinator is used
      * @param state_id
@@ -1349,11 +1246,9 @@ public class JChannel extends Channel {
                     received_bytes+=msg.getLength();
                 }
 
-                if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
-                    if(local_addr != null && msg.getSrc() != null)
-                        if(local_addr.equals(msg.getSrc()))
-                            return null;
-                }
+                // discard local messages (sent by myself to me)
+                if(discard_own_messages && local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc()))
+                    return null;
                 break;
 
             case Event.VIEW_CHANGE:
@@ -1373,9 +1268,8 @@ public class JChannel extends Channel {
                 // not good: we are only connected when we returned from connect() - bela June 22 2007
                 // Changed: when a channel gets a view of which it is a member then it should be
                 // connected even if connect() hasn't returned yet ! (bela Noc 2010)
-                if(connected == false) {
+                if(connected == false)
                     connected=true;
-                }
                 break;
 
             case Event.CONFIG:
@@ -1567,10 +1461,6 @@ public class JChannel extends Channel {
                 break;
 
             case Event.BLOCK:
-                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
-                    return true;
-                }
-
                 if(receiver != null) {
                     try {
                         receiver.block();
@@ -1583,8 +1473,7 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.UNBLOCK:
-                //invoke receiver if block receiving is on
-                if(receive_blocks && receiver instanceof ExtendedReceiver) {                                                     
+                if(receiver instanceof ExtendedReceiver) {
                     try {
                         ((ExtendedReceiver)receiver).unblock();
                     }
@@ -1692,8 +1581,7 @@ public class JChannel extends Channel {
         sb.append("closed=").append(closed).append('\n');
         sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
-            sb.append("receive_blocks=").append(receive_blocks).append('\n');
-            sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
+            sb.append("discard_own_messages=").append(discard_own_messages).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
             sb.append("props=").append(getProperties()).append('\n');
         }
