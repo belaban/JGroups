@@ -20,7 +20,6 @@ public class Global {
     public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
 
     public static final Object NULL=new Object();
-    public static final Address NULL_ADDR=new UUID();
 
     public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
 
