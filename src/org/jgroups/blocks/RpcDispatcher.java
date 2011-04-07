@@ -5,7 +5,6 @@ package org.jgroups.blocks;
 import org.jgroups.*;
 import org.jgroups.util.*;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -60,22 +59,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public RpcDispatcher(PullPushAdapter adapter, Serializable id,
-                         MessageListener l, MembershipListener l2, Object server_obj) {
-        super(adapter, id, l, l2);
-
-        // Fixes bug #804956
-        // channel.setChannelListener(this);
-        if(this.adapter != null) {
-            Transport t=this.adapter.getTransport();
-            if(t != null && t instanceof Channel) {
-                ((Channel)t).addChannelListener(this);
-            }
-        }
-
-        this.server_obj=server_obj;
-    }
 
 
     public interface Marshaller {
