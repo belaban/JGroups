@@ -30,17 +30,14 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
     private Button                 clear_button, leave_button;
     private Label                  mbr_label;
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
-    private final String                 groupname="DrawGroup";
+    private static final String    groupname="DrawGroup";
     private Channel                channel=null;
     private Thread                 receiver=null;
     private int                    member_size=1;
     private int                    red=0, green=0, blue=0;
     private Color                  default_color=null;
 
-    private final ChannelFactory   factory=new JChannelFactory();
-    private String                 props="TUNNEL(router_host=janet;router_port=12002):" + 
-	                                 "PING(gossip_host=janet;gossip_port=12002):" +
-	                                 "FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:QUEUE";
+    private String                 props="tunnel.xml";
 
     private final Vector           members=new Vector();
     private boolean                fl=true;
@@ -62,7 +59,7 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 
 
 	try {
-	    channel=factory.createChannel(props);
+	    channel=new JChannel(props);
 	    showStatus("Connecting to group " + groupname);
 	    channel.connect(groupname);
 	}
@@ -292,18 +289,16 @@ public class DrawApplet extends Applet implements Runnable, MouseMotionListener,
 
 
     public void viewAccepted(View v) {
-	Vector mbrs=v.getMembers();
-	if(v != null) {
-	    System.out.println("View accepted: " +v);
-	    member_size=v.size();
+        Vector mbrs=v.getMembers();
+        System.out.println("View accepted: " +v);
+        member_size=v.size();
 
-	    if(mbr_label != null)
-		mbr_label.setText(member_size + " mbr(s)");
+        if(mbr_label != null)
+            mbr_label.setText(member_size + " mbr(s)");
 
-	    members.removeAllElements();
-	    for(int i=0; i < mbrs.size(); i++)
-		members.addElement(mbrs.elementAt(i));
-	}
+        members.removeAllElements();
+        for(int i=0; i < mbrs.size(); i++)
+            members.addElement(mbrs.elementAt(i));
     }
 
 

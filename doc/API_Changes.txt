@@ -10,4 +10,11 @@ API changes in 3.0.0
 - Removed JChannel.getOpt()/setOpt()
 - Discarding of own messages can now be set via setDiscardOwnMessages(true)
 
+- Removed package org.jgroups.mux (e.g. Multiplexer and MuxChannel). Use a shared transport instead. If you have to,
+  use classes from package org.jgroups.blocks.mux (only if you're an expert though !)
+
+- Removed (J)ChannelFactory. Inject the channel yourself, e.g. through CDI
+
+
+
 

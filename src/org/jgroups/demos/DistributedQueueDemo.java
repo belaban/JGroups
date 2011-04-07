@@ -1,8 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.ChannelException;
-import org.jgroups.ChannelFactory;
-import org.jgroups.JChannelFactory;
+import org.jgroups.JChannel;
 import org.jgroups.blocks.DistributedQueue;
 
 import javax.swing.*;
@@ -82,10 +81,9 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
         }
     }
 
-    public void start(String groupname, ChannelFactory factory, String props)
-               throws ChannelException
+    public void start(JChannel ch) throws ChannelException
     {
-        h = new DistributedQueue(groupname, factory, props, 10000);
+        h = new DistributedQueue(ch);
         h.addNotifier(this);
 
         setLayout(null);
@@ -121,32 +119,6 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
         showAll();
         // pack();
         setVisible(true);
-
-        /*
-                 new Thread() {
-                     public void run() {
-                         System.out.println("-- sleeping");
-                         Util.sleep(10000);
-                         for(int i=0; i < 10; i++) {
-                             System.out.println("-- add()");
-                             h.add("Bela#" + i);
-                         }
-
-                         while(true) {
-                             Util.sleep(500);
-                             try
-                            {
-                                System.out.println(h.remove());
-                            }
-                            catch (QueueClosedException e)
-                            {
-                                e.printStackTrace();
-                            }
-                         }
-
-                     }
-                 }.start();
-        */
     }
 
     public void windowActivated(WindowEvent e)
@@ -250,9 +222,8 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
 
     public static void main(String[] args)
     {
-        String groupname = "QueueDemo";
+        String groupname = "DistributedQueueDemo-Cluster";
         DistributedQueueDemo client = new DistributedQueueDemo();
-        ChannelFactory factory = new JChannelFactory();
         String arg;
         String next_arg;
         boolean trace = false;
@@ -291,7 +262,9 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
 
         try
         {
-            client.start(groupname, factory, props);
+            JChannel ch=new JChannel(props);
+            ch.connect(groupname);
+            client.start(ch);
         }
         catch (Throwable t)
         {

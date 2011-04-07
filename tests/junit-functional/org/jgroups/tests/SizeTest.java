@@ -4,8 +4,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.blocks.RequestCorrelator;
-import org.jgroups.mux.MuxHeader;
-import org.jgroups.mux.ServiceInfo;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.GossipData;
@@ -742,26 +740,6 @@ public class SizeTest {
 
 
 
-    public static void testServiceInfo() throws Exception {
-        ServiceInfo si=new ServiceInfo();
-        _testSize(si);     
-    }
-
-
-
-    public static void testMuxHeader() throws Exception {
-        MuxHeader hdr=new MuxHeader();
-        _testSize(hdr);
-
-        hdr=new MuxHeader("bla");
-        _testSize(hdr);
-
-        ServiceInfo si=new ServiceInfo();
-        hdr=new MuxHeader(si);
-        _testSize(hdr);       
-        _testSize(new MuxHeader(si));
-    }
-
 
     private static void _testSize(Digest digest) throws Exception {
         long len=digest.serializedSize();
@@ -840,21 +818,6 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;
     }
-
-    private static void _testSize(ServiceInfo si) throws Exception {
-        long size=si.size();
-        byte[] serialized_form=Util.streamableToByteBuffer(si);
-        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        Assert.assertEquals(serialized_form.length, size);
-    }
-
-
-    private static void _testSize(MuxHeader hdr) throws Exception {
-         long size=hdr.size();
-         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
-         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        Assert.assertEquals(serialized_form.length, size);
-     }
 
 
 }

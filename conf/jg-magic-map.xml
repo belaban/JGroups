@@ -31,7 +31,6 @@
     <class id="60" name="org.jgroups.protocols.VIEW_SYNC$ViewSyncHeader"/>
     <class id="61" name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
     <class id="62" name="org.jgroups.protocols.SFC$Header"/>
-    <class id="63" name="org.jgroups.mux.MuxHeader"/>
     <class id="64" name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
     <class id="65" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader"/>
     <class id="66" name="org.jgroups.blocks.PullPushAdapter$PullHeader"/>

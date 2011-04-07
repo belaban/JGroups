@@ -1,13 +1,12 @@
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-import java.io.Serializable;
 import java.util.*;
 
 
@@ -58,30 +57,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     private Class[] reset_signature = null;
     private Class[] remove_signature = null;
     
-    /**
-     * Creates a DistributedQueue
-     * @param groupname The name of the group to join
-     * @param factory The ChannelFactory which will be used to create a channel
-     * @param properties The property string to be used to define the channel
-     * @param state_timeout The time to wait until state is retrieved in milliseconds. A value of 0 means wait forever.
-     */
-    public DistributedQueue(String groupname, ChannelFactory factory, String properties, long state_timeout)
-                     throws ChannelException
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("DistributedQueue(" + groupname + ',' + properties + ',' + state_timeout);
-        }
-
-        this.groupname = groupname;
-        initSignatures();
-        internalQueue = new LinkedList();
-        channel = (factory != null) ? factory.createChannel((Object)properties) : new JChannel(properties);
-        disp = new RpcDispatcher(channel, this, this, this);
-        disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
-        channel.connect(groupname);
-        start(state_timeout);
-    }
+   
 
     public DistributedQueue(JChannel channel)
     {
@@ -90,36 +66,13 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         init();
     }
 
-    /**
-      * Uses a user-provided PullPushAdapter to create the dispatcher rather than a Channel. If id is non-null, it will be
-      * used to register under that id. This is typically used when another building block is already using
-      * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
-      * between messages for the various blocks on top of PullPushAdapter. If null, we will assume we are the
-      * first block created on PullPushAdapter.
-      * The caller needs to call start(), before using the this block. It gives the opportunity for the caller
-      * to register as a lessoner for Notifications events.
-      * @param adapter The PullPushAdapter which to use as underlying transport
-      * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
-      *           requests/responses for different building blocks on top of PullPushAdapter.
-      */
-    public DistributedQueue(PullPushAdapter adapter, Serializable id)
-    {
-        this.channel = (Channel)adapter.getTransport();
-        this.groupname = this.channel.getClusterName();
 
-        initSignatures();
-        internalQueue = new LinkedList();
-
-        disp = new RpcDispatcher(adapter, id, this, this, this);
-        disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
-    }
 
     protected final void init()
     {
         initSignatures();
         internalQueue = new LinkedList();
         disp = new RpcDispatcher(channel, this, this, this);
-        disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
     }
 
     public final void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException
@@ -195,10 +148,10 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         {
             Object retval = null;
 
-            RspList rsp = disp.callRemoteMethods(null, "_add", new Object[]{value}, add_signature, GroupRequest.GET_ALL, 0);
+            RspList rsp = disp.callRemoteMethods(null, "_add", new Object[]{value}, add_signature, Request.GET_ALL, 0);
             Vector results = rsp.getResults();
 
-            if (results.size() > 0)
+            if (!results.isEmpty())
             {
                 retval = results.elementAt(0);
 
@@ -223,7 +176,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
     {
         try
         {
-            disp.callRemoteMethods(null, "_addAtHead", new Object[]{value}, addAtHead_signature, GroupRequest.GET_ALL, 0);
+            disp.callRemoteMethods(null, "_addAtHead", new Object[]{value}, addAtHead_signature, Request.GET_ALL, 0);
         }
          catch (Exception e)
         {

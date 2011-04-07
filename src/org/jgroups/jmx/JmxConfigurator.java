@@ -1,7 +1,6 @@
 package org.jgroups.jmx;
 
 import org.jgroups.JChannel;
-import org.jgroups.JChannelFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -107,15 +106,6 @@ public class JmxConfigurator {
         unregister(c, server, getChannelRegistrationName(c, domain, clusterName));
     }
 
-    public static void registerChannelFactory(JChannelFactory factory, MBeanServer server,
-                    String name) throws Exception {
-        register(factory, server, name);
-    }
-
-    public static void unRegisterChannelFactory(JChannelFactory factory, MBeanServer server,
-                    String name) throws Exception {
-        unregister(factory, server, name);
-    }
 
     public static void register(Object obj, MBeanServer server, String name)
                     throws MBeanRegistrationException, MalformedObjectNameException {
