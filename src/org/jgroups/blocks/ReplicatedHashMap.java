@@ -4,8 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.persistence.PersistenceFactory;
-import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
@@ -17,32 +15,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * Subclass of a {@link java.util.concurrent.ConcurrentHashMap} with replication
- * of the contents across a cluster. Any change to the hashmap (clear(), put(),
- * remove() etc) will transparently be propagated to all replicas in the group.
+ * Implementation of a {@link java.util.concurrent.ConcurrentMap} with replication of the contents across a cluster.
+ * Any change to the hashmap (clear(), put(), remove() etc) will transparently be propagated to all replicas in the group.
  * All read-only methods will always access the local replica.
  * <p>
- * Keys and values added to the hashmap <em>must be serializable</em>, the
- * reason being that they will be sent across the network to all replicas of the
- * group. Having said this, it is now for example possible to add RMI remote
- * objects to the hashtable as they are derived from
- * <code>java.rmi.server.RemoteObject</code> which in turn is serializable.
- * This allows to lookup shared distributed objects by their name and invoke
- * methods on them, regardless of one's onw location. A
- * <code>ReplicatedHashMap</code> thus allows to implement a distributed
- * naming service in just a couple of lines.
+ * Keys and values added to the hashmap <em>must be serializable</em>, the reason being that they will be sent
+ * across the network to all replicas of the group.<p/>
+ * A <code>ReplicatedHashMap</code> allows one to implement a distributed naming service in just a couple of lines.
  * <p>
- * An instance of this class will contact an existing member of the group to
- * fetch its initial state.
- * <p>
- * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable}
- * (asynchronous replication) and
- * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication)
- * into one class
- * 
+ * An instance of this class will contact an existing member of the group to fetch its initial state.
+ *
  * @author Bela Ban
  */
-@Unsupported(comment="Use JBossCache instead")
+@Unsupported
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
 
@@ -103,8 +88,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     // to be notified when mbrship changes
     private final Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
     private final Vector<Address> members=new Vector<Address>(); // keeps track of all DHTs
-    private boolean persistent=false; // whether to use PersistenceManager to save state
-    private PersistenceManager persistence_mgr=null;
 
     /**
      * Determines when the updates have to be sent across the network, avoids
@@ -114,109 +97,30 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     protected final Promise<Boolean> state_promise=new Promise<Boolean>();
 
-    /**
-     * Whether updates across the cluster should be asynchronous (default) or
-     * synchronous)
-     */
-    protected int update_mode=Request.GET_NONE;
-
-    /**
-     * For blocking updates only: the max time to wait (0 == forever)
-     */
-    protected long timeout=5000;
+    protected final RequestOptions call_options=new RequestOptions(Request.GET_NONE, 5000);
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
-    /**
-     * Wrapped map instance.
-     */
+    /** wrapped map instance */
     protected ConcurrentMap<K,V> map=null;
 
-    /**
-     * Creates a ReplicatedHashMap
-     * 
-     * @param clustername
-     *                The name of the group to join
-     * @param factory
-     *                The ChannelFactory which will be used to create a channel
-     * @param properties
-     *                The property string to be used to define the channel. This
-     *                will override the properties of the factory. If null, then
-     *                the factory properties will be used
-     * @param state_timeout
-     *                The time to wait until state is retrieved in milliseconds.
-     *                A value of 0 means wait forever.
-     */
-    public ReplicatedHashMap(String clustername,
-                             ChannelFactory factory,
-                             String properties,
-                             long state_timeout) throws ChannelException {
-        this(clustername, factory, properties, false, state_timeout);
-    }
+
+
 
     /**
-     * Creates a ReplicatedHashMap. Optionally the contents can be saved to
-     * persistent storage using the
-     * {@link org.jgroups.persistence.PersistenceManager}.
-     * 
-     * @param clustername
-     *                Name of the group to join
-     * @param factory
-     *                Instance of a ChannelFactory to create the channel
-     * @param properties
-     *                Protocol stack properties. This will override the
-     *                properties of the factory. If null, then the factory
-     *                properties will be used
-     * @param persistent
-     *                Whether the contents should be persisted
-     * @param state_timeout
-     *                Max number of milliseconds to wait until the state is
-     *                retrieved
-     */
-    public ReplicatedHashMap(String clustername,
-                             ChannelFactory factory,
-                             String properties,
-                             boolean persistent,
-                             long state_timeout) throws ChannelException {
-        this(createChannel(clustername, factory, properties), persistent);
-        channel.connect(clustername);
-        start(state_timeout);
-    }
-
-    private static Channel createChannel(String clustername,
-                                         ChannelFactory factory,
-                                         String properties) throws ChannelException {
-        Channel channel;
-        if(factory != null) {
-            channel=properties != null? factory.createChannel((Object)properties)
-                                      : factory.createChannel();
-        }
-        else {
-            channel=new JChannel(properties);
-        }
-        return channel;
-    }
-
-    /**
-     * Constructs a new ReplicatedHashMap with channel. Call {@link #start} to
-     * start this map.
+     * Constructs a new ReplicatedHashMap with channel. Call {@link #start} to start this map.
      */
     public ReplicatedHashMap(Channel channel) {
-        this(channel, false);
+        this.channel=channel;
+        this.map=new ConcurrentHashMap<K,V>();
+        init();
     }
 
-    /**
-     * Constructs a new ReplicatedHashMap with channel and persistence option.
-     * Call {@link #start} to start this map.
-     */
-    public ReplicatedHashMap(Channel channel,boolean persistent) {
-        this(new ConcurrentHashMap<K,V>(), channel, persistent);
-    }
 
     /**
      * Constructs a new ReplicatedHashMap using provided map instance.
      */
-    public ReplicatedHashMap(ConcurrentMap<K,V> map,Channel channel,boolean persistent) {
+    public ReplicatedHashMap(ConcurrentMap<K,V> map, Channel channel) {
         if(channel == null)
             throw new IllegalArgumentException("Cannot create ReplicatedHashMap with null channel");
         if(map == null)
@@ -225,7 +129,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         this.map=map;
         this.cluster_name=channel.getClusterName();
         this.channel=channel;
-        this.persistent=persistent;
         init();
     }
 
@@ -236,31 +139,26 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
                 return methods.get(id);
             }
         });
-
-        // Changed by bela (jan 20 2003): start() has to be called by user (only when providing
-        // own channel). First, Channel.connect() has to be called, then start().
-        // start(state_timeout);
     }
 
     public boolean isBlockingUpdates() {
-        return update_mode == GroupRequest.GET_ALL;
+        return call_options.getMode() == Request.GET_ALL;
     }
 
     /**
-     * Whether updates across the cluster should be asynchronous (default) or
-     * synchronous)
+     * Whether updates across the cluster should be asynchronous (default) or synchronous)
      * 
      * @param blocking_updates
      */
     public void setBlockingUpdates(boolean blocking_updates) {
-        this.update_mode=blocking_updates? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
+        call_options.setMode(blocking_updates? Request.GET_ALL : Request.GET_NONE);
     }
 
     /**
      * The timeout (in milliseconds) for blocking updates
      */
     public long getTimeout() {
-        return timeout;
+        return call_options.getTimeout();
     }
 
     /**
@@ -270,39 +168,21 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      *                The timeout (in milliseconds) for blocking updates
      */
     public void setTimeout(long timeout) {
-        this.timeout=timeout;
+        call_options.setTimeout(timeout);
     }
 
     /**
      * Fetches the state
-     * 
      * @param state_timeout
      * @throws org.jgroups.ChannelClosedException
      * @throws org.jgroups.ChannelNotConnectedException
-     * 
      */
-    public final void start(long state_timeout) throws ChannelClosedException,
-                                               ChannelNotConnectedException {
-        
+    public final void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
         if(!channel.isConnected()) throw new ChannelNotConnectedException();
         if(!channel.isOpen()) throw new ChannelClosedException();
         send_message = channel.getView().size()>1;
         
         boolean rc;
-        if(persistent) {
-            if(log.isInfoEnabled())
-                log.info("fetching state from database");
-            try {
-                persistence_mgr=PersistenceFactory.getInstance().createManager();
-            }
-            catch(Throwable ex) {
-                if(log.isErrorEnabled())
-                    log.error("failed creating PersistenceManager, " + "turning persistency off. Exception: "
-                              + Util.printStackTrace(ex));
-                persistent=false;
-            }
-        }
-
         state_promise.reset();
         rc=channel.getState(null, state_timeout);
         if(rc) {
@@ -321,30 +201,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         else {
             if(log.isInfoEnabled())
                 log.info("state could not be retrieved (first member)");
-            if(persistent) {
-                if(log.isInfoEnabled())
-                    log.info("fetching state from database");
-                try {
-                    Map<K,V> m=persistence_mgr.retrieveAll();
-                    if(m != null) {
-                        K key;
-                        V val;
-                        for(Map.Entry<K,V> entry:m.entrySet()) {
-                            key=entry.getKey();
-                            val=entry.getValue();
-                            if(log.isTraceEnabled())
-                                log.trace("inserting " + key + " --> " + val);
-                            put(key, val); // will replicate key and value
-                        }
-                    }
-                }
-                catch(Throwable ex) {
-                    if(log.isErrorEnabled())
-                        log.error("failed creating PersistenceManager, " + "turning persistency off. Exception: "
-                                  + Util.printStackTrace(ex));
-                    persistent=false;
-                }
-            }
         }
     }
 
@@ -360,18 +216,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         return channel;
     }
 
-    public boolean getPersistent() {
-        return persistent;
-    }
-
-    public void setPersistent(boolean p) {
-        persistent=p;
-    }
-
-    public void setDeadlockDetection(boolean flag) {
-        if(disp != null)
-            disp.setDeadlockDetection(flag);
-    }
 
     public void addNotifier(Notification n) {
         if(n != null)
@@ -395,11 +239,9 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     }
 
     /**
-     * Maps the specified key to the specified value in this table. Neither the
-     * key nor the value can be null. <p/>
+     * Maps the specified key to the specified value in this table. Neither the key nor the value can be null. <p/>
      * <p>
-     * The value can be retrieved by calling the <tt>get</tt> method with a
-     * key that is equal to the original key.
+     * The value can be retrieved by calling the <tt>get</tt> method with a key that is equal to the original key.
      * 
      * @param key
      *                key with which the specified value is to be associated
@@ -415,8 +257,8 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         if(send_message) {
             try {
-                MethodCall call=new MethodCall(PUT, new Object[] { key, value });
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                MethodCall call=new MethodCall(PUT, key, value);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("put(" + key + ", " + value + ") failed", e);
@@ -441,8 +283,8 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         if(send_message) {
             try {
-                MethodCall call=new MethodCall(PUT_IF_ABSENT, new Object[] { key, value });
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                MethodCall call=new MethodCall(PUT_IF_ABSENT, key, value);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("putIfAbsent(" + key + ", " + value + ") failed", e);
@@ -466,7 +308,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(PUT_ALL, m);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Throwable t) {
                 throw new RuntimeException("putAll() failed", t);
@@ -486,7 +328,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(CLEAR);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("clear() failed", e);
@@ -514,7 +356,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(REMOVE, key);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("remove(" + key + ") failed", e);
@@ -539,7 +381,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(REMOVE_IF_EQUALS, key, value);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("remove(" + key + ", " + value + ") failed", e);
@@ -564,7 +406,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(REPLACE_IF_EQUALS, key, oldValue, newValue);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("replace(" + key
@@ -595,7 +437,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(send_message) {
             try {
                 MethodCall call=new MethodCall(REPLACE_IF_EXISTS, key, value);
-                disp.callRemoteMethods(null, call, update_mode, timeout);
+                disp.callRemoteMethods(null, call, call_options);
             }
             catch(Exception e) {
                 throw new RuntimeException("replace(" + key + ", " + value + ") failed", e);
@@ -611,15 +453,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public V _put(K key, V value) {
         V retval=map.put(key, value);
-        if(persistent) {
-            try {
-                persistence_mgr.save(key, value);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed persisting " + key + " + " + value, t);
-            }
-        }
         for(Notification notif:notifs)
             notif.entrySet(key, value);
         return retval;
@@ -627,15 +460,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public V _putIfAbsent(K key, V value) {
         V retval=map.putIfAbsent(key, value);
-        if(persistent) {
-            try {
-                persistence_mgr.save(key, value);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed persisting " + key + " + " + value, t);
-            }
-        }
         for(Notification notif:notifs)
             notif.entrySet(key, value);
         return retval;
@@ -659,15 +483,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
             this.map.put(entry.getKey(), entry.getValue());
         }
 
-        if(persistent && !map.isEmpty()) {
-            try {
-                persistence_mgr.saveAll(map);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed persisting contents", t);
-            }
-        }
         if(!map.isEmpty()) {
             for(Notification notif:notifs)
                 notif.contentsSet(map);
@@ -676,30 +491,12 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public void _clear() {
         map.clear();
-        if(persistent) {
-            try {
-                persistence_mgr.clear();
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed clearing contents", t);
-            }
-        }
         for(Notification notif:notifs)
             notif.contentsCleared();
     }
 
     public V _remove(Object key) {
         V retval=map.remove(key);
-        if(persistent && retval != null) {
-            try {
-                persistence_mgr.remove((Serializable)key);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed removing " + key, t);
-            }
-        }
         if(retval != null) {
             for(Notification notif:notifs)
                 notif.entryRemoved((K)key);
@@ -710,15 +507,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public boolean _remove(Object key, Object value) {
         boolean removed=map.remove(key, value);
-        if(persistent && removed) {
-            try {
-                persistence_mgr.remove((Serializable)key);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed removing " + key, t);
-            }
-        }
         if(removed) {
             for(Notification notif:notifs)
                 notif.entryRemoved((K)key);
@@ -728,15 +516,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public boolean _replace(K key, V oldValue, V newValue) {
         boolean replaced=map.replace(key, oldValue, newValue);
-        if(persistent && replaced) {
-            try {
-                persistence_mgr.save(key, newValue);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed saving " + key + ", " + newValue, t);
-            }
-        }
         if(replaced) {
             for(Notification notif:notifs)
                 notif.entrySet(key, newValue);
@@ -746,15 +525,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public V _replace(K key, V value) {
         V retval=map.replace(key, value);
-        if(persistent) {
-            try {
-                persistence_mgr.save(key, value);
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed saving " + key + ", " + value, t);
-            }
-        }
         for(Notification notif:notifs)
             notif.entrySet(key, value);
         return retval;

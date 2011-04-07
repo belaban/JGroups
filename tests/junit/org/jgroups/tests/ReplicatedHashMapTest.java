@@ -15,9 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Test methods for ReplicatedHashMap
- * 
  * @author Bela Ban
- *          Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ReplicatedHashMapTest extends ChannelTestBase {
@@ -28,13 +26,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         JChannel c1=createChannel(true, 2);
-        this.map1=new ReplicatedHashMap<String,String>(c1, false);
+        this.map1=new ReplicatedHashMap<String,String>(c1);
         map1.setBlockingUpdates(true);
         c1.connect("ReplicatedHashMapTest");
         this.map1.start(5000);
 
         JChannel c2=createChannel(c1);
-        this.map2=new ReplicatedHashMap<String,String>(wrap, c2, false);
+        this.map2=new ReplicatedHashMap<String,String>(wrap, c2);
         map2.setBlockingUpdates(true);
         c2.connect("ReplicatedHashMapTest");
         this.map2.start(5000);

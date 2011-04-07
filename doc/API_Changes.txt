@@ -4,4 +4,6 @@ API changes in 3.0.0
 
 - Old and deprecated system properties such as bind.address (instead of jgroups.bind_addr) have been removed
 
+- Removed package org.jgroups.persistence and changed dependent demos accordingly (e.g. ReplicatedHashMap)
 
+- 
