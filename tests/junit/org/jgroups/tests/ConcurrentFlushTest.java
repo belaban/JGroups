@@ -6,8 +6,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -305,7 +303,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         boolean  blockReceived, unblockReceived;
         JChannel channel;
         CountDownLatch flushStartReceived, flushStopReceived;
-        final List<Object> events=new LinkedList<Object>();
+        final StringBuilder events=new StringBuilder();
 
 
         Listener(String name, JChannel channel, CountDownLatch flushStartReceived, CountDownLatch flushStopReceived) {
@@ -320,22 +318,22 @@ public class ConcurrentFlushTest extends ChannelTestBase {
             unblockReceived=true;
             if(flushStopReceived != null)
                 flushStopReceived.countDown();
-            events.add(new UnblockEvent());
+            events.append('u');
         }
 
         public void block() {
             blockReceived=true;
             if(flushStartReceived != null)
                 flushStartReceived.countDown();
-            events.add(new BlockEvent());
+            events.append('b');
         }
 
-        public List<Object> getEvents() {
-            return events;
+        public String getEventSequence() {
+            return events.toString();
         }
 
         public void viewAccepted(View new_view) {
-            events.add(new_view);
+            events.append('v');
         }
 
         public String getName() {

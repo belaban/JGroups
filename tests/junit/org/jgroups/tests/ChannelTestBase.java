@@ -276,7 +276,9 @@ public class ChannelTestBase {
   
 
     interface EventSequence {
-        List<Object> getEvents();
+        /** Return an event string. Events are translated as follows: get state='g', set state='s',
+         *  block='b', unlock='u', view='v' */
+        String getEventSequence();
         String getName();
     }
 
@@ -287,7 +289,7 @@ public class ChannelTestBase {
         protected Channel channel;
         protected Thread thread;
         protected Throwable exception;
-        protected List<Object> events;
+        protected StringBuilder events;
 
         public ChannelApplication(String name) throws Exception {
             channel = createChannel(true, 4);
@@ -300,7 +302,7 @@ public class ChannelTestBase {
         }
 
         protected void init(String name) {
-            events = Collections.synchronizedList(new LinkedList<Object>());
+            events = new StringBuilder();
             channel.setName(name);
             channel.setReceiver(this);
         }
@@ -357,54 +359,54 @@ public class ChannelTestBase {
             }
         }
 
-        public List<Object> getEvents() {
-            return events;
+        public String getEventSequence() {
+            return events.toString();
         }
 
         public void block() {
-            events.add(new BlockEvent());
+            events.append('b');
         }
 
         public byte[] getState() {
-            events.add(new GetStateEvent(null, null));
+            events.append('g');
             return null;
         }
 
         public void getState(OutputStream ostream) {
-            events.add(new GetStateEvent(null, null));
+            events.append('g');
         }
 
         public byte[] getState(String state_id) {
-            events.add(new GetStateEvent(null, state_id));
+            events.append('g');
             return null;
         }
 
         public void getState(String state_id, OutputStream ostream) {
-            events.add(new GetStateEvent(null, state_id));
+            events.append('g');
         }
 
         public void setState(byte[] state) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void setState(InputStream istream) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void setState(String state_id, byte[] state) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void setState(String state_id, InputStream istream) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void unblock() {
-            events.add(new UnblockEvent());
+            events.append('u');
         }
 
         public void viewAccepted(View new_view) {
-            events.add(new_view);
+            events.append('v');
             log.info(getLocalAddress() + ": view=" + new_view);
         }
     }
@@ -451,7 +453,7 @@ public class ChannelTestBase {
     }
 
     protected static void checkEventStateTransferSequence(EventSequence receiver) {
-        List<Object> events = receiver.getEvents();
+        String events = receiver.getEventSequence();
         assertNotNull(events);
         final String validSequence = "([b][vgs]*[u])+";
         // translate the eventTrace to an eventString
@@ -467,24 +469,7 @@ public class ChannelTestBase {
      * Method for translating event traces into event strings, where each event in the trace is
      * represented by a letter.
      */
-    protected static String translateEventTrace(List<Object> et) throws Exception {
-        StringBuilder eventString = new StringBuilder();
-        for (Iterator<Object> it = et.iterator(); it.hasNext();) {
-            Object obj = it.next();
-            if (obj instanceof BlockEvent)
-                eventString.append("b");
-            else if (obj instanceof UnblockEvent)
-                eventString.append("u");
-            else if (obj instanceof SetStateEvent)
-                eventString.append("s");
-            else if (obj instanceof GetStateEvent)
-                eventString.append("g");
-            else if (obj instanceof View)
-                eventString.append("v");
-            else
-                throw new Exception("Unrecognized event type in event trace");
-        }
-        String s = eventString.toString();
+    protected static String translateEventTrace(String s) throws Exception {
         // if it ends with block, strip it out because it will be regarded as error sequence
         while (s.endsWith("b")) {
             s = s.substring(0, s.length() - 1);
@@ -511,14 +496,13 @@ public class ChannelTestBase {
             // matches, and not just a substring
             if (!(matcher.start() == 0 && matcher.end() == eventString.length())) {
                 // match on full eventString not found
-                System.err
-                                .println("event string invalid (proper substring matched): event string = "
-                                                + eventString
-                                                + ", specification = "
-                                                + spec
-                                                + "matcher.start() "
-                                                + matcher.start()
-                                                + " matcher.end() " + matcher.end());
+                System.err.println("event string invalid (proper substring matched): event string = "
+                                     + eventString
+                                     + ", specification = "
+                                     + spec
+                                     + "matcher.start() "
+                                     + matcher.start()
+                                     + " matcher.end() " + matcher.end());
                 return false;
             }
         } else {

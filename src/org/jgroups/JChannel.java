@@ -933,9 +933,8 @@ public class JChannel extends Channel {
      *                 if flush is used in this channel and cluster could not be
      *                 flushed
      */    
-    public boolean getState(Address target, String state_id, long timeout,
-			boolean useFlushIfPresent) throws ChannelNotConnectedException,
-			ChannelClosedException {
+    public boolean getState(Address target, String state_id, long timeout, boolean useFlushIfPresent)
+      throws ChannelNotConnectedException, ChannelClosedException {
 		
     	Callable<Boolean> flusher = new Callable<Boolean>() {
 			public Boolean call() throws Exception {
@@ -1508,56 +1507,7 @@ public class JChannel extends Channel {
     }
 
 
-    /**
-     * returns the value of the event<BR>
-     * These objects will be returned<BR>
-     * <PRE>
-     * <B>Event Type    - Return Type</B>
-     * Event.MSG           - returns a Message object
-     * Event.VIEW_CHANGE   - returns a View object
-     * Event.SUSPECT       - returns a SuspectEvent object
-     * Event.BLOCK         - returns a new BlockEvent object
-     * Event.GET_APPLSTATE - returns a GetStateEvent object
-     * Event.STATE_RECEIVED- returns a SetStateEvent object
-     * Event.Exit          - returns an ExitEvent object
-     * All other           - return the actual Event object
-     * </PRE>
-     * @param   evt - the event of which you want to extract the value
-     * @return the event value if it matches the select list,
-     *         returns null if the event is null
-     *         returns the event itself if a match (See above) can not be made of the event type
-     */
-    static Object getEvent(Event evt) {
-        if(evt == null)
-            return null; // correct ?
 
-        switch(evt.getType()) {
-            case Event.MSG:
-                return evt.getArg();
-            case Event.VIEW_CHANGE:
-                return evt.getArg();
-            case Event.SUSPECT:
-                return new SuspectEvent(evt.getArg());
-            case Event.BLOCK:
-                return new BlockEvent();
-            case Event.UNBLOCK:
-                return new UnblockEvent();
-            case Event.GET_APPLSTATE:
-                StateTransferInfo info=(StateTransferInfo)evt.getArg();
-                return new GetStateEvent(info.target, info.state_id);
-            case Event.STATE_RECEIVED:
-                info=(StateTransferInfo)evt.getArg();
-                return new SetStateEvent(info.state, info.state_id);
-            case Event.STATE_TRANSFER_OUTPUTSTREAM:
-            	info = (StateTransferInfo)evt.getArg();
-                return new StreamingGetStateEvent(info.outputStream,info.state_id);
-            case Event.STATE_TRANSFER_INPUTSTREAM:
-            	info = (StateTransferInfo)evt.getArg();
-                return new StreamingSetStateEvent(info.inputStream,info.state_id);
-            default:
-                return evt;
-        }
-    }
 
     /**
      * Disconnects and closes the channel.

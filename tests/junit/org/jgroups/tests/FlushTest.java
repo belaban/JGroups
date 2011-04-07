@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -400,7 +398,7 @@ public class FlushTest extends ChannelTestBase {
             super(name, semaphore);
             this.connectMethod = connectMethod;
             this.msgCount = msgCount;
-            events = Collections.synchronizedList(new LinkedList<Object>());
+            events = new StringBuilder();
             if (connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
                 channel.connect("FlushTestReceiver");
 
@@ -414,7 +412,7 @@ public class FlushTest extends ChannelTestBase {
             super(ch, name, semaphore);
             this.connectMethod = connectMethod;
             this.msgCount = msgCount;
-            events = Collections.synchronizedList(new LinkedList<Object>());
+            events = new StringBuilder();
             if (connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
                 channel.connect("FlushTestReceiver");
 
@@ -423,12 +421,12 @@ public class FlushTest extends ChannelTestBase {
             }
         }
 
-        public List<Object> getEvents() {
-            return new LinkedList<Object>(events);
+        public String getEventSequence() {
+            return events.toString();
         }
 
         public byte[] getState() {
-            events.add(new GetStateEvent(null, null));
+            events.append('g');
             return new byte[] { 'b', 'e', 'l', 'a' };
         }
 
