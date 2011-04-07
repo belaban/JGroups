@@ -55,9 +55,8 @@
     <class id="52" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
     
     <!-- IDs reserved for building blocks -->
-    <class id="200" name="org.jgroups.blocks.PullPushAdapter"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
-    <class id="201" name="org.jgroups.blocks.RequestCorrelator"/>
-    <class id="204" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
+    <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
+    <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
 
     <!-- User-defined protocols should use IDs >= 1000 -->
 
