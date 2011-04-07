@@ -137,18 +137,15 @@ public class UtilTest {
         assert !(retval);
 
         System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
         retval=Util.isBindAddressPropertyIgnored();
-        assert !(retval);
+        assert !retval;
 
         System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
-        assert retval;
+        assert !retval;
 
 
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
         assert retval;
     }

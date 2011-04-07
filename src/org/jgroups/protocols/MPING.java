@@ -38,7 +38,7 @@ public class MPING extends PING implements Runnable {
     @LocalAddress
     @Property(description="Bind address for multicast socket. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null;
     

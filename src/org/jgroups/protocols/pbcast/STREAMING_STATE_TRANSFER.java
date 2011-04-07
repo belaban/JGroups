@@ -79,7 +79,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     @LocalAddress
     @Property(description = "The interface (NIC) used to accept state requests. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr;
     

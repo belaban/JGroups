@@ -77,7 +77,7 @@ public abstract class TP extends Protocol {
               description="The bind address which should be used by this transport. The following special values " +
                       "are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},writable=false)
+              systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr=null;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,

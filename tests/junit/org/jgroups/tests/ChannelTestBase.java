@@ -70,7 +70,7 @@ public class ChannelTestBase {
         this.channel_conf = chconf;
         
         boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, null, "bind_addr",
+        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr",
     			ignore_systemprops, bind_addr);
         // bind_addr = Util.getBindAddress(null).getHostAddress();
     }

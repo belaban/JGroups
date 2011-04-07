@@ -35,7 +35,7 @@ public class FD_ICMP extends FD {
     @Property(name="bind_addr",
               description="The NIC on which the ServerSocket should listen on. " +
                       "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK", 
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr=null ;
     

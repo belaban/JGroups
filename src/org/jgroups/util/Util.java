@@ -3146,7 +3146,7 @@ public class Util {
 
     	// determine the desired values for bind_addr_str and bind_interface_str
     	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR}, props, "bind_addr",
     			ignore_systemprops, null);
     	String bind_interface_str =Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
     			ignore_systemprops, null);
@@ -3625,11 +3625,8 @@ public class Util {
     public static boolean isBindAddressPropertyIgnored() {
         try {
             String tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-            if(tmp == null) {
-                tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD);
-                if(tmp == null)
-                    return false;
-            }
+            if(tmp == null)
+                return false;
             tmp=tmp.trim().toLowerCase();
             return !(tmp.equals("false") || tmp.equals("no") || tmp.equals("off")) && (tmp.equals("true") || tmp.equals("yes") || tmp.equals("on"));
         }

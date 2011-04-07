@@ -1218,7 +1218,7 @@ public class Configurator {
 
         for(String system_property_name: system_property_names) {
             if(system_property_name != null && system_property_name.length() > 0) {
-                if(system_property_name.equals(Global.BIND_ADDR) || system_property_name.equals(Global.BIND_ADDR_OLD))
+                if(system_property_name.equals(Global.BIND_ADDR))
                     if(Util.isBindAddressPropertyIgnored())
                         continue;
                 
