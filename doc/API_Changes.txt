@@ -1,0 +1,7 @@
+
+API changes in 3.0.0
+====================
+
+- Old and deprecated system properties such as bind.address (instead of jgroups.bind_addr) have been removed
+
+
