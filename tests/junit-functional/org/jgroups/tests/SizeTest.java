@@ -95,8 +95,8 @@ public class SizeTest {
         GossipData data;
         final Address own=org.jgroups.util.UUID.randomUUID();
         final Address coord=org.jgroups.util.UUID.randomUUID();
-        UUID.add((UUID)own, "own");
-        UUID.add((UUID)coord, "coord");
+        UUID.add(own, "own");
+        UUID.add(coord, "coord");
 
         final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
         final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
@@ -583,9 +583,6 @@ public class SizeTest {
         Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
 
-        ((UUID)uuid).setAdditionalData("Bela Ban".getBytes());
-        _testWriteAddress(uuid);
-
         Address addr=new IpAddress(7500);
         _testWriteAddress(addr);
 
@@ -663,9 +660,6 @@ public class SizeTest {
         System.out.println("hash 1: " + hash1);
         System.out.println("hash 2: " + hash2);
         assert hash1 == hash2;
-
-        uuid.setAdditionalData("bela ban".getBytes());
-        _testSize(uuid);
     }
 
 

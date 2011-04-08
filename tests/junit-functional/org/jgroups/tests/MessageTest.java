@@ -375,13 +375,6 @@ public class MessageTest {
     }
 
 
-    public static void testSizeMessageWithAdditionalData() throws Exception {
-        UUID dest=UUID.randomUUID();
-        dest.setAdditionalData("bela".getBytes());
-        Message msg=new Message(dest, null, null);
-        _testSize(msg);
-    }
-
 
     public static void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
         Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), "bela".getBytes());

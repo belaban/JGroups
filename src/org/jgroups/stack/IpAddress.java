@@ -117,16 +117,6 @@ public class IpAddress implements PhysicalAddress {
     }
 
 
-    /**
-     * Establishes an order between 2 addresses. Assumes other contains non-null IpAddress.
-     * Excludes channel_name from comparison.
-     * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
-     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
-     */
-    public final int compare(IpAddress other) {
-        return compareTo(other);
-    }
-
 
     /**
      * implements the java.lang.Comparable interface
@@ -154,45 +144,6 @@ public class IpAddress implements PhysicalAddress {
         rc=h1 < h2? -1 : h1 > h2? 1 : 0;
         return rc != 0 ? rc : port < other.port ? -1 : (port > other.port ? 1 : 0);
     }
-
-
-    /**
-     * This method compares both addresses' dotted-decimal notation in string format if the hashcode and ports are
-     * identical. Ca 30% slower than {@link #compareTo(Object)} if used excessively.
-     * @param o
-     * @return
-     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
-     */
-    public final int compareToUnique(Object o) {
-        int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
-
-        if(this == o) return 0;
-        if ((o == null) || !(o instanceof IpAddress))
-            throw new ClassCastException("comparison between different classes: the other object is " +
-                    (o != null? o.getClass() : o));
-        IpAddress other = (IpAddress) o;
-        if(ip_addr == null)
-            if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
-            else return -1;
-
-        h1=ip_addr.hashCode();
-        h2=other.ip_addr.hashCode();
-        rc=h1 < h2? -1 : h1 > h2? 1 : 0;
-
-        if(rc != 0)
-            return rc;
-
-        rc=port < other.port ? -1 : (port > other.port ? 1 : 0);
-
-        if(rc != 0)
-            return rc;
-
-        // here we have the same addresses hash codes and ports, now let's compare the dotted-decimal addresses
-
-        String addr1=ip_addr.getHostAddress(), addr2=other.ip_addr.getHostAddress();
-        return addr1.compareTo(addr2);
-    }
-
 
 
     public final boolean equals(Object obj) {

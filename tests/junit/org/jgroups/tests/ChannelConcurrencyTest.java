@@ -12,9 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.pbcast.GMS;
@@ -180,8 +178,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                     for(int i=0;i < 10;i++) {
                         final RspList rsp=md.castMessage(null,
                                                          new Message(null, null, i),
-                                                         GroupRequest.GET_ALL,
-                                                         2500);
+                                                         new RequestOptions(Request.GET_ALL, 2500));
                         for(Object o:rsp.getResults()) {
                             assertEquals("Wrong result received at " + c.getAddress(), i, o);
                         }

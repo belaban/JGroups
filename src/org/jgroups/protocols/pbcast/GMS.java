@@ -166,10 +166,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
 
-    /** @deprecated */
-    public static long getJoinRetryTimeout() {return -1;}
-    /** @deprecated */
-    public void setJoinRetryTimeout(long t) {}
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();

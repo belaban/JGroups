@@ -392,16 +392,6 @@ public class Message implements Streamable {
         return headers.putHeaderIfAbsent(id, hdr);
     }
 
-    /**
-     *
-     * @param key
-     * @return the header associated with key
-     * @deprecated Use getHeader() instead. The issue with removing a header is described in
-     * http://jira.jboss.com/jira/browse/JGRP-393
-     */
-    public Header removeHeader(short id) {
-        return getHeader(id);
-    }
 
     public Header getHeader(short id) {
         if(id <= 0)

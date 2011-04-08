@@ -924,31 +924,4 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         return map.values();
     }
 
-    /**
-     * Legacy method.
-     * 
-     * @deprecated
-     */
-    public boolean contains(Object value) {
-        return containsValue(value);
-    }
-
-    /**
-     * Legacy method.
-     * 
-     * @deprecated
-     */
-    public Enumeration<K> keys() {
-        return Collections.enumeration(keySet());
-    }
-
-    /**
-     * Legacy method.
-     * 
-     * @deprecated
-     */
-    public Enumeration<V> elements() {
-        return Collections.enumeration(values());
-    }
-
 }

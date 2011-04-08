@@ -245,13 +245,6 @@ public abstract class Channel /* implements Transport */ {
      */
     abstract public void setName(String name);
 
-    /**
-     Returns the group address of the group of which the channel is a member. This is
-     the object that was the argument to <code>connect()</code>. Calling this method on a closed
-     channel returns <code>null</code>.
-     @return The group address
-     @deprecated Use {@link #getClusterName()} instead */
-    abstract public String getChannelName();
 
     /**
      Returns the cluster name of the group of which the channel is a member. This is
@@ -280,15 +273,6 @@ public abstract class Channel /* implements Transport */ {
         return up_handler;
     }
 
-    /**
-     Allows to be notified when a channel event such as connect, disconnect or close occurs.
-     E.g. a PullPushAdapter may choose to stop when the channel is closed, or to start when
-     it is opened.
-     @deprecated Use addChannelListener() instead
-     */
-    public void setChannelListener(ChannelListener channel_listener) {
-        addChannelListener(channel_listener);
-    }
 
     /**
      Allows to be notified when a channel event such as connect, disconnect or close occurs.

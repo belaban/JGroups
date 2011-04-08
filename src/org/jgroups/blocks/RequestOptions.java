@@ -32,9 +32,6 @@ public class RequestOptions {
     /** A list of members which should be excluded from a call */
     private Set<Address> exclusion_list;
 
-    /** When options are sealed, subsequent modifications will throw an exception */
-    protected boolean sealed=false;
-
 
 
     public RequestOptions() {
@@ -68,7 +65,6 @@ public class RequestOptions {
         this.scope=opts.scope;
         this.flags=opts.flags;
         this.exclusion_list=opts.exclusion_list;
-        this.sealed=opts.sealed;
     }
 
 
@@ -81,7 +77,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setMode(int mode) {
-        checkSealed();
         this.mode=mode;
         return this;
     }
@@ -91,7 +86,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setTimeout(long timeout) {
-        checkSealed();
         this.timeout=timeout;
         return this;
     }
@@ -101,7 +95,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setAnycasting(boolean use_anycasting) {
-        checkSealed();
         this.use_anycasting=use_anycasting;
         return this;
     }
@@ -111,7 +104,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setScope(short scope) {
-        checkSealed();
         this.scope=scope;
         return this;
     }
@@ -121,7 +113,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setRspFilter(RspFilter rsp_filter) {
-        checkSealed();
         this.rsp_filter=rsp_filter;
         return this;
     }
@@ -131,13 +122,11 @@ public class RequestOptions {
     }
 
     public RequestOptions setFlags(byte flags) {
-        checkSealed();
         this.flags=Util.setFlag(this.flags, flags);
         return this;
     }
 
     public RequestOptions clearFlags(byte flags) {
-        checkSealed();
         this.flags=Util.clearFlags(this.flags, flags);
         return this;
     }
@@ -154,7 +143,6 @@ public class RequestOptions {
     }
 
     public RequestOptions setExclusionList(Address ... mbrs) {
-        checkSealed();
         if(exclusion_list == null)
             exclusion_list=new HashSet<Address>();
         else
@@ -163,13 +151,6 @@ public class RequestOptions {
         return this;
     }
 
-    /** Seals options against subsequent modifications
-     * @deprecated Will get removed together with SYNC and ASYNC in 3.0*/
-    @Deprecated
-    public RequestOptions seal() {
-        sealed=true;
-        return this;
-    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -185,9 +166,4 @@ public class RequestOptions {
         return sb.toString();
     }
 
-
-    protected void checkSealed() {
-        if(sealed)
-            throw new IllegalStateException("options are sealed, cannot modify them; use a new instance of RequestOptions");
-    }
 }

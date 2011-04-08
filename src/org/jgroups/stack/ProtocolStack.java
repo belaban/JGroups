@@ -167,46 +167,6 @@ public class ProtocolStack extends Protocol implements Transport {
         this.channel=ch;
     }
 
-    /**
-     * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()}  instead
-     * @return
-     */
-    public ThreadFactory getThreadFactory() {
-        TP transport=getTransport();
-        return transport != null? transport.getThreadFactory() : null;
-    }
-
-
-    /**
-     * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()} instead
-     * @param f
-     */
-    public void setThreadFactory(ThreadFactory f) {
-    }
-
-    /**
-     * @deprecated Use {@link TP#setTimerThreadFactory(org.jgroups.util.ThreadFactory)} instead
-     * @param f
-     */
-    public static void setTimerThreadFactory(ThreadFactory f) {
-    }
-
-
-
-    /**
-     * @deprecated Use {@link org.jgroups.protocols.TP#getTimer()} to fetch the timer and call getCorePoolSize() directly
-     * @return
-     */
-    public int getTimerThreads() {
-        TP transport=getTransport();
-        TimeScheduler timer;
-        if(transport != null) {
-            timer=transport.getTimer();
-            if(timer != null)
-                return timer.getMinThreads();
-        }
-        return -1;
-    }
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
@@ -343,22 +303,6 @@ public class ProtocolStack extends Protocol implements Transport {
         }
 
         return retval;
-    }
-
-    /**
-     * @deprecated Use {@link org.jgroups.protocols.TP#getTimer()} instead to fetch the timer from the
-     * transport and then invoke the method on it
-     * @return
-     */
-    public String dumpTimerQueue() {
-        TP transport=getTransport();
-        TimeScheduler timer;
-        if(transport != null) {
-            timer=transport.getTimer();
-            if(timer != null)
-                return timer.dumpTimerTasks();
-        }
-        return "";
     }
 
     /**
@@ -1035,18 +979,8 @@ public class ProtocolStack extends Protocol implements Transport {
         stopped=true;
     }
 
-    /**
-     * Not needed anymore, just left in here for backwards compatibility with JBoss AS
-     * @deprecated
-     */
-    public void flushEvents() {
-
-    }
-
-
 
     /*--------------------------- Transport interface ------------------------------*/
-
     public void send(Message msg) throws Exception {
         down(new Event(Event.MSG, msg));
     }

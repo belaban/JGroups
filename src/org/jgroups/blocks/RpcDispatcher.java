@@ -206,18 +206,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return retval;
     }
 
-    @Deprecated
-    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call, int mode, long timeout,
-                                                       boolean use_anycasting, boolean oob, RspFilter filter) {
-        RequestOptions options=new RequestOptions(mode, timeout, use_anycasting, filter);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethodsWithFuture(dests, method_call, options);
-    }
 
-    @Deprecated
-    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call) {
-        return callRemoteMethodsWithFuture(dests, method_call, new RequestOptions());
-    }
 
     public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty

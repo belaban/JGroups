@@ -69,7 +69,7 @@ public class RequestCorrelator {
      * is not null, all incoming requests will be dispatched to it (via
      * <code>handle(Message)</code>).
      *
-     * @param name Used to differentiate between different RequestCorrelators
+     * @param id Used to differentiate between different RequestCorrelators
      * (e.g. in different protocol layers). Has to be unique if multiple
      * request correlators are used.
      *
@@ -79,21 +79,6 @@ public class RequestCorrelator {
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
      */
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler) {
-        this.transport  = transport;
-        request_handler = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler, Address local_addr) {
-        this.transport  = transport;
-        this.local_addr=local_addr;
-        request_handler = handler;
-        start();
-    }
-
     public RequestCorrelator(short id, Object transport, RequestHandler handler, Address local_addr) {
         this.id         = id;
         this.transport  = transport;
@@ -110,100 +95,12 @@ public class RequestCorrelator {
     }
 
 
-    /**
-     * Constructor. Uses transport to send messages. If <code>handler</code>
-     * is not null, all incoming requests will be dispatched to it (via
-     * <code>handle(Message)</code>).
-     *
-     * @param name Used to differentiate between different RequestCorrelators
-     * (e.g. in different protocol layers). Has to be unique if multiple
-     * request correlators are used.
-     *
-     * @param transport Used to send/pass up requests. Can be either a Transport (only send() will be
-     *                  used then), or a Protocol (up_prot.up()/down_prot.down() will be used)
-     *
-     * @param handler Request handler. Method <code>handle(Message)</code>
-     * will be called when a request is received.
-     *
-     * @param deadlock_detection When enabled (true) recursive synchronous
-     * message calls will be detected and processed with higher priority in
-     * order to solve deadlocks. Slows down processing a little bit when
-     * enabled due to runtime checks involved.
-     */
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection) {
-        this.transport          = transport;
-        request_handler         = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
-        this.transport             = transport;
-        request_handler            = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection, Address local_addr) {
-        this.transport          = transport;
-        this.local_addr         = local_addr;
-        request_handler         = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler,
-                             boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
-        this.transport             = transport;
-        this.local_addr            = local_addr;
-        request_handler            = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler,
-                             Address local_addr, boolean concurrent_processing) {
-        this.transport             = transport;
-        this.local_addr            = local_addr;
-        request_handler            = handler;
-        start();
-    }
-
-
-
-    /**
-     * Switch the deadlock detection mechanism on/off
-     * @param flag the deadlock detection flag
-     * @deprecated deadlock detection is not needed with a concurrent stack
-     */
-    public void setDeadlockDetection(boolean flag) {
-    }
-
 
     public void setRequestHandler(RequestHandler handler) {
         request_handler=handler;
         start();
     }
 
-    /**
-     * @deprecated Not needed since the introduction of the concurrent stack
-     * @param concurrent_processing
-     */
-    public void setConcurrentProcessing(boolean concurrent_processing) {
-    }
-
-
-    /**
-     * Helper method for {@link #sendRequest(long,List,Message,RspCollector)}.
-     */
-    @Deprecated
-    public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
-        sendRequest(id, null, msg, coll);
-    }
 
 
     public RpcDispatcher.Marshaller getMarshaller() {

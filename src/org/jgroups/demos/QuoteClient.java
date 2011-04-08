@@ -18,8 +18,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 
-
-
 /**
  * Used in conjunction with QuoteServer: a client is member of a group of quote servers which replicate
  * stock quotes among themselves. The client broadcasts its request (set, get quotes) and (in the case of get
@@ -150,8 +148,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                                                 new RequestOptions(Request.GET_ALL, 10000));
 
                 Float val=null;
-                for(int i=0; i < rsp_list.size(); i++) {
-                    Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                for(Rsp rsp: rsp_list.values()) {
                     Object obj=rsp.getValue();
                     if(obj == null || obj instanceof Throwable)
                         continue;
@@ -189,14 +186,13 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
                         rsp_list=disp.callRemoteMethods(null, "getAllStocks",
-                                                        null, (Class[])null,
+                                                        null, null,
                                                         new RequestOptions(Request.GET_ALL, 5000));
 
                         System.out.println("rsp_list is " + rsp_list);
 
                         Hashtable all_stocks=null;
-                        for(int i=0; i < rsp_list.size(); i++) {
-                            Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                        for(Rsp rsp: rsp_list.values()) {
                             Object obj=rsp.getValue();
                             if(obj == null || obj instanceof Throwable)
                                 continue;

@@ -239,36 +239,6 @@ public class JChannel extends Channel {
 
 
 
-
-    /**
-     * Creates a new JChannel with the protocol stack as defined in the properties
-     * parameter. an example of this parameter is<BR>
-     * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"<BR>
-     * Other examples can be found in the ./conf directory<BR>
-     * @param properties the protocol stack setup; if null, the default protocol stack will be used.
-     * 					 The properties can also be a java.net.URL object or a string that is a URL spec.
-     *                   The JChannel will validate any URL object and String object to see if they are a URL.
-     *                   In case of the parameter being a url, the JChannel will try to load the xml from there.
-     *                   In case properties is a org.w3c.dom.Element, the ConfiguratorFactory will parse the
-     *                   DOM tree with the element as its root element.
-     * @deprecated Use the constructors with specific parameter types instead.
-     */
-    public JChannel(Object properties) throws ChannelException {
-        if (properties == null)
-            properties = DEFAULT_PROTOCOL_STACK;
-
-        ProtocolStackConfigurator c;
-
-        try {
-            c=ConfiguratorFactory.getStackConfigurator(properties);
-        }
-        catch(Exception x) {
-            throw new ChannelException("unable to load protocol stack", x);
-        }
-        init(c);
-    }
-
-
     /**
      * Creates a channel with the same configuration as the channel passed to this constructor. This is used by
      * testing code, and should not be used by any other code !
@@ -757,15 +727,6 @@ public class JChannel extends Channel {
                 UUID.add(local_addr, this.name);
             }
         }
-    }
-
-    /**
-     * returns the name of the channel
-     * if the channel is not connected or if it is closed it will return null
-     * @deprecated Use {@link #getClusterName()} instead
-     */
-    public String getChannelName() {
-        return closed ? null : !connected ? null : cluster_name;
     }
 
     @ManagedAttribute(description="Returns cluster name this channel is connected to")
@@ -1302,11 +1263,6 @@ public class JChannel extends Channel {
                     Map<String,Object> m=(Map<String,Object>)evt.getArg();
                     if(m != null) {
                         additional_data.putAll(m);
-                        if(m.containsKey("additional_data")) {
-                            byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr instanceof UUID)
-                                ((UUID)local_addr).setAdditionalData(tmp);
-                        }
                     }
                 }
                 catch(Throwable t) {
@@ -1441,11 +1397,6 @@ public class JChannel extends Channel {
     protected void setAddress() {
         Address old_addr=local_addr;
         local_addr=address_generator != null? address_generator.generateAddress() : UUID.randomUUID();
-
-        byte[] buf=(byte[])additional_data.get("additional_data");
-        if(buf != null)
-            ((UUID)local_addr).setAdditionalData(buf);
-
         if(old_addr != null)
             down(new Event(Event.REMOVE_ADDRESS, old_addr));
         if(name == null || name.length() == 0) // generate a logical name if not set

@@ -121,21 +121,6 @@ public class StreamableTest {
 
 
 
-    public static void testAdditionalData() throws Exception {
-        UUID dest=UUID.randomUUID();
-        dest.setAdditionalData("foo".getBytes());
-        UUID src=UUID.randomUUID();
-        src.setAdditionalData("foobar".getBytes());
-        Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), false));
-        msg.putHeader(PING_ID, hdr);
-        TpHeader udp_hdr=new TpHeader("bla");
-        msg.putHeader(UDP_ID, udp_hdr);
-        stream(msg);
-    }
-
-
-
 
     public static void testMergeView() throws Exception {
         Vector tmp_m1, tmp_m2 , m3, all, subgroups;

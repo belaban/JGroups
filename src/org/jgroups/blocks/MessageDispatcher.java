@@ -42,7 +42,6 @@ public class MessageDispatcher implements RequestHandler {
     protected MembershipListener membership_listener=null;
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
-    protected TransportAdapter transport_adapter=null;
     protected final Collection<Address> members=new TreeSet<Address>();
     protected Address local_addr=null;
     protected Serializable id=null;
@@ -108,12 +107,7 @@ public class MessageDispatcher implements RequestHandler {
 
     public void start() {
         if(corr == null) {
-            if(transport_adapter != null) {
-                corr=createRequestCorrelator(transport_adapter, this, local_addr);
-            }
-            else {
-                corr=createRequestCorrelator(prot_adapter, this, local_addr);
-            }
+            corr=createRequestCorrelator(prot_adapter, this, local_addr);
         }
         correlatorStarted();
         corr.start();
@@ -231,33 +225,7 @@ public class MessageDispatcher implements RequestHandler {
        }
     }
 
-    @Deprecated
-    public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
-        if(channel != null)
-            channel.send(msg);
-    }
 
-    @Deprecated
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
-        return castMessage(dests, msg, new RequestOptions(mode, timeout, false, null));
-    }
-
-
-    @Deprecated
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting) {
-        return castMessage(dests, msg, new RequestOptions(mode, timeout, use_anycasting, null));
-    }
-
-    // used by Infinispan
-    @Deprecated
-    /**
-     * @deprecated Use {@link #castMessage(java.util.Collection, org.jgroups.Message, RequestOptions)} instead
-     */
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                               RspFilter filter) {
-        RequestOptions opts=new RequestOptions(mode, timeout, use_anycasting, filter);
-        return castMessage(dests, msg, opts);
-    }
 
     /**
      * Sends a message to the members listed in dests. If dests is null, the message is sent to all current group
@@ -273,11 +241,6 @@ public class MessageDispatcher implements RequestHandler {
         return req != null? req.getResults() : RspList.EMPTY_RSP_LIST;
     }
 
-    @Deprecated
-    public NotifyingFuture<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                                                          RspFilter filter) {
-        return castMessageWithFuture(dests, msg, new RequestOptions(mode, timeout, use_anycasting, filter));
-    }
 
     public NotifyingFuture<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
         GroupRequest req=cast(dests, msg, options, false);
@@ -343,21 +306,10 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-
     public void done(long req_id) {
         corr.done(req_id);
     }
 
-
-    /**
-     * Sends a message to a single member (destination = msg.dest) and returns the response. The message's destination
-     * must be non-zero !
-     * @deprecated Use {@link #sendMessage(org.jgroups.Message, RequestOptions)} instead
-     */
-    @Deprecated
-    public Object sendMessage(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        return sendMessage(msg, new RequestOptions(mode, timeout, false, null));
-    }
 
 
     public Object sendMessage(Message msg, RequestOptions opts) throws TimeoutException, SuspectedException {
@@ -387,10 +339,6 @@ public class MessageDispatcher implements RequestHandler {
         return rsp.getValue();
     }
 
-    @Deprecated
-    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        return sendMessageWithFuture(msg, new RequestOptions(mode, timeout, false, null));
-    }
 
     public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws TimeoutException, SuspectedException {
         Address dest=msg.getDest();
@@ -604,19 +552,6 @@ public class MessageDispatcher implements RequestHandler {
 
         /* ----------------------- End of Protocol Interface ------------------------ */
 
-    }
-
-    @Deprecated
-    class TransportAdapter implements Transport {
-
-        public void send(Message msg) throws Exception {
-            if(channel != null)
-                channel.send(msg);
-        }
-
-        public Object receive(long timeout) throws Exception {
-            return null; // not supported and not needed
-        }
     }
 
 

@@ -73,10 +73,6 @@ public class FRAG2 extends Protocol {
 
     public int getFragSize() {return frag_size;}
     public void setFragSize(int s) {frag_size=s;}
-    /** @deprecated overhead was removed in 2.6.10 */
-    public int getOverhead() {return 0;}
-    /** @deprecated overhead was removed in 2.6.10 */
-    public void setOverhead(int o) {}
     public long getNumberOfSentMessages() {return num_sent_msgs.get();}
     public long getNumberOfSentFragments() {return num_sent_frags.get();}
     public long getNumberOfReceivedMessages() {return num_received_msgs.get();}

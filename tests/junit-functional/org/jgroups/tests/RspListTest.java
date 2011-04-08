@@ -171,25 +171,11 @@ public class RspListTest {
 
 
     public void testElementAt() {
-        Rsp rsp;
         Set<Address> s=new HashSet<Address>();
         s.addAll(rl.keySet());
-//        for(int i=0; i < rl.size(); i++) {
-//            rsp=(Rsp)rl.elementAt(i);
-//            s.add(rsp.getSender());
-//        }
         System.out.println("-- set is " + s);
         Assert.assertEquals(rl.size(), s.size());
     }
 
-
-    public void testElementAtWithOOBEx() {
-        try {
-            rl.elementAt(6);
-            assert false : "this should have thrown an ArrayIndexOutOfBoundsException";
-        }
-        catch(ArrayIndexOutOfBoundsException ex) {
-        }
-    }
 
 }
