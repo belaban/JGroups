@@ -651,7 +651,7 @@ public class MessageDispatcher implements RequestHandler {
 
         public Object down(Event evt) {
             if(channel != null) {
-                return channel.downcall(evt);
+                return channel.down(evt);
             }
             else
                 if(this.log.isWarnEnabled()) {

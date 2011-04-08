@@ -409,7 +409,7 @@ public class JChannel extends Channel {
             }
 
             // waits forever until connected (or channel is closed)
-            Object res = downcall(connect_event); 
+            Object res = down(connect_event);
             if (res != null && res instanceof Exception) {
                 // the JOIN was rejected by the coordinator
                 stopStack(true, false);
@@ -509,7 +509,7 @@ public class JChannel extends Channel {
             else
                 connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
 
-            Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
+            Object res=down(connect_event); // waits forever until connected (or channel is closed)
             joinSuccessful=!(res != null && res instanceof Exception);
             if(!joinSuccessful) {
                 stopStack(true, false);
@@ -1297,8 +1297,8 @@ public class JChannel extends Channel {
      * Sends a message through the protocol stack if the stack is available
      * @param evt the message to send down, encapsulated in an event
      */
-    public void down(Event evt) {
-        if(evt == null) return;
+    public Object down(Event evt) {
+        if(evt == null) return null;
 
         switch(evt.getType()) {
             case Event.CONFIG:
@@ -1319,34 +1319,9 @@ public class JChannel extends Channel {
                 break;            
         }
 
-        prot_stack.down(evt);
-    }
-
-
-    public Object downcall(Event evt) {
-        if(evt == null) return null;
-
-        switch(evt.getType()) {
-            case Event.CONFIG:
-                try {
-                    Map<String,Object> m=(Map<String,Object>)evt.getArg();
-                    if(m != null) {
-                        additional_data.putAll(m);
-                        if(m.containsKey("additional_data")) {
-                            byte[] tmp=(byte[])m.get("additional_data");
-                            if(local_addr instanceof UUID)
-                                ((UUID)local_addr).setAdditionalData(tmp);
-                        }
-                    }
-                }
-                catch(Throwable t) {
-                    if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
-                }
-                break;           
-        }
-
         return prot_stack.down(evt);
     }
+
 
 
 
@@ -1579,7 +1554,7 @@ public class JChannel extends Channel {
         if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }           	  
-        boolean successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND));
+        boolean successfulFlush=(Boolean)down(new Event(Event.SUSPEND));
         
         if(automatic_resume)
             stopFlush();
@@ -1609,7 +1584,7 @@ public class JChannel extends Channel {
         }
         View v = getView();
         if(v != null && v.getMembers().containsAll(flushParticipants)){
-            successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND, flushParticipants));
+            successfulFlush=(Boolean)down(new Event(Event.SUSPEND, flushParticipants));
         }else{
             throw new IllegalArgumentException("Current view " + v
                                                + " does not contain all flush participants "
@@ -1735,7 +1710,7 @@ public class JChannel extends Channel {
             if(my_view != null && !map.containsKey("view"))
                 map.put("view", my_view.toString());
             map.put("local_addr", getAddressAsString() + " [" + getAddressAsUUID() + "]");
-            PhysicalAddress physical_addr=(PhysicalAddress)downcall(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
             if(physical_addr != null)
                 map.put("physical_addr", physical_addr.toString());
             map.put("cluster", getClusterName());

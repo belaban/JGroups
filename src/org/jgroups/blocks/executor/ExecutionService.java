@@ -193,7 +193,7 @@ public class ExecutionService extends AbstractExecutorService {
             }
             // This will only happen on calling side since it is transient
             if (channel != null) {
-                return (Boolean)channel.downcall(new ExecutorEvent(
+                return (Boolean)channel.down(new ExecutorEvent(
                     ExecutorEvent.TASK_CANCEL, new Object[] {this, mayInterruptIfRunning}));
             }
             return sync.innerCancel(mayInterruptIfRunning);
@@ -514,7 +514,7 @@ public class ExecutionService extends AbstractExecutorService {
         finally {
             _unfinishedLock.unlock();
         }
-        return (List<Runnable>)ch.downcall(new ExecutorEvent(
+        return (List<Runnable>)ch.down(new ExecutorEvent(
             ExecutorEvent.ALL_TASK_CANCEL, new Object[]{futures, interrupt}));
     }
 

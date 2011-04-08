@@ -243,7 +243,7 @@ public class ReconciliationTest extends ChannelTestBase {
     private static void printDigests(List<JChannel> channels, String message) {
         System.out.println(message);
         for(JChannel channel:channels) {
-            System.out.println("[" + channel.getAddress() + "] " + channel.downcall(Event.GET_DIGEST_EVT).toString());
+            System.out.println("[" + channel.getAddress() + "] " + channel.down(Event.GET_DIGEST_EVT).toString());
         }
     }
 

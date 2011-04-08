@@ -196,16 +196,7 @@ public abstract class Channel /* implements Transport */ {
      blocks to communicate with (building block) specific protocol layers. Currently useful only
      with JChannel.
      */
-    public void down(Event evt) {
-    }
-
-    /**
-     * Can be used instead of down() when a return value is expected. This will be removed in 3.0 when we change
-     * the signature of down() to return Object rather than void
-     * @param evt
-     * @return
-     */
-    public Object downcall(Event evt) {
+    public Object down(Event evt) {
         return null;
     }
 

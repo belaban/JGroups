@@ -44,7 +44,7 @@ public class ExecutionRunner implements Runnable {
                 Runnable runnable = null;
                 // This task exits by being interrupted when the task isn't running
                 while (!shutdown.get()) {
-                    runnable = (Runnable)ch.downcall(new ExecutorEvent(
+                    runnable = (Runnable)ch.down(new ExecutorEvent(
                         ExecutorEvent.CONSUMER_READY, null));
                     if (Thread.interrupted()) {
                         if (runnable != null) {

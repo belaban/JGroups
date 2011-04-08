@@ -138,8 +138,8 @@ public class Topology extends Frame implements WindowListener {
     }
 
     public void windowClosing(WindowEvent e) {
+        setVisible(false);
         channel.close();
-        System.exit(0);
     }
 
     public void windowDeactivated(WindowEvent e) {
@@ -159,7 +159,7 @@ public class Topology extends Frame implements WindowListener {
         String props="udp.xml";
 
         channel=new JChannel(props);
-        channel.connect(channel_name);
+
         channel.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View view) {
                 setInternalState(view.getMembers());
@@ -173,6 +173,7 @@ public class Topology extends Frame implements WindowListener {
                 repaint();
             }
         });
+        channel.connect(channel_name);
         my_addr=channel.getAddress();
         if(my_addr != null)
             setTitle(my_addr.toString());

@@ -22,7 +22,6 @@ public class Event {
     public static final int GET_APPLSTATE                      = 17;  // get state from appl (arg=StateTransferInfo)
     public static final int GET_STATE                          = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK                       = 20;  // arg = StateTransferInfo
-    public static final int STATE_RECEIVED                     = 21;  // arg = StateTransferInfo (with state and state_id)
     public static final int STABLE                             = 30;  // arg = long[] (stable seqnos for mbrs)
     public static final int GET_DIGEST                         = 39;  //
     public static final int SET_DIGEST                         = 41;  // arg = Digest
@@ -80,23 +79,9 @@ public class Event {
         return type;
     }
 
-    /**
-     * Sets the new type
-     * @param type
-     * @deprecated in order to make an Event immutable
-     */
-    @Deprecated
-    public void setType(int type) {
-        throw new IllegalAccessError("setType() has been deprecated, to make Events immutable");
-    }
 
     public Object getArg() {
         return arg;
-    }
-
-    @Deprecated
-    public void setArg(Object arg) {
-        throw new IllegalAccessError("setArg() has been deprecated, to make Events immutable");
     }
 
 
@@ -117,7 +102,6 @@ public class Event {
             case GET_APPLSTATE:          return "GET_APPLSTATE";
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
-            case STATE_RECEIVED:         return "STATE_RECEIVED";
             case STABLE:                 return "STABLE";
             case GET_DIGEST:             return "GET_DIGEST";
             case SET_DIGEST:             return "SET_DIGEST";
