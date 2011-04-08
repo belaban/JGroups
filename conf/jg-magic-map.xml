@@ -30,13 +30,10 @@
     <class id="59" name="org.jgroups.protocols.FD_SIMPLE$FdHeader"/>
     <class id="60" name="org.jgroups.protocols.VIEW_SYNC$ViewSyncHeader"/>
     <class id="61" name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
-    <class id="62" name="org.jgroups.protocols.SFC$Header"/>
     <class id="64" name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
     <class id="65" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader"/>
     <class id="67" name="org.jgroups.protocols.AuthHeader"/>
     <class id="68" name="org.jgroups.util.UUID"/>
-    <class id="69" name="org.jgroups.protocols.MERGE3$CoordAnnouncement"/>
-    <class id="70" name="org.jgroups.protocols.MERGEFAST$MergefastHeader"/>
     <class id="71" name="org.jgroups.blocks.RequestCorrelator$Header"/>
     <class id="72" name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
     <class id="73" name="org.jgroups.protocols.UNICAST2$Unicast2Header"/>
