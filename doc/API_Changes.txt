@@ -24,9 +24,13 @@ API changes in 3.0.0
 
 - Removed PullPushAdapter. Use a Receiver to get callbacks on messages, views etc
 
-- Removed DistributedLockManager. Use LockService as replacement.
+- Removed DistributedLockManager. Use LockService as replacement
 
-- Removed NotificationBus. Use a normal JChannel as replacement.
+- Removed NotificationBus. Use a normal JChannel as replacement
+
+- Removed deprecated methods in MessageDispatcher and RpcDispatcher
+
+
 
 
 

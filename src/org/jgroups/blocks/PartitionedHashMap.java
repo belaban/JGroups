@@ -294,9 +294,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             }
             else {
                 val=(Cache.Value<V>)disp.callRemoteMethod(dest_node,
-                                                          new MethodCall(GET, new Object[]{key}),
-                                                          GroupRequest.GET_FIRST,
-                                                          call_timeout); 
+                                                          new MethodCall(GET, key),
+                                                          new RequestOptions(Request.GET_FIRST,
+                                                          call_timeout));
             }
             if(val != null) {
                 V retval=val.getValue();
@@ -322,8 +322,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 l2_cache.remove(key);
             }
             else {
-                disp.callRemoteMethod(dest_node, new MethodCall(REMOVE, new Object[]{key}),
-                                      GroupRequest.GET_NONE, call_timeout);
+                disp.callRemoteMethod(dest_node, new MethodCall(REMOVE, key), new RequestOptions(Request.GET_NONE, call_timeout));
             }
             if(l1_cache != null)
                 l1_cache.remove(key);
@@ -413,8 +412,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     private void sendPut(Address dest, K key, V val, long caching_time, boolean synchronous) {
         try {
-            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethod(dest, new MethodCall(PUT, new Object[]{key, val, caching_time}), mode, call_timeout);
+            int mode=synchronous? Request.GET_ALL : Request.GET_NONE;
+            disp.callRemoteMethod(dest, new MethodCall(PUT, key, val, caching_time),
+                                  new RequestOptions(mode, call_timeout));
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())

@@ -2,8 +2,9 @@
 package org.jgroups.demos.wb;
 
 import org.jgroups.*;
-import org.jgroups.blocks.*;
-import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.Request;
+import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -125,8 +126,8 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
     public void destroy() {
         if (disp != null) {
             try {
-				MethodCall call = new MethodCall("removeNode", new Object[] {panel.my_addr}, new String[] {Object.class.getName()}); 
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+				MethodCall call = new MethodCall("removeNode", new Object[] {panel.my_addr}, new Class[] {Object.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 5000));
             } catch (Exception e) {
                 log.error(e.toString());
             }

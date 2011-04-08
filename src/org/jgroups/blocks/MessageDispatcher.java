@@ -67,58 +67,13 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, boolean deadlock_detection) {
-        this.channel=channel;
-        prot_adapter=new ProtocolAdapter();
-        if(channel != null) {
-            local_addr=channel.getAddress();
-        }
-        setMessageListener(l);
-        setMembershipListener(l2);
-        if(channel != null) {
-            installUpHandler(prot_adapter, true);
-        }
-        start();
-    }
 
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2,
-                             boolean deadlock_detection, boolean concurrent_processing) {
-        this.channel=channel;
-        prot_adapter=new ProtocolAdapter();
-        if(channel != null) {
-            local_addr=channel.getAddress();
-        }
-        setMessageListener(l);
-        setMembershipListener(l2);
-        if(channel != null) {
-            installUpHandler(prot_adapter, true);
-        }
-        start();
-    }
 
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
         this(channel, l, l2);
         setRequestHandler(req_handler);
     }
-
-
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
-                             boolean deadlock_detection) {
-        this(channel, l, l2, deadlock_detection, false);
-        setRequestHandler(req_handler);
-    }
-
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
-                             boolean deadlock_detection, boolean concurrent_processing) {
-        this(channel, l, l2, deadlock_detection, concurrent_processing);
-        setRequestHandler(req_handler);
-    }
-
 
 
 
@@ -149,20 +104,6 @@ public class MessageDispatcher implements RequestHandler {
         }
     }
 
-    @Deprecated
-    public boolean getDeadlockDetection() {return false;}
-
-    @Deprecated
-    public void setDeadlockDetection(boolean flag) {
-    }
-
-
-    @Deprecated
-    public boolean getConcurrentProcessing() {return false;}
-
-    @Deprecated
-    public void setConcurrentProcessing(boolean flag) {
-    }
 
 
     public void start() {

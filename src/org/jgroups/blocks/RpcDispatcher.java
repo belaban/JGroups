@@ -42,23 +42,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
-                         boolean deadlock_detection) {
-        super(channel, l, l2);
-        channel.addChannelListener(this);
-        this.server_obj=server_obj;
-    }
-
-    @Deprecated
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
-                         boolean deadlock_detection, boolean concurrent_processing) {
-        super(channel, l, l2, false, concurrent_processing);
-        channel.addChannelListener(this);
-        this.server_obj=server_obj;
-    }
-
-
 
 
     public interface Marshaller {
@@ -166,26 +149,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout) {
-        return callRemoteMethods(dests, method_name, args, types, mode, timeout, false);
-    }
 
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout, boolean use_anycasting) {
-        return callRemoteMethods(dests, method_name, args, types, mode, timeout, use_anycasting, null);
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout, boolean use_anycasting, RspFilter filter) {
-        MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethods(dests, method_call,
-                                 new RequestOptions(mode, timeout, use_anycasting, filter, (byte)0));
-    }
 
     public RspList callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
                                      Class[] types, RequestOptions options) {
@@ -193,23 +157,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return callRemoteMethods(dests, method_call, options);
     }
 
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     String[] signature, int mode, long timeout) {
-        return callRemoteMethods(dests, method_name, args, signature, mode, timeout, false);
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     String[] signature, int mode, long timeout, boolean use_anycasting) {
-        MethodCall method_call=new MethodCall(method_name, args, signature);
-        return callRemoteMethods(dests, method_call, new RequestOptions(mode, timeout, use_anycasting, null, (byte)0));
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, MethodCall method_call, int mode, long timeout) {
-        return callRemoteMethods(dests, method_call,  new RequestOptions().setMode(mode).setTimeout(timeout));
-    }
 
 
     /**
@@ -311,42 +258,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, int mode, long timeout) throws Throwable {
-        MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
                                    Class[] types, RequestOptions options) throws Throwable {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethod(dest, method_call, options);
     }
 
-    @Deprecated
-    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   String[] signature, int mode, long timeout) throws Throwable {
-        MethodCall method_call=new MethodCall(method_name, args, signature);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout) throws Throwable {
-        return callRemoteMethod(dest, method_call, mode, timeout, false);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
-        RequestOptions options=new RequestOptions(mode, timeout, false, null);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethod(dest, method_call, options);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall call) throws Throwable {
-        return callRemoteMethod(dest, call, new RequestOptions());
-    }
 
     public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())
@@ -369,17 +286,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return retval;
     }
 
-    @Deprecated
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
-        RequestOptions options=new RequestOptions(mode, timeout, false, null);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethodWithFuture(dest, method_call, options);
-    }
-
-    @Deprecated
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call) throws Throwable {
-        return callRemoteMethodWithFuture(dest, call, new RequestOptions());
-    }
 
     public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())

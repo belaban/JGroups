@@ -2,9 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.*;
 import org.jgroups.util.Util;
 
 
@@ -39,8 +37,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
     public void start() throws Exception {
         channel=new JChannel(props);
-       //  channel.setOpt(Channel.LOCAL, Boolean.FALSE); // do not receive my own messages
-        disp=new MessageDispatcher(channel, null, this, this, false);
+        disp=new MessageDispatcher(channel, null, this, this);
         channel.connect("MessageDispatcherSpeedTestGroup");
 
         try {
@@ -73,7 +70,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {
-            disp.castMessage(null, new Message(), GroupRequest.GET_ALL, TIMEOUT);
+            disp.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, TIMEOUT));
             if(i % show == 0)
                 System.out.println("-- sent " + i);
         }
@@ -83,7 +80,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
 
 
-    void printStats(long total_time, int num) {
+    static void printStats(long total_time, int num) {
         double throughput=((double)num)/((double)total_time/1000.0);
         System.out.println("time for " + num + " remote calls was " +
                            total_time + ", avg=" + (total_time / (double)num) +

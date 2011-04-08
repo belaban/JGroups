@@ -427,9 +427,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         // 3. Execute a cluster wide GET
         try {
             RspList rsps=disp.callRemoteMethods(null,
-                                                new MethodCall(GET, new Object[]{key}),
-                                                GroupRequest.GET_ALL,
-                                                call_timeout);
+                                                new MethodCall(GET, key),
+                                                new RequestOptions(Request.GET_ALL, call_timeout));
             for(Rsp rsp: rsps.values()) {
                 Object obj=rsp.getValue();
                 if(obj == null || obj instanceof Throwable)
@@ -471,8 +470,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     @ManagedOperation
     public void remove(K key, boolean synchronous) {
         try {
-            disp.callRemoteMethods(null, new MethodCall(REMOVE, new Object[]{key}),
-                                   synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE, call_timeout);
+            disp.callRemoteMethods(null, new MethodCall(REMOVE, key),
+                                   new RequestOptions(synchronous? Request.GET_ALL : Request.GET_NONE, call_timeout));
             if(l1_cache != null)
                 l1_cache.remove(key);
         }
@@ -737,8 +736,9 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
     private void mcastPut(K key, V val, short repl_count, long caching_time, boolean synchronous) {
         try {
-            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethods(null, new MethodCall(PUT, new Object[]{key, val, repl_count, caching_time}), mode, call_timeout);
+            int mode=synchronous? Request.GET_ALL : Request.GET_NONE;
+            disp.callRemoteMethods(null, new MethodCall(PUT, key, val, repl_count, caching_time),
+                                   new RequestOptions(mode, call_timeout));
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -748,8 +748,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
     private void mcastClear(Set<K> keys, boolean synchronous) {
         try {
-            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethods(null, new MethodCall(REMOVE_MANY, new Object[]{keys}), mode, call_timeout);
+            int mode=synchronous? Request.GET_ALL : Request.GET_NONE;
+            disp.callRemoteMethods(null, new MethodCall(REMOVE_MANY, keys), new RequestOptions(mode, call_timeout));
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -760,9 +760,9 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
     private void move(Address dest, K key, V val, short repl_count, long caching_time, boolean synchronous) {
         try {
-            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethod(dest, new MethodCall(PUT_FORCE, new Object[]{key, val, repl_count, caching_time, true}),
-                                  mode, call_timeout);
+            int mode=synchronous? Request.GET_ALL : Request.GET_NONE;
+            disp.callRemoteMethod(dest, new MethodCall(PUT_FORCE, key, val, repl_count, caching_time, true),
+                                  new RequestOptions(mode, call_timeout));
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())

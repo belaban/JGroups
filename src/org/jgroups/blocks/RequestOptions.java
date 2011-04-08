@@ -65,6 +65,10 @@ public class RequestOptions {
         this(mode, timeout, false, null);
     }
 
+    public RequestOptions(int mode, long timeout, boolean use_anycasting) {
+        this(mode, timeout, use_anycasting, null);
+    }
+
     public RequestOptions(RequestOptions opts) {
         this.mode=opts.mode;
         this.timeout=opts.timeout;

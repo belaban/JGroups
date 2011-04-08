@@ -44,7 +44,6 @@ public class DistributedTree implements MessageListener, MembershipListener {
             "pbcast.GMS(join_timeout=5000;" +
             "print_local_addr=true):" +
             "pbcast.STATE_TRANSFER()";
-    static final long state_timeout=5000;   // wait 5 secs max to obtain state
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
@@ -87,10 +86,6 @@ public class DistributedTree implements MessageListener, MembershipListener {
         return channel != null? channel.getAddress() : null;
     }
 
-    public void setDeadlockDetection(boolean flag) {
-        if(disp != null)
-            disp.setDeadlockDetection(flag);
-    }
 
     public void start() throws Exception {
         start(8000);
@@ -149,8 +144,8 @@ public class DistributedTree implements MessageListener, MembershipListener {
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-				MethodCall call = new MethodCall("_add", new Object[] {fqn}, new String[] {String.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+				MethodCall call = new MethodCall("_add", new Object[] {fqn}, new Class[] {String.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 0));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -181,9 +176,9 @@ public class DistributedTree implements MessageListener, MembershipListener {
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-				MethodCall call = new MethodCall("_add", new Object[] {fqn, element}, 
-                    new String[] {String.class.getName(), Serializable.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
+                MethodCall call = new MethodCall("_add", new Object[] {fqn, element},
+                                                 new Class[] {String.class, Serializable.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, timeout));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -202,9 +197,9 @@ public class DistributedTree implements MessageListener, MembershipListener {
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-				MethodCall call = new MethodCall("_reset", new Object[] {fqn, element}, 
-                    new String[] {String.class.getName(), Serializable.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
+                MethodCall call = new MethodCall("_reset", new Object[] {fqn, element},
+                                                 new Class[] {String.class, Serializable.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, timeout));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -220,8 +215,8 @@ public class DistributedTree implements MessageListener, MembershipListener {
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-            	MethodCall call = new MethodCall("_remove", new Object[] {fqn}, new String[] {String.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
+            	MethodCall call = new MethodCall("_remove", new Object[] {fqn}, new Class[] {String.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, timeout));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);
@@ -259,9 +254,9 @@ public class DistributedTree implements MessageListener, MembershipListener {
 		//if true, propagate action to the group
         if(send_message == true) {
             try {
-				MethodCall call = new MethodCall("_set", new Object[] {fqn, element}, 
-                    new String[] {String.class.getName(), Serializable.class.getName()});
-                disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, timeout);
+                MethodCall call = new MethodCall("_set", new Object[] {fqn, element},
+                                                 new Class[] {String.class, Serializable.class});
+                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, timeout));
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled()) log.error("exception=" + ex);

@@ -6,10 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.*;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -58,7 +55,7 @@ public class Deadlock2Test extends ChannelTestBase {
         // call the nested group method on itself
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
         log("calling outerMethod() on all members");
-        RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+        RspList rspList = disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 0));
         log("results of outerMethod(): " + rspList);
 
         Assert.assertEquals(1, rspList.size());
@@ -105,7 +102,7 @@ public class Deadlock2Test extends ChannelTestBase {
         // call a point-to-point method on Member 2 that triggers a nested distributed RPC
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
         log("calling outerMethod() on " + localAddress2);
-        Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
+        Object retval = disp1.callRemoteMethod(localAddress2, call, new RequestOptions(Request.GET_ALL, 0));
         log("results of outerMethod(): " + retval);
     }
 
@@ -132,7 +129,7 @@ public class Deadlock2Test extends ChannelTestBase {
         // call a point-to-point method on Member 2 that triggers a nested distributed RPC
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
         log("calling outerMethod() on all members");
-        RspList rsps = disp1.callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
+        RspList rsps = disp1.callRemoteMethods(dests, call, new RequestOptions(Request.GET_ALL, 0));
         log("results of outerMethod():\n" + rsps);
         Assert.assertEquals(2, rsps.size());
     }

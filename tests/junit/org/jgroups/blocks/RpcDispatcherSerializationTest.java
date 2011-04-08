@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
@@ -48,7 +47,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     public void testNonSerializableArgument() throws Throwable {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
-                                   GroupRequest.GET_ALL, 5000);
+                                   new RequestOptions(Request.GET_ALL, 5000));
             throw new IllegalStateException("should throw NotSerializableException");
         }
         catch(Throwable t) {
@@ -65,7 +64,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         Vector<Address> members=channel.getView().getMembers();
         System.out.println("members are: " + members);
         RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
-                                            GroupRequest.GET_ALL, 8000);
+                                            new RequestOptions(Request.GET_ALL, 8000));
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
         assert members.size() == rsps.size() : "expected " + members.size() + " responses, but got " + rsps + " (" + rsps.size() + ")";
 
@@ -84,7 +83,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         RspList rsps;
         rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, new Long(322649)},
                                     new Class[]{boolean.class, long.class},
-                                    GroupRequest.GET_ALL, 0);
+                                    new RequestOptions(Request.GET_ALL, 0));
         assert rsps.size() == 2;
         for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=it.next();
@@ -93,7 +92,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
             assertFalse(rsp.wasSuspected());
         }
 
-        rsps=disp.callRemoteMethods(null, "methodB", null, (Class[])null, GroupRequest.GET_ALL, 0);
+        rsps=disp.callRemoteMethods(null, "methodB", null, null, new RequestOptions(Request.GET_ALL, 0));
         assertEquals(2, rsps.size());
         for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=it.next();
@@ -104,7 +103,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
 
 
-        rsps=disp.callRemoteMethods(null, "methodC", null, (Class[])null, GroupRequest.GET_ALL, 0);
+        rsps=disp.callRemoteMethods(null, "methodC", null, null, new RequestOptions(Request.GET_ALL, 0));
         assertEquals(2, rsps.size());
         for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=it.next();

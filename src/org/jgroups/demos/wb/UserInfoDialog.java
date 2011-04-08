@@ -16,53 +16,53 @@ public class UserInfoDialog extends Dialog implements ActionListener {
     
 
     public UserInfoDialog(Frame parent) {
-	super(parent, "Input", true);
-	setLayout(null);
+        super(parent, "Input", true);
+        setLayout(null);
 
-	l.setFont(default_font);
-	l.setSize(50, 30);
-	l.setLocation(30, 50);
+        l.setFont(default_font);
+        l.setSize(50, 30);
+        l.setLocation(30, 50);
 
-	name.setFont(default_font);
-	name.setSize(150, 30);
-	name.setLocation(90, 50);
-	//name.selectAll();
+        name.setFont(default_font);
+        name.setSize(150, 30);
+        name.setLocation(90, 50);
+        //name.selectAll();
 
-	ok.setFont(default_font);
-	ok.setSize(50, 30);
-	ok.setLocation(30, 90);
+        ok.setFont(default_font);
+        ok.setSize(50, 30);
+        ok.setLocation(30, 90);
 	
 
-	add(l);	add(name); add(ok);
-	ok.addActionListener(this);
-	setSize(300, 150);
+        add(l);	add(name); add(ok);
+        ok.addActionListener(this);
+        setSize(300, 150);
 
-	Point my_loc=parent.getLocation();
-	my_loc.x+=50;
-	my_loc.y+=150;
-	setLocation(my_loc);
-	show();
+        Point my_loc=parent.getLocation();
+        my_loc.x+=50;
+        my_loc.y+=150;
+        setLocation(my_loc);
+        show();
     }
 
 
     public String getUserName() {
-	return name.getText();
+        return name.getText();
     }
     
 
     public void actionPerformed(ActionEvent e) {
-	String     command=e.getActionCommand();
-	String     tmp=name.getText();
+        String     command=e.getActionCommand();
+        String     tmp=name.getText();
 
-	if(command == "OK") {
-	    if(tmp == null || tmp.length() < 1)
-		return;
-	    else
-		dispose();
-	}
-	else
-        System.err.println("UserInfoDialog.actionPerfomed(): unknown action " +
-                           e.getActionCommand());
+        if(command == "OK") {
+            if(tmp == null || tmp.length() < 1)
+                ;
+            else
+                dispose();
+        }
+        else
+            System.err.println("UserInfoDialog.actionPerfomed(): unknown action " +
+                                 e.getActionCommand());
     }
 
 
