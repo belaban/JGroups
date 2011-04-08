@@ -277,7 +277,7 @@ public class FlushTest extends ChannelTestBase {
             c2.connect("testPartialFlush");
 
             List<Address> members = new ArrayList<Address>();
-            members.add(c2.getLocalAddress());
+            members.add(c2.getAddress());
             boolean flushedOk = Util.startFlush(c2, members);
 
             assertTrue("Partial flush worked", flushedOk);

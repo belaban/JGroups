@@ -213,16 +213,6 @@ public abstract class Channel /* implements Transport */ {
     abstract public View getView();
 
 
-    /**
-     Returns the channel's own address. The result of calling this method on an unconnected
-     channel is implementation defined (may return null). Calling this method on a closed
-     channel returns null. Addresses can be used as destination in the <code>send()</code> operation.
-     @return The channel's address (opaque)
-     @deprecated Use {@link #getAddress()} instead
-     */
-    abstract public Address getLocalAddress();
-
-
 
     /**
      Returns the channel's own address. The result of calling this method on an unconnected

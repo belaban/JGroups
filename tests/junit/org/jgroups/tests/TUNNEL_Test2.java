@@ -68,10 +68,10 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         channel = new JChannel(props);
         modifyChannel(channel);
         channel.connect("testSimpleConnect");
-        assert channel.getLocalAddress() != null;
+        assert channel.getAddress() != null;
         assert channel.getView().size() == 1;
         channel.disconnect();
-        assert channel.getLocalAddress() == null;
+        assert channel.getAddress() == null;
         assert channel.getView() == null;
     }
 
@@ -87,14 +87,14 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         channel.connect("testConnectTwoChannels");
         View view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(channel.getLocalAddress());
-        assert view.containsMember(coordinator.getLocalAddress());
+        assert view.containsMember(channel.getAddress());
+        assert view.containsMember(coordinator.getAddress());
 
         channel.disconnect();
         Util.sleep(1000);
         view = coordinator.getView();
         assert view.size() == 1;
-        assert view.containsMember(coordinator.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
     }
 
     /**
@@ -120,13 +120,13 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         Util.sleep(3000);
         View view = coordinator.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
     }
 
     public void testConnectThreeChannelsWithGRDown() throws Exception {
@@ -144,8 +144,8 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         View view = channel.getView();
         assert channel.getView().size() == 3;
         assert third.getView().size() == 3;
-        assert view.containsMember(channel.getLocalAddress());
-        assert view.containsMember(coordinator.getLocalAddress());
+        assert view.containsMember(channel.getAddress());
+        assert view.containsMember(coordinator.getAddress());
 
         // kill router and recheck views
         gr2.stop();
@@ -154,8 +154,8 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         view = channel.getView();
         assert channel.getView().size() == 3;
         assert third.getView().size() == 3;
-        assert third.getView().containsMember(channel.getLocalAddress());
-        assert third.getView().containsMember(coordinator.getLocalAddress());
+        assert third.getView().containsMember(channel.getAddress());
+        assert third.getView().containsMember(coordinator.getAddress());
 
     }
 
@@ -201,13 +201,13 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         View view = coordinator.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         Message msg = msgPromise.getResult(20000);
         assert msg != null;
@@ -247,13 +247,13 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         View view = coordinator.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         Message msg = msgPromise.getResult(20000);
         assert msg != null;
@@ -288,13 +288,13 @@ public class TUNNEL_Test2 extends ChannelTestBase {
 
         View view = coordinator.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         Message msg = msgPromise.getResult(20000);
         assert msg != null;
@@ -318,13 +318,13 @@ public class TUNNEL_Test2 extends ChannelTestBase {
         channel.send(new Message(null, null, "payload"));
         View view = coordinator.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         view = channel.getView();
         assert view.size() == 2;
-        assert view.containsMember(coordinator.getLocalAddress());
-        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getAddress());
+        assert view.containsMember(channel.getAddress());
 
         Message msg = msgPromise.getResult(20000);
         assert msg != null;

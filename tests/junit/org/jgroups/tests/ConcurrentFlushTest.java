@@ -224,7 +224,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                     // partial, only between c2 and c3
-                    boolean rc=Util.startFlush(c2, (Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress())));
+                    boolean rc=Util.startFlush(c2, (Arrays.asList(c2.getAddress(), c3.getAddress())));
                     System.out.println("t2: partial flush rc=" + rc);
                 }
                 catch(InterruptedException e) {
@@ -238,7 +238,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                     interrupt();
                 }
                 finally {
-                    c2.stopFlush(Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress()));
+                    c2.stopFlush(Arrays.asList(c2.getAddress(), c3.getAddress()));
                 }
             }
         };

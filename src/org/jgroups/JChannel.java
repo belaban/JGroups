@@ -717,10 +717,6 @@ public class JChannel extends Channel {
         return Version.printDescription();
     }
 
-    @Deprecated
-    public Address getLocalAddress() {
-        return getAddress();
-    }
 
     /**
      * Returns the local address of the channel (null if the channel is closed)
