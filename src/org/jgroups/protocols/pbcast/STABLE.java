@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Computes the broadcast messages that are stable")
-@DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
 public class STABLE extends Protocol {
     private static final long MAX_SUSPEND_TIME=200000;
 

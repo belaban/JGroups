@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban May 29 2001
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
-@DeprecatedProperty(names={"srv_sock_bind_addr"})
 public class FD_SOCK extends Protocol implements Runnable {
     private static final int NORMAL_TERMINATION=9;
     private static final int ABNORMAL_TERMINATION=-1;

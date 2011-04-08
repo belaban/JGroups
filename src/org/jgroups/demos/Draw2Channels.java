@@ -353,11 +353,6 @@ public class Draw2Channels implements ActionListener {
         public void channelClosed(Channel channel) {
         }
 
-        public void channelShunned() {
-        }
-
-        public void channelReconnected(Address addr) {
-        }
     }
 
 

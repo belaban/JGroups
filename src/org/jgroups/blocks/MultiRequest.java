@@ -364,11 +364,6 @@ public class MultiRequest extends Request {
                 if(num_received >= majority)
                     return true;
                 break;
-            case GET_N:
-                if(expected_mbrs >= num_total) {
-                    return responsesComplete();
-                }
-                return num_received >= expected_mbrs || num_received + num_not_received < expected_mbrs && num_received + num_suspected >= expected_mbrs;
             case GET_NONE:
                 return true;
             default :

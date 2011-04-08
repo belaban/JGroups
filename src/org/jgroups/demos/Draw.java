@@ -435,12 +435,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     }
 
-    public void channelShunned() {
-    }
-
-    public void channelReconnected(Address addr) {
-    }
-
 
     /* --------------------------- End of ChannelListener interface ---------------------- */
 

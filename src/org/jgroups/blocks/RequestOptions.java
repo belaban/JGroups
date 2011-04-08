@@ -36,15 +36,6 @@ public class RequestOptions {
     protected boolean sealed=false;
 
 
-    @Deprecated public static final RequestOptions SYNC;
-
-    @Deprecated public static final RequestOptions ASYNC;
-
-    static {
-        SYNC=new RequestOptions(Request.GET_ALL, 5000).seal();
-        ASYNC=new RequestOptions(Request.GET_NONE, 5000).seal();
-    }
-
 
     public RequestOptions() {
     }

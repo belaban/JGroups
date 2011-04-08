@@ -1,23 +1,22 @@
 
 package org.jgroups.protocols;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.RouterStubManager;
 import org.jgroups.stack.RouterStub;
+import org.jgroups.stack.RouterStubManager;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.UUID;
+
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -34,7 +33,6 @@ import org.jgroups.util.UUID;
  * 
  * @author Bela Ban
  */
-@DeprecatedProperty(names={"gossip_refresh_rate"})
 public class TCPGOSSIP extends Discovery {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */

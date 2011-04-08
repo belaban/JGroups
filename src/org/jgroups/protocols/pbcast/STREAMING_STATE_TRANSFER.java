@@ -61,14 +61,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * 
  * @author Vladimir Blagojevic
- * @see org.jgroups.ExtendedMessageListener
- * @see org.jgroups.StreamingGetStateEvent
- * @see org.jgroups.StreamingSetStateEvent
  * @see org.jgroups.protocols.pbcast.STATE_TRANSFER
  * @since 2.4
  */
 @MBean(description = "State trasnfer protocol based on streaming state transfer")
-@DeprecatedProperty(names = {"use_flush", "flush_timeout", "use_reading_thread"})
 public class STREAMING_STATE_TRANSFER extends Protocol {
 
     /*
@@ -113,7 +109,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private final AtomicLong num_bytes_sent = new AtomicLong(0);
 
-    private volatile double avg_state_size = 0;
+    private double avg_state_size = 0;
 
     /*
      * --------------------------------------------- Fields ---------------------------------------
@@ -585,7 +581,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     if (log.isWarnEnabled()) {
                         // we get this exception when we close server socket
                         // exclude that case
-                        if (serverSocket != null && !serverSocket.isClosed()) {
+                        if (!serverSocket.isClosed()) {
                             log.warn("Spawning socket from server socket finished abnormaly", e);
                         }
                     }

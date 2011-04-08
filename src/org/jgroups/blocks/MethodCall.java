@@ -36,14 +36,8 @@ public class MethodCall implements Externalizable {
     /** The class types, e.g., new Class[]{String.class, int.class}. */
     protected Class[] types;
 
-    /** The signature, e.g., new String[]{String.class.getName(), int.class.getName()}. */
-    @Deprecated protected String[] signature;
-
     /** The Method of the call. */
     protected Method method;
-
-    /** To carry arbitrary data with a method call, data needs to be serializable if sent across the wire */
-    @Deprecated protected Map payload;
 
     protected static final Log log=LogFactory.getLog(MethodCall.class);
 
@@ -58,9 +52,6 @@ public class MethodCall implements Externalizable {
 
     /** Use class information. */
     protected static final short TYPES=3;
-
-    /** Provide a signature, similar to JMX. */
-    protected static final short SIGNATURE=4;
 
     /** Use an ID to map to a method */
     protected static final short ID=5;
@@ -84,17 +75,6 @@ public class MethodCall implements Externalizable {
         if(arguments != null) args=arguments;
     }
 
-    /**
-     *
-     * @param method_name
-     * @param args
-     */
-    @Deprecated
-    public MethodCall(String method_name, Object... args) {
-        this.method_name=method_name;
-        this.mode=OLD;
-        this.args=args;
-    }
 
     public MethodCall(short method_id, Object... args) {
         this.method_id=method_id;
@@ -110,13 +90,6 @@ public class MethodCall implements Externalizable {
         this.mode=TYPES;
     }
 
-    @Deprecated
-    public MethodCall(String method_name, Object[] args, String[] signature) {
-        this.method_name=method_name;
-        this.args=args;
-        this.signature=signature;
-        this.mode=SIGNATURE;
-    }
 
     private void init(Method method) {
         this.method=method;
@@ -177,19 +150,6 @@ public class MethodCall implements Externalizable {
         init(m);
     }
 
-
-
-    @Deprecated
-    public synchronized Object put(Object key, Object value) {
-        if(payload == null)
-            payload=new HashMap();
-        return payload.put(key, value);
-    }
-
-    @Deprecated
-    public synchronized Object get(Object key) {
-        return payload != null? payload.get(key) : null;
-    }
 
 
     /**
@@ -330,15 +290,7 @@ public class MethodCall implements Externalizable {
                     meth=this.method;
                 break;
             case TYPES:
-                //meth=cl.getDeclaredMethod(method_name, types);
                 meth = getMethod(cl, method_name, types);
-                break;
-            case SIGNATURE:
-                Class[] mytypes=null;
-                if(signature != null)
-                    mytypes=getTypesFromString(cl, signature);
-                //meth=cl.getDeclaredMethod(method_name, mytypes);
-                meth = getMethod(cl, method_name, mytypes);
                 break;
             case ID:
                 break;
@@ -475,22 +427,11 @@ public class MethodCall implements Externalizable {
         case TYPES:
             out.writeObject(types);
             break;
-        case SIGNATURE:
-            out.writeObject(signature);
-            break;
         case ID:
             break;
         default:
             if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
             break;
-        }
-
-        if(payload != null) {
-            out.writeBoolean(true);
-            out.writeObject(payload);
-        }
-        else {
-            out.writeBoolean(false);
         }
     }
 
@@ -519,19 +460,11 @@ public class MethodCall implements Externalizable {
         case TYPES:
             types=(Class[])in.readObject();
             break;
-        case SIGNATURE:
-            signature=(String[])in.readObject();
-            break;
         case ID:
             break;
         default:
             if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
             break;
-        }
-
-        boolean payload_available=in.readBoolean();
-        if(payload_available) {
-            payload=(Map)in.readObject();
         }
     }
 

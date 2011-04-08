@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
-@DeprecatedProperty(names={"shun"})
 public class FD_ALL extends Protocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -96,11 +95,7 @@ public class FD_ALL extends Protocol {
     public void setTimeout(long timeout) {this.timeout=timeout;}
     public long getInterval() {return interval;}
     public void setInterval(long interval) {this.interval=interval;}
-    @Deprecated
-    public static boolean isShun() {return false;}
-    @Deprecated
-    public void setShun(boolean flag) {}
-    
+
     @ManagedAttribute(description="Are heartbeat tasks running")
     public boolean isRunning() {
         lock.lock();

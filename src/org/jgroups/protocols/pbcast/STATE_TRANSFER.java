@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  */
 @MBean(description="State transfer protocol based on byte array transfer")
-@DeprecatedProperty(names= { "use_flush", "flush_timeout" })
 public class STATE_TRANSFER extends Protocol {
 
     /* --------------------------------------------- JMX statistics --------------------------------------------- */

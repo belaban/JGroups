@@ -40,7 +40,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban, Oct 16 2001
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
-@DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE2 extends Protocol {
     
     

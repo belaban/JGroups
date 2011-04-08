@@ -169,23 +169,6 @@ public class GossipRouter {
         return expiryTime;
     }
 
-    @Deprecated
-    public void setGossipRequestTimeout(long gossipRequestTimeout) {
-    }
-
-    @Deprecated
-    public static long getGossipRequestTimeout() {
-        return 0;
-    }
-
-    @Deprecated
-    public void setRoutingClientReplyTimeout(long routingClientReplyTimeout) {
-    }
-
-    @Deprecated
-    public static long getRoutingClientReplyTimeout() {
-        return 0;
-    }
 
     @ManagedAttribute(description="status")
     public boolean isStarted() {

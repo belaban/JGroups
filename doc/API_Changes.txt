@@ -30,7 +30,9 @@ API changes in 3.0.0
 
 - Removed deprecated methods in MessageDispatcher and RpcDispatcher
 
+- Removed JChannel.getLocalAddress(). Use JChannel.getAddress() instead
 
+- Removed deprecated methods and classes
 
 
 

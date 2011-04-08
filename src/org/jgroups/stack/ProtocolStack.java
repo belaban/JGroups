@@ -176,10 +176,6 @@ public class ProtocolStack extends Protocol implements Transport {
         return transport != null? transport.getThreadFactory() : null;
     }
 
-    @Deprecated
-    public static ThreadFactory getTimerThreadFactory() {
-        throw new UnsupportedOperationException("get the timer thread factory directly from the transport");
-    }
 
     /**
      * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()} instead

@@ -12,7 +12,7 @@
     <FD timeout="2000" max_tries="3" />
     <VERIFY_SUSPECT timeout="1500"/>
     <ENCRYPT encrypt_entire_message="false" sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding" asym_init="512" asym_algorithm="RSA"/>
-    <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800"/>
+    <pbcast.NAKACK retransmit_timeout="600,1200,2400,4800"/>
     <UNICAST timeout="1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" max_bytes="4m"/>
     <FRAG2 frag_size="8192"  />

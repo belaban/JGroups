@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Group membership protocol")
-@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
-        "reject_join_from_existing_member", "shun"})
 public class GMS extends Protocol implements TP.ProbeHandler {
     private static final String CLIENT="Client";
     private static final String COORD="Coordinator";
@@ -172,10 +170,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public static long getJoinRetryTimeout() {return -1;}
     /** @deprecated */
     public void setJoinRetryTimeout(long t) {}
-    @Deprecated
-    public static boolean isShun() {return false;}
-    @Deprecated
-    public void setShun(boolean s) {}
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();

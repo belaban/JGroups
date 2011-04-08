@@ -40,7 +40,6 @@ import java.util.Map;
  * 
  * @author Bela Ban
  */
-@DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */

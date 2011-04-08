@@ -1,7 +1,9 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.TimeoutException;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Promise;
 import org.jgroups.util.UUID;
@@ -20,8 +22,6 @@ import java.util.List;
  * response.
  * @author Bela Ban
  */
-@DeprecatedProperty(names={"gossip_host", "gossip_port", "gossip_refresh", "socket_conn_timeout",
-                           "socket_read_timeout", "discovery_timeout"})
 public class PING extends Discovery {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */

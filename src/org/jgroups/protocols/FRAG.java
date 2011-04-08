@@ -51,12 +51,7 @@ public class FRAG extends Protocol {
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
     private int frag_size=8192; // conservative value
 
-    @Property(description="The max size in bytes for the byte array output buffer",
-              deprecatedMessage="not used anymore")
-    @Deprecated
-    private int max_retained_buffer=70000;
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     

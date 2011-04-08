@@ -447,11 +447,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
     }
 
-    public void channelShunned() {
-    }
-
-    public void channelReconnected(Address new_addr) {
-    }
     /* ----------------------------------------------------------------------- */
 
 }

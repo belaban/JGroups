@@ -56,10 +56,4 @@ public class ChannelCallbackTest extends ReceiverAdapter implements ChannelListe
         System.out.println("-- channel closed: " + channel);
     }
 
-    public void channelShunned() {
-    }
-
-    public void channelReconnected(Address addr) {
-    }
-
 }

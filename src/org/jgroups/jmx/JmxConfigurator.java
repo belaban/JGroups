@@ -64,7 +64,7 @@ public class JmxConfigurator {
      * 
      * @param channel
      * @param server
-     * @param domain
+     * @param name
      *            Has to be a JMX ObjectName of the domain, e.g. DefaultDomain:name=JGroups
      */
     public static void registerChannel(JChannel channel, MBeanServer server, String name)
@@ -117,17 +117,7 @@ public class JmxConfigurator {
         internalUnregister(obj, server, name);
     }
 
-    @Deprecated
-    public DynamicMBean asDynamicMBean(JChannel ch) {
-        return new ResourceDMBean(ch);
-    }
 
-    @Deprecated
-    public DynamicMBean asDynamicMBean(Protocol p) {
-        return new ResourceDMBean(p);
-    }
-    
-    
     
     /**
      * Wrap JChannel with DynamicMBean interface. All annotated attributes and methods will be

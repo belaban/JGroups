@@ -350,8 +350,6 @@ public class GroupRequest extends Request {
                 if(num_received >= majority)
                     return true;
                 break;
-            case GET_N:
-                return true;
             case GET_NONE:
                 return true;
             default :

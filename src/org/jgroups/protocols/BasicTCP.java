@@ -16,7 +16,6 @@ import java.util.Set;
  * Shared base class for TCP protocols
  * @author Scott Marlow
  */
-@DeprecatedProperty(names={"suspect_on_send_failure", "skip_suspected_members"})
 public abstract class BasicTCP extends TP {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */

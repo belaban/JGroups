@@ -41,19 +41,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable unicast layer")
-@DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand, AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
 
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
-
-
-    @Property(description="Whether to loop back messages sent to self. Default is false",
-              deprecatedMessage="might get removed soon as it can destroy ordering. " +
-                      "See https://jira.jboss.org/jira/browse/JGRP-1092 for details")
-    @Deprecated
-    private boolean loopback=false;
 
 
     private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
@@ -92,11 +84,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private AgeOutCache<Address> cache=null;
 
-
-    @Deprecated @ManagedAttribute
-    public static int getUndeliveredMessages() {
-        return 0;
-    }
 
     public long[] getTimeout() {return timeout;}
 

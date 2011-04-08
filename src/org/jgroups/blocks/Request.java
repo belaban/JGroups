@@ -38,9 +38,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     /** return majority (of all members, may block) */
     public static final int GET_ABS_MAJORITY=4;
 
-    /** return n responses (may block) */
-    @Deprecated public static final int GET_N=5;
-
     /** return no response (async call) */
     public static final int GET_NONE=6;
 
@@ -69,11 +66,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
 
     
-    @Deprecated
-    public Request(Message request, RequestCorrelator corr, Transport transport, RspFilter filter, int mode, long timeout) {
-        this(request, corr, transport, new RequestOptions(mode, timeout, false, filter));
-    }
-
     public Request(Message request, RequestCorrelator corr, Transport transport, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
@@ -262,7 +254,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
             case GET_ALL: return "GET_ALL";
             case GET_MAJORITY: return "GET_MAJORITY";
             case GET_ABS_MAJORITY: return "GET_ABS_MAJORITY";
-            case GET_N: return "GET_N";
             case GET_NONE: return "GET_NONE";
             default: return "<unknown> (" + m + ")";
         }

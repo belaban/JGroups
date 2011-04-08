@@ -37,10 +37,6 @@ public class AckCollector {
         }
     }
 
-    @Deprecated
-    public static String printReceived() {
-        return "n/a";
-    }
 
     public String printSuspected() {
         synchronized(this) {
@@ -67,10 +63,6 @@ public class AckCollector {
         }
     }
 
-    @Deprecated
-    public static int receivedAcks() {
-        return -1;
-    }
 
     public int expectedAcks() {
         synchronized(this) {

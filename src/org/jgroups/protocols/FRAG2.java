@@ -41,7 +41,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
-@DeprecatedProperty(names={"overhead"})
 public class FRAG2 extends Protocol {
     
 

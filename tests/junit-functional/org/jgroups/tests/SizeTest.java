@@ -344,24 +344,6 @@ public class SizeTest {
     }
 
 
-    public static void testViewPayload() throws Exception {
-        View v=new View();
-        v.addPayload("name", "Bela Ban");
-        _testSize(v);
-
-        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
-        Vector<Address> mbrs=new Vector<Address>();
-        v=new View(vid, mbrs);
-        v.addPayload("id", 322649);
-        v.addPayload("name", "Michelle");
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        _testSize(v);
-    }
-
-
     public static void testMergeView() throws Exception {
         View v=new MergeView();
         _testSize(v);

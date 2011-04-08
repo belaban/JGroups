@@ -49,9 +49,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Transport protocol")
-@DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
-        "use_concurrent_stack", "prevent_port_reuse", "persistent_ports", "pm_expiry_time", "persistent_ports_file",
-        "start_port", "end_port", "use_local_host", "marshaller_pool_size", "num_timer_threads", "timer.num_threads"})
 public abstract class TP extends Protocol {
 
     protected static final byte LIST=1; // we have a list of messages rather than a single message when set
@@ -629,16 +626,10 @@ public abstract class TP extends Protocol {
     public InetAddress getBindAddressAsInetAddress() {return bind_addr;}
     public int getBindPort() {return bind_port;}
     public void setBindPort(int port) {this.bind_port=port;}
-    /** @deprecated Use {@link #isReceiveOnAllInterfaces()} instead */
-    public boolean getBindToAllInterfaces() {return receive_on_all_interfaces;}
     public void setBindToAllInterfaces(boolean flag) {this.receive_on_all_interfaces=flag;}
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
-    /** @deprecated This property was removed in 2.7*/
-    public static boolean isSendOnAllInterfaces() {return false;}
-    /** @deprecated This property was removed in 2.7*/
-    public static List<NetworkInterface> getSendInterfaces() {return null;}
     public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
@@ -648,19 +639,12 @@ public abstract class TP extends Protocol {
     public void setPortRange(int range) {this.port_range=range;}
     public int getPortRange() {return port_range ;}
 
-    /** @deprecated the concurrent stack is used by default */
-    @Deprecated
-    public void setUseConcurrentStack(boolean flag) {}
-
     public boolean isOOBThreadPoolEnabled() { return oob_thread_pool_enabled; }
 
     public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }
 
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
-
-    /** @deprecated With the concurrent stack being the default, this property is ignored */
-    public static boolean isUseIncomingPacketHandler() {return false;}
 
     public ConcurrentMap<String,Protocol> getUpProtocols() {return up_prots;}
 

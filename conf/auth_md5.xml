@@ -2,7 +2,6 @@
     <UDP mcast_send_buf_size="32000"
         mcast_port="45566"
         ucast_recv_buf_size="64000"
-        bind_to_all_interfaces="true"
         loopback="true"
         mcast_recv_buf_size="64000"
         max_bundle_size="60000"
@@ -20,7 +19,6 @@
     <VERIFY_SUSPECT timeout="1500"/>
     <pbcast.NAKACK
         use_mcast_xmit="false"
-        gc_lag="50"
         retransmit_timeout="600,1200,2400,4800"/>
     <UNICAST timeout="1200,2400,3600"/>
     <pbcast.STABLE stability_delay="1000"

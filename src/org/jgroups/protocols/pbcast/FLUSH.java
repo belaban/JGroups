@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 2.4
  */
 @MBean(description = "Flushes the cluster")
-@DeprecatedProperty(names = { "auto_flush_conf" })
 public class FLUSH extends Protocol {
 
     /*
