@@ -152,7 +152,7 @@ public class MERGE2 extends Protocol {
             case Event.VIEW_CHANGE:
                 Object ret=down_prot.down(evt);
                 view=(View)evt.getArg();
-                Vector<Address> mbrs=view.getMembers();
+                List<Address> mbrs=view.getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     task.stop();
                     return ret;
@@ -160,8 +160,8 @@ public class MERGE2 extends Protocol {
                 members.clear();
                 members.addAll(mbrs);
                 merge_candidates.removeAll(members);
-                Address coord=mbrs.elementAt(0);
-                if(coord.equals(local_addr)) {
+                Address coord=mbrs.isEmpty()? null : mbrs.iterator().next();
+                if(coord != null && coord.equals(local_addr)) {
                     is_coord=true;
                     task.start(); // start task if we became coordinator (doesn't start if already running)
                 }

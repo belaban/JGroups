@@ -6,8 +6,7 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -36,7 +35,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * the second member will be the new coordinator if the current one disappears
      * or leaves the group.
      */
-    protected Vector<Address> members=null;
+    protected List<Address> members=null;
 
 
 
@@ -53,14 +52,9 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param vid     The view id of this view (can not be null)
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(ViewId vid, Vector<Address> members) {
+    public View(ViewId vid, List<Address> members) {
         this.vid=vid;
-        this.members=members;
-    }
-
-    public View(ViewId vid, Collection<Address> members) {
-        this.vid=vid;
-        this.members=new Vector<Address>(members);
+        this.members=new ArrayList<Address>(members);
     }
 
     /**
@@ -70,7 +64,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param id      The lamport timestamp of this view
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(Address creator, long id, Collection<Address> members) {
+    public View(Address creator, long id, List<Address> members) {
         this(new ViewId(creator, id), members);
     }
 
@@ -104,8 +98,8 @@ public class View implements Externalizable, Cloneable, Streamable {
      *
      * @return a reference to the ordered list of members in this view
      */
-    public Vector<Address> getMembers() {
-        return Util.unmodifiableVector(members);
+    public List<Address> getMembers() {
+        return Collections.unmodifiableList(members);
     }
 
     /**
@@ -116,7 +110,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      *         if the argument mbr is null, this operation returns false
      */
     public boolean containsMember(Address mbr) {
-        return !(mbr == null || members == null) && members.contains(mbr);
+        return mbr != null && members.contains(mbr);
     }
 
 
@@ -149,14 +143,13 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @return the number of members in this view 0..n
      */
     public int size() {
-        return members == null ? 0 : members.size();
+        return members.size();
     }
 
 
     public View copy() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
-        return new View(vid2, members2);
+        return new View(vid2, new ArrayList<Address>(members));
     }
 
 
@@ -166,24 +159,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
-        return new View(vid2, members2);
-    }
-
-
-    /**
-     * debug only
-     */
-    public String printDetails() {
-        StringBuilder ret=new StringBuilder();
-        ret.append(vid).append("\n\t");
-        if(members != null) {
-            for(int i=0; i < members.size(); i++) {
-                ret.append(members.elementAt(i)).append("\n\t");
-            }
-            ret.append('\n');
-        }
-        return ret.toString();
+        return new View(vid2, new ArrayList<Address>(members));
     }
 
 
@@ -202,7 +178,7 @@ public class View implements Externalizable, Cloneable, Streamable {
     @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vid=(ViewId)in.readObject();
-        members=(Vector<Address>)in.readObject();
+        members=(List<Address>)in.readObject();
     }
 
 
@@ -230,7 +206,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
 
         // members:
-        members=(Vector<Address>)Util.readAddresses(in, Vector.class);
+        members=(List<Address>)Util.readAddresses(in, ArrayList.class);
     }
 
     public int serializedSize() {

@@ -2086,19 +2086,19 @@ public class Util {
      * Selects a random subset of members according to subset_percentage and returns them.
      * Picks no member twice from the same membership. If the percentage is smaller than 1 -> picks 1 member.
      */
-    public static Vector<Address> pickSubset(Vector<Address> members, double subset_percentage) {
-        Vector<Address> ret=new Vector<Address>(), tmp_mbrs;
+    public static List<Address> pickSubset(List<Address> members, double subset_percentage) {
+        List<Address> ret=new ArrayList<Address>(), tmp_mbrs;
         int num_mbrs=members.size(), subset_size, index;
 
         if(num_mbrs == 0) return ret;
         subset_size=(int)Math.ceil(num_mbrs * subset_percentage);
 
-        tmp_mbrs=(Vector<Address>)members.clone();
+        tmp_mbrs=new ArrayList<Address>(members);
 
         for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
             index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
-            ret.addElement(tmp_mbrs.elementAt(index));
-            tmp_mbrs.removeElementAt(index);
+            ret.add(tmp_mbrs.get(index));
+            tmp_mbrs.remove(index);
         }
 
         return ret;
@@ -2262,8 +2262,8 @@ public class Util {
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
      * new_mbrs are returned.
      */
-    public static Vector<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
-        Vector<Address> retval=new Vector<Address>();
+    public static List<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
+        List<Address> retval=new ArrayList<Address>();
         if(old_mbrs == null || new_mbrs == null)
             return retval;
 
@@ -3369,15 +3369,8 @@ public class Util {
     }
 
 
-    public static <T> Vector<T> unmodifiableVector(Vector<? extends T> v) {
-        if(v == null) return null;
-        return new UnmodifiableVector(v);
-    }
-
-    
 
     /** IP related utilities */
-
     public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
     	if (ip_version == StackType.IPv4)
     		return InetAddress.getByName("127.0.0.1") ;
@@ -3645,8 +3638,8 @@ public class Util {
     public static boolean isCoordinator(View view, Address local_addr) {
         if(view == null || local_addr == null)
             return false;
-        Vector<Address> mbrs=view.getMembers();
-        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.firstElement());
+        List<Address> mbrs=view.getMembers();
+        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.iterator().next());
     }
 
     public static MBeanServer getMBeanServer() {

@@ -7,8 +7,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.io.*;
-import java.util.Random;
-import java.util.Vector;
+import java.util.*;
+import java.util.List;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
@@ -33,7 +33,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
     private String props="tunnel.xml";
 
-    private final Vector members=new Vector();
+    private final List<Address> members=new ArrayList<Address>();
     private boolean fl=true;
     Log log=LogFactory.getLog(getClass());
 
@@ -53,16 +53,15 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
             channel=new JChannel(props);
             channel.setReceiver(new ReceiverAdapter() {
                 public void viewAccepted(View v) {
-                    Vector mbrs=v.getMembers();
+                    List<Address> mbrs=v.getMembers();
                     System.out.println("View accepted: " + v);
                     member_size=v.size();
 
                     if(mbr_label != null)
                         mbr_label.setText(member_size + " mbr(s)");
 
-                    members.removeAllElements();
-                    for(int i=0; i < mbrs.size(); i++)
-                        members.addElement(mbrs.elementAt(i));
+                    members.clear();
+                    members.addAll(mbrs);
                 }
 
                 public void receive(Message msg) {

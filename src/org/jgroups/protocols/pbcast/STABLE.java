@@ -342,7 +342,7 @@ public class STABLE extends Protocol {
 
 
     private void handleViewChange(View v) {
-        Vector<Address> tmp=v.getMembers();
+        List<Address> tmp=v.getMembers();
         synchronized(mbrs) {
             mbrs.clear();
             mbrs.addAll(tmp);

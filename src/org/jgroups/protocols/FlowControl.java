@@ -500,7 +500,7 @@ public abstract class FlowControl extends Protocol {
     }
 
 
-    protected void handleViewChange(Vector<Address> mbrs) {
+    protected void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 

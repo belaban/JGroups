@@ -3,8 +3,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.BARRIER;
+import org.jgroups.protocols.EXAMPLE;
 import org.jgroups.protocols.PING;
-import org.jgroups.protocols.VIEW_SYNC;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -40,8 +40,8 @@ public class BARRIERTest {
         s.setView(v);
         s.addMember(a1);
         bottom_prot=new PING();
-        VIEW_SYNC view_sync=new VIEW_SYNC();
-        Protocol[] stack=new Protocol[]{view_sync, barrier_prot, bottom_prot};
+        EXAMPLE example=new EXAMPLE();
+        Protocol[] stack=new Protocol[]{example, barrier_prot, bottom_prot};
         s.setProtocolStack(stack);
         s.start();
     }

@@ -14,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.List;
 import java.util.Vector;
 
 
@@ -153,7 +154,7 @@ public class StreamableTest {
 
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        Vector sub=((MergeView)view_all).getSubgroups();
+        List<View> sub=((MergeView)view_all).getSubgroups();
         assert sub.get(0) instanceof View;
         assert sub.get(1) instanceof MergeView;
         assert sub.get(2) instanceof View;

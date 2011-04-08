@@ -1585,11 +1585,11 @@ public class JChannel extends Channel {
     }
 
     Address determineCoordinator() {
-        Vector<Address> mbrs=my_view != null? my_view.getMembers() : null;
+        List<Address> mbrs=my_view != null? my_view.getMembers() : null;
         if(mbrs == null)
             return null;
         if(!mbrs.isEmpty())
-            return mbrs.firstElement();
+            return mbrs.iterator().next();
         return null;
     }
 

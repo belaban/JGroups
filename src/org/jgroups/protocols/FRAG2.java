@@ -186,8 +186,8 @@ public class FRAG2 extends Protocol {
 
 
     private void handleViewChange(View view) {
-        Vector<Address> new_mbrs=view.getMembers(), left_mbrs;
-        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        List<Address> new_mbrs=view.getMembers();
+        List<Address> left_mbrs=Util.determineLeftMembers(members, new_mbrs);
         members.clear();
         members.addAll(new_mbrs);
 

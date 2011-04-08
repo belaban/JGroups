@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.List;
 
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
@@ -61,7 +61,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     }
 
     public void testTargetMethodNotFound() {
-        Vector<Address> members=channel.getView().getMembers();
+        List<Address> members=channel.getView().getMembers();
         System.out.println("members are: " + members);
         RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
                                             new RequestOptions(Request.GET_ALL, 8000));

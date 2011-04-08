@@ -165,11 +165,11 @@ public class Topology extends Frame implements WindowListener {
                 setInternalState(view.getMembers());
             }
 
-            public void setInternalState(Vector mbrs) {
+            public void setInternalState(java.util.List<Address> mbrs) {
                 members.removeAllElements();
-                for(int i=0; i < mbrs.size(); i++)
-                    addNode(mbrs.elementAt(i));
-                coordinator=mbrs.size() <= 1 || (mbrs.size() > 1 && mbrs.elementAt(0).equals(my_addr));
+                for(Address mbr: mbrs)
+                    addNode(mbr);
+                coordinator=mbrs.size() <= 1 || (mbrs.size() > 1 && mbrs.iterator().next().equals(my_addr));
                 repaint();
             }
         });

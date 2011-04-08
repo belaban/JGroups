@@ -166,7 +166,7 @@ public class SEQUENCER extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     private void handleViewChange(View v) {
-        Vector<Address> mbrs=v.getMembers();
+        List<Address> mbrs=v.getMembers();
         if(mbrs.isEmpty()) return;
         boolean coord_changed=false;
 
@@ -174,7 +174,7 @@ public class SEQUENCER extends Protocol {
             members.clear();
             members.addAll(mbrs);
             Address prev_coord=coord;
-            coord=mbrs.firstElement();
+            coord=mbrs.iterator().next();
             is_coord=local_addr != null && local_addr.equals(coord);
             coord_changed=prev_coord != null && !prev_coord.equals(coord);
         }

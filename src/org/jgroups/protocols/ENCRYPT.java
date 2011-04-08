@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.WeakHashMap;
@@ -458,7 +459,7 @@ public class ENCRYPT extends Protocol {
     private synchronized void handleViewChange(View view, boolean makeServer) {
 
         // if view is a bit broken set me as keyserver
-        Vector<Address> members = view.getMembers();
+        List<Address> members = view.getMembers();
         if (members == null || members.isEmpty() || members.get(0) == null) { 
             becomeKeyServer(local_addr);
             return;

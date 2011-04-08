@@ -528,10 +528,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.TMP_VIEW:
                 View tmp_view=(View)evt.getArg();
-                Vector<Address> mbrs=tmp_view.getMembers();
+                List<Address> mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                // adjustReceivers(false);
                 break;
 
             case Event.VIEW_CHANGE:

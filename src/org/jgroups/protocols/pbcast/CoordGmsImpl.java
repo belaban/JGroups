@@ -19,7 +19,7 @@ import java.util.*;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends ServerGmsImpl {
-    private final Long                MAX_SUSPEND_TIMEOUT=new Long(30000);
+    private final Long  MAX_SUSPEND_TIMEOUT=new Long(30000);
 
     public CoordGmsImpl(GMS g) {
         super(g);
@@ -237,7 +237,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
      *                 be set by GMS
      */
     public void handleViewChange(View new_view, Digest digest) {
-        Vector<Address> mbrs=new_view.getMembers();
+        List<Address> mbrs=new_view.getMembers();
         if(leaving && !mbrs.contains(gms.local_addr))
             return;
         gms.installView(new_view, digest);

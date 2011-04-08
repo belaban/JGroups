@@ -221,7 +221,7 @@ public class Merger {
             return;
         for(Map.Entry<Address,View> entry: map.entrySet()) {
             Address key=entry.getKey();
-            Collection<Address> members=new ArrayList<Address>(entry.getValue().getMembers());
+            List<Address> members=new ArrayList<Address>(entry.getValue().getMembers());
             boolean modified=false;
             for(Iterator<Address> it=members.iterator(); it.hasNext();) {
                 Address val=it.next();

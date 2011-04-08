@@ -14,7 +14,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 /**
  * Tests concurrent startup or replicated hashmap.
@@ -130,7 +129,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
         public void entrySet(K key, V value) {}
 
-        public void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
+        public void viewChange(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
             log.info("Got view in ReplicatedHashMap notifier " + view);
         }
     }

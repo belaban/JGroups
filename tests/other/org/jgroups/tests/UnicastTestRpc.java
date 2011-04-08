@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -327,7 +328,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     void populateAnycastList(View view) {
         if(!anycasting) return;
         anycast_mbrs.clear();
-        Vector<Address> mbrs=view.getMembers();
+        List<Address> mbrs=view.getMembers();
         int index=mbrs.indexOf(local_addr);
         for(int i=index + 1; i < index + 1 + anycast_count; i++) {
             int new_index=i % mbrs.size();
@@ -349,20 +350,22 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     private Address getReceiver() {
         try {
-            Vector<Address> mbrs=channel.getView().getMembers();
+            List<Address> mbrs=channel.getView().getMembers();
             System.out.println("pick receiver from the following members:");
-            for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getAddress()))
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
+            int i=0;
+            for(Address mbr: mbrs) {
+                if(mbr.equals(channel.getAddress()))
+                    System.out.println("[" + i + "]: " + mbr + " (self)");
                 else
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i));
+                    System.out.println("[" + i + "]: " + mbr);
+                i++;
             }
             System.out.flush();
             System.in.skip(System.in.available());
             BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
             String str=reader.readLine().trim();
             int index=Integer.parseInt(str);
-            return mbrs.elementAt(index); // index out of bounds caught below
+            return mbrs.get(index); // index out of bounds caught below
         }
         catch(Exception e) {
             System.err.println("UnicastTest.getReceiver(): " + e);

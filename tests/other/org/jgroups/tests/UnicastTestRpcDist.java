@@ -2,26 +2,29 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.blocks.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.DataOutputStream;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -403,7 +406,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     /** Picks the next member in the view */
     private Address getReceiver() {
         try {
-            Vector<Address> mbrs=channel.getView().getMembers();
+            List<Address> mbrs=channel.getView().getMembers();
             int index=mbrs.indexOf(local_addr);
             int new_index=index + 1 % mbrs.size();
             return mbrs.get(new_index);

@@ -8,12 +8,12 @@ import org.jgroups.blocks.ReplicatedHashMap;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.io.Serializable;
 
 
@@ -24,7 +24,7 @@ import java.io.Serializable;
  * of a group; all hashmaps with the same name find each other and form a group.
  * @author Bela Ban
  */
-public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener, ReplicatedHashMap.Notification {
+public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener, ReplicatedHashMap.Notification<Serializable,Serializable> {
     ReplicatedHashMap<String,Float>  map=null;
     final JButton                    get=new JButton("Get");
     final JButton                    set=new JButton("Set");
@@ -207,11 +207,11 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
         System.out.println("contents cleared");
     }
 
-    public void viewChange(View view, Vector new_mbrs, Vector old_mbrs) {
+
+    public void viewChange(View view, java.util.List<Address> new_mbrs, java.util.List<Address> old_mbrs) {
         System.out.println("** view: " + view);
         _setTitle();
     }
-
 
     private void _setTitle() {
         int num=map.getChannel().getView().getMembers().size();

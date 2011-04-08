@@ -10,6 +10,7 @@ import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Vector;
 
 
@@ -61,12 +62,11 @@ public class EXAMPLE extends Protocol {
         switch(evt.getType()) {
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
-                Vector<Address> new_members=((View)evt.getArg()).getMembers();
+                List<Address> new_members=((View)evt.getArg()).getMembers();
                 synchronized(members) {
                     members.removeAllElements();
                     if(new_members != null && !new_members.isEmpty())
-                        for(int i=0; i < new_members.size(); i++)
-                            members.addElement(new_members.elementAt(i));
+                        members.addAll(new_members);
                 }
                 return down_prot.down(evt);
 

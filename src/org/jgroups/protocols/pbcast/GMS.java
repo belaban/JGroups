@@ -518,7 +518,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         Address coord;
         int rc;
         ViewId vid=new_view.getVid();
-        Vector<Address> mbrs=new_view.getMembers();
+        List<Address> mbrs=new_view.getMembers();
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -628,41 +628,16 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
     /** Returns true if local_addr is member of mbrs, else false */
-    protected boolean checkSelfInclusion(Vector<Address> mbrs) {
-        Object mbr;
+    protected boolean checkSelfInclusion(List<Address> mbrs) {
         if(mbrs == null)
             return false;
-        for(int i=0; i < mbrs.size(); i++) {
-            mbr=mbrs.elementAt(i);
+        for(Address mbr: mbrs) {
             if(mbr != null && local_addr.equals(mbr))
                 return true;
         }
         return false;
     }
 
-
-    public View makeView(Vector<Address> mbrs) {
-        Address coord=null;
-        long id=0;
-
-        if(view_id != null) {
-            coord=view_id.getCoordAddress();
-            id=view_id.getId();
-        }
-        return new View(coord, id, mbrs);
-    }
-
-
-    public static View makeView(Vector<Address> mbrs, ViewId vid) {
-        Address coord=null;
-        long id=0;
-
-        if(vid != null) {
-            coord=vid.getCoordAddress();
-            id=vid.getId();
-        }
-        return new View(coord, id, mbrs);
-    }
 
 
     /** Send down a SET_DIGEST event */

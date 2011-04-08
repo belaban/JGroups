@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.Vector;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class UnicastContentionTest {
     }
 
     private static Address pickNextMember(View view, Address local_addr) {
-        Vector<Address> mbrs=view.getMembers();
+        List<Address> mbrs=view.getMembers();
         for(Address mbr: mbrs) {
             if(!mbr.equals(local_addr))
                 return mbr;

@@ -374,7 +374,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     	
     	// get the current membership, as seen by C
         View view=c3.getView();
-        Vector<Address> members=view.getMembers();
+        List<Address> members=view.getMembers();
         System.out.println("list is " + members);
 
         // cause C to leave the group and close its channel

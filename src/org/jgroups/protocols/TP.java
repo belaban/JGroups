@@ -1320,7 +1320,7 @@ public abstract class TP extends Protocol {
                     members.clear();
 
                     if(!isSingleton()) {
-                        Vector<Address> tmpvec=view.getMembers();
+                        List<Address> tmpvec=view.getMembers();
                         members.addAll(tmpvec);
                     }
                     else {
@@ -2287,7 +2287,7 @@ public abstract class TP extends Protocol {
                     break;
                 case Event.VIEW_CHANGE:
                     View view=(View)evt.getArg();
-                    Vector<Address> tmp=view.getMembers();
+                    List<Address> tmp=view.getMembers();
                     members.clear();
                     members.addAll(tmp);
                     break;

@@ -6,6 +6,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 
+import java.util.List;
 import java.util.Vector;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -143,7 +144,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      *                 be set by GMS
      */
     public void handleViewChange(View new_view, Digest digest) {
-        Vector<Address> mbrs=new_view.getMembers();
+        List<Address> mbrs=new_view.getMembers();
         suspected_mbrs.removeAllElements();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
             return;

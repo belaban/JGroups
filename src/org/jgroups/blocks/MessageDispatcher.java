@@ -94,7 +94,7 @@ public class MessageDispatcher implements RequestHandler {
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
      * initially since viewChange has most likely already been called in PullPushAdapter.
      */
-    private void setMembers(Vector new_mbrs) {
+    private void setMembers(List<Address> new_mbrs) {
         if(new_mbrs != null) {
             synchronized(members) {
                 members.clear();
@@ -113,7 +113,7 @@ public class MessageDispatcher implements RequestHandler {
         corr.start();
 
         if(channel != null) {
-            Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
+            List<Address> tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
             if(channel instanceof JChannel) {
                 TP transport=channel.getProtocolStack().getTransport();
@@ -480,7 +480,7 @@ public class MessageDispatcher implements RequestHandler {
 
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
-                    Vector new_mbrs=v.getMembers();
+                    List<Address> new_mbrs=v.getMembers();
                     setMembers(new_mbrs);
                     if(membership_listener != null) {
                         membership_listener.viewAccepted(v);

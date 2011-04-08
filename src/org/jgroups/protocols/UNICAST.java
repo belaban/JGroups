@@ -392,7 +392,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 View view=(View)evt.getArg();
-                Vector<Address> new_members=view.getMembers();
+                List<Address> new_members=view.getMembers();
                 Set<Address> non_members=new HashSet<Address>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
 

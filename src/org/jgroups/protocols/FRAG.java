@@ -59,7 +59,7 @@ public class FRAG extends Protocol {
     private final FragmentationList  fragment_list=new FragmentationList();
 
     private AtomicInteger            curr_id=new AtomicInteger(1);
-    private final Vector<Address>    members=new Vector<Address>(11);
+    private final List<Address>      members=new ArrayList<Address>(11);
     
     
  
@@ -167,8 +167,8 @@ public class FRAG extends Protocol {
 
 
     private void handleViewChange(View view) {
-        Vector<Address> new_mbrs=view.getMembers(), left_mbrs;
-        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        List<Address> new_mbrs=view.getMembers();
+        List<Address> left_mbrs=Util.determineLeftMembers(members, new_mbrs);
         members.clear();
         members.addAll(new_mbrs);
 

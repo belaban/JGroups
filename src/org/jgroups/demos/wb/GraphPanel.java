@@ -109,7 +109,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
 
     // Removes nodes that are not in the view
-    public void adjustNodes(Vector v) {
+    public void adjustNodes(java.util.List<Address> v) {
         Node n;
         boolean removed=false;
 

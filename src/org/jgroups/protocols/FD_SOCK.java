@@ -305,7 +305,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.VIEW_CHANGE:
                 View v=(View) evt.getArg();
-                final Vector<Address> new_mbrs=v.getMembers();
+                final List<Address> new_mbrs=v.getMembers();
 
                 synchronized(this) {
                     members.removeAllElements();

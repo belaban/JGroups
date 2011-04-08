@@ -241,7 +241,7 @@ public class RELAY extends Protocol {
         if(local_view != null)
             new_mbrs=Util.newMembers(local_view.getMembers(), view.getMembers());
         local_view=view;
-        coord=view.getMembers().firstElement();
+        coord=view.getMembers().iterator().next();
         boolean create_bridge=false;
 
         boolean is_new_coord=Util.isCoordinator(view, local_addr);
@@ -564,7 +564,7 @@ public class RELAY extends Protocol {
             switch(view.size()) {
                 case 1:
                     // the remote cluster disappeared, remove all of its addresses from the view
-                    if(prev_members > 1 && view.getMembers().firstElement().equals(bridge.getAddress())) {
+                    if(prev_members > 1 && view.getMembers().iterator().next().equals(bridge.getAddress())) {
                         remote_view=null;
                         View new_global_view=generateGlobalView(local_view, null);
                         sendViewOnLocalCluster(null, new_global_view, false, null);

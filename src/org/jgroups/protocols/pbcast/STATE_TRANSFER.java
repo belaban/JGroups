@@ -328,7 +328,7 @@ public class STATE_TRANSFER extends Protocol {
 
     private void handleViewChange(View v) {
         Address old_coord;
-        Vector<Address> new_members=v.getMembers();
+        List<Address> new_members=v.getMembers();
         boolean send_up_null_state_rsp=false;
 
         synchronized(members) {

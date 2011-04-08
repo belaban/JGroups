@@ -93,7 +93,7 @@ public class AckCollector {
 
     public void handleView(View v) {
         if(v == null) return;
-        Vector<Address> mbrs=v.getMembers();
+        List<Address> mbrs=v.getMembers();
         synchronized(this) {
             suspected_mbrs.retainAll(mbrs);
         }

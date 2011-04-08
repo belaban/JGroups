@@ -319,7 +319,7 @@ public class SCOPE extends Protocol {
     }
 
     private void handleView(View view) {
-        Vector<Address> members=view.getMembers();
+        List<Address> members=view.getMembers();
 
         // Remove all non members from receiver_table
         Set<Address> keys=new HashSet<Address>(queues.keySet());

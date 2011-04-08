@@ -208,7 +208,7 @@ public class MultiRequest extends Request {
      * </ul>
      */
      public void viewChange(View new_view) {
-        Vector<Address> mbrs=new_view != null? new_view.getMembers() : null;
+        List<Address> mbrs=new_view != null? new_view.getMembers() : null;
         if(mbrs == null)
             return;
 

@@ -16,6 +16,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.*;
@@ -403,7 +404,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private void handleViewChange(View v) {
-        Vector<Address> new_members = v.getMembers();
+        List<Address> new_members = v.getMembers();
         synchronized (members) {
             members.clear();
             members.addAll(new_members);

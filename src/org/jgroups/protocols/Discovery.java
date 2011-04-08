@@ -436,7 +436,7 @@ public abstract class Discovery extends Protocol {
 
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
-                Vector<Address> tmp;
+                List<Address> tmp;
                 view=(View)evt.getArg();
                 if((tmp=view.getMembers()) != null) {
                     synchronized(members) {

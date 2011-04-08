@@ -762,16 +762,14 @@ public class FC extends Protocol {
     }
 
 
-    private void handleViewChange(Vector<Address> mbrs) {
-        Address addr;
+    private void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 
         lock.lock();
         try {
             // add members not in membership to received and sent hashmap (with full credits)
-            for(int i=0; i < mbrs.size(); i++) {
-                addr=mbrs.elementAt(i);
+            for(Address addr: mbrs) {
                 if(!received.containsKey(addr))
                     received.put(addr, new Credit(max_credits));
                 if(!sent.containsKey(addr))
@@ -779,14 +777,14 @@ public class FC extends Protocol {
             }
             // remove members that left
             for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
-                addr=it.next();
+                Address addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove();
             }
 
             // remove members that left
             for(Iterator<Address> it=sent.keySet().iterator(); it.hasNext();) {
-                addr=it.next();
+                Address addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove(); // modified the underlying map
             }

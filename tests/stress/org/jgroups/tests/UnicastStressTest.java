@@ -3,13 +3,13 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,12 +70,12 @@ public class UnicastStressTest {
         for(int i=0; i < channels.length; i++) {
             JChannel channel=channels[i];
             View view=channel.getView();
-            Vector<Address> members=view.getMembers();
+            List<Address> members=view.getMembers();
             if(members.size() != num_channels) {
                 throw new Exception("cluster has not formed correctly, expected " + num_channels + " channels, found" +
                         " only " + members.size() + " (view: " + view + ")");
             }
-            Vector<Address> tmp=pickBuddies(members, channel.getAddress());
+            List<Address> tmp=pickBuddies(members, channel.getAddress());
 
             for(int j=0; j < num_threads; j++) {
                 Sender sender=new Sender(start_barrier, msg_size, num_msgs, dispatchers[i], channel.getAddress(), tmp);
@@ -115,8 +115,8 @@ public class UnicastStressTest {
         System.out.println("Throughput: " + Util.printBytes(throughput) + " / sec");
     }
 
-    private Vector<Address> pickBuddies(Vector<Address> members, Address local_addr) {
-        Vector<Address> retval=new Vector<Address>();
+    private List<Address> pickBuddies(List<Address> members, Address local_addr) {
+        List<Address> retval=new ArrayList<Address>();
         int index=members.indexOf(local_addr);
         if(index < 0)
             return null;
@@ -173,10 +173,10 @@ public class UnicastStressTest {
         private final int num_msgs;
         private final int msg_size;
         private final RpcDispatcher disp;
-        private final Vector buddies;
+        private final List<Address> buddies;
 
 
-        public Sender(CyclicBarrier barrier, int msg_size, int num_msgs, RpcDispatcher disp, Address local_addr, Vector buddies) {
+        public Sender(CyclicBarrier barrier, int msg_size, int num_msgs, RpcDispatcher disp, Address local_addr, List<Address> buddies) {
             this.barrier=barrier;
             this.msg_size=msg_size;
             this.num_msgs=num_msgs;

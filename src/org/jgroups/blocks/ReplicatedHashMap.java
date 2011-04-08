@@ -36,7 +36,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         void entryRemoved(K key);
 
-        void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs);
+        void viewChange(View view, java.util.List<Address> new_mbrs, java.util.List<Address> old_mbrs);
 
         void contentsSet(Map<K,V> new_entries);
 
@@ -87,7 +87,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     private String cluster_name=null;
     // to be notified when mbrship changes
     private final Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
-    private final Vector<Address> members=new Vector<Address>(); // keeps track of all DHTs
+    private final List<Address> members=new ArrayList<Address>(); // keeps track of all DHTs
 
     /**
      * Determines when the updates have to be sent across the network, avoids
@@ -634,10 +634,10 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     /*------------------- Membership Changes ----------------------*/
 
     public void viewAccepted(View new_view) {
-        Vector<Address> new_mbrs=new_view.getMembers();
+        List<Address> new_mbrs=new_view.getMembers();
 
         if(new_mbrs != null) {
-            sendViewChangeNotifications(new_view, new_mbrs, new Vector<Address>(members)); // notifies observers (joined, left)
+            sendViewChangeNotifications(new_view, new_mbrs, new ArrayList<Address>(members)); // notifies observers (joined, left)
             members.clear();
             members.addAll(new_mbrs);
         }
@@ -658,8 +658,8 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      */
     public void block() {}
 
-    void sendViewChangeNotifications(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
-        Vector<Address> joined, left;
+    void sendViewChangeNotifications(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
+        List<Address> joined, left;
 
         if((notifs.isEmpty()) || (old_mbrs == null)
            || (new_mbrs == null)
@@ -668,21 +668,21 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
             return;
 
         // 1. Compute set of members that joined: all that are in new_mbrs, but not in old_mbrs
-        joined=new Vector<Address>();
-        for(Address mbr:new_mbrs) {
+        joined=new ArrayList<Address>();
+        for(Address mbr: new_mbrs) {
             if(!old_mbrs.contains(mbr))
-                joined.addElement(mbr);
+                joined.add(mbr);
         }
 
         // 2. Compute set of members that left: all that were in old_mbrs, but not in new_mbrs
-        left=new Vector<Address>();
-        for(Address mbr:old_mbrs) {
+        left=new ArrayList<Address>();
+        for(Address mbr: old_mbrs) {
             if(!new_mbrs.contains(mbr)) {
-                left.addElement(mbr);
+                left.add(mbr);
             }
         }
 
-        for(Notification notif:notifs) {
+        for(Notification notif: notifs) {
             notif.viewChange(view, joined, left);
         }
     }

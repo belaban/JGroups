@@ -131,7 +131,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
     }
 
     private static boolean isCoordinator(Channel ch) {
-        Vector<Address> members=ch.getView().getMembers();
+        List<Address> members=ch.getView().getMembers();
         Address local_addr=ch.getAddress();
         return !members.isEmpty() && members.get(0).equals(local_addr);
     }
