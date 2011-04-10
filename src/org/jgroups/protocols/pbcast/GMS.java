@@ -115,10 +115,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     private final Membership tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
-    private final Vector<Address> joining=new Vector<Address>(7);
+    private final List<Address> joining=new ArrayList<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    private final Vector<Address> leaving=new Vector<Address>(7);
+    private final List<Address> leaving=new ArrayList<Address>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     private BoundedList<Address> prev_members=null;
@@ -405,7 +405,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(new_mbrs != null) {
                 for(Address tmp_mbr: new_mbrs) {
                     if(!joining.contains(tmp_mbr))
-                        joining.addElement(tmp_mbr);
+                        joining.add(tmp_mbr);
                 }
             }
 

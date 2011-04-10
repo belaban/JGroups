@@ -143,7 +143,7 @@ public class MFC extends FlowControl {
     }
 
 
-    protected void handleViewChange(Vector<Address> mbrs) {
+    protected void handleViewChange(List<Address> mbrs) {
         super.handleViewChange(mbrs);
 
         Set<Address> keys=new HashSet<Address>(credits.keys());

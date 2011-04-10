@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Util;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
@@ -124,7 +125,7 @@ public class UFC extends FlowControl {
     }
 
 
-    protected void handleViewChange(Vector<Address> mbrs) {
+    protected void handleViewChange(List<Address> mbrs) {
         super.handleViewChange(mbrs);
         if(mbrs == null) return;
 

@@ -55,15 +55,15 @@ public class AckMcastReceiverWindow {
 
 
     public void remove(Object sender, Vector seqnos) {
-    Vector v=(Vector)msgs.get(sender);
-    Long   seqno;
+        Vector v=(Vector)msgs.get(sender);
+        Long   seqno;
 
-    if(v != null && seqnos != null) {
-        for(int i=0; i < seqnos.size(); i++) {
-        seqno=(Long)seqnos.elementAt(i);
-        v.removeElement(seqno);
+        if(v != null && seqnos != null) {
+            for(int i=0; i < seqnos.size(); i++) {
+                seqno=(Long)seqnos.elementAt(i);
+                v.removeElement(seqno);
+            }
         }
-    }
     }
 
 

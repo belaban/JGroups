@@ -91,7 +91,7 @@ public abstract class Discovery extends Protocol {
     protected TimeScheduler timer=null;
 
     protected View view;
-    protected final Vector<Address> members=new Vector<Address>(11);
+    protected final List<Address> members=new ArrayList<Address>(11);
     protected Address local_addr=null;
     protected String group_addr=null;
     protected final Set<Responses> ping_responses=new HashSet<Responses>();

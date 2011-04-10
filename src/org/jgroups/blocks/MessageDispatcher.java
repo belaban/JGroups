@@ -83,9 +83,9 @@ public class MessageDispatcher implements RequestHandler {
 
 
     /** Returns a copy of members */
-    protected Collection getMembers() {
+    protected Collection<Address> getMembers() {
         synchronized(members) {
-            return new ArrayList(members);
+            return new ArrayList<Address>(members);
         }
     }
 
@@ -244,7 +244,7 @@ public class MessageDispatcher implements RequestHandler {
 
     public NotifyingFuture<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
         GroupRequest req=cast(dests, msg, options, false);
-        return req != null? req : new NullFuture(RspList.EMPTY_RSP_LIST);
+        return req != null? req : new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
     }
 
     protected GroupRequest cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
@@ -259,7 +259,7 @@ public class MessageDispatcher implements RequestHandler {
         }
         else {
             synchronized(members) {
-                real_dests=new ArrayList(members);
+                real_dests=new ArrayList<Address>(members);
             }
         }
 
@@ -348,12 +348,12 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, options);
+        UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
         req.setBlockForResults(false);
         try {
             req.execute();
             if(options.getMode() == Request.GET_NONE)
-                return new NullFuture(null);
+                return new NullFuture<T>(null);
             return req;
         }
         catch(Exception t) {
