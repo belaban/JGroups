@@ -23,10 +23,10 @@ import java.util.*;
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
     protected Object        server_obj=null;
     /** Marshaller to marshall requests at the caller and unmarshal requests at the receiver(s) */
-    protected Marshaller2   req_marshaller=null;
+    protected Marshaller    req_marshaller=null;
 
     /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
-    protected Marshaller2   rsp_marshaller=null;
+    protected Marshaller    rsp_marshaller=null;
     protected final List<ChannelListener> additionalChannelListeners=new ArrayList<ChannelListener>();
     protected MethodLookup  method_lookup=null;
 
@@ -44,13 +44,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
 
+
     public interface Marshaller {
-        byte[] objectToByteBuffer(Object obj) throws Exception;
-        Object objectFromByteBuffer(byte[] buf) throws Exception;
-    }
-
-
-    public interface Marshaller2 extends Marshaller {
         /**
          * Marshals the object into a byte[] buffer and returns a Buffer with a ref to the underlying byte[] buffer,
          * offset and length.<br/>
@@ -64,43 +59,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
          */
         Buffer objectToBuffer(Object obj) throws Exception;
 
-        Object objectFromByteBuffer(byte[] buf, int offset, int length) throws Exception;
+        Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception;
     }
 
 
-    /** Used to provide a Marshaller2 interface to a Marshaller. This class is for internal use only, and will be
-     * removed in 3.0 when Marshaller and Marshaller2 get merged. Do not use, but provide an implementation of
-     * Marshaller directly, e.g. in setRequestMarshaller().
-     */
-    public static class MarshallerAdapter implements Marshaller2 {
-        private final Marshaller marshaller;
-
-        public MarshallerAdapter(Marshaller marshaller) {
-            this.marshaller=marshaller;
-        }
-
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
-            return marshaller.objectToByteBuffer(obj);
-        }
-
-        public Object objectFromByteBuffer(byte[] buf) throws Exception {
-            return buf == null? null : marshaller.objectFromByteBuffer(buf);
-        }
-
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            byte[] buf=marshaller.objectToByteBuffer(obj);
-            return new Buffer(buf, 0, buf.length);
-        }
-
-        public Object objectFromByteBuffer(byte[] buf, int offset, int length) throws Exception {
-            if(buf == null || (offset == 0 && length == buf.length))
-                return marshaller.objectFromByteBuffer(buf);
-            byte[] tmp=new byte[length];
-            System.arraycopy(buf, offset, tmp, 0, length);
-            return marshaller.objectFromByteBuffer(tmp);
-        }
-
-    }
 
 
     public static String getName() {return "RpcDispatcher";}
@@ -108,23 +70,13 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public Marshaller getRequestMarshaller()             {return req_marshaller;}
 
     public void setRequestMarshaller(Marshaller m) {
-        if(m == null)
-            this.req_marshaller=null;
-        else if(m instanceof Marshaller2)
-            this.req_marshaller=(Marshaller2)m;
-        else
-            this.req_marshaller=new MarshallerAdapter(m);
+        this.req_marshaller=m;
     }
 
     public Marshaller getResponseMarshaller()             {return rsp_marshaller;}
 
     public void setResponseMarshaller(Marshaller m) {
-        if(m == null)
-            this.rsp_marshaller=null;
-        else if(m instanceof Marshaller2)
-            this.rsp_marshaller=(Marshaller2)m;
-        else
-            this.rsp_marshaller=new MarshallerAdapter(m);
+        this.rsp_marshaller=m;
 
         if(corr != null)
             corr.setMarshaller(this.rsp_marshaller);
@@ -319,7 +271,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         try {
             body=req_marshaller != null?
-                    req_marshaller.objectFromByteBuffer(req.getBuffer(), req.getOffset(), req.getLength())
+                    req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength())
                     : req.getObject();
         }
         catch(Throwable e) {

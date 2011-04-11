@@ -10,10 +10,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -935,14 +932,14 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         static final byte VALUE       = 3;
         
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
             DataOutputStream out=new DataOutputStream(out_stream);
             try {
                 if(obj == null) {
                     out_stream.write(NULL);
                     out_stream.flush();
-                    return out_stream.toByteArray();
+                    return new Buffer(out_stream.toByteArray());
                 }
 
                 if(obj instanceof MethodCall) {
@@ -971,25 +968,25 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
                     Util.objectToStream(obj, out);
                 }
                 out.flush();
-                return out_stream.toByteArray();
+                return new Buffer(out_stream.toByteArray());
             }
             finally {
                 Util.close(out);
             }
         }
 
-        public Object objectFromByteBuffer(byte[] buf) throws Exception {
+        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
             if(buf == null)
                 return null;
 
-            DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
+            DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf, offset, length));
             byte type=in.readByte();
             if(type == NULL)
                 return null;
             if(type == METHOD_CALL) {
                 short id=in.readShort();
-                short length=in.readShort();
-                Object[] args=length > 0? new Object[length] : null;
+                short len=in.readShort();
+                Object[] args=len > 0? new Object[len] : null;
                 if(args != null) {
                     for(int i=0; i < args.length; i++)
                         args[i]=Util.objectFromStream(in);

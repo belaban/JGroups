@@ -49,7 +49,7 @@ public class RequestCorrelator {
     protected RequestHandler request_handler=null;
 
     /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected RpcDispatcher.Marshaller2 marshaller=null;
+    protected RpcDispatcher.Marshaller marshaller=null;
 
     /** makes the instance unique (together with IDs) */
     protected short id=ClassConfigurator.getProtocolId(this.getClass());
@@ -108,12 +108,7 @@ public class RequestCorrelator {
     }
 
     public void setMarshaller(RpcDispatcher.Marshaller marshaller) {
-        if(marshaller == null)
-            this.marshaller=null;
-        else if(marshaller instanceof RpcDispatcher.Marshaller2)
-            this.marshaller=(RpcDispatcher.Marshaller2)marshaller;
-        else
-            this.marshaller=new RpcDispatcher.MarshallerAdapter(marshaller);
+        this.marshaller=marshaller;
     }
 
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
@@ -393,7 +388,7 @@ public class RequestCorrelator {
                     byte[] buf=msg.getBuffer();
                     int offset=msg.getOffset(), length=msg.getLength();
                     try {
-                        retval=marshaller != null? marshaller.objectFromByteBuffer(buf, offset, length) :
+                        retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :
                                 Util.objectFromByteBuffer(buf, offset, length);
                     }
                     catch(Exception e) {

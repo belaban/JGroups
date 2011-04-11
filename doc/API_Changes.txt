@@ -36,6 +36,10 @@ API changes in 3.0.0
 
 - Streamable: DataInputStream --> DataInput, DataOutputStream --> DataOutput
 
+- RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
+
+
+
 
 
 

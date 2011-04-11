@@ -7,6 +7,7 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -453,27 +454,27 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
             if(call.getId() == 0) {
                 Integer arg=(Integer)call.getArgs()[0];
                 ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE);
                 buf.put((byte)0).putInt(arg);
-                return buf.array();
+                return new Buffer(buf.array());
             }
             else if(call.getId() == 1) {
                 Long arg=(Long)call.getArgs()[0];
                 byte[] arg2=(byte[])call.getArgs()[1];
                 ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
                 buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
-                return buf.array();
+                return new Buffer(buf.array());
             }
             else
                 throw new IllegalStateException("method " + call.getMethod() + " not known");
         }
 
-        public Object objectFromByteBuffer(byte[] buffer) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer);
+        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
+            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
 
             byte type=buf.get();
             switch(type) {

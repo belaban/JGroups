@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -127,7 +128,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         static final byte LONG  = 2;
         static final byte OBJ   = 3;
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             ByteArrayOutputStream out=new ByteArrayOutputStream(24);
             ObjectOutputStream oos=new ObjectOutputStream(out);
 
@@ -148,15 +149,15 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                     oos.writeObject(obj);
                 }
                 oos.flush();
-                return out.toByteArray();
+                return new Buffer(out.toByteArray());
             }
             finally {
                 Util.close(oos);
             }
         }
 
-        public Object objectFromByteBuffer(byte[] buf) throws Exception {
-            ByteArrayInputStream inp=new ByteArrayInputStream(buf);
+        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
+            ByteArrayInputStream inp=new ByteArrayInputStream(buf, offset, length);
             ObjectInputStream in=new ObjectInputStream(inp);
 
             try {

@@ -10,6 +10,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import java.io.ByteArrayInputStream;
@@ -557,7 +558,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         static final byte VALUE       = 3;
         
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
 
             ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
             DataOutputStream out=new DataOutputStream(out_stream);
@@ -565,7 +566,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 if(obj == null) {
                     out_stream.write(NULL);
                     out_stream.flush();
-                    return out_stream.toByteArray();
+                    return new Buffer(out_stream.toByteArray());
                 }
                 if(obj instanceof MethodCall) {
                     out.writeByte(METHOD_CALL);
@@ -593,14 +594,14 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                     Util.objectToStream(obj, out);
                 }
                 out.flush();
-                return out_stream.toByteArray();
+                return new Buffer(out_stream.toByteArray());
             }
             finally {
                 Util.close(out);
             }
         }
 
-        public Object objectFromByteBuffer(byte[] buf) throws Exception {
+        public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
             if(buf == null)
                 return null;
 
@@ -610,8 +611,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 return null;
             if(type == METHOD_CALL) {
                 short id=in.readShort();
-                short length=in.readShort();
-                Object[] args=length > 0? new Object[length] : null;
+                short len=in.readShort();
+                Object[] args=len > 0? new Object[len] : null;
                 if(args != null) {
                     for(int i=0; i < args.length; i++)
                         args[i]=Util.objectFromStream(in);

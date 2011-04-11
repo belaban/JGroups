@@ -8,10 +8,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
 import java.io.DataInput;
@@ -593,7 +590,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
             ByteBuffer buf;
             switch(call.getId()) {
@@ -601,28 +598,28 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                 case GET_CONFIG:
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE);
                     buf.put((byte)call.getId());
-                    return buf.array();
+                    return new Buffer(buf.array());
                 case SET_OOB:
                 case SET_SYNC:
-                    return booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]);
+                    return new Buffer(booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]));
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:
                 case SET_MSG_SIZE:
                 case SET_ANYCAST_COUNT:
-                    return intBuffer(call.getId(), (Integer)call.getArgs()[0]);
+                    return new Buffer(intBuffer(call.getId(), (Integer)call.getArgs()[0]));
                 case GET:
-                    return longBuffer(call.getId(), (Long)call.getArgs()[0]);
+                    return new Buffer(longBuffer(call.getId(), (Long)call.getArgs()[0]));
                 case PUT:
                     Long long_arg=(Long)call.getArgs()[0];
                     byte[] arg2=(byte[])call.getArgs()[1];
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
                     buf.put((byte)call.getId()).putLong(long_arg).putInt(arg2.length).put(arg2, 0, arg2.length);
-                    return buf.array();
+                    return new Buffer(buf.array());
                 case SET_READ_PERCENTAGE:
                     Double double_arg=(Double)call.getArgs()[0];
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE);
                     buf.put((byte)call.getId()).putDouble(double_arg);
-                    return buf.array();
+                    return new Buffer(buf.array());
                 default:
                     throw new IllegalStateException("method " + call.getMethod() + " not known");
             }
@@ -630,8 +627,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
 
-        public Object objectFromByteBuffer(byte[] buffer) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer);
+        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
+            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
 
             byte type=buf.get();
             switch(type) {
