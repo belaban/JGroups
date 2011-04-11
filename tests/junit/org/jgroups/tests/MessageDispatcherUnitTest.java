@@ -58,7 +58,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     public void testNullMessageToSelf() {
         MyHandler handler=new MyHandler(null);
         d1.setRequestHandler(handler);
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
         System.out.println("rsps:\n" + rsps);
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
@@ -93,7 +93,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
@@ -129,7 +129,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         MyHandler handler=new MyHandler(new byte[size]);
         d1.setRequestHandler(handler);
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
@@ -153,7 +153,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
-        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, 0));
+        RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");

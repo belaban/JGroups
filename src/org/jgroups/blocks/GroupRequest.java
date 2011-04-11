@@ -300,7 +300,7 @@ public class GroupRequest extends Request {
     private void sendRequest(final Collection<Address> targetMembers, long requestId) throws Exception {
         try {
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
             }
             else {
                 if(options.getAnycasting()) {                                                          

@@ -97,7 +97,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     protected final Promise<Boolean> state_promise=new Promise<Boolean>();
 
-    protected final RequestOptions call_options=new RequestOptions(Request.GET_NONE, 5000);
+    protected final RequestOptions call_options=new RequestOptions(ResponseMode.GET_NONE, 5000);
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -142,7 +142,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     }
 
     public boolean isBlockingUpdates() {
-        return call_options.getMode() == Request.GET_ALL;
+        return call_options.getMode() == ResponseMode.GET_ALL;
     }
 
     /**
@@ -151,7 +151,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      * @param blocking_updates
      */
     public void setBlockingUpdates(boolean blocking_updates) {
-        call_options.setMode(blocking_updates? Request.GET_ALL : Request.GET_NONE);
+        call_options.setMode(blocking_updates? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
     }
 
     /**

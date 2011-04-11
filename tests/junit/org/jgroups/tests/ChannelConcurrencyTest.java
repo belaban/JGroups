@@ -178,7 +178,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                     for(int i=0;i < 10;i++) {
                         final RspList rsp=md.castMessage(null,
                                                          new Message(null, null, i),
-                                                         new RequestOptions(Request.GET_ALL, 2500));
+                                                         new RequestOptions(ResponseMode.GET_ALL, 2500));
                         for(Object o:rsp.getResults()) {
                             assertEquals("Wrong result received at " + c.getAddress(), i, o);
                         }

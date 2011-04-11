@@ -70,7 +70,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {
-            disp.castMessage(null, new Message(), new RequestOptions(Request.GET_ALL, TIMEOUT));
+            disp.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, TIMEOUT));
             if(i % show == 0)
                 System.out.println("-- sent " + i);
         }

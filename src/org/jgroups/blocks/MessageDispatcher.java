@@ -328,7 +328,7 @@ public class MessageDispatcher implements RequestHandler {
             throw new RuntimeException("failed executing request " + req, t);
         }
 
-        if(opts.getMode() == Request.GET_NONE)
+        if(opts.getMode() == ResponseMode.GET_NONE)
             return null;
 
         Rsp rsp=req.getResult();
@@ -352,7 +352,7 @@ public class MessageDispatcher implements RequestHandler {
         req.setBlockForResults(false);
         try {
             req.execute();
-            if(options.getMode() == Request.GET_NONE)
+            if(options.getMode() == ResponseMode.GET_NONE)
                 return new NullFuture<T>(null);
             return req;
         }

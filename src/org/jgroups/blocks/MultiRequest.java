@@ -314,7 +314,7 @@ public class MultiRequest extends Request {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
             }
             else {
                 if(options.getAnycasting()) {

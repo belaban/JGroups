@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -96,7 +97,7 @@ public class RpcDispatcherBlocking implements MembershipListener {
 
     RspList sendGroupRpc() throws Exception {
         return disp.callRemoteMethods(null, "print", new Object[]{new Integer(i++)}, new Class[] {int.class},
-                                      new RequestOptions(Request.GET_ALL, 0));
+                                      new RequestOptions(ResponseMode.GET_ALL, 0));
     }
 
 

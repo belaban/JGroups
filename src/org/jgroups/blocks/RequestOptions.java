@@ -11,33 +11,33 @@ import java.util.*;
  * @since 2.10
  */
 public class RequestOptions {
-    /** The mode of a request. Defined in GroupRequest e.g. GET_NONE, GET_ALL */
-    private int       mode=Request.GET_NONE;
+    /** The mode of a request. Defined in {@link ResponseMode} e.g. GET_NONE, GET_ALL */
+    private ResponseMode  mode=ResponseMode.GET_NONE;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
-    private long      timeout; // used when mode != GET_NONE
+    private long          timeout; // used when mode != GET_NONE
 
     /** Turns on anycasting; this results in multiple unicasts rather than a multicast for group calls */
-    private boolean   use_anycasting;
+    private boolean       use_anycasting;
 
     /** Allows for filtering of responses */
-    private RspFilter rsp_filter;
+    private RspFilter     rsp_filter;
 
     /** The scope of a message, allows for concurrent delivery of messages from the same sender */
-    private short     scope;
+    private short         scope;
 
     /** The flags set in the message in which a request is sent */
-    private byte      flags; // Message.OOB, Message.DONT_BUNDLE etc
+    private byte          flags; // Message.OOB, Message.DONT_BUNDLE etc
 
     /** A list of members which should be excluded from a call */
-    private Set<Address> exclusion_list;
+    private Set<Address>  exclusion_list;
 
 
 
     public RequestOptions() {
     }
 
-    public RequestOptions(int mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, byte flags) {
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, byte flags) {
         this.mode=mode;
         this.timeout=timeout;
         this.use_anycasting=use_anycasting;
@@ -45,15 +45,15 @@ public class RequestOptions {
         this.flags=flags;
     }
 
-    public RequestOptions(int mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
         this(mode, timeout, use_anycasting, rsp_filter, (byte)0);
     }
 
-    public RequestOptions(int mode, long timeout) {
+    public RequestOptions(ResponseMode mode, long timeout) {
         this(mode, timeout, false, null);
     }
 
-    public RequestOptions(int mode, long timeout, boolean use_anycasting) {
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting) {
         this(mode, timeout, use_anycasting, null);
     }
 
@@ -68,15 +68,15 @@ public class RequestOptions {
     }
 
 
-    public static RequestOptions SYNC() {return new RequestOptions(Request.GET_ALL, 5000);}
-    public static RequestOptions ASYNC() {return new RequestOptions(Request.GET_NONE, 5000);}
+    public static RequestOptions SYNC() {return new RequestOptions(ResponseMode.GET_ALL, 5000);}
+    public static RequestOptions ASYNC() {return new RequestOptions(ResponseMode.GET_NONE, 5000);}
 
 
-    public int getMode() {
+    public ResponseMode getMode() {
         return mode;
     }
 
-    public RequestOptions setMode(int mode) {
+    public RequestOptions setMode(ResponseMode mode) {
         this.mode=mode;
         return this;
     }
@@ -154,7 +154,7 @@ public class RequestOptions {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("mode=" + Request.modeToString(mode));
+        sb.append("mode=" + mode);
         sb.append(", timeout=" + timeout);
         if(use_anycasting)
             sb.append(", anycasting=true");

@@ -74,9 +74,9 @@ public class SendDialog extends Dialog implements ActionListener {
             MethodCall call=new MethodCall("displayMessage", new Object[]{sender,retval},
                                            new Class[]{String.class,String.class});
             if(command.equals("Send"))
-                disp.callRemoteMethod(dest.addr, call, new RequestOptions(Request.GET_FIRST, 0));
+                disp.callRemoteMethod(dest.addr, call, new RequestOptions(ResponseMode.GET_FIRST, 0));
             else if(command.equals("Send to all"))
-                disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 0));
+                disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 0));
         }
         catch(Throwable ex) {
             System.err.println(ex);

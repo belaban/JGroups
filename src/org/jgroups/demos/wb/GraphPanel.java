@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
@@ -235,7 +236,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         try {
             MethodCall call=new MethodCall("moveNode", new Object[]{pick}, new Class[]{Node.class});
-            wb.disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 0));
+            wb.disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 0));
         }
         catch(Exception ex) {
             log.error(ex.toString());
@@ -267,7 +268,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
             MethodCall call=new MethodCall("addNode",
                                            new Object[]{name,my_addr,new Integer(xloc),new Integer(yloc)},
                                            new Class[]{String.class,Address.class,int.class,int.class});
-            wb.disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 0));
+            wb.disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 0));
         }
         catch(Exception e) {
             log.error(e.toString());

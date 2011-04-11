@@ -3,8 +3,8 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
 
@@ -197,7 +197,7 @@ public class UnicastStressTest {
             }
 
             for(int i=0; i < num_msgs; i++) {
-                disp.callRemoteMethods(buddies, "receive", arg, types, new RequestOptions(Request.GET_NONE, 5000, true));
+                disp.callRemoteMethods(buddies, "receive", arg, types, new RequestOptions(ResponseMode.GET_NONE, 5000, true));
             }
         }
     }

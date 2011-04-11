@@ -5,6 +5,7 @@ package org.jgroups.demos;
 import org.jgroups.*;
 import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -145,7 +146,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                 showMsg("Looking up value for " + stock_name + ':');
                 rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
                                                 new Class[]{String.class},
-                                                new RequestOptions(Request.GET_ALL, 10000));
+                                                new RequestOptions(ResponseMode.GET_ALL, 10000));
 
                 Float val=null;
                 for(Rsp rsp: rsp_list.values()) {
@@ -177,7 +178,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     Float val=new Float(stock_val);
                     disp.callRemoteMethods(null, "setQuote", new Object[]{stock_name, val},
                                            new Class[]{String.class, Float.class},
-                                           new RequestOptions(Request.GET_FIRST, 0));
+                                           new RequestOptions(ResponseMode.GET_FIRST, 0));
 
                     showMsg("Stock " + stock_name + " set to " + val);
                 }
@@ -187,7 +188,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                         showMsg("Getting all stocks:");
                         rsp_list=disp.callRemoteMethods(null, "getAllStocks",
                                                         null, null,
-                                                        new RequestOptions(Request.GET_ALL, 5000));
+                                                        new RequestOptions(ResponseMode.GET_ALL, 5000));
 
                         System.out.println("rsp_list is " + rsp_list);
 

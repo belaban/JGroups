@@ -36,7 +36,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     public void testUnserializableValue() {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new Pojo()}, new Class[]{Pojo.class},
-                                   new RequestOptions(Request.GET_ALL, 5000));
+                                   new RequestOptions(ResponseMode.GET_ALL, 5000));
             throw new IllegalStateException("this should have thrown an exception");
         }
         catch(Throwable t) {
@@ -48,7 +48,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     @Test(expectedExceptions=NotSerializableException.class)
     public void testUnserializableValue2() throws Throwable {
         disp.callRemoteMethod(channel.getAddress(), "foo", new Object[]{new Pojo()}, new Class[]{Pojo.class},
-                              new RequestOptions(Request.GET_ALL, 5000));
+                              new RequestOptions(ResponseMode.GET_ALL, 5000));
     }
 
     private static class Pojo { // doesn't implement Serializable !

@@ -121,7 +121,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         if(members.size() < 2)
             return;
         Address coord=members.get(0);
-        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(Request.GET_ALL, 5000));
+        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             this.oob=config.oob;
             this.sync=config.sync;
@@ -326,7 +326,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
         options.setFlags(Message.NO_FC);
@@ -440,8 +440,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             Object[] get_args=new Object[]{0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
-            RequestOptions get_options=new RequestOptions(Request.GET_ALL, 20000, false, null);
-            RequestOptions put_options=new RequestOptions(sync ? Request.GET_ALL : Request.GET_NONE, 20000, true, null);
+            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 20000, false, null);
+            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 20000, true, null);
 
             byte flags=0;
             if(oob) flags=Util.setFlag(flags, Message.OOB);

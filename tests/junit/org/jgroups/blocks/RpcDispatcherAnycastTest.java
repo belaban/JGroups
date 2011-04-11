@@ -63,10 +63,10 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
 
         Util.sleep(1000);
 
-        RspList rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(Request.GET_ALL, 0, false));
+        RspList rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, false));
         System.out.println("rsps (no anycast): " + rsps);
 
-        rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(Request.GET_ALL, 0, true));
+        rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, true));
         System.out.println("rsps (with anycast): " + rsps);
     }
 

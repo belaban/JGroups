@@ -113,8 +113,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
         if(show <=0)
             show=1;
-        int request_type=async ? Request.GET_NONE : Request.GET_ALL;
-
+        ResponseMode request_type=async ? ResponseMode.GET_NONE : ResponseMode.GET_ALL;
 
         measure_method_call=new MethodCall((short)0);
         RequestOptions opts=new RequestOptions(request_type, TIMEOUT,

@@ -51,7 +51,7 @@ public class UnicastRequest<T> extends Request {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == GET_NONE? null : this);
+                corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
             }
             else {
                 transport.send(request_msg);
@@ -196,7 +196,7 @@ public class UnicastRequest<T> extends Request {
 
     @GuardedBy("lock")
     protected boolean responsesComplete() {
-        return done || options.getMode() == GET_NONE || result.wasReceived() || result.wasSuspected();
+        return done || options.getMode() == ResponseMode.GET_NONE || result.wasReceived() || result.wasSuspected();
     }
 
 

@@ -271,7 +271,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 (anycasting? anycast_mbrs : destination) + ", sync=" + sync + ", oob=" + oob + ", anycasting=" + anycasting);
         
         // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0, anycasting, null);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0, anycasting, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
         if(oob) options.setFlags(Message.OOB);
 
@@ -279,7 +279,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             disp.callRemoteMethods(anycast_mbrs, new MethodCall((short)0, num_msgs), options);
         else
             disp.callRemoteMethod(destination, new MethodCall((short)0, num_msgs), options);
-        options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
+        options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++) {
@@ -405,7 +405,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             MethodCall call=new MethodCall((short)1, args);
 
             //if(anycasting && sync)
-               //  options.setMode(Request.GET_FIRST);
+               //  options.setMode(ResponseMode.GET_FIRST);
 
             for(int i=1; i <= number_of_msgs; i++) {
                 Object retval=null;

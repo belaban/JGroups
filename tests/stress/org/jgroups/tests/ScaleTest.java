@@ -90,8 +90,8 @@ public class ScaleTest {
     private void invokeRpcs() throws Exception {
         Method method=MethodCall.findMethod(ScaleTest.class, "getAddress", null);
         MethodCall call=new MethodCall(method);
-        RequestOptions opts=new RequestOptions().setMode(GroupRequest.GET_ALL)
-                .setTimeout(5000).setFlags(Message.DONT_BUNDLE);
+        RequestOptions opts=new RequestOptions().setMode(ResponseMode.GET_ALL)
+          .setTimeout(5000).setFlags(Message.DONT_BUNDLE);
         int num_msgs=Util.readIntFromStdin("Number of RPCs: ");
         int print=num_msgs / 10;
         System.out.println("Invoking " + num_msgs + " RPCs:");

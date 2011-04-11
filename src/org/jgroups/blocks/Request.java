@@ -26,20 +26,20 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public abstract class Request implements RspCollector, Command, NotifyingFuture {
-    /** return only first response */
+    /** return only first response *//*
     public static final int GET_FIRST=1;
 
-    /** return all responses */
+    *//** return all responses *//*
     public static final int GET_ALL=2;
 
-    /** return majority (of all non-faulty members) */
+    *//** return majority (of all non-faulty members) *//*
     public static final int GET_MAJORITY=3;
 
-    /** return majority (of all members, may block) */
+    *//** return majority (of all members, may block) *//*
     public static final int GET_ABS_MAJORITY=4;
 
-    /** return no response (async call) */
-    public static final int GET_NONE=6;
+    *//** return no response (async call) *//*
+    public static final int GET_NONE=6;*/
 
 
     protected static final Log        log=LogFactory.getLog(Request.class);
@@ -101,7 +101,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
         }
 
         sendRequest();
-        if(!block_for_results || options.getMode() == GET_NONE)
+        if(!block_for_results || options.getMode() == ResponseMode.GET_NONE)
             return true;
 
         lock.lock();
@@ -170,7 +170,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
         ret.append(super.toString());
-        ret.append("req_id=").append(req_id).append(", mode=" + modeToString(options.getMode()));
+        ret.append("req_id=").append(req_id).append(", mode=" + options.getMode());
         return ret.toString();
     }
 
@@ -248,7 +248,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
 
 
-    public static String modeToString(int m) {
+    /*public static String modeToString(int m) {
         switch(m) {
             case GET_FIRST: return "GET_FIRST";
             case GET_ALL: return "GET_ALL";
@@ -257,7 +257,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
             case GET_NONE: return "GET_NONE";
             default: return "<unknown> (" + m + ")";
         }
-    }
+    }*/
 
 
 }
