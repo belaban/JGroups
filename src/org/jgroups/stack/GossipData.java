@@ -8,8 +8,8 @@ import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -105,7 +105,7 @@ public class GossipData implements Streamable {
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         Util.writeString(group, out);
         Util.writeAddress(addr, out);
@@ -115,7 +115,7 @@ public class GossipData implements Streamable {
         Util.writeByteBuffer(buffer, offset, length, out);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
         group=Util.readString(in);
         addr=Util.readAddress(in);

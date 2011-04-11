@@ -147,7 +147,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
                 "MERGE2(min_interval=5000;max_interval=10000):"+
                 "FD_SOCK:"+
                 "VERIFY_SUSPECT(timeout=1500):"+
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1000,1500,2000,3000):"+
+                "pbcast.NAKACK(retransmit_timeout=1000,1500,2000,3000):"+
                 "UNICAST(timeout=1000,1500,2000,3000):"+
                 "pbcast.STABLE(desired_avg_gossip=10000):"+
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):"+

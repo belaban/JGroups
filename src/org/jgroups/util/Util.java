@@ -585,88 +585,83 @@ public class Util {
 
 
 
-    public static void objectToStream(Object obj, DataOutputStream out) throws Exception {
+    public static void objectToStream(Object obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.write(TYPE_NULL);
             return;
         }
 
         Byte type;
-        try {
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                out.write(TYPE_STREAMABLE);
-                writeGenericStreamable((Streamable)obj, out);
-            }
-            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-                out.write(type.byteValue());
-                switch(type.byteValue()) {
-                    case TYPE_BOOLEAN:
-                        out.writeBoolean(((Boolean)obj).booleanValue());
-                        break;
-                    case TYPE_BYTE:
-                        out.writeByte(((Byte)obj).byteValue());
-                        break;
-                    case TYPE_CHAR:
-                        out.writeChar(((Character)obj).charValue());
-                        break;
-                    case TYPE_DOUBLE:
-                        out.writeDouble(((Double)obj).doubleValue());
-                        break;
-                    case TYPE_FLOAT:
-                        out.writeFloat(((Float)obj).floatValue());
-                        break;
-                    case TYPE_INT:
-                        out.writeInt(((Integer)obj).intValue());
-                        break;
-                    case TYPE_LONG:
-                        out.writeLong(((Long)obj).longValue());
-                        break;
-                    case TYPE_SHORT:
-                        out.writeShort(((Short)obj).shortValue());
-                        break;
-                    case TYPE_STRING:
-                        String str=(String)obj;
-                        if(str.length() > Short.MAX_VALUE) {
-                            out.writeBoolean(true);
-                            ObjectOutputStream oos=new ObjectOutputStream(out);
-                            try {
-                                oos.writeObject(str);
-                            }
-                            finally {
-                                oos.close();
-                            }
+        if(obj instanceof Streamable) {  // use Streamable if we can
+            out.write(TYPE_STREAMABLE);
+            writeGenericStreamable((Streamable)obj, out);
+        }
+        else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+            out.write(type.byteValue());
+            switch(type.byteValue()) {
+                case TYPE_BOOLEAN:
+                    out.writeBoolean(((Boolean)obj).booleanValue());
+                    break;
+                case TYPE_BYTE:
+                    out.writeByte(((Byte)obj).byteValue());
+                    break;
+                case TYPE_CHAR:
+                    out.writeChar(((Character)obj).charValue());
+                    break;
+                case TYPE_DOUBLE:
+                    out.writeDouble(((Double)obj).doubleValue());
+                    break;
+                case TYPE_FLOAT:
+                    out.writeFloat(((Float)obj).floatValue());
+                    break;
+                case TYPE_INT:
+                    out.writeInt(((Integer)obj).intValue());
+                    break;
+                case TYPE_LONG:
+                    out.writeLong(((Long)obj).longValue());
+                    break;
+                case TYPE_SHORT:
+                    out.writeShort(((Short)obj).shortValue());
+                    break;
+                case TYPE_STRING:
+                    String str=(String)obj;
+                    if(str.length() > Short.MAX_VALUE) {
+                        out.writeBoolean(true);
+                        ObjectOutputStream oos=new ObjectOutputStream((OutputStream)out);
+                        try {
+                            oos.writeObject(str);
                         }
-                        else {
-                            out.writeBoolean(false);
-                            out.writeUTF(str);
+                        finally {
+                            oos.close();
                         }
-                        break;
-                    case TYPE_BYTEARRAY:
-                        byte[] buf=(byte[])obj;
-                        out.writeInt(buf.length);
-                        out.write(buf, 0, buf.length);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("type " + type + " is invalid");
-                }
-            }
-            else { // will throw an exception if object is not serializable
-                out.write(TYPE_SERIALIZABLE);
-                ObjectOutputStream tmp=new ObjectOutputStream(out);
-                tmp.writeObject(obj);
+                    }
+                    else {
+                        out.writeBoolean(false);
+                        out.writeUTF(str);
+                    }
+                    break;
+                case TYPE_BYTEARRAY:
+                    byte[] buf=(byte[])obj;
+                    out.writeInt(buf.length);
+                    out.write(buf, 0, buf.length);
+                    break;
+                default:
+                    throw new IllegalArgumentException("type " + type + " is invalid");
             }
         }
-        finally {
-            Util.close(out);
+        else { // will throw an exception if object is not serializable
+            out.write(TYPE_SERIALIZABLE);
+            ObjectOutputStream tmp=new ObjectOutputStream((OutputStream)out);
+            tmp.writeObject(obj);
         }
     }
 
 
 
-    public static Object objectFromStream(DataInputStream in) throws Exception {
+    public static Object objectFromStream(DataInput in) throws Exception {
         if(in == null) return null;
         Object retval=null;
-        byte b=(byte)in.read();
+        byte b=in.readByte();
 
         switch(b) {
             case TYPE_NULL:
@@ -675,7 +670,7 @@ public class Util {
                 retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ObjectInputStream tmp=new ObjectInputStream(in);
+                ObjectInputStream tmp=new ObjectInputStream((InputStream)in);
                 retval=tmp.readObject();
                 break;
             case TYPE_BOOLEAN:
@@ -704,7 +699,7 @@ public class Util {
                 break;
             case TYPE_STRING:
                 if(in.readBoolean()) { // large string
-                    ObjectInputStream ois=new ObjectInputStream(in);
+                    ObjectInputStream ois=new ObjectInputStream((InputStream)in);
                     try {
                         retval=ois.readObject();
                     }
@@ -777,12 +772,12 @@ public class Util {
 
 
 
-    public static void writeAuthToken(AuthToken token, DataOutputStream out) throws IOException{
+    public static void writeAuthToken(AuthToken token, DataOutput out) throws IOException{
         Util.writeString(token.getName(), out);
         token.writeTo(out);
     }
 
-    public static AuthToken readAuthToken(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static AuthToken readAuthToken(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         try{
             String type = Util.readString(in);
             Object obj = Class.forName(type).newInstance();
@@ -796,7 +791,7 @@ public class Util {
     }
 
 
-    public static void writeView(View view, DataOutputStream out) throws IOException {
+    public static void writeView(View view, DataOutput out) throws IOException {
         if(view == null) {
             out.writeBoolean(false);
             return;
@@ -806,7 +801,7 @@ public class Util {
         view.writeTo(out);
     }
 
-    public static View readView(DataInputStream in) throws IOException, InstantiationException, IllegalAccessException {
+    public static View readView(DataInput in) throws IOException, InstantiationException, IllegalAccessException {
         if(in.readBoolean() == false)
             return null;
         boolean isMergeView=in.readBoolean();
@@ -819,7 +814,7 @@ public class Util {
         return view;
     }
 
-    public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
+    public static void writeAddress(Address addr, DataOutput out) throws IOException {
         byte flags=0;
         boolean streamable_addr=true;
 
@@ -847,7 +842,7 @@ public class Util {
             writeOtherAddress(addr, out);
     }
 
-    public static Address readAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Address readAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         byte flags=in.readByte();
         if(Util.isFlagSet(flags, Address.NULL))
             return null;
@@ -887,7 +882,7 @@ public class Util {
         return retval;
     }
 
-    private static Address readOtherAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    private static Address readOtherAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         short magic_number=in.readShort();
         Class cl=ClassConfigurator.get(magic_number);
         if(cl == null)
@@ -897,7 +892,7 @@ public class Util {
         return addr;
     }
 
-    private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
+    private static void writeOtherAddress(Address addr, DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(addr.getClass());
 
         // write the class info
@@ -910,11 +905,12 @@ public class Util {
 
     /**
      * Writes a Vector of Addresses. Can contain 65K addresses at most
+     *
      * @param v A Collection<Address>
      * @param out
      * @throws IOException
      */
-    public static void writeAddresses(Collection<? extends Address> v, DataOutputStream out) throws IOException {
+    public static void writeAddresses(Collection<? extends Address> v, DataOutput out) throws IOException {
         if(v == null) {
             out.writeShort(-1);
             return;
@@ -927,6 +923,7 @@ public class Util {
 
     /**
      *
+     *
      * @param in
      * @param cl The type of Collection, e.g. Vector.class
      * @return Collection of Address objects
@@ -934,7 +931,7 @@ public class Util {
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public static Collection<? extends Address> readAddresses(DataInputStream in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
+    public static Collection<? extends Address> readAddresses(DataInput in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
         short length=in.readShort();
         if(length < 0) return null;
         Collection<Address> retval=(Collection<Address>)cl.newInstance();
@@ -965,7 +962,7 @@ public class Util {
 
 
 
-    public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
+    public static void writeStreamable(Streamable obj, DataOutput out) throws IOException {
         if(obj == null) {
             out.writeBoolean(false);
             return;
@@ -975,7 +972,7 @@ public class Util {
     }
 
 
-    public static Streamable readStreamable(Class clazz, DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Streamable readStreamable(Class clazz, DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         Streamable retval=null;
         if(in.readBoolean() == false)
             return null;
@@ -985,7 +982,7 @@ public class Util {
     }
 
 
-    public static void writeGenericStreamable(Streamable obj, DataOutputStream out) throws IOException {
+    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws IOException {
         short magic_number;
         String classname;
 
@@ -1013,9 +1010,9 @@ public class Util {
 
 
 
-    public static Streamable readGenericStreamable(DataInputStream in) throws IOException {
+    public static Streamable readGenericStreamable(DataInput in) throws IOException {
         Streamable retval=null;
-        int b=in.read();
+        int b=in.readByte();
         if(b == 0)
             return null;
 
@@ -1048,7 +1045,7 @@ public class Util {
         }
     }
 
-    public static void writeClass(Class<?> classObject, DataOutputStream out) throws IOException {
+    public static void writeClass(Class<?> classObject, DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(classObject);
         // write the magic number or the class name
         if(magic_number == -1) {
@@ -1061,7 +1058,7 @@ public class Util {
         }
     }
 
-    public static Class<?> readClass(DataInputStream in) throws IOException, ClassNotFoundException {
+    public static Class<?> readClass(DataInput in) throws IOException, ClassNotFoundException {
         Class<?> clazz;
         boolean use_magic_number = in.readBoolean();
         if(use_magic_number) {
@@ -1082,7 +1079,7 @@ public class Util {
         return clazz;
     }
 
-    public static void writeObject(Object obj, DataOutputStream out) throws Exception {
+    public static void writeObject(Object obj, DataOutput out) throws Exception {
         if(obj instanceof Streamable) {
             out.writeInt(-1);
             writeGenericStreamable((Streamable)obj, out);
@@ -1094,7 +1091,7 @@ public class Util {
         }
     }
 
-    public static Object readObject(DataInputStream in) throws Exception {
+    public static Object readObject(DataInput in) throws Exception {
         int len=in.readInt();
         if(len == -1)
             return readGenericStreamable(in);
@@ -1106,7 +1103,7 @@ public class Util {
 
 
 
-    public static void writeString(String s, DataOutputStream out) throws IOException {
+    public static void writeString(String s, DataOutput out) throws IOException {
         if(s != null) {
             out.write(1);
             out.writeUTF(s);
@@ -1117,14 +1114,14 @@ public class Util {
     }
 
 
-    public static String readString(DataInputStream in) throws IOException {
-        int b=in.read();
+    public static String readString(DataInput in) throws IOException {
+        int b=in.readByte();
         if(b == 1)
             return in.readUTF();
         return null;
     }
 
-    public static void writeAsciiString(String str, DataOutputStream out) throws IOException {
+    public static void writeAsciiString(String str, DataOutput out) throws IOException {
         if(str == null) {
             out.write(-1);
             return;
@@ -1136,8 +1133,8 @@ public class Util {
         out.writeBytes(str);
     }
 
-    public static String readAsciiString(DataInputStream in) throws IOException {
-        byte length=(byte)in.read();
+    public static String readAsciiString(DataInput in) throws IOException {
+        byte length=in.readByte();
         if(length == -1)
             return null;
         byte[] tmp=new byte[length];
@@ -1146,18 +1143,18 @@ public class Util {
     }
 
 
-    public static String parseString(DataInputStream in) {
+    public static String parseString(DataInput in) {
         return parseString(in, false);
     }
 
-    public static String parseString(DataInputStream in, boolean break_on_newline) {
+    public static String parseString(DataInput in, boolean break_on_newline) {
         StringBuilder sb=new StringBuilder();
         int ch;
 
         // read white space
         while(true) {
             try {
-                ch=in.read();
+                ch=in.readByte();
                 if(ch == -1) {
                     return null; // eof
                 }
@@ -1170,6 +1167,9 @@ public class Util {
                     break;
                 }
             }
+            catch(EOFException eof) {
+                return null;
+            }
             catch(IOException e) {
                 break;
             }
@@ -1177,7 +1177,7 @@ public class Util {
 
         while(true) {
             try {
-                ch=in.read();
+                ch=in.readByte();
                 if(ch == -1)
                     break;
                 if(Character.isWhitespace(ch))
@@ -1218,11 +1218,11 @@ public class Util {
     }
 
 
-    public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
+    public static void writeByteBuffer(byte[] buf, DataOutput out) throws IOException {
         writeByteBuffer(buf, 0, buf.length, out);
     }
 
-     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutputStream out) throws IOException {
+     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutput out) throws IOException {
         if(buf != null) {
             out.write(1);
             out.writeInt(length);
@@ -1233,8 +1233,8 @@ public class Util {
         }
     }
 
-    public static byte[] readByteBuffer(DataInputStream in) throws IOException {
-        int b=in.read();
+    public static byte[] readByteBuffer(DataInput in) throws IOException {
+        int b=in.readByte();
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];

@@ -973,7 +973,7 @@ public class FLUSH extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(viewID);
             Util.writeAddresses(flushParticipants, out);
@@ -981,7 +981,7 @@ public class FLUSH extends Protocol {
         }
 
         @SuppressWarnings("unchecked")
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException,
                         InstantiationException {
             type = in.readByte();
             viewID = in.readLong();

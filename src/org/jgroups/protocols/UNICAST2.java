@@ -11,8 +11,8 @@ import org.jgroups.util.AgeOutCache;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -933,7 +933,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             switch(type) {
                 case DATA:
@@ -952,7 +952,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             switch(type) {
                 case DATA:

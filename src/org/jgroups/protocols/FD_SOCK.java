@@ -911,7 +911,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             int size;
             out.writeByte(type);
             Util.writeAddress(mbr, out);
@@ -935,7 +935,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             int size;
             type=in.readByte();
             mbr=Util.readAddress(in);

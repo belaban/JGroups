@@ -182,7 +182,7 @@ public class View implements Externalizable, Cloneable, Streamable {
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         // vid
         if(vid != null) {
             out.writeBoolean(true);
@@ -196,7 +196,7 @@ public class View implements Externalizable, Cloneable, Streamable {
     }
 
     @SuppressWarnings("unchecked") 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         boolean b;
         // vid:
         b=in.readBoolean();

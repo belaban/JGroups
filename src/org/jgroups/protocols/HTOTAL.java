@@ -147,12 +147,12 @@ public class HTOTAL extends Protocol {
             this.src=src;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeAddress(dest, out);
             Util.writeAddress(src, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             dest=Util.readAddress(in);
             src=Util.readAddress(in);
         }

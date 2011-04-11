@@ -8,8 +8,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -636,7 +636,7 @@ public class RELAY extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             switch(type) {
                 case DISSEMINATE:
@@ -649,7 +649,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
             switch(type) {
                 case DISSEMINATE:
@@ -700,7 +700,7 @@ public class RELAY extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeView(remote_view, out);
             Util.writeView(global_view, out);
             out.writeInt(uuids.size());
@@ -710,7 +710,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             remote_view=Util.readView(in);
             global_view=Util.readView(in);
             int size=in.readInt();

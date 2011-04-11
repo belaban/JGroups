@@ -3,8 +3,8 @@ package org.jgroups.tests.perf;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.text.NumberFormat;
 
@@ -64,7 +64,7 @@ public class MemberInfo implements Streamable {
         return sb.toString();
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(start);
         out.writeLong(stop);
         out.writeLong(num_msgs_expected);
@@ -73,7 +73,7 @@ public class MemberInfo implements Streamable {
         out.writeLong(total_bytes_received);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         start=in.readLong();
         stop=in.readLong();
         num_msgs_expected=in.readLong();

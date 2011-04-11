@@ -53,12 +53,12 @@ public class Range implements Externalizable, Streamable, Comparable<Range> {
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(low);
         out.writeLong(high);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         low=in.readLong();
         high=in.readLong();
     }

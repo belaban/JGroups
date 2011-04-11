@@ -4,21 +4,17 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
-import org.jgroups.protocols.UDP;
-import org.jgroups.protocols.PING;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.Range;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
 
@@ -415,10 +411,10 @@ public class MessageTest {
             return 0;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         }
 
         public String toString() {

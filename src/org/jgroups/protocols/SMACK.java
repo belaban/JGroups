@@ -13,8 +13,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -269,12 +269,12 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
             return Global.LONG_SIZE + Global.BYTE_SIZE;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(seqno);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             seqno=in.readLong();
         }

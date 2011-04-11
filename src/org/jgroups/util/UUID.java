@@ -258,12 +258,12 @@ public class UUID implements Address, Streamable, Comparable<Address> {
 
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(leastSigBits);
         out.writeLong(mostSigBits);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         leastSigBits=in.readLong();
         mostSigBits=in.readLong();
     }

@@ -309,7 +309,7 @@ public class DISCARD extends Protocol {
 			this.dropMessages= ignoredAddresses;
 		}
 
-		public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+		public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
 			int size = in.readShort();
 			if (size > 0) {
 				dropMessages.clear();
@@ -319,7 +319,7 @@ public class DISCARD extends Protocol {
 			}
 		}
 
-		public void writeTo(DataOutputStream out) throws IOException {
+		public void writeTo(DataOutput out) throws IOException {
 			if (dropMessages != null && !dropMessages.isEmpty()) {
 				out.writeShort(dropMessages.size());
 				for (Address addr: dropMessages) {

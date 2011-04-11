@@ -6,10 +6,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -718,7 +715,7 @@ public class STOMP extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(type.ordinal());
             out.writeInt(headers.size());
             for(Map.Entry<String,String> entry: headers.entrySet()) {
@@ -727,7 +724,7 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readInt()];
             int size=in.readInt();
             for(int i=0; i < size; i++) {

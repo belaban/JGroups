@@ -10,9 +10,7 @@ import org.jgroups.util.Headers;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 
 
@@ -527,10 +525,11 @@ public class Message implements Streamable {
 
     /**
      * Streams all members (dest and src addresses, buffer and headers) to the output stream.
+     *
      * @param out
      * @throws IOException
      */
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         byte leading=0;
 
         if(dest_addr != null)
@@ -623,7 +622,7 @@ public class Message implements Streamable {
     }
 
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
 
         // 1. read the leading byte first
         byte leading=in.readByte();
@@ -751,14 +750,14 @@ public class Message implements Streamable {
         return sb.toString();
     }
 
-    private static void writeHeader(Header hdr, DataOutputStream out) throws IOException {
+    private static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
         out.writeShort(magic_number);
         hdr.writeTo(out);
     }
 
 
-    private static Header readHeader(DataInputStream in) throws IOException {
+    private static Header readHeader(DataInput in) throws IOException {
         try {
             short magic_number=in.readShort();
             Class clazz=ClassConfigurator.get(magic_number);

@@ -7,8 +7,8 @@ import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -324,8 +324,8 @@ public class FD_ALL extends Protocol {
         public HeartbeatHeader() {}
         public String toString() {return "heartbeat";}
         public int size() {return 0;}
-        public void writeTo(DataOutputStream out) throws IOException {}
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {}
+        public void writeTo(DataOutput out) throws IOException {}
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {}
     }
 
 

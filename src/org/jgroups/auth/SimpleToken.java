@@ -1,7 +1,7 @@
 package org.jgroups.auth;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import org.jgroups.Message;
@@ -77,10 +77,11 @@ public class SimpleToken extends AuthToken {
     /**
      * Required to serialize the object to pass across the wire
      * 
+     *
      * @param out
      * @throws IOException
      */
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
@@ -90,12 +91,13 @@ public class SimpleToken extends AuthToken {
     /**
      * Required to deserialize the object when read in from the wire
      * 
+     *
      * @param in
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException,
                     InstantiationException {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");

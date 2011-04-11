@@ -3,8 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Global;
 import org.jgroups.Header;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -29,11 +29,11 @@ public class FcHeader extends Header {
         return Global.BYTE_SIZE;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
     }
 

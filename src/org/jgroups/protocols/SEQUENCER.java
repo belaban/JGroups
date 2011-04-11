@@ -386,12 +386,12 @@ public class SEQUENCER extends Protocol {
         }
 
   
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeStreamable(tag, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             tag=(ViewId)Util.readStreamable(ViewId.class, in);
         }

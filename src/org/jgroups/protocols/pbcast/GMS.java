@@ -1114,7 +1114,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             boolean isMergeView=view != null && view instanceof MergeView;
             out.writeBoolean(isMergeView);
@@ -1128,7 +1128,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             out.writeBoolean(useFlushIfPresent);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             boolean isMergeView=in.readBoolean();
             if(isMergeView)

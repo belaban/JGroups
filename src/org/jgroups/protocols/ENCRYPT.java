@@ -10,8 +10,8 @@ import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.*;
@@ -19,7 +19,6 @@ import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -1193,13 +1192,13 @@ public class ENCRYPT extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeShort(type);
             Util.writeString(version, out);
             out.writeBoolean(encrypt_entire_msg);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readShort();
             version=Util.readString(in);
             encrypt_entire_msg=in.readBoolean();

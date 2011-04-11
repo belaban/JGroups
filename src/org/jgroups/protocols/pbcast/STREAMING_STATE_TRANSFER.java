@@ -972,7 +972,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(id);
             Util.writeAddress(sender, out);
@@ -981,7 +981,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             Util.writeString(state_id, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException,
                 InstantiationException {
             type = in.readByte();
             id = in.readLong();

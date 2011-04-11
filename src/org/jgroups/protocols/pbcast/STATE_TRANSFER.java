@@ -1,7 +1,6 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -515,7 +514,7 @@ public class STATE_TRANSFER extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(id);
             Util.writeAddress(sender, out);
@@ -523,7 +522,7 @@ public class STATE_TRANSFER extends Protocol {
             Util.writeString(state_id, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             id=in.readLong();
             sender=Util.readAddress(in);

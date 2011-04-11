@@ -1,7 +1,7 @@
 package org.jgroups.demos;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -122,21 +122,16 @@ public class ExecutionServiceDemo {
 
         // We copy over as a single array with no offset
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(size);
-            for (int i = 0; i < size; ++i) {
-                out.writeByte(bytes[i + offset]);
-            }
+            out.write(bytes, offset, size);
         }
 
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
-            int size = in.readInt();
-            bytes = new byte[size];
-            for (int i = 0; i < size; ++i) {
-                bytes[i] = in.readByte();
-            }
+            bytes = new byte[in.readInt()];
+            in.readFully(bytes, 0, bytes.length);
         }
     }
     
@@ -180,7 +175,7 @@ public class ExecutionServiceDemo {
         }
         
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(bytes1.length);
             out.write(bytes1);
             out.writeInt(bytes2.length);
@@ -188,7 +183,7 @@ public class ExecutionServiceDemo {
         }
 
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             int size = in.readInt();
             bytes1 = new byte[size];

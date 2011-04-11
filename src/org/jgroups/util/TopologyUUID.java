@@ -86,14 +86,14 @@ public class TopologyUUID extends UUID {
         return retval;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
         Util.writeString(site_id, out);
         Util.writeString(rack_id, out);
         Util.writeString(machine_id, out);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         super.readFrom(in);
         site_id=Util.readString(in);
         rack_id=Util.readString(in);

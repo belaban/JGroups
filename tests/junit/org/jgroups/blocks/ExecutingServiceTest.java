@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -186,12 +186,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(millis);
         }
 
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             millis = in.readLong();
         }
@@ -241,7 +241,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             try {
                 Util.writeObject(_object, out);
             }
@@ -255,7 +255,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             try {
                 _object = (V)Util.readObject(in);

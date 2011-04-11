@@ -5,8 +5,8 @@ import org.jgroups.Address;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 
@@ -35,12 +35,12 @@ public class Owner implements Streamable {
         return thread_id;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(address, out);
         out.writeLong(thread_id);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         address=Util.readAddress(in);
         thread_id=in.readLong();
     }

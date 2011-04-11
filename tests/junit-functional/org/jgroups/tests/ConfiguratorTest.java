@@ -142,7 +142,7 @@ public class ConfiguratorTest {
                 "FD(max_tries=3;timeout=2000):" +
                 "VERIFY_SUSPECT(timeout=1500):" +
                 "BARRIER:" +
-                "pbcast.NAKACK(gc_lag=0;use_mcast_xmit=false;retransmit_timeout=300,600,1200,2400,4800;" +
+                "pbcast.NAKACK(use_mcast_xmit=false;retransmit_timeout=300,600,1200,2400,4800;" +
                 "discard_delivered_msgs=true):" +
                 "UNICAST(loopback=false;timeout=300,600,1200,2400,3600):" +
                 "pbcast.STABLE(desired_avg_gossip=50000;max_bytes=1000000;stability_delay=1000):" +

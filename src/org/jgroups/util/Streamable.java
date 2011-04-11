@@ -1,7 +1,7 @@
 package org.jgroups.util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -13,9 +13,9 @@ public interface Streamable {
 
     /** Write the entire state of the current object (including superclasses) to outstream.
      * Note that the output stream <em>must not</em> be closed */
-    void writeTo(DataOutputStream out) throws IOException;
+    void writeTo(DataOutput out) throws IOException;
 
     /** Read the state of the current object (including superclasses) from instream
      * Note that the input stream <em>must not</em> be closed */
-    void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException;
+    void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException;
 }
