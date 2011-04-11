@@ -5,7 +5,6 @@ package org.jgroups;
 
 /**
  * Allows a listener to be notified when group membership changes.
- * These callbacks are used in {@link org.jgroups.blocks.PullPushAdapter}.
  * <p>
  * The MembershipListener interface is similar to the {@link MessageListener} 
  * interface: every time a new view, a suspicion message, or a 

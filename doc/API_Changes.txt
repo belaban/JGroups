@@ -38,6 +38,10 @@ API changes in 3.0.0
 
 - RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
 
+- Removed partial state transfer (nobody ever used it !)
+
+
+
 
 
 

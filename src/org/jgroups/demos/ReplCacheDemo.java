@@ -2,9 +2,10 @@
 package org.jgroups.demos;
 
 
+import org.jgroups.Address;
+import org.jgroups.MembershipListener;
 import org.jgroups.View;
 import org.jgroups.blocks.Cache;
-import org.jgroups.blocks.MembershipListenerAdapter;
 import org.jgroups.blocks.ReplCache;
 import org.jgroups.jmx.JmxConfigurator;
 
@@ -270,9 +271,15 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         frame.setVisible(true);
         setTitle("ReplCacheDemo");
 
-        cache.addMembershipListener(new MembershipListenerAdapter() {
+        cache.addMembershipListener(new MembershipListener() {
             public void viewAccepted(View new_view) {
                 setTitle("ReplCacheDemo");
+            }
+
+            public void suspect(Address suspected_mbr) {
+            }
+
+            public void block() {
             }
         });
     }
