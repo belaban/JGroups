@@ -141,7 +141,7 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests">
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="clean,compile-no-unittests">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
