@@ -375,6 +375,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     public void block() {
     }
 
+    public void unblock() {
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -477,6 +479,8 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         public void block() {
         }
 
+        public void unblock() {
+        }
 
         private static Address findFirst(Map<Short,Address> map, int index) {
             Address retval;

@@ -99,9 +99,6 @@ public abstract class Channel /* implements Transport */ {
      * @param target
      *            The address of the member from which the state is to be
      *            retrieved. If it is null, the state is retrieved from coordinator is contacted.
-     * @param state_id
-     *            The ID of a substate. If the full state is to be fetched, set
-     *            this parameter to null
      * @param timeout
      *            Milliseconds to wait for the state response (0 = wait indefinitely).
      * 
@@ -109,7 +106,7 @@ public abstract class Channel /* implements Transport */ {
      * @throws StateTransferException thrown if state transfer was not successful
      * 
      */
-    abstract public void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;
+    abstract public void connect(String cluster_name, Address target, long timeout) throws ChannelException;
 
 
     /** Disconnects the channel from the current group (if connected), leaving the group.
@@ -347,18 +344,6 @@ public abstract class Channel /* implements Transport */ {
     abstract public boolean getState(Address target, long timeout)
             throws ChannelNotConnectedException, ChannelClosedException;
 
-
-    /**
-     * Fetches a partial state identified by state_id.
-     * @param target
-     * @param state_id
-     * @param timeout
-     * @return
-     * @throws ChannelNotConnectedException
-     * @throws ChannelClosedException
-     */
-    abstract public boolean getState(Address target, String state_id, long timeout)
-            throws ChannelNotConnectedException, ChannelClosedException;
 
 
     public abstract Map<String,Object> getInfo();

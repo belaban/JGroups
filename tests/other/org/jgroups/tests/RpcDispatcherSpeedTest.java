@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Bela Ban
  * @version $Revision: 1.23 $
  */
-public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
+public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
     RpcDispatcher       disp;
     String              props=null;
@@ -191,7 +191,14 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
         System.out.println("-- new view: " + new_view);
     }
 
+    public void suspect(Address suspected_mbr) {
+    }
 
+    public void block() {
+    }
+
+    public void unblock() {
+    }
 
 
     public static void main(String[] args) {

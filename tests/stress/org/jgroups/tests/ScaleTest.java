@@ -38,9 +38,18 @@ public class ScaleTest {
 
     public void start() throws ChannelException {
         ch=new JChannel(props);
-        disp=new RpcDispatcher(ch, null, new MembershipListenerAdapter() {
+        disp=new RpcDispatcher(ch, null, new MembershipListener() {
             public void viewAccepted(View new_view) {
                 System.out.println("view=" + new_view);
+            }
+
+            public void suspect(Address suspected_mbr) {
+            }
+
+            public void block() {
+            }
+
+            public void unblock() {
             }
         }, this);
         ch.connect("ScaleTest-Cluster");

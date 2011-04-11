@@ -517,17 +517,10 @@ public class SizeTest {
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null);
         _testSize(hdr);
 
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null, "my_state");
-        _testSize(hdr);
-
-
         MutableDigest digest=new MutableDigest(2);
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
-        _testSize(hdr);
-
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest, "my_state");
         _testSize(hdr);
     }
 
@@ -572,11 +565,6 @@ public class SizeTest {
 
 
 
-    public static void testIpAddressWithAdditionalData() throws Exception {
-        IpAddress addr=new IpAddress(5555, false);
-        addr.setAdditionalData("bela".getBytes());
-        _testSize(addr);
-    }
 
 
     public static void testWriteAddress() throws IOException, IllegalAccessException, InstantiationException {
@@ -587,9 +575,6 @@ public class SizeTest {
         _testWriteAddress(addr);
 
         addr=new IpAddress("127.0.0.1", 5678);
-        _testWriteAddress(addr);
-
-        ((IpAddress)addr).setAdditionalData("Bela Ban".getBytes());
         _testWriteAddress(addr);
     }
 

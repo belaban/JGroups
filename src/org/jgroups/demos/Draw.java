@@ -21,7 +21,7 @@ import java.io.*;
  * mouse moves are broadcast to all group members, which then apply them to their canvas<p>
  * @author Bela Ban, Oct 17 2001
  */
-public class Draw extends ExtendedReceiverAdapter implements ActionListener, ChannelListener {
+public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
@@ -217,7 +217,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         mainFrame.setBounds(new Rectangle(250, 250));
 
         if(!no_channel && use_state) {
-            channel.connect(groupname,null,null, state_timeout);
+            channel.connect(groupname, null, state_timeout);
         }
         mainFrame.setVisible(true);
         setTitle();

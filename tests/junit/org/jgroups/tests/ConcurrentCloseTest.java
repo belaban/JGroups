@@ -68,7 +68,7 @@ public class ConcurrentCloseTest extends ChannelTestBase {
         }
     }
 
-    private static class MyReceiver extends ExtendedReceiverAdapter {
+    private static class MyReceiver extends ReceiverAdapter {
         private final String name;
 
         public MyReceiver(String name) {

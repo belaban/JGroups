@@ -298,7 +298,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
             assertEquals(c.getView().getMembers().size(), channels.length);
     }
 
-    private static class Listener extends ExtendedReceiverAdapter implements EventSequence {
+    private static class Listener extends ReceiverAdapter implements EventSequence {
         final String name;
         boolean  blockReceived, unblockReceived;
         JChannel channel;

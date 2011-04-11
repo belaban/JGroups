@@ -61,9 +61,10 @@ public class RpcDispatcherBlocking implements MembershipListener {
 
     /** Block sending and receiving of messages until viewAccepted() is called */
     public void block() {
-        
     }
 
+    public void unblock() {
+    }
 
     public void start() throws Exception {
         int     c;

@@ -403,7 +403,7 @@ public class FlushTest extends ChannelTestBase {
                 channel.connect("FlushTestReceiver");
 
             if (connectMethod == CONNECT_AND_GET_STATE) {
-                channel.connect("FlushTestReceiver", null, null, 25000);
+                channel.connect("FlushTestReceiver", null, 25000);
             }
         }
 
@@ -417,7 +417,7 @@ public class FlushTest extends ChannelTestBase {
                 channel.connect("FlushTestReceiver");
 
             if (connectMethod == CONNECT_AND_GET_STATE) {
-                channel.connect("FlushTestReceiver", null, null, 25000);
+                channel.connect("FlushTestReceiver", null, 25000);
             }
         }
 
@@ -467,7 +467,7 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    private class SimpleReplier extends ExtendedReceiverAdapter {
+    private class SimpleReplier extends ReceiverAdapter {
         Channel channel;
 
         boolean handle_requests = false;

@@ -285,7 +285,7 @@ public class ChannelTestBase {
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication extends ExtendedReceiverAdapter implements EventSequence, Runnable {
+    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
         protected Channel channel;
         protected Thread thread;
         protected Throwable exception;
@@ -376,28 +376,11 @@ public class ChannelTestBase {
             events.append('g');
         }
 
-        public byte[] getState(String state_id) {
-            events.append('g');
-            return null;
-        }
-
-        public void getState(String state_id, OutputStream ostream) {
-            events.append('g');
-        }
-
         public void setState(byte[] state) {
             events.append('s');
         }
 
         public void setState(InputStream istream) {
-            events.append('s');
-        }
-
-        public void setState(String state_id, byte[] state) {
-            events.append('s');
-        }
-
-        public void setState(String state_id, InputStream istream) {
             events.append('s');
         }
 

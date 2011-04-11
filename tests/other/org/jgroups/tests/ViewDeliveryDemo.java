@@ -107,7 +107,7 @@ public final class ViewDeliveryDemo {
 
 
 
-    private static class MyReceiver extends ExtendedReceiverAdapter implements Runnable {
+    private static class MyReceiver extends ReceiverAdapter implements Runnable {
         ViewId my_vid;
         long last_time=System.currentTimeMillis();
         static final long MAX_TIME=10000;

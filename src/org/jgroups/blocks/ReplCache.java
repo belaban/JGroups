@@ -602,6 +602,9 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     public void block() {
     }
 
+    public void unblock() {
+    }
+
     public void changed() {
         notifyChangeListeners();
     }

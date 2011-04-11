@@ -91,10 +91,10 @@ public class RpcDispatcherStressTest implements MembershipListener {
         System.out.println("-- suspected " + suspected_mbr);
     }
 
-
-
     public void block() {
-        ;
+    }
+
+    public void unblock() {
     }
 
     /* ------------------------------ End of MembershipListener interface -------------------------------- */

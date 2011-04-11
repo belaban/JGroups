@@ -94,16 +94,13 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
 
     public void suspect(Address suspected_mbr) {
-        ;
     }
-
-
 
     public void block() {
-        ;
     }
 
-
+    public void unblock() {
+    }
 
     public static void main(String[] args) {
         String                 props=null;

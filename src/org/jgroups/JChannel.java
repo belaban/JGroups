@@ -407,8 +407,7 @@ public class JChannel extends Channel {
      *                                       
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
-     * @param state_id the substate id for partial state transfer. If null entire state will be transferred. 
-     * @param timeout the timeout for state transfer.      
+     * @param timeout the timeout for state transfer.
      * 
      * @exception ChannelException The protocol stack cannot be started
      * @exception ChannelException Connecting to cluster was not successful 
@@ -419,9 +418,8 @@ public class JChannel extends Channel {
      */
     public synchronized void connect(String cluster_name,
                                      Address target,
-                                     String state_id,
                                      long timeout) throws ChannelException {
-    	connect(cluster_name, target, state_id, timeout,true);
+    	connect(cluster_name, target, timeout,true);
     }
 
     
@@ -441,8 +439,7 @@ public class JChannel extends Channel {
      *                                       
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
-     * @param state_id the substate id for partial state transfer. If null entire state will be transferred. 
-     * @param timeout the timeout for state transfer.      
+     * @param timeout the timeout for state transfer.
      * 
      * @exception ChannelException The protocol stack cannot be started
      * @exception ChannelException Connecting to cluster was not successful 
@@ -453,7 +450,6 @@ public class JChannel extends Channel {
      */
     public synchronized void connect(String cluster_name,
                                      Address target,
-                                     String state_id,
                                      long timeout,
                                      boolean useFlushIfPresent) throws ChannelException {
 
@@ -495,17 +491,15 @@ public class JChannel extends Channel {
             if(canFetchState) {
                 try {
                     // fetch state from target
-                    stateTransferOk=getState(target, state_id, timeout, false);
+                    stateTransferOk=getState(target, timeout, false);
                     if(!stateTransferOk) {
-                        throw new StateTransferException(getAddress() + " could not fetch state "
-                            + (state_id == null ? "(full)" : state_id) + " from "
-                            + (target == null ? "(all)" : target));
+                        throw new StateTransferException(getAddress() + " could not fetch state from "
+                                                           + (target == null ? "(all)" : target));
                     }
                 }
                 catch(Exception e) {
-                    throw new StateTransferException(getAddress() + " could not fetch state "
-                        + (state_id == null ? "(full)" : state_id) + " from "
-                        + (target == null ? "(all)" : target), e);
+                    throw new StateTransferException(getAddress() + " could not fetch state from "
+                                                       + (target == null ? "(all)" : target), e);
                 }
             }
 
@@ -758,139 +752,76 @@ public class JChannel extends Channel {
 
 
     /**
-     * Retrieves a full state from the target member.
+     * Retrieves the full state from the target member.
      * <p>
      * 
-     * State transfer is initiated by invoking getState on this channel, state
-     * receiver, and sending a GET_STATE message to a target member - state
-     * provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application
-     * state to a state receiver. Upon successful installation of a state at
-     * state receiver this method returns true.
-     * 
+     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE
+     * message to a target member - state provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application state to a state receiver. Upon successful
+     * installation of a state at state receiver this method returns true.
      * 
      * @param target
      *                State provider. If null, coordinator is used
      * @param timeout
-     *                the number of milliseconds to wait for the operation to
-     *                complete successfully. 0 waits until the state has been
-     *                received  
+     *                the number of milliseconds to wait for the operation to complete successfully.
+     *                0 waits until the state has been received
      * 
-     * @see ExtendedMessageListener#getState(OutputStream)
-     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState(OutputStream)
+     * @see MessageListener#setState(InputStream)
      * @see MessageListener#getState()
      * @see MessageListener#setState(byte[])
      * 
      * 
      * @return true if state transfer was successful, false otherwise
      * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval
-     *                 was initiated
+     *                 if channel was not connected at the time state retrieval was initiated
      * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was
-     *                 initiated
+     *                 if channel was closed at the time state retrieval was initiated
      * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this
-     *                 channel
+     *                 if one of state transfer protocols is not present in this channel
      * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be
-     *                 flushed
+     *                 if flush is used in this channel and cluster could not be flushed
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        return getState(target,null,timeout);
+        return getState(target, timeout, true);
     }
 
-    /**
-     * Retrieves a substate (or partial state) indicated by state_id from the target member.
-     * <p>
-     * 
-     * State transfer is initiated by invoking getState on this channel, state
-     * receiver, and sending a GET_STATE message to a target member - state
-     * provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application
-     * state to a state receiver. Upon successful installation of a state at
-     * state receiver this method returns true.
-     * 
-     * 
-     * @param target
-     *                State provider. If null, coordinator is used
-     * @param state_id
-     *                The ID of the substate. If null, the entire state will be
-     *                transferred
-     * @param timeout
-     *                the number of milliseconds to wait for the operation to
-     *                complete successfully. 0 waits until the state has been
-     *                received
-     *                    
-     * @see ExtendedMessageListener#getState(OutputStream)
-     * @see ExtendedMessageListener#setState(InputStream)
-     * @see MessageListener#getState()
-     * @see MessageListener#setState(byte[])
-     * 
-     * 
-     * @return true if state transfer was successful, false otherwise
-     * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval
-     *                 was initiated
-     * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was
-     *                 initiated
-     * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this
-     *                 channel
-     * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be
-     *                 flushed
-     */
-    public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
-        return getState(target, state_id, timeout, true);
-    }
+    
     
     /**
-     * Retrieves a substate (or partial state) indicated by state_id from the target member.
+     * Retrieves state from the target member.
      * <p>
      * 
-     * State transfer is initiated by invoking getState on this channel, state
-     * receiver, and sending a GET_STATE message to a target member - state
-     * provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application
-     * state to a state receiver. Upon successful installation of a state at
-     * state receiver this method returns true.
+     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE message
+     * to a target member - state provider. State provider passes GET_STATE message to application that is using the
+     * state provider channel which in turn provides an application state to a state receiver. Upon successful
+     * installation of a state at the state receiver this method returns true.
      * 
-     *
      * @param target
      *                State provider. If null, coordinator is used
-     * @param state_id
-     *                The ID of the substate. If null, the entire state will be
-     *                transferred
      * @param timeout
-     *                the number of milliseconds to wait for the operation to
-     *                complete successfully. 0 waits until the state has been
-     *                received
+     *                the number of milliseconds to wait for the operation to complete successfully. 0 waits until
+     *                the state has been received
      * @param useFlushIfPresent
      *                whether channel should be flushed prior to state retrieval
      * 
-     * @see ExtendedMessageListener#getState(OutputStream)
-     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState(OutputStream)
+     * @see MessageListener#setState(InputStream)
      * @see MessageListener#getState()
      * @see MessageListener#setState(byte[])
      * 
      * 
      * @return true if state transfer was successful, false otherwise
      * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval
-     *                 was initiated
+     *                 if channel was not connected at the time state retrieval was initiated
      * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was
-     *                 initiated
+     *                 if channel was closed at the time state retrieval was initiated
      * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this
-     *                 channel
+     *                 if one of state transfer protocols is not present in this channel
      * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be
-     *                 flushed
+     *                 if flush is used in this channel and cluster could not be flushed
      */    
-    public boolean getState(Address target, String state_id, long timeout, boolean useFlushIfPresent)
+    public boolean getState(Address target, long timeout, boolean useFlushIfPresent)
       throws ChannelNotConnectedException, ChannelClosedException {
 		
     	Callable<Boolean> flusher = new Callable<Boolean>() {
@@ -898,54 +829,46 @@ public class JChannel extends Channel {
 				return Util.startFlush(JChannel.this);
 			}
 		};
-		return getState(target, state_id, timeout, useFlushIfPresent?flusher:null);
+		return getState(target, timeout, useFlushIfPresent?flusher:null);
 	}
     
     /**
-     * Retrieves a substate (or partial state) indicated by state_id from the target member.
+     * Retrieves state from the target member.
      * <p>
      * 
-     * State transfer is initiated by invoking getState on this channel, state
-     * receiver, and sending a GET_STATE message to a target member - state
-     * provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application
-     * state to a state receiver. Upon successful installation of a state at
-     * state receiver this method returns true.
+     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE
+     * message to a target member - state provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application state to a state receiver. Upon
+     * successful installation of a state at the state receiver this method returns true.
      * 
      * 
+     *
      * @param target
      *                State provider. If null, coordinator is used
-     * @param state_id
-     *                The ID of the substate. If null, the entire state will be
-     *                transferred
      * @param timeout
-     *                the number of milliseconds to wait for the operation to
-     *                complete successfully. 0 waits until the state has been
-     *                received
+     *                the number of milliseconds to wait for the operation to complete successfully. 0 waits until
+     *                the state has been received
      * @param flushInvoker
      *                algorithm invoking flush
-     * 
-     * @see ExtendedMessageListener#getState(OutputStream)
-     * @see ExtendedMessageListener#setState(InputStream)
+     *
+     * @see MessageListener#getState(OutputStream)
+     * @see MessageListener#setState(InputStream)
      * @see MessageListener#getState()
      * @see MessageListener#setState(byte[])
      * 
      * 
      * @return true if state transfer was successful, false otherwise
      * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval
-     *                 was initiated
+     *                 if channel was not connected at the time state retrieval was initiated
      * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was
-     *                 initiated
+     *                 if channel was closed at the time state retrieval was initiated
      * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this
-     *                 channel
+     *                 if one of state transfer protocols is not present in this channel
      * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be
-     *                 flushed
+     *                 if flush is used in this channel and cluster could not be flushed
      */    
-    protected boolean getState(Address target, String state_id, long timeout,Callable<Boolean> flushInvoker) throws ChannelNotConnectedException, ChannelClosedException {
+    protected boolean getState(Address target, long timeout, Callable<Boolean> flushInvoker)
+      throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
         if(!state_transfer_supported) {
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
@@ -979,7 +902,7 @@ public class JChannel extends Channel {
 		}
 
         state_promise.reset();
-        StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);
+        StateTransferInfo state_info=new StateTransferInfo(target, timeout);
         down(new Event(Event.GET_STATE, state_info));
         Boolean b=state_promise.getResult(state_info.timeout);
         
@@ -1002,9 +925,7 @@ public class JChannel extends Channel {
      * @param evt the event carrying the message from the protocol stack
      */
     public Object up(Event evt) {
-        int     type=evt.getType();
-
-        switch(type) {
+        switch(evt.getType()) {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
@@ -1058,13 +979,9 @@ public class JChannel extends Channel {
                     }
 
                     if(state != null) {
-                        String state_id=state_info.state_id;
                         if(receiver != null) {
                             try {
-                                if(receiver instanceof ExtendedReceiver && state_id != null)
-                                    ((ExtendedReceiver)receiver).setState(state_id, state);
-                                else
-                                    receiver.setState(state);
+                                receiver.setState(state);
                             }
                             catch(Throwable t) {
                                 if(log.isWarnEnabled())
@@ -1087,28 +1004,17 @@ public class JChannel extends Channel {
                 //Oct 13,2006 moved to down() when Event.STATE_TRANSFER_INPUTSTREAM_CLOSED is received
                 //state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
 
-                if(up_handler != null) {
+                if(up_handler != null)
                     return up_handler.up(evt);
-                }
 
                 if(is != null) {
-                    if(receiver instanceof ExtendedReceiver) {
+                    if(receiver != null) {
                         try {
-                            if(sti.state_id == null)
-                                ((ExtendedReceiver)receiver).setState(is);
-                            else
-                                ((ExtendedReceiver)receiver).setState(sti.state_id, is);
+                            receiver.setState(is);
                         }
                         catch(Throwable t) {
                             if(log.isWarnEnabled())
                                 log.warn("failed calling setState() in receiver", t);
-                        }
-                    }
-                    else if(receiver instanceof Receiver) {
-                        if(log.isWarnEnabled()){
-                            log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-                                    " application does not implement ExtendedMessageListener. State is not transfered");
-                            Util.close(is);
                         }
                     }
                 }
@@ -1126,7 +1032,7 @@ public class JChannel extends Channel {
         if(up_handler != null)
             return up_handler.up(evt);
 
-        switch(type) {
+        switch(evt.getType()) {
             case Event.MSG:
                 if(receiver != null) {
                     try {
@@ -1165,47 +1071,30 @@ public class JChannel extends Channel {
                 break;
             case Event.GET_APPLSTATE:
                 if(receiver != null) {
-                    StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
                     byte[] tmp_state=null;
-                    String state_id=state_info.state_id;
                     try {
-                        if(receiver instanceof ExtendedReceiver && state_id!=null) {
-                            tmp_state=((ExtendedReceiver)receiver).getState(state_id);
-                        }
-                        else {
-                            tmp_state=receiver.getState();
-                        }
+                        tmp_state=receiver.getState();
                     }
                     catch(Throwable t) {
                         if(log.isWarnEnabled())
                             log.warn("failed calling getState() in receiver", t);
                     }
-                    return new StateTransferInfo(null, state_id, 0L, tmp_state);
+                    return new StateTransferInfo(null, 0L, tmp_state);
                 }
                 break;
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
                 StateTransferInfo sti=(StateTransferInfo)evt.getArg();
                 OutputStream os=sti.outputStream;
-                if(receiver instanceof ExtendedReceiver) {                    
+                if(receiver != null) {
                     if(os != null) {
                         try {
-                            if(sti.state_id == null)
-                                ((ExtendedReceiver)receiver).getState(os);
-                            else
-                                ((ExtendedReceiver)receiver).getState(sti.state_id, os);
+                            receiver.getState(os);
                         }
                         catch(Throwable t) {
                             if(log.isWarnEnabled())
                                 log.warn("failed calling getState() in receiver", t);
                         }                       
                     }                    
-                }
-                else if(receiver instanceof Receiver){
-                    if(log.isWarnEnabled()){
-                        log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-                                " application does not implement ExtendedMessageListener. State is not transfered");
-                        Util.close(os);
-                    }
                 }
                 break;
 
@@ -1222,9 +1111,9 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.UNBLOCK:
-                if(receiver instanceof ExtendedReceiver) {
+                if(receiver != null) {
                     try {
-                        ((ExtendedReceiver)receiver).unblock();
+                        receiver.unblock();
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
@@ -1237,7 +1126,7 @@ public class JChannel extends Channel {
         }
 
 
-        if(type == Event.GET_APPLSTATE) {
+        if(evt.getType() == Event.GET_APPLSTATE) {
             try {
                 return applstate_exchanger.exchange(null);
             }

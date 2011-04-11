@@ -29,7 +29,7 @@ import javax.management.MBeanServer;
  *
  * @author Bela Ban Dec 13 2001
  */
-public class LargeState extends ExtendedReceiverAdapter {
+public class LargeState extends ReceiverAdapter {
     Channel  channel;
     byte[]   state=null;
     Thread   getter=null;
@@ -122,25 +122,6 @@ public class LargeState extends ExtendedReceiverAdapter {
         state_promise.setResult(Boolean.TRUE);
     }
 
-    public byte[] getState(String state_id) {
-        if(state_id == null)
-            return getState();
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public void setState(String state_id, byte[] state) {
-        if(state_id == null) {
-            setState(state);
-            state_promise.setResult(Boolean.TRUE);
-            return;
-        }
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public void getState(String state_id, OutputStream ostream) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
     public void setState(InputStream istream) {
         try {
             total_received=0;
@@ -167,10 +148,6 @@ public class LargeState extends ExtendedReceiverAdapter {
         finally {
             Util.close(istream);
         }
-    }
-
-    public void setState(String state_id, InputStream istream) {
-        throw new UnsupportedOperationException("not yet implemented");
     }
 
     public void getState(OutputStream ostream) {

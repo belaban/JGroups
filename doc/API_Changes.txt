@@ -40,6 +40,9 @@ API changes in 3.0.0
 
 - Removed partial state transfer (nobody ever used it !)
 
+- Removed ExtendedXXXAdapters: there is only Receiver, ReceiverAdapter, MessageListener and MembershipListener
+- Moved ExtendedMembershipListener.unblock() into MembershipListener, removed ExtendedMembershipListener
+
 
 
 

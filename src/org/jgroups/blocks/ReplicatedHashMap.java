@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @Unsupported
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
-        AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
+        AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V> {
 
     public interface Notification<K extends Serializable, V extends Serializable> {
         void entrySet(K key, V value);
@@ -574,11 +574,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     }
 
 
-        public byte[] getState(String state_id) {
-        // not implemented
-        return null;
-    }
-
     public void getState(OutputStream ostream) {
         K key;
         V val;
@@ -603,10 +598,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         }
     }
 
-    public void getState(String state_id, OutputStream ostream) {}
-
-    public void setState(String state_id, byte[] state) {}
-
     public void setState(InputStream istream) {
         HashMap<K,V> new_copy=null;
         ObjectInputStream ois=null;
@@ -628,8 +619,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         state_promise.setResult(Boolean.TRUE);
     }
-
-    public void setState(String state_id, InputStream istream) {}
 
     /*------------------- Membership Changes ----------------------*/
 

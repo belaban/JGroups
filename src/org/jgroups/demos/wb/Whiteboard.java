@@ -12,7 +12,8 @@ import org.jgroups.logging.LogFactory;
 import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.*;
-
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 /**
@@ -21,8 +22,7 @@ import java.awt.event.*;
  * be sent to specific or all members. Whiteboard is both an application and an applet.
  * @author Bela Ban
  */
-public class Whiteboard extends Applet implements ActionListener, MessageListener, MembershipListener,
-						  ComponentListener, FocusListener {
+public class Whiteboard extends Applet implements MessageListener, MembershipListener, ActionListener, ComponentListener, FocusListener {
     public RpcDispatcher           disp;
     Channel                        channel;
     GraphPanel                     panel;
@@ -48,6 +48,11 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
         panel.setState(new_state);
     }
 
+    public void getState(OutputStream ostream) {
+    }
+
+    public void setState(InputStream istream) {
+    }
 
     private String getInfo() {
         StringBuilder ret = new StringBuilder();
@@ -182,6 +187,8 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
     public void block() {
     }
 
+    public void unblock() {
+    }
 
     public void moveNode(Node n) {
         panel.moveNode(n);

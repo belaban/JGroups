@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.ChannelException;
-import org.jgroups.ExtendedReceiverAdapter;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -114,7 +114,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Provider extends ExtendedReceiverAdapter {
+    private static class Provider extends ReceiverAdapter {
         private final byte[] state;
 
         public Provider(int size) {
@@ -143,7 +143,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Requester extends ExtendedReceiverAdapter {
+    private static class Requester extends ReceiverAdapter {
         private final Promise<Integer> promise;
 
         public Requester(Promise<Integer> p) {

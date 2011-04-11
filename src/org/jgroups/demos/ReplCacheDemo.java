@@ -281,6 +281,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
             public void block() {
             }
+
+            public void unblock() {
+            }
         });
     }
 

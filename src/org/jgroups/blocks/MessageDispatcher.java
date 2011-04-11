@@ -400,34 +400,22 @@ public class MessageDispatcher implements RequestHandler {
 
                 case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
                     StateTransferInfo info=(StateTransferInfo)evt.getArg();
-                    String state_id=info.state_id;
                     byte[] tmp_state=null;
                     if(msg_listener != null) {
                         try {
-                            if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-                                tmp_state=((ExtendedMessageListener)msg_listener).getState(state_id);
-                            }
-                            else {
-                                tmp_state=msg_listener.getState();
-                            }
+                            tmp_state=msg_listener.getState();
                         }
                         catch(Throwable t) {
                             this.log.error("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
-                    return new StateTransferInfo(null, state_id, 0L, tmp_state);
+                    return new StateTransferInfo(null, 0L, tmp_state);
 
                 case Event.GET_STATE_OK:
                     if(msg_listener != null) {
                         try {
                             info=(StateTransferInfo)evt.getArg();
-                            String id=info.state_id;
-                            if(msg_listener instanceof ExtendedMessageListener && id!=null) {
-                                ((ExtendedMessageListener)msg_listener).setState(id, info.state);
-                            }
-                            else {
-                                msg_listener.setState(info.state);
-                            }
+                            msg_listener.setState(info.state);
                         }
                         catch(ClassCastException cast_ex) {
                             if(this.log.isErrorEnabled())
@@ -440,42 +428,18 @@ public class MessageDispatcher implements RequestHandler {
                 case Event.STATE_TRANSFER_OUTPUTSTREAM:
                     StateTransferInfo sti=(StateTransferInfo)evt.getArg();
                     OutputStream os=sti.outputStream;
-                    if(msg_listener instanceof ExtendedMessageListener) {                        
-                        if(os != null && msg_listener instanceof ExtendedMessageListener) {
-                            if(sti.state_id == null)
-                                ((ExtendedMessageListener)msg_listener).getState(os);
-                            else
-                                ((ExtendedMessageListener)msg_listener).getState(sti.state_id, os);
-                        }
-                        return new StateTransferInfo(null, os, sti.state_id);
-                    }
-                    else if(msg_listener instanceof MessageListener){
-                        if(log.isWarnEnabled()){
-                            log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
-                                    + " application does not implement ExtendedMessageListener. State is not transfered");
-                            Util.close(os);
-                        }
+                    if(msg_listener != null) {
+                        if(os != null)
+                            msg_listener.getState(os);
+                        return new StateTransferInfo(null, os);
                     }
                     break;
 
                 case Event.STATE_TRANSFER_INPUTSTREAM:
                     sti=(StateTransferInfo)evt.getArg();
                     InputStream is=sti.inputStream;
-                    if(msg_listener instanceof ExtendedMessageListener) {                    	
-                        if(is!=null && msg_listener instanceof ExtendedMessageListener) {
-                            if(sti.state_id == null)
-                                ((ExtendedMessageListener)msg_listener).setState(is);
-                            else
-                                ((ExtendedMessageListener)msg_listener).setState(sti.state_id, is);
-                        }
-                    }
-                    else if(msg_listener instanceof MessageListener){
-                        if(log.isWarnEnabled()){
-                            log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
-                                    + " application does not implement ExtendedMessageListener. State is not transfered");
-                            Util.close(is);
-                        }
-                    }
+                    if(msg_listener != null && is!=null)
+                        msg_listener.setState(is);
                     break;
 
                 case Event.VIEW_CHANGE:
@@ -500,14 +464,12 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.BLOCK:
-                    if(membership_listener != null) {
+                    if(membership_listener != null)
                         membership_listener.block();
-                    }
                     break;
                 case Event.UNBLOCK:
-                    if(membership_listener instanceof ExtendedMembershipListener) {
-                        ((ExtendedMembershipListener)membership_listener).unblock();
-                    }
+                    if(membership_listener != null)
+                        membership_listener.unblock();
                     break;
             }
 

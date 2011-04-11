@@ -85,7 +85,7 @@ public class PerfTpTest {
         }
 
         ch=new JChannel(props);
-        ch.setReceiver(new ExtendedReceiverAdapter());
+        ch.setReceiver(new ReceiverAdapter());
         ch.connect("demo");
         tp=PERF_TP.getInstance();
         local_addr=ch.getAddress();
