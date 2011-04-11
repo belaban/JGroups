@@ -141,12 +141,12 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests,create-schema">
+            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
          manifest="${conf.dir}/manifest.mf"
-         includes="org/jgroups/**,schema/**">
+         includes="org/jgroups/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
         <fileset dir="${root.dir}">
             <include name="CREDITS"/>
@@ -155,7 +155,7 @@
             <include name="EULA"/>
         </fileset>
         <fileset dir="${lib.dir}">
-            <include name="licenses/*"/>
+            <include name="licenses/thirdparty*"/>
         </fileset>
     </jar>    	
     </target>
