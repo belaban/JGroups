@@ -149,10 +149,9 @@
          includes="org/jgroups/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
         <fileset dir="${root.dir}">
-            <include name="CREDITS"/>
             <include name="INSTALL.html"/>
             <include name="LICENSE"/>
-            <include name="EULA"/>
+            <include name="README"/>
         </fileset>
         <fileset dir="${lib.dir}">
             <include name="licenses/thirdparty*"/>
