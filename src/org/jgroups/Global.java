@@ -58,11 +58,6 @@ public class Global {
 
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
 
-    public static final String MUX_ENABLED="jgroups.mux.enabled";
-    public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
-    public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
-    public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
-
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
 
