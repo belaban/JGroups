@@ -2,17 +2,14 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.debug.Simulator;
-import org.jgroups.protocols.FC;
-import org.jgroups.protocols.FRAG2;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.Vector;
 
 
 /**
@@ -21,7 +18,7 @@ import java.util.Vector;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class FCTest {
-    Simulator s=null;
+    JChannel ch;
     static final int SIZE=1000; // bytes
     static final int NUM_MSGS=100000;
     static final int PRINT=NUM_MSGS / 10;
@@ -30,40 +27,30 @@ public class FCTest {
 
     @BeforeMethod
     void setUp() throws Exception {
-        IpAddress a1=new IpAddress(1111);
-        Vector<Address> members=new Vector<Address>();
-        members.add(a1);
-        View v=new View(a1, 1, members);
-        s=new Simulator();
-        s.setLocalAddress(a1);
-        s.setView(v);
-        s.addMember(a1);
-        FC fc=new FC();
-        fc.setMinCredits(1000);
-        fc.setMaxCredits(10000);
-        fc.setMaxBlockTime(1000);
-        FRAG2 frag=new FRAG2();
-        frag.setFragSize(8000);
-        Protocol[] stack=new Protocol[]{frag, fc};
-        s.setProtocolStack(stack);
-        s.start();
+        ch=Util.createChannel(new SHARED_LOOPBACK().setValue("thread_pool_rejection_policy", "run").setValue("loopback", true),
+                              new PING(),
+                              new NAKACK().setValue("use_mcast_xmit", false),
+                              new UNICAST2(),
+                              new STABLE().setValue("max_bytes", 50000),
+                              new GMS().setValue("print_local_addr", false),
+                              new FC().setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000),
+                              new FRAG2());
+        ch.connect("FCTest");
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        s.stop();
+        Util.close(ch);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testReceptionOfAllMessages() {
+    public void testReceptionOfAllMessages() throws ChannelNotConnectedException, ChannelClosedException {
         int num_received=0;
         Receiver r=new Receiver();
-        s.setReceiver(r);
+        ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new Message(null, null, createPayload(SIZE));
-            Event evt=new Event(Event.MSG, msg);
-            s.send(evt);
+            ch.send(msg);
             if(i % PRINT == 0)
                 System.out.println("==> " + i);
         }
@@ -71,13 +58,15 @@ public class FCTest {
         while(num_tries > 0) {
             Util.sleep(1000);
             num_received=r.getNumberOfReceivedMessages();
-            System.out.println("-- num received=" + num_received + ", stats:\n" + s.dumpStats());
+            System.out.println("-- num received=" + num_received);
             if(num_received >= NUM_MSGS)
                 break;
             num_tries--;
         }
         assert num_received == NUM_MSGS;
     }
+
+
 
 
 
@@ -89,15 +78,13 @@ public class FCTest {
     }
 
 
-    static class Receiver implements Simulator.Receiver {
+    static class Receiver extends ReceiverAdapter {
         int num_mgs_received=0;
 
-        public void receive(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                num_mgs_received++;
-                if(num_mgs_received % PRINT == 0)
-                    System.out.println("<== " + num_mgs_received);
-            }
+        public void receive(Message msg) {
+            num_mgs_received++;
+            if(num_mgs_received % PRINT == 0)
+                System.out.println("<== " + num_mgs_received);
         }
 
         public int getNumberOfReceivedMessages() {
