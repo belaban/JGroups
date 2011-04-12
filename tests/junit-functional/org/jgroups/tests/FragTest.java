@@ -2,16 +2,19 @@
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.Global;
-import org.jgroups.debug.ProtocolTester;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 
 /**
@@ -21,11 +24,13 @@ import org.jgroups.util.Util;
  *
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class FragTest {
-    public static final long NUM_MSGS=10;
+    public static final long NUM_MSGS=1000;
     public static final int MSG_SIZE=100000;
     public static final int FRAG_SIZE=24000;
+
+    protected JChannel ch;
 
 
     private static Message createBigMessage(int size) {
@@ -35,73 +40,88 @@ public class FragTest {
     }
 
 
+    @BeforeClass
+    protected void setup() throws Exception {
+        ch=createChannel();
+        ch.connect("FragTestCluster");
+    }
+
+    @AfterClass
+    protected void destroy() {
+        Util.close(ch);
+    }
+
+
 
     public void testRegularMessages() throws Exception {
-        FragReceiver frag_receiver=new FragReceiver(this);
-        ProtocolTester t=new ProtocolTester("FRAG2(frag_size=" + FRAG_SIZE + ')', frag_receiver);
-        Message big_msg;
-        IpAddress local_addr=new IpAddress(5555);
-
-        System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + '\n');
-
-        for(int i=0; i < NUM_MSGS; i++) {
-            big_msg=createBigMessage(MSG_SIZE);
-            big_msg.setSrc(local_addr);
-            System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
-            frag_receiver.down(new Event(Event.MSG, big_msg));
-            Util.sleep(10);
+        FragReceiver frag_receiver=new FragReceiver();
+        ch.setReceiver(frag_receiver);
+        for(int i=1; i <= NUM_MSGS; i++) {
+            Message big_msg=createBigMessage(MSG_SIZE);
+            ch.send(big_msg);
         }
-        t.stop();
+        System.out.println("-- done sending");
+        for(int i=0; i < 10; i++) {
+            int num_msgs=frag_receiver.getNumMsgs();
+            if(num_msgs >= NUM_MSGS)
+                break;
+            Util.sleep(500);
+        }
+        assert frag_receiver.getNumMsgs() == NUM_MSGS;
     }
 
 
-    public void testMessagesWithOffsets() throws Exception {
-        FragReceiver frag_receiver=new FragReceiver(this);
-        ProtocolTester t=new ProtocolTester("FRAG2(frag_size=" + FRAG_SIZE + ')', frag_receiver);
-        Message big_msg;
-        IpAddress local_addr=new IpAddress(5555);
+   public void testMessagesWithOffsets() throws Exception {
+       FragReceiver frag_receiver=new FragReceiver();
+       ch.setReceiver(frag_receiver);
+       byte[] big_buffer=new byte[(int)(MSG_SIZE * NUM_MSGS)];
+       int offset=0;
 
-        System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + '\n');
+       for(int i=1; i <= NUM_MSGS; i++) {
+           Message big_msg=new Message(null, null, big_buffer, offset, MSG_SIZE);
+           ch.send(big_msg);
+           offset+=MSG_SIZE;
+       }
 
-        byte[] big_buffer=new byte[(int)(MSG_SIZE * NUM_MSGS)];
+       System.out.println("-- done sending");
+       for(int i=0; i < 10; i++) {
+           int num_msgs=frag_receiver.getNumMsgs();
+           if(num_msgs >= NUM_MSGS)
+               break;
+           Util.sleep(500);
+       }
+       assert frag_receiver.getNumMsgs() == NUM_MSGS;
+   }
 
-        int offset=0;
-
-        for(int i=0; i < NUM_MSGS; i++) {
-            big_msg=new Message(null, null, big_buffer, offset, MSG_SIZE);
-            big_msg.setSrc(local_addr);
-            System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
-            frag_receiver.down(new Event(Event.MSG, big_msg));
-            Util.sleep(10);
-            offset+=MSG_SIZE;
-        }
-        t.stop();
+    protected static JChannel createChannel() throws Exception {
+        JChannel ch=new JChannel(false);
+        ProtocolStack stack=new ProtocolStack();
+        ch.setProtocolStack(stack);
+        stack.addProtocol(new SHARED_LOOPBACK())
+          .addProtocol(new PING())
+          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
+          .addProtocol(new UNICAST2())
+          .addProtocol(new STABLE().setValue("max_bytes", 50000))
+          .addProtocol(new GMS().setValue("print_local_addr", false))
+          .addProtocol(new UFC())
+          .addProtocol(new MFC())
+          .addProtocol(new FRAG2().setValue("frag_size", FRAG_SIZE));
+        stack.init();
+        return ch;
     }
 
 
+    private static class FragReceiver extends ReceiverAdapter {
+        int num_msgs=0;
 
-    private static class FragReceiver extends Protocol {
-        long num_msgs=0;
-        FragTest t=null;
-
-        FragReceiver(FragTest t) {
-            this.t=t;
+        public int getNumMsgs() {
+            return num_msgs;
         }
 
-        public Object up(Event evt) {
-            Message msg=null;
-            Address sender;
-
-            if(evt == null || evt.getType() != Event.MSG)
-                return null;
-            msg=(Message)evt.getArg();
-            sender=msg.getSrc();
-            if(sender == null) {
-                log.error("FragTest.FragReceiver.up(): sender is null; discarding msg");
-                return null;
-            }
-            System.out.println("Received msg from " + sender + " [" + msg.getLength() + " bytes]");
-            return null;
+        public void receive(Message msg) {
+            num_msgs++;
+            if(num_msgs % 100 == 0)
+                System.out.println("received " + num_msgs + " / " + NUM_MSGS);
         }
 
     }
