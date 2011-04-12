@@ -43,7 +43,11 @@ API changes in 3.0.0
 - Removed ExtendedXXXAdapters: there is only Receiver, ReceiverAdapter, MessageListener and MembershipListener
 - Moved ExtendedMembershipListener.unblock() into MembershipListener, removed ExtendedMembershipListener
 
-- Changed Request.GET_ALL/GET_FIRST/GET_NONE etc from an int to ResponseMode
+- Changed Request.GET_ALL/GET_FIRST/GET_NONE etc from an int to ResponseMode.GET_ALL etc
+
+- Removed ProtocolTester (use SHARED_LOOPBACK instead)
+
+
 
 
 
