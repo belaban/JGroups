@@ -136,7 +136,7 @@ public class NakackTest {
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);
         stack.addProtocol(new SHARED_LOOPBACK())
-          .addProtocol(new PING())
+          .addProtocol(new PING().setValue("timeout", 500).setValue("num_initial_members", 3))
           .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
           .addProtocol(new UNICAST2())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
