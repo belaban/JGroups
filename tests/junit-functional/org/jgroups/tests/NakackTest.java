@@ -22,10 +22,6 @@ import java.util.concurrent.ConcurrentMap;
  * a long value, mirroring seqnos used. A receiver peer receives the messages
  * from each sender and checks that seqnos are received in the correct order.
  * <p/>
- * This test makes use of Simulator to test the protocol in
- * isolation from a JChannel. Each peer is wrapped in a Simulator instance and
- * the instances are linked together to form the group.
- * <p/>
  * An object all_msgs_recd is used to allow the main test thread to discover when
  * all sent messages have been received.
  * <p/>
@@ -151,7 +147,6 @@ public class NakackTest {
    
 
     /**
-     * This is called by the Simulator when a message comes back up the stack.
      * This method should do the following:
      * - receive messages from senders
      * - check that sequence numbers for each sender are in order (with no gaps)
