@@ -11,6 +11,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
@@ -2237,6 +2238,16 @@ public class Util {
         Vector<Address> mbrs=new Vector<Address>();
         mbrs.addAll(Arrays.asList(members));
         return new View(coord, id, mbrs);
+    }
+
+    public static JChannel createChannel(Protocol... prots) throws Exception {
+        JChannel ch=new JChannel(false);
+        ProtocolStack stack=new ProtocolStack();
+        ch.setProtocolStack(stack);
+        for(Protocol prot: prots)
+            stack.addProtocol(prot);
+        stack.init();
+        return ch;
     }
 
 

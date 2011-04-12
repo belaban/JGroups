@@ -5,9 +5,8 @@ import org.jgroups.protocols.BARRIER;
 import org.jgroups.protocols.EXAMPLE;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -30,11 +29,14 @@ public class BARRIERTest {
         ping_prot=new PING();
         example_prot=new EXAMPLE();
         barrier_prot=new BARRIER();
-        ch=createChannel(new SHARED_LOOPBACK(), ping_prot, barrier_prot, example_prot);
+        ch=Util.createChannel(new SHARED_LOOPBACK(), ping_prot, barrier_prot, example_prot);
         ch.connect("BARRIERTest");
     }
 
-
+    @AfterMethod
+    public void destroy() {
+        Util.close(ch);
+    }
 
     public void testBlocking() {
         assert !barrier_prot.isClosed();
@@ -93,15 +95,6 @@ public class BARRIERTest {
     }
 
 
-    protected static JChannel createChannel(Protocol ... prots) throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        for(Protocol prot: prots)
-            stack.addProtocol(prot);
-        stack.init();
-        return ch;
-    }
 
 
     static class MyReceiver extends ReceiverAdapter {
