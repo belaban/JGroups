@@ -99,9 +99,6 @@ public class JChannel extends Channel {
 
     private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
-    private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
-    
-
     /*channel connected flag*/
     protected volatile boolean connected=false;
 
@@ -974,19 +971,16 @@ public class JChannel extends Channel {
                 byte[] state=state_info.state;
 
                 try {
-                    if(up_handler != null) {
+                    if(up_handler != null)
                         return up_handler.up(evt);
-                    }
 
-                    if(state != null) {
-                        if(receiver != null) {
-                            try {
-                                receiver.setState(state);
-                            }
-                            catch(Throwable t) {
-                                if(log.isWarnEnabled())
-                                    log.warn("failed calling setState() in receiver", t);
-                            }
+                    if(state != null && receiver != null) {
+                        try {
+                            receiver.setState(state);
+                        }
+                        catch(Throwable t) {
+                            if(log.isWarnEnabled())
+                                log.warn("failed calling setState() in receiver", t);
                         }
                     }
                 }
@@ -1007,15 +1001,13 @@ public class JChannel extends Channel {
                 if(up_handler != null)
                     return up_handler.up(evt);
 
-                if(is != null) {
-                    if(receiver != null) {
-                        try {
-                            receiver.setState(is);
-                        }
-                        catch(Throwable t) {
-                            if(log.isWarnEnabled())
-                                log.warn("failed calling setState() in receiver", t);
-                        }
+                if(is != null && receiver != null) {
+                    try {
+                        receiver.setState(is);
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling setState() in receiver", t);
                     }
                 }
                 break;
@@ -1032,107 +1024,14 @@ public class JChannel extends Channel {
         if(up_handler != null)
             return up_handler.up(evt);
 
-        switch(evt.getType()) {
-            case Event.MSG:
-                if(receiver != null) {
-                    try {
-                        receiver.receive((Message)evt.getArg());
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling receive() in receiver", t);
-                    }
-                    return null;
-                }
-                break;
-            case Event.VIEW_CHANGE:
-                if(receiver != null) {
-                    try {
-                        receiver.viewAccepted((View)evt.getArg());
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling viewAccepted() in receiver", t);
-                    }
-                    return null;
-                }
-                break;
-            case Event.SUSPECT:
-                if(receiver != null) {
-                    try {
-                        receiver.suspect((Address)evt.getArg());
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling suspect() in receiver", t);
-                    }
-                    return null;
-                }
-                break;
-            case Event.GET_APPLSTATE:
-                if(receiver != null) {
-                    byte[] tmp_state=null;
-                    try {
-                        tmp_state=receiver.getState();
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling getState() in receiver", t);
-                    }
-                    return new StateTransferInfo(null, 0L, tmp_state);
-                }
-                break;
-            case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                OutputStream os=sti.outputStream;
-                if(receiver != null) {
-                    if(os != null) {
-                        try {
-                            receiver.getState(os);
-                        }
-                        catch(Throwable t) {
-                            if(log.isWarnEnabled())
-                                log.warn("failed calling getState() in receiver", t);
-                        }                       
-                    }                    
-                }
-                break;
-
-            case Event.BLOCK:
-                if(receiver != null) {
-                    try {
-                        receiver.block();
-                    }
-                    catch(Throwable t) {
-                        if(log.isErrorEnabled())
-                            log.error("failed calling block() in receiver", t);
-                    }                     
-                    return true;
-                }
-                break;
-            case Event.UNBLOCK:
-                if(receiver != null) {
-                    try {
-                        receiver.unblock();
-                    }
-                    catch(Throwable t) {
-                        if(log.isErrorEnabled())
-                            log.error("failed calling unblock() in receiver", t);
-                    }                                                            
-                }                       
-                return null;                
-            default:
-                break;
-        }
-
-
-        if(evt.getType() == Event.GET_APPLSTATE) {
+        // Invoke a callback in the receiver
+        if(receiver != null) {
             try {
-                return applstate_exchanger.exchange(null);
+                return invokeCallback(evt.getType(), evt.getArg());
             }
-            catch(InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
+            catch(Throwable t) {
+                if(log.isWarnEnabled())
+                    log.warn("failed invoking callback in receiver", t);
             }
         }
         return null;
@@ -1185,7 +1084,35 @@ public class JChannel extends Channel {
 
 
     /* ----------------------------------- Private Methods ------------------------------------- */
-
+    protected Object invokeCallback(int type, Object arg) {
+        switch(type) {
+            case Event.MSG:
+                receiver.receive((Message)arg);
+                break;
+            case Event.VIEW_CHANGE:
+                receiver.viewAccepted((View)arg);
+                break;
+            case Event.SUSPECT:
+                receiver.suspect((Address)arg);
+                break;
+            case Event.GET_APPLSTATE:
+                byte[] tmp_state=null;
+                tmp_state=receiver.getState();
+                return new StateTransferInfo(null, 0L, tmp_state);
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:
+                StateTransferInfo sti=(StateTransferInfo)arg;
+                OutputStream os=sti.outputStream;
+                if(os != null)
+                    receiver.getState(os);
+                break;
+            case Event.BLOCK:
+                receiver.block();
+                return true;
+            case Event.UNBLOCK:
+                receiver.unblock();
+        }
+        return null;
+    }
 
     protected final void init(ProtocolStackConfigurator configurator) throws ChannelException {
         if(log.isInfoEnabled())
