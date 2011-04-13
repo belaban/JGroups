@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -18,7 +19,7 @@ import java.util.Vector;
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
  */
-@Experimental
+@Experimental @Unsupported
 public class HTOTAL extends Protocol {
     Address coord=null;
     Address neighbor=null; // to whom do we forward the message (member to the right, or null if we're at the tail)

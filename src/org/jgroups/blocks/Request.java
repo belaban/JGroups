@@ -8,7 +8,6 @@ import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Command;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 
@@ -25,23 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements RspCollector, Command, NotifyingFuture {
-    /** return only first response *//*
-    public static final int GET_FIRST=1;
-
-    *//** return all responses *//*
-    public static final int GET_ALL=2;
-
-    *//** return majority (of all non-faulty members) *//*
-    public static final int GET_MAJORITY=3;
-
-    *//** return majority (of all members, may block) *//*
-    public static final int GET_ABS_MAJORITY=4;
-
-    *//** return no response (async call) *//*
-    public static final int GET_NONE=6;*/
-
-
+public abstract class Request implements RspCollector, NotifyingFuture {
     protected static final Log        log=LogFactory.getLog(Request.class);
 
     /** To generate unique request IDs (see getRequestId()) */

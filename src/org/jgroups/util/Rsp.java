@@ -39,7 +39,7 @@ public class Rsp<T> {
     public boolean equals(Object obj) {
         if(!(obj instanceof Rsp))
             return false;
-        Rsp other=(Rsp)obj;
+        Rsp<T> other=(Rsp<T>)obj;
         if(sender != null)
             return sender.equals(other.sender);
         return other.sender == null;
