@@ -260,7 +260,7 @@ public class ENCRYPT14KeystoreTest {
     static class MockAddress implements Address {
         private static final long serialVersionUID=-2044466632514705356L;
 
-        public boolean isMulticastAddress() {
+        private boolean isMulticastAddress() {
             return false;
         }
 

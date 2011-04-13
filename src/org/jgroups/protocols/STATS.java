@@ -127,7 +127,7 @@ public class STATS extends Protocol {
         length=msg.getLength();
         dest=msg.getDest();
         src=msg.getSrc();
-        mcast=dest == null || dest.isMulticastAddress();
+        mcast=dest == null;
 
         if(direction == UP) { // received
             received_msgs++;

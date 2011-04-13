@@ -1000,7 +1000,7 @@ public abstract class TP extends Protocol {
             msg.setDest(null);
         }
 
-        final boolean multicast=dest == null || dest.isMulticastAddress();
+        final boolean multicast=dest == null;
         if(loopback && (multicast || (dest.equals(msg.getSrc()) && dest.equals(local_addr)))) {
 
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
@@ -1761,7 +1761,7 @@ public abstract class TP extends Protocol {
                 Address dest=dst.getAddress();
                 Address src_addr=list.get(0).getSrc();
 
-                boolean multicast=dest == null || dest.isMulticastAddress();
+                boolean multicast=dest == null;
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
@@ -1967,7 +1967,7 @@ public abstract class TP extends Protocol {
                 Address dest=dst.getAddress();
                 Address src_addr=list.get(0).getSrc();
 
-                multicast=dest == null || dest.isMulticastAddress();
+                multicast=dest == null;
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();

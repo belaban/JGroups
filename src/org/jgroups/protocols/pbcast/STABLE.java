@@ -274,7 +274,7 @@ public class STABLE extends Protocol {
         if(max_bytes <= 0)
             return;
         Address dest=msg.getDest();
-        if(dest == null || dest.isMulticastAddress()) {
+        if(dest == null) {
             boolean send_stable_msg=false;
             received.lock();
             try {

@@ -323,7 +323,7 @@ public abstract class FlowControl extends Protocol {
                     break;
 
                 Address dest=msg.getDest();
-                boolean multicast=dest == null || dest.isMulticastAddress();
+                boolean multicast=dest == null;
                 boolean handle_multicasts=handleMulticastMessage();
                 boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast);
                 if(!process)
@@ -362,7 +362,7 @@ public abstract class FlowControl extends Protocol {
                     break;
 
                 Address dest=msg.getDest();
-                boolean multicast=dest == null || dest.isMulticastAddress();
+                boolean multicast=dest == null;
                 boolean handle_multicasts=handleMulticastMessage();
                 FcHeader hdr=(FcHeader)msg.getHeader(this.id);
                 boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;

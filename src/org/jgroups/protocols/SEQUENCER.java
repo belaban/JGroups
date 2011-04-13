@@ -82,7 +82,7 @@ public class SEQUENCER extends Protocol {
                 if(msg.isFlagSet(Message.NO_TOTAL_ORDER))
                     break;
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress()) { // only handle multicasts
+                if(dest == null) { // only handle multicasts
                     long next_seqno=seqno.getAndIncrement();
                     if(is_coord) {
                         SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);

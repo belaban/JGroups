@@ -84,7 +84,7 @@ public class DAISYCHAIN extends Protocol {
             case Event.MSG:
                 final Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress())
+                if(dest != null)
                     break; // only process multicast messages
 
                 if(next == null) // view hasn't been received yet, use the normal transport

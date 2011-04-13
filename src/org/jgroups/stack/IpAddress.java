@@ -93,10 +93,6 @@ public class IpAddress implements PhysicalAddress {
     public final InetAddress  getIpAddress()               {return ip_addr;}
     public final int          getPort()                    {return port;}
 
-    public final boolean      isMulticastAddress() {
-        return ip_addr != null && ip_addr.isMulticastAddress();
-    }
-
 
     /**
      * implements the java.lang.Comparable interface

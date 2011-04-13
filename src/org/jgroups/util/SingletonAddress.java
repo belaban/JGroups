@@ -33,10 +33,6 @@ public class SingletonAddress implements Address {
         return cluster_name;
     }
 
-    public boolean isMulticastAddress() {
-        return false;
-    }
-
     public int size() {
         return 0;
     }

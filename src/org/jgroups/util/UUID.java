@@ -268,9 +268,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
         mostSigBits=in.readLong();
     }
 
-    public boolean isMulticastAddress() {
-        return false;
-    }
 
     public int size() {
         return SIZE;

@@ -202,7 +202,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 if(msg == null || msg.isFlagSet(Message.NO_RELIABILITY)) break;
-                if(msg.getDest() == null || msg.getDest().isMulticastAddress()) {
+                if(msg.getDest() == null) {
                     lock.lock();
                     try {
                         long msg_id=seqno;

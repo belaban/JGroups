@@ -243,8 +243,7 @@ public class FLUSH extends Protocol {
             case Event.MSG:
                 Message msg = (Message) evt.getArg();
                 Address dest = msg.getDest();
-                if (dest == null || dest.isMulticastAddress()) {
-                    // mcasts
+                if (dest == null) { // mcasts
                     FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
                     if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
                         return down_prot.down(evt);
@@ -424,9 +423,8 @@ public class FLUSH extends Protocol {
                     // lets wait for STOP_FLUSH to complete
                     // before we start allowing message up.
                     Address dest = msg.getDest();
-                    if (dest != null && !dest.isMulticastAddress()) {
-                        return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny
-                                                // applies to multicasts
+                    if (dest != null) {
+                        return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
                     }
                 }
                 break;

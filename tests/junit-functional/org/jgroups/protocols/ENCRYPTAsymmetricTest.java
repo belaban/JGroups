@@ -482,7 +482,7 @@ public class ENCRYPTAsymmetricTest {
         public MockAddress() {
         }
 
-        public boolean isMulticastAddress() {
+        private boolean isMulticastAddress() {
             return false;
         }
 

@@ -46,7 +46,7 @@ public class HTOTAL extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress()) { // only process multipoint messages
+                if(dest == null) { // only process multipoint messages
                     if(coord == null)
                         log.error("coordinator is null, cannot send message to coordinator");
                     else {

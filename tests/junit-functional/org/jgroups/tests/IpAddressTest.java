@@ -130,15 +130,6 @@ public class IpAddressTest {
     }
 
 
-    public void testMcast() {
-        assert h.isMulticastAddress();
-        assert !a.isMulticastAddress();
-        assert !e.isMulticastAddress();
-        assert !g.isMulticastAddress();
-
-    }
-
-    
 
     public void testCompareTo() {
         Assert.assertEquals(0, a.compareTo(b));

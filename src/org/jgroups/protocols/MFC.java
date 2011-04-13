@@ -12,7 +12,6 @@ import org.jgroups.util.Tuple;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 
 
 /**
@@ -95,7 +94,7 @@ public class MFC extends FlowControl {
     }
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
-        if(dest != null && !dest.isMulticastAddress()) { // 2nd line of defense, not really needed
+        if(dest != null) { // 2nd line of defense, not really needed
             log.error(getClass().getSimpleName() + " doesn't handle unicast messages; passing message down");
             return down_prot.down(evt);
         }

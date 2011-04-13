@@ -104,7 +104,7 @@ public class DUPL extends Protocol {
 
     private void copy(Message msg, int num_copies, Direction direction) {
         Address dest=msg.getDest();
-        boolean multicast=dest == null || dest.isMulticastAddress();
+        boolean multicast=dest == null;
         if((multicast && copy_multicast_msgs) ||  (!multicast && copy_unicast_msgs)) {
             for(int i=0; i < num_copies; i++) {
                 Message copy=msg.copy(true);

@@ -218,13 +218,13 @@ public class DISCARD extends Protocol {
             case Event.MSG:
             msg=(Message)evt.getArg();
             Address dest=msg.getDest();
-            boolean multicast=dest == null || dest.isMulticastAddress();
+            boolean multicast=dest == null;
 
             if(msg.getSrc() == null)
                 msg.setSrc(localAddress);
 
             if(discard_all) {
-                if(dest == null || dest.isMulticastAddress() || dest.equals(localAddress)) {
+                if(dest == null || dest.equals(localAddress)) {
                     //System.out.println("[" + localAddress + "] down(): looping back " + msg + ", hdrs:\n" + msg.getHeaders());
                     loopback(msg);
                 }

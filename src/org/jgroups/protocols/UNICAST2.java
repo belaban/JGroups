@@ -306,7 +306,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 msg=(Message)evt.getArg();
                 dst=msg.getDest();
 
-                if(dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                if(dst == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
                 // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
@@ -348,7 +348,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
+                if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break;
 
                 if(!started) {

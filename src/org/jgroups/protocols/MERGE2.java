@@ -191,8 +191,7 @@ public class MERGE2 extends Protocol {
                     break;
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                boolean multicast=dest == null || dest.isMulticastAddress();
-                if(!multicast)
+                if(dest != null)
                     break;
                 final Address sender=msg.getSrc();
                 if(!members.contains(sender) && merge_candidates.add(sender)) {

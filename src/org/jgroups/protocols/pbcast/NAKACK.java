@@ -501,7 +501,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
+                if(dest != null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break; // unicast address: not null and not mcast, pass down unchanged
 
                 send(evt, msg);

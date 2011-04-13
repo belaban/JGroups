@@ -144,7 +144,7 @@ public class RELAY extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress())
+                if(dest == null)
                     break;
 
                 // forward non local destinations to the coordinator, to relay to the remote cluster
@@ -211,7 +211,7 @@ public class RELAY extends Protocol {
                     return null;
                 }
 
-                if(is_coord && relay && (dest == null || dest.isMulticastAddress()) && !msg.isFlagSet(Message.NO_RELAY)) {
+                if(is_coord && relay && dest == null && !msg.isFlagSet(Message.NO_RELAY)) {
                     Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
                     try {
                         byte[] buf=Util.streamableToByteBuffer(tmp);

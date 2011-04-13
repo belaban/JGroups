@@ -34,7 +34,7 @@ public class RelayDemo {
                 Address sender=msg.getSrc();
                 System.out.println("<< " + msg.getObject() + " from " + sender);
                 Address dst=msg.getDest();
-                if(dst == null || dst.isMulticastAddress()) {
+                if(dst == null) {
                     Message rsp=new Message(msg.getSrc(), null, "this is a response");
                     try {
                         ch.send(rsp);

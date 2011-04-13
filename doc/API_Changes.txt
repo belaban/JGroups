@@ -47,6 +47,10 @@ API changes in 3.0.0
 
 - Removed ProtocolTester (use SHARED_LOOPBACK instead)
 
+- Removed Address.isMulticastAddress(): a null address is a multicast address
+
+
+
 
 
 

@@ -615,8 +615,7 @@ public class FC extends Protocol {
      * @param length
      */
     private void determineCreditors(Address dest, int length) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
-        if(multicast) {
+        if(dest == null) {
             for(Map.Entry<Address,Credit> entry: sent.entrySet()) {
                 if(entry.getValue().get() <= length)
                     creditors.add(entry.getKey());
@@ -638,10 +637,8 @@ public class FC extends Protocol {
      * @return The lowest number of credits left, or -1 if a unicast member was not found
      */
     private long decrementCredit(Map<Address,Credit> map, Address dest, long credits) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
         long lowest=max_credits;
-
-        if(multicast) {
+        if(dest == null) {
             if(map.isEmpty())
                 return -1;
             for(Credit cred: map.values())
