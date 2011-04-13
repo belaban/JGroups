@@ -307,14 +307,6 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             System.out.println("** View=" + v);
     }
 
-    public void block() {
-        System.out.println("--  received BlockEvent");
-    }
-
-    public void unblock() {
-        System.out.println("-- received UnblockEvent");
-    }
-
 
     public byte[] getState() {
         return panel.getState();
