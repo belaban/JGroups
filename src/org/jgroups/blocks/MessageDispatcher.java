@@ -293,6 +293,9 @@ public class MessageDispatcher implements RequestHandler {
         if(options != null) {
             req.setResponseFilter(options.getRspFilter());
             req.setAnycasting(options.getAnycasting());
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
         }
         req.setBlockForResults(block_for_results);
 
@@ -320,6 +323,12 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
+        if(opts != null) {
+            msg.setFlag(opts.getFlags());
+            if(opts.getScope() > 0)
+                msg.setScope(opts.getScope());
+        }
+
         UnicastRequest req=new UnicastRequest(msg, corr, dest, opts);
         try {
             req.execute();
@@ -328,7 +337,7 @@ public class MessageDispatcher implements RequestHandler {
             throw new RuntimeException("failed executing request " + req, t);
         }
 
-        if(opts.getMode() == ResponseMode.GET_NONE)
+        if(opts != null && opts.getMode() == ResponseMode.GET_NONE)
             return null;
 
         Rsp rsp=req.getResult();
@@ -348,11 +357,17 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
+
         UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
         req.setBlockForResults(false);
         try {
             req.execute();
-            if(options.getMode() == ResponseMode.GET_NONE)
+            if(options != null && options.getMode() == ResponseMode.GET_NONE)
                 return new NullFuture<T>(null);
             return req;
         }

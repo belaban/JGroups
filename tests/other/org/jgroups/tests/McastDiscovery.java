@@ -25,7 +25,7 @@ public class McastDiscovery {
     int mcast_port = 5000;
     long interval = 2000; // time between sends
     McastSender mcast_sender = null;
-    boolean running = true;
+    volatile boolean running = true;
     HashMap map = new HashMap(); // keys=interface (InetAddress), values=List of receivers (InetAddress)
 
 
@@ -42,7 +42,7 @@ public class McastDiscovery {
             while (running) {
                 for (Iterator it = handlers.iterator(); it.hasNext();) {
                     handler = (MessageHandler) it.next();
-                    handler.sendDiscoveryRequest(ttl);
+                    handler.sendDiscoveryRequest();
                 }
                 try {
                     sleep(interval);
@@ -135,7 +135,7 @@ public class McastDiscovery {
             }
         }
 
-        if (map.size() > 0)
+        if (!map.isEmpty())
             System.out.println("\n-- Valid interfaces are " + map.keySet() + '\n');
         else {
             System.out.println("\nNo valid interfaces found, listing interfaces by number of responses/interface:\n" +
@@ -283,7 +283,7 @@ public class McastDiscovery {
         }
 
 
-        void sendDiscoveryRequest(int ttl) {
+        void sendDiscoveryRequest() {
             DiscoveryRequest req;
             byte[] buf;
             DatagramPacket packet;
@@ -354,10 +354,11 @@ public class McastDiscovery {
 
 
 abstract class DiscoveryPacket implements Serializable {
-
+    private static final long serialVersionUID=-2592954324310791792L;
 }
 
 class DiscoveryRequest extends DiscoveryPacket {
+    private static final long serialVersionUID=7587678128986493349L;
     InetSocketAddress sender_addr = null;
 
     DiscoveryRequest(InetAddress addr, int port) {
@@ -373,6 +374,7 @@ class DiscoveryRequest extends DiscoveryPacket {
 
 
 class DiscoveryResponse extends DiscoveryPacket {
+    private static final long serialVersionUID=6862354518175504139L;
     InetSocketAddress discovery_responder = null; // address of member who responds to discovery request
     InetAddress interface_used = null;
 
