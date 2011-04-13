@@ -251,10 +251,6 @@ public class Util {
         return hdr != null? hdr.getScope() : 0;
     }
 
-    public static SCOPE.ScopeHeader getScopeHeader(Message msg) {
-        return (SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
-    }
-   
 
 
     /**
@@ -1122,33 +1118,10 @@ public class Util {
         return null;
     }
 
-    public static void writeAsciiString(String str, DataOutput out) throws IOException {
-        if(str == null) {
-            out.write(-1);
-            return;
-        }
-        int length=str.length();
-        if(length > Byte.MAX_VALUE)
-            throw new IllegalArgumentException("string is > " + Byte.MAX_VALUE);
-        out.write(length);
-        out.writeBytes(str);
-    }
 
-    public static String readAsciiString(DataInput in) throws IOException {
-        byte length=in.readByte();
-        if(length == -1)
-            return null;
-        byte[] tmp=new byte[length];
-        in.readFully(tmp, 0, tmp.length);
-        return new String(tmp, 0, tmp.length);
-    }
 
 
     public static String parseString(DataInput in) {
-        return parseString(in, false);
-    }
-
-    public static String parseString(DataInput in, boolean break_on_newline) {
         StringBuilder sb=new StringBuilder();
         int ch;
 
@@ -1160,7 +1133,7 @@ public class Util {
                     return null; // eof
                 }
                 if(Character.isWhitespace(ch)) {
-                    if(break_on_newline && ch == '\n')
+                    if(false && ch == '\n')
                         return null;
                 }
                 else {
@@ -1296,27 +1269,6 @@ public class Util {
         return retval;
     }
 
-    public static List<Message> byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
-        List<Message>  retval=null;
-        ByteArrayInputStream input=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(input);
-        int size=in.readInt();
-
-        if(size == 0)
-            return null;
-
-        Message msg;
-        retval=new LinkedList<Message>();
-        for(int i=0; i < size; i++) {
-            msg=new Message(false); // don't create headers, readFrom() will do this
-            msg.readFrom(in);
-            retval.add(msg);
-        }
-
-        return retval;
-    }
-
-
 
 
 
@@ -1419,15 +1371,6 @@ public class Util {
     }
 
 
-    /** Sleeps between 1 and timeout milliseconds, chosen randomly. Timeout must be > 1 */
-    public static void sleepRandom(long timeout) {
-        if(timeout <= 0) {
-            return;
-        }
-
-        long r=(int)((Math.random() * 100000) % timeout) + 1;
-        sleep(r);
-    }
 
     /** Sleeps between floor and ceiling milliseconds, chosen randomly */
     public static void sleepRandom(long floor, long ceiling) {
@@ -1450,27 +1393,6 @@ public class Util {
         return r < cutoff;
     }
 
-
-    public static String getHostname() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        }
-        catch(Exception ex) {
-        }
-        return "localhost";
-    }
-
-
-    public static void dumpStack(boolean exit) {
-        try {
-            throw new Exception("Dumping stack:");
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            if(exit)
-                System.exit(0);
-        }
-    }
 
 
     public static String dumpThreads() {
@@ -1655,24 +1577,6 @@ public class Util {
     }
 
 
-    /** Tries to read a <code>MethodCall</code> object from the message's buffer and prints it.
-     Returns empty string if object is not a method call */
-    public static String printMethodCall(Message msg) {
-        Object obj;
-        if(msg == null)
-            return "";
-        if(msg.getLength() == 0)
-            return "";
-
-        try {
-            obj=msg.getObject();
-            return obj.toString();
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
-
-    }
 
 
     public static void printThreads() {
@@ -2698,8 +2602,7 @@ public class Util {
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
      * InetSocketAddress
      */
-    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts, int port_range)
-            throws UnknownHostException {
+    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts, int port_range) {
 
         StringTokenizer tok=new StringTokenizer(hosts, ",");
         String t;
@@ -3428,7 +3331,7 @@ public class Util {
      *
      * @param intf the interface to be checked
      */
-    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope) throws SocketException {
+    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope) {
         StackType ip_version=Util.getIpStackType();
         for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
             InetAddress addr=(InetAddress)addresses.nextElement();
@@ -3472,7 +3375,7 @@ public class Util {
      * @param intf
      * @return
      */
-    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws SocketException, UnknownHostException {
+    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws UnknownHostException {
         boolean supportsVersion = false ;
         if (intf != null) {
             // get all the InetAddresses defined on the interface
