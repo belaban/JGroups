@@ -114,6 +114,23 @@
     <target name="compile-no-unittests"
             depends="prepare"
             description="Compiles all Java files">
+        <javac srcdir="${src.dir}"
+               destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+        </javac>
+    </target>
+
+    <target name="compile-essential-unittests"
+            depends="prepare"
+            description="Compiles only tests shipped with JGroups">
         <javac destdir="${compile.dir}"
                source="1.6"
                classpathref="jg.classpath"
@@ -122,12 +139,10 @@
                deprecation="off"
                optimize="off"
                listfiles="false"
-               includes="org/jgroups/**"
-               excludes="org/jgroups/tests/junit/,org/jgroups/tests/junit-functional/,org/jgroups/tests/stress">
+               includes="org/jgroups/tests/**">
+            <src path="${tests.dir}/perf"/>
+            <src path="${tests.dir}/other"/>
             <exclude name="**/obsolete/**"/>
-            <src path="${src.dir}"/>
-            <src path="${other.dir}"/>
-            <src path="${perf.dir}"/>
         </javac>
     </target>
 
@@ -141,7 +156,8 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="clean,compile-no-unittests">
+            description="Creates the jgroups-${version}.jar (includes everything)"
+            depends="clean,compile-no-unittests,compile-essential-unittests">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
