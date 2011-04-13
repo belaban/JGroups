@@ -26,12 +26,9 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     int                 num=1000;
     int                 num_threads=1;
     static final long   TIMEOUT=10000;
-    static final Class  LONG_CLASS=long.class;
-    static final String LONG=long.class.getName();
     final Method[]      METHODS=new Method[1];
     final Object[]      EMPTY_OBJECT_ARRAY=new Object[]{};
     final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
-    final String[]      EMPTY_STRING_ARRAY=new String[]{};
     private long        sleep=0;
     private boolean     async, oob;
 
