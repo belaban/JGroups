@@ -18,7 +18,6 @@
     <class id="15" name="org.jgroups.protocols.pbcast.NAKACK"/>
     <class id="16" name="org.jgroups.protocols.pbcast.STABLE"/>
     <class id="17" name="org.jgroups.protocols.pbcast.STATE_TRANSFER"/>
-    <class id="18" name="org.jgroups.protocols.SMACK"/>
     <class id="19" name="org.jgroups.protocols.COMPRESS"/>
     <class id="20" name="org.jgroups.protocols.FC"/>
     <class id="21" name="org.jgroups.protocols.UDP"/>
@@ -34,7 +33,6 @@
     <class id="33" name="org.jgroups.protocols.AUTH"/>
     <class id="36" name="org.jgroups.protocols.HTOTAL"/>
     <class id="37" name="org.jgroups.protocols.DISCARD"/>
-    <class id="38" name="org.jgroups.protocols.LOOPBACK"/>
     <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
     <class id="40" name="org.jgroups.protocols.UNICAST2"/>
     <class id="41" name="org.jgroups.protocols.SCOPE"/>

@@ -12,7 +12,6 @@
     <class id="25" name="org.jgroups.protocols.pbcast.NakAckHeader"/>
     <class id="27" name="org.jgroups.protocols.pbcast.STABLE$StableHeader"/>
     <class id="28" name="org.jgroups.protocols.pbcast.STATE_TRANSFER$StateHeader"/>
-    <class id="29" name="org.jgroups.protocols.SMACK$SmackHeader"/>
     <class id="30" name="org.jgroups.Message"/>
     <class id="31" name="org.jgroups.View"/>
     <class id="32" name="org.jgroups.ViewId"/>
