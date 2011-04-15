@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -79,9 +80,8 @@ public class TCPPING extends Discovery {
     
     public void setInitialHosts(List<IpAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
-    }      
+    }
 
-    
     public int getPortRange() {
         return port_range;
     }
@@ -93,6 +93,11 @@ public class TCPPING extends Discovery {
     @ManagedAttribute
     public String getDynamicHostList() {
         return dynamic_hosts.toString();
+    }
+
+    @ManagedOperation
+    public void clearDynamicHostList() {
+        dynamic_hosts.clear();
     }
 
     @ManagedAttribute

@@ -10,8 +10,14 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.*;
-import org.jgroups.util.*;
+import org.jgroups.stack.AddressGenerator;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -28,7 +34,6 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Exchanger;
 
 
 /**
