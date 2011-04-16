@@ -1,0 +1,67 @@
+
+API changes in 3.0.0
+====================
+
+- Old and deprecated system properties such as bind.address (instead of jgroups.bind_addr) have been removed
+
+- Removed package org.jgroups.persistence and changed dependent demos accordingly (e.g. ReplicatedHashMap)
+
+- Removed all options except for Channel.LOCAL
+- Removed JChannel.getOpt()/setOpt()
+- Discarding of own messages can now be set via setDiscardOwnMessages(true)
+
+- Removed package org.jgroups.mux (e.g. Multiplexer and MuxChannel). Use a shared transport instead. If you have to,
+  use classes from package org.jgroups.blocks.mux (only if you're an expert though !)
+
+- Removed (J)ChannelFactory. Inject the channel yourself, e.g. through CDI
+
+- Removed JChannel.receive(). Use a Receiver or ReceiverAdapter and JChannel.setReceiver(Receiver) to switch from a
+  pull based approach of receiving messages to a push-based approach
+
+- Removed JChannel.receive(), peek(), shutdown(), open(), returnState(), getAllStates(), blockOK()
+
+- Removed DistributedQueue
+
+- Removed PullPushAdapter. Use a Receiver to get callbacks on messages, views etc
+
+- Removed DistributedLockManager. Use LockService as replacement
+
+- Removed NotificationBus. Use a normal JChannel as replacement
+
+- Removed deprecated methods in MessageDispatcher and RpcDispatcher
+
+- Removed JChannel.getLocalAddress(). Use JChannel.getAddress() instead
+
+- Removed deprecated methods and classes
+
+- Streamable: DataInputStream --> DataInput, DataOutputStream --> DataOutput
+
+- RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
+
+- Removed partial state transfer (nobody ever used it !)
+
+- Removed ExtendedXXXAdapters: there is only Receiver, ReceiverAdapter, MessageListener and MembershipListener
+- Moved ExtendedMembershipListener.unblock() into MembershipListener, removed ExtendedMembershipListener
+
+- Changed Request.GET_ALL/GET_FIRST/GET_NONE etc from an int to ResponseMode.GET_ALL etc
+
+- Removed ProtocolTester (use SHARED_LOOPBACK instead)
+
+- Removed Address.isMulticastAddress(): a null address is a multicast address
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

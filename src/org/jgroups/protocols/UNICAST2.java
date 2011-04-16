@@ -11,8 +11,8 @@ import org.jgroups.util.AgeOutCache;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -306,7 +306,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 msg=(Message)evt.getArg();
                 dst=msg.getDest();
 
-                if(dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                if(dst == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
                 // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
@@ -348,7 +348,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
+                if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break;
 
                 if(!started) {
@@ -409,7 +409,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 View view=(View)evt.getArg();
-                Vector<Address> new_members=view.getMembers();
+                List<Address> new_members=view.getMembers();
                 Set<Address> non_members=new HashSet<Address>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
 
@@ -933,7 +933,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             switch(type) {
                 case DATA:
@@ -952,7 +952,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             switch(type) {
                 case DATA:

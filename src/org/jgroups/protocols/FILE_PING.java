@@ -62,6 +62,10 @@ public class FILE_PING extends Discovery {
         super.stop();
     }
 
+    public boolean isDynamic() {
+        return true;
+    }
+
     public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
         List<PingData> existing_mbrs=readAll(cluster_name);
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));

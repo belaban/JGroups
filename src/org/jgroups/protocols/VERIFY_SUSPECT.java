@@ -37,7 +37,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     private InetAddress bind_addr; // interface for ICMP pings
     
@@ -316,12 +316,12 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeShort(type);
             Util.writeAddress(from, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readShort();
             from=Util.readAddress(in);
         }

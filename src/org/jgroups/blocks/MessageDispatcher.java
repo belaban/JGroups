@@ -42,11 +42,8 @@ public class MessageDispatcher implements RequestHandler {
     protected MembershipListener membership_listener=null;
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
-    protected TransportAdapter transport_adapter=null;
     protected final Collection<Address> members=new TreeSet<Address>();
     protected Address local_addr=null;
-    protected PullPushAdapter adapter=null;
-    protected PullPushHandler handler=null;
     protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
@@ -69,36 +66,7 @@ public class MessageDispatcher implements RequestHandler {
         start();
     }
 
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, boolean deadlock_detection) {
-        this.channel=channel;
-        prot_adapter=new ProtocolAdapter();
-        if(channel != null) {
-            local_addr=channel.getAddress();
-        }
-        setMessageListener(l);
-        setMembershipListener(l2);
-        if(channel != null) {
-            installUpHandler(prot_adapter, true);
-        }
-        start();
-    }
 
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2,
-                             boolean deadlock_detection, boolean concurrent_processing) {
-        this.channel=channel;
-        prot_adapter=new ProtocolAdapter();
-        if(channel != null) {
-            local_addr=channel.getAddress();
-        }
-        setMessageListener(l);
-        setMembershipListener(l2);
-        if(channel != null) {
-            installUpHandler(prot_adapter, true);
-        }
-        start();
-    }
 
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
@@ -107,122 +75,6 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
-                             boolean deadlock_detection) {
-        this(channel, l, l2, deadlock_detection, false);
-        setRequestHandler(req_handler);
-    }
-
-    @Deprecated
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler,
-                             boolean deadlock_detection, boolean concurrent_processing) {
-        this(channel, l, l2, deadlock_detection, concurrent_processing);
-        setRequestHandler(req_handler);
-    }
-
-
-    /*
-     * Uses a user-provided PullPushAdapter rather than a Channel as transport. If id is non-null, it will be
-     * used to register under that id. This is typically used when another building block is already using
-     * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
-     * between messages for the various blocks on top of PullPushAdapter. If null, we will assume we are the
-     * first block created on PullPushAdapter.
-     * @param adapter The PullPushAdapter which to use as underlying transport
-     * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
-     *           requests/responses for different building blocks on top of PullPushAdapter.
-     */
-    @Deprecated
-    public MessageDispatcher(PullPushAdapter adapter, Serializable id, MessageListener l, MembershipListener l2) {
-        this.adapter=adapter;
-        this.id=id;
-        setMembers(((Channel) adapter.getTransport()).getView().getMembers());
-        setMessageListener(l);
-        setMembershipListener(l2);
-        handler=new PullPushHandler();
-        transport_adapter=new TransportAdapter();
-        adapter.addMembershipListener(handler); // remove in stop()
-        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
-            adapter.setListener(handler);
-        }
-        else {
-            adapter.registerListener(id, handler);
-        }
-
-        Transport tp;
-        if((tp=adapter.getTransport()) instanceof Channel) {
-            local_addr=((Channel) tp).getAddress();
-        }
-        start();
-    }
-
-
-    /*
-     * Uses a user-provided PullPushAdapter rather than a Channel as transport. If id is non-null, it will be
-     * used to register under that id. This is typically used when another building block is already using
-     * PullPushAdapter, and we want to add this building block in addition. The id is the used to discriminate
-     * between messages for the various blocks on top of PullPushAdapter. If null, we will assume we are the
-     * first block created on PullPushAdapter.
-     * @param adapter The PullPushAdapter which to use as underlying transport
-     * @param id A serializable object (e.g. an Integer) used to discriminate (multiplex/demultiplex) between
-     *           requests/responses for different building blocks on top of PullPushAdapter.
-     * @param req_handler The object implementing RequestHandler. It will be called when a request is received
-     */
-    @Deprecated
-    public MessageDispatcher(PullPushAdapter adapter, Serializable id,
-                             MessageListener l, MembershipListener l2,
-                             RequestHandler req_handler) {
-        this.adapter=adapter;
-        this.id=id;
-        setMembers(((Channel) adapter.getTransport()).getView().getMembers());
-        setRequestHandler(req_handler);
-        setMessageListener(l);
-        setMembershipListener(l2);
-        handler=new PullPushHandler();
-        transport_adapter=new TransportAdapter();
-        adapter.addMembershipListener(handler);
-        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
-            adapter.setListener(handler);
-        }
-        else {
-            adapter.registerListener(id, handler);
-        }
-
-        Transport tp;
-        if((tp=adapter.getTransport()) instanceof Channel) {
-            local_addr=((Channel) tp).getAddress(); // fixed bug #800774
-        }
-
-        start();
-    }
-
-    @Deprecated
-    public MessageDispatcher(PullPushAdapter adapter, Serializable id,
-                             MessageListener l, MembershipListener l2,
-                             RequestHandler req_handler, boolean concurrent_processing) {
-        this.adapter=adapter;
-        this.id=id;
-        setMembers(((Channel) adapter.getTransport()).getView().getMembers());
-        setRequestHandler(req_handler);
-        setMessageListener(l);
-        setMembershipListener(l2);
-        handler=new PullPushHandler();
-        transport_adapter=new TransportAdapter();
-        adapter.addMembershipListener(handler);
-        if(id == null) { // no other building block around, let's become the main consumer of this PullPushAdapter
-            adapter.setListener(handler);
-        }
-        else {
-            adapter.registerListener(id, handler);
-        }
-
-        Transport tp;
-        if((tp=adapter.getTransport()) instanceof Channel) {
-            local_addr=((Channel) tp).getAddress(); // fixed bug #800774
-        }
-
-        start();
-    }
 
 
     public UpHandler getProtocolAdapter() {
@@ -231,9 +83,9 @@ public class MessageDispatcher implements RequestHandler {
 
 
     /** Returns a copy of members */
-    protected Collection getMembers() {
+    protected Collection<Address> getMembers() {
         synchronized(members) {
-            return new ArrayList(members);
+            return new ArrayList<Address>(members);
         }
     }
 
@@ -242,7 +94,7 @@ public class MessageDispatcher implements RequestHandler {
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
      * initially since viewChange has most likely already been called in PullPushAdapter.
      */
-    private void setMembers(Vector new_mbrs) {
+    private void setMembers(List<Address> new_mbrs) {
         if(new_mbrs != null) {
             synchronized(members) {
                 members.clear();
@@ -251,36 +103,17 @@ public class MessageDispatcher implements RequestHandler {
         }
     }
 
-    @Deprecated
-    public boolean getDeadlockDetection() {return false;}
-
-    @Deprecated
-    public void setDeadlockDetection(boolean flag) {
-    }
-
-
-    @Deprecated
-    public boolean getConcurrentProcessing() {return false;}
-
-    @Deprecated
-    public void setConcurrentProcessing(boolean flag) {
-    }
 
 
     public void start() {
         if(corr == null) {
-            if(transport_adapter != null) {
-                corr=createRequestCorrelator(transport_adapter, this, local_addr);
-            }
-            else {
-                corr=createRequestCorrelator(prot_adapter, this, local_addr);
-            }
+            corr=createRequestCorrelator(prot_adapter, this, local_addr);
         }
         correlatorStarted();
         corr.start();
 
         if(channel != null) {
-            Vector tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
+            List<Address> tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
             if(channel instanceof JChannel) {
                 TP transport=channel.getProtocolStack().getTransport();
@@ -301,18 +134,12 @@ public class MessageDispatcher implements RequestHandler {
 
 
     public void stop() {
-        if(corr != null) {
+        if(corr != null)
             corr.stop();
-        }
 
         if(channel instanceof JChannel) {
             TP transport=channel.getProtocolStack().getTransport();
             corr.unregisterProbeHandler(transport);
-        }
-
-        // fixes leaks of MembershipListeners (http://jira.jboss.com/jira/browse/JGRP-160)
-        if(adapter != null && handler != null) {
-            adapter.removeMembershipListener(handler);
         }
     }
 
@@ -398,49 +225,7 @@ public class MessageDispatcher implements RequestHandler {
        }
     }
 
-    @Deprecated
-    public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
-        if(channel != null) {
-            channel.send(msg);
-            return;
-        }
-        if(adapter != null) {
-            try {
-                if(id != null)
-                    adapter.send(id, msg);
-                else
-                    adapter.send(msg);
-            }
-            catch(Throwable ex) {
-                log.error("exception=" + Util.print(ex));
-            }
-        }
-        else {
-            log.error("channel == null");
-        }
-    }
 
-    @Deprecated
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout) {
-        return castMessage(dests, msg, new RequestOptions(mode, timeout, false, null));
-    }
-
-
-    @Deprecated
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting) {
-        return castMessage(dests, msg, new RequestOptions(mode, timeout, use_anycasting, null));
-    }
-
-    // used by Infinispan
-    @Deprecated
-    /**
-     * @deprecated Use {@link #castMessage(java.util.Collection, org.jgroups.Message, RequestOptions)} instead
-     */
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                               RspFilter filter) {
-        RequestOptions opts=new RequestOptions(mode, timeout, use_anycasting, filter);
-        return castMessage(dests, msg, opts);
-    }
 
     /**
      * Sends a message to the members listed in dests. If dests is null, the message is sent to all current group
@@ -456,15 +241,10 @@ public class MessageDispatcher implements RequestHandler {
         return req != null? req.getResults() : RspList.EMPTY_RSP_LIST;
     }
 
-    @Deprecated
-    public NotifyingFuture<RspList> castMessageWithFuture(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                                                          RspFilter filter) {
-        return castMessageWithFuture(dests, msg, new RequestOptions(mode, timeout, use_anycasting, filter));
-    }
 
     public NotifyingFuture<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
         GroupRequest req=cast(dests, msg, options, false);
-        return req != null? req : new NullFuture(RspList.EMPTY_RSP_LIST);
+        return req != null? req : new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
     }
 
     protected GroupRequest cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
@@ -479,26 +259,19 @@ public class MessageDispatcher implements RequestHandler {
         }
         else {
             synchronized(members) {
-                real_dests=new ArrayList(members);
+                real_dests=new ArrayList<Address>(members);
             }
         }
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
         Channel tmp=channel;
-        if(tmp == null) {
-            if(adapter != null && adapter.getTransport() instanceof Channel) {
-                tmp=(Channel) adapter.getTransport();
-            }
-        }
 
-        if(tmp != null && tmp.getOpt(Channel.LOCAL).equals(Boolean.FALSE)) {
-            if(local_addr == null) {
+        if(tmp != null && tmp.getDiscardOwnMessages()) {
+            if(local_addr == null)
                 local_addr=tmp.getAddress();
-            }
-            if(local_addr != null) {
+            if(local_addr != null)
                 real_dests.remove(local_addr);
-            }
         }
 
         if(options != null && options.hasExclusionList()) {
@@ -520,6 +293,9 @@ public class MessageDispatcher implements RequestHandler {
         if(options != null) {
             req.setResponseFilter(options.getRspFilter());
             req.setAnycasting(options.getAnycasting());
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
         }
         req.setBlockForResults(block_for_results);
 
@@ -533,21 +309,10 @@ public class MessageDispatcher implements RequestHandler {
     }
 
 
-
     public void done(long req_id) {
         corr.done(req_id);
     }
 
-
-    /**
-     * Sends a message to a single member (destination = msg.dest) and returns the response. The message's destination
-     * must be non-zero !
-     * @deprecated Use {@link #sendMessage(org.jgroups.Message, RequestOptions)} instead
-     */
-    @Deprecated
-    public Object sendMessage(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        return sendMessage(msg, new RequestOptions(mode, timeout, false, null));
-    }
 
 
     public Object sendMessage(Message msg, RequestOptions opts) throws TimeoutException, SuspectedException {
@@ -558,6 +323,12 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
+        if(opts != null) {
+            msg.setFlag(opts.getFlags());
+            if(opts.getScope() > 0)
+                msg.setScope(opts.getScope());
+        }
+
         UnicastRequest req=new UnicastRequest(msg, corr, dest, opts);
         try {
             req.execute();
@@ -566,7 +337,7 @@ public class MessageDispatcher implements RequestHandler {
             throw new RuntimeException("failed executing request " + req, t);
         }
 
-        if(opts.getMode() == Request.GET_NONE)
+        if(opts != null && opts.getMode() == ResponseMode.GET_NONE)
             return null;
 
         Rsp rsp=req.getResult();
@@ -577,10 +348,6 @@ public class MessageDispatcher implements RequestHandler {
         return rsp.getValue();
     }
 
-    @Deprecated
-    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, int mode, long timeout) throws TimeoutException, SuspectedException {
-        return sendMessageWithFuture(msg, new RequestOptions(mode, timeout, false, null));
-    }
 
     public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws TimeoutException, SuspectedException {
         Address dest=msg.getDest();
@@ -590,12 +357,18 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, options);
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
+
+        UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
         req.setBlockForResults(false);
         try {
             req.execute();
-            if(options.getMode() == Request.GET_NONE)
-                return new NullFuture(null);
+            if(options != null && options.getMode() == ResponseMode.GET_NONE)
+                return new NullFuture<T>(null);
             return req;
         }
         catch(Exception t) {
@@ -642,34 +415,22 @@ public class MessageDispatcher implements RequestHandler {
 
                 case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
                     StateTransferInfo info=(StateTransferInfo)evt.getArg();
-                    String state_id=info.state_id;
                     byte[] tmp_state=null;
                     if(msg_listener != null) {
                         try {
-                            if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-                                tmp_state=((ExtendedMessageListener)msg_listener).getState(state_id);
-                            }
-                            else {
-                                tmp_state=msg_listener.getState();
-                            }
+                            tmp_state=msg_listener.getState();
                         }
                         catch(Throwable t) {
                             this.log.error("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
-                    return new StateTransferInfo(null, state_id, 0L, tmp_state);
+                    return new StateTransferInfo(null, 0L, tmp_state);
 
                 case Event.GET_STATE_OK:
                     if(msg_listener != null) {
                         try {
                             info=(StateTransferInfo)evt.getArg();
-                            String id=info.state_id;
-                            if(msg_listener instanceof ExtendedMessageListener && id!=null) {
-                                ((ExtendedMessageListener)msg_listener).setState(id, info.state);
-                            }
-                            else {
-                                msg_listener.setState(info.state);
-                            }
+                            msg_listener.setState(info.state);
                         }
                         catch(ClassCastException cast_ex) {
                             if(this.log.isErrorEnabled())
@@ -682,47 +443,23 @@ public class MessageDispatcher implements RequestHandler {
                 case Event.STATE_TRANSFER_OUTPUTSTREAM:
                     StateTransferInfo sti=(StateTransferInfo)evt.getArg();
                     OutputStream os=sti.outputStream;
-                    if(msg_listener instanceof ExtendedMessageListener) {                        
-                        if(os != null && msg_listener instanceof ExtendedMessageListener) {
-                            if(sti.state_id == null)
-                                ((ExtendedMessageListener)msg_listener).getState(os);
-                            else
-                                ((ExtendedMessageListener)msg_listener).getState(sti.state_id, os);
-                        }
-                        return new StateTransferInfo(null, os, sti.state_id);
-                    }
-                    else if(msg_listener instanceof MessageListener){
-                        if(log.isWarnEnabled()){
-                            log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
-                                    + " application does not implement ExtendedMessageListener. State is not transfered");
-                            Util.close(os);
-                        }
+                    if(msg_listener != null) {
+                        if(os != null)
+                            msg_listener.getState(os);
+                        return new StateTransferInfo(null, os);
                     }
                     break;
 
                 case Event.STATE_TRANSFER_INPUTSTREAM:
                     sti=(StateTransferInfo)evt.getArg();
                     InputStream is=sti.inputStream;
-                    if(msg_listener instanceof ExtendedMessageListener) {                    	
-                        if(is!=null && msg_listener instanceof ExtendedMessageListener) {
-                            if(sti.state_id == null)
-                                ((ExtendedMessageListener)msg_listener).setState(is);
-                            else
-                                ((ExtendedMessageListener)msg_listener).setState(sti.state_id, is);
-                        }
-                    }
-                    else if(msg_listener instanceof MessageListener){
-                        if(log.isWarnEnabled()){
-                            log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
-                                    + " application does not implement ExtendedMessageListener. State is not transfered");
-                            Util.close(is);
-                        }
-                    }
+                    if(msg_listener != null && is!=null)
+                        msg_listener.setState(is);
                     break;
 
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
-                    Vector new_mbrs=v.getMembers();
+                    List<Address> new_mbrs=v.getMembers();
                     setMembers(new_mbrs);
                     if(membership_listener != null) {
                         membership_listener.viewAccepted(v);
@@ -742,15 +479,12 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.BLOCK:
-                    if(membership_listener != null) {
+                    if(membership_listener != null)
                         membership_listener.block();
-                    }
-                    channel.blockOk();
                     break;
                 case Event.UNBLOCK:
-                    if(membership_listener instanceof ExtendedMembershipListener) {
-                        ((ExtendedMembershipListener)membership_listener).unblock();
-                    }
+                    if(membership_listener != null)
+                        membership_listener.unblock();
                     break;
             }
 
@@ -783,7 +517,7 @@ public class MessageDispatcher implements RequestHandler {
 
         public Object down(Event evt) {
             if(channel != null) {
-                return channel.downcall(evt);
+                return channel.down(evt);
             }
             else
                 if(this.log.isWarnEnabled()) {
@@ -797,155 +531,6 @@ public class MessageDispatcher implements RequestHandler {
 
     }
 
-    @Deprecated
-    class TransportAdapter implements Transport {
-
-        public void send(Message msg) throws Exception {
-            if(channel != null) {
-                channel.send(msg);
-            }
-            else
-                if(adapter != null) {
-                    try {
-                        if(id != null) {
-                            adapter.send(id, msg);
-                        }
-                        else {
-                            adapter.send(msg);
-                        }
-                    }
-                    catch(Throwable ex) {
-                        if(log.isErrorEnabled()) {
-                            log.error("exception=" + Util.print(ex));
-                        }
-                    }
-                }
-                else {
-                    if(log.isErrorEnabled()) {
-                        log.error("channel == null");
-                    }
-                }
-        }
-
-        public Object receive(long timeout) throws Exception {
-            return null; // not supported and not needed
-        }
-    }
-
-    @Deprecated
-    class PullPushHandler implements ExtendedMessageListener, MembershipListener {
-
-
-        /* ------------------------- MessageListener interface ---------------------- */
-        public void receive(Message msg) {
-            boolean consumed=false;
-            if(corr != null) {
-                consumed=corr.receiveMessage(msg);
-            }
-
-            if(!consumed) {   // pass on to MessageListener
-                if(msg_listener != null) {
-                    msg_listener.receive(msg);
-                }
-            }
-        }
-
-        public byte[] getState() {
-            return msg_listener != null ? msg_listener.getState() : null;
-        }
-
-        public byte[] getState(String state_id) {
-            if(msg_listener == null) return null;
-            if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-                return ((ExtendedMessageListener)msg_listener).getState(state_id);
-            }
-            else {
-                return msg_listener.getState();
-            }
-        }
-
-        public void setState(byte[] state) {
-            if(msg_listener != null) {
-                msg_listener.setState(state);
-            }
-        }
-
-        public void setState(String state_id, byte[] state) {
-            if(msg_listener != null) {
-                if(msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-                    ((ExtendedMessageListener)msg_listener).setState(state_id, state);
-                }
-                else {
-                    msg_listener.setState(state);
-                }
-            }
-        }
-
-        public void getState(OutputStream ostream) {
-            if (msg_listener instanceof ExtendedMessageListener) {
-                ((ExtendedMessageListener) msg_listener).getState(ostream);
-            }
-        }
-
-        public void getState(String state_id, OutputStream ostream) {
-            if (msg_listener instanceof ExtendedMessageListener && state_id!=null) {
-                ((ExtendedMessageListener) msg_listener).getState(state_id,ostream);
-            }
-
-        }
-
-        public void setState(InputStream istream) {
-            if (msg_listener instanceof ExtendedMessageListener) {
-                ((ExtendedMessageListener) msg_listener).setState(istream);
-            }
-        }
-
-        public void setState(String state_id, InputStream istream) {
-            if (msg_listener instanceof ExtendedMessageListener && state_id != null) {
-                ((ExtendedMessageListener) msg_listener).setState(state_id,istream);
-            }
-        }
-        /*
-		 * --------------------- End of MessageListener interface
-		 * -------------------
-		 */
-
-
-        /* ------------------------ MembershipListener interface -------------------- */
-        public void viewAccepted(View v) {
-            if(corr != null) {
-                corr.receiveView(v);
-            }
-
-            Vector new_mbrs=v.getMembers();
-            setMembers(new_mbrs);
-            if(membership_listener != null) {
-                membership_listener.viewAccepted(v);
-            }
-        }
-
-        public void suspect(Address suspected_mbr) {
-            if(corr != null) {
-                corr.receiveSuspect(suspected_mbr);
-            }
-            if(membership_listener != null) {
-                membership_listener.suspect(suspected_mbr);
-            }
-        }
-
-        public void block() {
-            if(membership_listener != null) {
-                membership_listener.block();
-            }
-        }
-
-        /* --------------------- End of MembershipListener interface ---------------- */
-
-
-
-        // @todo: receive SET_LOCAL_ADDR event and call corr.setLocalAddress(addr)
-
-    }
 
 
 }

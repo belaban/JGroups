@@ -54,13 +54,6 @@ public class GroupRequestTest {
 
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testMessageReceptionWithSuspect() throws Exception {
-        _testMessageReceptionWithSuspect(true);
-        _testMessageReceptionWithSuspect(false);
-    }
-
-
-    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChange() throws Exception {
         _testMessageReceptionWithViewChange(true);
         _testMessageReceptionWithViewChange(false);
@@ -80,7 +73,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_FIRST, 0));
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -114,7 +107,7 @@ public class GroupRequestTest {
                 new Message(null, a3, new Long(3))};
         MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -174,7 +167,7 @@ public class GroupRequestTest {
         MyDelayedTransport tp = new MyDelayedTransport(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest req=new GroupRequest(new Message(), tp, dests, new RequestOptions(Request.GET_ALL, timeout));
+        GroupRequest req=new GroupRequest(new Message(), tp, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
         tp.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
@@ -189,7 +182,7 @@ public class GroupRequestTest {
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -199,18 +192,6 @@ public class GroupRequestTest {
         Assert.assertEquals(2, results.size());
     }
 
-    private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
-        Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
-        MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
-        transport.setGroupRequest(req);
-        boolean rc=req.execute();
-        System.out.println("group request is " + req);
-        assert rc;
-        assert req.isDone();
-        RspList results=req.getResults();
-        assert results.size() == 2;
-     }
 
 
     private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
@@ -222,7 +203,7 @@ public class GroupRequestTest {
                                         new View(Util.createRandomAddress(), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -239,7 +220,7 @@ public class GroupRequestTest {
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(Util.createRandomAddress(), 322649, new_dests)};
         MyTransport transport=new MyTransport(async, responses);
-        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(Request.GET_ALL, 0));
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
 
         transport.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
@@ -307,8 +288,6 @@ public class GroupRequestTest {
                         }
                         request.receiveResponse(retval, sender);
                     }
-                    else if(obj instanceof SuspectEvent)
-                        request.suspect((Address)((SuspectEvent)obj).getMember());
                     else if(obj instanceof View)
                         request.viewChange((View)obj);
                     else
@@ -363,8 +342,7 @@ public class GroupRequestTest {
                             e.printStackTrace();
                         }
                         request.receiveResponse(retval, sender);
-                    } else if (obj instanceof SuspectEvent)
-                        request.suspect((Address) ((SuspectEvent) obj).getMember());
+                    }
                     else if (obj instanceof View)
                         request.viewChange((View) obj);
                     else

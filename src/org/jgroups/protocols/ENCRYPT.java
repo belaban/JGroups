@@ -10,15 +10,15 @@ import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -458,7 +458,7 @@ public class ENCRYPT extends Protocol {
     private synchronized void handleViewChange(View view, boolean makeServer) {
 
         // if view is a bit broken set me as keyserver
-        Vector<Address> members = view.getMembers();
+        List<Address> members = view.getMembers();
         if (members == null || members.isEmpty() || members.get(0) == null) { 
             becomeKeyServer(local_addr);
             return;
@@ -774,14 +774,19 @@ public class ENCRYPT extends Protocol {
                                                                                   IllegalBlockSizeException,
                                                                                   BadPaddingException,
                                                                                   NoSuchPaddingException,
-                                                                                  NoSuchAlgorithmException {
+                                                                                  NoSuchAlgorithmException,
+                                                                                  NoSuchProviderException {
         Message newMsg;
 
         if(log.isDebugEnabled())
             log.debug("encoding shared key ");
 
         // create a cipher with peer's public key
-        Cipher tmp=Cipher.getInstance(asymAlgorithm);
+        Cipher tmp;
+        if (asymProvider != null && asymProvider.trim().length() > 0)
+            tmp=Cipher.getInstance(asymAlgorithm, asymProvider);
+        else
+            tmp=Cipher.getInstance(asymAlgorithm);
         tmp.init(Cipher.ENCRYPT_MODE, pubKey);
 
         //encrypt current secret key
@@ -966,7 +971,11 @@ public class ENCRYPT extends Protocol {
             keySpec=new SecretKeySpec(keyBytes, getAlgorithm(symAlgorithm));
 
             // test reconstituted key to see if valid
-            Cipher temp=Cipher.getInstance(symAlgorithm);
+            Cipher temp;
+            if (symProvider != null && symProvider.trim().length() > 0)
+                temp=Cipher.getInstance(symAlgorithm, symProvider);
+            else
+                temp=Cipher.getInstance(symAlgorithm);
             temp.init(Cipher.SECRET_KEY, keySpec);
         }
         catch(Exception e) {
@@ -1183,13 +1192,13 @@ public class ENCRYPT extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeShort(type);
             Util.writeString(version, out);
             out.writeBoolean(encrypt_entire_msg);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readShort();
             version=Util.readString(in);
             encrypt_entire_msg=in.readBoolean();

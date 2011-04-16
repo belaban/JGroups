@@ -12,8 +12,8 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -41,19 +41,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable unicast layer")
-@DeprecatedProperty(names={"immediate_ack", "use_gms", "enabled_mbrs_timeout", "eager_lock_release"})
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand, AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
 
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
-
-
-    @Property(description="Whether to loop back messages sent to self. Default is false",
-              deprecatedMessage="might get removed soon as it can destroy ordering. " +
-                      "See https://jira.jboss.org/jira/browse/JGRP-1092 for details")
-    @Deprecated
-    private boolean loopback=false;
 
 
     private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
@@ -92,11 +84,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private AgeOutCache<Address> cache=null;
 
-
-    @Deprecated @ManagedAttribute
-    public static int getUndeliveredMessages() {
-        return 0;
-    }
 
     public long[] getTimeout() {return timeout;}
 
@@ -280,7 +267,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 msg=(Message)evt.getArg();
                 dst=msg.getDest();
 
-                if(dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                if(dst == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
                 // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
@@ -319,7 +306,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || dst.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
+                if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break;
 
                 if(!started) {
@@ -405,7 +392,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 View view=(View)evt.getArg();
-                Vector<Address> new_members=view.getMembers();
+                List<Address> new_members=view.getMembers();
                 Set<Address> non_members=new HashSet<Address>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
 
@@ -819,7 +806,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             switch(type) {
                 case DATA:
@@ -835,7 +822,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             switch(type) {
                 case DATA:

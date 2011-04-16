@@ -2,26 +2,26 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.blocks.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.DataOutputStream;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -121,7 +121,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         if(members.size() < 2)
             return;
         Address coord=members.get(0);
-        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(Request.GET_ALL, 5000));
+        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             this.oob=config.oob;
             this.sync=config.sync;
@@ -326,7 +326,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
         options.setFlags(Message.NO_FC);
@@ -403,7 +403,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     /** Picks the next member in the view */
     private Address getReceiver() {
         try {
-            Vector<Address> mbrs=channel.getView().getMembers();
+            List<Address> mbrs=channel.getView().getMembers();
             int index=mbrs.indexOf(local_addr);
             int new_index=index + 1 % mbrs.size();
             return mbrs.get(new_index);
@@ -440,8 +440,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             Object[] get_args=new Object[]{0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
-            RequestOptions get_options=new RequestOptions(Request.GET_ALL, 20000, false, null);
-            RequestOptions put_options=new RequestOptions(sync ? Request.GET_ALL : Request.GET_NONE, 20000, true, null);
+            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 20000, false, null);
+            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 20000, true, null);
 
             byte flags=0;
             if(oob) flags=Util.setFlag(flags, Message.OOB);
@@ -517,13 +517,13 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(num_gets);
             out.writeLong(num_puts);
             out.writeLong(time);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             num_gets=in.readLong();
             num_puts=in.readLong();
             time=in.readLong();
@@ -560,7 +560,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeBoolean(oob);
             out.writeBoolean(sync);
             out.writeInt(num_threads);
@@ -570,7 +570,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             out.writeDouble(read_percentage);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             oob=in.readBoolean();
             sync=in.readBoolean();
             num_threads=in.readInt();
@@ -590,7 +590,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
     static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
             ByteBuffer buf;
             switch(call.getId()) {
@@ -598,28 +598,28 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
                 case GET_CONFIG:
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE);
                     buf.put((byte)call.getId());
-                    return buf.array();
+                    return new Buffer(buf.array());
                 case SET_OOB:
                 case SET_SYNC:
-                    return booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]);
+                    return new Buffer(booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]));
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:
                 case SET_MSG_SIZE:
                 case SET_ANYCAST_COUNT:
-                    return intBuffer(call.getId(), (Integer)call.getArgs()[0]);
+                    return new Buffer(intBuffer(call.getId(), (Integer)call.getArgs()[0]));
                 case GET:
-                    return longBuffer(call.getId(), (Long)call.getArgs()[0]);
+                    return new Buffer(longBuffer(call.getId(), (Long)call.getArgs()[0]));
                 case PUT:
                     Long long_arg=(Long)call.getArgs()[0];
                     byte[] arg2=(byte[])call.getArgs()[1];
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
                     buf.put((byte)call.getId()).putLong(long_arg).putInt(arg2.length).put(arg2, 0, arg2.length);
-                    return buf.array();
+                    return new Buffer(buf.array());
                 case SET_READ_PERCENTAGE:
                     Double double_arg=(Double)call.getArgs()[0];
                     buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE);
                     buf.put((byte)call.getId()).putDouble(double_arg);
-                    return buf.array();
+                    return new Buffer(buf.array());
                 default:
                     throw new IllegalStateException("method " + call.getMethod() + " not known");
             }
@@ -627,8 +627,8 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
 
-        public Object objectFromByteBuffer(byte[] buffer) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer);
+        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
+            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
 
             byte type=buf.get();
             switch(type) {

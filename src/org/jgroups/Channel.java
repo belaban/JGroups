@@ -2,6 +2,7 @@
 package org.jgroups;
 
 
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.logging.Log;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
@@ -19,8 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  A channel represents a group communication endpoint (like BSD datagram sockets). A
  client joins a group by connecting the channel to a group address and leaves it by
  disconnecting. Messages sent over the channel are received by all group members that
- are connected to the same group (that is, all members that have the same group
- address).<p>
+ are connected to the same group (that is, all members that have the same group address).<p>
 
  The FSM for a channel is roughly as follows: a channel is created
  (<em>unconnected</em>). The channel is connected to a group
@@ -32,43 +32,28 @@ import java.util.concurrent.CopyOnWriteArraySet;
  more than one channel in an application.<p>
 
  Messages can be sent to the group members using the <em>send</em> method and messages
- can be received using <em>receive</em> (pull approach).<p>
+ can be received setting a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the
+ {@link Receiver#receive(Message)} callback.<p>
 
- A channel instance is created using either a <em>ChannelFactory</em> or the public
- constructor. Each implementation of a channel must provide a subclass of
- <code>Channel</code> and an implementation of <code>ChannelFactory</code>.  <p>
+ A channel instance is created using the public constructor.  <p>
  Various degrees of sophistication in message exchange can be achieved using building
  blocks on top of channels; e.g., light-weight groups, synchronous message invocation,
  or remote method calls. Channels are on the same abstraction level as sockets, and
- should really be simple to use. Higher-level abstractions are all built on top of
- channels.
+ should really be simple to use. Higher-level abstractions are all built on top of channels.
 
  @author  Bela Ban
  @see     java.net.DatagramPacket
  @see     java.net.MulticastSocket
  */
 @MBean(description="Channel")
-public abstract class Channel implements Transport {
-    @Deprecated
-    public static final int BLOCK=0;
-    @Deprecated
-    public static final int VIEW=1;
-    @Deprecated
-    public static final int SUSPECT=2;
-    public static final int LOCAL=3;
-    @Deprecated
-    public static final int GET_STATE_EVENTS=4;
-    @Deprecated
-    public static final int AUTO_RECONNECT=5;
-    @Deprecated
-    public static final int AUTO_GETSTATE=6;
-
-
+public abstract class Channel /* implements Transport */ {
     protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
     protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
+    @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
+    protected boolean discard_own_messages=false;
 
     protected abstract Log getLog();
 
@@ -114,9 +99,6 @@ public abstract class Channel implements Transport {
      * @param target
      *            The address of the member from which the state is to be
      *            retrieved. If it is null, the state is retrieved from coordinator is contacted.
-     * @param state_id
-     *            The ID of a substate. If the full state is to be fetched, set
-     *            this parameter to null
      * @param timeout
      *            Milliseconds to wait for the state response (0 = wait indefinitely).
      * 
@@ -124,7 +106,7 @@ public abstract class Channel implements Transport {
      * @throws StateTransferException thrown if state transfer was not successful
      * 
      */
-    abstract public void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;
+    abstract public void connect(String cluster_name, Address target, long timeout) throws ChannelException;
 
 
     /** Disconnects the channel from the current group (if connected), leaving the group.
@@ -143,20 +125,6 @@ public abstract class Channel implements Transport {
     abstract public void close();
 
 
-    /** Shuts down the channel without disconnecting if connected, stops all the threads */
-    @Deprecated
-    abstract public void shutdown();
-
-
-    /**
-     Re-opens a closed channel. Throws an exception if the channel is already open. After this method
-     returns, connect() may be called to join a group. The address of this member will be different from
-     the previous incarnation.
-     */
-    public void open() throws ChannelException {
-        ;
-    }
-
 
     /**
      Determines whether the channel is open; 
@@ -171,22 +139,6 @@ public abstract class Channel implements Transport {
      */
     abstract public boolean isConnected();
 
-
-    /**
-     * Returns the number of messages that are waiting. Those messages can be
-     * removed by {@link #receive(long)}. Note that this number could change after
-     * calling this method and before calling <tt>receive()</tt> (e.g. the latter
-     * method might be called by a different thread).
-     * @return The number of messages on the queue, or -1 if the queue/channel
-     * is closed/disconnected.
-     */
-    public int getNumMessages() {
-        return -1;
-    }
-
-    public String dumpQueue() {
-        return "";
-    }
 
 
     /**
@@ -241,78 +193,9 @@ public abstract class Channel implements Transport {
      blocks to communicate with (building block) specific protocol layers. Currently useful only
      with JChannel.
      */
-    public void down(Event evt) {
-    }
-
-    /**
-     * Can be used instead of down() when a return value is expected. This will be removed in 3.0 when we change
-     * the signature of down() to return Object rather than void
-     * @param evt
-     * @return
-     */
-    public Object downcall(Event evt) {
+    public Object down(Event evt) {
         return null;
     }
-
-
-    /** Receives a message, a view change or a block event. By using <code>setOpt</code>, the
-     type of objects to be received can be determined (e.g., not views and blocks, just
-     messages).
-
-     The possible types returned can be:
-     <ol>
-     <li><code>Message</code>. Normal message
-     <li><code>Event</code>. All other events (used by JChannel)
-     <li><code>View</code>. A view change.
-     <li><code>BlockEvent</code>. A block event indicating that a flush protocol has been started, and we should not
-     send any more messages. This event should be ack'ed by calling {@link org.jgroups.Channel#blockOk()} .
-     Any messages sent after blockOk() returns might get blocked until the flush protocol has completed.
-     <li><code>UnblockEvent</code>. An unblock event indicating that the flush protocol has completed and we can resume
-     sending messages
-     <li><code>SuspectEvent</code>. A notification of a suspected member.
-     <li><code>GetStateEvent</code>. The current state of the application should be
-     returned using <code>ReturnState</code>.
-     <li><code>SetStateEvent</code>. The state of a single/all members as requested previously
-     by having called <code>Channel.getState(s).
-     <li><code>ExitEvent</code>. Signals that this member was forced to leave the group 
-     (e.g., caused by the member being suspected.) The member can rejoin the group by calling
-     open(). If the AUTO_RECONNECT is set (see setOpt()), the reconnect will be done automatically.
-     </ol>
-     The <code>instanceof</code> operator can be used to discriminate between different types
-     returned.
-     @param timeout Value in milliseconds. Value <= 0 means wait forever
-     @return A Message, View, BlockEvent, SuspectEvent, GetStateEvent, SetStateEvent or
-     ExitEvent, depending on what is on top of the internal queue.
-
-     @exception ChannelNotConnectedException The channel must be connected to receive messages.
-
-     @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
-     A new channel has to be created first.
-
-     @exception TimeoutException Thrown when a timeout has occurred.
-     @deprecated Use a {@link Receiver} instead
-     */
-    abstract public Object receive(long timeout) throws ChannelNotConnectedException,
-                                                        ChannelClosedException, TimeoutException;
-
-
-    /** Returns the next message, view, block, suspect or other event <em>without removing
-     it from the queue</em>.
-     @param timeout Value in milliseconds. Value <= 0 means wait forever
-     @return A Message, View, BlockEvent, SuspectEvent, GetStateEvent or SetStateEvent object,
-     depending on what is on top of the internal queue.
-
-     @exception ChannelNotConnectedException The channel must be connected to receive messages.
-
-     @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
-     A new channel has to be created first.
-
-     @exception TimeoutException Thrown when a timeout has occurred.
-
-     @see #receive(long)
-     @deprecated Use a {@link Receiver} instead, this method will not be available in JGroups 3.0
-     */
-    abstract public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException;
 
 
     /**
@@ -325,16 +208,6 @@ public abstract class Channel implements Transport {
      @return The current view.  
      */
     abstract public View getView();
-
-
-    /**
-     Returns the channel's own address. The result of calling this method on an unconnected
-     channel is implementation defined (may return null). Calling this method on a closed
-     channel returns null. Addresses can be used as destination in the <code>send()</code> operation.
-     @return The channel's address (opaque)
-     @deprecated Use {@link #getAddress()} instead
-     */
-    abstract public Address getLocalAddress();
 
 
 
@@ -369,13 +242,6 @@ public abstract class Channel implements Transport {
      */
     abstract public void setName(String name);
 
-    /**
-     Returns the group address of the group of which the channel is a member. This is
-     the object that was the argument to <code>connect()</code>. Calling this method on a closed
-     channel returns <code>null</code>.
-     @return The group address
-     @deprecated Use {@link #getClusterName()} instead */
-    abstract public String getChannelName();
 
     /**
      Returns the cluster name of the group of which the channel is a member. This is
@@ -404,15 +270,6 @@ public abstract class Channel implements Transport {
         return up_handler;
     }
 
-    /**
-     Allows to be notified when a channel event such as connect, disconnect or close occurs.
-     E.g. a PullPushAdapter may choose to stop when the channel is closed, or to start when
-     it is opened.
-     @deprecated Use addChannelListener() instead
-     */
-    public void setChannelListener(ChannelListener channel_listener) {
-        addChannelListener(channel_listener);
-    }
 
     /**
      Allows to be notified when a channel event such as connect, disconnect or close occurs.
@@ -449,31 +306,12 @@ public abstract class Channel implements Transport {
     }
 
     /**
-     Sets an option. The following options are currently recognized:
-     <ol>
-     <li><code>BLOCK</code>. Turn the reception of BLOCK events on/off (value is Boolean).
-     Default is off
-     <li><code>LOCAL</code>. Receive its own broadcast messages to the group
-     (value is Boolean). Default is on.
-     <li><code>AUTO_RECONNECT</code>. Turn auto-reconnection on/off. If on, when a member if forced out
-     of a group (EXIT event), then we will reconnect.
-     <li><code>AUTO_GETSTATE</code>. Turn automatic fetching of state after an auto-reconnect on/off.
-     This also sets AUTO_RECONNECT to true (if not yet set).
-     </ol>
-     This method can be called on an unconnected channel. Calling this method on a
-     closed channel has no effect.
+     * When set to true, all messages sent a member A will be discarded by A.
+     * @param flag
      */
-    abstract public void setOpt(int option, Object value);
-
-
-    /**
-     Gets an option. This method can be called on an unconnected channel.  Calling this
-     method on a closed channel returns <code>null</code>.
-
-     @param option  The option to be returned.
-     @return The object associated with an option.
-     */
-    abstract public Object getOpt(int option);
+    public void setDiscardOwnMessages(boolean flag) {discard_own_messages=flag;}
+    
+    public boolean getDiscardOwnMessages() {return discard_own_messages;}
 
     abstract public boolean flushSupported();
     
@@ -486,14 +324,6 @@ public abstract class Channel implements Transport {
     abstract public void stopFlush();
     
     abstract public void stopFlush(List<Address> flushParticipants);
-
-
-    /** Called to acknowledge a block() (callback in <code>MembershipListener</code> or
-     <code>BlockEvent</code> received from call to <code>Receive</code>).
-     After sending BlockOk, no messages should be sent until a new view has been received.
-     Calling this method on a closed channel has no effect.
-     */
-    abstract public void blockOk();
 
 
     /**
@@ -515,72 +345,11 @@ public abstract class Channel implements Transport {
             throws ChannelNotConnectedException, ChannelClosedException;
 
 
-    /**
-     * Fetches a partial state identified by state_id.
-     * @param target
-     * @param state_id
-     * @param timeout
-     * @return
-     * @throws ChannelNotConnectedException
-     * @throws ChannelClosedException
-     */
-    abstract public boolean getState(Address target, String state_id, long timeout)
-            throws ChannelNotConnectedException, ChannelClosedException;
 
-    /**
-     Retrieve all states of the group members. Will contact all group members to get
-     the states. When the method returns true, a <code>SetStateEvent</code> will have been
-     added to the channel's queue, causing <code>Receive</code> to return the states in one of
-     the next invocations. If false, no states will be retrieved by <code>Receive</code>.
-     @param targets A list of members which are contacted for states. If the list is null,
-     all the current members of the group will be contacted.
-     @param timeout Milliseconds to wait for the response (0 = wait indefinitely).
-     @return boolean True if the state was retrieved successfully, otherwise false.
-     @exception ChannelNotConnectedException The channel must be connected to
-     receive messages.
-     @exception ChannelClosedException The channel is closed and therefore cannot be used
-     any longer. A new channel has to be created first.
-     @deprecated Not really needed - we always want to get the state from a single member
-     */
-    abstract public boolean getAllStates(Vector targets, long timeout)
-            throws ChannelNotConnectedException, ChannelClosedException;
-
-
-    /**
-     * Called by the application is response to receiving a
-     * <code>getState()</code> object when calling <code>receive()</code>.
-     * @param state The state of the application as a byte buffer
-     *              (to send over the network).
-     */
-    public abstract void returnState(byte[] state);
-
-    /** Returns a given substate (state_id of null means return entire state) */
-    public abstract void returnState(byte[] state, String state_id);
-    
     public abstract Map<String,Object> getInfo();
     public abstract void setInfo(String key, Object value);
 
 
-    public static String option2String(int option) {
-        switch(option) {
-            case BLOCK:
-                return "BLOCK";
-            case VIEW:
-                return "VIEW";
-            case SUSPECT:
-                return "SUSPECT";
-            case LOCAL:
-                return "LOCAL";
-            case GET_STATE_EVENTS:
-                return "GET_STATE_EVENTS";
-            case AUTO_RECONNECT:
-                return "AUTO_RECONNECT";
-            case AUTO_GETSTATE:
-                return "AUTO_GETSTATE";
-            default:
-                return "unknown (" + option + ')';
-        }
-    }
 
     protected void notifyChannelConnected(Channel c) {
         if(channel_listeners == null) return;

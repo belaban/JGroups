@@ -21,7 +21,7 @@ import java.io.*;
  * mouse moves are broadcast to all group members, which then apply them to their canvas<p>
  * @author Bela Ban, Oct 17 2001
  */
-public class Draw extends ExtendedReceiverAdapter implements ActionListener, ChannelListener {
+public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
@@ -43,7 +43,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
-                boolean use_blocking, boolean use_unicasts, String name) throws Exception {
+                boolean use_unicasts, String name) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
@@ -55,8 +55,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
-        if(use_blocking)
-            channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
     }
@@ -150,7 +148,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_blocking, use_unicasts, name);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -219,7 +217,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         mainFrame.setBounds(new Rectangle(250, 250));
 
         if(!no_channel && use_state) {
-            channel.connect(groupname,null,null, state_timeout);
+            channel.connect(groupname, null, state_timeout);
         }
         mainFrame.setVisible(true);
         setTitle();
@@ -307,14 +305,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
         else
             System.out.println("** View=" + v);
-    }
-
-    public void block() {
-        System.out.println("--  received BlockEvent");
-    }
-
-    public void unblock() {
-        System.out.println("-- received UnblockEvent");
     }
 
 
@@ -435,12 +425,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     public void channelClosed(Channel channel) {
 
-    }
-
-    public void channelShunned() {
-    }
-
-    public void channelReconnected(Address addr) {
     }
 
 

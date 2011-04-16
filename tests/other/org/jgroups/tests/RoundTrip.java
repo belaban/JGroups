@@ -35,7 +35,7 @@ public class RoundTrip extends ReceiverAdapter {
             }
         }
         else {
-            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            channel.setDiscardOwnMessages(true);
             System.out.println("sending " + num + " requests");
             sendRequests();
             channel.close();

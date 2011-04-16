@@ -9,8 +9,8 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Util;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 
 /**
@@ -99,7 +99,7 @@ public class UFC extends FlowControl {
 
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
-        if(dest == null || dest.isMulticastAddress()) { // 2nd line of defense, not really needed
+        if(dest == null) { // 2nd line of defense, not really needed
             log.error(getClass().getSimpleName() + " doesn't handle multicast messages; passing message down");
             return down_prot.down(evt);
         }
@@ -124,7 +124,7 @@ public class UFC extends FlowControl {
     }
 
 
-    protected void handleViewChange(Vector<Address> mbrs) {
+    protected void handleViewChange(List<Address> mbrs) {
         super.handleViewChange(mbrs);
         if(mbrs == null) return;
 

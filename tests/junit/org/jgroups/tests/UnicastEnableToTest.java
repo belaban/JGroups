@@ -102,7 +102,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
 
 
-    private static class MyReceiver extends ExtendedReceiverAdapter {
+    private static class MyReceiver extends ReceiverAdapter {
         List<Message> msgs=Collections.synchronizedList(new LinkedList<Message>());
 
         public void receive(Message msg) {

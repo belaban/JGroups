@@ -10,8 +10,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -49,7 +49,7 @@ public class RequestCorrelator {
     protected RequestHandler request_handler=null;
 
     /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected RpcDispatcher.Marshaller2 marshaller=null;
+    protected RpcDispatcher.Marshaller marshaller=null;
 
     /** makes the instance unique (together with IDs) */
     protected short id=ClassConfigurator.getProtocolId(this.getClass());
@@ -69,7 +69,7 @@ public class RequestCorrelator {
      * is not null, all incoming requests will be dispatched to it (via
      * <code>handle(Message)</code>).
      *
-     * @param name Used to differentiate between different RequestCorrelators
+     * @param id Used to differentiate between different RequestCorrelators
      * (e.g. in different protocol layers). Has to be unique if multiple
      * request correlators are used.
      *
@@ -79,21 +79,6 @@ public class RequestCorrelator {
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
      */
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler) {
-        this.transport  = transport;
-        request_handler = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler, Address local_addr) {
-        this.transport  = transport;
-        this.local_addr=local_addr;
-        request_handler = handler;
-        start();
-    }
-
     public RequestCorrelator(short id, Object transport, RequestHandler handler, Address local_addr) {
         this.id         = id;
         this.transport  = transport;
@@ -110,100 +95,12 @@ public class RequestCorrelator {
     }
 
 
-    /**
-     * Constructor. Uses transport to send messages. If <code>handler</code>
-     * is not null, all incoming requests will be dispatched to it (via
-     * <code>handle(Message)</code>).
-     *
-     * @param name Used to differentiate between different RequestCorrelators
-     * (e.g. in different protocol layers). Has to be unique if multiple
-     * request correlators are used.
-     *
-     * @param transport Used to send/pass up requests. Can be either a Transport (only send() will be
-     *                  used then), or a Protocol (up_prot.up()/down_prot.down() will be used)
-     *
-     * @param handler Request handler. Method <code>handle(Message)</code>
-     * will be called when a request is received.
-     *
-     * @param deadlock_detection When enabled (true) recursive synchronous
-     * message calls will be detected and processed with higher priority in
-     * order to solve deadlocks. Slows down processing a little bit when
-     * enabled due to runtime checks involved.
-     */
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection) {
-        this.transport          = transport;
-        request_handler         = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
-        this.transport             = transport;
-        request_handler            = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport,
-                             RequestHandler handler, boolean deadlock_detection, Address local_addr) {
-        this.transport          = transport;
-        this.local_addr         = local_addr;
-        request_handler         = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler,
-                             boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
-        this.transport             = transport;
-        this.local_addr            = local_addr;
-        request_handler            = handler;
-        start();
-    }
-
-    @Deprecated
-    public RequestCorrelator(String name, Object transport, RequestHandler handler,
-                             Address local_addr, boolean concurrent_processing) {
-        this.transport             = transport;
-        this.local_addr            = local_addr;
-        request_handler            = handler;
-        start();
-    }
-
-
-
-    /**
-     * Switch the deadlock detection mechanism on/off
-     * @param flag the deadlock detection flag
-     * @deprecated deadlock detection is not needed with a concurrent stack
-     */
-    public void setDeadlockDetection(boolean flag) {
-    }
-
 
     public void setRequestHandler(RequestHandler handler) {
         request_handler=handler;
         start();
     }
 
-    /**
-     * @deprecated Not needed since the introduction of the concurrent stack
-     * @param concurrent_processing
-     */
-    public void setConcurrentProcessing(boolean concurrent_processing) {
-    }
-
-
-    /**
-     * Helper method for {@link #sendRequest(long,List,Message,RspCollector)}.
-     */
-    @Deprecated
-    public void sendRequest(long id, Message msg, RspCollector coll) throws Exception {
-        sendRequest(id, null, msg, coll);
-    }
 
 
     public RpcDispatcher.Marshaller getMarshaller() {
@@ -211,12 +108,7 @@ public class RequestCorrelator {
     }
 
     public void setMarshaller(RpcDispatcher.Marshaller marshaller) {
-        if(marshaller == null)
-            this.marshaller=null;
-        else if(marshaller instanceof RpcDispatcher.Marshaller2)
-            this.marshaller=(RpcDispatcher.Marshaller2)marshaller;
-        else
-            this.marshaller=new RpcDispatcher.MarshallerAdapter(marshaller);
+        this.marshaller=marshaller;
     }
 
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
@@ -496,7 +388,7 @@ public class RequestCorrelator {
                     byte[] buf=msg.getBuffer();
                     int offset=msg.getOffset(), length=msg.getLength();
                     try {
-                        retval=marshaller != null? marshaller.objectFromByteBuffer(buf, offset, length) :
+                        retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :
                                 Util.objectFromByteBuffer(buf, offset, length);
                     }
                     catch(Exception e) {
@@ -699,14 +591,14 @@ public class RequestCorrelator {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(id);
             out.writeBoolean(rsp_expected);
             out.writeShort(corrId);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             id=in.readLong();
             rsp_expected=in.readBoolean();
@@ -736,12 +628,12 @@ public class RequestCorrelator {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             super.writeTo(out);
             Util.writeAddresses(exclusion_list, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             super.readFrom(in);
             exclusion_list=Util.readAddresses(in, LinkedList.class);
         }

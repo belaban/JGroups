@@ -4,8 +4,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.blocks.RequestCorrelator;
-import org.jgroups.mux.MuxHeader;
-import org.jgroups.mux.ServiceInfo;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.GossipData;
@@ -97,8 +95,8 @@ public class SizeTest {
         GossipData data;
         final Address own=org.jgroups.util.UUID.randomUUID();
         final Address coord=org.jgroups.util.UUID.randomUUID();
-        UUID.add((UUID)own, "own");
-        UUID.add((UUID)coord, "coord");
+        UUID.add(own, "own");
+        UUID.add(coord, "coord");
 
         final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
         final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
@@ -346,24 +344,6 @@ public class SizeTest {
     }
 
 
-    public static void testViewPayload() throws Exception {
-        View v=new View();
-        v.addPayload("name", "Bela Ban");
-        _testSize(v);
-
-        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
-        Vector<Address> mbrs=new Vector<Address>();
-        v=new View(vid, mbrs);
-        v.addPayload("id", 322649);
-        v.addPayload("name", "Michelle");
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        _testSize(v);
-    }
-
-
     public static void testMergeView() throws Exception {
         View v=new MergeView();
         _testSize(v);
@@ -537,17 +517,10 @@ public class SizeTest {
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null);
         _testSize(hdr);
 
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null, "my_state");
-        _testSize(hdr);
-
-
         MutableDigest digest=new MutableDigest(2);
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
-        _testSize(hdr);
-
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest, "my_state");
         _testSize(hdr);
     }
 
@@ -592,27 +565,16 @@ public class SizeTest {
 
 
 
-    public static void testIpAddressWithAdditionalData() throws Exception {
-        IpAddress addr=new IpAddress(5555, false);
-        addr.setAdditionalData("bela".getBytes());
-        _testSize(addr);
-    }
 
 
     public static void testWriteAddress() throws IOException, IllegalAccessException, InstantiationException {
         Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
 
-        ((UUID)uuid).setAdditionalData("Bela Ban".getBytes());
-        _testWriteAddress(uuid);
-
         Address addr=new IpAddress(7500);
         _testWriteAddress(addr);
 
         addr=new IpAddress("127.0.0.1", 5678);
-        _testWriteAddress(addr);
-
-        ((IpAddress)addr).setAdditionalData("Bela Ban".getBytes());
         _testWriteAddress(addr);
     }
 
@@ -683,9 +645,6 @@ public class SizeTest {
         System.out.println("hash 1: " + hash1);
         System.out.println("hash 2: " + hash2);
         assert hash1 == hash2;
-
-        uuid.setAdditionalData("bela ban".getBytes());
-        _testSize(uuid);
     }
 
 
@@ -741,26 +700,6 @@ public class SizeTest {
     }
 
 
-
-    public static void testServiceInfo() throws Exception {
-        ServiceInfo si=new ServiceInfo();
-        _testSize(si);     
-    }
-
-
-
-    public static void testMuxHeader() throws Exception {
-        MuxHeader hdr=new MuxHeader();
-        _testSize(hdr);
-
-        hdr=new MuxHeader("bla");
-        _testSize(hdr);
-
-        ServiceInfo si=new ServiceInfo();
-        hdr=new MuxHeader(si);
-        _testSize(hdr);       
-        _testSize(new MuxHeader(si));
-    }
 
 
     private static void _testSize(Digest digest) throws Exception {
@@ -840,21 +779,6 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;
     }
-
-    private static void _testSize(ServiceInfo si) throws Exception {
-        long size=si.size();
-        byte[] serialized_form=Util.streamableToByteBuffer(si);
-        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        Assert.assertEquals(serialized_form.length, size);
-    }
-
-
-    private static void _testSize(MuxHeader hdr) throws Exception {
-         long size=hdr.size();
-         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
-         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        Assert.assertEquals(serialized_form.length, size);
-     }
 
 
 }

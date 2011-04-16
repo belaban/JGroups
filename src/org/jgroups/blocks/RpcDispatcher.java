@@ -5,7 +5,6 @@ package org.jgroups.blocks;
 import org.jgroups.*;
 import org.jgroups.util.*;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -24,10 +23,10 @@ import java.util.*;
 public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
     protected Object        server_obj=null;
     /** Marshaller to marshall requests at the caller and unmarshal requests at the receiver(s) */
-    protected Marshaller2   req_marshaller=null;
+    protected Marshaller    req_marshaller=null;
 
     /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
-    protected Marshaller2   rsp_marshaller=null;
+    protected Marshaller    rsp_marshaller=null;
     protected final List<ChannelListener> additionalChannelListeners=new ArrayList<ChannelListener>();
     protected MethodLookup  method_lookup=null;
 
@@ -43,48 +42,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
-                         boolean deadlock_detection) {
-        super(channel, l, l2);
-        channel.addChannelListener(this);
-        this.server_obj=server_obj;
-    }
 
-    @Deprecated
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
-                         boolean deadlock_detection, boolean concurrent_processing) {
-        super(channel, l, l2, false, concurrent_processing);
-        channel.addChannelListener(this);
-        this.server_obj=server_obj;
-    }
-
-
-    @Deprecated
-    public RpcDispatcher(PullPushAdapter adapter, Serializable id,
-                         MessageListener l, MembershipListener l2, Object server_obj) {
-        super(adapter, id, l, l2);
-
-        // Fixes bug #804956
-        // channel.setChannelListener(this);
-        if(this.adapter != null) {
-            Transport t=this.adapter.getTransport();
-            if(t != null && t instanceof Channel) {
-                ((Channel)t).addChannelListener(this);
-            }
-        }
-
-        this.server_obj=server_obj;
-    }
 
 
     public interface Marshaller {
-        byte[] objectToByteBuffer(Object obj) throws Exception;
-        Object objectFromByteBuffer(byte[] buf) throws Exception;
-    }
-
-
-    public interface Marshaller2 extends Marshaller {
         /**
          * Marshals the object into a byte[] buffer and returns a Buffer with a ref to the underlying byte[] buffer,
          * offset and length.<br/>
@@ -98,43 +59,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
          */
         Buffer objectToBuffer(Object obj) throws Exception;
 
-        Object objectFromByteBuffer(byte[] buf, int offset, int length) throws Exception;
+        Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception;
     }
 
 
-    /** Used to provide a Marshaller2 interface to a Marshaller. This class is for internal use only, and will be
-     * removed in 3.0 when Marshaller and Marshaller2 get merged. Do not use, but provide an implementation of
-     * Marshaller directly, e.g. in setRequestMarshaller().
-     */
-    public static class MarshallerAdapter implements Marshaller2 {
-        private final Marshaller marshaller;
-
-        public MarshallerAdapter(Marshaller marshaller) {
-            this.marshaller=marshaller;
-        }
-
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
-            return marshaller.objectToByteBuffer(obj);
-        }
-
-        public Object objectFromByteBuffer(byte[] buf) throws Exception {
-            return buf == null? null : marshaller.objectFromByteBuffer(buf);
-        }
-
-        public Buffer objectToBuffer(Object obj) throws Exception {
-            byte[] buf=marshaller.objectToByteBuffer(obj);
-            return new Buffer(buf, 0, buf.length);
-        }
-
-        public Object objectFromByteBuffer(byte[] buf, int offset, int length) throws Exception {
-            if(buf == null || (offset == 0 && length == buf.length))
-                return marshaller.objectFromByteBuffer(buf);
-            byte[] tmp=new byte[length];
-            System.arraycopy(buf, offset, tmp, 0, length);
-            return marshaller.objectFromByteBuffer(tmp);
-        }
-
-    }
 
 
     public static String getName() {return "RpcDispatcher";}
@@ -142,23 +70,13 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     public Marshaller getRequestMarshaller()             {return req_marshaller;}
 
     public void setRequestMarshaller(Marshaller m) {
-        if(m == null)
-            this.req_marshaller=null;
-        else if(m instanceof Marshaller2)
-            this.req_marshaller=(Marshaller2)m;
-        else
-            this.req_marshaller=new MarshallerAdapter(m);
+        this.req_marshaller=m;
     }
 
     public Marshaller getResponseMarshaller()             {return rsp_marshaller;}
 
     public void setResponseMarshaller(Marshaller m) {
-        if(m == null)
-            this.rsp_marshaller=null;
-        else if(m instanceof Marshaller2)
-            this.rsp_marshaller=(Marshaller2)m;
-        else
-            this.rsp_marshaller=new MarshallerAdapter(m);
+        this.rsp_marshaller=m;
 
         if(corr != null)
             corr.setMarshaller(this.rsp_marshaller);
@@ -183,26 +101,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout) {
-        return callRemoteMethods(dests, method_name, args, types, mode, timeout, false);
-    }
 
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout, boolean use_anycasting) {
-        return callRemoteMethods(dests, method_name, args, types, mode, timeout, use_anycasting, null);
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     Class[] types, int mode, long timeout, boolean use_anycasting, RspFilter filter) {
-        MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethods(dests, method_call,
-                                 new RequestOptions(mode, timeout, use_anycasting, filter, (byte)0));
-    }
 
     public RspList callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
                                      Class[] types, RequestOptions options) {
@@ -210,23 +109,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return callRemoteMethods(dests, method_call, options);
     }
 
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     String[] signature, int mode, long timeout) {
-        return callRemoteMethods(dests, method_name, args, signature, mode, timeout, false);
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, String method_name, Object[] args,
-                                     String[] signature, int mode, long timeout, boolean use_anycasting) {
-        MethodCall method_call=new MethodCall(method_name, args, signature);
-        return callRemoteMethods(dests, method_call, new RequestOptions(mode, timeout, use_anycasting, null, (byte)0));
-    }
-
-    @Deprecated
-    public RspList callRemoteMethods(Vector<Address> dests, MethodCall method_call, int mode, long timeout) {
-        return callRemoteMethods(dests, method_call,  new RequestOptions().setMode(mode).setTimeout(timeout));
-    }
 
 
     /**
@@ -276,18 +158,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return retval;
     }
 
-    @Deprecated
-    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call, int mode, long timeout,
-                                                       boolean use_anycasting, boolean oob, RspFilter filter) {
-        RequestOptions options=new RequestOptions(mode, timeout, use_anycasting, filter);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethodsWithFuture(dests, method_call, options);
-    }
 
-    @Deprecated
-    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Vector<Address> dests, MethodCall method_call) {
-        return callRemoteMethodsWithFuture(dests, method_call, new RequestOptions());
-    }
 
     public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
@@ -328,42 +199,12 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    @Deprecated
-    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, int mode, long timeout) throws Throwable {
-        MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
                                    Class[] types, RequestOptions options) throws Throwable {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethod(dest, method_call, options);
     }
 
-    @Deprecated
-    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   String[] signature, int mode, long timeout) throws Throwable {
-        MethodCall method_call=new MethodCall(method_name, args, signature);
-        return callRemoteMethod(dest, method_call, mode, timeout);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout) throws Throwable {
-        return callRemoteMethod(dest, method_call, mode, timeout, false);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
-        RequestOptions options=new RequestOptions(mode, timeout, false, null);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethod(dest, method_call, options);
-    }
-
-    @Deprecated
-    public Object callRemoteMethod(Address dest, MethodCall call) throws Throwable {
-        return callRemoteMethod(dest, call, new RequestOptions());
-    }
 
     public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())
@@ -386,17 +227,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return retval;
     }
 
-    @Deprecated
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
-        RequestOptions options=new RequestOptions(mode, timeout, false, null);
-        if(oob) options.setFlags(Message.OOB);
-        return callRemoteMethodWithFuture(dest, method_call, options);
-    }
-
-    @Deprecated
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call) throws Throwable {
-        return callRemoteMethodWithFuture(dest, call, new RequestOptions());
-    }
 
     public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())
@@ -441,7 +271,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         try {
             body=req_marshaller != null?
-                    req_marshaller.objectFromByteBuffer(req.getBuffer(), req.getOffset(), req.getLength())
+                    req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength())
                     : req.getObject();
         }
         catch(Throwable e) {
@@ -558,11 +388,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
     }
 
-    public void channelShunned() {
-    }
-
-    public void channelReconnected(Address new_addr) {
-    }
     /* ----------------------------------------------------------------------- */
 
 }

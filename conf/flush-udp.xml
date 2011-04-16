@@ -5,7 +5,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.12.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
@@ -46,7 +46,7 @@
     <VERIFY_SUSPECT timeout="1500"/>
     <pbcast.NAKACK use_stats_for_retransmission="false"
                    exponential_backoff="150"
-                   use_mcast_xmit="true" gc_lag="0"
+                   use_mcast_xmit="true"
                    retransmit_timeout="300,600,1200"
                    discard_delivered_msgs="false"/>
     <UNICAST timeout="300,600,1200"/>

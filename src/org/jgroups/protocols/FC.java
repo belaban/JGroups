@@ -615,8 +615,7 @@ public class FC extends Protocol {
      * @param length
      */
     private void determineCreditors(Address dest, int length) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
-        if(multicast) {
+        if(dest == null) {
             for(Map.Entry<Address,Credit> entry: sent.entrySet()) {
                 if(entry.getValue().get() <= length)
                     creditors.add(entry.getKey());
@@ -638,10 +637,8 @@ public class FC extends Protocol {
      * @return The lowest number of credits left, or -1 if a unicast member was not found
      */
     private long decrementCredit(Map<Address,Credit> map, Address dest, long credits) {
-        boolean multicast=dest == null || dest.isMulticastAddress();
         long lowest=max_credits;
-
-        if(multicast) {
+        if(dest == null) {
             if(map.isEmpty())
                 return -1;
             for(Credit cred: map.values())
@@ -762,16 +759,14 @@ public class FC extends Protocol {
     }
 
 
-    private void handleViewChange(Vector<Address> mbrs) {
-        Address addr;
+    private void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 
         lock.lock();
         try {
             // add members not in membership to received and sent hashmap (with full credits)
-            for(int i=0; i < mbrs.size(); i++) {
-                addr=mbrs.elementAt(i);
+            for(Address addr: mbrs) {
                 if(!received.containsKey(addr))
                     received.put(addr, new Credit(max_credits));
                 if(!sent.containsKey(addr))
@@ -779,14 +774,14 @@ public class FC extends Protocol {
             }
             // remove members that left
             for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
-                addr=it.next();
+                Address addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove();
             }
 
             // remove members that left
             for(Iterator<Address> it=sent.keySet().iterator(); it.hasNext();) {
-                addr=it.next();
+                Address addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove(); // modified the underlying map
             }

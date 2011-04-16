@@ -33,8 +33,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-@DeprecatedProperty(names={"max_xmit_size", "eager_lock_release", "stats_list_size", "max_xmit_buf_size",
-                           "enable_xmit_time_stats"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
 
     /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
@@ -51,9 +49,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(name="retransmit_timeout", converter=PropertyConverters.LongArray.class, description="Timeout before requesting retransmissions. Default is 600, 1200, 2400, 4800")
     private long[] retransmit_timeouts= { 600, 1200, 2400, 4800 }; // time(s) to wait before requesting retransmission
 
-    @Deprecated
-    @Property(description="Garbage collection lag")
-    private int gc_lag=20; // number of msgs garbage collection lags behind
 
     @Property(description="Max number of messages to be removed from a NakReceiverWindow. This property might " +
             "get removed anytime, so don't use it !")
@@ -226,11 +221,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    @Deprecated
-    public static int getUndeliveredMessages() {
-        return 0;
-    }
-
     public long getXmitRequestsReceived() {return xmit_reqs_received;}
     public long getXmitRequestsSent() {return xmit_reqs_sent;}
     public long getXmitResponsesReceived() {return xmit_rsps_received;}
@@ -324,15 +314,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
-    @Deprecated
-    public int getGcLag() {
-        return gc_lag;
-    }
-
-    @Deprecated
-    public void setGcLag(int gc_lag) {
-        this.gc_lag=gc_lag;
-    }
 
     public boolean isUseMcastXmit() {
         return use_mcast_xmit;
@@ -355,35 +336,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public void setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
-        boolean old=this.discard_delivered_msgs;
         this.discard_delivered_msgs=discard_delivered_msgs;
-    }
-
-    @Deprecated
-    public static int getMaxXmitBufSize() {
-        return 0;
-    }
-
-    @Deprecated
-    public static void setMaxXmitBufSize(int max_xmit_buf_size) {
-        ;
-    }
-
-    /**
-     *
-     * @return
-     * @deprecated removed in 2.6
-     */
-    public static long getMaxXmitSize() {
-        return -1;
-    }
-
-    /**
-     *
-     * @param max_xmit_size
-     * @deprecated removed in 2.6
-     */
-    public void setMaxXmitSize(long max_xmit_size) {
     }
 
     public void setLogDiscardMessages(boolean flag) {
@@ -548,7 +501,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress() || msg.isFlagSet(Message.NO_RELIABILITY))
+                if(dest != null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break; // unicast address: not null and not mcast, pass down unchanged
 
                 send(evt, msg);
@@ -575,10 +528,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.TMP_VIEW:
                 View tmp_view=(View)evt.getArg();
-                Vector<Address> mbrs=tmp_view.getMembers();
+                List<Address> mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                // adjustReceivers(false);
                 break;
 
             case Event.VIEW_CHANGE:
@@ -1323,18 +1275,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
             }
 
-            high_seqno_delivered-=gc_lag;
-            if(high_seqno_delivered < 0) {
+            if(high_seqno_delivered < 0)
                 continue;
-            }
 
             if(log.isTraceEnabled())
                 log.trace("deleting msgs <= " + high_seqno_delivered + " from " + sender);
 
             // delete *delivered* msgs that are stable
-            if(recv_win != null) {
+            if(recv_win != null)
                 recv_win.stable(high_seqno_delivered);  // delete all messages with seqnos <= seqno
-            }
         }
     }
 

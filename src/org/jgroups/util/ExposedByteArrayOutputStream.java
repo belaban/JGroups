@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 
 /**
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
@@ -164,30 +163,6 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
         return new String(buf, 0, count, charsetName);
     }
 
-    /**
-     * Creates a newly allocated string. Its size is the current size of
-     * the output stream and the valid contents of the buffer have been
-     * copied into it. Each character <i>c</i> in the resulting string is
-     * constructed from the corresponding element <i>b</i> in the byte
-     * array such that:
-     * <blockquote><pre>
-     *     c == (char)(((hibyte &amp; 0xff) &lt;&lt; 8) | (b &amp; 0xff))
-     * </pre></blockquote>
-     * @param hibyte the high byte of each resulting Unicode character.
-     * @return the current contents of the output stream, as a string.
-     * @see java.io.ByteArrayOutputStream#size()
-     * @see java.io.ByteArrayOutputStream#toString(String)
-     * @see java.io.ByteArrayOutputStream#toString()
-     * @deprecated This method does not properly convert bytes into characters.
-     *             As of JDK&nbsp;1.1, the preferred way to do this is via the
-     *             <code>toString(String enc)</code> method, which takes an encoding-name
-     *             argument, or the <code>toString()</code> method, which uses the
-     *             platform's default character encoding.
-     */
-    @Deprecated
-    public String toString(int hibyte) {
-        return new String(buf, hibyte, 0, count);
-    }
-
+    
 
 }

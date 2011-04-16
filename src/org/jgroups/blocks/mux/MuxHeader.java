@@ -1,7 +1,7 @@
 package org.jgroups.blocks.mux;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import org.jgroups.Global;
@@ -31,11 +31,11 @@ public class MuxHeader extends Header {
         return Global.SHORT_SIZE;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeShort(id);
     }
     
-    public void readFrom(DataInputStream in) throws IOException {
+    public void readFrom(DataInput in) throws IOException {
         id = in.readShort();
     }
 }

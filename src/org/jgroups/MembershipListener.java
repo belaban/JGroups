@@ -5,7 +5,6 @@ package org.jgroups;
 
 /**
  * Allows a listener to be notified when group membership changes.
- * These callbacks are used in {@link org.jgroups.blocks.PullPushAdapter}.
  * <p>
  * The MembershipListener interface is similar to the {@link MessageListener} 
  * interface: every time a new view, a suspicion message, or a 
@@ -40,5 +39,21 @@ public interface MembershipListener {
      * Note that block() is the equivalent of reception of a BlockEvent in the pull mode.
      */
     void block();
+
+
+    /**
+     * Called <em>after</em> the FLUSH protocol has unblocked previously blocked senders, and
+     * messages can be sent again. This callback only needs to be implemented if we require a
+     * notification of that.
+     *
+     * <p>
+     * Note that during new view installation we provide guarantee that unblock invocation strictly
+     * follows view installation at some node A belonging to that view . However, some other message
+     * M may squeeze in between view and unblock callbacks.
+     *
+     * For more details see https://jira.jboss.org/jira/browse/JGRP-986
+     *
+     */
+    void unblock();
 
 }

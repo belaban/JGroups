@@ -1,17 +1,14 @@
 package org.jgroups.tests;
 
-import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.jgroups.blocks.MembershipListenerAdapter;
 import org.jgroups.blocks.RpcDispatcher;
 
 /**
  * Test mimicking the behavior of Inifinispan in DIST (sync and async) mode.
  * @author Bela Ban
  */
-public class UnicastStressTestRpc extends MembershipListenerAdapter {
+public class UnicastStressTestRpc implements MembershipListener {
     JChannel ch;
     RpcDispatcher disp;
     String props="udp.xml";
@@ -48,6 +45,15 @@ public class UnicastStressTestRpc extends MembershipListenerAdapter {
 
     public void viewAccepted(View new_view) {
         System.out.println("- new view: " + new_view);
+    }
+
+    public void suspect(Address suspected_mbr) {
+    }
+
+    public void block() {
+    }
+
+    public void unblock() {
     }
 
 

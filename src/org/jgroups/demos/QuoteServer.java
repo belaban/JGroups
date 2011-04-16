@@ -24,7 +24,7 @@ import java.util.Hashtable;
  * @author Bela Ban
  */
 
-public class QuoteServer implements MembershipListener, MessageListener {
+public class QuoteServer extends ReceiverAdapter {
     final Hashtable stocks=new Hashtable();
     Channel channel;
     RpcDispatcher disp;
@@ -52,6 +52,9 @@ public class QuoteServer implements MembershipListener, MessageListener {
     }
 
     public void block() {
+    }
+
+    public void unblock() {
     }
 
     public void start() {

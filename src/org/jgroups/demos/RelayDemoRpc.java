@@ -1,10 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.Request;
-import org.jgroups.blocks.RequestOptions;
-import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.*;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -61,7 +58,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 for(Address dest: view.getMembers()) {
                     System.out.println("invoking method in " + dest + ": ");
                     try {
-                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(Request.GET_ALL, 5000));
+                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, 5000));
                         System.out.println("rsp from " + dest + ": " + rsp);
                     }
                     catch(Throwable throwable) {
@@ -71,7 +68,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 continue;
             }
 
-            RspList rsps=disp.callRemoteMethods(null, call, new RequestOptions(Request.GET_ALL, 5000).setAnycasting(true));
+            RspList rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
             for(Rsp rsp: rsps.values())
                 System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
         }

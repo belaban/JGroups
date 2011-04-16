@@ -8,7 +8,6 @@ import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Command;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 
@@ -25,26 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements RspCollector, Command, NotifyingFuture {
-    /** return only first response */
-    public static final int GET_FIRST=1;
-
-    /** return all responses */
-    public static final int GET_ALL=2;
-
-    /** return majority (of all non-faulty members) */
-    public static final int GET_MAJORITY=3;
-
-    /** return majority (of all members, may block) */
-    public static final int GET_ABS_MAJORITY=4;
-
-    /** return n responses (may block) */
-    @Deprecated public static final int GET_N=5;
-
-    /** return no response (async call) */
-    public static final int GET_NONE=6;
-
-
+public abstract class Request implements RspCollector, NotifyingFuture {
     protected static final Log        log=LogFactory.getLog(Request.class);
 
     /** To generate unique request IDs (see getRequestId()) */
@@ -69,11 +49,6 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
 
     
-    @Deprecated
-    public Request(Message request, RequestCorrelator corr, Transport transport, RspFilter filter, int mode, long timeout) {
-        this(request, corr, transport, new RequestOptions(mode, timeout, false, filter));
-    }
-
     public Request(Message request, RequestCorrelator corr, Transport transport, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
@@ -109,7 +84,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
         }
 
         sendRequest();
-        if(!block_for_results || options.getMode() == GET_NONE)
+        if(!block_for_results || options.getMode() == ResponseMode.GET_NONE)
             return true;
 
         lock.lock();
@@ -178,7 +153,7 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
         ret.append(super.toString());
-        ret.append("req_id=").append(req_id).append(", mode=" + modeToString(options.getMode()));
+        ret.append("req_id=").append(req_id).append(", mode=" + options.getMode());
         return ret.toString();
     }
 
@@ -256,17 +231,16 @@ public abstract class Request implements RspCollector, Command, NotifyingFuture 
 
 
 
-    public static String modeToString(int m) {
+    /*public static String modeToString(int m) {
         switch(m) {
             case GET_FIRST: return "GET_FIRST";
             case GET_ALL: return "GET_ALL";
             case GET_MAJORITY: return "GET_MAJORITY";
             case GET_ABS_MAJORITY: return "GET_ABS_MAJORITY";
-            case GET_N: return "GET_N";
             case GET_NONE: return "GET_NONE";
             default: return "<unknown> (" + m + ")";
         }
-    }
+    }*/
 
 
 }

@@ -29,10 +29,9 @@ import javax.management.MBeanServer;
  *
  * @author Bela Ban Dec 13 2001
  */
-public class LargeState extends ExtendedReceiverAdapter {
+public class LargeState extends ReceiverAdapter {
     Channel  channel;
     byte[]   state=null;
-    Thread   getter=null;
     boolean  rc=false;
     String   props;
     long     start, stop;
@@ -40,7 +39,6 @@ public class LargeState extends ExtendedReceiverAdapter {
     int      size=100000;
     int      total_received=0;
     final    Promise state_promise=new Promise();
-    static final int STREAMING_CHUNK_SIZE=10000;
 
 
     public void start(boolean provider, int size, String props,boolean jmx) throws Exception {
@@ -59,27 +57,17 @@ public class LargeState extends ExtendedReceiverAdapter {
 
         if(provider) {
             this.size=size;
-            // System.out.println("Creating state of " + size + " bytes");
-            // state=createLargeState(size);
             System.out.println("Waiting for other members to join and fetch large state");
-
-//            System.out.println("sending a few messages");
-//            for(int i=0; i < 100; i++) {
-//                channel.send(null, null, "hello world " + i);
-//            }
         }
         else {
             System.out.println("Getting state");
             start=System.currentTimeMillis();
-            // total_received=0;
             state_promise.reset();
             rc=channel.getState(null, 0);
             System.out.println("getState(), rc=" + rc);
             if(rc)
                 state_promise.getResult(10000);
         }
-
-        // mainLoop();
         if(!provider) {
             channel.close();
         }
@@ -91,7 +79,7 @@ public class LargeState extends ExtendedReceiverAdapter {
     }
 
 
-    byte[] createLargeState(int size) {
+    static byte[] createLargeState(int size) {
         return new byte[size];
     }
 
@@ -122,25 +110,6 @@ public class LargeState extends ExtendedReceiverAdapter {
         state_promise.setResult(Boolean.TRUE);
     }
 
-    public byte[] getState(String state_id) {
-        if(state_id == null)
-            return getState();
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public void setState(String state_id, byte[] state) {
-        if(state_id == null) {
-            setState(state);
-            state_promise.setResult(Boolean.TRUE);
-            return;
-        }
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    public void getState(String state_id, OutputStream ostream) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
     public void setState(InputStream istream) {
         try {
             total_received=0;
@@ -167,10 +136,6 @@ public class LargeState extends ExtendedReceiverAdapter {
         finally {
             Util.close(istream);
         }
-    }
-
-    public void setState(String state_id, InputStream istream) {
-        throw new UnsupportedOperationException("not yet implemented");
     }
 
     public void getState(OutputStream ostream) {

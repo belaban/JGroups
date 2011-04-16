@@ -7,7 +7,7 @@
 	<!-- input file: tcpgossip.old.xml -->
 
 <config xmlns="urn:org:jgroups" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-2.12.xsd">
+	xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
 	<TCP bind_port="7800" loopback="true" 
 		recv_buf_size="${tcp.recv_buf_size:20M}"
 		send_buf_size="${tcp.send_buf_size:640K}"
@@ -45,7 +45,7 @@
     <MERGE2 max_interval="30000" min_interval="10000" />
     <FD timeout="2000" max_tries="4" />
     <VERIFY_SUSPECT timeout="1500" />
-    <pbcast.NAKACK use_mcast_xmit="false" gc_lag="100"
+    <pbcast.NAKACK use_mcast_xmit="false"
                    retransmit_timeout="600,1200,2400,4800" />
     <UNICAST timeout="300,600,1200" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"

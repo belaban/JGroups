@@ -89,7 +89,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
 
     /** Invoke a method on all but myself */
     public void testInvocationWithExclusionOfSelf() {
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a1);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a1);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);
         System.out.println("rsps:\n" + rsps);
@@ -99,7 +99,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     }
 
     public void testInvocationWithExclusionOfTwo() {
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a2, a3);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a2, a3);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);
         System.out.println("rsps:\n" + rsps);
@@ -109,7 +109,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     }
 
     public void testInvocationOnEmptyTargetSet() {
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 5000).setExclusionList(a1, a2, a3);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a1, a2, a3);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);
         System.out.println("rsps:\n" + rsps);

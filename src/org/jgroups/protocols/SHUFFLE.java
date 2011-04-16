@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  *
  */
-@Unsupported
+@Experimental
 public class SHUFFLE extends Protocol {
     protected TimeScheduler timer=null;
     protected final List<Message> up_msgs=new LinkedList<Message>();

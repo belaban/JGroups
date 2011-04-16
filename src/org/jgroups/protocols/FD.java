@@ -38,7 +38,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
-@DeprecatedProperty(names={"shun"})
 public class FD extends Protocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -108,10 +107,6 @@ public class FD extends Protocol {
     public int getMaxTries() {return max_tries;}
     public void setMaxTries(int max_tries) {this.max_tries=max_tries;}
     public int getCurrentNumTries() {return num_tries;}
-    @Deprecated
-    public static boolean isShun() {return false;}
-    @Deprecated
-    public void setShun(boolean flag) {}
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
@@ -400,14 +395,14 @@ public class FD extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             Util.writeAddresses(mbrs, out);
             Util.writeAddress(from, out);
         }
 
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             mbrs=(Collection<Address>)Util.readAddresses(in, Vector.class);
             from=Util.readAddress(in);

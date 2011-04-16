@@ -33,10 +33,6 @@ public class SingletonAddress implements Address {
         return cluster_name;
     }
 
-    public boolean isMulticastAddress() {
-        return false;
-    }
-
     public int size() {
         return 0;
     }
@@ -49,11 +45,11 @@ public class SingletonAddress implements Address {
         throw new UnsupportedOperationException();
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         throw new UnsupportedOperationException();
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         throw new UnsupportedOperationException();
     }
 

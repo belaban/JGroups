@@ -208,7 +208,7 @@ public class MultiRequest extends Request {
      * </ul>
      */
      public void viewChange(View new_view) {
-        Vector<Address> mbrs=new_view != null? new_view.getMembers() : null;
+        List<Address> mbrs=new_view != null? new_view.getMembers() : null;
         if(mbrs == null)
             return;
 
@@ -314,7 +314,7 @@ public class MultiRequest extends Request {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
             }
             else {
                 if(options.getAnycasting()) {
@@ -364,11 +364,6 @@ public class MultiRequest extends Request {
                 if(num_received >= majority)
                     return true;
                 break;
-            case GET_N:
-                if(expected_mbrs >= num_total) {
-                    return responsesComplete();
-                }
-                return num_received >= expected_mbrs || num_received + num_not_received < expected_mbrs && num_received + num_suspected >= expected_mbrs;
             case GET_NONE:
                 return true;
             default :

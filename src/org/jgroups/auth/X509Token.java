@@ -1,7 +1,7 @@
 package org.jgroups.auth;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -146,14 +146,14 @@ public class X509Token extends AuthToken {
         return false;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("X509Token writeTo()");
         }
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException,
                     InstantiationException {
         if (log.isDebugEnabled()) {
             log.debug("X509Token readFrom()");

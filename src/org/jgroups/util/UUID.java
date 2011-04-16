@@ -18,7 +18,6 @@ import java.util.Map;
 public class UUID implements Address, Streamable, Comparable<Address> {
     protected long   mostSigBits;
     protected long   leastSigBits;
-    protected byte[] additional_data;
 
     /** The random number generator used by this class to create random based UUIDs */
     protected static volatile SecureRandom numberGenerator=null;
@@ -30,7 +29,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
 
     protected static boolean print_uuids=false;
 
-    protected static final int SIZE=Global.LONG_SIZE * 2 + Global.BYTE_SIZE;
+    protected static final int SIZE=Global.LONG_SIZE * 2;
 
     protected static final LazyRemovalCache.Printable<Address,String> print_function=new LazyRemovalCache.Printable<Address,String>() {
         public java.lang.String print(Address key, String val) {
@@ -132,26 +131,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
 
     public static String printCache() {
         return cache.printCache(print_function);
-    }
-
-    /**
-     * Returns the additional_data.
-     * @return byte[]
-     * @since 2.8
-     * @deprecated Will be removed in 3.0. This was only added to be backwards compatible with 2.7
-     */
-    public final byte[] getAdditionalData() {
-        return additional_data;
-    }
-
-    /**
-     * Sets the additional_data.
-     * @param additional_data The additional_data to set
-     * @since 2.8
-     * @deprecated Will be removed in 3.0. This was only added to be backwards compatible with 2.7
-     */
-    public final void setAdditionalData(byte[] additional_data) {
-        this.additional_data=additional_data;
     }
 
 
@@ -279,48 +258,23 @@ public class UUID implements Address, Streamable, Comparable<Address> {
 
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(leastSigBits);
         out.writeLong(mostSigBits);
-        if(additional_data != null) {
-            out.writeBoolean(true); // 1 byte
-            out.writeShort(additional_data.length);
-            out.write(additional_data, 0, additional_data.length);
-        }
-        else
-            out.writeBoolean(false);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         leastSigBits=in.readLong();
         mostSigBits=in.readLong();
-        if(in.readBoolean() == false)
-            return;
-        int len=in.readUnsignedShort();
-        if(len > 0) {
-            additional_data=new byte[len];
-            in.readFully(additional_data, 0, additional_data.length);
-        }
     }
 
-    public boolean isMulticastAddress() {
-        return false;
-    }
 
     public int size() {
-        int retval=SIZE;
-        if(additional_data != null)
-            retval+=additional_data.length + Global.SHORT_SIZE;
-        return retval;
+        return SIZE;
     }
 
     public Object clone() throws CloneNotSupportedException {
-        UUID ret=new UUID(mostSigBits, leastSigBits);
-        if(additional_data != null) {
-            ret.additional_data=new byte[additional_data.length];
-            System.arraycopy(additional_data, 0, ret.additional_data, 0, additional_data.length);
-        }
-        return ret;
+        return new UUID(mostSigBits, leastSigBits);
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {

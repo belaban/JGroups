@@ -93,13 +93,6 @@ public class RspList implements Map<Address,Rsp> {
         return rsps.entrySet();
     }
 
-    /**
-     * Clears the response list
-     * @deprecated Use {@link #clear()} instead
-     */
-    public void reset() {
-        clear();
-    }
 
 
     public void addRsp(Address sender, Object retval) {
@@ -206,19 +199,6 @@ public class RspList implements Map<Address,Rsp> {
         return rsps.size();
     }
 
-    /**
-     * Returns the Rsp at index i
-     * @param i The index
-     * @return a Rsp
-     * @throws ArrayIndexOutOfBoundsException
-     * @deprecated Use {@link #entrySet()} or {@link #values()} instead
-     */
-    public Object elementAt(int i) throws ArrayIndexOutOfBoundsException {
-        Set<Address> keys=new TreeSet<Address>(keySet());
-        Object[] keys_array=keys.toArray();
-        Object key=keys_array[i];
-        return get(key);
-    }
 
 
     public String toString() {

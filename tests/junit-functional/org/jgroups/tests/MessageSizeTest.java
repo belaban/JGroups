@@ -5,15 +5,10 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.Address;
 import org.jgroups.Version;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.util.*;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.DataOutputStream;
@@ -94,7 +89,7 @@ public class MessageSizeTest {
         ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
         ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
         Address dest=msg.getDest();
-        boolean multicast=dest == null || dest.isMulticastAddress();
+        boolean multicast=dest == null;
         writeMessage(msg, dos, multicast);
         return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
     }

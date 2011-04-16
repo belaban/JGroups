@@ -11,6 +11,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
@@ -250,10 +251,6 @@ public class Util {
         return hdr != null? hdr.getScope() : 0;
     }
 
-    public static SCOPE.ScopeHeader getScopeHeader(Message msg) {
-        return (SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
-    }
-   
 
 
     /**
@@ -585,88 +582,83 @@ public class Util {
 
 
 
-    public static void objectToStream(Object obj, DataOutputStream out) throws Exception {
+    public static void objectToStream(Object obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.write(TYPE_NULL);
             return;
         }
 
         Byte type;
-        try {
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                out.write(TYPE_STREAMABLE);
-                writeGenericStreamable((Streamable)obj, out);
-            }
-            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-                out.write(type.byteValue());
-                switch(type.byteValue()) {
-                    case TYPE_BOOLEAN:
-                        out.writeBoolean(((Boolean)obj).booleanValue());
-                        break;
-                    case TYPE_BYTE:
-                        out.writeByte(((Byte)obj).byteValue());
-                        break;
-                    case TYPE_CHAR:
-                        out.writeChar(((Character)obj).charValue());
-                        break;
-                    case TYPE_DOUBLE:
-                        out.writeDouble(((Double)obj).doubleValue());
-                        break;
-                    case TYPE_FLOAT:
-                        out.writeFloat(((Float)obj).floatValue());
-                        break;
-                    case TYPE_INT:
-                        out.writeInt(((Integer)obj).intValue());
-                        break;
-                    case TYPE_LONG:
-                        out.writeLong(((Long)obj).longValue());
-                        break;
-                    case TYPE_SHORT:
-                        out.writeShort(((Short)obj).shortValue());
-                        break;
-                    case TYPE_STRING:
-                        String str=(String)obj;
-                        if(str.length() > Short.MAX_VALUE) {
-                            out.writeBoolean(true);
-                            ObjectOutputStream oos=new ObjectOutputStream(out);
-                            try {
-                                oos.writeObject(str);
-                            }
-                            finally {
-                                oos.close();
-                            }
+        if(obj instanceof Streamable) {  // use Streamable if we can
+            out.write(TYPE_STREAMABLE);
+            writeGenericStreamable((Streamable)obj, out);
+        }
+        else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+            out.write(type.byteValue());
+            switch(type.byteValue()) {
+                case TYPE_BOOLEAN:
+                    out.writeBoolean(((Boolean)obj).booleanValue());
+                    break;
+                case TYPE_BYTE:
+                    out.writeByte(((Byte)obj).byteValue());
+                    break;
+                case TYPE_CHAR:
+                    out.writeChar(((Character)obj).charValue());
+                    break;
+                case TYPE_DOUBLE:
+                    out.writeDouble(((Double)obj).doubleValue());
+                    break;
+                case TYPE_FLOAT:
+                    out.writeFloat(((Float)obj).floatValue());
+                    break;
+                case TYPE_INT:
+                    out.writeInt(((Integer)obj).intValue());
+                    break;
+                case TYPE_LONG:
+                    out.writeLong(((Long)obj).longValue());
+                    break;
+                case TYPE_SHORT:
+                    out.writeShort(((Short)obj).shortValue());
+                    break;
+                case TYPE_STRING:
+                    String str=(String)obj;
+                    if(str.length() > Short.MAX_VALUE) {
+                        out.writeBoolean(true);
+                        ObjectOutputStream oos=new ObjectOutputStream((OutputStream)out);
+                        try {
+                            oos.writeObject(str);
                         }
-                        else {
-                            out.writeBoolean(false);
-                            out.writeUTF(str);
+                        finally {
+                            oos.close();
                         }
-                        break;
-                    case TYPE_BYTEARRAY:
-                        byte[] buf=(byte[])obj;
-                        out.writeInt(buf.length);
-                        out.write(buf, 0, buf.length);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("type " + type + " is invalid");
-                }
-            }
-            else { // will throw an exception if object is not serializable
-                out.write(TYPE_SERIALIZABLE);
-                ObjectOutputStream tmp=new ObjectOutputStream(out);
-                tmp.writeObject(obj);
+                    }
+                    else {
+                        out.writeBoolean(false);
+                        out.writeUTF(str);
+                    }
+                    break;
+                case TYPE_BYTEARRAY:
+                    byte[] buf=(byte[])obj;
+                    out.writeInt(buf.length);
+                    out.write(buf, 0, buf.length);
+                    break;
+                default:
+                    throw new IllegalArgumentException("type " + type + " is invalid");
             }
         }
-        finally {
-            Util.close(out);
+        else { // will throw an exception if object is not serializable
+            out.write(TYPE_SERIALIZABLE);
+            ObjectOutputStream tmp=new ObjectOutputStream((OutputStream)out);
+            tmp.writeObject(obj);
         }
     }
 
 
 
-    public static Object objectFromStream(DataInputStream in) throws Exception {
+    public static Object objectFromStream(DataInput in) throws Exception {
         if(in == null) return null;
         Object retval=null;
-        byte b=(byte)in.read();
+        byte b=in.readByte();
 
         switch(b) {
             case TYPE_NULL:
@@ -675,7 +667,7 @@ public class Util {
                 retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ObjectInputStream tmp=new ObjectInputStream(in);
+                ObjectInputStream tmp=new ObjectInputStream((InputStream)in);
                 retval=tmp.readObject();
                 break;
             case TYPE_BOOLEAN:
@@ -704,7 +696,7 @@ public class Util {
                 break;
             case TYPE_STRING:
                 if(in.readBoolean()) { // large string
-                    ObjectInputStream ois=new ObjectInputStream(in);
+                    ObjectInputStream ois=new ObjectInputStream((InputStream)in);
                     try {
                         retval=ois.readObject();
                     }
@@ -777,12 +769,12 @@ public class Util {
 
 
 
-    public static void writeAuthToken(AuthToken token, DataOutputStream out) throws IOException{
+    public static void writeAuthToken(AuthToken token, DataOutput out) throws IOException{
         Util.writeString(token.getName(), out);
         token.writeTo(out);
     }
 
-    public static AuthToken readAuthToken(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static AuthToken readAuthToken(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         try{
             String type = Util.readString(in);
             Object obj = Class.forName(type).newInstance();
@@ -796,7 +788,7 @@ public class Util {
     }
 
 
-    public static void writeView(View view, DataOutputStream out) throws IOException {
+    public static void writeView(View view, DataOutput out) throws IOException {
         if(view == null) {
             out.writeBoolean(false);
             return;
@@ -806,7 +798,7 @@ public class Util {
         view.writeTo(out);
     }
 
-    public static View readView(DataInputStream in) throws IOException, InstantiationException, IllegalAccessException {
+    public static View readView(DataInput in) throws IOException, InstantiationException, IllegalAccessException {
         if(in.readBoolean() == false)
             return null;
         boolean isMergeView=in.readBoolean();
@@ -819,7 +811,7 @@ public class Util {
         return view;
     }
 
-    public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
+    public static void writeAddress(Address addr, DataOutput out) throws IOException {
         byte flags=0;
         boolean streamable_addr=true;
 
@@ -847,7 +839,7 @@ public class Util {
             writeOtherAddress(addr, out);
     }
 
-    public static Address readAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Address readAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         byte flags=in.readByte();
         if(Util.isFlagSet(flags, Address.NULL))
             return null;
@@ -887,7 +879,7 @@ public class Util {
         return retval;
     }
 
-    private static Address readOtherAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    private static Address readOtherAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         short magic_number=in.readShort();
         Class cl=ClassConfigurator.get(magic_number);
         if(cl == null)
@@ -897,7 +889,7 @@ public class Util {
         return addr;
     }
 
-    private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
+    private static void writeOtherAddress(Address addr, DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(addr.getClass());
 
         // write the class info
@@ -910,11 +902,12 @@ public class Util {
 
     /**
      * Writes a Vector of Addresses. Can contain 65K addresses at most
+     *
      * @param v A Collection<Address>
      * @param out
      * @throws IOException
      */
-    public static void writeAddresses(Collection<? extends Address> v, DataOutputStream out) throws IOException {
+    public static void writeAddresses(Collection<? extends Address> v, DataOutput out) throws IOException {
         if(v == null) {
             out.writeShort(-1);
             return;
@@ -927,6 +920,7 @@ public class Util {
 
     /**
      *
+     *
      * @param in
      * @param cl The type of Collection, e.g. Vector.class
      * @return Collection of Address objects
@@ -934,7 +928,7 @@ public class Util {
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public static Collection<? extends Address> readAddresses(DataInputStream in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
+    public static Collection<? extends Address> readAddresses(DataInput in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
         short length=in.readShort();
         if(length < 0) return null;
         Collection<Address> retval=(Collection<Address>)cl.newInstance();
@@ -965,7 +959,7 @@ public class Util {
 
 
 
-    public static void writeStreamable(Streamable obj, DataOutputStream out) throws IOException {
+    public static void writeStreamable(Streamable obj, DataOutput out) throws IOException {
         if(obj == null) {
             out.writeBoolean(false);
             return;
@@ -975,7 +969,7 @@ public class Util {
     }
 
 
-    public static Streamable readStreamable(Class clazz, DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Streamable readStreamable(Class clazz, DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         Streamable retval=null;
         if(in.readBoolean() == false)
             return null;
@@ -985,7 +979,7 @@ public class Util {
     }
 
 
-    public static void writeGenericStreamable(Streamable obj, DataOutputStream out) throws IOException {
+    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws IOException {
         short magic_number;
         String classname;
 
@@ -1013,9 +1007,9 @@ public class Util {
 
 
 
-    public static Streamable readGenericStreamable(DataInputStream in) throws IOException {
+    public static Streamable readGenericStreamable(DataInput in) throws IOException {
         Streamable retval=null;
-        int b=in.read();
+        int b=in.readByte();
         if(b == 0)
             return null;
 
@@ -1048,7 +1042,7 @@ public class Util {
         }
     }
 
-    public static void writeClass(Class<?> classObject, DataOutputStream out) throws IOException {
+    public static void writeClass(Class<?> classObject, DataOutput out) throws IOException {
         short magic_number=ClassConfigurator.getMagicNumber(classObject);
         // write the magic number or the class name
         if(magic_number == -1) {
@@ -1061,7 +1055,7 @@ public class Util {
         }
     }
 
-    public static Class<?> readClass(DataInputStream in) throws IOException, ClassNotFoundException {
+    public static Class<?> readClass(DataInput in) throws IOException, ClassNotFoundException {
         Class<?> clazz;
         boolean use_magic_number = in.readBoolean();
         if(use_magic_number) {
@@ -1082,7 +1076,7 @@ public class Util {
         return clazz;
     }
 
-    public static void writeObject(Object obj, DataOutputStream out) throws Exception {
+    public static void writeObject(Object obj, DataOutput out) throws Exception {
         if(obj instanceof Streamable) {
             out.writeInt(-1);
             writeGenericStreamable((Streamable)obj, out);
@@ -1094,7 +1088,7 @@ public class Util {
         }
     }
 
-    public static Object readObject(DataInputStream in) throws Exception {
+    public static Object readObject(DataInput in) throws Exception {
         int len=in.readInt();
         if(len == -1)
             return readGenericStreamable(in);
@@ -1106,7 +1100,7 @@ public class Util {
 
 
 
-    public static void writeString(String s, DataOutputStream out) throws IOException {
+    public static void writeString(String s, DataOutput out) throws IOException {
         if(s != null) {
             out.write(1);
             out.writeUTF(s);
@@ -1117,58 +1111,38 @@ public class Util {
     }
 
 
-    public static String readString(DataInputStream in) throws IOException {
-        int b=in.read();
+    public static String readString(DataInput in) throws IOException {
+        int b=in.readByte();
         if(b == 1)
             return in.readUTF();
         return null;
     }
 
-    public static void writeAsciiString(String str, DataOutputStream out) throws IOException {
-        if(str == null) {
-            out.write(-1);
-            return;
-        }
-        int length=str.length();
-        if(length > Byte.MAX_VALUE)
-            throw new IllegalArgumentException("string is > " + Byte.MAX_VALUE);
-        out.write(length);
-        out.writeBytes(str);
-    }
-
-    public static String readAsciiString(DataInputStream in) throws IOException {
-        byte length=(byte)in.read();
-        if(length == -1)
-            return null;
-        byte[] tmp=new byte[length];
-        in.readFully(tmp, 0, tmp.length);
-        return new String(tmp, 0, tmp.length);
-    }
 
 
-    public static String parseString(DataInputStream in) {
-        return parseString(in, false);
-    }
 
-    public static String parseString(DataInputStream in, boolean break_on_newline) {
+    public static String parseString(DataInput in) {
         StringBuilder sb=new StringBuilder();
         int ch;
 
         // read white space
         while(true) {
             try {
-                ch=in.read();
+                ch=in.readByte();
                 if(ch == -1) {
                     return null; // eof
                 }
                 if(Character.isWhitespace(ch)) {
-                    if(break_on_newline && ch == '\n')
+                    if(false && ch == '\n')
                         return null;
                 }
                 else {
                     sb.append((char)ch);
                     break;
                 }
+            }
+            catch(EOFException eof) {
+                return null;
             }
             catch(IOException e) {
                 break;
@@ -1177,7 +1151,7 @@ public class Util {
 
         while(true) {
             try {
-                ch=in.read();
+                ch=in.readByte();
                 if(ch == -1)
                     break;
                 if(Character.isWhitespace(ch))
@@ -1218,11 +1192,11 @@ public class Util {
     }
 
 
-    public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
+    public static void writeByteBuffer(byte[] buf, DataOutput out) throws IOException {
         writeByteBuffer(buf, 0, buf.length, out);
     }
 
-     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutputStream out) throws IOException {
+     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutput out) throws IOException {
         if(buf != null) {
             out.write(1);
             out.writeInt(length);
@@ -1233,8 +1207,8 @@ public class Util {
         }
     }
 
-    public static byte[] readByteBuffer(DataInputStream in) throws IOException {
-        int b=in.read();
+    public static byte[] readByteBuffer(DataInput in) throws IOException {
+        int b=in.readByte();
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];
@@ -1294,27 +1268,6 @@ public class Util {
         output.close();
         return retval;
     }
-
-    public static List<Message> byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
-        List<Message>  retval=null;
-        ByteArrayInputStream input=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(input);
-        int size=in.readInt();
-
-        if(size == 0)
-            return null;
-
-        Message msg;
-        retval=new LinkedList<Message>();
-        for(int i=0; i < size; i++) {
-            msg=new Message(false); // don't create headers, readFrom() will do this
-            msg.readFrom(in);
-            retval.add(msg);
-        }
-
-        return retval;
-    }
-
 
 
 
@@ -1418,15 +1371,6 @@ public class Util {
     }
 
 
-    /** Sleeps between 1 and timeout milliseconds, chosen randomly. Timeout must be > 1 */
-    public static void sleepRandom(long timeout) {
-        if(timeout <= 0) {
-            return;
-        }
-
-        long r=(int)((Math.random() * 100000) % timeout) + 1;
-        sleep(r);
-    }
 
     /** Sleeps between floor and ceiling milliseconds, chosen randomly */
     public static void sleepRandom(long floor, long ceiling) {
@@ -1449,27 +1393,6 @@ public class Util {
         return r < cutoff;
     }
 
-
-    public static String getHostname() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        }
-        catch(Exception ex) {
-        }
-        return "localhost";
-    }
-
-
-    public static void dumpStack(boolean exit) {
-        try {
-            throw new Exception("Dumping stack:");
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            if(exit)
-                System.exit(0);
-        }
-    }
 
 
     public static String dumpThreads() {
@@ -1654,24 +1577,6 @@ public class Util {
     }
 
 
-    /** Tries to read a <code>MethodCall</code> object from the message's buffer and prints it.
-     Returns empty string if object is not a method call */
-    public static String printMethodCall(Message msg) {
-        Object obj;
-        if(msg == null)
-            return "";
-        if(msg.getLength() == 0)
-            return "";
-
-        try {
-            obj=msg.getObject();
-            return obj.toString();
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
-
-    }
 
 
     public static void printThreads() {
@@ -2086,19 +1991,19 @@ public class Util {
      * Selects a random subset of members according to subset_percentage and returns them.
      * Picks no member twice from the same membership. If the percentage is smaller than 1 -> picks 1 member.
      */
-    public static Vector<Address> pickSubset(Vector<Address> members, double subset_percentage) {
-        Vector<Address> ret=new Vector<Address>(), tmp_mbrs;
+    public static List<Address> pickSubset(List<Address> members, double subset_percentage) {
+        List<Address> ret=new ArrayList<Address>(), tmp_mbrs;
         int num_mbrs=members.size(), subset_size, index;
 
         if(num_mbrs == 0) return ret;
         subset_size=(int)Math.ceil(num_mbrs * subset_percentage);
 
-        tmp_mbrs=(Vector<Address>)members.clone();
+        tmp_mbrs=new ArrayList<Address>(members);
 
         for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
             index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
-            ret.addElement(tmp_mbrs.elementAt(index));
-            tmp_mbrs.removeElementAt(index);
+            ret.add(tmp_mbrs.get(index));
+            tmp_mbrs.remove(index);
         }
 
         return ret;
@@ -2239,6 +2144,16 @@ public class Util {
         return new View(coord, id, mbrs);
     }
 
+    public static JChannel createChannel(Protocol... prots) throws Exception {
+        JChannel ch=new JChannel(false);
+        ProtocolStack stack=new ProtocolStack();
+        ch.setProtocolStack(stack);
+        for(Protocol prot: prots)
+            stack.addProtocol(prot);
+        stack.init();
+        return ch;
+    }
+
 
     public static Address createRandomAddress() {
         return createRandomAddress(generateLocalName());
@@ -2262,8 +2177,8 @@ public class Util {
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
      * new_mbrs are returned.
      */
-    public static Vector<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
-        Vector<Address> retval=new Vector<Address>();
+    public static List<Address> determineLeftMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
+        List<Address> retval=new ArrayList<Address>();
         if(old_mbrs == null || new_mbrs == null)
             return retval;
 
@@ -2687,8 +2602,7 @@ public class Util {
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
      * InetSocketAddress
      */
-    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts, int port_range)
-            throws UnknownHostException {
+    public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts, int port_range) {
 
         StringTokenizer tok=new StringTokenizer(hosts, ",");
         String t;
@@ -3049,7 +2963,7 @@ public class Util {
             catch(BindException bind_ex) {
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
-                if(bind_addr != null) {
+                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
                     NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
                     if(nic == null)
                         throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
@@ -3146,7 +3060,7 @@ public class Util {
 
     	// determine the desired values for bind_addr_str and bind_interface_str
     	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR}, props, "bind_addr",
     			ignore_systemprops, null);
     	String bind_interface_str =Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
     			ignore_systemprops, null);
@@ -3254,8 +3168,10 @@ public class Util {
      * 
      */
     public static InetAddress validateBindAddressFromInterface(InetAddress bind_addr, String bind_interface_str) throws UnknownHostException, SocketException {
-    	
-    	NetworkInterface bind_intf=null ;
+    	NetworkInterface bind_intf=null;
+
+        if(bind_addr != null && bind_addr.isLoopbackAddress())
+            return bind_addr;
 
     	// 1. if bind_interface_str is null, or empty, no constraint on bind_addr
     	if (bind_interface_str == null || bind_interface_str.trim().length() == 0)
@@ -3367,15 +3283,8 @@ public class Util {
     }
 
 
-    public static <T> Vector<T> unmodifiableVector(Vector<? extends T> v) {
-        if(v == null) return null;
-        return new UnmodifiableVector(v);
-    }
-
-    
 
     /** IP related utilities */
-
     public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
     	if (ip_version == StackType.IPv4)
     		return InetAddress.getByName("127.0.0.1") ;
@@ -3403,10 +3312,14 @@ public class Util {
         Enumeration intfs=NetworkInterface.getNetworkInterfaces();
         while(intfs.hasMoreElements()) {
             NetworkInterface intf=(NetworkInterface)intfs.nextElement();
-            if(intf.isUp()) {
-                address=getAddress(intf, scope) ;
-                if(address != null)
-                    return address;
+            try {
+                if(intf.isUp()) {
+                    address=getAddress(intf, scope) ;
+                    if(address != null)
+                        return address;
+                }
+            }
+            catch (SocketException e) {
             }
         }
         return null ;
@@ -3418,7 +3331,7 @@ public class Util {
      *
      * @param intf the interface to be checked
      */
-    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope) throws SocketException {
+    public static InetAddress getAddress(NetworkInterface intf, AddressScope scope) {
         StackType ip_version=Util.getIpStackType();
         for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
             InetAddress addr=(InetAddress)addresses.nextElement();
@@ -3462,7 +3375,7 @@ public class Util {
      * @param intf
      * @return
      */
-    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws SocketException, UnknownHostException {
+    public static boolean interfaceHasIPAddresses(NetworkInterface intf, StackType ip_version) throws UnknownHostException {
         boolean supportsVersion = false ;
         if (intf != null) {
             // get all the InetAddresses defined on the interface
@@ -3563,15 +3476,14 @@ public class Util {
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr, String prot_name) throws Exception {
-        if(bind_addr.isAnyLocalAddress())
+        if(bind_addr.isAnyLocalAddress() || bind_addr.isLoopbackAddress())
             return;
         Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr: addrs) {
             if(addr.equals(bind_addr))
                 return;
         }
-        if(!bind_addr.isLoopbackAddress())
-            throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
+        throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
     }
     
 
@@ -3620,11 +3532,8 @@ public class Util {
     public static boolean isBindAddressPropertyIgnored() {
         try {
             String tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-            if(tmp == null) {
-                tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD);
-                if(tmp == null)
-                    return false;
-            }
+            if(tmp == null)
+                return false;
             tmp=tmp.trim().toLowerCase();
             return !(tmp.equals("false") || tmp.equals("no") || tmp.equals("off")) && (tmp.equals("true") || tmp.equals("yes") || tmp.equals("on"));
         }
@@ -3643,8 +3552,8 @@ public class Util {
     public static boolean isCoordinator(View view, Address local_addr) {
         if(view == null || local_addr == null)
             return false;
-        Vector<Address> mbrs=view.getMembers();
-        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.firstElement());
+        List<Address> mbrs=view.getMembers();
+        return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.iterator().next());
     }
 
     public static MBeanServer getMBeanServer() {

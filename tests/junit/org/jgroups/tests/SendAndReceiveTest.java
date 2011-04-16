@@ -5,6 +5,7 @@ package org.jgroups.tests;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.ReceiverAdapter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -27,7 +28,7 @@ public class SendAndReceiveTest {
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+            "pbcast.NAKACK(retransmit_timeout=300,600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400,4800):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
@@ -41,7 +42,7 @@ public class SendAndReceiveTest {
                 "MERGE2(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+                "pbcast.NAKACK(retransmit_timeout=300,600,1200,2400,4800):" +
                 "UNICAST(timeout=600,1200,2400,4800):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=8096):" +
@@ -53,7 +54,7 @@ public class SendAndReceiveTest {
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
             "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
+            "pbcast.NAKACK(retransmit_timeout=300,600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400,4800):" +
              "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
@@ -91,24 +92,30 @@ public class SendAndReceiveTest {
     @Test
     public void testSendAndReceiveWithDefaultUDP_Loopback() {
         setUp(props1);
+        MyReceiver receiver=new MyReceiver();
+        channel.setReceiver(receiver);
         sendMessages(NUM_MSGS);
-        int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
+        int received_msgs=receiveMessages(receiver, NUM_MSGS, TIMEOUT);
         assert received_msgs >= NUM_MSGS;
     }
 
     @Test
     public void testSendAndReceiveWithDefaultUDP_NoLoopback() {
         setUp(props2);
+        MyReceiver receiver=new MyReceiver();
+        channel.setReceiver(receiver);
         sendMessages(NUM_MSGS);
-        int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
+        int received_msgs=receiveMessages(receiver, NUM_MSGS, TIMEOUT);
         assert received_msgs >= NUM_MSGS;
     }
 
     @Test
     public void testSendAndReceiveWithLoopback() {
         setUp(props3);
+        MyReceiver receiver=new MyReceiver();
+        channel.setReceiver(receiver);
         sendMessages(NUM_MSGS);
-        int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
+        int received_msgs=receiveMessages(receiver, NUM_MSGS, TIMEOUT);
         assert received_msgs >= NUM_MSGS;
     }
 
@@ -133,10 +140,7 @@ public class SendAndReceiveTest {
      * @param timeout Must be > 0
      * @return
      */
-    private int receiveMessages(int num, long timeout) {
-        int received=0;
-        Object msg;
-
+    private static int receiveMessages(MyReceiver receiver, int num, long timeout) {
         if(timeout <= 0)
             timeout=5000;
 
@@ -147,19 +151,28 @@ public class SendAndReceiveTest {
             if(wait_time <= 0)
                 break;
             try {
-                msg=channel.receive(wait_time);
-                if(msg instanceof Message) {
-                    received++;
-                    System.out.print("+" + received + ' ');
-                }
-                if(received >= num)
+                if(receiver.getReceived() >= num)
                     break;
             }
             catch(Throwable t) {
                 assert false : "failed receiving message";
             }
         }
-        return received;
+        return receiver.getReceived();
+    }
+
+
+    protected static class MyReceiver extends ReceiverAdapter {
+        int received=0;
+
+        public int getReceived() {
+            return received;
+        }
+
+        public void receive(Message msg) {
+            received++;
+            System.out.print("+" + received + ' ');
+        }
     }
 
 

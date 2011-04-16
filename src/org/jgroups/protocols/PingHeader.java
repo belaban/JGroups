@@ -74,14 +74,14 @@ public class PingHeader extends Header {
     }
 
 
-    public void writeTo(DataOutputStream outstream) throws IOException {
+    public void writeTo(DataOutput outstream) throws IOException {
         outstream.writeByte(type);
         outstream.writeBoolean(return_view_only);
         Util.writeStreamable(arg, outstream);
         Util.writeString(cluster_name, outstream);
     }
 
-    public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput instream) throws IOException, IllegalAccessException, InstantiationException {
         type=instream.readByte();
         return_view_only=instream.readBoolean();
         arg=(PingData)Util.readStreamable(PingData.class, instream);

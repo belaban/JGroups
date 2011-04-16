@@ -243,7 +243,7 @@ public class ReconciliationTest extends ChannelTestBase {
     private static void printDigests(List<JChannel> channels, String message) {
         System.out.println(message);
         for(JChannel channel:channels) {
-            System.out.println("[" + channel.getAddress() + "] " + channel.downcall(Event.GET_DIGEST_EVT).toString());
+            System.out.println("[" + channel.getAddress() + "] " + channel.down(Event.GET_DIGEST_EVT).toString());
         }
     }
 
@@ -264,7 +264,7 @@ public class ReconciliationTest extends ChannelTestBase {
         void triggerFlush();
     }
 
-    private class MyReceiver extends ExtendedReceiverAdapter {
+    private class MyReceiver extends ReceiverAdapter {
         Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
 
         Channel channel;
@@ -347,7 +347,7 @@ public class ReconciliationTest extends ChannelTestBase {
             Util.sleep(timeout);
     }
 
-    private class Cache extends ExtendedReceiverAdapter {
+    private class Cache extends ReceiverAdapter {
         protected final Map<Object,Object> data;
 
         Channel ch;
@@ -407,10 +407,6 @@ public class ReconciliationTest extends ChannelTestBase {
             return state;
         }
 
-        public byte[] getState(String state_id) {
-            return getState();
-        }
-
         @SuppressWarnings("unchecked")
         public void setState(byte[] state) {
             Map<Object,Object> m;
@@ -424,10 +420,6 @@ public class ReconciliationTest extends ChannelTestBase {
             catch(Exception e) {
                 e.printStackTrace();
             }
-        }
-
-        public void setState(String state_id, byte[] state) {
-            setState(state);
         }
 
         public void getState(OutputStream ostream) {
@@ -450,10 +442,6 @@ public class ReconciliationTest extends ChannelTestBase {
                     System.err.println(e);
                 }
             }
-        }
-
-        public void getState(String state_id, OutputStream ostream) {
-            getState(ostream);
         }
 
         @SuppressWarnings("unchecked")
@@ -479,10 +467,6 @@ public class ReconciliationTest extends ChannelTestBase {
                     System.err.println(e);
                 }
             }
-        }
-
-        public void setState(String state_id, InputStream istream) {
-            setState(istream);
         }
 
         public void clear() {

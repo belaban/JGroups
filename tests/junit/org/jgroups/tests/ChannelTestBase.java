@@ -70,7 +70,7 @@ public class ChannelTestBase {
         this.channel_conf = chconf;
         
         boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, null, "bind_addr",
+        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr",
     			ignore_systemprops, bind_addr);
         // bind_addr = Util.getBindAddress(null).getHostAddress();
     }
@@ -220,7 +220,6 @@ public class ChannelTestBase {
 
         public Channel createChannel(final JChannel ch) throws Exception {
             JChannel retval = new JChannel(ch);
-            retval.setOpt(Channel.BLOCK, ch.getOpt(Channel.BLOCK));
             if(useFlush())
                 Util.addFlush(retval, new FLUSH());
             return retval;
@@ -228,7 +227,6 @@ public class ChannelTestBase {
 
         private JChannel createChannel(String configFile) throws Exception {
             JChannel ch = new JChannel(configFile);
-            ch.setOpt(Channel.BLOCK, useBlocking());
             if(useFlush())
                 Util.addFlush(ch, new FLUSH());
             return ch;
@@ -237,10 +235,7 @@ public class ChannelTestBase {
         protected void makeUnique(Channel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
                                           null, "mcast_addr", false, null);
-            if (str != null)
-                makeUnique(channel, num, str);
-            else
-                makeUnique(channel, num, null);
+            makeUnique(channel, num, str);
         }
 
         protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
@@ -270,7 +265,7 @@ public class ChannelTestBase {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",");
-                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1);
+                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING) ping).setInitialHosts(init_hosts);
             } else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
@@ -281,18 +276,20 @@ public class ChannelTestBase {
   
 
     interface EventSequence {
-        List<Object> getEvents();
+        /** Return an event string. Events are translated as follows: get state='g', set state='s',
+         *  block='b', unlock='u', view='v' */
+        String getEventSequence();
         String getName();
     }
 
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication extends ExtendedReceiverAdapter implements EventSequence, Runnable {
+    protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
         protected Channel channel;
         protected Thread thread;
         protected Throwable exception;
-        protected List<Object> events;
+        protected StringBuilder events;
 
         public ChannelApplication(String name) throws Exception {
             channel = createChannel(true, 4);
@@ -305,7 +302,7 @@ public class ChannelTestBase {
         }
 
         protected void init(String name) {
-            events = Collections.synchronizedList(new LinkedList<Object>());
+            events = new StringBuilder();
             channel.setName(name);
             channel.setReceiver(this);
         }
@@ -362,54 +359,37 @@ public class ChannelTestBase {
             }
         }
 
-        public List<Object> getEvents() {
-            return events;
+        public String getEventSequence() {
+            return events.toString();
         }
 
         public void block() {
-            events.add(new BlockEvent());
+            events.append('b');
         }
 
         public byte[] getState() {
-            events.add(new GetStateEvent(null, null));
+            events.append('g');
             return null;
         }
 
         public void getState(OutputStream ostream) {
-            events.add(new GetStateEvent(null, null));
-        }
-
-        public byte[] getState(String state_id) {
-            events.add(new GetStateEvent(null, state_id));
-            return null;
-        }
-
-        public void getState(String state_id, OutputStream ostream) {
-            events.add(new GetStateEvent(null, state_id));
+            events.append('g');
         }
 
         public void setState(byte[] state) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void setState(InputStream istream) {
-            events.add(new SetStateEvent(null, null));
-        }
-
-        public void setState(String state_id, byte[] state) {
-            events.add(new SetStateEvent(null, null));
-        }
-
-        public void setState(String state_id, InputStream istream) {
-            events.add(new SetStateEvent(null, null));
+            events.append('s');
         }
 
         public void unblock() {
-            events.add(new UnblockEvent());
+            events.append('u');
         }
 
         public void viewAccepted(View new_view) {
-            events.add(new_view);
+            events.append('v');
             log.info(getLocalAddress() + ": view=" + new_view);
         }
     }
@@ -456,7 +436,7 @@ public class ChannelTestBase {
     }
 
     protected static void checkEventStateTransferSequence(EventSequence receiver) {
-        List<Object> events = receiver.getEvents();
+        String events = receiver.getEventSequence();
         assertNotNull(events);
         final String validSequence = "([b][vgs]*[u])+";
         // translate the eventTrace to an eventString
@@ -472,24 +452,7 @@ public class ChannelTestBase {
      * Method for translating event traces into event strings, where each event in the trace is
      * represented by a letter.
      */
-    protected static String translateEventTrace(List<Object> et) throws Exception {
-        StringBuilder eventString = new StringBuilder();
-        for (Iterator<Object> it = et.iterator(); it.hasNext();) {
-            Object obj = it.next();
-            if (obj instanceof BlockEvent)
-                eventString.append("b");
-            else if (obj instanceof UnblockEvent)
-                eventString.append("u");
-            else if (obj instanceof SetStateEvent)
-                eventString.append("s");
-            else if (obj instanceof GetStateEvent)
-                eventString.append("g");
-            else if (obj instanceof View)
-                eventString.append("v");
-            else
-                throw new Exception("Unrecognized event type in event trace");
-        }
-        String s = eventString.toString();
+    protected static String translateEventTrace(String s) throws Exception {
         // if it ends with block, strip it out because it will be regarded as error sequence
         while (s.endsWith("b")) {
             s = s.substring(0, s.length() - 1);
@@ -516,14 +479,13 @@ public class ChannelTestBase {
             // matches, and not just a substring
             if (!(matcher.start() == 0 && matcher.end() == eventString.length())) {
                 // match on full eventString not found
-                System.err
-                                .println("event string invalid (proper substring matched): event string = "
-                                                + eventString
-                                                + ", specification = "
-                                                + spec
-                                                + "matcher.start() "
-                                                + matcher.start()
-                                                + " matcher.end() " + matcher.end());
+                System.err.println("event string invalid (proper substring matched): event string = "
+                                     + eventString
+                                     + ", specification = "
+                                     + spec
+                                     + "matcher.start() "
+                                     + matcher.start()
+                                     + " matcher.end() " + matcher.end());
                 return false;
             }
         } else {

@@ -8,10 +8,10 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.Serializable;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.DataInputStream;
 
 
 /**
@@ -56,13 +56,13 @@ public class JoinRsp implements Serializable, Streamable {
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeStreamable(view, out);
         Util.writeStreamable(digest, out);
         Util.writeString(fail_reason, out);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         view=(View)Util.readStreamable(View.class, in);
         digest=(Digest)Util.readStreamable(Digest.class, in);
         fail_reason=Util.readString(in);

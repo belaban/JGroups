@@ -130,15 +130,6 @@ public class IpAddressTest {
     }
 
 
-    public void testMcast() {
-        assert h.isMulticastAddress();
-        assert !a.isMulticastAddress();
-        assert !e.isMulticastAddress();
-        assert !g.isMulticastAddress();
-
-    }
-
-    
 
     public void testCompareTo() {
         Assert.assertEquals(0, a.compareTo(b));
@@ -247,11 +238,8 @@ public class IpAddressTest {
         ObjectInputStream     ois;
         IpAddress             a2, b2;
         
-        a.setAdditionalData(null);
-        b.setAdditionalData("Bela Ban".getBytes());
         oos.writeObject(a);
         oos.writeObject(b);
-        
 
         buf=bos.toByteArray();        
         bis=new ByteArrayInputStream(buf);
@@ -261,9 +249,6 @@ public class IpAddressTest {
 
         Assert.assertEquals(a, a2);
         Assert.assertEquals(b, b2);
-
-        assert a2.getAdditionalData() == null;
-        Assert.assertEquals("Bela Ban", new String(b2.getAdditionalData()));
     }
 
     
@@ -321,13 +306,9 @@ public class IpAddressTest {
         IpAddress             a2, b2, x, x2, y, y2;
 
         x=createStackConformantAddress(5555);
-        x.setAdditionalData(new byte[]{'b','e','l','a'});
 
         y=createStackConformantAddress(1111);
-        y.setAdditionalData(new byte[]{'b','e','l','a'});
 
-        a.setAdditionalData(null);
-        b.setAdditionalData("Bela Ban".getBytes());
         a.writeTo(oos);
         b.writeTo(oos);
         x.writeTo(oos);
@@ -348,16 +329,8 @@ public class IpAddressTest {
         Assert.assertEquals(a, a2);
         Assert.assertEquals(b, b2);
 
-        assert a2.getAdditionalData() == null;
-        Assert.assertEquals("Bela Ban", new String(b2.getAdditionalData()));
-
-        assert x2.getAdditionalData() != null;
-        Assert.assertEquals(4, x2.getAdditionalData().length);
-
         assert y2.getIpAddress() != null;
         Assert.assertEquals(1111, y2.getPort());
-        assert y2.getAdditionalData() != null;
-        Assert.assertEquals(4, y2.getAdditionalData().length);
     }
 
 

@@ -3,8 +3,8 @@ package org.jgroups.blocks.executor;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
@@ -129,7 +129,7 @@ public class Executions {
         }
 
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeClass(_classCallable, out);
             out.writeByte(_constructorNumber);
             out.writeByte(_args.length);
@@ -145,7 +145,7 @@ public class Executions {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             try {
                 _classCallable = (Class<? extends Callable<?>>)Util.readClass(in);

@@ -43,7 +43,7 @@ public class UNICAST_ContentionTest {
         c2.connect("testSimpleMessageReception");
 
         int NUM=100;
-        Address c1_addr=c1.getLocalAddress(), c2_addr=c2.getLocalAddress();
+        Address c1_addr=c1.getAddress(), c2_addr=c2.getAddress();
         for(int i=1; i <= NUM; i++) {
             c1.send(c1_addr, null, "bla");
             c1.send(c2_addr, null, "bla");
@@ -80,7 +80,7 @@ public class UNICAST_ContentionTest {
         c1.connect("testSimpleMessageReception");
         c2.connect("testSimpleMessageReception");
 
-        Address c1_addr=c1.getLocalAddress(), c2_addr=c2.getLocalAddress();
+        Address c1_addr=c1.getAddress(), c2_addr=c2.getAddress();
         MySender[] c1_senders=new MySender[NUM_THREADS];
         for(int i=0; i < c1_senders.length; i++) {
             c1_senders[i]=new MySender(c1, c2_addr, latch);

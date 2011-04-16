@@ -1,10 +1,6 @@
 package org.jgroups.blocks.executor;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -193,7 +189,7 @@ public class ExecutionService extends AbstractExecutorService {
             }
             // This will only happen on calling side since it is transient
             if (channel != null) {
-                return (Boolean)channel.downcall(new ExecutorEvent(
+                return (Boolean)channel.down(new ExecutorEvent(
                     ExecutorEvent.TASK_CANCEL, new Object[] {this, mayInterruptIfRunning}));
             }
             return sync.innerCancel(mayInterruptIfRunning);
@@ -514,7 +510,7 @@ public class ExecutionService extends AbstractExecutorService {
         finally {
             _unfinishedLock.unlock();
         }
-        return (List<Runnable>)ch.downcall(new ExecutorEvent(
+        return (List<Runnable>)ch.down(new ExecutorEvent(
             ExecutorEvent.ALL_TASK_CANCEL, new Object[]{futures, interrupt}));
     }
 
@@ -722,7 +718,7 @@ public class ExecutionService extends AbstractExecutorService {
             return result;
         }
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             try {
                 Util.writeObject(task, out);
             }
@@ -745,7 +741,7 @@ public class ExecutionService extends AbstractExecutorService {
         }
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             // We can't use Util.readObject since it's size is limited to 2^15-1
             // The runner could be larger than that possibly

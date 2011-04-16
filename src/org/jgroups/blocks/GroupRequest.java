@@ -194,7 +194,7 @@ public class GroupRequest extends Request {
      * </ul>
      */
     public void viewChange(View new_view) {
-        Vector<Address> mbrs=new_view != null? new_view.getMembers() : null;
+        List<Address> mbrs=new_view != null? new_view.getMembers() : null;
         if(mbrs == null)
             return;
 
@@ -300,7 +300,7 @@ public class GroupRequest extends Request {
     private void sendRequest(final Collection<Address> targetMembers, long requestId) throws Exception {
         try {
             if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == GET_NONE? null : this, options);
+                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
             }
             else {
                 if(options.getAnycasting()) {                                                          
@@ -350,8 +350,6 @@ public class GroupRequest extends Request {
                 if(num_received >= majority)
                     return true;
                 break;
-            case GET_N:
-                return true;
             case GET_NONE:
                 return true;
             default :

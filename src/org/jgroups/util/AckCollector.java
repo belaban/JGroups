@@ -37,10 +37,6 @@ public class AckCollector {
         }
     }
 
-    @Deprecated
-    public static String printReceived() {
-        return "n/a";
-    }
 
     public String printSuspected() {
         synchronized(this) {
@@ -67,10 +63,6 @@ public class AckCollector {
         }
     }
 
-    @Deprecated
-    public static int receivedAcks() {
-        return -1;
-    }
 
     public int expectedAcks() {
         synchronized(this) {
@@ -101,7 +93,7 @@ public class AckCollector {
 
     public void handleView(View v) {
         if(v == null) return;
-        Vector<Address> mbrs=v.getMembers();
+        List<Address> mbrs=v.getMembers();
         synchronized(this) {
             suspected_mbrs.retainAll(mbrs);
         }

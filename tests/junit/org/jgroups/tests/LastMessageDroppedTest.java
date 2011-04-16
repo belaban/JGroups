@@ -44,7 +44,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
-        c1.setOpt(Channel.LOCAL, false);
+        c1.setDiscardOwnMessages(true);
 
         Message m1=new Message(null, null, 1);
         Message m2=new Message(null, null, 2);

@@ -26,7 +26,6 @@ public class IpAddress implements PhysicalAddress {
 
     private InetAddress             ip_addr=null;
     private int                     port=0;
-    private byte[]                  additional_data;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
     static boolean                  resolve_dns=false;
     transient int                   size=-1;
@@ -94,39 +93,6 @@ public class IpAddress implements PhysicalAddress {
     public final InetAddress  getIpAddress()               {return ip_addr;}
     public final int          getPort()                    {return port;}
 
-    public final boolean      isMulticastAddress() {
-        return ip_addr != null && ip_addr.isMulticastAddress();
-    }
-
-    /**
-     * Returns the additional_data.
-     * @return byte[]
-     */
-    public final byte[] getAdditionalData() {
-        return additional_data;
-    }
-
-    /**
-     * Sets the additional_data.
-     * @param additional_data The additional_data to set
-     */
-    public final void setAdditionalData(byte[] additional_data) {
-        this.additional_data=additional_data;
-        size=-1;  // changed May 13 2006 bela (suggested by Bruce Schuchardt)
-        size=size();
-    }
-
-
-    /**
-     * Establishes an order between 2 addresses. Assumes other contains non-null IpAddress.
-     * Excludes channel_name from comparison.
-     * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
-     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
-     */
-    public final int compare(IpAddress other) {
-        return compareTo(other);
-    }
-
 
     /**
      * implements the java.lang.Comparable interface
@@ -154,45 +120,6 @@ public class IpAddress implements PhysicalAddress {
         rc=h1 < h2? -1 : h1 > h2? 1 : 0;
         return rc != 0 ? rc : port < other.port ? -1 : (port > other.port ? 1 : 0);
     }
-
-
-    /**
-     * This method compares both addresses' dotted-decimal notation in string format if the hashcode and ports are
-     * identical. Ca 30% slower than {@link #compareTo(Object)} if used excessively.
-     * @param o
-     * @return
-     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
-     */
-    public final int compareToUnique(Object o) {
-        int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
-
-        if(this == o) return 0;
-        if ((o == null) || !(o instanceof IpAddress))
-            throw new ClassCastException("comparison between different classes: the other object is " +
-                    (o != null? o.getClass() : o));
-        IpAddress other = (IpAddress) o;
-        if(ip_addr == null)
-            if (other.ip_addr == null) return port < other.port ? -1 : (port > other.port ? 1 : 0);
-            else return -1;
-
-        h1=ip_addr.hashCode();
-        h2=other.ip_addr.hashCode();
-        rc=h1 < h2? -1 : h1 > h2? 1 : 0;
-
-        if(rc != 0)
-            return rc;
-
-        rc=port < other.port ? -1 : (port > other.port ? 1 : 0);
-
-        if(rc != 0)
-            return rc;
-
-        // here we have the same addresses hash codes and ports, now let's compare the dotted-decimal addresses
-
-        String addr1=ip_addr.getHostAddress(), addr2=other.ip_addr.getHostAddress();
-        return addr1.compareTo(addr2);
-    }
-
 
 
     public final boolean equals(Object obj) {
@@ -254,13 +181,6 @@ public class IpAddress implements PhysicalAddress {
             out.writeByte(0);
         }
         out.writeShort(port);
-        if(additional_data != null) {
-            out.writeBoolean(true);
-            out.writeShort(additional_data.length);
-            out.write(additional_data, 0, additional_data.length);
-        }
-        else
-            out.writeBoolean(false);
     }
 
 
@@ -280,17 +200,9 @@ public class IpAddress implements PhysicalAddress {
         }
         //then read the port
         port=in.readUnsignedShort();
-
-        if(in.readBoolean() == false)
-            return;
-        len=in.readShort();
-        if(len > 0) {
-            additional_data=new byte[len];
-            in.readFully(additional_data, 0, additional_data.length);
-        }
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         if(ip_addr != null) {
             byte[] address=ip_addr.getAddress();  // 4 bytes (IPv4) or 16 bytes (IPv6)
             out.writeByte(address.length); // 1 byte
@@ -302,17 +214,9 @@ public class IpAddress implements PhysicalAddress {
             out.writeByte(0);
         }
         out.writeShort(port);
-        if(additional_data != null) {
-            out.writeBoolean(true); // 1 byte
-            out.writeShort(additional_data.length);
-            out.write(additional_data, 0, additional_data.length);
-        }
-        else {
-            out.writeBoolean(false);
-        }
     }
 
-    public void readFrom(DataInputStream in) throws IOException {
+    public void readFrom(DataInput in) throws IOException {
         int len=in.readByte();
         if(len > 0 && (len != Global.IPV4_SIZE && len != Global.IPV6_SIZE))
             throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes (was " +
@@ -329,39 +233,24 @@ public class IpAddress implements PhysicalAddress {
 
         // changed from readShort(): we need the full 65535, with a short we'd only get up to 32K !
         port=in.readUnsignedShort();
-
-        if(in.readBoolean() == false)
-            return;
-        len=in.readUnsignedShort();
-        if(len > 0) {
-            additional_data=new byte[len];
-            in.readFully(additional_data, 0, additional_data.length);
-        }
     }
 
     public int size() {
         if(size >= 0)
             return size;
-        // length (1 bytes) + 4 bytes for port + 1 for additional_data available
-        int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE + Global.BYTE_SIZE;
+        // length (1 bytes) + 4 bytes for port
+        int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE;
         if(ip_addr != null) {
             tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
             if(ip_addr instanceof Inet6Address)
                 tmp_size+=Global.INT_SIZE;
         }
-        if(additional_data != null)
-            tmp_size+=additional_data.length+Global.SHORT_SIZE;
         size=tmp_size;
         return tmp_size;
     }
 
     public Object clone() throws CloneNotSupportedException {
-        IpAddress ret=new IpAddress(ip_addr, port);
-        if(additional_data != null) {
-            ret.additional_data=new byte[additional_data.length];
-            System.arraycopy(additional_data, 0, ret.additional_data, 0, additional_data.length);
-        }
-        return ret;
+        return new IpAddress(ip_addr, port);
     }
 
 

@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 2.4
  */
 @MBean(description = "Flushes the cluster")
-@DeprecatedProperty(names = { "auto_flush_conf" })
 public class FLUSH extends Protocol {
 
     /*
@@ -244,8 +243,7 @@ public class FLUSH extends Protocol {
             case Event.MSG:
                 Message msg = (Message) evt.getArg();
                 Address dest = msg.getDest();
-                if (dest == null || dest.isMulticastAddress()) {
-                    // mcasts
+                if (dest == null) { // mcasts
                     FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
                     if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
                         return down_prot.down(evt);
@@ -425,9 +423,8 @@ public class FLUSH extends Protocol {
                     // lets wait for STOP_FLUSH to complete
                     // before we start allowing message up.
                     Address dest = msg.getDest();
-                    if (dest != null && !dest.isMulticastAddress()) {
-                        return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny
-                                                // applies to multicasts
+                    if (dest != null) {
+                        return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
                     }
                 }
                 break;
@@ -974,7 +971,7 @@ public class FLUSH extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             out.writeLong(viewID);
             Util.writeAddresses(flushParticipants, out);
@@ -982,7 +979,7 @@ public class FLUSH extends Protocol {
         }
 
         @SuppressWarnings("unchecked")
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException,
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException,
                         InstantiationException {
             type = in.readByte();
             viewID = in.readLong();

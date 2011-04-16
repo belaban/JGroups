@@ -163,18 +163,6 @@ public class NakReceiverWindow {
         retransmitter.setRetransmitTimeouts(timeouts);
     }
 
-    @Deprecated
-    public void setDiscardDeliveredMessages(boolean flag) {
-    }
-
-    @Deprecated
-    public int getMaxXmitBufSize() {
-        return 0;
-    }
-
-    @Deprecated
-    public void setMaxXmitBufSize(int max_xmit_buf_size) {
-    }
 
     public void setListener(Listener l) {
         this.listener=l;

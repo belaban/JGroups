@@ -86,7 +86,8 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         long start, stop, diff;
         System.out.println("calling with timeout=" + timeout + ", block_time=" + block_time);
         start=System.currentTimeMillis();
-        RspList retval=disp.callRemoteMethods(null, "foo", new Object[]{block_time}, new Class[]{long.class}, GroupRequest.GET_ALL, timeout);
+        RspList retval=disp.callRemoteMethods(null, "foo", new Object[]{block_time}, new Class[]{long.class},
+                                              new RequestOptions(ResponseMode.GET_ALL, timeout));
         stop=System.currentTimeMillis();
         diff=stop-start;
         System.out.println("rsps (in " + diff + "ms:)\n" + retval);

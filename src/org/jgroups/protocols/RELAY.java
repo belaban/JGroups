@@ -8,8 +8,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -144,7 +144,7 @@ public class RELAY extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress())
+                if(dest == null)
                     break;
 
                 // forward non local destinations to the coordinator, to relay to the remote cluster
@@ -211,7 +211,7 @@ public class RELAY extends Protocol {
                     return null;
                 }
 
-                if(is_coord && relay && (dest == null || dest.isMulticastAddress()) && !msg.isFlagSet(Message.NO_RELAY)) {
+                if(is_coord && relay && dest == null && !msg.isFlagSet(Message.NO_RELAY)) {
                     Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
                     try {
                         byte[] buf=Util.streamableToByteBuffer(tmp);
@@ -237,8 +237,11 @@ public class RELAY extends Protocol {
 
 
     protected void handleView(final View view) {
+        List<Address> new_mbrs=null;
+        if(local_view != null)
+            new_mbrs=Util.newMembers(local_view.getMembers(), view.getMembers());
         local_view=view;
-        coord=view.getMembers().firstElement();
+        coord=view.getMembers().iterator().next();
         boolean create_bridge=false;
 
         boolean is_new_coord=Util.isCoordinator(view, local_addr);
@@ -257,8 +260,8 @@ public class RELAY extends Protocol {
 
         if(is_coord) {
             // need to have a local view before JChannel.connect() returns; we don't want to change the viewAccepted() semantics
-            sendViewOnLocalCluster(null, remote_view, generateGlobalView(view, remote_view, view instanceof MergeView), true);
-
+            sendViewOnLocalCluster(remote_view, generateGlobalView(view, remote_view, view instanceof MergeView),
+                                   true, new_mbrs);
             if(create_bridge)
                 createBridge();
             sendViewToRemote(ViewData.create(view, null), false);
@@ -271,9 +274,6 @@ public class RELAY extends Protocol {
             ViewData data=(ViewData)Util.streamableFromByteBuffer(ViewData.class, buf, offset, length);
             if(data.uuids != null)
                 UUID.add(data.uuids);
-
-            if(remote_view != null && data.remote_view != null && remote_view.getVid() == data.remote_view.getVid())
-                return null;
 
             remote_view=data.remote_view;
             if(global_view == null || (data.global_view != null &&!global_view.equals(data.global_view))) {
@@ -403,7 +403,7 @@ public class RELAY extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("I'm the coordinator, creating a channel (props=" + bridge_props + ", cluster_name=" + bridge_name + ")");
             bridge=new JChannel(bridge_props);
-            bridge.setOpt(Channel.LOCAL, false); // don't receive my own messages
+            bridge.setDiscardOwnMessages(true); // don't receive my own messages
             bridge.setReceiver(new Receiver());
             bridge.connect(bridge_name);
 
@@ -443,27 +443,42 @@ public class RELAY extends Protocol {
     }
 
 
-    protected void sendViewOnLocalCluster(Address dest, View remote_view, View global_view, boolean use_seperate_thread) {
-        sendViewOnLocalCluster(dest, ViewData.create(remote_view, global_view), use_seperate_thread);
+    protected void sendViewOnLocalCluster(View remote_view, View global_view,
+                                          boolean use_seperate_thread, List<Address> new_mbrs) {
+        sendViewOnLocalCluster(ViewData.create(remote_view, global_view), use_seperate_thread, new_mbrs);
     }
 
 
-    protected void sendViewOnLocalCluster(Address dest, ViewData data, boolean use_seperate_thread) {
+    protected void sendViewOnLocalCluster(ViewData data, boolean use_seperate_thread, final List<Address> new_mbrs) {
         try {
-            final Message view_msg=new Message(dest, null, Util.streamableToByteBuffer(data));
-            view_msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+            final byte[] buffer=Util.streamableToByteBuffer(data);
+            final List<Address> destinations=new ArrayList<Address>();
+            destinations.add(null); // send to all
+            if(new_mbrs != null)
+                destinations.addAll(new_mbrs);
+
             if(use_seperate_thread) {
                 timer.execute(new Runnable() {
                     public void run() {
-                        down_prot.down(new Event(Event.MSG, view_msg));
+                        sendViewOnLocalCluster(destinations, buffer);
                     }
                 });
             }
             else
-                down_prot.down(new Event(Event.MSG, view_msg));
+                sendViewOnLocalCluster(destinations, buffer);
         }
         catch(Exception e) {
             log.error("failed sending view to local cluster", e);
+        }
+    }
+
+
+    protected void sendViewOnLocalCluster(final List<Address> destinations, final byte[] buffer) {
+        for(Address dest: destinations) {
+            Message view_msg=new Message(dest, null, buffer);
+            RelayHeader hdr=RelayHeader.create(RelayHeader.Type.VIEW);
+            view_msg.putHeader(id, hdr);
+            down_prot.down(new Event(Event.MSG, view_msg));
         }
     }
 
@@ -525,7 +540,7 @@ public class RELAY extends Protocol {
                         boolean merge=remote_view == null;
                         stopRemoteViewFetcher();
                         data.global_view=generateGlobalView(local_view, data.remote_view, merge);
-                        sendViewOnLocalCluster(null, data, false);
+                        sendViewOnLocalCluster(data, false, null);
                     }
                     catch(Exception e) {
                         log.error("failed unmarshalling view from remote cluster", e);
@@ -549,10 +564,10 @@ public class RELAY extends Protocol {
             switch(view.size()) {
                 case 1:
                     // the remote cluster disappeared, remove all of its addresses from the view
-                    if(prev_members > 1 && view.getMembers().firstElement().equals(bridge.getAddress())) {
+                    if(prev_members > 1 && view.getMembers().iterator().next().equals(bridge.getAddress())) {
                         remote_view=null;
                         View new_global_view=generateGlobalView(local_view, null);
-                        sendViewOnLocalCluster(null, null, new_global_view, false);
+                        sendViewOnLocalCluster(null, new_global_view, false, null);
                     }
                     break;
                 case 2:
@@ -621,7 +636,7 @@ public class RELAY extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type.ordinal());
             switch(type) {
                 case DISSEMINATE:
@@ -634,7 +649,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
             switch(type) {
                 case DISSEMINATE:
@@ -685,7 +700,7 @@ public class RELAY extends Protocol {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeView(remote_view, out);
             Util.writeView(global_view, out);
             out.writeInt(uuids.size());
@@ -695,7 +710,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             remote_view=Util.readView(in);
             global_view=Util.readView(in);
             int size=in.readInt();

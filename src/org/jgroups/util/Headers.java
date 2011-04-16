@@ -120,16 +120,6 @@ public class Headers {
         return _putHeader(id, hdr, 0, false);
     }
 
-    /**
-     *
-     * @param id
-     * @return the header associated with key
-     * @deprecated Use getHeader() instead. The issue with removing a header is described in
-     * http://jira.jboss.com/jira/browse/JGRP-393
-     */
-    public Header removeHeader(short id) {
-        return getHeader(id);
-    }
 
     public Headers copy() {
         return new Headers(this);

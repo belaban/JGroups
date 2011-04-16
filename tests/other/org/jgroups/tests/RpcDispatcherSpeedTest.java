@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Bela Ban
  * @version $Revision: 1.23 $
  */
-public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
+public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
     RpcDispatcher       disp;
     String              props=null;
@@ -26,12 +26,9 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
     int                 num=1000;
     int                 num_threads=1;
     static final long   TIMEOUT=10000;
-    static final Class  LONG_CLASS=long.class;
-    static final String LONG=long.class.getName();
     final Method[]      METHODS=new Method[1];
     final Object[]      EMPTY_OBJECT_ARRAY=new Object[]{};
     final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
-    final String[]      EMPTY_STRING_ARRAY=new String[]{};
     private long        sleep=0;
     private boolean     async, oob;
 
@@ -64,7 +61,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
 
     public void start() throws Exception {
         channel=new JChannel(props);
-        channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+        channel.setDiscardOwnMessages(true);
         disp=new RpcDispatcher(channel, null, this, this); // no concurrent processing on incoming method calls
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {
@@ -113,8 +110,7 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
 
         if(show <=0)
             show=1;
-        int request_type=async ? Request.GET_NONE : Request.GET_ALL;
-
+        ResponseMode request_type=async ? ResponseMode.GET_NONE : ResponseMode.GET_ALL;
 
         measure_method_call=new MethodCall((short)0);
         RequestOptions opts=new RequestOptions(request_type, TIMEOUT,
@@ -191,7 +187,14 @@ public class RpcDispatcherSpeedTest extends MembershipListenerAdapter {
         System.out.println("-- new view: " + new_view);
     }
 
+    public void suspect(Address suspected_mbr) {
+    }
 
+    public void block() {
+    }
+
+    public void unblock() {
+    }
 
 
     public static void main(String[] args) {

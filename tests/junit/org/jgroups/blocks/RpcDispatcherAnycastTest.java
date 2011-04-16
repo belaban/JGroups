@@ -10,7 +10,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Vector;
+import java.util.List;
 
 /**
  * @author Bela Ban
@@ -54,19 +54,19 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
 
 
     public void testUnserializableValue() {
-        Vector<Address> members=ch.getView().getMembers();
+        List<Address> members=ch.getView().getMembers();
         System.out.println("members: " + members);
         assert members.size() > 1: "we should have more than 1 member";
 
-        Vector<Address> subset=Util.pickSubset(members, 0.2);
+        List<Address> subset=Util.pickSubset(members, 0.2);
         System.out.println("subset: " + subset);
 
         Util.sleep(1000);
 
-        RspList rsps=disp.callRemoteMethods(subset, "foo", null, (Class[])null, GroupRequest.GET_ALL, 0, false);
+        RspList rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, false));
         System.out.println("rsps (no anycast): " + rsps);
 
-        rsps=disp.callRemoteMethods(subset, "foo", null, (Class[])null, GroupRequest.GET_ALL, 0, true);
+        rsps=disp.callRemoteMethods(subset, "foo", null, null, new RequestOptions(ResponseMode.GET_ALL, 0, true));
         System.out.println("rsps (with anycast): " + rsps);
     }
 

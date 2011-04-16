@@ -110,7 +110,7 @@ public class STATS extends Protocol {
     }
 
     private void handleViewChange(View view) {
-        Vector members=view.getMembers();
+        List<Address> members=view.getMembers();
         Set tmp=new LinkedHashSet(members);
         tmp.add(null); // for null destination (= mcast)
         sent.keySet().retainAll(tmp);
@@ -127,7 +127,7 @@ public class STATS extends Protocol {
         length=msg.getLength();
         dest=msg.getDest();
         src=msg.getSrc();
-        mcast=dest == null || dest.isMulticastAddress();
+        mcast=dest == null;
 
         if(direction == UP) { // received
             received_msgs++;

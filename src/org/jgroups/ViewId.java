@@ -124,12 +124,12 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
         id=in.readLong();
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(coord_addr, out);
         out.writeLong(id);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         coord_addr=Util.readAddress(in);
         id=in.readLong();
     }

@@ -138,7 +138,7 @@
                         &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
                         &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
                         &lt;pbcast.NAKACK
-                                       use_mcast_xmit="false" gc_lag="0"
+                                       use_mcast_xmit="false"
                                        retransmit_timeout="300,600,1200,2400,4800"
                                        discard_delivered_msgs="true"/&gt;
                         &lt;UNICAST timeout="300,600,1200,2400,3600"/&gt;
@@ -417,7 +417,7 @@
              num_initial_members="3"/&gt;
     &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
     &lt;pbcast.NAKACK
-                   use_mcast_xmit="false" gc_lag="0"
+                   use_mcast_xmit="false"
                    retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="true"/&gt;
     &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"

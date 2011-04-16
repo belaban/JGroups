@@ -39,7 +39,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Computes the broadcast messages that are stable")
-@DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
 public class STABLE extends Protocol {
     private static final long MAX_SUSPEND_TIME=200000;
 
@@ -275,7 +274,7 @@ public class STABLE extends Protocol {
         if(max_bytes <= 0)
             return;
         Address dest=msg.getDest();
-        if(dest == null || dest.isMulticastAddress()) {
+        if(dest == null) {
             boolean send_stable_msg=false;
             received.lock();
             try {
@@ -343,7 +342,7 @@ public class STABLE extends Protocol {
 
 
     private void handleViewChange(View v) {
-        Vector<Address> tmp=v.getMembers();
+        List<Address> tmp=v.getMembers();
         synchronized(mbrs) {
             mbrs.clear();
             mbrs.addAll(tmp);
@@ -761,12 +760,12 @@ public class STABLE extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeInt(type);
             Util.writeStreamable(stableDigest, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
             stableDigest=(Digest)Util.readStreamable(Digest.class, in);
         }

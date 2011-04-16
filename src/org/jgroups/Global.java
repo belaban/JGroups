@@ -2,7 +2,6 @@ package org.jgroups;
 
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.SCOPE;
-import org.jgroups.util.UUID;
 
 /**
  * Globals used by JGroups packages.
@@ -20,7 +19,6 @@ public class Global {
     public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
 
     public static final Object NULL=new Object();
-    public static final Address NULL_ADDR=new UUID();
 
     public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
 
@@ -31,10 +29,8 @@ public class Global {
 
 
     public static final String BIND_ADDR="jgroups.bind_addr";
-    public static final String BIND_ADDR_OLD="bind.address";
     public static final String BIND_INTERFACE="jgroups.bind_interface";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
-    public static final String IGNORE_BIND_ADDRESS_PROPERTY_OLD="ignore.bind.address";
 
     public static final String TCPPING_INITIAL_HOSTS="jgroups.tcpping.initial_hosts";
 
@@ -61,11 +57,6 @@ public class Global {
     public static final String IPV6_MCAST_PREFIX="jgroups.ipmcast.prefix";
 
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
-
-    public static final String MUX_ENABLED="jgroups.mux.enabled";
-    public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
-    public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
-    public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
@@ -99,6 +90,7 @@ public class Global {
     public static final String UDP_MCAST_SOCK="jgroups.udp.mcast_sock";
     public static final String UDP_UCAST_SOCK="jgroups.udp.unicast_sock";
     public static final String TCP_SRV_SOCK="jgroups.tcp.srv_sock";
+    public static final String TCP_SOCK="jgroups.tcp.sock";
     public static final String TUNNEL_UCAST_SOCK="jgroups.tunnel.ucast_sock";
     public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
     public static final String BPING_SOCK="jgroups.bping.sock";

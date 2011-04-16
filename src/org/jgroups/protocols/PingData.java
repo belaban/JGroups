@@ -8,8 +8,8 @@ import org.jgroups.View;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -116,7 +116,7 @@ public class PingData implements Streamable {
         return sb.toString();
     }
 
-    public void writeTo(DataOutputStream outstream) throws IOException {
+    public void writeTo(DataOutput outstream) throws IOException {
         Util.writeAddress(own_addr, outstream);
         Util.writeView(view, outstream);
         outstream.writeBoolean(is_server);
@@ -124,7 +124,7 @@ public class PingData implements Streamable {
         Util.writeAddresses(physical_addrs, outstream);
     }
 
-    public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput instream) throws IOException, IllegalAccessException, InstantiationException {
         own_addr=Util.readAddress(instream);
         view=Util.readView(instream);
         is_server=instream.readBoolean();

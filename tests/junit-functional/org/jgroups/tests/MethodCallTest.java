@@ -77,7 +77,7 @@ public class MethodCallTest {
 
     public void testWithNull() {
         try {
-            MethodCall mc=new MethodCall("foobar", null, (Class[])null);
+            MethodCall mc=new MethodCall("foobar", null, null);
             System.out.println("mc: " + mc);
             mc.invoke(target);
         }
@@ -113,7 +113,7 @@ public class MethodCallTest {
 
     public void testOldWithNull3() {
         try {
-            MethodCall mc=new MethodCall("foobar", null, (Class[])null);
+            MethodCall mc=new MethodCall("foobar", null, null);
             mc.invoke(target);
         }
         catch(Throwable t) {
@@ -124,7 +124,7 @@ public class MethodCallTest {
 
     public void testOldWithNull4() {
         try {
-            MethodCall mc=new MethodCall("foobar", new Object[0], (Class[])null);
+            MethodCall mc=new MethodCall("foobar", new Object[0], null);
             mc.invoke(target);
         }
         catch(Throwable t) {
@@ -137,7 +137,7 @@ public class MethodCallTest {
         Method m;
         try {
             m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
-            MethodCall mc=new MethodCall(m, new Object[]{new Integer(22), "Bela"});
+            MethodCall mc=new MethodCall(m, new Integer(22), "Bela");
             Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
         }
         catch(Throwable t) {
@@ -215,7 +215,7 @@ public class MethodCallTest {
 
     public void testTypesWithNullArgument4() {
         MethodCall mc;
-        mc=new MethodCall("foobar", null, (Class[])null);
+        mc=new MethodCall("foobar", null, null);
         try {
             mc.invoke(target);
         }
@@ -247,7 +247,7 @@ public class MethodCallTest {
     public void testSignature() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
-                          new String[]{int.class.getName(), String.class.getName()});
+                          new Class[]{int.class, String.class});
         try {
             Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
         }
@@ -296,7 +296,7 @@ public class MethodCallTest {
     public static void testMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
-        MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
+        MethodCall methodCall = new MethodCall(method, "abc");
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
@@ -307,7 +307,7 @@ public class MethodCallTest {
     public static void testInheritanceMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
-        MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
+        MethodCall methodCall = new MethodCall(method, "abc");
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
@@ -370,7 +370,7 @@ public class MethodCallTest {
 
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
-                                               new String[] { "java.lang.String" });
+                                               new Class[] {String.class});
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
@@ -381,7 +381,7 @@ public class MethodCallTest {
     public static void testInheritanceSIGNATURE() throws Throwable {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
-                                               new String[] { "java.lang.String" });
+                                               new Class[] {String.class});
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
@@ -393,16 +393,12 @@ public class MethodCallTest {
     public static void testMarshalling() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
-                                               new String[] { "java.lang.String" });
-        methodCall.put("name", "Bela");
-        methodCall.put("id", new Integer(322649));
+                                               new Class[] {String.class});
 
         System.out.println("methodCall: " + methodCall);
 
         MethodCall m=marshalAndUnmarshal(methodCall);
         System.out.println("m: " + m);
-        Assert.assertEquals(m.get("name"), "Bela");
-        Assert.assertEquals(m.get("id"), new Integer(322649));
     }
 
 

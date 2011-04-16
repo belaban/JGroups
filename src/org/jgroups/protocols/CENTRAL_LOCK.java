@@ -117,7 +117,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         super.handleView(view);
         Address old_coord=coord;
         if(view.size() > 0) {
-            coord=view.getMembers().firstElement();
+            coord=view.getMembers().iterator().next();
             is_coord=coord.equals(local_addr);
             if(log.isDebugEnabled())
                 log.debug("local_addr=" + local_addr + ", coord=" + coord + ", is_coord=" + is_coord);

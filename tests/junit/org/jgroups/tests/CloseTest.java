@@ -7,9 +7,8 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.Vector;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -80,7 +79,7 @@ public class CloseTest extends ChannelTestBase {
     @Test
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         Address a1, a2;
-        Vector members;
+        List<Address> members;
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
 
         c1.set(createChannel(true));
@@ -121,7 +120,7 @@ public class CloseTest extends ChannelTestBase {
     @Test
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
         Address a1, a2;
-        Vector members;
+        List<Address> members;
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
 
         final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByCoordinator");
@@ -149,7 +148,6 @@ public class CloseTest extends ChannelTestBase {
         assert 1 == members.size();
         assert !members.contains(a1);
         assert members.contains(a2);
-        assert c2.get().getNumMessages() == 0;
     }
 
 

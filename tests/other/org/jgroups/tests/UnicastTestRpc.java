@@ -7,6 +7,7 @@ import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -16,6 +17,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -269,7 +271,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 (anycasting? anycast_mbrs : destination) + ", sync=" + sync + ", oob=" + oob + ", anycasting=" + anycasting);
         
         // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(Request.GET_ALL, 0, anycasting, null);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0, anycasting, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
         if(oob) options.setFlags(Message.OOB);
 
@@ -277,7 +279,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             disp.callRemoteMethods(anycast_mbrs, new MethodCall((short)0, num_msgs), options);
         else
             disp.callRemoteMethod(destination, new MethodCall((short)0, num_msgs), options);
-        options.setMode(sync? Request.GET_ALL : Request.GET_NONE);
+        options.setMode(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE);
 
         Invoker[] invokers=new Invoker[num_threads];
         for(int i=0; i < invokers.length; i++) {
@@ -327,7 +329,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     void populateAnycastList(View view) {
         if(!anycasting) return;
         anycast_mbrs.clear();
-        Vector<Address> mbrs=view.getMembers();
+        List<Address> mbrs=view.getMembers();
         int index=mbrs.indexOf(local_addr);
         for(int i=index + 1; i < index + 1 + anycast_count; i++) {
             int new_index=i % mbrs.size();
@@ -349,20 +351,22 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     private Address getReceiver() {
         try {
-            Vector<Address> mbrs=channel.getView().getMembers();
+            List<Address> mbrs=channel.getView().getMembers();
             System.out.println("pick receiver from the following members:");
-            for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getAddress()))
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
+            int i=0;
+            for(Address mbr: mbrs) {
+                if(mbr.equals(channel.getAddress()))
+                    System.out.println("[" + i + "]: " + mbr + " (self)");
                 else
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i));
+                    System.out.println("[" + i + "]: " + mbr);
+                i++;
             }
             System.out.flush();
             System.in.skip(System.in.available());
             BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
             String str=reader.readLine().trim();
             int index=Integer.parseInt(str);
-            return mbrs.elementAt(index); // index out of bounds caught below
+            return mbrs.get(index); // index out of bounds caught below
         }
         catch(Exception e) {
             System.err.println("UnicastTest.getReceiver(): " + e);
@@ -401,7 +405,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
             MethodCall call=new MethodCall((short)1, args);
 
             //if(anycasting && sync)
-               //  options.setMode(Request.GET_FIRST);
+               //  options.setMode(ResponseMode.GET_FIRST);
 
             for(int i=1; i <= number_of_msgs; i++) {
                 Object retval=null;
@@ -450,27 +454,27 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     static class CustomMarshaller implements RpcDispatcher.Marshaller {
 
-        public byte[] objectToByteBuffer(Object obj) throws Exception {
+        public Buffer objectToBuffer(Object obj) throws Exception {
             MethodCall call=(MethodCall)obj;
             if(call.getId() == 0) {
                 Integer arg=(Integer)call.getArgs()[0];
                 ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE);
                 buf.put((byte)0).putInt(arg);
-                return buf.array();
+                return new Buffer(buf.array());
             }
             else if(call.getId() == 1) {
                 Long arg=(Long)call.getArgs()[0];
                 byte[] arg2=(byte[])call.getArgs()[1];
                 ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE + Global.LONG_SIZE + arg2.length);
                 buf.put((byte)1).putLong(arg).putInt(arg2.length).put(arg2, 0, arg2.length);
-                return buf.array();
+                return new Buffer(buf.array());
             }
             else
                 throw new IllegalStateException("method " + call.getMethod() + " not known");
         }
 
-        public Object objectFromByteBuffer(byte[] buffer) throws Exception {
-            ByteBuffer buf=ByteBuffer.wrap(buffer);
+        public Object objectFromBuffer(byte[] buffer, int offset, int length) throws Exception {
+            ByteBuffer buf=ByteBuffer.wrap(buffer, offset, length);
 
             byte type=buf.get();
             switch(type) {

@@ -6,8 +6,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -226,7 +224,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                 try {
                     startFlushLatch.await();
                     // partial, only between c2 and c3
-                    boolean rc=Util.startFlush(c2, (Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress())));
+                    boolean rc=Util.startFlush(c2, (Arrays.asList(c2.getAddress(), c3.getAddress())));
                     System.out.println("t2: partial flush rc=" + rc);
                 }
                 catch(InterruptedException e) {
@@ -240,7 +238,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
                     interrupt();
                 }
                 finally {
-                    c2.stopFlush(Arrays.asList(c2.getLocalAddress(), c3.getLocalAddress()));
+                    c2.stopFlush(Arrays.asList(c2.getAddress(), c3.getAddress()));
                 }
             }
         };
@@ -300,12 +298,12 @@ public class ConcurrentFlushTest extends ChannelTestBase {
             assertEquals(c.getView().getMembers().size(), channels.length);
     }
 
-    private static class Listener extends ExtendedReceiverAdapter implements EventSequence {
+    private static class Listener extends ReceiverAdapter implements EventSequence {
         final String name;
         boolean  blockReceived, unblockReceived;
         JChannel channel;
         CountDownLatch flushStartReceived, flushStopReceived;
-        final List<Object> events=new LinkedList<Object>();
+        final StringBuilder events=new StringBuilder();
 
 
         Listener(String name, JChannel channel, CountDownLatch flushStartReceived, CountDownLatch flushStopReceived) {
@@ -320,22 +318,22 @@ public class ConcurrentFlushTest extends ChannelTestBase {
             unblockReceived=true;
             if(flushStopReceived != null)
                 flushStopReceived.countDown();
-            events.add(new UnblockEvent());
+            events.append('u');
         }
 
         public void block() {
             blockReceived=true;
             if(flushStartReceived != null)
                 flushStartReceived.countDown();
-            events.add(new BlockEvent());
+            events.append('b');
         }
 
-        public List<Object> getEvents() {
-            return events;
+        public String getEventSequence() {
+            return events.toString();
         }
 
         public void viewAccepted(View new_view) {
-            events.add(new_view);
+            events.append('v');
         }
 
         public String getName() {

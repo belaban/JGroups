@@ -51,12 +51,7 @@ public class FRAG extends Protocol {
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
     private int frag_size=8192; // conservative value
 
-    @Property(description="The max size in bytes for the byte array output buffer",
-              deprecatedMessage="not used anymore")
-    @Deprecated
-    private int max_retained_buffer=70000;
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
@@ -64,7 +59,7 @@ public class FRAG extends Protocol {
     private final FragmentationList  fragment_list=new FragmentationList();
 
     private AtomicInteger            curr_id=new AtomicInteger(1);
-    private final Vector<Address>    members=new Vector<Address>(11);
+    private final List<Address>      members=new ArrayList<Address>(11);
     
     
  
@@ -172,8 +167,8 @@ public class FRAG extends Protocol {
 
 
     private void handleViewChange(View view) {
-        Vector<Address> new_mbrs=view.getMembers(), left_mbrs;
-        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        List<Address> new_mbrs=view.getMembers();
+        List<Address> left_mbrs=Util.determineLeftMembers(members, new_mbrs);
         members.clear();
         members.addAll(new_mbrs);
 

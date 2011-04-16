@@ -5,16 +5,15 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
-import org.jgroups.persistence.PersistenceFactory;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.io.Serializable;
 
 
@@ -25,9 +24,7 @@ import java.io.Serializable;
  * of a group; all hashmaps with the same name find each other and form a group.
  * @author Bela Ban
  */
-public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener,
-                                          ReplicatedHashMap.Notification {
-    static final String              groupname="HashMapDemo";
+public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener, ReplicatedHashMap.Notification<Serializable,Serializable> {
     ReplicatedHashMap<String,Float>  map=null;
     final JButton                    get=new JButton("Get");
     final JButton                    set=new JButton("Set");
@@ -92,10 +89,10 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
 
 
 
-    public void start(ChannelFactory factory, String props, boolean persist)
-            throws ChannelException {
-        map=new ReplicatedHashMap<String,Float>(groupname, factory, props, persist, 10000);
+    public void start(JChannel channel) throws ChannelException {
+        map=new ReplicatedHashMap<String,Float>(channel);
         map.addNotifier(this);
+        map.start(10000);
 
         setLayout(null);
         setSize(400, 300);
@@ -210,11 +207,11 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
         System.out.println("contents cleared");
     }
 
-    public void viewChange(View view, Vector new_mbrs, Vector old_mbrs) {
+
+    public void viewChange(View view, java.util.List<Address> new_mbrs, java.util.List<Address> old_mbrs) {
         System.out.println("** view: " + view);
         _setTitle();
     }
-
 
     private void _setTitle() {
         int num=map.getChannel().getView().getMembers().size();
@@ -223,21 +220,12 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
 
     public static void main(String args[]) {
         ReplicatedHashMapDemo     client=new ReplicatedHashMapDemo();
-        ChannelFactory            factory;
-        String                    arg;
-        boolean                   persist=false;
-
-
-        String props="udp.xml";
+        JChannel                  channel;
+        String                    props="udp.xml";
 
         try {
             for(int i=0; i < args.length; i++) {
-                arg=args[i];
-                if("-persist".equals(arg) && i+1<args.length) {
-                    persist=true;
-                    PersistenceFactory.getInstance().createManager(args[++i]);
-                    continue;
-                }
+                String arg=args[i];
                 if("-props".equals(arg)) {
                     props=args[++i];
                     continue;
@@ -251,8 +239,9 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
             return;
         }
         try {
-            factory=new JChannelFactory(props);
-            client.start(factory, props, persist);
+            channel=new JChannel(props);
+            channel.connect("ReplicatedHashMapDemo-Cluster");
+            client.start(channel);
         }
         catch(Throwable t) {
             t.printStackTrace();
@@ -261,7 +250,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
 
 
     static void help() {
-        System.out.println("ReplicatedHashMapDemo [-help] [-persist] [-props <properties>]");
+        System.out.println("ReplicatedHashMapDemo [-help] [-props <properties>]");
     }
 
 }

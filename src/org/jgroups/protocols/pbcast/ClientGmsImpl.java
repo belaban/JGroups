@@ -236,7 +236,7 @@ public class ClientGmsImpl extends GmsImpl {
      * becomes coordinator.
      */
     private boolean installView(View new_view) {
-        Vector<Address> mems=new_view.getMembers();
+        List<Address> mems=new_view.getMembers();
         if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
             if(log.isErrorEnabled())

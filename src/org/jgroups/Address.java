@@ -19,13 +19,6 @@ public interface Address extends Externalizable, Streamable, Comparable<Address>
     public static final byte IP_ADDR    = 1 << 2;
 
 
-    /**
-     * Checks whether this is an address that represents multiple destinations;
-     * e.g., a class D address in the Internet.
-     * @return true if this is a multicast address, false if it is a unicast address
-     */
-    boolean  isMulticastAddress();
-
     /** Returns serialized size of this address */
     int size();
 }

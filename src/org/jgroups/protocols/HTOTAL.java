@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -18,7 +19,7 @@ import java.util.Vector;
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
  */
-@Experimental
+@Experimental @Unsupported
 public class HTOTAL extends Protocol {
     Address coord=null;
     Address neighbor=null; // to whom do we forward the message (member to the right, or null if we're at the tail)
@@ -46,7 +47,7 @@ public class HTOTAL extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress()) { // only process multipoint messages
+                if(dest == null) { // only process multipoint messages
                     if(coord == null)
                         log.error("coordinator is null, cannot send message to coordinator");
                     else {
@@ -147,12 +148,12 @@ public class HTOTAL extends Protocol {
             this.src=src;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeAddress(dest, out);
             Util.writeAddress(src, out);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             dest=Util.readAddress(in);
             src=Util.readAddress(in);
         }

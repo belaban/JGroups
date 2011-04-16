@@ -4,8 +4,6 @@
     multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
-    We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
-    due to threadless stack support)
     author: Bela Ban
 -->
 <config>
@@ -16,11 +14,9 @@
             discard_incompatible_packets="true"
             max_bundle_size="64000"
             max_bundle_timeout="30"
-            use_incoming_packet_handler="true"
-            use_outgoing_packet_handler="false"
             down_thread="false" up_thread="false"
             enable_bundling="true"
-            start_port="7800"
+            bind_port="7800"
             use_send_queues="false"
             sock_conn_timeout="300" skip_suspected_members="true"
             reader_threads="8"
@@ -41,7 +37,7 @@
     <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
     <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
     <pbcast.NAKACK max_xmit_size="60000"
-                   use_mcast_xmit="false" gc_lag="0"
+                   use_mcast_xmit="false"
                    retransmit_timeout="300,600,1200,2400,4800"
                    down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>

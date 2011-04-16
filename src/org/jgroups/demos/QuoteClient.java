@@ -3,7 +3,9 @@ package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.Request;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -15,8 +17,6 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Enumeration;
 import java.util.Hashtable;
-
-
 
 
 /**
@@ -43,14 +43,14 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     final java.awt.List listbox=new java.awt.List();
     final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
 
-    final String props=null; // default stack from JChannel
+    static final String props=null; // default stack from JChannel
 
 
     public QuoteClient() {
         super();
         try {
             channel=new JChannel(props);
-            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+            channel.setDiscardOwnMessages(true);
             disp=new RpcDispatcher(channel, null, this, this);
             channel.connect(channel_name);
         }
@@ -146,11 +146,10 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                 showMsg("Looking up value for " + stock_name + ':');
                 rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
                                                 new Class[]{String.class},
-                                                GroupRequest.GET_ALL, 10000);
+                                                new RequestOptions(ResponseMode.GET_ALL, 10000));
 
                 Float val=null;
-                for(int i=0; i < rsp_list.size(); i++) {
-                    Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                for(Rsp rsp: rsp_list.values()) {
                     Object obj=rsp.getValue();
                     if(obj == null || obj instanceof Throwable)
                         continue;
@@ -179,7 +178,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     Float val=new Float(stock_val);
                     disp.callRemoteMethods(null, "setQuote", new Object[]{stock_name, val},
                                            new Class[]{String.class, Float.class},
-                                           GroupRequest.GET_FIRST, 0);
+                                           new RequestOptions(ResponseMode.GET_FIRST, 0));
 
                     showMsg("Stock " + stock_name + " set to " + val);
                 }
@@ -188,14 +187,13 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
                         rsp_list=disp.callRemoteMethods(null, "getAllStocks",
-                                                        null, (Class[])null,
-                                                        GroupRequest.GET_ALL, 5000);
+                                                        null, null,
+                                                        new RequestOptions(ResponseMode.GET_ALL, 5000));
 
                         System.out.println("rsp_list is " + rsp_list);
 
                         Hashtable all_stocks=null;
-                        for(int i=0; i < rsp_list.size(); i++) {
-                            Rsp rsp=(Rsp)rsp_list.elementAt(i);
+                        for(Rsp rsp: rsp_list.values()) {
                             Object obj=rsp.getValue();
                             if(obj == null || obj instanceof Throwable)
                                 continue;
@@ -255,6 +253,8 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     public void block() {
     }
 
+    public void unblock() {
+    }
 
     public static void main(String args[]) {
         QuoteClient client=new QuoteClient();

@@ -482,7 +482,7 @@ public class ENCRYPTAsymmetricTest {
         public MockAddress() {
         }
 
-        public boolean isMulticastAddress() {
+        private boolean isMulticastAddress() {
             return false;
         }
 
@@ -506,10 +506,10 @@ public class ENCRYPTAsymmetricTest {
             return address.name.equals(this.name);
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         }
     }
 

@@ -11,7 +11,7 @@ import org.jgroups.util.Streamable;
 
 import javax.management.MBeanServer;
 import java.io.*;
-import java.util.Vector;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -189,7 +189,7 @@ public class UnicastTest extends ReceiverAdapter {
 
 
     private Address getReceiver() {
-        Vector mbrs=null;
+        List<Address> mbrs=null;
         int index;
         BufferedReader reader;
         String tmp;
@@ -197,18 +197,20 @@ public class UnicastTest extends ReceiverAdapter {
         try {
             mbrs=channel.getView().getMembers();
             System.out.println("pick receiver from the following members:");
-            for(int i=0; i < mbrs.size(); i++) {
-                if(mbrs.elementAt(i).equals(channel.getAddress()))
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i) + " (self)");
+            int i=0;
+            for(Address mbr: mbrs) {
+                if(mbr.equals(channel.getAddress()))
+                    System.out.println("[" + i + "]: " + mbr + " (self)");
                 else
-                    System.out.println("[" + i + "]: " + mbrs.elementAt(i));
+                    System.out.println("[" + i + "]: " + mbr);
+                i++;
             }
             System.out.flush();
             System.in.skip(System.in.available());
             reader=new BufferedReader(new InputStreamReader(System.in));
             tmp=reader.readLine().trim();
             index=Integer.parseInt(tmp);
-            return (Address)mbrs.elementAt(index); // index out of bounds caught below
+            return mbrs.get(index); // index out of bounds caught below
         }
         catch(Exception e) {
             System.err.println("UnicastTest.getReceiver(): " + e);
@@ -279,11 +281,11 @@ public class UnicastTest extends ReceiverAdapter {
             this.num_values=num_values;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(num_values);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             num_values=in.readLong();
         }
     }
@@ -302,7 +304,7 @@ public class UnicastTest extends ReceiverAdapter {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(value);
             if(buf != null) {
                 out.writeInt(buf.length);
@@ -313,12 +315,12 @@ public class UnicastTest extends ReceiverAdapter {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             value=in.readLong();
             int len=in.readInt();
             if(len > 0) {
                 buf=new byte[len];
-                in.read(buf, 0, len);
+                in.readFully(buf, 0, len);
             }
         }
     }

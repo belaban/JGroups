@@ -10,6 +10,4 @@ public interface ChannelListener {
     void channelConnected(Channel channel);
     void channelDisconnected(Channel channel);
     void channelClosed(Channel channel);
-    @Deprecated void channelShunned();
-    @Deprecated void channelReconnected(Address addr);
 }

@@ -6,10 +6,7 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
-import java.util.Collection;
+import java.util.*;
 
 
 /**
@@ -23,11 +20,13 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class View implements Externalizable, Cloneable, Streamable {
+    private static final long serialVersionUID=555919142840905496L;
+
     /* A view is uniquely identified by its ViewID
-     * The view id contains the creator address and a Lamport time.
-     * The Lamport time is the highest timestamp seen or sent from a view.
-     * if a view change comes in with a lower Lamport time, the event is discarded.
-     */
+    * The view id contains the creator address and a Lamport time.
+    * The Lamport time is the highest timestamp seen or sent from a view.
+    * if a view change comes in with a lower Lamport time, the event is discarded.
+    */
     protected ViewId vid=null;
 
     /**
@@ -36,11 +35,8 @@ public class View implements Externalizable, Cloneable, Streamable {
      * the second member will be the new coordinator if the current one disappears
      * or leaves the group.
      */
-    protected Vector<Address> members=null;
+    protected List<Address> members=null;
 
-    @Deprecated
-    protected Map<String, Object> payload=null;
-    private static final long serialVersionUID=7027860705519930293L;
 
 
     /**
@@ -56,14 +52,9 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param vid     The view id of this view (can not be null)
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(ViewId vid, Vector<Address> members) {
+    public View(ViewId vid, List<Address> members) {
         this.vid=vid;
-        this.members=members;
-    }
-
-    public View(ViewId vid, Collection<Address> members) {
-        this.vid=vid;
-        this.members=new Vector<Address>(members);
+        this.members=new ArrayList<Address>(members);
     }
 
     /**
@@ -73,7 +64,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param id      The lamport timestamp of this view
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(Address creator, long id, Collection<Address> members) {
+    public View(Address creator, long id, List<Address> members) {
         this(new ViewId(creator, id), members);
     }
 
@@ -107,8 +98,8 @@ public class View implements Externalizable, Cloneable, Streamable {
      *
      * @return a reference to the ordered list of members in this view
      */
-    public Vector<Address> getMembers() {
-        return Util.unmodifiableVector(members);
+    public List<Address> getMembers() {
+        return Collections.unmodifiableList(members);
     }
 
     /**
@@ -119,7 +110,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      *         if the argument mbr is null, this operation returns false
      */
     public boolean containsMember(Address mbr) {
-        return !(mbr == null || members == null) && members.contains(mbr);
+        return mbr != null && members.contains(mbr);
     }
 
 
@@ -152,14 +143,13 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @return the number of members in this view 0..n
      */
     public int size() {
-        return members == null ? 0 : members.size();
+        return members.size();
     }
 
 
     public View copy() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
-        return new View(vid2, members2);
+        return new View(vid2, new ArrayList<Address>(members));
     }
 
 
@@ -169,61 +159,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
-        return new View(vid2, members2);
-    }
-
-
-    /**
-     * debug only
-     */
-    public String printDetails() {
-        StringBuilder ret=new StringBuilder();
-        ret.append(vid).append("\n\t");
-        if(members != null) {
-            for(int i=0; i < members.size(); i++) {
-                ret.append(members.elementAt(i)).append("\n\t");
-            }
-            ret.append('\n');
-        }
-        return ret.toString();
-    }
-
-    /**
-     * Adds a key and value to the view. Since the payloads will be shipped around *with* the view, so the keys and
-     * values need to be serializable. Note that the total serialized size of <em>all</em> keys and values cannot
-     * exceed 65000 bytes !
-     * @param key
-     * @param value
-     * @deprecated Will be removed in 3.0
-     */
-    public void addPayload(String key, Object value) {
-        if(payload == null) {
-            payload=new HashMap<String, Object>(7);
-        }
-        payload.put(key, value);
-    }
-
-    /**
-     *
-     * @param key
-     * @return
-     * @deprecated Will be removed in 3.0
-     */
-    public Object removePayload(String key) {
-        return payload != null? payload.remove(key) : null;
-    }
-
-    /**
-     *
-     * @param key
-     * @return
-     * @deprecated Will be removed in 3.0
-     */
-    public Object getPayload(String key) {
-        if(payload != null)
-            return payload.get(key);
-        return null;
+        return new View(vid2, new ArrayList<Address>(members));
     }
 
 
@@ -237,26 +173,16 @@ public class View implements Externalizable, Cloneable, Streamable {
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(vid);
         out.writeObject(members);
-        if(payload != null && !payload.isEmpty()) {
-            out.writeBoolean(true);
-            out.writeObject(payload);
-        }
-        else {
-            out.writeBoolean(false);
-        }
     }
 
     @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vid=(ViewId)in.readObject();
-        members=(Vector<Address>)in.readObject();
-        if(in.readBoolean()) {
-            payload=(Map<String, Object>)in.readObject();
-        }
+        members=(List<Address>)in.readObject();
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         // vid
         if(vid != null) {
             out.writeBoolean(true);
@@ -267,24 +193,10 @@ public class View implements Externalizable, Cloneable, Streamable {
 
         // members:
         Util.writeAddresses(members, out);
-
-        if(payload != null && !payload.isEmpty()) {
-            try {
-                byte buffer[]=Util.objectToByteBuffer(payload);
-                out.writeShort(buffer.length);
-                out.write(buffer, 0, buffer.length);
-            }
-            catch(Exception e) {
-                throw new IOException("could not write View payload");
-            }
-        }
-        else {
-            out.writeShort(0);
-        }
     }
 
     @SuppressWarnings("unchecked") 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         boolean b;
         // vid:
         b=in.readBoolean();
@@ -294,19 +206,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
 
         // members:
-        members=(Vector<Address>)Util.readAddresses(in, Vector.class);
-
-        short payloadLength=in.readShort();
-        if(payloadLength > 0) {
-            byte[] buffer=new byte[payloadLength];
-            in.readFully(buffer);
-            try {
-                payload=(Map<String, Object>)Util.objectFromByteBuffer(buffer);
-            }
-            catch(Exception e) {
-                throw new IOException("Could not read View payload " + buffer.length);
-            }
-        }
+        members=(List<Address>)Util.readAddresses(in, ArrayList.class);
     }
 
     public int serializedSize() {
@@ -314,11 +214,6 @@ public class View implements Externalizable, Cloneable, Streamable {
         if(vid != null)
             retval+=vid.serializedSize();
         retval+=Util.size(members);
-
-        retval+=Global.SHORT_SIZE; // presence for payload
-        if(payload != null) {
-            retval+=Util.sizeOf(payload);
-        }
         return retval;
     }
 

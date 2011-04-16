@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Group membership protocol")
-@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout", "merge_leader",
-        "reject_join_from_existing_member", "shun"})
 public class GMS extends Protocol implements TP.ProbeHandler {
     private static final String CLIENT="Client";
     private static final String COORD="Coordinator";
@@ -117,10 +115,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     private final Membership tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
-    private final Vector<Address> joining=new Vector<Address>(7);
+    private final List<Address> joining=new ArrayList<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    private final Vector<Address> leaving=new Vector<Address>(7);
+    private final List<Address> leaving=new ArrayList<Address>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     private BoundedList<Address> prev_members=null;
@@ -168,14 +166,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
 
-    /** @deprecated */
-    public static long getJoinRetryTimeout() {return -1;}
-    /** @deprecated */
-    public void setJoinRetryTimeout(long t) {}
-    @Deprecated
-    public static boolean isShun() {return false;}
-    @Deprecated
-    public void setShun(boolean s) {}
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
@@ -415,7 +405,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             if(new_mbrs != null) {
                 for(Address tmp_mbr: new_mbrs) {
                     if(!joining.contains(tmp_mbr))
-                        joining.addElement(tmp_mbr);
+                        joining.add(tmp_mbr);
                 }
             }
 
@@ -504,8 +494,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                             + ack_collector.printMissing());
                 }
             }
-            }
-        }           
+        }
+    }
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);        
@@ -528,7 +518,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         Address coord;
         int rc;
         ViewId vid=new_view.getVid();
-        Vector<Address> mbrs=new_view.getMembers();
+        List<Address> mbrs=new_view.getMembers();
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -638,41 +628,16 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
 
     /** Returns true if local_addr is member of mbrs, else false */
-    protected boolean checkSelfInclusion(Vector<Address> mbrs) {
-        Object mbr;
+    protected boolean checkSelfInclusion(List<Address> mbrs) {
         if(mbrs == null)
             return false;
-        for(int i=0; i < mbrs.size(); i++) {
-            mbr=mbrs.elementAt(i);
+        for(Address mbr: mbrs) {
             if(mbr != null && local_addr.equals(mbr))
                 return true;
         }
         return false;
     }
 
-
-    public View makeView(Vector<Address> mbrs) {
-        Address coord=null;
-        long id=0;
-
-        if(view_id != null) {
-            coord=view_id.getCoordAddress();
-            id=view_id.getId();
-        }
-        return new View(coord, id, mbrs);
-    }
-
-
-    public static View makeView(Vector<Address> mbrs, ViewId vid) {
-        Address coord=null;
-        long id=0;
-
-        if(vid != null) {
-            coord=vid.getCoordAddress();
-            id=vid.getId();
-        }
-        return new View(coord, id, mbrs);
-    }
 
 
     /** Send down a SET_DIGEST event */
@@ -915,13 +880,13 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                             (physical_addr != null? ", physical address=" + physical_addr : "") +
                             "\n-------------------------------------------------------------------");
                 }
-                if(log.isDebugEnabled()) {
-                    PhysicalAddress physical_addr=print_physical_addrs?
-                      (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
-                    log.debug("\n-------------------------------------------------------------------\n" +
-                                "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
-                                (physical_addr != null? ", physical address=" + physical_addr : "") +
-                                "\n-------------------------------------------------------------------");
+                else {
+                    if(log.isDebugEnabled()) {
+                        PhysicalAddress physical_addr=print_physical_addrs?
+                          (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
+                        log.debug("address=" + local_addr + ", cluster=" + evt.getArg() +
+                                    (physical_addr != null? ", physical address=" + physical_addr : ""));
+                    }
                 }
                 down_prot.down(evt);
                 if(local_addr == null)
@@ -1149,7 +1114,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
             boolean isMergeView=view != null && view instanceof MergeView;
             out.writeBoolean(isMergeView);
@@ -1163,7 +1128,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             out.writeBoolean(useFlushIfPresent);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
             boolean isMergeView=in.readBoolean();
             if(isMergeView)

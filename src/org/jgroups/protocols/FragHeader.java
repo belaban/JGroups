@@ -28,7 +28,7 @@ public class FragHeader extends Header {
     }
 
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeLong(id);
         out.writeInt(frag_id);
         out.writeInt(num_frags);
@@ -38,7 +38,7 @@ public class FragHeader extends Header {
         return Global.LONG_SIZE + 2*Global.INT_SIZE;
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         id=in.readLong();
         frag_id=in.readInt();
         num_frags=in.readInt();

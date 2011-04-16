@@ -11,7 +11,7 @@ set PROPS=%PROPS%:TCPGOSSIP(initial_hosts=localhost[5556];gossip_refresh_rate=10
 set PROPS=%PROPS%:MERGE2(min_interval=5000;max_interval=10000)
 set PROPS=%PROPS%:FD_SOCK
 set PROPS=%PROPS%:VERIFY_SUSPECT(timeout=1500)
-set PROPS=%PROPS%:pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800)
+set PROPS=%PROPS%:pbcast.NAKACK(retransmit_timeout=600,1200,2400,4800)
 set PROPS=%PROPS%:UNICAST(timeout=600,1200,2400,4800)
 set PROPS=%PROPS%:pbcast.STABLE(desired_avg_gossip=20000)
 set PROPS=%PROPS%:FRAG(frag_size=8096;down_thread=false;up_thread=false)

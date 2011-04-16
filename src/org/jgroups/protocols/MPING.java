@@ -5,13 +5,21 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayInputStream;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.*;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
@@ -22,7 +30,6 @@ import java.util.*;
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
  */
-@DeprecatedProperty(names="bind_to_all_interfaces")
 public class MPING extends PING implements Runnable {
     
     private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
@@ -38,7 +45,7 @@ public class MPING extends PING implements Runnable {
     @LocalAddress
     @Property(description="Bind address for multicast socket. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null;
     

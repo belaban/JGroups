@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban May 29 2001
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
-@DeprecatedProperty(names={"srv_sock_bind_addr"})
 public class FD_SOCK extends Protocol implements Runnable {
     private static final int NORMAL_TERMINATION=9;
     private static final int ABNORMAL_TERMINATION=-1;
@@ -44,7 +43,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     @LocalAddress
     @Property(description="The NIC on which the ServerSocket should listen on. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR, Global.BIND_ADDR_OLD},
+              systemProperty={Global.BIND_ADDR},
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
     InetAddress bind_addr=null; 
     
@@ -292,7 +291,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     startServerSocket();
                 }
                 catch(Exception e) {
-                    throw new IllegalArgumentException("failed to created server socket", e);
+                    throw new IllegalArgumentException("failed to start server socket", e);
                 }
                 return ret;
 
@@ -306,7 +305,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.VIEW_CHANGE:
                 View v=(View) evt.getArg();
-                final Vector<Address> new_mbrs=v.getMembers();
+                final List<Address> new_mbrs=v.getMembers();
 
                 synchronized(this) {
                     members.removeAllElements();
@@ -912,7 +911,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             int size;
             out.writeByte(type);
             Util.writeAddress(mbr, out);
@@ -936,7 +935,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             int size;
             type=in.readByte();
             mbr=Util.readAddress(in);

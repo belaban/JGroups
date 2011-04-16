@@ -14,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.List;
 import java.util.Vector;
 
 
@@ -121,21 +122,6 @@ public class StreamableTest {
 
 
 
-    public static void testAdditionalData() throws Exception {
-        UUID dest=UUID.randomUUID();
-        dest.setAdditionalData("foo".getBytes());
-        UUID src=UUID.randomUUID();
-        src.setAdditionalData("foobar".getBytes());
-        Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, Util.createView(src, 1, src), false));
-        msg.putHeader(PING_ID, hdr);
-        TpHeader udp_hdr=new TpHeader("bla");
-        msg.putHeader(UDP_ID, udp_hdr);
-        stream(msg);
-    }
-
-
-
 
     public static void testMergeView() throws Exception {
         Vector tmp_m1, tmp_m2 , m3, all, subgroups;
@@ -168,7 +154,7 @@ public class StreamableTest {
 
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        Vector sub=((MergeView)view_all).getSubgroups();
+        List<View> sub=((MergeView)view_all).getSubgroups();
         assert sub.get(0) instanceof View;
         assert sub.get(1) instanceof MergeView;
         assert sub.get(2) instanceof View;

@@ -6,7 +6,7 @@
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-    <property name="version" value="2.12.1.Beta1"/>
+    <property name="version" value="3.0.0.Alpha1"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
@@ -114,6 +114,23 @@
     <target name="compile-no-unittests"
             depends="prepare"
             description="Compiles all Java files">
+        <javac srcdir="${src.dir}"
+               destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+        </javac>
+    </target>
+
+    <target name="compile-essential-unittests"
+            depends="prepare"
+            description="Compiles only tests shipped with JGroups">
         <javac destdir="${compile.dir}"
                source="1.6"
                classpathref="jg.classpath"
@@ -122,12 +139,10 @@
                deprecation="off"
                optimize="off"
                listfiles="false"
-               includes="org/jgroups/**"
-               excludes="org/jgroups/tests/junit/,org/jgroups/tests/junit-functional/,org/jgroups/tests/stress">
+               includes="org/jgroups/tests/**">
+            <src path="${tests.dir}/perf"/>
+            <src path="${tests.dir}/other"/>
             <exclude name="**/obsolete/**"/>
-            <src path="${src.dir}"/>
-            <src path="${other.dir}"/>
-            <src path="${perf.dir}"/>
         </javac>
     </target>
 
@@ -141,21 +156,21 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile-no-unittests,create-schema">
+            description="Creates the jgroups-${version}.jar (includes everything)"
+            depends="clean,compile-no-unittests,compile-essential-unittests">
     	<mkdir dir="${dist.dir}"/>
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
          manifest="${conf.dir}/manifest.mf"
-         includes="org/jgroups/**,schema/**">
+         includes="org/jgroups/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
         <fileset dir="${root.dir}">
-            <include name="CREDITS"/>
             <include name="INSTALL.html"/>
             <include name="LICENSE"/>
-            <include name="EULA"/>
+            <include name="README"/>
         </fileset>
         <fileset dir="${lib.dir}">
-            <include name="licenses/*"/>
+            <include name="licenses/thirdparty*"/>
         </fileset>
     </jar>    	
     </target>

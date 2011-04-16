@@ -1,74 +1,60 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.BARRIER;
+import org.jgroups.protocols.EXAMPLE;
 import org.jgroups.protocols.PING;
-import org.jgroups.protocols.VIEW_SYNC;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.UUID;
+import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL,sequential=true)
 public class BARRIERTest {
-    Address a1;
-    Vector<Address> members;
-    View v;
-    Simulator s;
-    BARRIER barrier_prot=new BARRIER();
-    PING bottom_prot;
+    JChannel ch;
+    PING     ping_prot;
+    BARRIER  barrier_prot;
+    EXAMPLE example_prot;
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        a1=UUID.randomUUID();
-        members=new Vector<Address>();
-        members.add(a1);
-        v=new View(a1, 1, members);
-        s=new Simulator();
-        s.setLocalAddress(a1);
-        s.setView(v);
-        s.addMember(a1);
-        bottom_prot=new PING();
-        VIEW_SYNC view_sync=new VIEW_SYNC();
-        Protocol[] stack=new Protocol[]{view_sync, barrier_prot, bottom_prot};
-        s.setProtocolStack(stack);
-        s.start();
+        ping_prot=new PING();
+        example_prot=new EXAMPLE();
+        barrier_prot=new BARRIER();
+        ch=Util.createChannel(new SHARED_LOOPBACK(), ping_prot, barrier_prot, example_prot);
+        ch.connect("BARRIERTest");
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
-        s.stop();
+    public void destroy() {
+        Util.close(ch);
     }
-
 
     public void testBlocking() {
         assert !barrier_prot.isClosed();
-        s.send(new Event(Event.CLOSE_BARRIER));
+        ch.down(new Event(Event.CLOSE_BARRIER));
         assert barrier_prot.isClosed();
-        s.send(new Event(Event.OPEN_BARRIER));
+        ch.down(new Event(Event.OPEN_BARRIER));
         assert !barrier_prot.isClosed();
     }
 
 
     public void testThreadsBlockedOnBarrier() {
         MyReceiver receiver=new MyReceiver();
-        s.setReceiver(receiver);
-        s.send(new Event(Event.CLOSE_BARRIER));
+        ch.setReceiver(receiver);
+        ch.down(new Event(Event.CLOSE_BARRIER));
         for(int i=0; i < 5; i++) {
             new Thread() {
                 public void run() {
-                    bottom_prot.up(new Event(Event.MSG, new Message(null, null, null)));
+                    ping_prot.up(new Event(Event.MSG, new Message(null, null, null)));
                 }
             }.start();
         }
@@ -77,7 +63,7 @@ public class BARRIERTest {
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
 
-        s.send(new Event(Event.OPEN_BARRIER));
+        ch.down(new Event(Event.OPEN_BARRIER));
         Util.sleep(2000);
 
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
@@ -89,14 +75,16 @@ public class BARRIERTest {
 
     public void testThreadsBlockedOnMutex() throws InterruptedException {
         BlockingReceiver receiver=new BlockingReceiver();
-        s.setReceiver(receiver);
+        ch.setReceiver(receiver);
 
         Thread thread=new Thread() {
-            public void run() {bottom_prot.up(new Event(Event.MSG, new Message()));}
+            public void run() {
+                ping_prot.up(new Event(Event.MSG, new Message()));}
         };
 
         Thread thread2=new Thread() {
-            public void run() {bottom_prot.up(new Event(Event.MSG, new Message()));}
+            public void run() {
+                ping_prot.up(new Event(Event.MSG, new Message()));}
         };
 
         thread.start();
@@ -109,14 +97,12 @@ public class BARRIERTest {
 
 
 
-    static class MyReceiver implements Simulator.Receiver {
+    static class MyReceiver extends ReceiverAdapter {
         AtomicInteger num_mgs_received=new AtomicInteger(0);
 
-        public void receive(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                if(num_mgs_received.incrementAndGet() % 1000 == 0)
-                    System.out.println("<== " + num_mgs_received.get());
-            }
+        public void receive(Message msg) {
+            if(num_mgs_received.incrementAndGet() % 1000 == 0)
+                System.out.println("<== " + num_mgs_received.get());
         }
 
         public int getNumberOfReceivedMessages() {
@@ -125,17 +111,17 @@ public class BARRIERTest {
     }
 
 
-    class BlockingReceiver implements Simulator.Receiver {
+    class BlockingReceiver extends ReceiverAdapter {
 
-        public void receive(Event evt) {
+        public void receive(Message msg) {
             System.out.println("Thread " + Thread.currentThread().getId() + " receive() called - about to enter mutex");
             synchronized(this) {
                 System.out.println("Thread " + Thread.currentThread().getId() + " entered mutex");
                 Util.sleep(2000);
                 System.out.println("Thread " + Thread.currentThread().getId() + " closing barrier");
-                s.send(new Event(Event.CLOSE_BARRIER));
+                ch.down(new Event(Event.CLOSE_BARRIER));
                 System.out.println("Thread " + Thread.currentThread().getId() + " closed barrier");
-}
+            }
         }
     }
 

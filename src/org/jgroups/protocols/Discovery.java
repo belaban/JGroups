@@ -91,7 +91,7 @@ public abstract class Discovery extends Protocol {
     protected TimeScheduler timer=null;
 
     protected View view;
-    protected final Vector<Address> members=new Vector<Address>(11);
+    protected final List<Address> members=new ArrayList<Address>(11);
     protected Address local_addr=null;
     protected String group_addr=null;
     protected final Set<Responses> ping_responses=new HashSet<Responses>();
@@ -109,6 +109,8 @@ public abstract class Discovery extends Protocol {
 
 
     public abstract void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception;
+
+    public abstract boolean isDynamic();
 
 
     public void handleDisconnect() {
@@ -434,7 +436,7 @@ public abstract class Discovery extends Protocol {
 
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
-                Vector<Address> tmp;
+                List<Address> tmp;
                 view=(View)evt.getArg();
                 if((tmp=view.getMembers()) != null) {
                     synchronized(members) {

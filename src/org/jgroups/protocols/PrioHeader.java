@@ -3,8 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Global;
 import org.jgroups.Header;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -45,11 +45,11 @@ public class PrioHeader extends Header {
 		return Global.BYTE_SIZE;
 	}
 
-	public void writeTo( DataOutputStream outstream ) throws IOException {
+	public void writeTo( DataOutput outstream ) throws IOException {
 		outstream.writeByte(priority);
 	}
 
-	public void readFrom( DataInputStream instream ) throws IOException, IllegalAccessException, InstantiationException {
+	public void readFrom( DataInput instream ) throws IOException, IllegalAccessException, InstantiationException {
 		priority=instream.readByte();
 	}
 

@@ -1,7 +1,7 @@
 package org.jgroups.demos;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -152,12 +152,12 @@ public class ExecutionServiceDemo {
 
         // We copy over as a single array with no offset
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeStreamable(new ByteBufferStreamable(buffer), out);
         }
 
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             buffer = ((ByteBufferStreamable)Util.readStreamable(
                 ByteBufferStreamable.class, in)).buffer;
@@ -210,13 +210,13 @@ public class ExecutionServiceDemo {
         }
         
         @Override
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             Util.writeStreamable(new ByteBufferStreamable(bytes1), out);
             Util.writeStreamable(new ByteBufferStreamable(bytes2), out);
         }
 
         @Override
-        public void readFrom(DataInputStream in) throws IOException,
+        public void readFrom(DataInput in) throws IOException,
                 IllegalAccessException, InstantiationException {
             bytes1 = ((ByteBufferStreamable)Util.readStreamable(
                 ByteBufferStreamable.class, in)).buffer;

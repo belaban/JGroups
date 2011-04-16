@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
-            "pbcast.NAKACK(use_mcast_xmit=false;gc_lag=0;log_discard_msgs=false;log_not_found_msgs=false)" +
+            "pbcast.NAKACK(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
             ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
 
     static final String flush_props=simple_props + ":pbcast.FLUSH";

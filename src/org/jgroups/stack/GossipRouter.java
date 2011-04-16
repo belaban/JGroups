@@ -169,23 +169,6 @@ public class GossipRouter {
         return expiryTime;
     }
 
-    @Deprecated
-    public void setGossipRequestTimeout(long gossipRequestTimeout) {
-    }
-
-    @Deprecated
-    public static long getGossipRequestTimeout() {
-        return 0;
-    }
-
-    @Deprecated
-    public void setRoutingClientReplyTimeout(long routingClientReplyTimeout) {
-    }
-
-    @Deprecated
-    public static long getRoutingClientReplyTimeout() {
-        return 0;
-    }
 
     @ManagedAttribute(description="status")
     public boolean isStarted() {
@@ -792,7 +775,7 @@ public class GossipRouter {
                 
                 String logical_name = request.getLogicalName();
                 if (logical_name != null && addr instanceof org.jgroups.util.UUID)
-                    org.jgroups.util.UUID.add((org.jgroups.util.UUID) addr, logical_name);
+                    org.jgroups.util.UUID.add(addr, logical_name);
 
                 // group name, logical address, logical name, physical addresses (could be null)
                 logical_addrs.add(addr); // allows us to remove the entries for this connection on

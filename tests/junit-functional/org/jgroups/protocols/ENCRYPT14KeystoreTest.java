@@ -260,7 +260,7 @@ public class ENCRYPT14KeystoreTest {
     static class MockAddress implements Address {
         private static final long serialVersionUID=-2044466632514705356L;
 
-        public boolean isMulticastAddress() {
+        private boolean isMulticastAddress() {
             return false;
         }
 
@@ -275,11 +275,11 @@ public class ENCRYPT14KeystoreTest {
         public void writeExternal(ObjectOutput out) throws IOException {
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             ;
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             ;
         }
 

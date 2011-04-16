@@ -13,10 +13,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Shared base class for tcpip protocols
+ * Shared base class for TCP protocols
  * @author Scott Marlow
  */
-@DeprecatedProperty(names={"suspect_on_send_failure", "skip_suspected_members"})
 public abstract class BasicTCP extends TP {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -78,20 +77,11 @@ public abstract class BasicTCP extends TP {
         super.init();
 
         if(!isSingleton() && bind_port <= 0) {
-            Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
-            if(dynamic_discovery_prot == null)
-                dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");
-
-            if(dynamic_discovery_prot != null) {
-                if(log.isDebugEnabled())
-                    log.debug("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + bind_port + " is okay");
-            }
-            else {
+            Discovery discovery_prot=(Discovery)stack.findProtocol(Discovery.class);
+            if(discovery_prot != null && !discovery_prot.isDynamic())
                 throw new IllegalArgumentException("start_port cannot be set to " + bind_port +
-                        ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
-            }
+                                                     ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
         }
-        
     }
 
 

@@ -236,7 +236,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         protected void useChannel() throws Exception {
             System.out.println(channel.getName() + ": connecting and fetching the state");
-            channel.connect("StateTransferTest", null, null, 30000);
+            channel.connect("StateTransferTest", null, 30000);
             System.out.println(channel.getName() + ": state transfer is done");
             Object[] data=new Object[2];
             for(int i=from; i < to; i++) {

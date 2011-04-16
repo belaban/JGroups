@@ -354,7 +354,7 @@ public class Digest implements Externalizable, Streamable {
         senders.putAll(tmp);
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeShort(senders.size());
         for(Map.Entry<Address,Entry> entry: senders.entrySet()) {
             Entry val=entry.getValue();
@@ -366,7 +366,7 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         short size=in.readShort();
         Map<Address,Entry> tmp=new HashMap<Address, Entry>(size);
         Address key;
@@ -478,13 +478,13 @@ public class Digest implements Externalizable, Streamable {
             return SIZE;
         }
 
-        public void writeTo(DataOutputStream out) throws IOException {
+        public void writeTo(DataOutput out) throws IOException {
             out.writeLong(low_seqno);
             out.writeLong(highest_delivered_seqno);
             out.writeLong(highest_received_seqno);
         }
 
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             low_seqno=in.readLong();
             highest_delivered_seqno=in.readLong();
             highest_received_seqno=in.readLong();

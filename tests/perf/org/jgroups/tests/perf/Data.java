@@ -5,7 +5,6 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -42,7 +41,7 @@ public class Data implements Streamable {
         return type;
     }
 
-    public void writeTo(DataOutputStream out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeByte(type);
         if(payload != null) {
             out.writeBoolean(true);
@@ -77,7 +76,7 @@ public class Data implements Streamable {
             out.writeBoolean(false);
     }
 
-    public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
         if(in.readBoolean()) {
             int length=in.readInt();

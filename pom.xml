@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>2.12.1.Beta1</version>
+    <version>3.0.0.Alpha1</version>
     <url>http://www.jgroups.org</url>
     <description>
         Reliable cluster communication toolkit
@@ -68,9 +68,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>bsh</groupId>
+            <groupId>org.beanshell</groupId>
             <artifactId>bsh</artifactId>
-            <version>1.2b7</version>
+            <version>2.0b5</version>
             <optional>true</optional>
             <scope>compile</scope>
         </dependency>
