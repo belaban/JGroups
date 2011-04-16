@@ -2,6 +2,8 @@
 *.iws
 *.ipr
 *.iml
+.project
+.classpath
 .idea/
 .idea
 classes/
