@@ -1,6 +1,11 @@
 package org.jgroups.protocols;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -18,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
@@ -132,8 +135,6 @@ abstract public class Executing extends Protocol {
      */
     protected Queue<Owner> _consumersAvailable = new ArrayDeque<Owner>();
     
-    protected ExecutorService _executor = Executors.newFixedThreadPool(4);
-
     protected static enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
         CONSUMER_READY,         // request to coordinator from server to tell of a new consumer ready
@@ -293,20 +294,21 @@ abstract public class Executing extends Protocol {
                     }
                     
                     if (local_addr.equals(owner.getAddress())) {
+                        if(log.isTraceEnabled())
+                            log.trace("[redirect] <--> [" + local_addr + "] "
+                                    + type.name() + " [" + value
+                                    + (owner.requestId != -1 ? " request id: " + 
+                                            owner.requestId : "")
+                                    + "]");
                         final Owner finalOwner = owner;
-                        _executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (type == Type.RESULT_SUCCESS) {
-                                    handleValueResponse(local_addr, 
-                                        finalOwner.requestId, valueToSend);
-                                }
-                                else if (type == Type.RESULT_EXCEPTION){
-                                    handleExceptionResponse(local_addr, 
-                                        finalOwner.requestId, (Throwable)valueToSend);
-                                }
-                            }
-                        });
+                        if (type == Type.RESULT_SUCCESS) {
+                            handleValueResponse(local_addr, 
+                                finalOwner.requestId, valueToSend);
+                        }
+                        else if (type == Type.RESULT_EXCEPTION){
+                            handleExceptionResponse(local_addr, 
+                                finalOwner.requestId, (Throwable)valueToSend);
+                        }
                     }
                     else {
                         sendRequest(owner.getAddress(), type, owner.requestId, 
@@ -441,9 +443,7 @@ abstract public class Executing extends Protocol {
                         handleConsumerReadyRequest(req.request, (Address)req.object);
                         break;
                     case CONSUMER_UNREADY:
-                        Owner consumer = new Owner((Address)req.object, req.request);
-                        _consumersAvailable.remove(consumer);
-                        sendRemoveConsumerRequest(consumer);
+                        handleConsumerUnreadyRequest(req.request, (Address)req.object);
                         break;
                     case CONSUMER_FOUND:
                         handleConsumerFoundResponse(req.request, (Address)req.object);
@@ -469,7 +469,7 @@ abstract public class Executing extends Protocol {
                             req.request);
                         break;
                     case RUN_REJECTED:
-                        // TODO: make this localfied
+                        // We could make requests local for this, but is it really worth it
                         handleTaskRejectedResponse(msg.getSrc(), req.request);
                         break;
                     case RESULT_SUCCESS:
@@ -480,7 +480,7 @@ abstract public class Executing extends Protocol {
                             (Throwable)req.object);
                         break;
                     case INTERRUPT_RUN:
-                        // TODO: make this localfied
+                        // We could make requests local for this, but is it really worth it
                         handleInterruptRequest(msg.getSrc(), req.request);
                         break;
                     case CREATE_CONSUMER_READY:
@@ -582,19 +582,8 @@ abstract public class Executing extends Protocol {
         }
         
         if (consumer != null) {
-            if (local_addr.equals(source.getAddress())) {
-                _executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        handleConsumerFoundResponse(consumer.getRequestId(), 
-                            consumer.getAddress());
-                    }
-                });
-            }
-            else {
-                sendRequest(source.getAddress(), Type.CONSUMER_FOUND, 
-                    consumer.getRequestId(), consumer.getAddress());
-            }
+            sendRequest(source.getAddress(), Type.CONSUMER_FOUND, 
+                consumer.getRequestId(), consumer.getAddress());
             sendRemoveConsumerRequest(consumer);
         }
         else {
@@ -619,23 +608,19 @@ abstract public class Executing extends Protocol {
         }
         
         if (requestor != null) {
-            if (local_addr.equals(requestor.getAddress())) {
-                _executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        handleConsumerFoundResponse(source.getRequestId(), source.getAddress());
-                    }
-                });
-            }
-            else {
-                sendRequest(requestor.getAddress(), Type.CONSUMER_FOUND, 
-                    source.getRequestId(), source.getAddress());
-            }
+            sendRequest(requestor.getAddress(), Type.CONSUMER_FOUND, 
+                source.getRequestId(), source.getAddress());
             sendRemoveRunRequest(requestor);
         }
         else {
             sendNewConsumerRequest(source);
         }
+    }
+    
+    protected void handleConsumerUnreadyRequest(long requestId, Address address) {
+        Owner consumer = new Owner(address, requestId);
+        _consumersAvailable.remove(consumer);
+        sendRemoveConsumerRequest(consumer);
     }
 
     protected void handleConsumerFoundResponse(long request, Address address) {
@@ -656,12 +641,7 @@ abstract public class Executing extends Protocol {
             _awaitingReturn.put(owner, runnable);
             // If local we pass along without serializing
             if (local_addr.equals(owner.getAddress())) {
-                _executor.submit(new Runnable () {
-                    @Override
-                    public void run() {
-                        handleTaskSubmittedRequest(runnable, local_addr, requestId);
-                    }
-                });
+                handleTaskSubmittedRequest(runnable, local_addr, requestId);
             }
             else {
                 if (runnable instanceof DistributedFuture) {
@@ -695,7 +675,7 @@ abstract public class Executing extends Protocol {
              * in case if the _tasks.take() call isn't registered quick
              * enough after sending the Type.CONSUMER_READY message
              */
-            received = _tasks.offer(runnable, 100, TimeUnit.MILLISECONDS);
+            received = _tasks.offer(runnable, 1000, TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
