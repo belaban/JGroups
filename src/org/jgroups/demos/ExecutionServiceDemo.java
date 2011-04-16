@@ -94,14 +94,14 @@ public class ExecutionServiceDemo {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutputStream out) throws IOException {
             int size = buffer.limit() - buffer.position();
             out.writeInt(size);
             out.write(buffer.array(), buffer.position(), size);
         }
 
         @Override
-        public void readFrom(DataInput in) throws IOException,
+        public void readFrom(DataInputStream in) throws IOException,
                 IllegalAccessException, InstantiationException {
             buffer = ByteBuffer.allocate(in.readInt());
             in.readFully(buffer.array());

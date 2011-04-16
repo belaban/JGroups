@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -845,7 +845,7 @@ abstract public class Executing extends Protocol {
             this.request=request;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type.ordinal());
             // We can't use Util.writeObject since it's size is limited to 2^15-1
             try {
@@ -868,7 +868,7 @@ abstract public class Executing extends Protocol {
             out.writeLong(request);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=Type.values()[in.readByte()];
             // We can't use Util.readObject since it's size is limited to 2^15-1
             try {
@@ -911,10 +911,10 @@ abstract public class Executing extends Protocol {
             return 0;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutputStream out) throws IOException {
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         }
     }
     
