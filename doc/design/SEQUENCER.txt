@@ -26,15 +26,11 @@ messages from A, B and C, the coordinator establishes an ordered sequence, order
 coordinator when sending the message. This sequence is delivered in order at all receivers, therefore establishing
 total ordering.
 
-Note that there can be cases where a sender P sends message M1 and M2, but M2 is received first by the coordinator,
-then M1. In this case, M2 would be *before* M1 in the global sequence established by the coordinator. If this is not
-desired, then use a group RPC which gets acked by every node before a new message is sent.
-
 Example: group is {A,B,C}. B wants to multicast a message M to the group. It does so by sending M to A. A then
 adds a header which records the original sender (B) and replaces M's sender address with its own (A).
 When a member receives M, everybody thinks the message is from A, and NAKACK will possibly retransmit from A
 in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with B. It has to
-do so on a (shallow) *copy* of M, otherwise we would change the original message and therefore retransmission
+do so on a *copy* of M, otherwise we would change the original message and therefore retransmission
 requests would go to B, rather than A !
 
 Reliability on failover of coordinator
