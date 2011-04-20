@@ -1399,6 +1399,23 @@ public class Util {
         StringBuilder sb=new StringBuilder();
         ThreadMXBean bean=ManagementFactory.getThreadMXBean();
         long[] ids=bean.getAllThreadIds();
+        _printThreads(bean, ids, sb);
+        long[] deadlocks=bean.findDeadlockedThreads();
+        if(deadlocks != null && deadlocks.length > 0) {
+            sb.append("deadlocked threads:\n");
+            _printThreads(bean, deadlocks, sb);
+        }
+
+        deadlocks=bean.findMonitorDeadlockedThreads();
+        if(deadlocks != null && deadlocks.length > 0) {
+            sb.append("monitor deadlocked threads:\n");
+            _printThreads(bean, deadlocks, sb);
+        }
+        return sb.toString();
+    }
+
+
+    protected static void _printThreads(ThreadMXBean bean, long[] ids, StringBuilder sb) {
         ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
         for(int i=0; i < threads.length; i++) {
             ThreadInfo info=threads[i];
@@ -1414,11 +1431,11 @@ public class Util {
             }
             sb.append("\n\n");
         }
-        return sb.toString();
     }
 
+
     public static boolean interruptAndWaitToDie(Thread t) {
-		return interruptAndWaitToDie(t, Global.THREAD_SHUTDOWN_WAIT_TIME);
+        return interruptAndWaitToDie(t, Global.THREAD_SHUTDOWN_WAIT_TIME);
 	}
 
     public static boolean interruptAndWaitToDie(Thread t, long timeout) {
