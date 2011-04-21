@@ -1,12 +1,12 @@
 
 
-Release Notes JGroups 2.12
-==========================
+Release Notes JGroups 2.12.1
+============================
 
 
 Author: Bela Ban
 
-JGroups 2.12 is API-backwards compatible with previous versions (down to 2.2.7).
+JGroups 2.12.1 is API-backwards compatible with previous versions (down to 2.2.7).
 
 Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
 
@@ -16,77 +16,12 @@ Below is a summary (with links to the detailed description) of the major new fea
 New features
 ============
 
+Sample config for large clusters
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-1307]
 
 
-RELAY: connecting local (autonomous) clusters into a large virtual cluster
---------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-747]
-
-A new protocol to connect 2 geographically separate sites into 1 large virtual cluster. The local clusters are
-completely autonomous, but RELAY makes them appear as if they were one.
-
-This can for example be used to implement geographic failover
-
-Blog: http://belaban.blogspot.com/2010/11/clustering-between-different-sites.html
-
-
-
-LockService: a new distributed locking service
-----------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1249]
-[https://issues.jboss.org/browse/JGRP-1298]
-[https://issues.jboss.org/browse/JGRP-1278]
-
-New distributed lock service, offering a java.util.concurrent.lock.Lock implementation (including conditions)
-providing cluster wide locks.
-
-Blog: http://belaban.blogspot.com/2011/01/new-distributed-locking-service-in.html
-
-
-
-Distributed ExecutorService
----------------------------
-[https://issues.jboss.org/browse/JGRP-1300]
-
-New implementation of java.util.concurrent.ExecutorService over JGroups (contributed by William Burns).
-Read the documentation at www.jgroups.org for details.
-
-
-
-BPING (Broadcast Ping): new discovery protocol based on broadcasting
---------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1269]
-
-This is mainly used for discovery of JGroups on Android based phones. Apparently, IP multicasting is not correctly
-implemented / supported on Android (2.1), and so we have to resort to UPD broadcasting.
-
-Blog: http://belaban.blogspot.com/2011/01/jgroups-on-android-phones.html
-
-
-
-JDBC_PING: new discovery protocol using a shared database
----------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1231]
-
-All nodes use a shared DB (e.g. RDS on EC2) to place their location information into, and to read information from.
-Thanks to Sanne for coming up with the idea and for implementing this !
-Additional infos are on the wiki: community.jboss.org/wiki/JDBCPING
-
-
-FD_SOCK: ability to pick the bind address and port for the client socket
-------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1262]
-
-
-
-Pluggable address generation
----------------------------
-[https://issues.jboss.org/browse/JGRP-1297]
-
-Address generation is now pluggable; JChannel.setAddressGenerator(AddressGenerator) allows for generation of
-specific implementations of Address. This can for example be used to pass additional information along with
-every address. Currently used by RELAY to pass the name of the sub cluster around with a UUID.
-
+Config udp-largecluster.xml was added, serves as blueprint for large clusters. This is work-in-progress.
 
 
 
@@ -95,22 +30,12 @@ Optimizations
 =============
 
 
-NAKACK: retransmitted messages don't need to be wrapped
--------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1266]
+ExecutionService
+----------------
+[https://issues.jboss.org/browse/JGRP-1308]
+[https://issues.jboss.org/browse/JGRP-1310]
 
-Not serializing retransmitted messages at the retransmitter and deserializing them at the requester saves
-1 serialization and 1 deserialization per retransmitted message.
-
-
-Faster NakReceiverWindow
-------------------------
-[https://issues.jboss.org/browse/JGRP-1133]
-
-Various optimizations to reduce locking in NakReceiverWindow:
-- Use of RetransmitTable (array-based matrix) rather than HashMap (reduced memory need, reduced locking, compaction)
-- Removal of double locking
-
+Removed serialization overhead when assigning task to self
 
 
 
@@ -120,71 +45,34 @@ Bug fixes
 =========
 
 
-NAKACK: incorrect digest on merge and state transfer
+ENCRYPT: use alg provider for cipher creation
 ----------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1251]
+[https://issues.jboss.org/browse/JGRP-1311]
 
-When calling JChannel.getState() on a merge, the fetched state would overwrite the digest incorrectly.
-
-
-AUTH: merge can bypass authorization
-------------------------------------
-[https://issues.jboss.org/browse/JGRP-1255]
-
-AUTH would not check creds of other members in case of a merge. This allowed an unauthorized node to join
-a cluster by triggering a merge.
+During distribution of the encryption key from the master to each cluster member,
+use the configured asym_provider and sym_provider when getting Ciphers.
 
 
-Custom SocketFactory ignored
-----------------------------
-[https://issues.jboss.org/browse/JGRP-1276]
+
+TCP SocketFactory ignored
+-------------------------
+[https://issues.jboss.org/browse/JGRP-1312]
 
 Despite setting a custom SocketFactory, it was ignored.
 
 
-UFC: crash of depleted member could hang node
----------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1274]
+Configuration sanity check: order of protocols was not enforced
+---------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1305]
 
-Causing it to wait forever for credits from the crashed member.
-
-
-Flow control: crash of member doesn't unblock sender
-----------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1283]
-[https://issues.jboss.org/browse/JGRP-1287]
-[https://issues.jboss.org/browse/JGRP-1274]
-
-When a sender block on P sending credits, and P crashes before being able to send credits,
-the sender blocks indefinitely.
+E.g. STABLE being below NAKACK would not throw an exception
 
 
-UNICAST2: incorrect delivery order under stress
------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1267]
+Custom thread factories, thread pools and timer overridden in init()
+--------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1306]
 
-UNICAST2 could (in rare cases) deliver messages in incorrect order. Fixed by using the same (proven)
-algorithm as NAKACK.
-
-
-Incorrect conversion of TimeUnit if MILLISECONDS were not used
---------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1277]
-
-
-Check if bind_addr is correct
------------------------------
-[https://issues.jboss.org/browse/JGRP-1280]
-
-JGroups now verifies that the bind address is indeed a valid IP address: it has to be either the wildcard
-address (0.0.0.0) or an address of a network interface that is up.
-
-
-ENCRYPT: sym_provider ignored
------------------------------
-[https://issues.jboss.org/browse/JGRP-1279]
-
-Property sym_provider is ignored
+When setting a custom thread factory, pool or timer, they would get overwritten in TP.init()
 
 
 
@@ -203,5 +91,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-March 2011
+April 2011
 
