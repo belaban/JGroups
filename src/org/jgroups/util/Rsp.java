@@ -9,16 +9,16 @@ import org.jgroups.Address;
  */
 public class Rsp<T> {
     /* flag that represents whether the response was received */
-    boolean received;
+    protected boolean received;
 
     /* flag that represents whether the response was suspected */
-    boolean suspected;
+    protected boolean suspected;
 
     /* The sender of this response */
-    Address sender;
+    protected Address sender;
 
     /* the value from the response */
-    T retval;
+    protected T retval;
 
 
     public Rsp(Address sender) {
