@@ -1119,6 +1119,29 @@ public class Util {
     }
 
 
+    public static String readFile(String filename) throws FileNotFoundException {
+        FileInputStream in=new FileInputStream(filename);
+        return readContents(in);
+    }
+
+
+    public static String readContents(InputStream input) {
+        StringBuilder sb=new StringBuilder();
+        int ch;
+        while(true) {
+            try {
+                ch=input.read();
+                if(ch != -1)
+                    sb.append((char)ch);
+                else
+                    break;
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+        return sb.toString();
+    }
 
 
     public static String parseString(DataInput in) {
