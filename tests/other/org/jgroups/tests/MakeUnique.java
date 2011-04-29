@@ -13,9 +13,13 @@ import java.util.*;
  */
 public class MakeUnique {
     
-    static void start(String inputfile, String outputfile, Collection<String> keywords) throws IOException {
+    static void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords) throws IOException {
         String input=inputfile != null? Util.readFile(inputfile) : Util.readContents(System.in);
-        StringTokenizer tok=new StringTokenizer(input, ",\n\r \t", true);
+        String delims=",\n\r \t[]";
+        if(delimiters != null)
+            delims=delims + delimiters;
+        
+        StringTokenizer tok=new StringTokenizer(input, delims, true);
         FileOutputStream output=new FileOutputStream(outputfile);
 
         Map<String,Integer> map=new HashMap<String,Integer>();
@@ -67,6 +71,7 @@ public class MakeUnique {
     public static void main(String[] args) throws IOException {
         String input=null;
         String output="output.txt";
+        String delims=null;
         Set<String> keywords=new HashSet<String>();
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-in")) {
@@ -77,12 +82,16 @@ public class MakeUnique {
                 output=args[++i];
                 continue;
             }
+            if(args[i].equals("-delims")) {
+                delims=args[++i];
+                continue;
+            }
             if(args[i].equals("-h")) {
-                System.out.println("MakeUnique -in inputfile [-out outputfile] [keyword]*");
+                System.out.println("MakeUnique -in inputfile [-out outputfile] [-delims delimiters] [keyword]*");
                 return;
             }
             keywords.add(args[i]);
         }
-        start(input, output, keywords);
+        start(input, output, delims, keywords);
     }
 }
