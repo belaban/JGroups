@@ -1,9 +1,9 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.Util;
+
 import java.io.*;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Replaces words that start with args passed to thei program with A, B, C and so on. Useful to convert a view of
@@ -14,23 +14,54 @@ import java.util.Set;
 public class MakeUnique {
     
     static void start(String inputfile, String outputfile, Collection<String> keywords) throws IOException {
-        InputStream in=inputfile == null? System.in : new FileInputStream(inputfile);
+        String input=inputfile != null? Util.readFile(inputfile) : Util.readContents(System.in);
+        StringTokenizer tok=new StringTokenizer(input, ",\n\r \t", true);
+        FileOutputStream output=new FileOutputStream(outputfile);
 
-        BufferedReader reader=new BufferedReader(new InputStreamReader(in));
-        StreamTokenizer tok=new StreamTokenizer(reader);
-        tok.slashSlashComments(false);
-        tok.slashStarComments(false);
-        // tok.parseNumbers();
-        tok.wordChars((int)'0', (int)'9');
-        tok.wordChars('-', '.');
+        Map<String,Integer> map=new HashMap<String,Integer>();
+        int current_char='A';
 
-        while(true) {
-            int type=tok.nextToken();
-            if(type == StreamTokenizer.TT_EOF)
-                break;
-            System.out.println(tok.sval);
+        while(tok.hasMoreTokens()) {
+            String token=tok.nextToken();
+            if(token == null)
+                continue;
+
+            // check if token is already in the map
+            if(map.containsKey(token)) {
+                Integer val=map.get(token);
+                output.write((char)val.intValue());
+                System.out.print((char)val.intValue());
+                continue;
+            }
+
+            if(keywords != null && isKeyword(keywords, token)) {
+                map.put(token, current_char++);
+                Integer val=map.get(token);
+                output.write((char)val.intValue());
+                System.out.print((char)val.intValue());
+            }
+            else {
+                output.write(token.getBytes());
+                System.out.print(new String(token.getBytes()));
+            }
+        }
+        output.close();
+        System.out.println("\noutput written to " + outputfile);
+    }
+
+    static boolean isKeyword(Collection<String> keywords, String token) {
+        // full match
+        for(String keyword: keywords) {
+            if(token.equals(keyword))
+                return true;
         }
 
+        // partial
+        for(String keyword: keywords) {
+            if(token.startsWith(keyword))
+                return true;
+        }
+        return false;
     }
 
     public static void main(String[] args) throws IOException {
