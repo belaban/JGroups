@@ -12,8 +12,10 @@ import java.util.*;
  * @since 3.0
  */
 public class MakeUnique {
+    int current_char='A';
+    int count=0;
     
-    static void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords) throws IOException {
+    void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords) throws IOException {
         String input=inputfile != null? Util.readFile(inputfile) : Util.readContents(System.in);
         String delims=",\n\r \t[]";
         if(delimiters != null)
@@ -22,8 +24,8 @@ public class MakeUnique {
         StringTokenizer tok=new StringTokenizer(input, delims, true);
         FileOutputStream output=new FileOutputStream(outputfile);
 
-        Map<String,Integer> map=new HashMap<String,Integer>();
-        int current_char='A';
+        Map<String,String> map=new HashMap<String,String>();
+
 
         while(tok.hasMoreTokens()) {
             String token=tok.nextToken();
@@ -32,17 +34,18 @@ public class MakeUnique {
 
             // check if token is already in the map
             if(map.containsKey(token)) {
-                Integer val=map.get(token);
-                output.write((char)val.intValue());
-                System.out.print((char)val.intValue());
+                String val=map.get(token);
+                output.write(val.getBytes());
+                System.out.print(val);
                 continue;
             }
 
             if(keywords != null && isKeyword(keywords, token)) {
-                map.put(token, current_char++);
-                Integer val=map.get(token);
-                output.write((char)val.intValue());
-                System.out.print((char)val.intValue());
+                map.put(token, get());
+                String val=map.get(token);
+                output.write(val.getBytes());
+                System.out.print(val);
+                increment();
             }
             else {
                 output.write(token.getBytes());
@@ -51,6 +54,20 @@ public class MakeUnique {
         }
         output.close();
         System.out.println("\noutput written to " + outputfile);
+    }
+
+    private String get() {
+        if(current_char <= 'Z')
+            return String.valueOf(current_char);
+        else
+            return String.valueOf(current_char) + String.valueOf(count);
+    }
+
+    private void increment() {
+        if(++current_char > 'Z') {
+            count++;
+            current_char='A';
+        }
     }
 
     static boolean isKeyword(Collection<String> keywords, String token) {
@@ -92,6 +109,6 @@ public class MakeUnique {
             }
             keywords.add(args[i]);
         }
-        start(input, output, delims, keywords);
+        new MakeUnique().start(input, output, delims, keywords);
     }
 }
