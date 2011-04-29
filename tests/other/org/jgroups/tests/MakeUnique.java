@@ -15,9 +15,9 @@ public class MakeUnique {
     int current_char='A';
     int count=0;
     
-    void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords) throws IOException {
+    void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords, boolean dump) throws IOException {
         String input=inputfile != null? Util.readFile(inputfile) : Util.readContents(System.in);
-        String delims=",\n\r \t[]";
+        String delims=",\n\r \t[]|";
         if(delimiters != null)
             delims=delims + delimiters;
         
@@ -54,10 +54,19 @@ public class MakeUnique {
         }
         output.close();
         System.out.println("\noutput written to " + outputfile);
+        if(dump) {
+            System.out.println("map:");
+            // new map, sorted by *value*
+            Map<String,String> tmp=new TreeMap<String,String>();
+            for(Map.Entry<String,String> entry: map.entrySet())
+                tmp.put(entry.getValue(), entry.getKey());
+            for(Map.Entry<String,String> entry: tmp.entrySet())
+                System.out.println(entry.getKey() + ": \t" + entry.getValue());
+        }
     }
 
     private String get() {
-        if(current_char <= 'Z')
+        if(current_char <= 'Z' && count == 0)
             return String.valueOf((char)current_char);
         else
             return String.valueOf((char)current_char) + String.valueOf(count);
@@ -90,6 +99,8 @@ public class MakeUnique {
         String output="output.txt";
         String delims=null;
         Set<String> keywords=new HashSet<String>();
+        boolean dump=false;
+
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-in")) {
                 input=args[++i];
@@ -103,12 +114,16 @@ public class MakeUnique {
                 delims=args[++i];
                 continue;
             }
+            if(args[i].equals("-dump")) {
+                dump=true;
+                continue;
+            }
             if(args[i].equals("-h")) {
                 System.out.println("MakeUnique -in inputfile [-out outputfile] [-delims delimiters] [keyword]*");
                 return;
             }
             keywords.add(args[i]);
         }
-        new MakeUnique().start(input, output, delims, keywords);
+        new MakeUnique().start(input, output, delims, keywords, dump);
     }
 }
