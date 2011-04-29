@@ -96,7 +96,7 @@ public abstract class TP extends Protocol {
     protected List<NetworkInterface> receive_interfaces=null;
 
     @Property(description="Max number of elements in the logical address cache before eviction starts")
-    protected int logical_addr_cache_max_size=200;
+    protected int logical_addr_cache_max_size=500;
 
     @Property(description="Time (in ms) after which entries in the logical address cache marked as removable are removed")
     protected long logical_addr_cache_expiration=120000;
