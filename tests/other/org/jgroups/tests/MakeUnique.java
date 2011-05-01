@@ -17,7 +17,7 @@ public class MakeUnique {
     
     void start(String inputfile, String outputfile, String delimiters, Collection<String> keywords, boolean dump) throws IOException {
         String input=inputfile != null? Util.readFile(inputfile) : Util.readContents(System.in);
-        String delims=",\n\r \t[]|:";
+        String delims=",\n\r \t[]|:;";
         if(delimiters != null)
             delims=delims + delimiters;
         
