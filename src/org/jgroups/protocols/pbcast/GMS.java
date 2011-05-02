@@ -10,6 +10,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
+import org.jgroups.util.UUID;
 
 import java.io.*;
 import java.util.*;
@@ -248,6 +249,22 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             sb.append(view).append("\n");
         }
         return sb.toString();
+    }
+
+
+    @ManagedOperation
+    public void suspect(String suspected_member) {
+        if(suspected_member == null)
+            return;
+        Map<Address,String> contents= UUID.getContents();
+        for(Map.Entry<Address,String> entry: contents.entrySet()) {
+            String logical_name=entry.getValue();
+            if(logical_name != null && logical_name.equals(suspected_member)) {
+                Address suspect=entry.getKey();
+                if(suspect != null)
+                    up(new Event(Event.SUSPECT, suspect));
+            }
+        }
     }
 
     public boolean isCoordinator() {
