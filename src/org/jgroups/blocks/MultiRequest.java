@@ -125,7 +125,7 @@ public class MultiRequest extends Request {
      * Adds a response to the response table. When all responses have been received,
      * <code>execute()</code> returns.
      */
-    public void receiveResponse(Object response_value, Address sender) {
+    public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
         if(done)
             return;
         Rsp rsp=findResponse(sender);
@@ -135,8 +135,12 @@ public class MultiRequest extends Request {
         RspFilter rsp_filter=options.getRspFilter();
         boolean responseReceived=false;
         if(!rsp.wasReceived()) {
-            if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender)))
-                rsp.setValue(response_value);
+            if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
+                if(is_exception && response_value instanceof Throwable)
+                    rsp.setException((Throwable)response_value);
+                else
+                    rsp.setValue(response_value);
+            }
             rsp.setReceived(responseReceived);
         }
 

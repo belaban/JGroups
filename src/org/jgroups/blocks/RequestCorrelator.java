@@ -381,8 +381,10 @@ public class RequestCorrelator {
                 break;
 
             case Header.RSP:
+            case Header.EXC_RSP:
                 RspCollector coll=requests.get(hdr.id);
                 if(coll != null) {
+                    boolean is_exception=hdr.type == Header.EXC_RSP;
                     Address sender=msg.getSrc();
                     Object retval;
                     byte[] buf=msg.getBuffer();
@@ -394,8 +396,9 @@ public class RequestCorrelator {
                     catch(Exception e) {
                         log.error("failed unmarshalling buffer into return value", e);
                         retval=e;
+                        is_exception=true;
                     }
-                    coll.receiveResponse(retval, sender);
+                    coll.receiveResponse(retval, sender, is_exception);
                 }
                 break;
 
@@ -452,6 +455,7 @@ public class RequestCorrelator {
         Object        rsp_buf; // either byte[] or Buffer
         Header        rsp_hdr;
         Message       rsp;
+        boolean       threw_exception=false;
 
         // i. Get the request correlator header from the msg and pass it to
         // the registered handler
@@ -469,7 +473,8 @@ public class RequestCorrelator {
             retval=request_handler.handle(req);
         }
         catch(Throwable t) {
-            if(log.isErrorEnabled()) log.error("error invoking method", t);
+            // if(log.isErrorEnabled()) log.error("error invoking method", t);
+            threw_exception=true;
             retval=t;
         }
 
@@ -488,6 +493,7 @@ public class RequestCorrelator {
         catch(Throwable t) {
             try {  // this call should succeed (all exceptions are serializable)
                 rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToByteBuffer(t);
+                threw_exception=true;
             }
             catch(Throwable tt) {
                 if(log.isErrorEnabled()) log.error("failed sending rsp: return value (" + retval + ") is not serializable");
@@ -510,7 +516,8 @@ public class RequestCorrelator {
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
-        rsp_hdr=new Header(Header.RSP, hdr.id, false, this.id);
+
+        rsp_hdr=new Header(threw_exception? Header.EXC_RSP : Header.RSP, hdr.id, false, this.id);
         rsp.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
@@ -543,8 +550,9 @@ public class RequestCorrelator {
      * The header for <tt>RequestCorrelator</tt> messages
      */
     public static class Header extends org.jgroups.Header {
-        public static final byte REQ = 0;
-        public static final byte RSP = 1;
+        public static final byte REQ     = 0;
+        public static final byte RSP     = 1;
+        public static final byte EXC_RSP = 2; // exception
 
         /** Type of header: request or reply */
         public byte    type;
@@ -579,12 +587,18 @@ public class RequestCorrelator {
             this.corrId       = corr_id;
         }
 
-        /**
-         */
         public String toString() {
             StringBuilder ret=new StringBuilder();
             ret.append("id=" + corrId + ", type=");
-            ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
+            switch(type) {
+                case REQ: ret.append("REQ");
+                    break;
+                case RSP: ret.append("RSP");
+                    break;
+                case EXC_RSP: ret.append("EXC_RSP");
+                    break;
+                default: ret.append("<unknown>");
+            }
             ret.append(", id=" + id);
             ret.append(", rsp_expected=" + rsp_expected);
             return ret.toString();
@@ -607,9 +621,9 @@ public class RequestCorrelator {
 
         public int size() {
             return Global.BYTE_SIZE  // type
-                    + Global.LONG_SIZE   // id
-                    + Global.BYTE_SIZE   // rsp_expected
-                    + Global.SHORT_SIZE; // corrId
+              + Global.LONG_SIZE     // id
+              + Global.BYTE_SIZE     // rsp_expected
+              + Global.SHORT_SIZE;   // corrId
         }
     }
 

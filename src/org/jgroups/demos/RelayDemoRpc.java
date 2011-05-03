@@ -68,7 +68,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 continue;
             }
 
-            RspList rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
+            RspList<Object> rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
             for(Rsp rsp: rsps.values())
                 System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
         }

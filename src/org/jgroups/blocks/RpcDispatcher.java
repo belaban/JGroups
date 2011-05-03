@@ -103,8 +103,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
 
 
-    public RspList callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
-                                     Class[] types, RequestOptions options) {
+    public <T> RspList<T> callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
+                                            Class[] types, RequestOptions options) {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethods(dests, method_call, options);
     }
@@ -119,7 +119,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
      * @return RspList A list of return values and flags (suspected, not received) per member
      * @since 2.9
      */
-    public RspList callRemoteMethods(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
+    public <T> RspList<T> callRemoteMethods(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
@@ -153,19 +153,19 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(options.getScope() > 0)
             msg.setScope(options.getScope());
 
-        RspList retval=super.castMessage(dests, msg, options);
+        RspList<T> retval=super.castMessage(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
 
 
 
-    public NotifyingFuture<RspList> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
+    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
                         append("() is empty: no need to send message"));
-            return new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
+            return new NullFuture<RspList<T>>(RspList.EMPTY_RSP_LIST);
         }
 
         if(log.isTraceEnabled())
@@ -193,20 +193,20 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(options.getScope() > 0)
             msg.setScope(options.getScope());
         
-        NotifyingFuture<RspList>  retval=super.castMessageWithFuture(dests, msg, options);
+        NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
 
 
-    public Object callRemoteMethod(Address dest, String method_name, Object[] args,
+    public <T> T callRemoteMethod(Address dest, String method_name, Object[] args,
                                    Class[] types, RequestOptions options) throws Throwable {
         MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethod(dest, method_call, options);
+        return (T)callRemoteMethod(dest, method_call, options);
     }
 
 
-    public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Throwable {
+    public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Throwable {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
 
@@ -220,10 +220,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(options.getScope() > 0)
             msg.setScope(options.getScope());
 
-        Object retval=super.sendMessage(msg, options);
+        T retval=(T)super.sendMessage(msg, options);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
-        if(retval instanceof Throwable)
-            throw (Throwable)retval;
         return retval;
     }
 
@@ -255,7 +253,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
      * Message contains MethodCall. Execute it against *this* object and return result.
      * Use MethodCall.invoke() to do this. Return result.
      */
-    public Object handle(Message req) {
+    public Object handle(Message req) throws Throwable {
         Object      body;
         MethodCall  method_call;
 
@@ -269,43 +267,31 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             return null;
         }
 
-        try {
-            body=req_marshaller != null?
-                    req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength())
-                    : req.getObject();
-        }
-        catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("exception marshalling object", e);
-            return e;
-        }
+        body=req_marshaller != null?
+          req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength()) : req.getObject();
 
         if(!(body instanceof MethodCall)) {
             if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
             
             // create an exception to represent this and return it
-            return  new IllegalArgumentException("message does not contain a MethodCall object") ;
+            throw new IllegalArgumentException("message does not contain a MethodCall object") ;
         }
 
         method_call=(MethodCall)body;
 
-        try {
-            if(log.isTraceEnabled())
-                log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
+        if(log.isTraceEnabled())
+            log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
 
-            if(method_call.getMode() == MethodCall.ID) {
-                if(method_lookup == null)
-                    throw new Exception("MethodCall uses ID=" + method_call.getId() + ", but method_lookup has not been set");
-                Method m=method_lookup.findMethod(method_call.getId());
-                if(m == null)
-                    throw new Exception("no method found for " + method_call.getId());
-                method_call.setMethod(m);
-            }
+        if(method_call.getMode() == MethodCall.ID) {
+            if(method_lookup == null)
+                throw new Exception("MethodCall uses ID=" + method_call.getId() + ", but method_lookup has not been set");
+            Method m=method_lookup.findMethod(method_call.getId());
+            if(m == null)
+                throw new Exception("no method found for " + method_call.getId());
+            method_call.setMethod(m);
+        }
             
-            return method_call.invoke(server_obj);
-        }
-        catch(Throwable x) {
-            return x;
-        }
+        return method_call.invoke(server_obj);
     }
 
     /**

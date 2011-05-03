@@ -3,7 +3,6 @@ package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
@@ -134,7 +133,6 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
 
     public void actionPerformed(ActionEvent e) {
         String command=e.getActionCommand();
-        RspList rsp_list;
 
         try {
             if(command.equals("Get")) {
@@ -144,16 +142,16 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     return;
                 }
                 showMsg("Looking up value for " + stock_name + ':');
-                rsp_list=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
-                                                new Class[]{String.class},
-                                                new RequestOptions(ResponseMode.GET_ALL, 10000));
+                RspList<Object> quotes=disp.callRemoteMethods(null, "getQuote", new Object[]{stock_name},
+                                                               new Class[]{String.class},
+                                                               new RequestOptions(ResponseMode.GET_ALL, 10000));
 
                 Float val=null;
-                for(Rsp rsp: rsp_list.values()) {
-                    Object obj=rsp.getValue();
-                    if(obj == null || obj instanceof Throwable)
+                for(Rsp<Object> rsp: quotes.values()) {
+                    Object quote=rsp.getValue();
+                    if(quote == null || quote instanceof Throwable)
                         continue;
-                    val=(Float)obj;
+                    val=(Float)quote;
                     break;
                 }
 
@@ -186,9 +184,9 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
                     if(command.equals("All")) {
                         listbox.removeAll();
                         showMsg("Getting all stocks:");
-                        rsp_list=disp.callRemoteMethods(null, "getAllStocks",
-                                                        null, null,
-                                                        new RequestOptions(ResponseMode.GET_ALL, 5000));
+                        RspList<Object> rsp_list=disp.callRemoteMethods(null, "getAllStocks",
+                                                                        null, null,
+                                                                        new RequestOptions(ResponseMode.GET_ALL, 5000));
 
                         System.out.println("rsp_list is " + rsp_list);
 

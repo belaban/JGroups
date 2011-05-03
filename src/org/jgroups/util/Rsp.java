@@ -8,17 +8,20 @@ import org.jgroups.Address;
  * class that represents a response from a communication
  */
 public class Rsp<T> {
-    /* flag that represents whether the response was received */
+    /** Flag that represents whether the response was received */
     protected boolean received;
 
-    /* flag that represents whether the response was suspected */
+    /** Flag that represents whether the response was suspected */
     protected boolean suspected;
 
-    /* The sender of this response */
+    /** The sender of this response */
     protected Address sender;
 
-    /* the value from the response */
+    /** The value from the response */
     protected T retval;
+
+    /** If there was an exception, this field will contain it */
+    protected Throwable exception;
 
 
     public Rsp(Address sender) {
@@ -32,8 +35,12 @@ public class Rsp<T> {
 
     public Rsp(Address sender, T retval) {
         this.sender=sender;
-        this.retval=retval;
-        received=true;
+        setValue(retval);
+    }
+
+    public Rsp(Address sender, Throwable t) {
+        this.sender=sender;
+        setException(t);
     }
 
     public boolean equals(Object obj) {
@@ -55,6 +62,16 @@ public class Rsp<T> {
 
     public void setValue(T val) {
         this.retval=val;
+        received=true;
+    }
+
+    public Throwable getException() {
+        return exception;
+    }
+
+    public void setException(Throwable t) {
+        this.exception=t;
+        received=true;
     }
 
     public Address getSender() {
@@ -84,8 +101,15 @@ public class Rsp<T> {
     }
 
     public String toString() {
-        return new StringBuilder("sender=").append(sender).append(", retval=").append(retval).append(", received=").
-                append(received).append(", suspected=").append(suspected).toString();
+        StringBuilder sb=new StringBuilder();
+        sb.append("sender=").append(sender);
+        if(retval != null)
+            sb.append(", retval=").append(retval);
+        if(exception != null)
+            sb.append(", exception=").append(exception);
+        sb.append(", received=").
+          append(received).append(", suspected=").append(suspected);
+        return sb.toString();
     }
 }
 

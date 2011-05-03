@@ -423,7 +423,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
 
         // 3. Execute a cluster wide GET
         try {
-            RspList rsps=disp.callRemoteMethods(null,
+            RspList<Object> rsps=disp.callRemoteMethods(null,
                                                 new MethodCall(GET, key),
                                                 new RequestOptions(ResponseMode.GET_ALL, call_timeout));
             for(Rsp rsp: rsps.values()) {

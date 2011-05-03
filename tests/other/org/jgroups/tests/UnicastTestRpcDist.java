@@ -330,13 +330,13 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         options.setFlags(Message.OOB);
         options.setFlags(Message.DONT_BUNDLE);
         options.setFlags(Message.NO_FC);
-        RspList responses=disp.callRemoteMethods(null, new MethodCall(START), options);
+        RspList<Object> responses=disp.callRemoteMethods(null, new MethodCall(START), options);
 
         long total_reqs=0;
         long total_time=0;
 
         System.out.println("\n======================= Results: ===========================");
-        for(Map.Entry<Address,Rsp> entry: responses.entrySet()) {
+        for(Map.Entry<Address,Rsp<Object>> entry: responses.entrySet()) {
             Address mbr=entry.getKey();
             Rsp rsp=entry.getValue();
             Results result=(Results)rsp.getValue();

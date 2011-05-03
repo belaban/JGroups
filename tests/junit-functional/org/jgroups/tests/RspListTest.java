@@ -164,7 +164,7 @@ public class RspListTest {
 
 
     public void testGetResults() {
-        Vector v=rl.getResults();
+        List v=rl.getResults();
         assert v != null;
         Assert.assertEquals(2, v.size());
     }

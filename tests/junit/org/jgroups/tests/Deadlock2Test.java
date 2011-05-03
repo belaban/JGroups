@@ -6,14 +6,17 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -163,16 +166,17 @@ public class Deadlock2Test extends ChannelTestBase {
             // RspList rspList = disp.callRemoteMethods(null, call, GroupResponseMode.GET_ALL, 5000);
             RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0, false, null, (byte)0);
             opts.setFlags(Message.OOB);
-            RspList rspList = disp.callRemoteMethods(null, call, opts);
-            Vector results = rspList.getResults();
+            RspList<String> rspList = disp.callRemoteMethods(null, call, opts);
+            List<String> results = rspList.getResults();
             log("results of calling innerMethod():\n" + rspList);
             StringBuilder sb=new StringBuilder("outerMethod[");
-            for(Enumeration e = results.elements(); e.hasMoreElements(); ) {
-                String s = (String)e.nextElement();
-                sb.append(s);
-                if (e.hasMoreElements()) {
+            boolean first=true;
+            for(String s: results) {
+                if(first)
+                    first=false;
+                else
                     sb.append(";");
-                }
+                sb.append(s);
             }
             sb.append("]");
             return sb.toString();
