@@ -382,6 +382,11 @@ public class StompConnection implements Runnable {
                 System.out.println("<< INFO: " + information);
             }
         });
+
+        if(!conn.isConnected()) {
+            conn.setupConnection();
+        }
+
         conn.connect();
 
         while(conn.isConnected()) {
