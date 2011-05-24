@@ -63,15 +63,18 @@ public class TopologyUUID extends UUID {
     }
 
     public boolean isSameSite(TopologyUUID addr) {
-        return addr != null && site_id != null  && site_id.equals(addr.getSiteId());
+        return addr != null
+          && ((site_id != null && site_id.equals(addr.getSiteId())) || (site_id == null && addr.getSiteId() == null));
     }
 
     public boolean isSameRack(TopologyUUID addr) {
-        return addr != null && rack_id != null  && rack_id.equals(addr.getRackId());
+        return addr != null
+          && ((rack_id != null && rack_id.equals(addr.getRackId())) || (rack_id == null && addr.getRackId() == null));
     }
 
     public boolean isSameMachine(TopologyUUID addr) {
-        return addr != null && machine_id != null  && machine_id.equals(addr.getMachineId());
+        return addr != null
+          && ((machine_id != null  && machine_id.equals(addr.getMachineId())) || (machine_id == null && addr.getMachineId() == null));
     }
 
 
