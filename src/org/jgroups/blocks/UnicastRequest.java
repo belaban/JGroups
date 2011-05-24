@@ -25,21 +25,12 @@ public class UnicastRequest<T> extends Request {
 
 
 
-    /**
-     @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     (e.g. if a suspicion service is available; timeouts are not needed).
-     */
     public UnicastRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
         super(m, corr, null, options);
         this.target=target;
         result=new Rsp<T>(target);
     }
 
-
-    /**
-     * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     *                       (e.g. if a suspicion service is available; timeouts are not needed).
-     */
     public UnicastRequest(Message m, Transport transport, Address target, RequestOptions options) {
         super(m, null, transport, options);
         this.target=target;

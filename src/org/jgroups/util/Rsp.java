@@ -5,13 +5,13 @@ import org.jgroups.Address;
 
 
 /**
- * class that represents a response from a communication
+ * Class that represents a response from a communication
  */
 public class Rsp<T> {
     /** Flag that represents whether the response was received */
     protected boolean received;
 
-    /** Flag that represents whether the response was suspected */
+    /** Flag that represents whether the sender of the response was suspected */
     protected boolean suspected;
 
     /** The sender of this response */
@@ -63,6 +63,7 @@ public class Rsp<T> {
     public void setValue(T val) {
         this.retval=val;
         received=true;
+        exception=null;
     }
 
     public Throwable getException() {
@@ -72,6 +73,7 @@ public class Rsp<T> {
     public void setException(Throwable t) {
         this.exception=t;
         received=true;
+        retval=null;
     }
 
     public Address getSender() {

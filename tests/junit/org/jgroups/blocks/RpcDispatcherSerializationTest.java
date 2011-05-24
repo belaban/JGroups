@@ -70,7 +70,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         assert members.size() == rsps.size() : "expected " + members.size() + " responses, but got " + rsps + " (" + rsps.size() + ")";
 
         for(Rsp rsp: rsps.values()) {
-            assert rsp.getValue() instanceof NoSuchMethodException : "response value is " + rsp.getValue();
+            assert rsp.getException() instanceof NoSuchMethodException : "exception is " + rsp.getException();
         }
     }
 
@@ -108,8 +108,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         assertEquals(2, rsps.size());
         for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=it.next();
-            assertNotNull(rsp.getValue());
-            assertTrue(rsp.getValue() instanceof Throwable);
+            assertNull(rsp.getValue());
+            assertNotNull(rsp.getException());
             assertTrue(rsp.wasReceived());
             assertFalse(rsp.wasSuspected());
         }

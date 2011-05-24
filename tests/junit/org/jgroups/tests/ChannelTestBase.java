@@ -150,7 +150,7 @@ public class ChannelTestBase {
     }
 
     protected final static void assertNull(Object val) {
-        Util.assertNotNull(null, val);
+        Util.assertNull(null, val);
     }
 
     /**
