@@ -64,13 +64,13 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     public void testTargetMethodNotFound() {
         List<Address> members=channel.getView().getMembers();
         System.out.println("members are: " + members);
-        RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
+        RspList<Object> rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
                                             new RequestOptions(ResponseMode.GET_ALL, 8000));
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
         assert members.size() == rsps.size() : "expected " + members.size() + " responses, but got " + rsps + " (" + rsps.size() + ")";
 
         for(Rsp rsp: rsps.values()) {
-            assert rsp.getValue() instanceof NoSuchMethodException : "response value is " + rsp.getValue();
+            assert rsp.getException() instanceof NoSuchMethodException : "exception is " + rsp.getException();
         }
     }
 
@@ -108,8 +108,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         assertEquals(2, rsps.size());
         for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=it.next();
-            assertNotNull(rsp.getValue());
-            assertTrue(rsp.getValue() instanceof Throwable);
+            assertNull(rsp.getValue());
+            assertNotNull(rsp.getException());
             assertTrue(rsp.wasReceived());
             assertFalse(rsp.wasSuspected());
         }

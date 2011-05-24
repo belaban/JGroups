@@ -67,7 +67,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
         
         // Validate normal dispatchers
-        Map<Address, Rsp> responses = dispatchers[0].callRemoteMethods(null, method, RequestOptions.SYNC());
+        Map<Address, Rsp<String>> responses = dispatchers[0].callRemoteMethods(null, method, RequestOptions.SYNC());
 
         Assert.assertEquals(responses.size(), 2);
         
@@ -190,7 +190,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
 //        Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
 
-    private static void verifyResponse(Map<Address,Rsp> responses, Channel channel, Object expected) {
+    private static void verifyResponse(Map<Address,Rsp<String>> responses, Channel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
         String address = channel.getAddress().toString();
         Assert.assertNotNull(response, address);

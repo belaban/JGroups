@@ -99,7 +99,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
     protected abstract void sendRequest() throws Exception;
 
-    public abstract void receiveResponse(Object response_value, Address sender);
+    public abstract void receiveResponse(Object response_value, Address sender, boolean is_exception);
 
     public abstract void viewChange(View new_view);
 

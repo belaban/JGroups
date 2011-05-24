@@ -236,18 +236,18 @@ public class MessageDispatcher implements RequestHandler {
      * @return
      * @since 2.9
      */
-    public RspList castMessage(final Collection<Address> dests, Message msg, RequestOptions options) {
-        GroupRequest req=cast(dests, msg, options, true);
+    public <T> RspList<T> castMessage(final Collection<Address> dests, Message msg, RequestOptions options) {
+        GroupRequest<T> req=cast(dests, msg, options, true);
         return req != null? req.getResults() : RspList.EMPTY_RSP_LIST;
     }
 
 
-    public NotifyingFuture<RspList> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
-        GroupRequest req=cast(dests, msg, options, false);
+    public <T> NotifyingFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests, Message msg, RequestOptions options) {
+        GroupRequest<T> req=cast(dests, msg, options, false);
         return req != null? req : new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
     }
 
-    protected GroupRequest cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
+    protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options, boolean block_for_results) {
         List<Address> real_dests;
 
         // we need to clone because we don't want to modify the original
@@ -289,7 +289,7 @@ public class MessageDispatcher implements RequestHandler {
             return null;
         }
 
-        GroupRequest req=new GroupRequest(msg, corr, real_dests, options);
+        GroupRequest<T> req=new GroupRequest<T>(msg, corr, real_dests, options);
         if(options != null) {
             req.setResponseFilter(options.getRspFilter());
             req.setAnycasting(options.getAnycasting());
@@ -315,7 +315,7 @@ public class MessageDispatcher implements RequestHandler {
 
 
 
-    public Object sendMessage(Message msg, RequestOptions opts) throws TimeoutException, SuspectedException {
+    public <T> T sendMessage(Message msg, RequestOptions opts) throws Throwable {
         Address dest=msg.getDest();
         if(dest == null) {
             if(log.isErrorEnabled())
@@ -329,7 +329,7 @@ public class MessageDispatcher implements RequestHandler {
                 msg.setScope(opts.getScope());
         }
 
-        UnicastRequest req=new UnicastRequest(msg, corr, dest, opts);
+        UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, opts);
         try {
             req.execute();
         }
@@ -340,9 +340,13 @@ public class MessageDispatcher implements RequestHandler {
         if(opts != null && opts.getMode() == ResponseMode.GET_NONE)
             return null;
 
-        Rsp rsp=req.getResult();
+        Rsp<T> rsp=req.getResult();
         if(rsp.wasSuspected())
             throw new SuspectedException(dest);
+
+        if(rsp.getException() != null)
+            throw rsp.getException();
+
         if(!rsp.wasReceived())
             throw new TimeoutException("timeout sending message to " + dest);
         return rsp.getValue();
@@ -379,7 +383,7 @@ public class MessageDispatcher implements RequestHandler {
 
 
     /* ------------------------ RequestHandler Interface ---------------------- */
-    public Object handle(Message msg) {
+    public Object handle(Message msg) throws Throwable {
         if(req_handler != null) {
             return req_handler.handle(msg);
         }

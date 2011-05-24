@@ -49,6 +49,52 @@ API changes in 3.0.0
 
 - Removed Address.isMulticastAddress(): a null address is a multicast address
 
+- Rsp, RspList, RpcDispatcher.callRemoteMethodsXXX() and MessageDispatcher.cast/sendXXX() methods now use
+  generics, so the code below:
+
+  RspList rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000));
+  for(Map.Entry<Address,Rsp> rsp: rsps.entrySet())
+      System.out.println(rsp.getKey() + ": " + rsp.getValue().getValue());
+
+  has to be changed to:
+
+  RspList<Date> rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000));
+  for(Map.Entry<Address,Rsp<Date>> rsp: rsps.entrySet())
+      System.out.println(rsp.getKey() + ": " + rsp.getValue().getValue());
+
+- RpcDispatcher.callRemoteMethod() now throws an exception if the target method threw an exception
+
+- RpcDispatcher.callRemoteMethods() return a RspList. If a member P threw an exception, then the Rsp for
+  P will have it in the field 'exception'. The 'result' field is *not* used for exceptions any longer !
+
+  An example to check for exceptions is:
+
+
+  Multicast:
+
+  RspList<Long> rsps=dispatcher.callRemoteMethods(null, "foo", null, null, new RequestOptions(...));
+  for(Rsp<Long> rsp: rsps.values) {
+     if(rsp.getException() != null) {
+         // we have an exception
+     }
+     else {
+         Long val=rsp.getValue();
+         // do something with the value
+     }
+  }
+
+  Unicast:
+
+  try {
+     Rsp<Long> rsp=disp.callRemoteMethod(target, "foo", null, null, new RequestOptions(...));
+     Long val=rsp.getValue();
+     // do something with the return value
+  }
+  catch(Throwable t) {
+     // "foo" threw an exception
+  }
+
+
 
 
 

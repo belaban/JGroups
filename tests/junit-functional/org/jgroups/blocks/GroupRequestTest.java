@@ -286,7 +286,7 @@ public class GroupRequestTest {
                         catch(Exception e) {
                             e.printStackTrace();
                         }
-                        request.receiveResponse(retval, sender);
+                        request.receiveResponse(retval, sender, false);
                     }
                     else if(obj instanceof View)
                         request.viewChange((View)obj);
@@ -341,7 +341,7 @@ public class GroupRequestTest {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        request.receiveResponse(retval, sender);
+                        request.receiveResponse(retval, sender, false);
                     }
                     else if (obj instanceof View)
                         request.viewChange((View) obj);

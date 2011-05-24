@@ -11,11 +11,9 @@ import java.util.*;
  * Contains responses from all members. Marks faulty members.
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
-public class RspList implements Map<Address,Rsp> {
+public class RspList<T extends Object> implements Map<Address,Rsp<T>> {
     public static final RspList EMPTY_RSP_LIST=new RspList();
-
-    /** Map<Address, Rsp> */
-    final Map<Address,Rsp> rsps=new HashMap<Address,Rsp>();
+    final Map<Address,Rsp<T>> rsps=new HashMap<Address,Rsp<T>>();
 
 
     public RspList() {
@@ -25,9 +23,9 @@ public class RspList implements Map<Address,Rsp> {
     /** Adds a list of responses
      * @param responses Collection<Rsp>
      */
-    public RspList(Collection<Rsp> responses) {
+    public RspList(Collection<Rsp<T>> responses) {
         if(responses != null) {
-            for(Rsp rsp: responses) {
+            for(Rsp<T> rsp: responses) {
                 rsps.put(rsp.getSender(), rsp);
             }
         }
@@ -51,7 +49,7 @@ public class RspList implements Map<Address,Rsp> {
      * @param key Address (key)
      * @return Rsp
      */
-    public Rsp get(Object key) {
+    public Rsp<T> get(Object key) {
         return rsps.get(key);
     }
 
@@ -60,20 +58,20 @@ public class RspList implements Map<Address,Rsp> {
      * @param key
      * @return Object value
      */
-    public Object getValue(Object key) {
-        Rsp rsp=get(key);
+    public T getValue(Object key) {
+        Rsp<T> rsp=get(key);
         return rsp != null? rsp.getValue() : null;
     }
 
-    public Rsp put(Address key, Rsp value) {
+    public Rsp<T> put(Address key, Rsp<T> value) {
         return rsps.put(key, value);
     }
 
-    public Rsp remove(Object key) {
+    public Rsp<T> remove(Object key) {
         return rsps.remove(key);
     }
 
-    public void putAll(Map<? extends Address, ? extends Rsp> m) {
+    public void putAll(Map<? extends Address, ? extends Rsp<T>> m) {
         rsps.putAll(m);
     }
 
@@ -85,18 +83,18 @@ public class RspList implements Map<Address,Rsp> {
         return rsps.keySet();
     }
 
-    public Collection<Rsp> values() {
+    public Collection<Rsp<T>> values() {
         return rsps.values();
     }
 
-    public Set<Map.Entry<Address,Rsp>> entrySet() {
+    public Set<Map.Entry<Address,Rsp<T>>> entrySet() {
         return rsps.entrySet();
     }
 
 
 
-    public void addRsp(Address sender, Object retval) {
-        Rsp rsp=get(sender);
+    public void addRsp(Address sender, T retval) {
+        Rsp<T> rsp=get(sender);
         if(rsp != null) {
             rsp.sender=sender;
             rsp.retval=retval;
@@ -104,19 +102,19 @@ public class RspList implements Map<Address,Rsp> {
             rsp.suspected=false;
             return;
         }
-        rsps.put(sender, new Rsp(sender, retval));
+        rsps.put(sender, new Rsp<T>(sender, retval));
     }
 
 
     public void addNotReceived(Address sender) {
-        Rsp rsp=get(sender);
+        Rsp<T> rsp=get(sender);
         if(rsp == null)
-            rsps.put(sender, new Rsp(sender));
+            rsps.put(sender, new Rsp<T>(sender));
     }
 
 
     public void addSuspect(Address sender) {
-        Rsp rsp=get(sender);
+        Rsp<T> rsp=get(sender);
         if(rsp != null) {
             rsp.sender=sender;
             rsp.retval=null;
@@ -124,19 +122,19 @@ public class RspList implements Map<Address,Rsp> {
             rsp.suspected=true;
             return;
         }
-        rsps.put(sender, new Rsp(sender, true));
+        rsps.put(sender, new Rsp<T>(sender, true));
     }
 
 
     public boolean isReceived(Address sender) {
-        Rsp rsp=get(sender);
+        Rsp<T> rsp=get(sender);
         return rsp != null && rsp.received;
     }
 
     public int numSuspectedMembers() {
         int num=0;
-        Collection<Rsp> values=values();
-        for(Rsp rsp: values) {
+        Collection<Rsp<T>> values=values();
+        for(Rsp<T> rsp: values) {
             if(rsp.wasSuspected())
                 num++;
         }
@@ -145,8 +143,8 @@ public class RspList implements Map<Address,Rsp> {
 
     public int numReceived() {
         int num=0;
-        Collection<Rsp> values=values();
-        for(Rsp rsp: values) {
+        Collection<Rsp<T>> values=values();
+        for(Rsp<T> rsp: values) {
             if(rsp.wasReceived())
                 num++;
         }
@@ -154,9 +152,9 @@ public class RspList implements Map<Address,Rsp> {
     }
 
     /** Returns the first value in the response set. This is random, but we try to return a non-null value first */
-    public Object getFirst() {
-        Collection<Rsp> values=values();
-        for(Rsp rsp: values) {
+    public T getFirst() {
+        Collection<Rsp<T>> values=values();
+        for(Rsp<T> rsp: values) {
             if(rsp.getValue() != null)
                 return rsp.getValue();
         }
@@ -167,30 +165,30 @@ public class RspList implements Map<Address,Rsp> {
     /**
      * Returns the results from non-suspected members that are not null.
      */
-    public Vector<Object> getResults() {
-        Vector<Object> ret=new Vector<Object>();
-        Object val;
+    public List<T> getResults() {
+        List<T> ret=new ArrayList<T>(size());
 
-        for(Rsp rsp: values()) {
+        T val;
+        for(Rsp<T> rsp: values()) {
             if(rsp.wasReceived() && (val=rsp.getValue()) != null)
-                ret.addElement(val);
+                ret.add(val);
         }
         return ret;
     }
 
 
-    public Vector<Address> getSuspectedMembers() {
-        Vector<Address> retval=new Vector<Address>();
-        for(Rsp rsp: values()) {
+    public List<Address> getSuspectedMembers() {
+        List<Address> retval=new ArrayList<Address>();
+        for(Rsp<T> rsp: values()) {
             if(rsp.wasSuspected())
-                retval.addElement(rsp.getSender());
+                retval.add(rsp.getSender());
         }
         return retval;
     }
 
 
     public boolean isSuspected(Address sender) {
-        Rsp rsp=get(sender);
+        Rsp<T> rsp=get(sender);
         return rsp != null && rsp.suspected;
     }
 
@@ -203,7 +201,7 @@ public class RspList implements Map<Address,Rsp> {
 
     public String toString() {
         StringBuilder ret=new StringBuilder();
-        for(Rsp rsp: values()) {
+        for(Rsp<T> rsp: values()) {
             ret.append("[" + rsp + "]\n");
         }
         return ret.toString();

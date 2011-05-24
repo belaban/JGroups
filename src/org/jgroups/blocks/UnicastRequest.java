@@ -25,25 +25,16 @@ public class UnicastRequest<T> extends Request {
 
 
 
-    /**
-     @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     (e.g. if a suspicion service is available; timeouts are not needed).
-     */
     public UnicastRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
         super(m, corr, null, options);
         this.target=target;
-        result=new Rsp(target);
+        result=new Rsp<T>(target);
     }
 
-
-    /**
-     * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
-     *                       (e.g. if a suspicion service is available; timeouts are not needed).
-     */
     public UnicastRequest(Message m, Transport transport, Address target, RequestOptions options) {
         super(m, null, transport, options);
         this.target=target;
-        result=new Rsp(target);
+        result=new Rsp<T>(target);
     }
 
 
@@ -71,7 +62,7 @@ public class UnicastRequest<T> extends Request {
      * Adds a response to the response table. When all responses have been received,
      * <code>execute()</code> returns.
      */
-    public void receiveResponse(Object response_value, Address sender) {
+    public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
         RspFilter rsp_filter=options.getRspFilter();
 
         lock.lock();
@@ -80,11 +71,21 @@ public class UnicastRequest<T> extends Request {
                 return;
             if(!result.wasReceived()) {
                 boolean responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
-                result.setValue((T)response_value);
+                if(is_exception && response_value instanceof Throwable)
+                    result.setException((Throwable)response_value);
+                else
+                    result.setValue((T)response_value);
                 result.setReceived(responseReceived);
-                if(log.isTraceEnabled())
-                    log.trace(new StringBuilder("received response for request ").append(req_id)
-                            .append(", sender=").append(sender).append(", val=").append(response_value));
+                if(log.isTraceEnabled()) {
+                    StringBuilder sb=new StringBuilder("received response for request ");
+                    sb.append(req_id).append(", sender=").append(sender);
+                    if(is_exception && response_value instanceof Throwable)
+                        sb.append(", exception=");
+                    else
+                        sb.append(", val=");
+                    sb.append(response_value);
+                    log.trace(sb.toString());
+                }
             }
             done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
             if(done && corr != null)
@@ -155,7 +156,7 @@ public class UnicastRequest<T> extends Request {
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */
 
-    public Rsp getResult() {
+    public Rsp<T> getResult() {
         return result;
     }
 

@@ -6,5 +6,5 @@ import org.jgroups.Message;
 
 
 public interface RequestHandler {
-    Object handle(Message msg);
+    Object handle(Message msg) throws Throwable;
 }
