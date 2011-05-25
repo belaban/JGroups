@@ -43,6 +43,8 @@ public class JmxConfigurator {
         if (cluster_name == null)
             cluster_name = "null";
 
+        cluster_name=ObjectName.quote(cluster_name);
+
         if (register_protocols) {
             ProtocolStack stack = channel.getProtocolStack();
             List<Protocol> protocols = stack.getProtocols();
@@ -89,6 +91,9 @@ public class JmxConfigurator {
 
     public static void unregisterChannel(JChannel c, MBeanServer server, String domain, String clusterName)
                     throws Exception {
+
+        if(clusterName != null)
+            clusterName=ObjectName.quote(clusterName);
 
         ProtocolStack stack = c.getProtocolStack();
         List<Protocol> protocols = stack.getProtocols();
@@ -197,19 +202,18 @@ public class JmxConfigurator {
         }
     }
 
-    private static ObjectName getObjectName(Object obj, String name)
-                    throws MalformedObjectNameException {
+    private static ObjectName getObjectName(Object obj, String name) throws MalformedObjectNameException {
         MBean resource = obj.getClass().getAnnotation(MBean.class);
         if (name != null && name.length() > 0) {
             return new ObjectName(name);
         } else if (resource.objectName() != null && resource.objectName().length() > 0) {
             return new ObjectName(resource.objectName());
         } else {
-            throw new MalformedObjectNameException("Instance " + obj + " of a class "
-                            + obj.getClass() + " does not have a valid object name");
+            throw new MalformedObjectNameException(obj + " of class " + obj.getClass() + " has an invalid object name");
         }
     }
 
+  
     /**
      * Unregisters object_name and everything under it
      * 
