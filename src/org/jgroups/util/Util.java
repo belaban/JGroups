@@ -3046,7 +3046,7 @@ public class Util {
                     ret=factory.createServerSocket(service_name, start_port, 50, bind_addr);
                 }
             }
-            catch(BindException bind_ex) {
+            catch(SocketException bind_ex) {
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
                 if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
