@@ -2944,24 +2944,7 @@ public class Util {
     }
 
 
-    /** Finds first available port starting at start_port and returns server socket */
-    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, int start_port) {
-        ServerSocket ret=null;
-
-        while(true) {
-            try {
-                ret=factory.createServerSocket(service_name, start_port);
-            }
-            catch(BindException bind_ex) {
-                start_port++;
-                continue;
-            }
-            catch(IOException io_ex) {
-            }
-            break;
-        }
-        return ret;
-    }
+  
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
         ServerSocket ret=null;
@@ -3000,7 +2983,7 @@ public class Util {
                     ret=factory.createServerSocket(service_name, start_port, 50, bind_addr);
                 }
             }
-            catch(BindException bind_ex) {
+            catch(SocketException bind_ex) {
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
                 if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
