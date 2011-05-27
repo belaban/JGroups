@@ -499,6 +499,32 @@ public abstract class Discovery extends Protocol {
         return new View(new ViewId(local_addr), mbrs);
     }
 
+    /**
+     * Creates a byte[] representation of the PingData, but DISCARDING the view it contains.
+     * @param data the PingData instance to serialize.
+     * @return
+     */
+    protected byte[] serializeWithoutView(PingData data) {
+        final PingData clone = new PingData(data.getAddress(), null, data.isServer(), data.getLogicalName(),  data.getPhysicalAddrs());
+        try {
+            return Util.streamableToByteBuffer(clone);
+        }
+        catch(Exception e) {
+            log.error("Error", e);
+            return null;
+        }
+    }
+
+    protected PingData deserialize(final byte[] data) {
+        try {
+            return (PingData)Util.streamableFromByteBuffer(PingData.class, data);
+        }
+        catch(Exception e) {
+            log.error("Error", e);
+            return null;
+        }
+    }
+
 
     private void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
                                        boolean is_server, String logical_name, Address sender) {

@@ -2,24 +2,15 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import org.jgroups.util.Util;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * <p>Discovery protocol using a JDBC connection to a shared database.
@@ -303,41 +294,6 @@ public class JDBC_PING extends FILE_PING {
         delete(group_addr, ownAddress);
     }
 
-    /**
-     * Creates a byte[] representation of the PingData, but DISCARDING
-     * the view it contains.
-     * @param data the PingData instance to serialize.
-     * @return
-     */
-    protected byte[] serializeWithoutView(PingData data) {
-        final PingData clone = new PingData(data.getAddress(), null, data.isServer(), data.getLogicalName(),  data.getPhysicalAddrs());
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream( 512 );
-        DataOutputStream outputStream = new DataOutputStream(byteArrayOutputStream);
-        try {
-            clone.writeTo(outputStream);
-        } catch (IOException e) {
-            //not expecting this to happen as it's an in-memory stream
-            log.error("Error", e);
-        }
-        return byteArrayOutputStream.toByteArray();
-    }
-    
-    protected PingData deserialize(final byte[] data) {
-        final PingData pingData = new PingData();
-        final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
-        final DataInputStream outputStream = new DataInputStream(byteArrayInputStream);
-        try {
-            pingData.readFrom(outputStream);
-        } catch (IllegalAccessException e) {
-            log.error("Error", e);
-        } catch (InstantiationException e) {
-            log.error("Error", e);
-        } catch (IOException e) {
-            // not expecting this to happen as it's an in-memory stream
-            log.error("Error", e);
-        }
-        return pingData;
-    }
     
     protected void closeConnection(final Connection connection) {
         try {
