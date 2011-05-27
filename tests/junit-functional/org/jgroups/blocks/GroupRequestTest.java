@@ -11,7 +11,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -20,7 +22,7 @@ import java.util.Vector;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
     Address a1, a2, a3;
-    Vector<Address> dests=null;
+    List<Address> dests=null;
 
     @BeforeClass
     void init() throws UnknownHostException {
@@ -31,7 +33,7 @@ public class GroupRequestTest {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        dests=new Vector<Address>(Arrays.asList(a1, a2));
+        dests=new ArrayList<Address>(Arrays.asList(a1, a2));
     }
 
     @AfterMethod

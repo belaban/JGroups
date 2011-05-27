@@ -6,17 +6,14 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 
-import java.util.List;
-import java.util.Vector;
-import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 
 /**
  * @author Bela Ban
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
-    private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
+    private final List<Address>     suspected_mbrs=new ArrayList<Address>(11);
     private final Promise<Boolean>  leave_promise=new Promise<Boolean>();
 
 
@@ -27,7 +24,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
     public void init() throws Exception {
         super.init();
-        suspected_mbrs.removeAllElements();
+        suspected_mbrs.clear();
         leave_promise.reset();
     }
 
@@ -116,7 +113,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
         for(Address mbr: suspectedMembers) {
             if(!suspected_mbrs.contains(mbr))
-                suspected_mbrs.addElement(mbr);
+                suspected_mbrs.add(mbr);
         }
 
         if(log.isDebugEnabled())
@@ -126,7 +123,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             if(log.isDebugEnabled())
                 log.debug("members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
-            suspected_mbrs.removeAllElements();
+            suspected_mbrs.clear();
             gms.becomeCoordinator();
             for(Address mbr: suspectedMembers) {
                 gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true));
@@ -145,7 +142,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      */
     public void handleViewChange(View new_view, Digest digest) {
         List<Address> mbrs=new_view.getMembers();
-        suspected_mbrs.removeAllElements();
+        suspected_mbrs.clear();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
             return;
         }

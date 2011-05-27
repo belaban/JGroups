@@ -67,7 +67,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
     private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
-    private final Vector<Address> members=new Vector<Address>(11);
+    private final List<Address> members=new ArrayList<Address>(11);
 
     private Address local_addr=null;
 

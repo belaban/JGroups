@@ -9,10 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -60,7 +57,7 @@ public class FRAG2 extends Protocol {
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     private int curr_id=1;
 
-    private final Vector<Address> members=new Vector<Address>(11);    
+    private final List<Address> members=new ArrayList<Address>(11);
 
     @ManagedAttribute(description="Number of sent messages")
     AtomicLong num_sent_msgs=new AtomicLong(0);

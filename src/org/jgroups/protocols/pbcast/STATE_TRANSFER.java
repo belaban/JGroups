@@ -41,7 +41,7 @@ public class STATE_TRANSFER extends Protocol {
     private Address local_addr=null;
 
     @GuardedBy("members")
-    private final Vector<Address> members=new Vector<Address>();
+    private final List<Address> members=new ArrayList<Address>();
 
     /**
      * Map<String,Set> of state requesters, one for each requester
@@ -295,7 +295,7 @@ public class STATE_TRANSFER extends Protocol {
         boolean send_up_null_state_rsp=false;
 
         synchronized(members) {
-            old_coord=(!members.isEmpty()? members.firstElement() : null);
+            old_coord=(!members.isEmpty()? members.get(0) : null);
             members.clear();
             members.addAll(new_members);
 

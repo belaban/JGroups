@@ -15,10 +15,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -119,7 +116,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private Address local_addr = null;
 
     @GuardedBy("members")
-    private final Vector<Address> members;
+    private final List<Address> members;
 
     /*
      * BlockingQueue to accept state transfer Message(s) if default transport
@@ -139,7 +136,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private AtomicBoolean flushProtocolInStack = new AtomicBoolean(false);
 
     public STREAMING_STATE_TRANSFER() {
-        members = new Vector<Address>();
+        members = new ArrayList<Address>();
     }
 
     @ManagedAttribute
