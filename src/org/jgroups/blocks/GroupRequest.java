@@ -120,18 +120,19 @@ public class GroupRequest<T> extends Request {
 
         RspFilter rsp_filter=options.getRspFilter();
         boolean responseReceived=false;
-        if(!rsp.wasReceived()) {
-            if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
-                if(is_exception && response_value instanceof Throwable)
-                    rsp.setException((Throwable)response_value);
-                else
-                    rsp.setValue((T)response_value);
-            }
-            rsp.setReceived(responseReceived);
-        }
 
         lock.lock();
         try {
+            if(!rsp.wasReceived()) {
+                if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
+                    if(is_exception && response_value instanceof Throwable)
+                        rsp.setException((Throwable)response_value);
+                    else
+                        rsp.setValue((T)response_value);
+                }
+                rsp.setReceived(responseReceived);
+            }
+
             if(responseReceived)
                 num_received++;
             done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
