@@ -381,7 +381,7 @@ public class StompConnection implements Runnable {
             System.out.println("StompConnection [-h host] [-p port]");
             return;
         }
-        StompConnection conn=new StompConnection(host+ ":" + port);
+        StompConnection conn=new StompConnection(host+ ":" + port, true, false);
         conn.addListener(new Listener() {
 
             public void onMessage(Map<String, String> headers, byte[] buf, int offset, int length) {
