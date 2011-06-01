@@ -7,13 +7,16 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
+import javax.management.Notification;
+import javax.management.NotificationBroadcasterSupport;
+import javax.management.NotificationListener;
 
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
  */
 @MBean
-public class JmxDemo {
+public class JmxDemo extends NotificationBroadcasterSupport {
     @ManagedAttribute
     private int age;   // exposed as read-only 'age'
 
@@ -62,6 +65,7 @@ public class JmxDemo {
     @ManagedAttribute(description="my number attribute")
     private long my_number=322649L;
 
+
     @ManagedAttribute
     public void setMyNumber(long new_number) {
         my_number=new_number;
@@ -93,8 +97,20 @@ public class JmxDemo {
     public int add(int a, int b) {return a+b;} // exposed because @MBean is on the class
 
 
+    
+
+
     public static void main(String[] args) {
         JmxDemo demo=new JmxDemo();
+        demo.addNotificationListener(new NotificationListener() {
+
+            @Override
+            public void handleNotification(Notification notification, Object handback) {
+                System.out.println(">> " + notification + ", handback=" + handback);
+            }
+        }, null, "myHandback");
+
+        demo.startNotifications();
 
         MBeanServer server=Util.getMBeanServer();
         if(server != null) {
@@ -107,6 +123,55 @@ public class JmxDemo {
             catch(Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void startNotifications() {
+        new Thread() {
+            @Override
+            public void run() {
+                int cnt=1;
+                while(true) {
+                    Util.sleep(1000);
+                    MyNotification notif=new MyNotification("home.grown", this, cnt, "hello-" + cnt);
+                    notif.setName("Bela Ban");
+                    cnt++;
+                    sendNotification(notif);
+                }
+            }
+        }.start();
+    }
+
+    protected static class MyNotification extends Notification {
+        protected String name;
+
+        public MyNotification(String type, Object source, long sequenceNumber) {
+            super(type, source, sequenceNumber);
+        }
+
+        public MyNotification(String type, Object source, long sequenceNumber, String message) {
+            super(type, source, sequenceNumber, message);
+        }
+
+        public MyNotification(String type, Object source, long sequenceNumber, long timeStamp) {
+            super(type, source, sequenceNumber, timeStamp);
+        }
+
+        public MyNotification(String type, Object source, long sequenceNumber, long timeStamp, String message) {
+            super(type, source, sequenceNumber, timeStamp, message);
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return super.toString() + ", name=" + name;
         }
     }
 }
