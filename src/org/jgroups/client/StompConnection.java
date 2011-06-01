@@ -54,23 +54,26 @@ public class StompConnection implements Runnable {
 
     protected String password;
 
+    protected boolean reconnect;
+
     protected final Log log=LogFactory.getLog(getClass());
 
     /**
      * @param dest IP address + ':' + port, e.g. "192.168.1.5:8787"
      */
     public StompConnection(String dest) {
-        this(dest, null, null, false);
+        this(dest, null, null, false, false);
     }
 
-    public StompConnection(String dest, boolean ssl) {
-        this(dest, null, null, ssl);
+    public StompConnection(String dest, boolean reconnect, boolean ssl) {
+        this(dest, null, null, reconnect, ssl);
     }
 
-    public StompConnection(String dest, String userid, String password, boolean ssl) {
+    public StompConnection(String dest, String userid, String password, boolean reconnect, boolean ssl) {;
         server_destinations.add(dest);
         this.userid = userid;
         this.password = password;
+        this.reconnect = reconnect;
         if (ssl)
             socket_factory = SSLSocketFactory.getDefault();
         else
@@ -87,10 +90,6 @@ public class StompConnection implements Runnable {
     public void removeListener(Listener listener) {
         if(listener != null)
             listeners.remove(listener);
-    }
-
-    public void connect() {
-        startRunner();
     }
 
     protected synchronized void startRunner() {
@@ -110,19 +109,14 @@ public class StompConnection implements Runnable {
             sb.append("passcode: ").append(password).append("\n");
         sb.append("\n");
 
-        try{
+        try {
             out.write(sb.toString().getBytes());
             out.write(STOMP.NULL_BYTE);
             out.flush();
         }
         catch(IOException ex) {
-            log.error("failed to send connect message: " + ex);
+            log.error("failed to send connect message:", ex);
         }
-    }
-
-    public void disconnect() {
-        running=false;
-        close();
     }
 
     public void subscribe(String destination) {
@@ -147,7 +141,7 @@ public class StompConnection implements Runnable {
             out.flush();
         }
         catch(IOException ex) {
-            log.error("failed subscribing to " + destination + ": " + ex);
+            log.error("failed subscribing to " + destination + ": ", ex);
         }
     }
 
@@ -173,14 +167,11 @@ public class StompConnection implements Runnable {
             out.flush();
         }
         catch(IOException ex) {
-            log.error("failed unsubscribing from " + destination + ": " + ex);
+            log.error("failed unsubscribing from " + destination + ": ", ex);
         }
     }
 
     public void send(String destination, byte[] buf, int offset, int length, String ... headers) {
-        if(!isConnected())
-            return;
-
         StringBuilder sb=new StringBuilder();
         sb.append(STOMP.ClientVerb.SEND.name()).append("\n");
         if(destination != null)
@@ -200,8 +191,8 @@ public class StompConnection implements Runnable {
             out.write(STOMP.NULL_BYTE);
             out.flush();
         }
-        catch(IOException ex) {
-            log.error("failed sending message to server: " + ex);
+        catch (IOException e) {
+            log.error("failed sending message to " + destination + ": ", e);
         }
     }
 
@@ -224,8 +215,17 @@ public class StompConnection implements Runnable {
         int timeout = 1;
         while(running) {
             try {
-                if(!isConnected()) {
-                    setupConnection();
+                if (!isConnected() && reconnect) {
+                    log.error("Reconnecting in "+timeout+"s.");
+                    try {
+                        Thread.sleep(timeout * 1000);
+                    }
+                    catch (InterruptedException e1) {
+                        // pass
+                    }
+                    timeout = timeout*2 > 60 ? 60 : timeout*2;
+
+                    connect();
                 }
 
                 // reset the connection backoff when we successfully connect.
@@ -269,15 +269,13 @@ public class StompConnection implements Runnable {
                 }
             }
             catch(IOException e) {
-                log.error("Connection closed unexpectedly, will attempt reconnect in "+timeout+"s.", e);
-                close();
-                try {
-                    Thread.sleep(timeout * 1000);
+                log.error("Connection closed unexpectedly:", e);
+                if (reconnect) {
+                    closeConnections();
                 }
-                catch (InterruptedException e1) {
-                    // pass
+                else {
+                    disconnect();
                 }
-                timeout = timeout*2 > 60 ? 60 : timeout*2;
             }
             catch(Throwable t) {
                 log.error("failure reading frame", t);
@@ -307,7 +305,7 @@ public class StompConnection implements Runnable {
         }
     }
 
-    protected void setupConnection() throws IOException{
+    public void connect() throws IOException{
         for (String dest : server_destinations) {
             try {
                 connectToDestination(dest);
@@ -320,12 +318,19 @@ public class StompConnection implements Runnable {
             }
             catch(IOException ex) {
                 if(log.isErrorEnabled())
-                    log.error("failed connecting to " + dest);
-                close();
+                    log.error("failed connecting to " + dest, ex);
+                closeConnections();
             }
         }
+
         if(!isConnected())
             throw new IOException("no target server available");
+
+        startRunner();
+    }
+
+    public void startReconnectingClient() {
+        startRunner();
     }
 
     protected void connectToDestination(String dest) throws IOException {
@@ -340,7 +345,12 @@ public class StompConnection implements Runnable {
         out=new DataOutputStream(sock.getOutputStream());
     }
 
-    protected void close() {
+    public void disconnect() {
+        running = false;
+        closeConnections();
+    }
+
+    protected void closeConnections() {
         Util.close(in);
         Util.close(out);
         Util.close(sock);
@@ -382,10 +392,6 @@ public class StompConnection implements Runnable {
                 System.out.println("<< INFO: " + information);
             }
         });
-
-        if(!conn.isConnected()) {
-            conn.setupConnection();
-        }
 
         conn.connect();
 
