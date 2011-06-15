@@ -9,9 +9,10 @@ import org.jgroups.util.MutableDigest;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -130,8 +131,7 @@ public class STABLE extends Protocol {
     private Future<?> resume_task_future=null;
     private final Object resume_task_mutex=new Object();
 
-    protected final MemoryMXBean memory_manager=ManagementFactory.getMemoryMXBean();
-       
+
     
     
     public STABLE() {             
@@ -354,7 +354,7 @@ public class STABLE extends Protocol {
                 initialized=true;
 
             if(ergonomics && cap > 0) {
-                long max_heap=(long)(memory_manager.getHeapMemoryUsage().getMax() * cap);
+                long max_heap=(long)(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() * cap);
                 long new_size=tmp.size() * original_max_bytes;
                 max_bytes=Math.min(max_heap, new_size);
                 if(log.isDebugEnabled())
