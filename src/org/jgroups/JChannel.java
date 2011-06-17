@@ -868,15 +868,14 @@ public class JChannel extends Channel {
      *                 if one of state transfer protocols is not present in this channel
      * @throws IllegalStateException
      *                 if flush is used in this channel and cluster could not be flushed
-     */    
+     */
     protected boolean getState(Address target, long timeout, Callable<Boolean> flushInvoker)
       throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
-        if(!state_transfer_supported) {
+        if(!state_transfer_supported)
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
-                    + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
-        }
-        
+                                              + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
+
         if(target == null)
             target=determineCoordinator();
         if(target != null && local_addr != null && target.equals(local_addr)) {
@@ -884,41 +883,34 @@ public class JChannel extends Channel {
                 log.trace("cannot get state from myself (" + target + "): probably the first member");
             return false;
         }
-              
-        boolean initiateFlush = flushSupported() && flushInvoker!=null;
-        
-        if (initiateFlush) {
-			boolean successfulFlush = false;
-			try {
-				successfulFlush = flushInvoker.call();
-			} 
-			catch (Exception e) {
-				successfulFlush = false;
-				// http://jira.jboss.com/jira/browse/JGRP-759
-			} 
-			finally {
-				if (!successfulFlush) {
-					throw new IllegalStateException("Node "+ local_addr+ " could not flush the cluster for state retrieval");
-				}
-			}
-		}
+
+        boolean initiateFlush=flushSupported() && flushInvoker != null;
+
+        if(initiateFlush) {
+            boolean successfulFlush=false;
+            try {
+                successfulFlush=flushInvoker.call();
+            }
+            catch(Throwable e) {
+                successfulFlush=false; // http://jira.jboss.com/jira/browse/JGRP-759
+            }
+            if(!successfulFlush)
+                throw new IllegalStateException("Node " + local_addr + " could not flush the cluster for state retrieval");
+        }
 
         state_promise.reset();
         StateTransferInfo state_info=new StateTransferInfo(target, timeout);
         down(new Event(Event.GET_STATE, state_info));
         Boolean b=state_promise.getResult(state_info.timeout);
-        
+
         if(initiateFlush)
             stopFlush();
-        
-        boolean state_transfer_successfull = b != null && b.booleanValue();
+
+        boolean state_transfer_successfull=b != null && b.booleanValue();
         if(!state_transfer_successfull)
             down(new Event(Event.RESUME_STABLE));
         return state_transfer_successfull;
     }
-
-
-
 
 
     /**
