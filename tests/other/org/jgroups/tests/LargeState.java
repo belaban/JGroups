@@ -105,7 +105,7 @@ public class LargeState extends ReceiverAdapter {
         stop=System.currentTimeMillis();
         if(state != null) {
             this.state=state;
-            System.out.println("<-- Received state, size=" + state.length + " (took " + (stop-start) + "ms)");
+            System.out.println("<-- Received byte[] state, size=" + state.length + " (took " + (stop-start) + "ms)");
         }
         state_promise.setResult(Boolean.TRUE);
     }
@@ -130,7 +130,7 @@ public class LargeState extends ReceiverAdapter {
             }
 
             stop=System.currentTimeMillis();
-            System.out.println("<-- Received state, size=" + total_received + " (took " + (stop-start) + "ms)");
+            System.out.println("<-- Received input stream state, size=" + total_received + " (took " + (stop-start) + "ms)");
             state_promise.setResult(Boolean.TRUE);
         }
         finally {
