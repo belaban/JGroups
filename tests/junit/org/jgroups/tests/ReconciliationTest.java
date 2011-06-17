@@ -173,7 +173,7 @@ public class ReconciliationTest extends ChannelTestBase {
         // now last sends 5 messages:
         System.out.println("\n" + lastsName + " sending 5 messages; " + nextToLastName + " will ignore them, but others will receive them");
         for(int i=1;i <= 5;i++)
-            last.send(null, null, new Integer(i));
+            last.send(null, new Integer(i));
 
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 

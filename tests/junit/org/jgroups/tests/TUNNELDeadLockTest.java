@@ -104,7 +104,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
             public void run() {
                 try {
                     for(int i=0; i < msgCount; i++) {
-                        channel.send(null, null, new byte[payloadSize]);
+                        channel.send(null, new byte[payloadSize]);
                         if(i % 2000 == 0)
                             System.out.println("-- sent " + i);
                     }

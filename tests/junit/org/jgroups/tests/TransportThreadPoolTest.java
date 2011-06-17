@@ -10,8 +10,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Collection;
 import java.util.concurrent.*;
 
@@ -54,10 +52,10 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
         
-        c1.send(null, null, "hello world");
-        c2.send(null, null, "bela");
-        c1.send(null, null, "message 3");
-        c2.send(null, null, "message 4");
+        c1.send(null, "hello world");
+        c2.send(null, "bela");
+        c1.send(null, "message 3");
+        c2.send(null, "message 4");
 
         long start=System.currentTimeMillis();
         

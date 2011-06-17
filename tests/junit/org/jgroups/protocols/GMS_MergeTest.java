@@ -290,7 +290,7 @@ public class GMS_MergeTest extends ChannelTestBase {
              System.out.println("sending " + NUM + " msgs:");
              for(int i=0; i < NUM; i++)
                  for(JChannel ch: channels)
-                     ch.send(null, null, "Number #" + i + " from " + ch.getAddress());
+                     ch.send(null, "Number #" + i + " from " + ch.getAddress());
 
              waitForNumMessages(NUM * channels.length, 10000, 1000, receivers);
              checkMessages(NUM * channels.length, receivers);
@@ -317,9 +317,9 @@ public class GMS_MergeTest extends ChannelTestBase {
 
              System.out.println("B and C exchange " + NUM + " messages, A discards them");
              for(int i=0; i < NUM; i++)
-                 b.send(null, null, "message #" + i +" from B");
+                 b.send(null, "message #" + i +" from B");
              for(int i=0; i < NUM; i++)
-                 c.send(null, null, "message #" + i +" from C");
+                 c.send(null, "message #" + i +" from C");
              waitForNumMessages(NUM * 2, 10000, 500, receivers[0], receivers[2]); // A *does* receiver B's and C's messages !
              checkMessages(NUM * 2, receivers[0], receivers[2]);
              checkMessages(0, receivers[1]);
@@ -402,7 +402,7 @@ public class GMS_MergeTest extends ChannelTestBase {
              System.out.println("sending " + NUM + " msgs:");
              for(int i=0; i < NUM; i++)
                  for(JChannel ch: channels)
-                     ch.send(null, null, "Number #" + i + " from " + ch.getAddress());
+                     ch.send(null, "Number #" + i + " from " + ch.getAddress());
 
              waitForNumMessages(NUM * channels.length, 10000, 1000, receivers);
              checkMessages(NUM * channels.length, receivers);

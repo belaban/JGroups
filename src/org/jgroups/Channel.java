@@ -173,19 +173,17 @@ public abstract class Channel /* implements Transport */ {
     /**
      Helper method. Will create a Message(dst, src, obj) and use send(Message).
      @param dst Destination address for message. If null, message will be sent to all current group members
-     @param src Source (sender's) address. If null, it will be set by the protocol's transport layer before
-     being put on the wire. Can usually be set to null.
      @param obj Serializable object. Will be serialized into the byte buffer of the Message. If it is <em>
      not</em> serializable, the byte buffer will be null.
      */
-    abstract public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException,
-                                                                                 ChannelClosedException;
+    abstract public void send(Address dst, Serializable obj) throws ChannelNotConnectedException,
+                                                                    ChannelClosedException;
 
-    abstract public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException,
-                                                                           ChannelClosedException;
+    abstract public void send(Address dst, byte[] buf) throws ChannelNotConnectedException,
+                                                              ChannelClosedException;
 
-    abstract public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException,
-                                                                           ChannelClosedException;
+    abstract public void send(Address dst, byte[] buf, int offset, int length) throws ChannelNotConnectedException,
+                                                                                      ChannelClosedException;
 
 
     /**

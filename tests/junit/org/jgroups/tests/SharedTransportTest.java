@@ -220,9 +220,9 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("B");
         c.connect("C");
 
-        a.send(null, null, "message from a");
-        b.send(null, null, "message from b");
-        c.send(null, null, "message from c");
+        a.send(null, "message from a");
+        b.send(null, "message from b");
+        c.send(null, "message from c");
         Util.sleep(500);
         assert r1.size() == 1;
         assert r2.size() == 1;
@@ -233,8 +233,8 @@ public class SharedTransportTest extends ChannelTestBase {
 
         b.disconnect();
         System.out.println("\n");
-        a.send(null, null, "message from a");
-        c.send(null, null, "message from c");
+        a.send(null, "message from a");
+        c.send(null, "message from c");
         Util.sleep(500);
         assert r1.size() == 1 : "size should be 1 but is " + r1.size();
         assert r3.size() == 1 : "size should be 1 but is " + r3.size();
@@ -243,7 +243,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
         c.disconnect();
         System.out.println("\n");
-        a.send(null, null, "message from a");
+        a.send(null, "message from a");
         Util.sleep(500);
         assert r1.size() == 1;
     }
@@ -300,7 +300,7 @@ public class SharedTransportTest extends ChannelTestBase {
         c.setReceiver(new MyReceiver("C"));
         c.connect("B");
 
-        c.send(null, null, "hello world from C");
+        c.send(null, "hello world from C");
     }
 
 
@@ -377,13 +377,13 @@ public class SharedTransportTest extends ChannelTestBase {
         c.setReceiver(rec_c);
         c.connect("B");
 
-        b.send(null, null, "first");
+        b.send(null, "first");
         Util.sleep(500); // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
         assertSize(1, rec_b, rec_c);
         assertSize(0, rec_a);
         a.close();
 
-        b.send(null, null, "second");
+        b.send(null, "second");
         Util.sleep(500);
         assertSize(0, rec_a);
         assertSize(2, rec_b, rec_c);

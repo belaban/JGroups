@@ -164,7 +164,7 @@ public class SequencerOrderTest {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
                     String channel_name=ch.getName();
-                    ch.send(null, null, channel_name + ":" + num.getAndIncrement());
+                    ch.send(null, channel_name + ":" + num.getAndIncrement());
                 }
                 catch(Exception e) {
                 }

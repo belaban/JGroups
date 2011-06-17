@@ -53,7 +53,7 @@ public class ProgrammaticChat {
 
         for(;;) {
             String line=Util.readStringFromStdin(": ");
-            ch.send(null, null, line);
+            ch.send(null, line);
         }
     }
 

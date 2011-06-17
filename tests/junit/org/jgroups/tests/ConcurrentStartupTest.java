@@ -126,7 +126,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public void useChannel() throws Exception {
             channel.connect("test", null, 25000); // join and state transfer
-            channel.send(null, null, channel.getAddress());
+            channel.send(null, channel.getAddress());
         }
 
         Set<Address> getList() {

@@ -128,7 +128,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
             Address addr=ch.getAddress();
             for(Address dest: mbrs) {
                 for(int i=1; i <= num_msgs; i++) {
-                    ch.send(dest, null, "unicast msg #" + i + " from " + addr);
+                    ch.send(dest, "unicast msg #" + i + " from " + addr);
                 }
             }
         }

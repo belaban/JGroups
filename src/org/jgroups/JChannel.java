@@ -639,24 +639,24 @@ public class JChannel extends Channel {
     /**
      * creates a new message with the destination address, and the source address
      * and the object as the message value
+     *
      * @param dst - the destination address of the message, null for all members
-     * @param src - the source address of the message
      * @param obj - the value of the message
      * @exception ChannelNotConnectedException
      * @exception ChannelClosedException
      * @see JChannel#send
      */
     @ManagedOperation
-    public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
-        send(new Message(dst, src, obj));
+    public void send(Address dst, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
+        send(new Message(dst, null, obj));
     }
 
-    public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException, ChannelClosedException {
-        send(new Message(dst, src, buf));
+    public void send(Address dst, byte[] buf) throws ChannelNotConnectedException, ChannelClosedException {
+        send(new Message(dst, null, buf));
     }
 
-    public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException, ChannelClosedException {
-        send(new Message(dst, src, buf, offset, length));
+    public void send(Address dst, byte[] buf, int offset, int length) throws ChannelNotConnectedException, ChannelClosedException {
+        send(new Message(dst, null, buf, offset, length));
     }
 
 

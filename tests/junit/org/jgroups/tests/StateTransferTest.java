@@ -243,7 +243,7 @@ public class StateTransferTest extends ChannelTestBase {
                 data[0]=new Integer(i);
                 data[1]="Value #" + i;
                 try {
-                    channel.send(null, null, data);
+                    channel.send(null, data);
                     if(i % 100 == 0)
                         Util.sleep(50);
 

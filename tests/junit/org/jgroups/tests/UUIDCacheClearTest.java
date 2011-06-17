@@ -36,8 +36,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             c2_addr=c2.getAddress();
 
             // send one unicast message from c1 to c2 and vice versa
-            c1.send(c2_addr, null, "one");
-            c2.send(c1_addr, null, "one");
+            c1.send(c2_addr, "one");
+            c2.send(c1_addr, "one");
 
             List<Message> c1_list=r1.getList();
             List<Message> c2_list=r2.getList();
@@ -61,8 +61,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             r2.clear();
 
             // send one unicast message from c1 to c2 and vice versa
-            c1.send(c2_addr, null, "two");
-            c2.send(c1_addr, null, "two");
+            c1.send(c2_addr, "two");
+            c2.send(c1_addr, "two");
             for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
                 if(!c1_list.isEmpty() && !c2_list.isEmpty())
                     break;

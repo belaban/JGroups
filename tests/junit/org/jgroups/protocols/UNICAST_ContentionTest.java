@@ -45,10 +45,10 @@ public class UNICAST_ContentionTest {
         int NUM=100;
         Address c1_addr=c1.getAddress(), c2_addr=c2.getAddress();
         for(int i=1; i <= NUM; i++) {
-            c1.send(c1_addr, null, "bla");
-            c1.send(c2_addr, null, "bla");
-            c2.send(c2_addr, null, "bla");
-            c2.send(c1_addr, null, "bla");
+            c1.send(c1_addr, "bla");
+            c1.send(c2_addr, "bla");
+            c2.send(c2_addr, "bla");
+            c2.send(c1_addr, "bla");
         }
 
         for(int i=0; i < 10; i++) {

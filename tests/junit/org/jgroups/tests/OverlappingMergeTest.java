@@ -277,7 +277,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         ra.clear(); rb.clear(); rc.clear();
         for(JChannel ch: channels) {
             for(int i=1; i <= num_msgs; i++)
-                ch.send(null, null, "#" + i);
+                ch.send(null, "#" + i);
         }
     }
 

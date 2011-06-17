@@ -131,8 +131,8 @@ public class UNICAST_ConnectionTests {
      */
     private void sendToEachOtherAndCheck(int num) throws Exception {
         for(int i=1; i <= num; i++) {
-            a.send(b_addr, null, "m" + i);
-            b.send(a_addr, null, "m" + i);
+            a.send(b_addr, "m" + i);
+            b.send(a_addr, "m" + i);
         }
         List<Message> l1=r1.getMessages();
         List<Message> l2=r2.getMessages();
@@ -150,7 +150,7 @@ public class UNICAST_ConnectionTests {
     private static void sendAndCheck(JChannel channel, Address dest, int num, MyReceiver receiver) throws Exception {
         receiver.clear();
         for(int i=1; i <= num; i++)
-            channel.send(dest, null, "m" + i);
+            channel.send(dest, "m" + i);
         List<Message> list=receiver.getMessages();
         for(int i=0; i < 10; i++) {
             if(list.size() == num)
