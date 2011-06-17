@@ -365,7 +365,7 @@ public class FD extends Protocol {
 
         lock.lock();
         try {
-            if(hb_sender != null && members != null && !members.contains(hb_sender)) {
+            if(hb_sender != null && !members.isEmpty() && !members.contains(hb_sender)) {
                 if(invalid_pingers.containsKey(hb_sender)) {
                     num_pings=invalid_pingers.get(hb_sender).intValue();
                     if(num_pings >= max_tries) {
