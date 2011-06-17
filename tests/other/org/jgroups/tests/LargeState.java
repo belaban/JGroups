@@ -38,7 +38,6 @@ public class LargeState extends ReceiverAdapter {
     boolean  provider=true;
     int      size=100000;
     int      total_received=0;
-    final    Promise state_promise=new Promise();
 
 
     public void start(boolean provider, int size, String props,boolean jmx) throws Exception {
@@ -62,11 +61,8 @@ public class LargeState extends ReceiverAdapter {
         else {
             System.out.println("Getting state");
             start=System.currentTimeMillis();
-            state_promise.reset();
             rc=channel.getState(null, 0);
             System.out.println("getState(), rc=" + rc);
-            if(rc)
-                state_promise.getResult(10000);
         }
         if(!provider) {
             channel.close();
@@ -107,7 +103,6 @@ public class LargeState extends ReceiverAdapter {
             this.state=state;
             System.out.println("<-- Received byte[] state, size=" + state.length + " (took " + (stop-start) + "ms)");
         }
-        state_promise.setResult(Boolean.TRUE);
     }
 
     public void setState(InputStream istream) {
@@ -130,8 +125,7 @@ public class LargeState extends ReceiverAdapter {
             }
 
             stop=System.currentTimeMillis();
-            System.out.println("<-- Received input stream state, size=" + total_received + " (took " + (stop-start) + "ms)");
-            state_promise.setResult(Boolean.TRUE);
+            System.out.println("<-- Received stream state, size=" + total_received + " (took " + (stop-start) + "ms)");
         }
         finally {
             Util.close(istream);
