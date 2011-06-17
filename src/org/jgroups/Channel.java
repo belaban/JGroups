@@ -18,24 +18,23 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  A channel represents a group communication endpoint (like BSD datagram sockets). A
- client joins a group by connecting the channel to a group address and leaves it by
+ client joins a group by connecting the channel to a group and leaves it by
  disconnecting. Messages sent over the channel are received by all group members that
- are connected to the same group (that is, all members that have the same group address).<p>
+ are connected to the same group (that is, all members that have the same group name).<p/>
 
- The FSM for a channel is roughly as follows: a channel is created
- (<em>unconnected</em>). The channel is connected to a group
- (<em>connected</em>). Messages can now be sent and received. The channel is
- disconnected from the group (<em>unconnected</em>). The channel could now be connected to a
- different group again. The channel is closed (<em>closed</em>).<p>
+ The FSM for a channel is roughly as follows: a channel is created (<em>unconnected</em>). The channel is connected to
+ a group (<em>connected</em>). Messages can now be sent and received. The channel is disconnected from the group
+ (<em>unconnected</em>). The channel could now be connected to a different group again.
+ The channel is closed (<em>closed</em>).<p/>
 
  Only a single sender is allowed to be connected to a channel at a time, but there can be
- more than one channel in an application.<p>
+ more than one channel in an application.<p/>
 
  Messages can be sent to the group members using the <em>send</em> method and messages
  can be received setting a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the
  {@link Receiver#receive(Message)} callback.<p>
 
- A channel instance is created using the public constructor.  <p>
+ A channel instance is created using the public constructor.<p/>
  Various degrees of sophistication in message exchange can be achieved using building
  blocks on top of channels; e.g., light-weight groups, synchronous message invocation,
  or remote method calls. Channels are on the same abstraction level as sockets, and
@@ -44,6 +43,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  @author  Bela Ban
  @see     java.net.DatagramPacket
  @see     java.net.MulticastSocket
+ @see     JChannel
  */
 @MBean(description="Channel")
 public abstract class Channel /* implements Transport */ {
@@ -86,33 +86,43 @@ public abstract class Channel /* implements Transport */ {
      @exception ChannelException The protocol stack cannot be started
      @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      A new channel has to be created first.
-     @see Channel#disconnect
+     @see #disconnect()
      */
     abstract public void connect(String cluster_name) throws ChannelException;
 
 
     /**
-     * Connects the channel to a group <em>and</em> fetches the state
-     * 
-     * @param cluster_name
-     *            The name of the cluster to connect to.
-     * @param target
-     *            The address of the member from which the state is to be
-     *            retrieved. If it is null, the state is retrieved from coordinator is contacted.
-     * @param timeout
-     *            Milliseconds to wait for the state response (0 = wait indefinitely).
-     * 
-     * @throws ChannelException thrown if connecting to cluster was not successful 
-     * @throws StateTransferException thrown if state transfer was not successful
-     * 
+     * Connects this channel to a group and gets a state from a specified state
+     * provider.
+     * <p>
+     *
+     * This method essentially invokes
+     * <code>connect<code> and <code>getState<code> methods successively.
+     * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and
+     * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succesion.
+     *
+     * If the channel is already connected, an error message will be printed to the error log.
+     * If the channel is closed a ChannelClosed exception will be thrown.
+     *
+     *
+     * @param cluster_name  the cluster name to connect to. Cannot be null.
+     * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
+     * @param timeout the timeout for state transfer.
+     *
+     * @exception ChannelException The protocol stack cannot be started
+     * @exception ChannelException Connecting to cluster was not successful
+     * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
+     *                                   A new channel has to be created first.
+     * @exception StateTransferException State transfer was not successful
+     *
      */
     abstract public void connect(String cluster_name, Address target, long timeout) throws ChannelException;
 
 
-    /** Disconnects the channel from the current group (if connected), leaving the group.
-     It is a null operation if not connected. It is a null operation if the channel is closed.
-
-     @see #connect(String) */
+    /**
+     * Disconnects the channel if it is connected. If the channel is closed or disconnected, this operation is ignored<br/>
+     * The channel can then be connected to the same or a different cluster again.
+     * @see #connect(String) */
     abstract public void disconnect();
 
 
@@ -127,8 +137,7 @@ public abstract class Channel /* implements Transport */ {
 
 
     /**
-     Determines whether the channel is open; 
-     i.e., the protocol stack has been created (may not be connected though).
+     Determines whether the channel is open; ie. the protocol stack has been created (may not be connected though).
      */
     abstract public boolean isOpen();
 
@@ -148,21 +157,18 @@ public abstract class Channel /* implements Transport */ {
      */
     public abstract Map<String,Object> dumpStats();
 
-    /** Sends a message to a (unicast) destination. The message contains
+    /** Sends a message. The message contains
      <ol>
      <li>a destination address (Address). A <code>null</code> address sends the message
      to all group members.
      <li>a source address. Can be left empty. Will be filled in by the protocol stack.
      <li>a byte buffer. The message contents.
      <li>several additional fields. They can be used by application programs (or patterns). E.g.
-     a message ID, a <code>oneway</code> field which determines whether a response is
-     expected etc.
+     a message ID, flags etc
      </ol>
      @param msg The message to be sent. Destination and buffer should be set. A null destination
      means to send to all group members.
-
      @exception ChannelNotConnectedException The channel must be connected to send messages.
-
      @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      A new channel has to be created first.
      */
@@ -179,8 +185,25 @@ public abstract class Channel /* implements Transport */ {
      */
     abstract public void send(Address dst, Address src, Serializable obj) throws ChannelException;
 
+    /**
+     * Sends a message. See {@link #send(Address,Address,byte[],int,int)} for details
+     * @param dst
+     * @param src
+     * @param buf
+     * @throws ChannelException
+     */
     abstract public void send(Address dst, Address src, byte[] buf) throws ChannelException;
 
+    /**
+     * Sends a message to a destination.
+     * @param dst The destination address. If null, the message will be sent to all cluster nodes (= group members)
+     * @param src The sender's address. Can be left null (the stack will fill in the address)
+     * @param buf The buffer to be sent
+     * @param offset The offset into the buffer
+     * @param length The length of the data to be sent. Has to be <= buf.length - offset. This will send
+     *        <code>length</code> bytes starting at <code>offset</code>
+     * @throws ChannelException If send() failed
+     */
     abstract public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelException;
 
 
@@ -195,13 +218,10 @@ public abstract class Channel /* implements Transport */ {
 
 
     /**
-     * Gets the current view. This does <em>not</em> retrieve a new view, use
-     <code>receive()</code> to do so. The view may only be available after a successful
-     <code>connect()</code>. The result of calling this method on an unconnected channel
-     is implementation defined (may return null). Calling it on a channel that is not
-     enabled to receive view events (via <code>setOpt</code>) returns
-     <code>null</code>. Calling this method on a closed channel returns a null view.
-     @return The current view.  
+     * Gets the current view. The view may only be available after a successful
+     * <code>connect()</code>. The result of calling this method on an unconnected channel
+     * is implementation defined (may return null). Calling this method on a closed channel returns a null view.
+     * @return The current view.
      */
     abstract public View getView();
 
@@ -210,8 +230,7 @@ public abstract class Channel /* implements Transport */ {
     /**
      Returns the channel's own address. The result of calling this method on an unconnected
      channel is implementation defined (may return null). Calling this method on a closed
-     channel returns null. Successor to {@link #getAddress()}. Addresses can be used as destination
-     in the <code>send()</code> operation.
+     channel returns null. Addresses can be used as destination in the <code>send()</code> operation.
      @return The channel's address (opaque)
      */
     abstract public Address getAddress();
@@ -226,14 +245,14 @@ public abstract class Channel /* implements Transport */ {
      * Returns the logical name of a given member. The lookup is from the local cache of logical address
      * / logical name mappings and no remote communication is performed.
      * @param member
-     * @return
+     * @return The logical name for <code>member</code>
      */
     abstract public String getName(Address member);
 
 
     /**
      * Sets the logical name for the channel. The name will stay associated with this channel for the channel's
-     * lifetime (until close() is called). This method should be called <em>before</em> calling connect().<br/>
+     * lifetime (until close() is called). This method should be called <em>before</em> calling connect().
      * @param name
      */
     abstract public void setName(String name);
@@ -310,11 +329,37 @@ public abstract class Channel /* implements Transport */ {
     public boolean getDiscardOwnMessages() {return discard_own_messages;}
 
     abstract public boolean flushSupported();
-    
+
+    /**
+     * Performs a partial flush in a cluster for flush participants.<p/>
+     * All pending messages are flushed out only for the flush participants. The remaining members in a cluster are not
+     * included in the flush. The flush participants should be a proper subset of a current view.<p/>
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     * @see #startFlush(boolean) 
+     */
     abstract public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume);
 
+    /**
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the system and all members
+     * ack their reception. After this call returns, no member will be sending any messages until
+     * {@link #stopFlush()} is called.<p/>
+     * In case of flush collisions, a random sleep time backoff algorithm is employed and the flush is reattempted for
+     * numberOfAttempts. Therefore this method is guaranteed to return after timeout x numberOfAttempts miliseconds.
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     */
     abstract public boolean startFlush(boolean automatic_resume);
-    
+
+    /**
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the
+     * system and all members ack their reception. After this call returns, no member will
+     * be sending any messages until {@link #stopFlush()} is called.
+     * @param timeout
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     * @see #startFlush(boolean)
+     */
     abstract public boolean startFlush(long timeout, boolean automatic_resume);
 
     abstract public void stopFlush();
@@ -349,10 +394,6 @@ public abstract class Channel /* implements Transport */ {
      */
     abstract public boolean getState(Address target, long timeout) throws ChannelException;
 
-
-
-    public abstract Map<String,Object> getInfo();
-    public abstract void setInfo(String key, Object value);
 
 
 
