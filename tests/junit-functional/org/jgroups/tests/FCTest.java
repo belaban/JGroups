@@ -44,7 +44,7 @@ public class FCTest {
     }
 
 
-    public void testReceptionOfAllMessages() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testReceptionOfAllMessages() throws ChannelException {
         int num_received=0;
         Receiver r=new Receiver();
         ch.setReceiver(r);

@@ -130,7 +130,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     /**
      * Fetch the group state from the current coordinator. If successful, this will trigger setState().
      */
-    public void fetchState(long timeout) throws ChannelClosedException, ChannelNotConnectedException {
+    public void fetchState(long timeout) throws ChannelException {
         boolean rc=channel.getState(null, timeout);
         if(log.isInfoEnabled()) {
             if(rc)

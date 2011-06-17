@@ -165,9 +165,8 @@ public abstract class Channel /* implements Transport */ {
 
      @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      A new channel has to be created first.
-
      */
-    abstract public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException;
+    abstract public void send(Message msg) throws ChannelException;
 
 
     /**
@@ -178,14 +177,11 @@ public abstract class Channel /* implements Transport */ {
      @param obj Serializable object. Will be serialized into the byte buffer of the Message. If it is <em>
      not</em> serializable, the byte buffer will be null.
      */
-    abstract public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException,
-                                                                                 ChannelClosedException;
+    abstract public void send(Address dst, Address src, Serializable obj) throws ChannelException;
 
-    abstract public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException,
-                                                                           ChannelClosedException;
+    abstract public void send(Address dst, Address src, byte[] buf) throws ChannelException;
 
-    abstract public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException,
-                                                                           ChannelClosedException;
+    abstract public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelException;
 
 
     /**
@@ -327,22 +323,31 @@ public abstract class Channel /* implements Transport */ {
 
 
     /**
-     Retrieve the state of the group. Will usually contact the oldest group member to get
-     the state. When the method returns true, a <code>SetStateEvent</code> will have been
-     added to the channel's queue, causing <code>receive()</code> to return the state in one of
-     the next invocations. If false, no state will be retrieved by <code>receive()</code>.
-     @param target The address of the member from which the state is to be retrieved. If it is
-     null, the coordinator is contacted.
-     @param timeout Milliseconds to wait for the response (0 = wait indefinitely).
-     @return boolean True if the state was retrieved successfully, otherwise false.
-     @exception ChannelNotConnectedException The channel must be connected to receive messages.
-
-     @exception ChannelClosedException The channel is closed and therefore cannot be used
-     any longer. A new channel has to be created first.
-
+     * Retrieves the full state from the target member.
+     * <p>
+     * State transfer is initiated by invoking getState on this channel, the state requester, and sending a GET_STATE
+     * message to a target member - the state provider. The state provider passes a GET_STATE message to the application
+     * that is using the the state provider channel which in turn provides an application state to the state requester.
+     * Upon successful installation of a state at the state receiver, this method returns true.
+     *
+     * @param target State provider. If null (default), the coordinator is used
+     * @param timeout The number of milliseconds to wait for the operation to complete successfully.
+     *                0 waits until the state has been received
+     *
+     * @see MessageListener#getState(java.io.OutputStream)
+     * @see MessageListener#setState(java.io.InputStream)
+     * @see MessageListener#getState()
+     * @see MessageListener#setState(byte[])
+     *
+     * @return true If the state transfer was successful, false otherwise
+     * @exception ChannelNotConnectedException The channel must be connected to receive messages.
+     * @exception ChannelClosedException The channel is closed and therefore cannot be used
+     *            any longer. A new channel has to be created first.
+     * @exception StateTransferException When there was a problem during the state transfer. The exact subtype of
+     *            the exception, plus the exception message will allow a caller to determine what went wrong, and to possbly retry.
+     * @throws IllegalStateException If the flush is used in this channel and the cluster could not be flushed
      */
-    abstract public boolean getState(Address target, long timeout)
-            throws ChannelNotConnectedException, ChannelClosedException;
+    abstract public boolean getState(Address target, long timeout) throws ChannelException;
 
 
 

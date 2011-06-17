@@ -623,7 +623,7 @@ public class JChannel extends Channel {
      * @exception ChannelClosedException
      */
     @ManagedOperation
-    public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
+    public void send(Message msg) throws ChannelException {
         checkClosedOrNotConnected();
         if(msg == null)
             throw new NullPointerException("msg is null");
@@ -644,18 +644,18 @@ public class JChannel extends Channel {
      * @param obj - the value of the message
      * @exception ChannelNotConnectedException
      * @exception ChannelClosedException
-     * @see JChannel#send
+     * @see JChannel#send(Message)
      */
     @ManagedOperation
-    public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
+    public void send(Address dst, Address src, Serializable obj) throws ChannelException {
         send(new Message(dst, src, obj));
     }
 
-    public void send(Address dst, Address src, byte[] buf) throws ChannelNotConnectedException, ChannelClosedException {
+    public void send(Address dst, Address src, byte[] buf) throws ChannelException {
         send(new Message(dst, src, buf));
     }
 
-    public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelNotConnectedException, ChannelClosedException {
+    public void send(Address dst, Address src, byte[] buf, int offset, int length) throws ChannelException {
         send(new Message(dst, src, buf, offset, length));
     }
 
@@ -750,82 +750,18 @@ public class JChannel extends Channel {
     }
 
 
-
-
-
     /**
-     * Retrieves the full state from the target member.
-     * <p>
-     * 
-     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE
-     * message to a target member - state provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application state to a state receiver. Upon successful
-     * installation of a state at state receiver this method returns true.
-     * 
-     * @param target
-     *                State provider. If null, coordinator is used
-     * @param timeout
-     *                the number of milliseconds to wait for the operation to complete successfully.
-     *                0 waits until the state has been received
-     * 
-     * @see MessageListener#getState(OutputStream)
-     * @see MessageListener#setState(InputStream)
-     * @see MessageListener#getState()
-     * @see MessageListener#setState(byte[])
-     * 
-     * 
-     * @return true if state transfer was successful, false otherwise
-     * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval was initiated
-     * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was initiated
-     * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this channel
-     * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be flushed
+     * {@inheritDoc}
      */
-    public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+    public boolean getState(Address target, long timeout) throws ChannelException {
         return getState(target, timeout, true);
     }
 
-    
-    
+
     /**
-     * Retrieves state from the target member.
-     * <p>
-     * 
-     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE message
-     * to a target member - state provider. State provider passes GET_STATE message to application that is using the
-     * state provider channel which in turn provides an application state to a state receiver. Upon successful
-     * installation of a state at the state receiver this method returns true.
-     * 
-     * @param target
-     *                State provider. If null, coordinator is used
-     * @param timeout
-     *                the number of milliseconds to wait for the operation to complete successfully. 0 waits until
-     *                the state has been received
-     * @param useFlushIfPresent
-     *                whether channel should be flushed prior to state retrieval
-     * 
-     * @see MessageListener#getState(OutputStream)
-     * @see MessageListener#setState(InputStream)
-     * @see MessageListener#getState()
-     * @see MessageListener#setState(byte[])
-     * 
-     * 
-     * @return true if state transfer was successful, false otherwise
-     * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval was initiated
-     * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was initiated
-     * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this channel
-     * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be flushed
-     */    
-    public boolean getState(Address target, long timeout, boolean useFlushIfPresent)
-      throws ChannelNotConnectedException, ChannelClosedException {
-		
+     * Retrieves state from the target member. See {@link #getState(Address,long)} for details.
+     */
+    public boolean getState(Address target, long timeout, boolean useFlushIfPresent) throws ChannelException {
     	Callable<Boolean> flusher = new Callable<Boolean>() {
 			public Boolean call() throws Exception {
 				return Util.startFlush(JChannel.this);
@@ -834,43 +770,8 @@ public class JChannel extends Channel {
 		return getState(target, timeout, useFlushIfPresent?flusher:null);
 	}
     
-    /**
-     * Retrieves state from the target member.
-     * <p>
-     * 
-     * State transfer is initiated by invoking getState on this channel, state receiver, and sending a GET_STATE
-     * message to a target member - state provider. State provider passes GET_STATE message to application that is
-     * using the state provider channel which in turn provides an application state to a state receiver. Upon
-     * successful installation of a state at the state receiver this method returns true.
-     * 
-     * 
-     *
-     * @param target
-     *                State provider. If null, coordinator is used
-     * @param timeout
-     *                the number of milliseconds to wait for the operation to complete successfully. 0 waits until
-     *                the state has been received
-     * @param flushInvoker
-     *                algorithm invoking flush
-     *
-     * @see MessageListener#getState(OutputStream)
-     * @see MessageListener#setState(InputStream)
-     * @see MessageListener#getState()
-     * @see MessageListener#setState(byte[])
-     * 
-     * 
-     * @return true if state transfer was successful, false otherwise
-     * @throws ChannelNotConnectedException
-     *                 if channel was not connected at the time state retrieval was initiated
-     * @throws ChannelClosedException
-     *                 if channel was closed at the time state retrieval was initiated
-     * @throws IllegalStateException
-     *                 if one of state transfer protocols is not present in this channel
-     * @throws IllegalStateException
-     *                 if flush is used in this channel and cluster could not be flushed
-     */
-    protected boolean getState(Address target, long timeout, Callable<Boolean> flushInvoker)
-      throws ChannelNotConnectedException, ChannelClosedException {
+
+    protected boolean getState(Address target, long timeout, Callable<Boolean> flushInvoker) throws ChannelException {
         checkClosedOrNotConnected();
         if(!state_transfer_supported)
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
@@ -1228,13 +1129,13 @@ public class JChannel extends Channel {
      * health check<BR>
      * throws a ChannelClosed exception if the channel is closed
      */
-    protected void checkClosed() throws ChannelClosedException {
+    protected void checkClosed() throws ChannelException {
         if(closed)
             throw new ChannelClosedException();
     }
 
 
-    protected void checkClosedOrNotConnected() throws ChannelNotConnectedException, ChannelClosedException {
+    protected void checkClosedOrNotConnected() throws ChannelException {
         if(closed)
             throw new ChannelClosedException();
         if(!connected)
