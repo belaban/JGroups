@@ -31,7 +31,7 @@
     <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
-    <property name="javadoc.packages" value="org.jgroups.*"/>
+    <property name="javadoc.packages" value="org.jgroups,org.jgroups.blocks"/>
     <property name="timestamp" value=".timestamp"/>
     <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
 
@@ -198,9 +198,10 @@
                  destdir="${javadoc.dir}"
                  classpathref="jg.classpath"
                  author="true"
+                 public="true"
                  version="true"
                  use="true"
-                 bottom="Copyright &#169; 1998-2009 Bela Ban / Red Hat. All Rights Reserved."
+                 bottom="Copyright &#169; 1998-2012 Bela Ban / Red Hat. All Rights Reserved."
                  useexternalfile="yes"
                  doctitle="JGroups"
                  overview="${src.dir}/org/jgroups/overview.html">
