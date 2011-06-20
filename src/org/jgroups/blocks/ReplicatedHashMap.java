@@ -108,7 +108,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
 
     /**
-     * Constructs a new ReplicatedHashMap with channel. Call {@link #start} to start this map.
+     * Constructs a new ReplicatedHashMap with channel. Call {@link #start(long)} to start this map.
      */
     public ReplicatedHashMap(Channel channel) {
         this.channel=channel;
@@ -177,7 +177,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      * @throws org.jgroups.ChannelClosedException
      * @throws org.jgroups.ChannelNotConnectedException
      */
-    public final void start(long state_timeout) throws ChannelClosedException, ChannelNotConnectedException {
+    public final void start(long state_timeout) throws ChannelException {
         if(!channel.isConnected()) throw new ChannelNotConnectedException();
         if(!channel.isOpen()) throw new ChannelClosedException();
         send_message = channel.getView().size()>1;

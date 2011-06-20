@@ -94,7 +94,9 @@ API changes in 3.0.0
      // "foo" threw an exception
   }
 
-
+- ChannelNotConnectedException and ChannelCloseException have been replaced by the superclass ChannelException. This way,
+  new exceptions can be thrown (and documented in the javadoc) without having to change the signature in the future.
+  These changes affect mainly JChannel.
 
 
 

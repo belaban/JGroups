@@ -55,12 +55,12 @@ public class OOBTest extends ChannelTestBase {
      * A and B. A multicasts a regular message, which blocks in B. Then A multicasts an OOB message, which must be
      * received by B.
      */
-    public void testNonBlockingUnicastOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testNonBlockingUnicastOOBMessage() throws ChannelException {
         Address dest=c2.getAddress();
         send(dest);
     }
 
-    public void testNonBlockingMulticastOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testNonBlockingMulticastOOBMessage() throws ChannelException {
         send(null);
     }
 
@@ -209,7 +209,7 @@ public class OOBTest extends ChannelTestBase {
      * @throws ChannelNotConnectedException
      * @throws ChannelClosedException
      */
-    public void testOOBMessageLoss() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testOOBMessageLoss() throws ChannelException {
         Util.close(c2); // we only need 1 channel
         MyReceiver receiver=new MySleepingReceiver("C1", 1000);
         c1.setReceiver(receiver);
@@ -249,7 +249,7 @@ public class OOBTest extends ChannelTestBase {
      * @throws ChannelNotConnectedException
      * @throws ChannelClosedException
      */
-    public void testOOBUnicastMessageLoss() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testOOBUnicastMessageLoss() throws ChannelException {
         MyReceiver receiver=new MySleepingReceiver("C2", 1000);
         c2.setReceiver(receiver);
 
@@ -331,7 +331,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
 
-    private void send(Address dest) throws ChannelNotConnectedException, ChannelClosedException {
+    private void send(Address dest) throws ChannelException {
         final ReentrantLock lock=new ReentrantLock();
         final BlockingReceiver receiver=new BlockingReceiver(lock);
         final int NUM=10;
