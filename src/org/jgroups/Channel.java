@@ -327,37 +327,34 @@ public abstract class Channel /* implements Transport */ {
     abstract public boolean flushSupported();
 
     /**
-     * Performs a partial flush in a cluster for flush participants.<p/>
-     * All pending messages are flushed out only for the flush participants. The remaining members in a cluster are not
-     * included in the flush. The flush participants should be a proper subset of a current view.<p/>
-     * @param automatic_resume Call {@link #stopFlush()} after the flush
-     * @return true if FLUSH completed within the timeout
-     * @see #startFlush(boolean) 
-     */
-    abstract public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume);
-
-    /**
-     * Will perform a flush of the system, ie. all pending messages are flushed out of the system and all members
-     * ack their reception. After this call returns, no member will be sending any messages until
-     * {@link #stopFlush()} is called.<p/>
-     * In case of flush collisions, a random sleep time backoff algorithm is employed and the flush is reattempted for
-     * numberOfAttempts. Therefore this method is guaranteed to return after timeout x numberOfAttempts miliseconds.
-     * @param automatic_resume Call {@link #stopFlush()} after the flush
-     * @return true if FLUSH completed within the timeout
-     */
-    abstract public boolean startFlush(boolean automatic_resume);
-
-    /**
-     * Will perform a flush of the system, ie. all pending messages are flushed out of the
-     * system and all members ack their reception. After this call returns, no member will
-     * be sending any messages until {@link #stopFlush()} is called.
-     * @param timeout
-     * @param automatic_resume Call {@link #stopFlush()} after the flush
-     * @return true if FLUSH completed within the timeout
+     * Performs a partial flush in a cluster for flush participants.
+     * <p/>
+     * All pending messages are flushed out only for the flush participants. The remaining members
+     * in a cluster are not included in the flush. The flush participants should be a proper subset
+     * of a current view.
+     * <p/>
+     * 
+     * @param automatic_resume
+     *            Call {@link #stopFlush()} after the flush
      * @see #startFlush(boolean)
      */
-    abstract public boolean startFlush(long timeout, boolean automatic_resume);
+    abstract public void startFlush(List<Address> flushParticipants, boolean automatic_resume)
+                throws Exception;
 
+    /**
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the system
+     * and all members ack their reception. After this call returns, no member will be sending any
+     * messages until {@link #stopFlush()} is called.
+     * <p/>
+     * In case of flush collisions, a random sleep time backoff algorithm is employed and the flush
+     * is reattempted for numberOfAttempts. Therefore this method is guaranteed to return after
+     * timeout x numberOfAttempts miliseconds.
+     * 
+     * @param automatic_resume
+     *            Call {@link #stopFlush()} after the flush
+     */
+    abstract public void startFlush(boolean automatic_resume) throws Exception;
+    
     abstract public void stopFlush();
     
     abstract public void stopFlush(List<Address> flushParticipants);

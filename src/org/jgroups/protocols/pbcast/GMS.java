@@ -693,17 +693,20 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         }
 
         try {
-            boolean successfulFlush=true;
+            boolean successfulFlush=false;
             boolean validView=new_view != null && new_view.size() > 0;
             if(validView && flushProtocolInStack) {
 
                 int attemptCount = 0;
-                while(attemptCount < maxAttempts){
-                    successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
-                    if(successfulFlush)
+                while (attemptCount < maxAttempts) {
+                    try {
+                        up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+                        successfulFlush = true;
                         break;
-                    Util.sleepRandom(randomFloor,randomCeiling);
-                    attemptCount++;
+                    } catch (Exception e) {
+                        Util.sleepRandom(randomFloor, randomCeiling);
+                        attemptCount++;
+                    }
                 }
 
                 if(successfulFlush) {

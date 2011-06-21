@@ -41,6 +41,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @MBean(description = "Flushes the cluster")
 public class FLUSH extends Protocol {
 
+    private static final FlushStartResult SUCCESS_START_FLUSH = new FlushStartResult(Boolean.TRUE,null); 
+   
     /*
      * ------------------------------------------ Properties------------------------------------------
      */
@@ -120,7 +122,7 @@ public class FLUSH extends Protocol {
     @GuardedBy("sharedLock")
     private boolean flushCompleted = false;
 
-    private final Promise<Boolean> flush_promise = new Promise<Boolean>();
+    private final Promise<FlushStartResult> flush_promise = new Promise<FlushStartResult>();
 
     private final Promise<Boolean> flush_unblock_promise = new Promise<Boolean>();
 
@@ -194,18 +196,17 @@ public class FLUSH extends Protocol {
     }
 
     @ManagedOperation(description = "Request cluster flush")
-    public boolean startFlush() {
-        return startFlush(new Event(Event.SUSPEND));
+    public void startFlush() {
+        startFlush(new Event(Event.SUSPEND));
     }
 
     @SuppressWarnings("unchecked")
-    private boolean startFlush(Event evt) {
+    private void startFlush(Event evt) {
         List<Address> flushParticipants = (List<Address>) evt.getArg();
-        return startFlush(flushParticipants);
+        startFlush(flushParticipants);
     }
 
-    private boolean startFlush(List<Address> flushParticipants) {
-        boolean successfulFlush = false;
+    private void startFlush(List<Address> flushParticipants) throws RuntimeException {
         if (!flushInProgress.get()) {
             flush_promise.reset();
             synchronized(sharedLock) {
@@ -214,19 +215,21 @@ public class FLUSH extends Protocol {
             }
             onSuspend(flushParticipants);
             try {
-                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
-                successfulFlush = r.booleanValue();
+                FlushStartResult r = flush_promise.getResultWithTimeout(start_flush_timeout);
+               if(r.failed())
+                   throw new RuntimeException(r.getFailureCause());
             } catch (TimeoutException e) {
-                if (log.isDebugEnabled())
-                    log.debug(localAddress
-                            + ": timed out waiting for flush responses after "
-                            + start_flush_timeout
-                            + " ms. Rejecting flush to participants "
-                            + flushParticipants);
                 rejectFlush(flushParticipants, currentViewId());
+                throw new RuntimeException(localAddress
+                            + " timed out waiting for flush responses after "
+                            + start_flush_timeout
+                            + " ms. Rejected flush to participants "
+                            + flushParticipants,e);
             }
         }
-        return successfulFlush;
+        else {
+            throw new RuntimeException("Flush attempt is in progress");
+        }        
     }
 
     @ManagedOperation(description = "Request end of flush in a cluster")
@@ -265,7 +268,8 @@ public class FLUSH extends Protocol {
                 return handleConnect(evt, false);
                 
             case Event.SUSPEND:
-                return startFlush(evt);
+                startFlush(evt);
+                break;
                 
              
             // only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
@@ -320,7 +324,7 @@ public class FLUSH extends Protocol {
             if (shouldSuspendByItself) {
                 isBlockingFlushDown = false;      
                 log.warn(localAddress + ": unblocking after " + timeout + "ms");
-                flush_promise.setResult(Boolean.TRUE);
+                flush_promise.setResult(new FlushStartResult(Boolean.TRUE,null));
                 notBlockedDown.signalAll();
             }            
         } catch (InterruptedException e) {
@@ -408,7 +412,7 @@ public class FLUSH extends Protocol {
                                 new Thread(r).start();
                             }
                             // however, flush should fail/retry as soon as one FAIL is received
-                            flush_promise.setResult(Boolean.FALSE);
+                            flush_promise.setResult(new FlushStartResult(Boolean.FALSE, new Exception("Flush failed for " + msg.getSrc())));
                             break;
 
                         case FlushHeader.FLUSH_COMPLETED:
@@ -461,7 +465,8 @@ public class FLUSH extends Protocol {
                 break;
 
             case Event.SUSPEND:
-                return startFlush(evt);
+                startFlush(evt);
+                break;
 
             case Event.RESUME:
                 onResume(evt);
@@ -492,7 +497,7 @@ public class FLUSH extends Protocol {
         synchronized (sharedLock) {
             reconcileOks.add(msg.getSrc());
             if (reconcileOks.size() >= flushMembers.size()) {
-                flush_promise.setResult(Boolean.TRUE);
+                flush_promise.setResult(SUCCESS_START_FLUSH);
                 if (log.isDebugEnabled())
                     log.debug(localAddress + ": all FLUSH_RECONCILE_OK received");
             }
@@ -660,7 +665,7 @@ public class FLUSH extends Protocol {
                   participantsInFlush));
       }
         if (participantsInFlush.isEmpty()) {
-            flush_promise.setResult(Boolean.TRUE);
+            flush_promise.setResult(SUCCESS_START_FLUSH);
         } else {
             down_prot.down(new Event(Event.MSG, msg));
             if (log.isDebugEnabled())
@@ -792,7 +797,7 @@ public class FLUSH extends Protocol {
         if (needsReconciliationPhase) {
             down_prot.down(new Event(Event.MSG, msg));
         } else if (flushCompleted) {
-            flush_promise.setResult(Boolean.TRUE);
+            flush_promise.setResult(SUCCESS_START_FLUSH);
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": all FLUSH_COMPLETED received");
         } else if (collision) {
@@ -884,6 +889,29 @@ public class FLUSH extends Protocol {
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": sent FLUSH_COMPLETED message to " + flushCoordinator);
         }
+    }
+    
+    private static class FlushStartResult {
+      private final Boolean result;
+      private final Exception failureCause;
+      
+
+      public FlushStartResult(Boolean result, Exception failureCause) {
+         this.result = result;
+         this.failureCause = failureCause;
+      }
+
+      public Boolean getResult() {
+         return result;
+      }
+      
+      public boolean failed(){
+         return result == Boolean.FALSE;
+      }
+
+      public Exception getFailureCause() {
+         return failureCause;
+      }
     }
 
     public static class FlushHeader extends Header {
