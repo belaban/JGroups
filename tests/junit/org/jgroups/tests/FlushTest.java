@@ -130,11 +130,9 @@ public class FlushTest extends ChannelTestBase {
             for (int i = 0; i < 100; i++) {
                 System.out.print("flush #" + i + ": ");
                 long start = System.currentTimeMillis();
-                boolean status = channel.startFlush(false);
+                channel.startFlush(false);
                 channel.stopFlush();
                 long diff = System.currentTimeMillis() - start;
-                System.out.println(status ? " OK (in " + diff + " ms)" : " FAIL");
-                assert status;
             }
         } finally {
             Util.close(channel, channel2, channel3);

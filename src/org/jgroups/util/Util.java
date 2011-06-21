@@ -2859,17 +2859,19 @@ public class Util {
             return hostname;
     }
 
-    public static boolean startFlush(Channel c, List<Address> flushParticipants, int numberOfAttempts,  long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
-    	boolean successfulFlush = false;
-        int attemptCount = 0;
-        while(attemptCount < numberOfAttempts){
-        	successfulFlush = c.startFlush(flushParticipants, false);
-        	if(successfulFlush)
-        		break;
-        	Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
-        	attemptCount++;
-        }
-        return successfulFlush;
+    public static boolean startFlush(Channel c, List<Address> flushParticipants,
+            int numberOfAttempts, long randomSleepTimeoutFloor, long randomSleepTimeoutCeiling) {
+      int attemptCount = 0;
+      while (attemptCount < numberOfAttempts) {
+         try {
+            c.startFlush(flushParticipants, false);
+            return true;
+         } catch (Exception e) {
+            Util.sleepRandom(randomSleepTimeoutFloor, randomSleepTimeoutCeiling);
+            attemptCount++;
+         }
+      }
+      return false;
     }
 
     public static boolean startFlush(Channel c, List<Address> flushParticipants) {
@@ -2877,16 +2879,17 @@ public class Util {
     }
 
     public static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
-    	boolean successfulFlush = false;
         int attemptCount = 0;
         while(attemptCount < numberOfAttempts){
-        	successfulFlush = c.startFlush(false);
-        	if(successfulFlush)
-        		break;
-        	Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
-        	attemptCount++;
+            try{
+               c.startFlush(false);
+               return true;
+            } catch(Exception e) {
+               Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
+               attemptCount++;
+            }
         }
-        return successfulFlush;
+        return false;
     }
 
     public static boolean startFlush(Channel c) {

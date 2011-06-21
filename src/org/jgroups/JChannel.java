@@ -1014,55 +1014,56 @@ public class JChannel extends Channel {
     }
 
     /** {@inheritDoc} */
-    public boolean startFlush(boolean automatic_resume) {
-        if(!flushSupported()) {
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }           	  
-        boolean successfulFlush=(Boolean)down(new Event(Event.SUSPEND));
-        
-        if(automatic_resume)
-            stopFlush();
-
-        return successfulFlush;              
+    public void startFlush(boolean automatic_resume) throws Exception {
+        if (!flushSupported()) {
+            throw new IllegalStateException(
+                        "Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
+        try {
+            down(new Event(Event.SUSPEND));            
+        } catch (Exception e) {
+            throw new ChannelException("Flush failed", e.getCause());
+        } finally {
+            if (automatic_resume)
+                stopFlush();
+        }
     }
 
     /** {@inheritDoc} */
-    public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume) {
-        boolean successfulFlush;
-        if(!flushSupported()){
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+    public void startFlush(List<Address> flushParticipants, boolean automatic_resume)
+                throws Exception {
+        if (!flushSupported()) {
+            throw new IllegalStateException(
+                        "Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
         View v = getView();
-        if(v != null && v.getMembers().containsAll(flushParticipants)){
-            successfulFlush=(Boolean)down(new Event(Event.SUSPEND, flushParticipants));
-        }else{
+        boolean validParticipants = v != null && v.getMembers().containsAll(flushParticipants);
+        if (!validParticipants)
             throw new IllegalArgumentException("Current view " + v
-                                               + " does not contain all flush participants "
-                                               + flushParticipants);
-        }
-        
-        if(automatic_resume)
-            stopFlush(flushParticipants);
-
-        return successfulFlush;              
-    }
-    
-    /** {@inheritDoc} */
-    public boolean startFlush(long timeout, boolean automatic_resume) {        
-        return startFlush(automatic_resume);       
+                        + " does not contain all flush participants " + flushParticipants);
+        try {
+            down(new Event(Event.SUSPEND, flushParticipants));
+        } catch (Exception e) {
+            throw new ChannelException("Flush failed", e.getCause());
+        } finally {
+            if (automatic_resume)
+                stopFlush(flushParticipants);
+        }          
     }
 
     public void stopFlush() {
-        if(!flushSupported()) {
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }      
-        down(new Event(Event.RESUME));      
+        if (!flushSupported()) {
+            throw new IllegalStateException(
+                        "Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
+        down(new Event(Event.RESUME));
     }
 
     public void stopFlush(List<Address> flushParticipants) {
-        if(!flushSupported()) {
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }       
+        if (!flushSupported()) {
+            throw new IllegalStateException(
+                        "Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
         down(new Event(Event.RESUME, flushParticipants));
     }
     
