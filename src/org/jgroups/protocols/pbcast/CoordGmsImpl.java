@@ -185,7 +185,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            boolean successfulFlush =!useFlushIfPresent || gms.startFlush(new_view);
+            boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
             if(!successfulFlush && hasJoiningMembers){
                 // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
                 // The joiner should block until the previous FLUSH completed
