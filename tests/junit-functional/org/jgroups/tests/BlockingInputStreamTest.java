@@ -26,6 +26,21 @@ public class BlockingInputStreamTest {
         assert in.available() == 4 && in.capacity() == 2000;
     }
 
+    public void testRead() throws IOException {
+        final BlockingInputStream in=new BlockingInputStream(100);
+        byte[] input=new byte[]{'B', 'e', 'l', 'a'};
+        in.write(input);
+        in.close();
+
+        assert in.available() == 4;
+        int b;
+        for(int i=0; i < input.length; i++) {
+            b=in.read();
+            assert b == input[i];
+        }
+        b=in.read();
+        assert b == -1;
+    }
 
     public void testBlockingReadAndClose() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(100);
@@ -47,7 +62,6 @@ public class BlockingInputStreamTest {
         byte[] buf=new byte[100];
         latch.countDown();
         int num=in.read(buf, 0, buf.length);
-        System.out.println("num = " + num);
         assert num == -1 : " expected -1 (EOF) but got " + num;
     }
 

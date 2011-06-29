@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Bounded input stream. A consumers reads bytes until the end of the stream is reached, or the input stream is closed.
+ * Bounded input stream. A consumer reads bytes until the end of the stream is reached, or the input stream is closed.
  * The producer writes bytes to the tail and blocks if the capacity has been reached (until the consumer reads more bytes).
  * <p/>
  * This class is for only 1 producer and 1 consumer; multiple producers/consumers will most likely yield incorrect
@@ -150,8 +150,6 @@ public class BlockingInputStream extends InputStream {
 
                 if(remaining() > 0) {
                     int bytes_to_write=Math.min(length-bytes_written, remaining());
-                    //System.out.println("arraycopy: src offset=" + (offset+bytes_written) + ", read_pos="+read_pos + ", write_pos="+
-                      //                   write_pos+ ", bytes_to_write=" + bytes_to_write + ", bytes_written=" + bytes_written);
                     System.arraycopy(buf, offset+bytes_written, this.buf, write_pos, bytes_to_write);
                     write_pos+=bytes_to_write;
                     bytes_written+=bytes_to_write;
