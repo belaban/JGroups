@@ -194,7 +194,7 @@ public class BlockingInputStream extends InputStream {
 
     /**
      * Closes the stream. Writes to a closed stream will fail, reads will successfully read the bytes that are already
-     * in the buffer and then return -1 or throw an EOFException
+     * in the buffer and then return -1 (EOF)
      * @throws IOException
      */
     public void close() throws IOException {

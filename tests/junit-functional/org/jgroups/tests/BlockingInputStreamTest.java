@@ -6,6 +6,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -26,6 +27,7 @@ public class BlockingInputStreamTest {
         assert in.available() == 4 && in.capacity() == 2000;
     }
 
+
     public void testRead() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(100);
         byte[] input=new byte[]{'B', 'e', 'l', 'a'};
@@ -33,36 +35,35 @@ public class BlockingInputStreamTest {
         in.close();
 
         assert in.available() == 4;
-        int b;
         for(int i=0; i < input.length; i++) {
-            b=in.read();
+            int b=in.read();
             assert b == input[i];
         }
-        b=in.read();
+        int b=in.read();
         assert b == -1;
     }
+
 
     public void testBlockingReadAndClose() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(100);
         final CountDownLatch latch=new CountDownLatch(1);
-
-        new Thread() {
-            public void run() {
-                try {
-                    latch.await();
-                    Util.sleep(1000);
-                    in.close();
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-
         byte[] buf=new byte[100];
+        
+        new Closer(latch, in, 1000L).start(); // closes input stream after 1 sec
         latch.countDown();
         int num=in.read(buf, 0, buf.length);
         assert num == -1 : " expected -1 (EOF) but got " + num;
+    }
+
+    
+    public void testBlockingWriteAndClose() throws IOException {
+        final BlockingInputStream in=new BlockingInputStream(3);
+        final CountDownLatch latch=new CountDownLatch(1);
+        byte[] buf=new byte[]{'B', 'e', 'l', 'a'};
+
+        new Closer(latch, in, 1000L).start(); // closes input stream after 1 sec
+        latch.countDown();
+        in.write(buf, 0, buf.length);
     }
 
 
@@ -71,33 +72,48 @@ public class BlockingInputStreamTest {
         in.close();
         byte[] buf=new byte[100];
         int num=in.read(buf, 0, buf.length);
-        System.out.println("num = " + num);
         assert num == -1 : " expected -1 (EOF) but got " + num;
     }
 
+    
+    public void testWriteCloseRead() throws IOException {
+        final BlockingInputStream in=new BlockingInputStream(100);
+        for(int i=1; i <= 5; i++) {
+            byte[] buf=("Hello world " + i).getBytes();
+            in.write(buf);
+        }
+        in.close();
+
+        int size=in.available();
+        byte[] buf=new byte[100];
+        int num=in.read(buf);
+        assert num == size;
+    }
+
+
+    public void testWriteCloseRead2() throws IOException {
+        final BlockingInputStream in=new BlockingInputStream(100);
+        StringBuilder sb=new StringBuilder();
+        for(int i=1; i <=10; i++)
+            sb.append("Hello world " + i);
+        byte[] buffer=sb.toString().getBytes();
+        new Writer(in, buffer).start();
+
+        Util.sleep(500);
+        int size=in.available();
+        byte[] buf=new byte[200];
+        int num=in.read(buf);
+        assert num == size;
+    }
+
+    
     public void testSimpleTransfer() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(100);
-        new Thread() {
-            public void run() {
-                byte[] buffer=new byte[500];
-                for(int i=0; i < buffer.length; i++) {
-                    if(i % 2 == 0)
-                        buffer[i]=0;
-                    else
-                        buffer[i]=1;
-                }
-                try {
-                    in.write(buffer, 0, buffer.length);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-                finally {
-                    Util.close(in);
-                }
-            }
-        }.start();
-
+        byte[] buffer=new byte[500];
+        for(int i=0; i < buffer.length; i++)
+            buffer[i]=(byte)(i % 2 == 0? 0 : 1);
+        new Writer(in, buffer).start();
+        
         byte[] tmp=new byte[500];
         int offset=0;
         while(true) {
@@ -120,21 +136,7 @@ public class BlockingInputStreamTest {
     public void testLargeTransfer() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(2048);
         final byte[] buffer=generateBuffer(100000);
-
-        new Thread() {
-            public void run() {
-                try {
-                    in.write(buffer, 0, buffer.length);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-                finally {
-                    Util.close(in);
-                }
-            }
-        }.start();
-
+        new Writer(in, buffer).start();
         byte[] tmp=new byte[buffer.length];
         int offset=0;
         while(true) {
@@ -149,81 +151,6 @@ public class BlockingInputStreamTest {
         for(int i=0; i < tmp.length; i++)
             assert buffer[i] == tmp[i];
         System.out.println("OK");
-    }
-
-
-    protected byte[] generateBuffer(int size) {
-        byte[] buf=new byte[size];
-        for(int i=0; i < buf.length; i++)
-            buf[i]=(byte)(Util.random(size) % Byte.MAX_VALUE);
-        return buf;
-    }
-    
-    public void testBlockingWriteAndClose() throws IOException {
-        final BlockingInputStream in=new BlockingInputStream(3);
-        final CountDownLatch latch=new CountDownLatch(1);
-
-        new Thread() {
-            public void run() {
-                try {
-                    latch.await();
-                    Util.sleep(1000);
-                    in.close();
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-
-        byte[] buf=new byte[]{'B', 'e', 'l', 'a'};
-        latch.countDown();
-        in.write(buf, 0, buf.length);
-    }
-
-
-    public void testWriteCloseRead() throws IOException {
-        final BlockingInputStream in=new BlockingInputStream(100);
-        for(int i=1; i <= 5; i++) {
-            byte[] buf=("Hello world " + i).getBytes();
-            in.write(buf);
-        }
-        in.close();
-
-        int size=in.available();
-        byte[] buf=new byte[100];
-        int num=in.read(buf);
-        assert num == size;
-    }
-
-    public void testWriteCloseRead2() throws IOException {
-        final BlockingInputStream in=new BlockingInputStream(100);
-
-        new Thread() {
-            public void run() {
-                try {
-                    for(int i=1; i <= 10; i++) {
-                        byte[] buf=("Hello world " + i).getBytes();
-                        try {
-                            in.write(buf);
-                        }
-                        catch(IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                finally {
-                    Util.close(in);
-                }
-            }
-        }.start();
-
-        Util.sleep(500);
-        
-        int size=in.available();
-        byte[] buf=new byte[200];
-        int num=in.read(buf);
-        assert num == size;
     }
 
 
@@ -256,4 +183,59 @@ public class BlockingInputStreamTest {
             Util.close(in);
         }
     }
+
+
+    protected byte[] generateBuffer(int size) {
+        byte[] buf=new byte[size];
+        for(int i=0; i < buf.length; i++)
+            buf[i]=(byte)(Util.random(size) % Byte.MAX_VALUE);
+        return buf;
+    }
+
+
+    protected static final class Closer extends Thread {
+        protected final CountDownLatch latch;
+        protected final InputStream in;
+        protected final long timeout;
+
+        public Closer(CountDownLatch latch, InputStream in, long timeout) {
+            this.latch=latch;
+            this.in=in;
+            this.timeout=timeout;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+                Util.sleep(timeout);
+                in.close();
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected static final class Writer extends Thread {
+        protected final BlockingInputStream in;
+        protected final byte[] buffer;
+
+        public Writer(BlockingInputStream in, byte[] buffer) {
+            this.in=in;
+            this.buffer=buffer;
+        }
+
+        public void run() {
+            try {
+                in.write(buffer);
+            }
+            catch(IOException e) {
+            }
+            finally {
+                Util.close(in);
+            }
+        }
+    }
+
+
 }
