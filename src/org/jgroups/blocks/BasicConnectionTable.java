@@ -647,6 +647,16 @@ public abstract class BasicConnectionTable {
 
 
        public void run() {
+           try {
+               _run();
+           }
+           finally {
+               receiverThread=null;
+               closeSocket();
+           }
+       }
+
+       protected void _run() {
            while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
                try {
                    if(in == null) {
@@ -675,8 +685,8 @@ public abstract class BasicConnectionTable {
            }
            if(log.isTraceEnabled())
                log.trace("ConnectionTable.Connection.Receiver terminated");
-           receiverThread=null;
-           closeSocket();
+           // receiverThread=null;
+           // closeSocket();
            // remove(peer_addr);
        }
 
