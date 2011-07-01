@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -93,6 +94,9 @@ public class BARRIER extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                if(msg.getDest() != null) // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
+                    return up_prot.up(evt);
                 Thread current_thread=Thread.currentThread();
                 in_flight_threads.put(current_thread, NULL);
                 if(barrier_closed.get()) {
