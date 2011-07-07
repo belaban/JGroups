@@ -47,35 +47,35 @@ public abstract class Discovery extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to wait for the initial members. Default is 3000 msec")
-    long timeout=3000;
+    protected long timeout=3000;
 
     @Property(description="Minimum number of initial members to get a response from. Default is 2")
-    int num_initial_members=2;
+    protected int num_initial_members=2;
 
     @Property(description="Minimum number of server responses (PingData.isServer()=true). If this value is " +
             "greater than 0, we'll ignore num_initial_members")
-    int num_initial_srv_members=0;
+    protected int num_initial_srv_members=0;
 
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
-    boolean break_on_coord_rsp=true;
+    protected boolean break_on_coord_rsp=true;
 
     @Property(description="Number of discovery requests to be sent distributed over timeout. Default is 2")
-    int num_ping_requests=2;
+    protected int num_ping_requests=2;
 
     @Property(description="Whether or not to return the entire logical-physical address cache mappings on a " +
             "discovery request, or not. Default is false, except for TCPPING")
-    boolean return_entire_cache=false;
+    protected boolean return_entire_cache=false;
 
     @Property(description="Only members with a rank <= max_rank will send a discovery response. 1 means only the " +
             "coordinator will reply. 0 disables this; everyone replies. JIRA: https://jira.jboss.org/browse/JGRP-1181")
-    int max_rank=0;
+    protected int max_rank=0;
 
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
     
     @ManagedAttribute(description="Total number of discovery requests sent ")
-    int num_discovery_requests=0;
+    protected int num_discovery_requests=0;
 
     /** The largest cluster size found so far (gets reset on stop()) */
     @ManagedAttribute
@@ -526,7 +526,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    private void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
+    protected void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
                                        boolean is_server, String logical_name, Address sender) {
         PingData ping_rsp=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
         Message rsp_msg=new Message(sender, null, null);
@@ -539,7 +539,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    class PingSenderTask {        
+    protected class PingSenderTask {
         private Future<?>      senderFuture;
 
         public PingSenderTask() {}
