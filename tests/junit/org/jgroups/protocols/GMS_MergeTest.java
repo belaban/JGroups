@@ -86,7 +86,7 @@ public class GMS_MergeTest extends ChannelTestBase {
     
     
     /**
-     * Simulates the death of a merge leader after having sent a MERG_REQ. Because there is no MergeView or CANCEL_MERGE
+     * Simulates the death of a merge leader after having sent a MERGE_REQ. Because there is no MergeView or CANCEL_MERGE
      * message, the MergeCanceller has to null merge_id after a timeout
      */
     static void _testMergeRequestTimeout(String props, String cluster_name) throws Exception {
@@ -104,9 +104,6 @@ public class GMS_MergeTest extends ChannelTestBase {
             assert merge_id == null;
             System.out.println("starting merge");
             gms.up(new Event(Event.MSG, merge_request));
-            merge_id=gms.getMergeId();
-            System.out.println("merge_id = " + merge_id);
-            assert new_merge_id.equals(merge_id);
 
             long timeout=gms.getMergeTimeout() * 2;
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");
@@ -685,31 +682,31 @@ public class GMS_MergeTest extends ChannelTestBase {
     private static class MyChannel extends JChannel {
         protected int id=0;
 
-        public MyChannel() throws ChannelException {
+        public MyChannel() throws Exception {
             super();
         }
 
-        public MyChannel(File properties) throws ChannelException {
+        public MyChannel(File properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(Element properties) throws ChannelException {
+        public MyChannel(Element properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(URL properties) throws ChannelException {
+        public MyChannel(URL properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(String properties) throws ChannelException {
+        public MyChannel(String properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(ProtocolStackConfigurator configurator) throws ChannelException {
+        public MyChannel(ProtocolStackConfigurator configurator) throws Exception {
             super(configurator);
         }
 
-        public MyChannel(JChannel ch) throws ChannelException {
+        public MyChannel(JChannel ch) throws Exception {
             super(ch);
         }
 

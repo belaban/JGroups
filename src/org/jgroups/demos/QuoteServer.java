@@ -8,6 +8,10 @@ import org.jgroups.util.Util;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -48,14 +52,7 @@ public class QuoteServer extends ReceiverAdapter {
         System.out.println("Accepted view (" + new_view.size() + new_view.getMembers() + ')');
     }
 
-    public void suspect(Address suspected_mbr) {
-    }
 
-    public void block() {
-    }
-
-    public void unblock() {
-    }
 
     public void start() {
         try {
@@ -101,27 +98,14 @@ public class QuoteServer extends ReceiverAdapter {
         System.out.println(stocks);
     }
 
-    public void receive(Message msg) {
+    public void getState(OutputStream ostream) throws Exception {
+        Util.objectToStream(stocks, new DataOutputStream(ostream));
     }
 
-    public byte[] getState() {
-        try {
-            return Util.objectToByteBuffer(stocks.clone());
-        }
-        catch(Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
+    public void setState(InputStream istream) throws Exception {
+        integrate((Hashtable)Util.objectFromStream(new DataInputStream(istream)));
     }
 
-    public void setState(byte[] state) {
-        try {
-            integrate((Hashtable)Util.objectFromByteBuffer(state));
-        }
-        catch(Exception ex) {
-            ex.printStackTrace();
-        }
-    }
 
     public static void main(String args[]) {
         try {

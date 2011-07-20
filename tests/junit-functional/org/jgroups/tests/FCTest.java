@@ -44,7 +44,7 @@ public class FCTest {
     }
 
 
-    public void testReceptionOfAllMessages() throws ChannelException {
+    public void testReceptionOfAllMessages() throws Exception {
         int num_received=0;
         Receiver r=new Receiver();
         ch.setReceiver(r);

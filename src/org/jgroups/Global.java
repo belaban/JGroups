@@ -95,7 +95,7 @@ public class Global {
     public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
     public static final String BPING_SOCK="jgroups.bping.sock";
     public static final String TP_DIAG_MCAST_SOCK="jgroups.tp.diag.mcast_sock";
-    public static final String STREAMING_STATE_TRANSFER_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
+    public static final String STATE_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
     public static final String FD_SOCK_SRV_SOCK="jgroups.fd_sock.srv_sock";
     public static final String BSH_SRV_SOCK="jgroups.bsh.srv_sock";
     public static final String STOMP_SRV_SOCK="jgroups.stomp.srv_sock";

@@ -367,20 +367,12 @@ public class ChannelTestBase {
             events.append('b');
         }
 
-        public byte[] getState() {
-            events.append('g');
-            return null;
-        }
 
-        public void getState(OutputStream ostream) {
+        public void getState(OutputStream ostream) throws Exception {
             events.append('g');
         }
 
-        public void setState(byte[] state) {
-            events.append('s');
-        }
-
-        public void setState(InputStream istream) {
+        public void setState(InputStream istream) throws Exception {
             events.append('s');
         }
 
@@ -405,8 +397,7 @@ public class ChannelTestBase {
     protected abstract class PushChannelApplicationWithSemaphore extends ChannelApplication {
         protected Semaphore semaphore;
 
-        public PushChannelApplicationWithSemaphore(String name, Semaphore semaphore)
-                        throws Exception {
+        public PushChannelApplicationWithSemaphore(String name, Semaphore semaphore) throws Exception {
             super(name);
             this.semaphore = semaphore;
         }

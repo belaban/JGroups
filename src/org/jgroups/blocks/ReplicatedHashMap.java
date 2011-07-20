@@ -95,8 +95,6 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      */
     private volatile boolean send_message=false;
 
-    protected final Promise<Boolean> state_promise=new Promise<Boolean>();
-
     protected final RequestOptions call_options=new RequestOptions(ResponseMode.GET_NONE, 5000);
 
     protected final Log log=LogFactory.getLog(this.getClass());
@@ -174,34 +172,10 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     /**
      * Fetches the state
      * @param state_timeout
-     * @throws org.jgroups.ChannelClosedException
-     * @throws org.jgroups.ChannelNotConnectedException
      */
-    public final void start(long state_timeout) throws ChannelException {
-        if(!channel.isConnected()) throw new ChannelNotConnectedException();
-        if(!channel.isOpen()) throw new ChannelClosedException();
-        send_message = channel.getView().size()>1;
-        
-        boolean rc;
-        state_promise.reset();
-        rc=channel.getState(null, state_timeout);
-        if(rc) {
-            if(log.isInfoEnabled())
-                log.info("state was retrieved successfully, waiting for setState()");
-            Boolean result=state_promise.getResult(state_timeout);
-            if(result == null) {
-                if(log.isErrorEnabled())
-                    log.error("setState() never got called");
-            }
-            else {
-                if(log.isInfoEnabled())
-                    log.info("setState() was called");
-            }
-        }
-        else {
-            if(log.isInfoEnabled())
-                log.info("state could not be retrieved (first member)");
-        }
+    public final void start(long state_timeout) throws Exception {
+        send_message=channel.getView().size() > 1;
+        channel.getState(null, state_timeout);
     }
 
     public Address getLocalAddress() {
@@ -536,45 +510,9 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
     public void receive(Message msg) {}
 
-    public byte[] getState() {
-        K key;
-        V val;
-        Map<K,V> copy=new HashMap<K,V>();
+    
 
-        for(Map.Entry<K,V> entry:entrySet()) {
-            key=entry.getKey();
-            val=entry.getValue();
-            copy.put(key, val);
-        }
-        try {
-            return Util.objectToByteBuffer(copy);
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled())
-                log.error("exception marshalling state: " + ex);
-            return null;
-        }
-    }
-
-    public void setState(byte[] new_state) {
-        HashMap<K,V> new_copy;
-
-        try {
-            new_copy=(HashMap<K,V>)Util.objectFromByteBuffer(new_state);
-            if(new_copy == null)
-                return;
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled())
-                log.error("exception unmarshalling state: " + ex);
-            return;
-        }
-        _putAll(new_copy);
-        state_promise.setResult(Boolean.TRUE);
-    }
-
-
-    public void getState(OutputStream ostream) {
+    public void getState(OutputStream ostream) throws Exception {
         K key;
         V val;
         HashMap<K,V> copy=new HashMap<K,V>();
@@ -586,30 +524,20 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
             copy.put(key, val);
         }
         try {
-            oos=new ObjectOutputStream(ostream);
+            oos=new ObjectOutputStream(new BufferedOutputStream(ostream, 1024));
             oos.writeObject(copy);
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled())
-                log.error("exception marshalling state: " + ex);
         }
         finally {
             Util.close(oos);
         }
     }
 
-    public void setState(InputStream istream) {
+    public void setState(InputStream istream) throws Exception {
         HashMap<K,V> new_copy=null;
         ObjectInputStream ois=null;
         try {
             ois=new ObjectInputStream(istream);
             new_copy=(HashMap<K,V>)ois.readObject();
-            ois.close();
-        }
-        catch(Throwable e) {
-            e.printStackTrace();
-            if(log.isErrorEnabled())
-                log.error("exception marshalling state: " + e);
         }
         finally {
             Util.close(ois);
@@ -617,7 +545,8 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         if(new_copy != null)
             _putAll(new_copy);
 
-        state_promise.setResult(Boolean.TRUE);
+        if(log.isDebugEnabled())
+            log.debug("state received successfully");
     }
 
     /*------------------- Membership Changes ----------------------*/

@@ -33,7 +33,7 @@ public class UnicastStressTestRpc implements MembershipListener {
     }
 
 
-    private void start() throws ChannelException {
+    private void start() throws Exception {
         ch=new JChannel(props);
         if(logical_name != null)
             ch.setName(logical_name);
@@ -74,7 +74,7 @@ public class UnicastStressTestRpc implements MembershipListener {
 
 
 
-    public static void main(String[] args) throws ChannelException {
+    public static void main(String[] args) throws Exception {
         String props="udp.xml";
         int num_threads=1;
         int msg_size=1000; // bytes

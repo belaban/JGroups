@@ -203,7 +203,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
 
-    public void testReferenceCounting() throws ChannelException {
+    public void testReferenceCounting() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         r1=new MyReceiver("a");
         a.setReceiver(r1);
@@ -360,7 +360,7 @@ public class SharedTransportTest extends ChannelTestBase {
     /** Create channels A, B and C. Close A. This will close the timer and transports threads (!), so B will
      * not be able to send messages anymore, so C will not receive any messages
      * Tests http://jira.jboss.com/jira/browse/JGRP-737 */
-    public void testSendingOfMessagesAfterChannelClose() throws ChannelException {
+    public void testSendingOfMessagesAfterChannelClose() throws Exception {
         MyReceiver rec_a=new MyReceiver("A"), rec_b=new MyReceiver("B"), rec_c=new MyReceiver("C");
         System.out.println("-- creating A");
         a=createSharedChannel(SINGLETON_1);
@@ -393,10 +393,9 @@ public class SharedTransportTest extends ChannelTestBase {
      * Use a CountDownLatch to concurrently connect 3 channels; confirms
      * the channels connect
      * 
-     * @throws ChannelException
-     * @throws InterruptedException
+     * @throws Exception
      */
-    public void testConcurrentCreation() throws ChannelException, InterruptedException
+    public void testConcurrentCreation() throws Exception
     {
        a=createSharedChannel(SINGLETON_1);
        r1=new MyReceiver("a");
@@ -473,7 +472,7 @@ public class SharedTransportTest extends ChannelTestBase {
         }
     }
 
-    private JChannel createSharedChannel(String singleton_name) throws ChannelException {
+    private JChannel createSharedChannel(String singleton_name) throws Exception {
         ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
         List<ProtocolConfiguration> protocols=config.getProtocolStack();
         ProtocolConfiguration transport=protocols.get(0);

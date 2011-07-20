@@ -10,9 +10,8 @@ package org.jgroups;
  * @since   2.6
  * 
  */
-public class StateTransferException extends ChannelException {
-   
-    private static final long serialVersionUID = -4070956583392020498L;
+public class StateTransferException extends Exception {
+    private static final long serialVersionUID=-4070956583392020498L;
 
     public StateTransferException(){    
     }
@@ -21,7 +20,7 @@ public class StateTransferException extends ChannelException {
         super(reason);        
     }
 
-    public StateTransferException(String reason,Throwable cause){
+    public StateTransferException(String reason,Throwable cause) {
         super(reason, cause);        
     }
 

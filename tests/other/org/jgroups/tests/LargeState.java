@@ -6,13 +6,10 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
-
-import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.IOException;
 
 import javax.management.MBeanServer;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Tests transfer of large states. Start first instance with -provider flag and -size flag (default = 1MB).
@@ -35,42 +32,46 @@ public class LargeState extends ReceiverAdapter {
     boolean  rc=false;
     String   props;
     long     start, stop;
-    boolean  provider=true;
+    boolean  provider=true, provider_fails=false, requester_fails=false;
     int      size=100000;
     int      total_received=0;
+    long     delay=0;
 
 
-    public void start(boolean provider, int size, String props,boolean jmx) throws Exception {
+    public void start(boolean provider, int size, String props, boolean provider_fails,
+                      boolean requester_fails, long delay, String name) throws Exception {
         this.provider=provider;
+        this.provider_fails=provider_fails;
+        this.requester_fails=requester_fails;
+        this.delay=delay;
         channel=new JChannel(props);
         channel.setReceiver(this);
+        if(name != null)
+            channel.setName(name);
         channel.connect("TestChannel");
-        if(jmx) {
-            MBeanServer server=Util.getMBeanServer();
-            if(server == null)
-                throw new Exception("No MBeanServers found;" +
-                        "\nLargeState needs to be run with an MBeanServer present, or inside JDK 5");
-            JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
-        }
+        MBeanServer server=Util.getMBeanServer();
+        if(server == null)
+            throw new Exception("No MBeanServers found;" +
+                                  "\nLargeState needs to be run with an MBeanServer present, or inside JDK 5");
+        JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
         System.out.println("-- connected to channel");
 
         if(provider) {
             this.size=size;
             System.out.println("Waiting for other members to join and fetch large state");
-        }
-        else {
-            System.out.println("Getting state");
-            start=System.currentTimeMillis();
-            rc=channel.getState(null, 0);
-            System.out.println("getState(), rc=" + rc);
-        }
-        if(!provider) {
-            channel.close();
-        }
-        else {
             for(;;) {
                 Util.sleep(10000);
             }
+        }
+        start=System.currentTimeMillis();
+        try {
+            channel.getState(null, 0);
+        }
+        catch(Exception ex) {
+            ex.printStackTrace();
+        }
+        finally {
+            Util.close(channel);
         }
     }
 
@@ -88,87 +89,54 @@ public class LargeState extends ReceiverAdapter {
             System.out.println("-- view: " + new_view);
     }
 
-    public byte[] getState() {
-        if(state == null) {
-            System.out.println("creating state of " + size + " bytes");
-            state=createLargeState(size);
-        }
-        System.out.println("--> returning state: " + state.length + " bytes");
-        return state;
-    }
 
-    public void setState(byte[] state) {
+    public void setState(InputStream istream) throws Exception {
+        total_received=0;
+        int received=0;
+        while(true) {
+            byte[] buf=new byte[10000];
+            received=istream.read(buf);
+            if(received < 0)
+                break;
+            if(delay > 0)
+                Util.sleep(delay);
+            total_received+=received;
+            if(requester_fails)
+                throw new Exception("booom - requester failed");
+        }
+
         stop=System.currentTimeMillis();
-        if(state != null) {
-            this.state=state;
-            System.out.println("<-- Received byte[] state, size=" + state.length + " (took " + (stop-start) + "ms)");
-        }
+        System.out.println("<-- received " + Util.printBytes(total_received) + " in " + (stop-start) + "ms");
     }
 
-    public void setState(InputStream istream) {
-        try {
-            total_received=0;
-            int received=0;
-            while(true) {
-                byte[] buf=new byte[10000];
-                try {
-                    received=istream.read(buf);
-                    if(received < 0)
-                        break;
-                    // System.out.println("received " + received + " bytes");
-                    total_received+=received;
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-
-            stop=System.currentTimeMillis();
-            System.out.println("<-- Received stream state, size=" + total_received + " (took " + (stop-start) + "ms)");
+    public void getState(OutputStream ostream) throws Exception {
+        int frag_size=size / 10;
+        long bytes=0;
+        for(int i=0; i < 10; i++) {
+            byte[] buf=new byte[frag_size];
+            ostream.write(buf);
+            bytes+=buf.length;
+            if(provider_fails)
+                throw new Exception("booom - provider failed");
+            if(delay > 0)
+                Util.sleep(delay);
         }
-        finally {
-            Util.close(istream);
+        int remaining=size - (10 * frag_size);
+        if(remaining > 0) {
+            byte[] buf=new byte[remaining];
+            ostream.write(buf);
+            bytes+=buf.length;
         }
-    }
-
-    public void getState(OutputStream ostream) {
-        try {
-            int frag_size=size / 10;
-            for(int i=0; i < 10; i++) {
-                byte[] buf=new byte[frag_size];
-                try {
-                    ostream.write(buf);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-            int remaining=size - (10 * frag_size);
-            if(remaining > 0) {
-                byte[] buf=new byte[remaining];
-                try {
-                    ostream.write(buf);
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        finally {
-            Util.close(ostream);
-        }
+        System.out.println("--> wrote " + Util.printBytes(bytes));
     }
 
 
     public static void main(String[] args) {
-        boolean provider=false;
-        boolean jmx=false;
-        int size=1024 * 1024;
-        String props=null;
-
-
+        boolean provider=false, provider_fails=false, requester_fails=false;
+        int     size=1024 * 1024;
+        String  props=null;
+        long    delay=0;
+        String  name=null;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -179,8 +147,12 @@ public class LargeState extends ReceiverAdapter {
             	provider=true;
                 continue;
             }
-            if("-jmx".equals(args[i])) {                
-                jmx=true;
+            if("-provider_fails".equals(args[i])) {
+                provider_fails=true;
+                continue;
+            }
+            if("-requester_fails".equals(args[i])) {
+                requester_fails=true;
                 continue;
             }
             if("-size".equals(args[i])) {
@@ -191,13 +163,21 @@ public class LargeState extends ReceiverAdapter {
                 props=args[++i];
                 continue;
             }
+            if("-delay".equals(args[i])) {
+                delay=Long.parseLong(args[++i]);
+                continue;
+            }
+            if("-name".equals(args[i])) {
+                name=args[++i];
+                continue;
+            }
             help();
             return;
         }
 
 
         try {
-            new LargeState().start(provider, size, props,jmx);
+            new LargeState().start(provider, size, props, provider_fails, requester_fails, delay, name);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -205,7 +185,8 @@ public class LargeState extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("LargeState [-help] [-size <size of state in bytes] [-provider] [-props <properties>] [-jmx]");
+        System.out.println("LargeState [-help] [-size <size of state in bytes] [-provider] [-name name] " +
+                             "[-props <properties>] [-provider_fails] [-requester_fails] [-delay <ms>]");
     }
 
 }

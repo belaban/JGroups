@@ -5,13 +5,13 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.io.*;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,47 +29,41 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     public void testConcurrentStartupWithState() {
         final String[] names=new String[] { "A", "B", "C", "D" };
         final int count=names.length;
+        final Connector[] channels=new Connector[count];
+        final int NUM_MSGS=10;
 
-        final ConcurrentStartupChannel[] channels=new ConcurrentStartupChannel[count];
         try {
-            // Create a semaphore and take all its permits
-            Semaphore semaphore=new Semaphore(count);
-            semaphore.acquire(count);
-
-            // Create activation threads that will block on the semaphore
             for(int i=0;i < count;i++) {
                 if(i == 0)
-                    channels[i]=new ConcurrentStartupChannel(names[i], semaphore);
+                    channels[i]=new Connector(createChannel(true, 4, names[i]));
                 else
-                    channels[i]=new ConcurrentStartupChannel((JChannel)channels[0].getChannel(), names[i], semaphore);
-                channels[i].start();
-                semaphore.release(1);
+                    channels[i]=new Connector(createChannel(channels[0].getChannel(), names[i]));
                 if(i == 0)
-                    Util.sleep(1500); // sleep after the first node to educe the chances of a merge
+                    Util.sleep(1500); // sleep after the first node to reduce the chances of a merge
             }
+
+            // Connect the first channel and establish the initial state by sending a few messages
+            channels[0].connect(1,2,3,4,5,6,7);
+
+            // Connect the other channels
+            for(int i=1; i < count; i++)
+                channels[i].connect(7+i);
 
             // Make sure everyone is in sync
             Channel[] tmp=new Channel[channels.length];
             for(int i=0; i < channels.length; i++)
                 tmp[i]=channels[i].getChannel();
 
-            Util.blockUntilViewsReceived(30000, 500, tmp);
-            System.out.println(">>>> all nodes have the same view <<<<");
-
-            // Re-acquire the semaphore tickets; when we have them all we know the threads are done
-            boolean acquired=semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
-            if(!acquired) {
-                log.warn("Most likely a bug, analyse the stack below:");
-                log.warn(Util.dumpThreads());
-            }
+            Util.waitUntilAllChannelsHaveSameSize(30000, 500, tmp);
+            System.out.println("\n>>>> all nodes have the same view " + tmp[0].getView() + "  <<<<\n");
 
             // Sleep to ensure async messages arrive
-            System.out.println("Waiting for all channels to have received the " + count + " messages:");
+            System.out.println("Waiting for all channels to have received the " + NUM_MSGS + " messages:");
             long end_time=System.currentTimeMillis() + 10000L;
             while(System.currentTimeMillis() < end_time) {
                 boolean terminate=true;
-                for(ConcurrentStartupChannel ch: channels) {
-                    if(ch.getList().size() != count) {
+                for(Connector ch: channels) {
+                    if(ch.getList().size() != NUM_MSGS) {
                         terminate=false;
                         break;
                     }
@@ -81,28 +75,21 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
 
             System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++");
-            for(ConcurrentStartupChannel channel:channels)
-                System.out.println(channel.getName() + ": state=" + channel.getList());
+            for(Connector channel:channels)
+                System.out.println(channel.getChannel().getName() + ": state=" + channel.getList());
             System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++");
 
-            //Vladimir Oct 1st 2009: if merged occurred state is corrupted. Do not verify state in that case.
-            for(ConcurrentStartupChannel ch: channels) {
-                Set<Address> list=ch.getList();
-                if(!ch.merged)
-                    assert list.size() == count : ": list is " + list + ", should have " + count + " elements";
+            for(Connector ch: channels) {
+                List<Integer> list=ch.getList();
+                assert list.size() == NUM_MSGS : ": list is " + list + ", should have " + count + " elements";
             }
-            System.out.println(">>>> done, all messages received by all channels <<<<");
-            for (ConcurrentStartupChannel channel : channels)
-                if(!channel.merged)
-                    checkEventStateTransferSequence(channel);
+            System.out.println(">>>> done, all messages received by all channels <<<<\n");
         }
         catch(Exception ex) {
         }
         finally {
-            for(ConcurrentStartupChannel channel: channels)
-                channel.getChannel().setReceiver(null); // silence the receivers so they don't logs views
-            for(ConcurrentStartupChannel channel: channels)
-                channel.cleanup();
+            for(Connector connector: channels)
+                connector.close();
         }
     }
 
@@ -112,108 +99,60 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     
 
-    protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
-        private final Set<Address> state=new HashSet<Address>();
-        boolean merged = false;
+    protected static class Connector extends ReceiverAdapter {
+        protected final List<Integer> state=new ArrayList<Integer>(10);
+        protected final JChannel      ch;
 
-        public ConcurrentStartupChannel(String name,Semaphore semaphore) throws Exception{
-            super(name, semaphore);
+        public Connector(JChannel ch) {
+            this.ch=ch;
         }
 
-        public ConcurrentStartupChannel(JChannel ch,String name,Semaphore semaphore) throws Exception{
-            super(ch,name, semaphore);
+        public JChannel getChannel() {
+            return ch;
         }
 
-        public void useChannel() throws Exception {
-            channel.connect("test", null, 25000); // join and state transfer
-            channel.send(null, channel.getAddress());
+        public void connect(Integer ... numbers) throws Exception {
+            ch.setReceiver(this);
+            ch.connect("ConcurrentStartupTest", null, 25000); // join and state transfer
+            // ch.connect("ConcurrentStartupTest");
+            // ch.getState(null, 5000);
+            System.out.println(ch.getAddress() + ": --> " + Util.printListWithDelimiter(Arrays.asList(numbers), ","));
+            for(int num: numbers)
+                ch.send(null, num);
         }
 
-        Set<Address> getList() {
-            synchronized(state) {
-                return state;
-            }
+        public void close() {
+            Util.close(ch);
+        }
+
+        List<Integer> getList() {
+            return state;
         }
 
         public void receive(Message msg) {
             if(msg.getBuffer() == null)
                 return;
-            Address obj = (Address)msg.getObject();
-            log.info(channel.getAddress() + ": received " + obj);
+            Integer number=(Integer)msg.getObject();
             synchronized(state) {
-                state.add(obj);
+                state.add(number);
+                System.out.println(ch.getAddress() + ": <-- " + number + " from " + msg.getSrc() + ", state: " + state);
             }
         }
 
-        public void viewAccepted(View new_view) {
-            super.viewAccepted(new_view);     
-            if(new_view instanceof MergeView) {
-                merged = true;
+
+        public void getState(OutputStream ostream) throws Exception {
+            synchronized(state) {
+                Util.objectToStream(state, new DataOutputStream(ostream));
             }
         }
 
         @SuppressWarnings("unchecked")
-        public void setState(byte[] state) {
-            super.setState(state);
-            try{
-                List<Address> tmp = (List) Util.objectFromByteBuffer(state);
-                synchronized(this.state) {
-                    this.state.addAll(tmp);
-                    log.info(channel.getAddress() + ": state is " + this.state);
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-
-        public byte[] getState() {
-            super.getState();
-            List<Address> tmp = null;
+        public void setState(InputStream istream) throws Exception {
+            List<Integer> tmp=(List<Integer>)Util.objectFromStream(new DataInputStream(istream));
             synchronized(state) {
-                tmp = new LinkedList<Address>(state);
-                try{
-                    return Util.objectToByteBuffer(tmp);
-                }catch(Exception e){
-                    e.printStackTrace();
-                    return null;
-                }
-            }
-        }
-
-        public void getState(OutputStream ostream) {
-            super.getState(ostream);
-            ObjectOutputStream oos = null;
-            try{
-                oos = new ObjectOutputStream(ostream);
-                List<Address> tmp = null;
-                synchronized(state) {
-                    tmp = new LinkedList<Address>(state);
-                }
-                oos.writeObject(tmp);
-                oos.flush();
-            }catch(IOException e){
-                e.printStackTrace();
-            }finally{
-                Util.close(oos);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        public void setState(InputStream istream) {
-            super.setState(istream);
-            ObjectInputStream ois = null;
-            try{
-                ois = new ObjectInputStream(istream);
-                List<Address> tmp = (List) ois.readObject();
-                synchronized(state){
-                    // state.clear();
-                    state.addAll(tmp);
-                    log.info(channel.getAddress() + ": state is " + state);
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }finally{
-                Util.close(ois);
+                state.clear();
+                state.addAll(tmp);
+                System.out.println(ch.getAddress() + " <-- state: " + state);
             }
         }
     }

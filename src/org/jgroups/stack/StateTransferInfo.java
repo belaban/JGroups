@@ -2,9 +2,6 @@
 package org.jgroups.stack;
 
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.jgroups.Address;
 
 
@@ -18,8 +15,6 @@ public class StateTransferInfo {
     public Address      target=null;
     public long         timeout=0;
     public byte[]       state=null;
-    public InputStream  inputStream = null;
-    public OutputStream outputStream = null;
 
 
 
@@ -42,29 +37,9 @@ public class StateTransferInfo {
     }
 
 
-    public StateTransferInfo(Address target, InputStream is) {
-        this.target=target;
-        this.inputStream=is;
-    }
-
-    public StateTransferInfo(Address target, OutputStream os) {
-        this.target=target;
-        this.outputStream=os;
-    }
-
-
-
 
     public StateTransferInfo copy() {
-       if(inputStream!=null){
-          return new StateTransferInfo(target,inputStream);
-       }
-       else if(outputStream!=null){
-          return new StateTransferInfo(target,outputStream);
-       }
-       else{
-          return new StateTransferInfo(target, timeout, state);
-       }
+        return new StateTransferInfo(target, timeout, state);
     }
 
 

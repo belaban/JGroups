@@ -580,7 +580,7 @@
         </section>
 
         <section>
-            <title>pbcast.STREAMING_STATE_TRANSFER</title>
+            <title>pbcast.STATE</title>
 
             <section>
                 <title>Overview</title>
@@ -619,7 +619,7 @@
                 <para>Prior to 2.6.9 and 2.8 releases streaming state transfer relied 
                 	exclusively on its own tcp sockets to transfer state between members. 
                 	The downside of tcp socket approach is that it is not firewall friendly. If 
-                	use_default_transport property of pbcast.STREAMING_STATE_TRANSFER is 
+                	use_default_transport property of pbcast.STATE is
                 	set to true streaming state transfer will use normal messages to transfer 
                 	state. This approach besides being completely transparent to application is also 
                 	firewall friendly. However, as expected, tcp sockets have better performance. 
@@ -746,14 +746,11 @@
                 </para>
 
                 <para>
-                    <screen>public boolean getState(Address target,long timeout)throws
-                        ChannelNotConnectedException,ChannelClosedException;
-                        public boolean getState(Address target,String state_id,long timeout)throws
-                        ChannelNotConnectedException,ChannelClosedException;
+                    <screen>public boolean getState(Address target, long timeout) throws
+                        Exception;
                     </screen>
-                    Introduction of STREAMING_STATE_TRANSFER does
-                    <emphasis>not</emphasis>
-                    change the current API.
+                    Introduction of STATE does
+                    <emphasis>not</emphasis> change the current API.
                 </para>
             </section>
 
@@ -761,15 +758,15 @@
                 <title>Configuration</title>
 
                 <para>State transfer type choice is static, implicit and mutually
-                    exclusive. JChannel cannot use both STREAMING_STATE_TRANSFER and
+                    exclusive. JChannel cannot use both STATE and
                     STATE_TRANSFER in one JChannel configuration.
                 </para>
 
-                <para>STREAMING_STATE_TRANSFER allows the following confguration
+                <para>STATE allows the following confguration
                     parameters:
                 </para>
 
-				${STREAMING_STATE_TRANSFER}
+				${STATE}
             </section>
 
             <section>

@@ -18,7 +18,7 @@ public class RoundTrip extends ReceiverAdapter {
     final Object mutex=new Object(); // to sync sending and reception of a message
 
 
-    private void start(boolean server, int num, int msg_size, String props) throws ChannelException {
+    private void start(boolean server, int num, int msg_size, String props) throws Exception {
         this.server=server;
         this.num=num;
         this.msg_size=msg_size;
@@ -127,7 +127,7 @@ public class RoundTrip extends ReceiverAdapter {
     }
 
 
-    public static void main(String[] args) throws ChannelException {
+    public static void main(String[] args) throws Exception {
         boolean server=false;
         int num=100;
         int msg_size=10; // 10 bytes

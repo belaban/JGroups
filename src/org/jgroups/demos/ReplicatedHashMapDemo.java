@@ -89,7 +89,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
 
 
 
-    public void start(JChannel channel) throws ChannelException {
+    public void start(JChannel channel) throws Exception {
         map=new ReplicatedHashMap<String,Float>(channel);
         map.addNotifier(this);
         map.start(10000);

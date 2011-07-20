@@ -408,7 +408,7 @@ public class RELAY extends Protocol {
             bridge.connect(bridge_name);
 
         }
-        catch(ChannelException e) {
+        catch(Exception e) {
             log.error("failed creating bridge channel (props=" + bridge_props + ")", e);
         }
     }

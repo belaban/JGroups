@@ -66,7 +66,6 @@
          min_threshold="0.4"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
-    <FRAG2 frag_size="60000"  />
-    <pbcast.STREAMING_STATE_TRANSFER/>
-    <!-- pbcast.STATE_TRANSFER/> -->
+    <FRAG2 frag_size="60000" />
+    <pbcast.STATE_TRANSFER />
 </config>

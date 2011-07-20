@@ -89,7 +89,7 @@ public class OrderingTest {
         return ch;
     }
 
-    /*protected static JChannel createChannel() throws ChannelException {
+    /*protected static JChannel createChannel() throws Exception {
         return new JChannel("/home/bela/fast.xml");
     }*/
 

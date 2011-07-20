@@ -1,13 +1,12 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
 import org.jgroups.Global;
-import org.jgroups.ChannelException;
-import org.jgroups.util.Util;
+import org.jgroups.JChannel;
 import org.jgroups.protocols.TP;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeClass;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
@@ -17,7 +16,7 @@ public class SetPropertyTest {
     JChannel ch;
 
     @BeforeClass
-    void init() throws ChannelException {
+    void init() throws Exception {
         ch=new JChannel();
     }
 

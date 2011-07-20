@@ -120,8 +120,7 @@ public class Merger {
         //[JGRP-700] - FLUSH: flushing should span merge
 
         /*if flush is in stack, let this coordinator flush its cluster island */
-        boolean successfulFlush=gms.startFlush(view);
-        if(!successfulFlush) {
+        if(gms.flushProtocolInStack && !gms.startFlush(view)) {
             sendMergeRejectedResponse(sender, merge_id);
             if(log.isWarnEnabled())
                 log.warn(gms.local_addr + ": flush failed; sending merge rejected message to "+ sender+ ", merge_id="+ merge_id);

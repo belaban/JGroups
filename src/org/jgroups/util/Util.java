@@ -202,6 +202,7 @@ public class Util {
 
 
 
+
     /**
      * Blocks until all channels have the same view
      * @param timeout How long to wait (max in ms)
@@ -209,26 +210,34 @@ public class Util {
      * @param channels The channels which should form the view. The expected view size is channels.length.
      * Must be non-null
      */
-    public static void blockUntilViewsReceived(long timeout, long interval, Channel ... channels) throws TimeoutException {
-        final int expected_size=channels.length;
+    public static void waitUntilAllChannelsHaveSameSize(long timeout, long interval, Channel... channels) throws TimeoutException {
+        int size=channels.length;
 
-        if(interval > timeout)
-            throw new IllegalArgumentException("interval needs to be smaller than timeout");
-        final long end_time=System.currentTimeMillis() + timeout;
-        while(System.currentTimeMillis() < end_time) {
-            boolean all_ok=true;
+        if(interval >= timeout || timeout <= 0)
+            throw new IllegalArgumentException("interval needs to be smaller than timeout or timeout needs to be > 0");
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() <= target_time) {
+            boolean all_channels_have_correct_size=true;
             for(Channel ch: channels) {
                 View view=ch.getView();
-                if(view == null || view.size() != expected_size) {
-                    all_ok=false;
+                if(view == null || view.size() != size) {
+                    all_channels_have_correct_size=false;
                     break;
                 }
             }
-            if(all_ok)
+            if(all_channels_have_correct_size)
                 return;
             Util.sleep(interval);
         }
-        throw new TimeoutException();
+        View[] views=new View[channels.length];
+        StringBuilder sb=new StringBuilder();
+        for(int i=0; i < channels.length; i++) {
+            views[i]=channels[i].getView();
+            sb.append(channels[i].getName()).append(": ").append(views[i]).append("\n");
+        }
+        for(View view: views)
+            if(view == null || view.size() != size)
+                throw new TimeoutException("Timeout " + timeout + " kicked in, views are:\n" + sb);
     }
 
 
@@ -4039,6 +4048,9 @@ public class Util {
         Thread thread=factory.newThread(group, task, thread_name);
         thread.start();
     }
+
+
+
 
 }
 

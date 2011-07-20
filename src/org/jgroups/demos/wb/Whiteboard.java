@@ -36,19 +36,14 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
         ;
     }
 
-    public byte[] getState() {
-        panel.saveState();
-        return panel.getState();
+    
+
+    public void getState(OutputStream ostream) throws Exception {
+        panel.getState(ostream);
     }
 
-    public void setState(byte[] new_state) {
-        panel.setState(new_state);
-    }
-
-    public void getState(OutputStream ostream) {
-    }
-
-    public void setState(InputStream istream) {
+    public void setState(InputStream istream) throws Exception {
+        panel.setState(istream);
     }
 
     private String getInfo() {

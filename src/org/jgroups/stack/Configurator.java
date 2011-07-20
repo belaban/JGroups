@@ -51,11 +51,11 @@ public class Configurator {
          stack=protocolStack;
     }
 
-    public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception{
+    public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception {
          return setupProtocolStack(config, stack);
     }
      
-    public Protocol setupProtocolStack(ProtocolStack copySource)throws Exception{
+    public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception {
         List<Protocol> protocols=copySource.copyProtocols(stack);
         Collections.reverse(protocols);
         return connectProtocols(protocols);                  

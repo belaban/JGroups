@@ -149,7 +149,7 @@ public class ConfiguratorTest {
                 "pbcast.GMS(print_local_addr=true;view_bundling=true;join_timeout=3000):" +
                 "FC(max_block_time=10000;max_credits=5000000;min_threshold=0.25):" +
                 "FRAG2(frag_size=60000):" +
-                "pbcast.STREAMING_STATE_TRANSFER(use_reading_thread=true)";
+                "pbcast.STATE(use_reading_thread=true)";
         
         List<ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);

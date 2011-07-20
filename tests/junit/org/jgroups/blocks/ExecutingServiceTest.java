@@ -52,8 +52,8 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ExecutingServiceTest extends ChannelTestBase {
-    protected static Log log = LogFactory.getLog(ExecutingServiceTest.class);
-    protected static AtomicReference<CyclicBarrier> requestBlocker = 
+    protected static Log logger= LogFactory.getLog(ExecutingServiceTest.class);
+    protected static AtomicReference<CyclicBarrier> requestBlocker =
         new AtomicReference<CyclicBarrier>();
     
     protected JChannel c1, c2, c3;
@@ -204,8 +204,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
             }
             catch (InterruptedException e) {
                 Thread interruptedThread = Thread.currentThread();
-                if (log.isTraceEnabled())
-                    log.trace("Submitted cancelled thread - " + interruptedThread);
+                if (logger.isTraceEnabled())
+                    logger.trace("Submitted cancelled thread - " + interruptedThread);
                 canceledThreads.offer(interruptedThread);
             }
             return null;
@@ -353,15 +353,15 @@ public class ExecutingServiceTest extends ChannelTestBase {
         
         // We wait until it is ready
         SleepingStreamableCallable.barrier.await(5, TimeUnit.SECONDS);
-        if (log.isTraceEnabled())
-            log.trace("Cancelling future by interrupting");
+        if (logger.isTraceEnabled())
+            logger.trace("Cancelling future by interrupting");
         future.cancel(true);
         
         Thread cancelled = SleepingStreamableCallable.canceledThreads.poll(2, 
             TimeUnit.SECONDS);
 
-        if (log.isTraceEnabled())
-            log.trace("Cancelling task by interrupting");
+        if (logger.isTraceEnabled())
+            logger.trace("Cancelling task by interrupting");
         // We try to stop the thread now which should now stop the runner
         consumer.interrupt();
         assert cancelled != null : "There was no cancelled thread";
@@ -427,8 +427,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
         SleepingStreamableCallable.barrier.await(2, TimeUnit.SECONDS);
         
         if (interrupt) {
-            if (log.isTraceEnabled())
-                log.trace("Cancelling futures by interrupting");
+            if (logger.isTraceEnabled())
+                logger.trace("Cancelling futures by interrupting");
             e1.shutdownNow();
             // We wait for the task to be interrupted.
             assert SleepingStreamableCallable.canceledThreads.poll(2, 
@@ -449,8 +449,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
             // We should have received this exception
         }
         
-        if (log.isTraceEnabled())
-            log.trace("Cancelling task by interrupting");
+        if (logger.isTraceEnabled())
+            logger.trace("Cancelling task by interrupting");
         // We try to stop the thread.
         consumer.interrupt();
         
@@ -536,15 +536,15 @@ public class ExecutingServiceTest extends ChannelTestBase {
         service.submit(new Runnable() {
             @Override
             public void run() {
-                // We close the coordinator
+                // we close the coordinator
                 Util.close(c1);
             }
         });
         
         barrier.await(2, TimeUnit.SECONDS);
-        
+
         requestBlocker.getAndSet(null).reset();
-        
+
         // We need to reconnect the channel now
         c1=createChannel(c2, "A");
         addExecutingProtocol(c1);

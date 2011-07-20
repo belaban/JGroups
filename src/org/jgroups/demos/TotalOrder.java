@@ -10,6 +10,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
@@ -152,52 +156,7 @@ public class TotalOrder extends Frame {
         this.num=num;
         setFont(def_font);
 
-        try {
-            channel=new JChannel(props);
-            channel.setReceiver(new ReceiverAdapter() {
-                public void receive(Message msg) {
-                    try {
-                        TotOrderRequest req=new TotOrderRequest();
-                        ByteBuffer buf=ByteBuffer.wrap(msg.getBuffer());
-                        req.init(buf);
-                        processRequest(req);
-                    }
-                    catch(Exception e) {
-                        System.err.println(e);
-                    }
-                }
 
-                public byte[] getState() {
-                    int[][] copy_of_state=canvas.getCopyOfState();
-                    try {
-                        return Util.objectToByteBuffer(copy_of_state);
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                        return null;
-                    }
-                }
-
-                public void setState(byte[] state) {
-                    try {
-                        canvas.setState(Util.objectFromByteBuffer(state));
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                public void viewAccepted(View view) {
-                    System.out.println("view = " + view);
-                }
-            });
-            channel.connect("TotalOrderGroup");
-            channel.getState(null, 8000);
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
 
         start.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -230,9 +189,7 @@ public class TotalOrder extends Frame {
         get_state.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    boolean rc=channel.getState(null, 3000);
-                    if(rc == false)
-                        error("State could not be retrieved !");
+                    channel.getState(null, 3000);
                 }
                 catch(Throwable t) {
                     error("exception fetching state: " + t);
@@ -269,6 +226,42 @@ public class TotalOrder extends Frame {
         s=canvas.getSize();
         s.height+=100;
         setSize(s);
+
+        try {
+            channel=new JChannel(props);
+            channel.setReceiver(new ReceiverAdapter() {
+                public void receive(Message msg) {
+                    try {
+                        TotOrderRequest req=new TotOrderRequest();
+                        ByteBuffer buf=ByteBuffer.wrap(msg.getBuffer());
+                        req.init(buf);
+                        processRequest(req);
+                    }
+                    catch(Exception e) {
+                        System.err.println(e);
+                    }
+                }
+
+                public void getState(OutputStream output) throws Exception {
+                    int[][] copy_of_state=canvas.getCopyOfState();
+                    Util.objectToStream(copy_of_state, new DataOutputStream(output));
+                }
+
+                public void setState(InputStream input) throws Exception {
+                    canvas.setState(Util.objectFromStream(new DataInputStream(input)));
+                }
+
+                public void viewAccepted(View view) {
+                    System.out.println("view = " + view);
+                }
+            });
+            channel.connect("TotalOrderGroup");
+            channel.getState(null, 8000);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
     }
 
 

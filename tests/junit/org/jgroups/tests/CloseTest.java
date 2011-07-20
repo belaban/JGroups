@@ -211,20 +211,20 @@ public class CloseTest extends ChannelTestBase {
 
 
     @Test
-    public void testChannelClosedException() throws Exception {
+    public void testClosedChannel() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
         System.out.println("-- connecting channel --");
-        ch.get().connect(getUniqueClusterName("CloseTest.testChannelClosedException"));
+        ch.get().connect(getUniqueClusterName("CloseTest.testClosedChannel"));
         System.out.println("-- closing channel --");
         ch.get().close();
         Util.sleep(2000);
 
         try {
-            ch.get().connect(getUniqueClusterName("CloseTest.testChannelClosedException"));
+            ch.get().connect(getUniqueClusterName("CloseTest.testClosedChannel"));
             assert false;
         }
-        catch(ChannelClosedException ex) {
+        catch(IllegalStateException ex) {
             assertTrue(true);
         }
     }

@@ -14,7 +14,6 @@
             discard_incompatible_packets="true"
             max_bundle_size="64000"
             max_bundle_timeout="30"
-            down_thread="false" up_thread="false"
             enable_bundling="true"
             bind_port="7800"
             use_send_queues="false"
@@ -27,32 +26,26 @@
             processor_queueSize="100"
             processor_keepAliveTime="-1"/>
     <TCPPING timeout="3000"
-             down_thread="false" up_thread="false"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="1"
              num_initial_members="3"/>
     <MERGE2 max_interval="100000"
-            down_thread="false" up_thread="false" min_interval="20000"/>
-    <FD_SOCK down_thread="false" up_thread="false"/>
-    <FD timeout="10000" max_tries="5" down_thread="false" up_thread="false" shun="true"/>
-    <VERIFY_SUSPECT timeout="1500" down_thread="false" up_thread="false"/>
+             min_interval="20000"/>
+    <FD_SOCK />
+    <FD timeout="10000" max_tries="5"  shun="true"/>
+    <VERIFY_SUSPECT timeout="1500" />
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false"
                    retransmit_timeout="300,600,1200,2400,4800"
-                   down_thread="false" up_thread="false"
                    discard_delivered_msgs="true"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   down_thread="false" up_thread="false"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                down_thread="false" up_thread="false"
                 join_retry_timeout="2000" shun="true"
                 view_bundling="true"/>
-    <FC max_credits="2000000" down_thread="false" up_thread="false"
+    <FC max_credits="2000000"
         min_threshold="0.10"/>
-    <FRAG2 frag_size="60000" down_thread="false" up_thread="false"/>
-    <pbcast.STREAMING_STATE_TRANSFER down_thread="false" up_thread="false"
-                                     use_flush="true" use_reading_thread="true"/>
-    <!-- pbcast.STATE_TRANSFER down_thread="false" up_thread="false" use_flush="false"/ -->
-    <pbcast.FLUSH down_thread="false" up_thread="false"/>
+    <FRAG2 frag_size="60000" />
+    <pbcast.STATE_TRANSFER />
+    <pbcast.FLUSH />
 </config>

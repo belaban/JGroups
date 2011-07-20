@@ -27,7 +27,7 @@ public class PingPong extends ReceiverAdapter {
     final List<Address> members=new ArrayList<Address>();
 
 
-    public void start(String props, String name, boolean unicast) throws ChannelException {
+    public void start(String props, String name, boolean unicast) throws Exception {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
@@ -76,7 +76,7 @@ public class PingPong extends ReceiverAdapter {
 
 
 
-    public static void main(String[] args) throws ChannelException {
+    public static void main(String[] args) throws Exception {
         String props="udp.xml";
         String name=null;
         boolean unicast=false;

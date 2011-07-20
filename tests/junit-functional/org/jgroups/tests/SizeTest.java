@@ -514,13 +514,13 @@ public class SizeTest {
     public static void testStateHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         STATE_TRANSFER.StateHeader hdr;
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, addr, 322649, null);
+        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, null);
         _testSize(hdr);
 
         MutableDigest digest=new MutableDigest(2);
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);
+        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, digest);
         _testSize(hdr);
     }
 

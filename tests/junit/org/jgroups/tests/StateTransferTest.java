@@ -29,11 +29,11 @@ public class StateTransferTest extends ChannelTestBase {
         try {
             Address self=ch.getAddress();
             assert self != null;
-            boolean rc=ch.getState(self, 20000);
-            assert !rc : "getState() on self should return false";
+            ch.getState(self, 20000);
+            assert true : "getState() on self should return";
         }
         finally {
-            ch.close();
+            Util.close(ch);
         }
     }
 
@@ -59,8 +59,7 @@ public class StateTransferTest extends ChannelTestBase {
                 StateTransferApplication app=apps[i];
                 app.start();
                 semaphore.release();
-                //avoid merge
-                Util.sleep(3000);
+                Util.sleep(3000); // to reduce changes of a merge
             }
 
             // Make sure everyone is in sync
@@ -68,7 +67,7 @@ public class StateTransferTest extends ChannelTestBase {
             for(int i=0; i < apps.length; i++)
                 tmp[i]=apps[i].getChannel();
 
-            Util.blockUntilViewsReceived(60000, 1000, tmp);
+            Util.waitUntilAllChannelsHaveSameSize(60000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -164,58 +163,21 @@ public class StateTransferTest extends ChannelTestBase {
                 semaphore.release();
         }
 
-        public byte[] getState() {
-            synchronized(map) {
-                try {
-                    return Util.objectToByteBuffer(map);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
 
-        @SuppressWarnings("unchecked")
-        public void setState(byte[] state) {
-            synchronized(map) {
-                try {
-                    Map<Object,Object> tmp=(Map<Object,Object>)Util.objectFromByteBuffer(state);
-                    map.putAll(tmp);
-                    log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
 
-        public void getState(OutputStream ostream) {
+        public void getState(OutputStream ostream) throws Exception {
             synchronized(map) {
-                try {
-                    ObjectOutputStream out=new ObjectOutputStream(ostream);
-                    out.writeObject(map);
-                    out.close();
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
+                Util.objectToStream(map, new DataOutputStream(ostream));
             }
         }
 
         @SuppressWarnings("unchecked")
-        public void setState(InputStream istream) {
+        public void setState(InputStream istream) throws Exception {
+            Map<Object,Object> tmp=(Map<Object,Object>)Util.objectFromStream(new DataInputStream(istream));
             synchronized(map) {
-                try {
-                    ObjectInputStream in=new ObjectInputStream(istream);
-                    Map<Object,Object> tmp=(Map<Object,Object>)in.readObject();
-                    Util.close(in);
-                    map.putAll(tmp);
-                    log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
+                map.clear();
+                map.putAll(tmp);
+                log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
             }
         }
 

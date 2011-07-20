@@ -13,33 +13,28 @@ public interface MessageListener {
 	 * @param msg
 	 */
     void          receive(Message msg);
-    /**
-     * Answers the group state; e.g., when joining.
-     * @return byte[] 
-     */
-    byte[]        getState();
-    /**
-     * Sets the group state; e.g., when joining.
-     * @param state
-     */
-    void          setState(byte[] state);
+
 
     /**
-     * Allows an application to write a state through a provided OutputStream.
-     * An application is obligated to always close the given OutputStream reference.
+     * Allows an application to write a state through a provided OutputStream. When done, the OutputStream doesn't need
+     * to be closed; this is done automatically when returning from the callback
      *
-     * @param ostream the OutputStream
+     * @param output the OutputStream
+     * @throws Exception if the streaming fails, any exceptions should be thrown so that the state requester can
+     * re-throw them and let the caller know what happened
      * @see java.io.OutputStream#close()
      */
-    public void getState(OutputStream ostream);
+    public void getState(OutputStream output) throws Exception;
 
 
     /**
-     * Allows an application to read a state through a provided InputStream.
-     * An application is obligated to always close the given InputStream reference.
+     * Allows an application to read a state through a provided InputStream. When done, the InputStream doesn't need
+     * to be closed; this is done automatically when returning from the callback
      *
-     * @param istream the InputStream
+     * @param input the InputStream
+     * @throws Exception if the streaming fails, any exceptions should be thrown so that the state requester can
+     * catch them and thus know what happened
      * @see java.io.InputStream#close()
      */
-    public void setState(InputStream istream);
+    public void setState(InputStream input) throws Exception;
 }

@@ -3,7 +3,6 @@ package org.jgroups.demos.wb;
 
 import org.jgroups.Address;
 import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.logging.Log;
@@ -15,13 +14,14 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.Vector;
+import java.io.*;
+import java.util.*;
+import java.util.List;
 
 
 public class GraphPanel extends Panel implements MouseListener, MouseMotionListener {
     final Whiteboard wb;
-    final Vector nodes=new Vector();
-    final Vector copy=new Vector();
+    final java.util.List<Node> nodes=new ArrayList<Node>();
     String myname=null;
     public Object my_addr=null;
     Node pick;
@@ -56,7 +56,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
             if(nodes.size() < 1)
                 return null;
             for(int i=nodes.size() - 1; i >= 0; i--) {
-                n=(Node)nodes.elementAt(i);
+                n=(Node)nodes.get(i);
                 if(x >= n.xloc && x <= (n.xloc + n.width) && y >= n.yloc && y <= (n.yloc + n.height))
                     return n;
             }
@@ -78,7 +78,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
         n.y=yloc;
         n.lbl=lbl;
         n.addr=addr;
-        nodes.addElement(n);
+        nodes.add(n);
         repaint();
     }
 
@@ -94,12 +94,12 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         synchronized(nodes) {
             for(int i=0; i < nodes.size(); i++) {
-                n=(Node)nodes.elementAt(i);
+                n=(Node)nodes.get(i);
                 a=n.addr;
                 if(a == null)
                     continue;
                 if(addr.equals(a)) {
-                    nodes.removeElement(n);
+                    nodes.remove(n);
                     System.out.println("Removed node " + n);
                     break;
                 }
@@ -116,10 +116,10 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         synchronized(nodes) {
             for(int i=0; i < nodes.size(); i++) {
-                n=(Node)nodes.elementAt(i);
+                n=(Node)nodes.get(i);
                 if(!v.contains(n.addr)) {
                     System.out.println("adjustNodes(): node " + n + " was removed");
-                    nodes.removeElement(n);
+                    nodes.remove(n);
                     removed=true;
                 }
             }
@@ -170,7 +170,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         FontMetrics fm=offgraphics.getFontMetrics();
         for(int i=0; i < nodes.size(); i++) {
-            paintNode(offgraphics, (Node)nodes.elementAt(i), fm);
+            paintNode(offgraphics, (Node)nodes.get(i), fm);
         }
 
         g.drawImage(offscreen, 0, 0, null);
@@ -209,7 +209,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
 
         for(int i=0; i < nodes.size(); i++) {
-            n=(Node)nodes.elementAt(i);
+            n=(Node)nodes.get(i);
             dist=(n.x - p.x) * (n.x - p.x) + (n.y - p.y) * (n.y - p.y);
             if(dist < bestdist) {
                 pick=n;
@@ -278,51 +278,29 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
 
     public void stop() {
-        nodes.removeAllElements();
+        nodes.clear();
     }
 
 
-    public void saveState() {
-        copy.removeAllElements();
-        synchronized(nodes) {
-            for(int i=0; i < nodes.size(); i++)
-                copy.addElement(nodes.elementAt(i));
-        }
-    }
-
-
-    public byte[] getState() {  // return the copy previously saved by saveState()
+    public void getState(OutputStream output) throws Exception {
+        DataOutputStream out=new DataOutputStream(new BufferedOutputStream(output, 1000));
         try {
-            return Util.objectToByteBuffer(copy);
-        }
-        catch(Throwable ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
-
-
-    public void setState(byte[] data) {
-        Vector n;
-        Object new_state;
-
-        try {
-            new_state=Util.objectFromByteBuffer(data);
-        }
-        catch(Exception ex) {
-            ex.printStackTrace();
-            return;
-        }
-
-        synchronized(nodes) {
-            nodes.removeAllElements();
-            if(new_state != null) {
-                n=(Vector)new_state;
-                for(int i=0; i < n.size(); i++)
-                    nodes.addElement(n.elementAt(i));
-                repaint();
+            synchronized(nodes) {
+                Util.objectToStream(nodes, out);
             }
         }
+        finally {
+            Util.close(out);
+        }
+    }
+
+    public void setState(InputStream input) throws Exception {
+        java.util.List<Node> copy=(List<Node>)Util.objectFromStream(new DataInputStream(input));
+        synchronized(nodes) {
+            nodes.clear();
+            nodes.addAll(copy);
+        }
+        repaint();
     }
 
 
@@ -332,7 +310,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         synchronized(nodes) {
             for(int i=0; i < nodes.size(); i++) {
-                tmp=(Node)nodes.elementAt(i);
+                tmp=nodes.get(i);
                 if(n.addr.equals(tmp.addr)) {
                     tmp.x=n.x;
                     tmp.y=n.y;

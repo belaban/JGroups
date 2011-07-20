@@ -206,7 +206,7 @@ public class FLUSH extends Protocol {
         startFlush(flushParticipants);
     }
 
-    private void startFlush(List<Address> flushParticipants) throws RuntimeException {
+    private void startFlush(List<Address> flushParticipants) {
         if (!flushInProgress.get()) {
             flush_promise.reset();
             synchronized(sharedLock) {
@@ -216,8 +216,8 @@ public class FLUSH extends Protocol {
             onSuspend(flushParticipants);
             try {
                 FlushStartResult r = flush_promise.getResultWithTimeout(start_flush_timeout);
-               if(r.failed())
-                   throw new RuntimeException(r.getFailureCause());
+                if(r.failed())
+                    throw new RuntimeException(r.getFailureCause());
             } catch (TimeoutException e) {
                 rejectFlush(flushParticipants, currentViewId());
                 throw new RuntimeException(localAddress
@@ -269,8 +269,7 @@ public class FLUSH extends Protocol {
                 
             case Event.SUSPEND:
                 startFlush(evt);
-                break;
-                
+                return null;
              
             // only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
             case Event.SUSPEND_BUT_FAIL: 
@@ -466,7 +465,7 @@ public class FLUSH extends Protocol {
 
             case Event.SUSPEND:
                 startFlush(evt);
-                break;
+                return null;
 
             case Event.RESUME:
                 onResume(evt);

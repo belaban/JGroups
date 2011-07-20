@@ -45,10 +45,10 @@ public class ChannelTest extends ChannelTestBase {
        
             try {
                 c1.connect("testBasicOperations");
-                throw new IllegalStateException("Should generated exception, and it has NOT");
+                assert false : "Should have generated exception, and it has not";
             }
             catch (Exception e) {
-                assert e instanceof ChannelClosedException;
+                assert e instanceof IllegalStateException;
             }
        
             assert c1.isConnected() == false;

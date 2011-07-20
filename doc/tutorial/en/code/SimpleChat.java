@@ -4,10 +4,9 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
 
+import java.io.*;
 import java.util.List;
 import java.util.LinkedList;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 public class SimpleChat extends ReceiverAdapter {
     JChannel channel;
@@ -26,34 +25,24 @@ public class SimpleChat extends ReceiverAdapter {
         }
     }
 
-    public byte[] getState() {
+    public void getState(OutputStream output) throws Exception {
         synchronized(state) {
-            try {
-                return Util.objectToByteBuffer(state);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-                return null;
-            }
+            Util.objectToStream(state, new DataOutputStream(output));
         }
     }
 
-    public void setState(byte[] new_state) {
-        try {
-            List<String> list=(List<String>)Util.objectFromByteBuffer(new_state);
-            synchronized(state) {
-                state.clear();
-                state.addAll(list);
-            }
-            System.out.println("received state (" + list.size() + " messages in chat history):");
-            for(String str: list) {
-                System.out.println(str);
-            }
+    public void setState(InputStream input) throws Exception {
+        List<String> list=(List<String>)Util.objectFromStream(new DataInputStream(input));
+        synchronized(state) {
+            state.clear();
+            state.addAll(list);
         }
-        catch(Exception e) {
-            e.printStackTrace();
+        System.out.println("received state (" + list.size() + " messages in chat history):");
+        for(String str: list) {
+            System.out.println(str);
         }
     }
+
 
     private void start() throws Exception {
         channel=new JChannel();

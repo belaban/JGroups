@@ -53,14 +53,12 @@ public class BlockingInputStream extends InputStream {
 
 
 
-
-    /** {@inheritDoc} */
     public int read() throws IOException {
         lock.lock();
         try {
             while(true) {
                 if(read_pos < write_pos) {
-                    int retval=buf[read_pos++];
+                    int retval=buf[read_pos++] & 0xff;
                     not_full.signal();
                     return retval;
                 }
@@ -79,12 +77,10 @@ public class BlockingInputStream extends InputStream {
     }
 
 
-    /** {@inheritDoc} */
     public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
-    /** {@inheritDoc} */
     public int read(byte[] b, int off, int len) throws IOException {
         sanityCheck(b, off, len);
 
@@ -176,7 +172,6 @@ public class BlockingInputStream extends InputStream {
         throw new IOException("skip() not supported");
     }
 
-    /** {@inheritDoc} */
     public int available() throws IOException {
         lock.lock();
         try {
@@ -208,6 +203,11 @@ public class BlockingInputStream extends InputStream {
         finally {
             lock.unlock();
         }
+    }
+
+    public boolean isClosed() {
+        lock.lock();
+        try {return closed;} finally {lock.unlock();}
     }
 
     public String toString() {

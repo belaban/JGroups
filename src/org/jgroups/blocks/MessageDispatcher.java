@@ -10,9 +10,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 
@@ -409,7 +407,7 @@ public class MessageDispatcher implements RequestHandler {
 
 
 
-        private Object handleUpEvent(Event evt) {
+        private Object handleUpEvent(Event evt) throws Throwable {
             switch(evt.getType()) {
                 case Event.MSG:
                     if(msg_listener != null) {
@@ -418,14 +416,15 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
-                    StateTransferInfo info=(StateTransferInfo)evt.getArg();
                     byte[] tmp_state=null;
                     if(msg_listener != null) {
                         try {
-                            tmp_state=msg_listener.getState();
+                            ByteArrayOutputStream output=new ByteArrayOutputStream(1024);
+                            msg_listener.getState(output);
+                            tmp_state=output.toByteArray();
                         }
                         catch(Throwable t) {
-                            this.log.error("failed getting state from message listener (" + msg_listener + ')', t);
+                            throw new Exception("failed getting state from message listener (" + msg_listener + ')', t);
                         }
                     }
                     return new StateTransferInfo(null, 0L, tmp_state);
@@ -433,30 +432,24 @@ public class MessageDispatcher implements RequestHandler {
                 case Event.GET_STATE_OK:
                     if(msg_listener != null) {
                         try {
-                            info=(StateTransferInfo)evt.getArg();
-                            msg_listener.setState(info.state);
+                            StateTransferResult result=(StateTransferResult)evt.getArg();
+                            ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
+                            msg_listener.setState(input);
                         }
-                        catch(ClassCastException cast_ex) {
-                            if(this.log.isErrorEnabled())
-                                this.log.error("received SetStateEvent, but argument " +
-                                        evt.getArg() + " is not serializable. Discarding message.");
+                        catch(Throwable t) {
+                            throw new RuntimeException("failed calling setState() in state requester", t);
                         }
                     }
                     break;
 
                 case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                    StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                    OutputStream os=sti.outputStream;
-                    if(msg_listener != null) {
-                        if(os != null)
-                            msg_listener.getState(os);
-                        return new StateTransferInfo(null, os);
-                    }
+                    OutputStream os=(OutputStream)evt.getArg();
+                    if(msg_listener != null && os != null)
+                        msg_listener.getState(os);
                     break;
 
                 case Event.STATE_TRANSFER_INPUTSTREAM:
-                    sti=(StateTransferInfo)evt.getArg();
-                    InputStream is=sti.inputStream;
+                    InputStream is=(InputStream)evt.getArg();
                     if(msg_listener != null && is!=null)
                         msg_listener.setState(is);
                     break;
@@ -477,9 +470,8 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.SUSPECT:
-                    if(membership_listener != null) {
+                    if(membership_listener != null)
                         membership_listener.suspect((Address) evt.getArg());
-                    }
                     break;
 
                 case Event.BLOCK:
@@ -506,7 +498,12 @@ public class MessageDispatcher implements RequestHandler {
         public Object up(Event evt) {
             if(corr != null) {
                 if(!corr.receive(evt)) {
-                    return handleUpEvent(evt);
+                    try {
+                        return handleUpEvent(evt);
+                    }
+                    catch(Throwable t) {
+                        throw new RuntimeException(t);
+                    }
                 }
             }
             else {

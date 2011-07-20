@@ -51,7 +51,7 @@
             <screen>
                 public class bla {
 
-                    public static void main(String[] args) throws ChannelException, ClassNotFoundException {
+                    public static void main(String[] args) throws Exception {
                         JChannel ch=new JChannel();
                         ch.connect("demo");
                         ch.setReceiver(new ReceiverAdapter() {

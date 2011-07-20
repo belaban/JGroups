@@ -19,7 +19,6 @@ import java.util.Map;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- *          belaban Exp $
  */
 @Test(groups= { Global.FLUSH }, sequential=true)
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
@@ -31,10 +30,8 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         }
         catch(Exception e) {
             log.warn("Exception while running testConcurrentStartup4Members", e);
-            for(ReplicatedHashMap<Address,Integer> map:channels) {
+            for(ReplicatedHashMap<Address,Integer> map: channels)
                 map.stop();
-                Util.sleep(1000);
-            }
         }
     }
 
@@ -45,10 +42,8 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         }
         catch(Exception e) {
             log.warn("Exception while running testConcurrentStartup8Members", e);
-            for(ReplicatedHashMap<Address,Integer> map:channels) {
+            for(ReplicatedHashMap<Address,Integer> map: channels)
                 map.stop();
-                Util.sleep(1000);
-            }
         }
     }
 
@@ -73,7 +68,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
             map.setBlockingUpdates(true);
         }
 
-        //do a very concurrent startup
+        // do a very concurrent startup
         for(ReplicatedHashMap<Address,Integer> map:channels) {
             map.getChannel().connect("ReplicatedHashMapStartupTest");
             map.start(0);
@@ -90,25 +85,20 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
             }
         }
 
-        //verify all view are correct
-        for(ReplicatedHashMap<Address,Integer> map:channels) {
+        // verify all view are correct
+        for(ReplicatedHashMap<Address,Integer> map:channels)
             Assert.assertEquals(map.getChannel().getView().size(), channelCount, "Correct view");
-        }
 
-        for(ReplicatedHashMap<Address,Integer> map:channels) {
+        for(ReplicatedHashMap<Address,Integer> map:channels)
             map.removeNotifier(n);
-        }
 
         //verify all maps have all elements
-        for(ReplicatedHashMap<Address,Integer> map:channels) {
+        for(ReplicatedHashMap<Address,Integer> map:channels)
             Assert.assertEquals(map.size(), channelCount, "Correct size");
-        }
 
         log.info("stopping replicated hash maps...");
-        for(ReplicatedHashMap<Address,Integer> map:channels) {
+        for(ReplicatedHashMap<Address,Integer> map:channels)
             map.stop();
-            Util.sleep(1000);
-        }
     }
 
     private static void modifyGMS(JChannel c) {

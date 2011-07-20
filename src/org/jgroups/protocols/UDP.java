@@ -228,17 +228,8 @@ public class UDP extends TP {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        if(log.isDebugEnabled()) log.debug("creating sockets");
-        try {
-            createSockets();
-        }
-        catch(Exception ex) {
-            String tmp="problem creating sockets (bind_addr=" + bind_addr + ", mcast_addr=" + mcast_addr + ")";
-            throw new Exception(tmp, ex);
-        }
-
+        createSockets();
         super.start();
-
         ucast_receiver=new PacketReceiver(sock,
                                           "unicast receiver",
                                           new Runnable() {

@@ -126,7 +126,7 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
 
             // restart and....
             gossipRouter.start();
-            Util.blockUntilViewsReceived(60000, 500, coordinator, channel, third);
+            Util.waitUntilAllChannelsHaveSameSize(60000, 500, coordinator, channel, third);
 
             // confirm they found each other
             View view = channel.getView();
@@ -157,7 +157,7 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
 
             // restart and....
             gossipRouter.start();
-            Util.blockUntilViewsReceived(60000, 500, coordinator, channel, third);
+            Util.waitUntilAllChannelsHaveSameSize(60000, 500, coordinator, channel, third);
 
             // confirm they found each other
             View view = channel.getView();

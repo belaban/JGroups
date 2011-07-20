@@ -7,6 +7,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -47,7 +48,7 @@ public class NakackTest {
     Thread[] threads=new Thread[NUM_PEERS];
 
     //define senders and receivers
-    boolean[] isSender={false, true,true};
+    boolean[] isSender={false,true,true};
 
     // used to wait for signal that all messages received
     static final Object all_msgs_recd=new Object();
@@ -91,9 +92,8 @@ public class NakackTest {
     /**
      * Test to see thyat NAKACK delivery is reliable and FIFO.
      */
-    public void testReceptionOfAllMessages() {
-        for(JChannel ch: channels)
-          assert ch.getView().size() == NUM_PEERS;
+    public void testReceptionOfAllMessages() throws TimeoutException {
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
 
         // start the NAKACK peers and let them exchange messages
         for(int i=0; i < NUM_PEERS; i++) {
@@ -113,9 +113,8 @@ public class NakackTest {
 
         // wait for the threads to terminate
         try {
-            for(int i=0; i < NUM_PEERS; i++) {
+            for(int i=0; i < NUM_PEERS; i++)
                 threads[i].join();
-            }
         }
         catch(InterruptedException e) {
         }
@@ -132,7 +131,8 @@ public class NakackTest {
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);
         stack.addProtocol(new SHARED_LOOPBACK())
-          .addProtocol(new PING().setValue("timeout", 500).setValue("num_initial_members", 3))
+          .addProtocol(new PING().setValue("timeout", 2000).setValue("num_initial_members", 3))
+          .addProtocol(new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000))
           .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
           .addProtocol(new UNICAST2())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))

@@ -36,7 +36,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
     @Test
-    public void testSingleJoin() throws ChannelException {
+    public void testSingleJoin() throws Exception {
         c1.connect("JoinTest");
         View v=c1.getView();
         assert v != null;
@@ -46,10 +46,9 @@ public class JoinTest extends ChannelTestBase {
 
     /**
      * Tests that immediately after a connect(), a getView() returns the correct view
-     * @throws ChannelException
      */
     @Test
-    public void testJoinsOnTwoChannels() throws ChannelException {
+    public void testJoinsOnTwoChannels() throws Exception {
         c1.connect("JoinTest");
         c2.connect("JoinTest");
         
@@ -66,7 +65,7 @@ public class JoinTest extends ChannelTestBase {
 
 
     @Test
-    public void testJoinsOnTwoChannelsAndSend() throws ChannelException {
+    public void testJoinsOnTwoChannelsAndSend() throws Exception {
         c1.connect("JoinTest");
         c2.connect("JoinTest");
         MyReceiver r1=new MyReceiver("c1");

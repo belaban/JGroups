@@ -386,92 +386,23 @@ public class ReconciliationTest extends ChannelTestBase {
             Object key=modification[0];
             Object val=modification[1];
             synchronized(data) {
-                // System.out.println("****** [" + name + "] received PUT(" +
-                // key + ", " + val + ") " + " from " + msg.getSrc() + "
-                // *******");
                 data.put(key, val);
             }
         }
 
-        public byte[] getState() {
-            byte[] state=null;
+
+        public void getState(OutputStream ostream) throws Exception {
             synchronized(data) {
-                try {
-                    state=Util.objectToByteBuffer(data);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                    return null;
-                }
-            }
-            return state;
-        }
-
-        @SuppressWarnings("unchecked")
-        public void setState(byte[] state) {
-            Map<Object,Object> m;
-            try {
-                m=(Map<Object,Object>)Util.objectFromByteBuffer(state);
-                synchronized(data) {
-                    data.clear();
-                    data.putAll(m);
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        public void getState(OutputStream ostream) {
-            ObjectOutputStream oos=null;
-            try {
-                oos=new ObjectOutputStream(ostream);
-                synchronized(data) {
-                    oos.writeObject(data);
-                }
-                oos.flush();
-            }
-            catch(IOException e) {
-            }
-            finally {
-                try {
-                    if(oos != null)
-                        oos.close();
-                }
-                catch(IOException e) {
-                    System.err.println(e);
-                }
+                Util.objectToStream(data, new DataOutputStream(ostream));
             }
         }
 
         @SuppressWarnings("unchecked")
-        public void setState(InputStream istream) {
-            ObjectInputStream ois=null;
-            try {
-                ois=new ObjectInputStream(istream);
-                Map<Object,Object> m=(Map<Object,Object>)ois.readObject();
-                synchronized(data) {
-                    data.clear();
-                    data.putAll(m);
-                }
-
-            }
-            catch(Exception e) {
-            }
-            finally {
-                try {
-                    if(ois != null)
-                        ois.close();
-                }
-                catch(IOException e) {
-                    System.err.println(e);
-                }
-            }
-        }
-
-        public void clear() {
+        public void setState(InputStream istream) throws Exception {
+            Map<Object,Object> m=(Map<Object,Object>)Util.objectFromStream(new DataInputStream(istream));
             synchronized(data) {
                 data.clear();
+                data.putAll(m);
             }
         }
 

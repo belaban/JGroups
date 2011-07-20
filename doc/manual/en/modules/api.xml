@@ -507,7 +507,7 @@
         </para>
 
       <screen>
-          public JChannel(String props) throws ChannelException {}
+          public JChannel(String props) throws Exception {}
       </screen>
 
         <para>It creates an instance of <classname>JChannel</classname> . The
@@ -903,9 +903,8 @@
 		      </para>  
 		      
 		      <screen>
-		      public void connect(string cluster_name, address target,
-                                  string state_id, long timeout)
-                          throws ChannelException;
+		      public void connect(string cluster_name, address target, long timeout)
+                          throws Exception;
 		      </screen>
 		      
 		      <para>
@@ -1152,7 +1151,7 @@
             <para>Received when the application's current state should be
             provided to a state requesting group member. If state transfer
             events are not enabled on the channel (default), or if channel is
-            not configured with pbcast.STREAMING_STATE_TRANSFER then this
+            not configured with pbcast.STATE then this
             event will never be received. </para>
           </listitem>
         </varlistentry>
@@ -1177,7 +1176,7 @@
             <para>Received at state requesting member when the state
             InputStream becomes ready for reading. If state transfer events
             are not enabled on the channel (default), or if channel is not
-            configured with pbcast.STREAMING_STATE_TRANSFER then this event
+            configured with pbcast.STATE then this event
             will never be received. </para>
           </listitem>
         </varlistentry>

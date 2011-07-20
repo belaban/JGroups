@@ -94,10 +94,24 @@ API changes in 3.0.0
      // "foo" threw an exception
   }
 
-- ChannelNotConnectedException and ChannelCloseException have been replaced by the superclass ChannelException. This way,
+- ChannelNotConnectedException and ChannelClosedException have been replaced by IllegalStateException. This way,
   new exceptions can be thrown (and documented in the javadoc) without having to change the signature in the future.
-  These changes affect mainly JChannel.
+  These changes affect mainly JChannel
 
+- ChannelException has been replaced by Exception in all signatures
+
+- State transfer API changes:
+  ---------------------------
+  - Removed byte[] getState() and void setState(byte[] data) callbacks in MessageListener and Receiver. Use the callbacks
+    which use input and output streams instead
+  - JChannel.getState() now returns void instead of boolean
+  - The getState(OutputStream) and setState(InputStream) callbacks now throw Exception; any exception on the state
+    provider will get sent back to the requester and will be re-thrown
+  - STREAMING_STATE_TRANSFER has been separated into 2 protocols (sharing a common superclass): STATE and STATE_SOCK.
+    STATE uses the transport of the stack in which it resides, to transfer state; STATE_SOCK creates a TCP connection
+    to which a state requester connects to fetch the state.
+
+  
 
 
 

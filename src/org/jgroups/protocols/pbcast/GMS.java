@@ -683,6 +683,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
     protected boolean _startFlush(final View new_view, int maxAttempts, long randomFloor, long randomCeiling) {
+        if(!flushProtocolInStack)
+            return true;
         if(flushInvokerClass != null) {
             try {
                 Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
@@ -696,7 +698,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
             boolean successfulFlush=false;
             boolean validView=new_view != null && new_view.size() > 0;
             if(validView && flushProtocolInStack) {
-
                 int attemptCount = 0;
                 while (attemptCount < maxAttempts) {
                     try {

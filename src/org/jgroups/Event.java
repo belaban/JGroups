@@ -33,11 +33,10 @@ public class Event {
     public static final int RESUME_STABLE                      = 66;  // arg = null
     public static final int SUSPEND					           = 68;  // arg = List<Address> (used by FLUSH)
     public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
-    public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg=java.io.InputStream subclass
-    public static final int STATE_TRANSFER_OUTPUTSTREAM        = 72;  // arg=java.io.OutputStream subclass
-    public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED  = 73;  //arg=null
-    public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED = 74;  //arg=null
-    public static final int UNBLOCK                            = 75;  //arg=null (indicate end of flush round)
+    public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg = InputStream
+    public static final int STATE_TRANSFER_OUTPUTSTREAM        = 72;  // arg = OutputStream
+    public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED  = 73;  // arg = StateTransferResult
+    public static final int UNBLOCK                            = 75;  // arg = null (indicate end of flush round)
     public static final int CLOSE_BARRIER                      = 76;  // arg = null
     public static final int OPEN_BARRIER                       = 77;  // arg = null
     public static final int REBROADCAST				           = 78;  // arg = Digest
@@ -118,7 +117,6 @@ public class Event {
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
-            case STATE_TRANSFER_OUTPUTSTREAM_CLOSED: return "STATE_TRANSFER_OUTPUTSTREAM_CLOSED";
             case UNBLOCK:                return "UNBLOCK";
             case CLOSE_BARRIER:          return "CLOSE_BARRIER";
             case OPEN_BARRIER:           return "OPEN_BARRIER";

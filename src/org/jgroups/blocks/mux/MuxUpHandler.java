@@ -90,7 +90,7 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
     @Override
     public Object up(Event evt) {
         switch (evt.getType()) {
-            case Event.MSG: {
+            case Event.MSG:
                 Message msg = (Message) evt.getArg();
                 MuxHeader hdr = (MuxHeader) msg.getHeader(MuxRequestCorrelator.MUX_ID);
                 if (hdr != null) {
@@ -99,37 +99,32 @@ public class MuxUpHandler implements UpHandler, Muxer<UpHandler> {
                     return (handler != null) ? handler.up(evt) : new NoMuxHandler(id);
                 }
                 break;
-            }
             case Event.GET_APPLSTATE:
             case Event.GET_STATE_OK: 
             case Event.STATE_TRANSFER_OUTPUTSTREAM: 
-            case Event.STATE_TRANSFER_INPUTSTREAM: {
+            case Event.STATE_TRANSFER_INPUTSTREAM:
                 ImmutableReference<Object> wrapper = handleStateTransferEvent(evt);
                 if (wrapper != null)
                 {
                    return wrapper.get();
                 }
                 break;
-            } 
-            case Event.BLOCK: 
-            case Event.UNBLOCK: {
-               synchronized (flushMutex)
-               {
-                  this.lastFlushEvent = evt;
-                  passToAllHandlers(evt);
-                  break;
-               }
-            }
+            case Event.BLOCK:
+            case Event.UNBLOCK:
+                synchronized (flushMutex)
+                {
+                   this.lastFlushEvent = evt;
+                   passToAllHandlers(evt);
+                   break;
+                }
             case Event.VIEW_CHANGE:
             case Event.SET_LOCAL_ADDRESS: 
-            case Event.SUSPECT:  {
-               passToAllHandlers(evt);
-               break;
-           }
-           default: {
+            case Event.SUSPECT:
                 passToAllHandlers(evt);
                 break;
-           }
+            default:
+                passToAllHandlers(evt);
+                break;
         }
         
         return (defaultHandler != null) ? defaultHandler.up(evt) : null;

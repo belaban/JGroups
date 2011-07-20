@@ -39,7 +39,7 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="Run"/>
 
-    <PING timeout="1000" num_initial_members="3"/>
+    <PING timeout="2000" num_initial_members="3"/>
     <MERGE2 max_interval="30000" min_interval="10000"/>
     <FD_SOCK/>
     <FD_ALL/>
@@ -52,13 +52,12 @@
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4m"/>   
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" view_bundling="true"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="5000" view_bundling="true"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <FRAG2 frag_size="60000"/>
-    <pbcast.STREAMING_STATE_TRANSFER />
-    <!-- <pbcast.STATE_TRANSFER/> -->
+    <pbcast.STATE_TRANSFER />
     <pbcast.FLUSH timeout="0"/>
 </config>

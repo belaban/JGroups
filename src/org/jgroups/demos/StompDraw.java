@@ -333,35 +333,6 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         }
 
 
-        public byte[] getState() {
-            byte[] retval=null;
-            if(state == null) return null;
-            synchronized(state) {
-                try {
-                    retval=Util.objectToByteBuffer(state);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return retval;
-        }
-
-        @SuppressWarnings("unchecked")
-        public void setState(byte[] buf) {
-            synchronized(state) {
-                try {
-                    Map<Point,Color> tmp=(Map<Point,Color>)Util.objectFromByteBuffer(buf);
-                    state.clear();
-                    state.putAll(tmp);
-                    System.out.println("received state: " + buf.length + " bytes, " + state.size() + " entries");
-                    createOffscreenImage(true);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
 
         public void writeState(OutputStream outstream) throws IOException {
             synchronized(state) {

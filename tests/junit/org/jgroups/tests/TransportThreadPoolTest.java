@@ -41,7 +41,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c1.connect("TransportThreadPoolTest");
         c2.connect("TransportThreadPoolTest");
         
-        Util.blockUntilViewsReceived(5000, 500, c1, c2);
+        Util.waitUntilAllChannelsHaveSameSize(5000, 500, c1, c2);
         assert c2.getView().size() == 2 : "view is " + c2.getView() + ", but should have had a size of 2";
         
         TP transport=c1.getProtocolStack().getTransport();
