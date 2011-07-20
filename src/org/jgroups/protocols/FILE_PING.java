@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
  */
-@Experimental
 public class FILE_PING extends Discovery {
     protected static final String SUFFIX=".node";
 

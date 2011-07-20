@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-@Experimental
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private final ThreadManagerThreadPoolExecutor pool;
 

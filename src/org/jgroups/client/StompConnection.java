@@ -30,7 +30,7 @@ import java.util.*;
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
  */
-@Experimental @Unsupported
+@Experimental
 public class StompConnection implements Runnable {
     protected SocketFactory    socket_factory;
     protected Socket           sock;

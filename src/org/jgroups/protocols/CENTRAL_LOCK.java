@@ -35,7 +35,6 @@ import org.jgroups.util.Util;
  * @see Locking
  * @see PEER_LOCK
  */
-@Experimental
 public class CENTRAL_LOCK extends Locking implements LockNotification {
 
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")

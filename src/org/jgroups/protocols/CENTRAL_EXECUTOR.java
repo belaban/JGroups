@@ -20,7 +20,6 @@ import org.jgroups.util.Util;
  * @author wburns
  * @since 2.12.0
  */
-@Experimental
 public class CENTRAL_EXECUTOR extends Executing {
 
     @Property(description="Number of backups to the coordinator.  Queue State gets replicated to these nodes as well")

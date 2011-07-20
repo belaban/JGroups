@@ -36,7 +36,6 @@ import static java.lang.String.valueOf;
  * This protocol is unsupported and experimental !
  * @author Bela Ban
  */
-@Experimental
 public class S3_PING extends FILE_PING {
 
     @Property(description="The access key to AWS (S3)")

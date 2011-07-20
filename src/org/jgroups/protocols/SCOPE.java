@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban
  * @since 2.10
  */
-@Experimental
 @MBean(description="Implementation of scopes (concurrent delivery of messages from the same sender)")
 public class SCOPE extends Protocol {
 

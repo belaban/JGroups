@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
  */
-@Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
     private Address                    local_addr=null, coord=null;

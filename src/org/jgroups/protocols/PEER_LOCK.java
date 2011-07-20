@@ -33,7 +33,6 @@ import org.jgroups.blocks.locking.Owner;
  * @see Locking
  * @see CENTRAL_LOCK
  */
-@Experimental
 public class PEER_LOCK extends Locking {
 
     public PEER_LOCK() {

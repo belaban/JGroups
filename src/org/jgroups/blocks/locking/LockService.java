@@ -34,7 +34,6 @@ import org.jgroups.protocols.Locking;
  * @author Bela Ban
  * @since 2.12
  */
-@Experimental
 public class LockService {
     protected JChannel ch;
     protected Locking lock_prot;
