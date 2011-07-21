@@ -67,7 +67,7 @@
             <para>Method <methodname>receive()</methodname> is be called whenever a message is received. The
                 <methodname>getState()</methodname> and <methodname>setState()</methodname>
                 methods are used to fetch and set the group state (e.g. when joining). Refer to
-                <xref linkend="GetState"/> for a discussion of state transfer.
+                <xref linkend="StateTransfer"/> for a discussion of state transfer.
             </para>
         </section>
 
@@ -248,7 +248,7 @@
         </para>
     </section>
 
-    <section>
+    <section id="Message">
         <title>Message</title>
 
         <para>
@@ -356,7 +356,7 @@
         </para>
     </section>
 
-    <section>
+    <section id="Header">
         <title>Header</title>
 
         <para>
@@ -367,7 +367,7 @@
 
     </section>
 
-    <section>
+    <section id="Event">
         <title>Event</title>
 
         <para>
@@ -384,49 +384,46 @@
     </section>
 
 
-    <section>
+    <section id="View">
         <title>View</title>
 
-        <para>A View (
-            <classname>View</classname>
-            ) is a list of the current members of a group. It consists of a
-            <classname>ViewId</classname>
-            , which uniquely identifies the view (see below), and a list of members. Views are set in a channel
-            automatically by the underlying protocol stack whenever a new member joins or an existing one leaves (or
-            crashes). All members of a group see the same sequence of views.
+        <para>
+            A view (<classname>org.jgroups.View</classname>) is a list of the current members of a group. It consists
+            of a <classname>ViewId</classname>, which uniquely identifies the view (see below), and a list of members.
+            Views are installed in a channel automatically by the underlying protocol stack whenever a new member joins
+            or an existing one leaves (or crashes). All members of a group see the same sequence of views.
         </para>
 
-        <para>Note that there is a comparison function which orders all the members of a group in the same way. Usually,
-            the first member of the list is the
-            <emphasis>coordinator</emphasis>
-            (the one who emits new views). Thus, whenever the membership changes, every member can determine the
-            coordinator easily and without having to contact other members.
+        <para>
+            Note that the first member of a view is the <emphasis>coordinator</emphasis> (the one who emits new views).
+            Thus, whenever the membership changes, every member can determine the coordinator easily and without having
+            to contact other members, by picking the first member of a view.
         </para>
 
-        <para>The code below shows how to send a (unicast) message to the first member of a view (error checking code
+        <para>
+            The code below shows how to send a (unicast) message to the first member of a view (error checking code
             omitted):
-
-            <screen>
-                View view=channel.getView(); Address first=view.getMembers().first(); Message msg=new Message(first,
-                null, "Hello world"); channel.send(msg);
-            </screen>
+            <programlisting>
+                View view=channel.getView();
+                Address first=view.getMembers().get(0);
+                Message msg=new Message(first, null, "Hello world");
+                channel.send(msg);
+            </programlisting>
         </para>
 
-        <para>Whenever an application is notified that a new view has been installed (e.g. by
+        <para>
+            Whenever an application is notified that a new view has been installed (e.g. by
             <methodname>Receiver.viewAccepted()</methodname>, the view is already set in the channel. For example,
-            calling
-            <methodname>Channel.getView()</methodname>
-            in a
-            <methodname>viewAccepted()</methodname>
+            calling <methodname>Channel.getView()</methodname> in a <methodname>viewAccepted()</methodname>
             callback would return the same view (or possibly the next one in case there has already been a new view !).
         </para>
 
-        <section>
+        <section id="ViewId">
             <title>ViewId</title>
 
             <para>The ViewId is used to uniquely number views. It consists of the address of the view creator and a
-                sequence number. ViewIds can be compared for equality and put in a hashtable as they implement equals()
-                and hashCode() methods.
+                sequence number. ViewIds can be compared for equality and put in a hashmaps as they implement equals()
+                and hashCode().
                 <footnote>Note that the latter 2 methods only take the ID into account.</footnote>
             </para>
         </section>
@@ -434,31 +431,24 @@
         <section id="MergeView">
             <title>MergeView</title>
 
-            <para>Whenever a group splits into subgroups, e.g. due to a network partition, and later the subgroups merge
-                back together, a MergeView instead of a View will be received by the application. The MergeView class is
+            <para>
+                Whenever a group splits into subgroups, e.g. due to a network partition, and later the subgroups merge
+                back together, a MergeView instead of a View will be received by the application. The MergeView is
                 a subclass of View and contains as additional instance variable the list of views that were merged. As
-                an example if the group denoted by view
-                <literal>V1:(p,q,r,s,t)</literal>
-                split into subgroups
-                <literal>V2:(p,q,r)</literal>
-                and
-                <literal>V2:(s,t)</literal>
-                , the merged view might be
-                <literal>V3:(p,q,r,s,t)</literal>
-                . In this case the MergeView would contains a list of 2 views:
-                <literal>V2:(p,q,r)</literal>
-                and
-                <literal>V2:(s,t)</literal>
-                .
+                an example if the group denoted by view <literal>V1:(p,q,r,s,t)</literal> split into subgroups
+                <literal>V2:(p,q,r)</literal> and <literal>V2:(s,t)</literal>, the merged view might be
+                <literal>V3:(p,q,r,s,t)</literal>. In this case the MergeView would contains a list of 2 views:
+                <literal>V2:(p,q,r)</literal> and <literal>V2:(s,t)</literal>.
             </para>
         </section>
     </section>
 
 
-    <section>
+    <section id="JChannel">
         <title>JChannel</title>
 
-        <para>In order to join a group and send messages, a process has to create a channel. A channel is like a socket.
+        <para>
+            In order to join a group and send messages, a process has to create a channel. A channel is like a socket.
             When a client connects to a channel, it gives the the name of the group it would like to join. Thus, a
             channel is (in its connected state) always associated with a particular group. The protocol stack takes care
             that channels with the same group name find each other: whenever a client connects to a channel given group
@@ -466,66 +456,58 @@
             being installed (which contains the new member). If no members exist, a new group will be created.
         </para>
 
-        <para>A state transition diagram for the major states a channel can assume are shown in
-            <xref linkend="ChannelStatesFig"/>
-            .
+        <para>
+            A state transition diagram for the major states a channel can assume are shown in
+            <xref linkend="ChannelStatesFig"/>.
         </para>
 
         <figure id="ChannelStatesFig">
             <title>Channel states</title>
-
             <graphic align="center" fileref="images/ChannelStates.png" format="PNG"/>
         </figure>
 
-        <para>When a channel is first created, it is in the unconnected state. An attempt to perform certain operations
+        <para>
+            When a channel is first created, it is in the unconnected state. An attempt to perform certain operations
             which are only valid in the connected state (e.g. send/receive messages) will result in an exception. After
-            a successful connection by a client, it moves to the connected state. Now channels will receive messages,
-            views and suspicions from other members and may send messages to other members or to the group. Getting the
-            local address of a channel is guaranteed to be a valid operation in this state (see below). When the channel
-            is disconnected, it moves back to the unconnected state. Both a connected and unconnected channel may be
-            closed, which makes the channel unusable for further operations. Any attempt to do so will result in an
-            exception. When a channel is closed directly from a connected state, it will first be disconnected, and then
-            closed.
+            a successful connection by a client, it moves to the connected state. Now the channel will receive messages
+            from other members and may send messages to other members or to the group, and it will get notified when
+            new members join or leave. Getting the local address of a channel is guaranteed to be a valid operation in
+            this state (see below). When the channel is disconnected, it moves back to the unconnected state.
+            Both a connected and unconnected channel may be closed, which makes the channel unusable for further
+            operations. Any attempt to do so will result in an exception. When a channel is closed directly
+            from a connected state, it will first be disconnected, and then closed.
         </para>
 
-        <para>The methods available for creating and manipulating channels are discussed now.</para>
+        <para>
+            The methods available for creating and manipulating channels are discussed now.
+        </para>
 
-        <section>
+        <section id="CreatingAChannel">
             <title>Creating a channel</title>
 
             <para>
-                A channel can be created in two ways: an instance of a subclass of
-                <classname>Channel</classname>
-                is created directly using its public constructor (e.g.
-                <methodname>new JChannel()</methodname>
-                ), or a channel factory is created, which -- upon request -- creates instances of channels. We will only
-                look at the first method of creating channel: by direct instantiation.
+                A channel is created using one of its public constructors (e.g. <methodname>new JChannel()</methodname>).
             </para>
 
             <para>
-                The public constructor of
-                <classname>JChannel</classname>
-                looks as follows:
+                The most frequently used constructor of <classname>JChannel</classname> looks as follows:
             </para>
 
-            <screen>
+            <programlisting>
                 public JChannel(String props) throws Exception {}
-            </screen>
+            </programlisting>
 
-            <para>It creates an instance of
-                <classname>JChannel</classname>
-                . The
-                <parameter>props</parameter>
-                argument points to an XML file containing the configuration of the protocol stack to be used. This can
-                be a String, but there are also other constructors which take for example a DOM element or a URL (more
-                on this later).
+            <para>
+                The <parameter>props</parameter> argument points to an XML file containing the configuration of the
+                protocol stack to be used. This can be a String, but there are also other constructors which take for
+                example a DOM element or a URL (see the javadoc for details).
             </para>
 
-            <para>If the props argument is null, the default properties will be used. An exception will be thrown if the
+            <para>
+                If the props argument is null, the default properties will be used. An exception will be thrown if the
                 channel cannot be created. Possible causes include protocols that were specified in the property
                 argument, but were not found, or wrong parameters to protocols.
             </para>
-
 
             <para>For example, the Draw demo can be launched as follows:</para>
 
@@ -546,52 +528,101 @@
             <para>
                 A sample XML configuration looks like this (edited from udp.xml):
             </para>
-            <screen>
-                &lt;config&gt; &lt;UDP mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
-                mcast_port="${jgroups.udp.mcast_port:45588}" discard_incompatible_packets="true" max_bundle_size="60000"
-                max_bundle_timeout="30" ip_ttl="${jgroups.udp.ip_ttl:2}" enable_bundling="true"
-                thread_pool.enabled="true" thread_pool.min_threads="1" thread_pool.max_threads="25"
-                thread_pool.keep_alive_time="5000" thread_pool.queue_enabled="false" thread_pool.queue_max_size="100"
-                thread_pool.rejection_policy="Run" oob_thread_pool.enabled="true" oob_thread_pool.min_threads="1"
-                oob_thread_pool.max_threads="8" oob_thread_pool.keep_alive_time="5000"
-                oob_thread_pool.queue_enabled="false" oob_thread_pool.queue_max_size="100"
-                oob_thread_pool.rejection_policy="Run"/&gt; &lt;PING timeout="2000" num_initial_members="3"/&gt; &lt;MERGE2
-                max_interval="30000" min_interval="10000"/&gt; &lt;FD_SOCK/&gt; &lt;FD timeout="10000" max_tries="5" /&gt;
-                &lt;VERIFY_SUSPECT timeout="1500" /&gt; &lt;BARRIER /&gt; &lt;pbcast.NAKACK use_mcast_xmit="false"
-                retransmit_timeout="300,600,1200,2400,4800" discard_delivered_msgs="true"/&gt; &lt;UNICAST
-                timeout="300,600,1200,2400,3600"/&gt; &lt;pbcast.STABLE stability_delay="1000"
-                desired_avg_gossip="50000" max_bytes="400000"/&gt; &lt;VIEW_SYNC avg_send_interval="60000" /&gt; &lt;pbcast.GMS
-                print_local_addr="true" join_timeout="3000" view_bundling="true"/&gt; &lt;FC max_credits="20000000"
-                min_threshold="0.10"/&gt; &lt;FRAG2 frag_size="60000" /&gt; &lt;pbcast.STATE_TRANSFER /&gt; &lt;/config&gt;
-            </screen>
+            <programlisting>
+                &lt;config xmlns="urn:org:jgroups"
+                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
+                    &lt;UDP
+                         mcast_port="${jgroups.udp.mcast_port:45588}"
+                         tos="8"
+                         ucast_recv_buf_size="20M"
+                         ucast_send_buf_size="640K"
+                         mcast_recv_buf_size="25M"
+                         mcast_send_buf_size="640K"
+                         loopback="true"
+                         discard_incompatible_packets="true"
+                         max_bundle_size="64K"
+                         max_bundle_timeout="30"
+                         ip_ttl="${jgroups.udp.ip_ttl:2}"
+                         enable_bundling="true"
+                         enable_diagnostics="true"
+                         thread_naming_pattern="cl"
+
+                         timer_type="new"
+                         timer.min_threads="4"
+                         timer.max_threads="10"
+                         timer.keep_alive_time="3000"
+                         timer.queue_max_size="500"
+
+                         thread_pool.enabled="true"
+                         thread_pool.min_threads="2"
+                         thread_pool.max_threads="8"
+                         thread_pool.keep_alive_time="5000"
+                         thread_pool.queue_enabled="true"
+                         thread_pool.queue_max_size="10000"
+                         thread_pool.rejection_policy="discard"
+
+                         oob_thread_pool.enabled="true"
+                         oob_thread_pool.min_threads="1"
+                         oob_thread_pool.max_threads="8"
+                         oob_thread_pool.keep_alive_time="5000"
+                         oob_thread_pool.queue_enabled="false"
+                         oob_thread_pool.queue_max_size="100"
+                         oob_thread_pool.rejection_policy="Run"/&gt;
+
+                    &lt;PING timeout="2000"
+                            num_initial_members="3"/&gt;
+                    &lt;MERGE2 max_interval="30000"
+                            min_interval="10000"/&gt;
+                    &lt;FD_SOCK/&gt;
+                    &lt;FD_ALL/&gt;
+                    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+                    &lt;BARRIER /&gt;
+                    &lt;pbcast.NAKACK use_stats_for_retransmission="false"
+                                   exponential_backoff="0"
+                                   use_mcast_xmit="true"
+                                   retransmit_timeout="300,600,1200"
+                                   discard_delivered_msgs="true"/&gt;
+                    &lt;UNICAST2 timeout="300,600,1200"/&gt;
+                    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                                   max_bytes="4M"/&gt;
+                    &lt;pbcast.GMS print_local_addr="true" join_timeout="10000"
+                                view_bundling="true"/&gt;
+                    &lt;UFC max_credits="2M"
+                         min_threshold="0.4"/&gt;
+                    &lt;MFC max_credits="2M"
+                         min_threshold="0.4"/&gt;
+                    &lt;FRAG2 frag_size="60K"  /&gt;
+                    &lt;pbcast.STATE_TRANSFER  /&gt;
+                &lt;/config&gt;
+            </programlisting>
 
             <para>
                 A stack is wrapped by &lt;config&gt; and &lt;/config&gt; elements and lists all protocols from bottom
                 (UDP) to top (STATE_TRANSFER). Each element defines one protocol.
             </para>
 
-            <para>Each protocol is implemented as a Java class. When a protocol stack is created based on the above XML
+            <para>
+                Each protocol is implemented as a Java class. When a protocol stack is created based on the above XML
                 configuration, the first element ("UDP") becomes the bottom-most layer, the second one will be placed on
                 the first, etc: the stack is created from the bottom to the top.
             </para>
+
             <para>
-                Each element has to be the name of a Java class that resides in the
-                <classname>org.jgroups.stack.protocols</classname>
+                Each element has to be the name of a Java class that resides in the <classname>org.jgroups.protocols</classname>
                 package. Note that only the base name has to be given, not the fully specified class name (
-                <classname>UDP</classname>
-                instead of
-                <classname>org.jgroups.stack.protocols.UDP</classname>). If the protocol class is not found, JGroups
-                assumes that the name given is a fully qualified classname and will therefore try to instantiate that
-                class. If this does not work an exception is thrown. This allows for protocol classes to reside in
-                different packages altogether, e.g. a valid protocol name could be
-                <classname>com.sun.eng.protocols.reliable.UCAST</classname>
-                .
+                <classname>UDP</classname> instead of <classname>org.jgroups.protocols.UDP</classname>).
+                If the protocol class is not found, JGroups assumes that the name given is a fully qualified classname
+                and will therefore try to instantiate that class. If this does not work an exception is thrown.
+                This allows for protocol classes to reside in different packages altogether, e.g. a valid protocol name
+                could be <classname>com.sun.eng.protocols.reliable.UCAST</classname>.
             </para>
 
-            <para>Each layer may have zero or more arguments, which are specified as a list of name/value pairs in
+            <para>
+                Each layer may have zero or more arguments, which are specified as a list of name/value pairs in
                 parentheses directly after the protocol name. In the example above, UDP is configured with some options,
-                one of them being the IP multicast address (mcast_addr) which is set to 228.10.10.10, or to the value of
-                the system property jgroups.udp.mcast_addr, if set.
+                one of them being the IP multicast port (mcast_port) which is set to 45588, or to the value of
+                the system property jgroups.udp.mcast_port, if set.
             </para>
 
             <para>
@@ -599,7 +630,7 @@
             </para>
 
 
-            <section>
+            <section id="ProgrammaticCreation">
                 <title>Programmatic creation</title>
                 <para>
                     Usually, channels are created by passing the name of an XML configuration file to the JChannel()
@@ -612,40 +643,59 @@
                 <para>
                     An example of how to programmatically create a channel is shown below (copied from
                     ProgrammaticChat):
-                    <screen>
-                        JChannel ch=new JChannel(false); // 1 ProtocolStack stack=new ProtocolStack(); // 2
-                        ch.setProtocolStack(stack); // 3 stack.addProtocol(new UDP().setValue("bind_addr",
-                        InetAddress.getByName("192.168.1.5"))) .addProtocol(new PING()) .addProtocol(new MERGE2())
-                        .addProtocol(new FD_SOCK()) .addProtocol(new FD_ALL().setValue("timeout",
-                        12000).setValue("interval", 3000)) .addProtocol(new VERIFY_SUSPECT()) .addProtocol(new
-                        BARRIER()) .addProtocol(new NAKACK()) .addProtocol(new UNICAST2()) .addProtocol(new STABLE())
-                        .addProtocol(new GMS()) .addProtocol(new UFC()) .addProtocol(new MFC()) .addProtocol(new
-                        FRAG2()); // 4 stack.init(); // 5
+                    <programlisting>
+              public static void main(String[] args) throws Exception {
+                    JChannel ch=new JChannel(false); // (1)
+                    ProtocolStack stack=new ProtocolStack();
+                    ch.setProtocolStack(stack); // (2)
+                    stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+                        .addProtocol(new PING())
+                        .addProtocol(new MERGE2())
+                        .addProtocol(new FD_SOCK())
+                        .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+                        .addProtocol(new VERIFY_SUSPECT())
+                        .addProtocol(new BARRIER())
+                        .addProtocol(new NAKACK())
+                        .addProtocol(new UNICAST2())
+                        .addProtocol(new STABLE())
+                        .addProtocol(new GMS())
+                        .addProtocol(new UFC())
+                        .addProtocol(new MFC())
+                        .addProtocol(new FRAG2()); // (3)
+                    stack.init(); // (4)
 
-                        ch.setReceiver(new ReceiverAdapter() { public void viewAccepted(View new_view) {
-                        System.out.println("view: " + new_view); }
+                    ch.setReceiver(new ReceiverAdapter() {
+                            public void viewAccepted(View new_view) {
+                                System.out.println("view: " + new_view);
+                            }
 
-                        public void receive(Message msg) { System.out.println(msg.getObject() + " [" + msg.getSrc() +
-                        "]"); } });
+                            public void receive(Message msg) {
+                                System.out.println("&lt;&lt; " + msg.getObject() + " [" + msg.getSrc() + "]");
+                            }
+                    });
 
-                        ch.connect("ChatCluster");
+                    ch.connect("ChatCluster");
 
-                        for(;;) { String line=Util.readStringFromStdin(": "); ch.send(null, null, line); }
-                    </screen>
+                    for(;;) {
+                        String line=Util.readStringFromStdin(": ");
+                        ch.send(null, line);
+                    }
+              }
+                    </programlisting>
                 </para>
                 <para>
-                    First a JChannel is created. The 'false' argument tells the channel not to create a ProtocolStack.
-                    This is needed because we will create one ourselves later (2) and set it in the channel (3).
+                    First a JChannel is created (1). The 'false' argument tells the channel not to create a ProtocolStack.
+                    This is needed because we will create one ourselves later and set it in the channel (2).
                 </para>
                 <para>
-                    Next, all protocols are added to the stack. Note that the order is from bottom (transport protocol)
+                    Next, all protocols are added to the stack (3). Note that the order is from bottom (transport protocol)
                     to top. So UDP as transport is added first, then PING and so on, until FRAG2, which is the top
                     protocol. Every protocol can be configured via setters, but there is also a generic setValue(String
                     attr_name, Object value), which can be used to configure protocols as well, as shown in the example.
                 </para>
                 <para>
                     Once the stack is configured, we call ProtocolStack.init() to link all protocols correctly and to
-                    call init() in every protocol instance. After this, the channel is ready to be used and all
+                    call init() in every protocol instance (4). After this, the channel is ready to be used and all
                     subsequent actions (e.g. connect()) can be executed. When the init() method returns, we have
                     essentially the equivalent of new JChannel(config_file).
                 </para>
@@ -655,96 +705,13 @@
         </section>
 
 
-        <section id="SettingOptions">
-            <title>Setting options</title>
-
-            <para>
-                A number of options can be set in a channel. To do so, the following method is used:
-                <screen>
-                    public void setOpt(int option, Object value);
-                </screen>
-            </para>
-
-            <para>Arguments are the options number and a value. The following options are currently recognized:</para>
-
-            <variablelist>
-                <varlistentry>
-                    <term>
-                        <constant>Channel.BLOCK</constant>
-                    </term>
-
-                    <listitem>
-                        <para>The argument is a boolean object. If true, block messages will be received.</para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>
-                        <constant>Channel.LOCAL</constant>
-                    </term>
-
-                    <listitem>
-                        <para>Local delivery. The argument is a boolean value. If set to true, a member will receive all
-                            messages it sent to itself. Otherwise, all messages sent by itself will be discarded. This
-                            option allows to send messages to the group, without receiving a copy. Default is true
-                            (members will receive their own copy of messages multicast to the group).
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>
-                        <constant>Channel.AUTO_RECONNECT</constant>
-                    </term>
-
-                    <listitem>
-                        <para>When set to true, a shunned channel will leave the group and then try to automatically
-                            re-join. Default is false. Note that in 2.8, shunning has been removed, therefore this
-                            option has been deprecated.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>
-                        <constant>Channel.AUTO_GETSTATE</constant>
-                    </term>
-
-                    <listitem>
-                        <para>When set to true a shunned channel, after reconnection, will attempt to fetch the state
-                            from the coordinator. This requires AUTO_RECONNECT to be true as well. Default is false.
-                            Note that in 2.8, shunning has been removed, therefore this option has been deprecated.
-                        </para>
-                    </listitem>
-                </varlistentry>
-            </variablelist>
-
-            <para>The equivalent method to get options is
-                <methodname>getOpt()</methodname>:
-
-                <screen>
-                    public Object getOpt(int option);
-                </screen>
-            </para>
-
-            <para>Given an option, the current value of the option is returned.</para>
-
-            <note>
-                <title>Deprecating options in 3.0</title>
-
-                <para>
-                    Most of the options (except LOCAL) have been deprecated in 2.6.x and will be removed in 3.0.
-                </para>
-            </note>
-
-        </section>
 
         <section id="LogicalName">
             <title>Giving the channel a logical name</title>
             <para>
-                A channel can be given a logical name which is then used instead of the channel's address. A logical
-                name might show the function of a channel, e.g. "HostA-HTTP-Cluster", which is more legible than a UUID
-                3c7e52ea-4087-1859-e0a9-77a0d2f69f29.
+                A channel can be given a logical name which is then used instead of the channel's address in toString().
+                A logical name might show the function of a channel, e.g. "HostA-HTTP-Cluster", which is more legible
+                than a UUID 3c7e52ea-4087-1859-e0a9-77a0d2f69f29.
             </para>
             <para>
                 For example, when we have 3 channels, using logical names we might see a view "{A,B,C}", which is nicer
@@ -758,34 +725,33 @@
             </para>
             <para>
                 The logical name can be set using:
-                <screen>
+                <programlisting>
                     public void setName(String logical_name);
-                </screen>
+                </programlisting>
             </para>
             <para>
-                This should be done before connecting a channel. Note that the logical name stays with a channel until
-                the channel is destroyed, whereas a UUID is created on each connection.
+                This should be done <emphasis>before</emphasis> connecting a channel. Note that the logical name stays
+                with a channel until the channel is destroyed, whereas a UUID is created on each connection.
             </para>
 
             <para>
                 When JGroups starts, it prints the logical name and the associated physical address(es):
                 <screen>
-                    ------------------------------------------------------------------- GMS: address=mac-53465,
-                    cluster=DrawGroupDemo, physical address=192.168.1.3:49932
-                    ------------------------------------------------------------------- ** View=[mac-53465|0]
-                    [mac-53465]
+                    -------------------------------------------------------------------
+                    GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
+                    -------------------------------------------------------------------
                 </screen>
 
                 The logical name is mac-53465 and the physical address is 192.168.1.3:49932. The UUID is not shown here.
             </para>
         </section>
 
-        <section>
+        <section id="CustomAddresses">
             <title>Generating custom addresses</title>
             <para>
                 Since 2.12 address generation is pluggable. This means that an application can determine what kind of
                 addresses it uses. The default address type is UUID, and since some protocols use UUID, it is
-                recommended to provide custom classes as<emphasis>subclasses of UUID</emphasis>.
+                recommended to provide custom classes as <emphasis>subclasses of UUID</emphasis>.
             </para>
             <para>
                 This can be used to for example pass additional data around with an address, for example information
@@ -798,57 +764,57 @@
                     <listitem>Write an implementation of org.jgroups.stack.AddressGenerator</listitem>
                     <listitem>For any class CustomAddress, it will need to get registered with the ClassConfigurator in
                         order to marshal it correctly:
-                        <screen>
-                            class CustomAddress extends UUID { static { ClassConfigurator.add((short)8900,
-                            CustomAddress.class); } }
-                        </screen>
+                        <programlisting>
+                    class CustomAddress extends UUID {
+                        static {
+                            ClassConfigurator.add((short)8900, CustomAddress.class);
+                        }
+                    }
+                        </programlisting>
                         Note that the ID should be chosen such that it doesn't collide with any IDs defined in
                         jg-magic-map.xml.
                     </listitem>
                     <listitem>Set the address generator in JChannel: setAddressGenerator(AddressGenerator). This has to
-                        be done
-                        <emphasis>before</emphasis>
-                        the channel is connected
+                        be done <emphasis>before</emphasis> the channel is connected.
                     </listitem>
                 </itemizedlist>
             </para>
             <para>
-                An example of a subclass is org.jgroups.util.PayloadUUID.
+                An example of a subclass is org.jgroups.util.PayloadUUID, and there are 2 more shipped with JGroups.
             </para>
         </section>
 
-        <section>
-            <title>Connecting to a channel</title>
+        <section id="JoiningACluster">
+            <title>Joining a cluster</title>
 
-            <para>When a client wants to join a group, it
-                <emphasis>connects</emphasis>
-                to a channel giving the name of the group to be joined:
+            <para>
+                When a client wants to join a cluster, it <emphasis>connects</emphasis>
+                to a channel giving the name of the cluster to be joined:
             </para>
 
-            <screen>
-                public void connect(String clustername) throws ChannelClosed;
-            </screen>
+            <programlisting>
+                public void connect(String clustername) throws Exception;
+            </programlisting>
 
-            <para>The cluster name is a string, naming the cluster to be joined. All channels that are connected to the
-                same name form a cluster. Messages multicast on any channel in the cluster will be received by all
+            <para>
+                The cluster name is the name of the cluster to be joined. All channels that call connect() with
+                the same name form a cluster. Messages sent on any channel in the cluster will be received by all
                 members (including the one who sent it
                 <footnote>
-                    <para>Local delivery can be turned on/off using
-                        <methodname>setOpt()</methodname>
-                        .
+                    <para>
+                        Local delivery can be turned off using <methodname>setDiscardOwnMessages(true)</methodname>.
                     </para>
                 </footnote>
                 ).
             </para>
 
-            <para>The method returns as soon as the group has been joined successfully. If the channel is in the closed
-                state (see
-                <xref linkend="ChannelStatesFig"/>
-                ), an exception will be thrown. If there are no other members, i.e. no other member has connected to a
-                group with this name, then a new group is created and the member joined. The first member of a group
-                becomes its
-                <emphasis>coordinator</emphasis>
-                . A coordinator is in charge of multicasting new views whenever the membership changes
+            <para>
+                The connect() method returns as soon as the cluster has been joined successfully. If the channel is in
+                the closed state (see <xref linkend="ChannelStatesFig"/>), an exception will be thrown. If there are
+                no other members, i.e. no other member has connected to a cluster with this name, then a new cluster is
+                created and the member joins it as first member. The first member of a cluster becomes its
+                <emphasis>coordinator</emphasis>.
+                A coordinator is in charge of installing new views whenever the membership changes
                 <footnote>
                     <para>This is managed internally however, and an application programmer does not need to be
                         concerned about it.
@@ -856,660 +822,404 @@
                 </footnote>
                 .
             </para>
-
         </section>
 
-        <section>
-            <title>Connecting to a channel and getting the state in one operation</title>
+        <section id="AtomicJoinAndGetState">
+            <title>Joining a cluster and getting the state in one operation</title>
             <para>
-                Clients can also join a cluster group and fetch cluster state in one operation. The best way to
-                conceptualize connect and fetch state connect method is to think of it as an invocation of regular
-                connect and getstate methods executed in succession. However, there are several advantages of using
-                connect and fetch state connect method over regular connect. First of all, underlying message exchange
-                is heavily optimized, especially if the flush protocol is used in the stack. But more importantly, from
-                clients perspective, connect and join operations become one atomic operation.
+                Clients can also join a cluster and fetch cluster state <emphasis>in one operation</emphasis>.
+                The best way to conceptualize the connect and fetch state connect method is to think of it as an
+                invocation of the regular connect() and getState() methods executed in succession. However, there are
+                several advantages of using the connect and fetch state connect method over the regular connect. First
+                of all, the underlying message exchange is heavily optimized, especially if the flush protocol is used.
+                But more importantly, from a client's perspective, the connect() and fetch state operations become
+                one atomic operation.
             </para>
 
-            <screen>
-                public void connect(string cluster_name, address target, long timeout) throws Exception;
-            </screen>
+            <programlisting>
+                public synchronized void connect(String cluster_name, Address target, long timeout) throws Exception;
+            </programlisting>
 
             <para>
-                Just as in regular connect method cluster name represents a cluster to be joined. Address parameter
-                indicates a cluster member to fetch state from. Null address parameter indicates that state should be
-                fetched from the cluster coordinator. If state should be fetched from a particular member other than
-                coordinator clients can provide an address of that member. State id used for partial state transfer
-                while timeout bounds entire join and fetch operation.
+                Just as in a regular connect(), the cluster name represents a cluster to be joined. The target parameter
+                indicates a cluster member to fetch the state from. A null target indicates that the state should be
+                fetched from the cluster coordinator. If the state should be fetched from a particular member other than
+                the coordinator, clients can simply provide the address of that member. The timeout paremeter bounds
+                the entire join and fetch operation. An exception will be thrown if the timeout is exceeded.
             </para>
         </section>
 
-        <section>
-            <title>Getting the local address and the group name</title>
+        <section id="GettingAddress">
+            <title>Getting the local address and the cluster name</title>
 
-            <para>Method
-                <methodname>getLocalAddress()</methodname>
-                returns the local address of the channel
-                <footnote>
-                    Since 2.8 the method is
-                    <methodname>getAddress()</methodname>
-                </footnote>
-                . In the case of
-                <classname>JChannel</classname>
-                , the local address is generated by the bottom-most layer of the protocol stack when the stack is
-                connected to. That means that -- depending on the channel implementation -- the local address may or may
+            <para>
+                Method <methodname>getAddress()</methodname> returns the address of the channel. The address may or may
                 not be available when a channel is in the unconnected state.
             </para>
 
-            <screen>
-                public Address getLocalAddress(); // use getAddress() with 2.8.0+
-            </screen>
+            <programlisting>
+                public Address getAddress();
+            </programlisting>
 
-            <para>Method
-                <methodname>getClusterName()</methodname>
-                returns the name of the cluster in which the channel is a member:
+            <para>
+                Method <methodname>getClusterName()</methodname> returns the name of the cluster which the member joined.
             </para>
 
             <screen>
                 public String getClusterName();
             </screen>
 
-            <para>Again, the result is undefined if the channel is in the unconnected or closed state.</para>
+            <para>
+                Again, the result is undefined if the channel is in the disconnected or closed state.
+            </para>
         </section>
 
-        <section>
+        <section id="GettingTheView">
             <title>Getting the current view</title>
 
             <para>The following method can be used to get the current view of a channel:</para>
 
-            <screen>
+            <programlisting>
                 public View getView();
-            </screen>
+            </programlisting>
 
-            <para>This method does
-                <emphasis>not</emphasis>
-                retrieve a new view (message) from the channel, but only returns the current view of the channel. The
-                current view is updated every time a view message is received: when method
-                <methodname>receive()</methodname>
-                is called, and the return value is a view, before the view is returned, it will be installed in the
-                channel, i.e. it will become the current view.
+            <para>
+                This method does <emphasis>not</emphasis>  returns the current view of the channel. The
+                current view is updated every time a new view is installed (viewAccepted() callback).
             </para>
 
-            <para>Calling this method on an unconnected or closed channel is implementation defined. A channel may
+            <para>
+                Calling this method on an unconnected or closed channel is implementation defined. A channel may
                 return null, or it may return the last view it knew of.
             </para>
         </section>
 
-        <section>
-            <title>Sending a message</title>
+        <section id="SendingMessages">
+            <title>Sending messages</title>
 
-            <para>Once the channel is connected, messages can be sent using the
-                <methodname>send()</methodname>
+            <para>
+                Once the channel is connected, messages can be sent using one of the <methodname>send()</methodname>
                 methods:
             </para>
 
-            <screen>
-                public void send(Message msg) throws ChannelNotConnected, ChannelClosed; public void send(Address dst,
-                Address src, Object obj) throws ChannelNotConnected, ChannelClosed;
-            </screen>
-
-            <para>The first
-                <methodname>send()</methodname>
-                method has only one argument, which is the message to be sent. The message's destination should either
-                be the address of the receiver (unicast) or null (multicast). When it is null, the message will be sent
-                to all members of the group (including itself). The source address may be null; if it is, it will be set
-                to the channel's address (so that recipients may generate a response and send it back to the sender).
-            </para>
-
-            <para>The second
-                <methodname>send()</methodname>
-                method is a helper method and uses the former method internally. It requires the address of receiver and
-                sender and an object (which has to be serializable), constructs a Message and sends it.
-            </para>
-
-            <para>If the channel is not connected, or was closed, an exception will be thrown upon attempting to send a
-                message.
-            </para>
-
-            <para>Here's an example of sending a (multicast) message to all members of a group:
-
-                <screen>
-                    Map data; // any serializable data try { channel.send(null, null, data); } catch(Exception ex) { //
-                    handle errors }
-                </screen>
-            </para>
-
-            <para>The null value as destination address means that the message will be sent to all members in the group.
-                The sender's address will be filled in by the bottom-most protocol. The payload is a hashmap, which will
-                be serialized into the message's buffer and unserialized at the receiver's end. Alternatively, any other
-                means of generating a byte buffer and setting the message's buffer to it (e.g. using
-                Message.setBuffer()) would also work.
-            </para>
-
-            <para>Here's an example of sending a (unicast) message to the first member (coordinator) of a group:
-
-                <screen>
-                    Map data; try { Address receiver=channel.getView().getMembers().first(); channel.send(receiver,
-                    null, data); } catch(Exception ex) { // handle errors }
-                </screen>
-            </para>
-
-            <para>It creates a Message with a specific address for the receiver (the first member of the group). Again,
-                the sender's address can be left null as it will be filled in by the bottom-most protocol.
-            </para>
-        </section>
-
-        <section>
-            <title>Receiving a message</title>
-
-            <para>Method
-                <methodname>receive()</methodname>
-                is used to receive messages, views, suspicions and blocks:
-            </para>
-
-            <screen>
-                public Object receive(long timeout) throws ChannelNotConnected, ChannelClosed, Timeout;
-            </screen>
-
-            <para>A channel receives messages asynchronously from the network and stores them in a queue. When receive()
-                is called, the next available message from the top of that queue is removed and returned. When there are
-                no messages on the queue, the method will block. If
-                <parameter>timeout</parameter>
-                is greater than 0, it will wait the specified number of milliseconds for a message to be received, and
-                throw a
-                <classname>TimeoutException</classname>
-                exception if none was received during that time. If the timeout is 0 or negative, the method will wait
-                indefinitely for the next available message.
-            </para>
-
-            <para>Depending on the channel options (see
-                <xref linkend="SettingOptions"/>
-                ), the following types of objects may be received:
-            </para>
-
-            <variablelist>
-                <varlistentry>
-                    <term>Message</term>
-
-                    <listitem>
-                        <para>A regular message. To send a response to the sender, a new message can be created. Its
-                            destination address would be the received message's source address. Method
-                            <methodname>Message.makeReply()</methodname>
-                            is a helper method to create a response.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>View</term>
-
-                    <listitem>
-                        <para>A view change, signalling that a member has joined, left or crashed. The application may
-                            or may not perform some action upon receiving a view change (e.g. updating a GUI object of
-                            the membership, or redistributing a load-balanced collaborative task to all members). Note
-                            that a longer action, or any action that blocks should be performed in a separate thread. A
-                            <classname>MergeView</classname>
-                            will be received when 2 or more subgroups merged into one (see
-                            <xref linkend="MergeView"/>
-                            for details). Here, a possible state merge by the application needs to be done in a separate
-                            thread.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>SuspectEvent</term>
-
-                    <listitem>
-                        <para>Notification of a member that is suspected. Method
-                            <methodname>SuspectEvent.getMember()</methodname>
-                            retrieves the address of the suspected member. Usually this message will be followed by a
-                            view change.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>BlockEvent</term>
-
-                    <listitem>
-                        <para>The application has to stop sending messages. When the application has stopped sending
-                            messages, it needs to acknowledge this message with a
-                            <methodname>Channel.blockOk()</methodname>
-                            method.
-                        </para>
-
-                        <para>
-                            The BlockEvent reception can be used to complete pending tasks, e.g. send pending messages,
-                            but once Channel.blockOk() has been called, all threads that send messages (calling
-                            Channel.send() or Channel.down()) will be blocked until FLUSH unblocks them.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-
-                <varlistentry>
-                    <term>UnblockEvent</term>
-
-                    <listitem>
-                        <para>The application can resume sending messages. Any previously messages blocked by FLUSH will
-                            be unblocked; when the UnblockEvent is received the channel has already been unblocked.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>GetStateEvent</term>
-
-                    <listitem>
-                        <para>Received when the application's current state should be saved (for a later state transfer.
-                            A
-                            <emphasis>copy</emphasis>
-                            of the current state should be made (possibly wrapped in a
-                            <methodname>synchronized</methodname>
-                            statement and returned calling method
-                            <methodname>Channel.returnState()</methodname>
-                            . If state transfer events are not enabled on the channel (default), then this event will
-                            never be received. This message will only be received with the Virtual Synchrony suite of
-                            protocols (see the Programmer's Guide).
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>StreamingGetStateEvent</term>
-
-                    <listitem>
-                        <para>Received when the application's current state should be provided to a state requesting
-                            group member. If state transfer events are not enabled on the channel (default), or if
-                            channel is not configured with pbcast.STATE then this event will never be received.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>SetStateEvent</term>
-
-                    <listitem>
-                        <para>Received as response to a
-                            <methodname>getState(s)</methodname>
-                            method call. The argument contains the state of a single member (
-                            <type>byte[]</type>
-                            ) or of all members (
-                            <classname>Vector</classname>
-                            ). Since the state of a single member could also be a vector, the interpretation of the
-                            argument is left to the application.
-                        </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
-                    <term>StreamingSetStateEvent</term>
-
-                    <listitem>
-                        <para>Received at state requesting member when the state InputStream becomes ready for reading.
-                            If state transfer events are not enabled on the channel (default), or if channel is not
-                            configured with pbcast.STATE then this event will never be received.
-                        </para>
-                    </listitem>
-                </varlistentry>
-            </variablelist>
-
-            <para>The caller has to check the type of the object returned. This can be done using the
-                <methodname>instanceof</methodname>
-                operator, as follows:
-                <screen>
-                    Object obj=channel.receive(0); // wait forever if(obj instanceof Message) Message msg=(Message)obj;
-                    else if(obj instanceof View) View v=(View)obj; else ; // don't handle suspicions or blocks
-                </screen>
-            </para>
-
-            <para>If for example views, suspicions and blocks are disabled, then the caller is guaranteed to only
-                receive return values of type
-                <classname>Message</classname>
-                . In this case, the return value can be cast to a
-                <classname>Message</classname>
-                directly, without using the
-                <methodname>instanceof</methodname>
-                operator.
-            </para>
-
-            <para>If the channel is not connected, or was closed, a corresponding exception will be thrown.</para>
-
-            <para>The example below shows how to retrieve the "Hello world" string from a message:
-                <screen>
-                    Message msg; // received above try { String s=(String)msg.getObject(); // error if obj not
-                    Serializable // alternative: s=new String(msg.getBuffer()); } catch(Exception ex) { // handle
-                    errors, e.g. casting error above) }
-                </screen>
-            </para>
-
-            <para>The Message.getObject() method retrieves the message's byte buffer, converts it into a (serializable)
-                object and returns the object.
-            </para>
-        </section>
-
-        <section>
-            <title>Using a Receiver to receive messages</title>
-
-            <para>Instead of pulling messages from a channel in an application thread, a Receiver can be registered with
-                a channel. This is the preferred and recommended way of receiving messages. In 3.0, the receive() method
-                will be removed from JChannel. All received messages, view changes and state transfer requests will
-                invoke callbacks on the registered Receiver:
-                <screen>
-                    JChannel ch=new JChannel(); ch.setReceiver(new ExtendedReceiverAdapter() { public void
-                    receive(Message msg) { System.out.println("received message " + msg); } public void
-                    viewAccepted(View new_view) { System.out.println("received view " + new_view); } });
-                    ch.connect("bla");
-                </screen>
-            </para>
-
-            <para>The
-                <classname>ExtendedReceiverAdapter</classname>
-                class implements all callbacks of ExtendedReceiver with no-ops, in the example above we override
-                receive() and viewAccepted().
-            </para>
-
-            <para>The advantage of using a Receiver is that the application doesn't have to waste 1 thread for pulling
-                messages out of a channel. In addition, the channel doesn't have to maintain an (unbounded) queue of
-                messages/views, which can quickly get large if the receiver cannot process messages fast enough, and the
-                sender keeps sending messages.
-            </para>
-            <note>
-                Note that the Channel.receive() method has been deprecated, and will be removed in 3.0. Use the Receiver
-                interface instead and register as a Receiver with Channel.setReceiver(Receiver r).
-            </note>
-        </section>
-
-        <section>
-            <title>Peeking at a message</title>
-
-            <para>Instead of removing the next available message from the channel,
-                <methodname>peek()</methodname>
-                just returns a reference to the next message, but does not remove it. This is useful when one has to
-                check the type of the next message, e.g. whether it is a regular message, or a view change. The
-                signature of this method is not shown here, it is the same as for
-                <methodname>receive()</methodname>
-                .
-            </para>
-            <note>
-                The peek() method has also been deprecated, and will be removed in 3.0.
-            </note>
-        </section>
-
-        <section id="GetState">
-            <title>Getting the group's state</title>
-
-            <para>A newly joined member may wish to retrieve the state of the group before starting work. This is done
-                with
-                <methodname>getState()</methodname>. This method returns the state of one member (in most cases, of the
-                oldest member, the coordinator). It returns true or false, depending on whether a valid state could be
-                retrieved. For example, if a member is a singleton, then calling this method would always return false
-                <footnote>
-                    <para>A member will
-                        <emphasis>never</emphasis>
-                        retrieve the state from itself !
-                    </para>
-                </footnote>
-                .
-            </para>
-
-            <para>The actual state is returned as the return value of one of the subsequent
-                <methodname>receive()</methodname>
-                calls, in the form of a
-                <classname>SetStateEvent</classname>
-                object. If
-                <methodname>getState()</methodname>
-                returned true, then a valid state (non-null) will be returned, otherwise a null state will be returned.
-                Alternatively if an application uses MembershipListener (see
-                <xref linkend="MembershipListener"/>
-                ) instead of pulling messages from a channel, the
-                <methodname>getState()</methodname>
-                method will be invoked and a copy of the current state should be returned. By the same token, setting a
-                state would be accomplished by JGroups calling the
-                <methodname>setState()</methodname>
-                method of the state fetcher.
-            </para>
-
-            <para>The reason for not directly returning the state as a result of
-                <methodname>getState()</methodname>
-                is that the state has to be returned in the correct position relative to other messages. Returning it
-                directly would violate the FIFO properties of a channel, and state transfer would not be correct.
-            </para>
-
-            <para>The following code fragment shows how a group member participates in state transfers:
-                <screen>
-                    channel=new JChannel(); channel.connect("TestChannel"); boolean rc=channel.getState(null, 5000);
-
-                    ...
-
-                    Object state, copy; Object ret=channel.receive(0); if(ret instanceof Message) ; else if(ret
-                    instanceof GetStateEvent) { // make a copy so that other msgs don't change the state
-                    copy=copyState(state); channel.returnState(Util.objectToByteBuffer(copy)); } else if(ret instanceof
-                    SetStateEvent) { SetStateEvent e=(SetStateEvent)ret; state=e.getArg(); }
-                </screen>
-            </para>
-
-
-            <para>A JChannel has to be created whose stack includes the
-                <constant>STATE_TRANSFER</constant>
-                or
-                <constant>pbcast.STATE_TRANSFER</constant>
-                protocols (see
-                <xref linkend="user-advanced"/>
-                ). Method
-                <methodname>getState()</methodname>
-                subsequently asks the channel to return the current state. If there is a current state (there may not be
-                any other members in the group !), then true is returned. In this case, one of the subsequent
-                <methodname>receive()</methodname>
-                method invocations on the channel will return a
-                <classname>SetStateEvent</classname>
-                object which contains the current state. In this case, the caller sets its state to the one received
-                from the channel.
-            </para>
-
-            <para>Method
-                <methodname>receive()</methodname>
-                might return a
-                <classname>GetStateEvent</classname>
-                object, requesting the state of the member to be returned. In this case,
-                <emphasis>a copy of the current state should be made</emphasis>
-                and returned using
-                <methodname>JChannel.returnState()</methodname>
-                . It is important to a) synchronize access to the state when returning it since other accesses may
-                modify it while it is being returned and b) make a copy of the state since other accesses after
-                returning the state may still be able to modify it ! This is possible because the state is not
-                immediately returned, but travels down the stack (in the same address space), and a reference to it
-                could still alter it.
-            </para>
-        </section>
-
-        <section>
-            <title>Getting the state with a Receiver</title>
-
-            <para>As an alternative to handling the GetStateEvent and SetStateEvent events, and calling
-                Channel.returnState(), a Receiver could be used. The example above would look like this:
-                <screen>
-                    class MyReceiver extends ReceiverAdapter { final Map m=new HashMap(); public byte[] getState() { //
-                    so nobody else can modify the map while we serialize it synchronized(m) { byte[]
-                    state=Util.objectToByteBuffer(m); return state; } }
-
-                    public void setState(byte[] state) { synchronized(m) { Map
-                    new_m=(Map)Util.objectFromByteBuffer(state); m.clear(); m.addAll(new_m); } } } // use default props
-                    (has to include STATE_TRANSFER) channel=new JChannel(); channel.setReceiver(new MyReceiver());
-                    channel.connect("TestChannel"); boolean rc=channel.getState(null, 5000);
-                </screen>
-            </para>
-
-            <para>In a group consisting of A,B and C, with D joining the group and calling Channel.getState(), the
-                following sequence of callbacks happens:
-                <itemizedlist>
-                    <listitem>
-                        D calls Channel.getState(). The state will be retrieved from the oldest member, A
-                    </listitem>
-
-                    <listitem>
-                        A.MyReceiver.getState() is called. A returns a copy of its hashmap
-                    </listitem>
-
-                    <listitem>
-                        D: getState() returns true
-                    </listitem>
-
-                    <listitem>
-                        D.MyReceiver.setState() is called with the serialized state. D unserializes the state and sets
-                        it
-                    </listitem>
-                </itemizedlist>
-            </para>
-        </section>
-
-        <section id="PartialStateTransfer">
-            <title>Partial state transfer</title>
-
-            <para>Partial state transfer means that instead of transferring the entire state, we may want to transfer
-                only a
-                <emphasis>substate</emphasis>. For example, with HTTP session replication, a new node in a cluster may
-                want to transfer only the state of a specific session, not
-                <emphasis>all</emphasis>
-                HTTP sessions. This can be done with either the pull or push model. The method to call would be
-                Channel.getState(), including the ID of the substate (a string). In the pull model, GetStateEvent and
-                SetStateEvent have an additional member, state_id, and in the push model, there are 2 additional
-                getState() and setState() callbacks. The example below shows partial state transfer for the push model:
-                <screen>
-                    class MyReceiver extends ExtendedReceiverAdapter { final Map m=new HashMap();
-
-                    public byte[] getState() { return getState(null); }
-
-                    public byte[] getState(String substate_id) { // so nobody can modify the map while we serialize it
-                    synchronized(m) { byte[] state=null; if(substate_id == null) { state=Util.objectToByteBuffer(m); }
-                    else { Object value=m.get(substate_id); if(value != null) { return Util.objectToByteBuffer(value); }
-                    } return state; } }
-
-                    public void setState(byte[] state) { setState(null, state); }
-
-                    public void setState(String substate_id, byte[] state) { synchronized(m) { if(substate_id != null) {
-                    Object value=Util.objectFromByteBuffer(state); m.put(substate_id, value); } else { Map
-                    new_m=(Map)Util.objectFromByteBuffer(state); m.clear(); m.addAll(new_m); } } } }
-
-                    // use default props (has to include pbcast.STATE_TRANSFER) channel=new JChannel();
-                    channel.setReceiver(new MyReceiver()); channel.connect("TestChannel"); boolean
-                    rc=channel.getState(null, "MyID", 5000);
-                </screen>
-            </para>
-
-            <para>The example shows that the Channel.getState() method specifies the ID of the substate, in this case
-                "MyID". The
-                <methodname>getState(String substate_id)</methodname>
-                method checks whether the substate ID is not null, and returns the substate pertaining to the ID, or the
-                entire state if the substate_id is null. The same goes for setting the substate: if
-                <methodname>setState(String substate_id, byte[] state)</methodname>
-                has a non-null substate_id, only that part of the current state will be overwritten, otherwise (if null)
-                the entire state will be overwritten.
-            </para>
-        </section>
-
-        <section>
-            <title>Streaming state transfer</title>
-
-            <para>Streaming state transfer allows transfer of application (partial) state without having to load entire
-                state into memory prior to sending it to a joining member. Streaming state transfer is especially useful
-                if the state is very large (&gt;1Gb), and use of regular state transfer would likely result in
-                OutOfMemoryException. Streaming state transfer was introduced in JGroups 2.4. JGroups channel has to be
-                configured with either regular or streaming state transfer. The JChannel API that invokes state transfer
-                (i.e. JChannel.getState(long timeout, Address member)) remains the same.
-            </para>
-
-            <para>Streaming state transfer, just as regular byte based state transfer, can be used in both pull and push
-                mode. Similarly to the current getState and setState methods of org.jgroups.MessageListener, the
-                application interested in streaming state transfer in a push mode would implement streaming getState
-                method(s) by sending/writing state through a provided OutputStream reference and setState method(s) by
-                receiving/reading state through a provided InputStream reference. In order to use streaming state
-                transfer in a push mode, existing ExtendedMessageListener has been expanded to include additional four
-                methods:
-                <screen>
-                    public interface ExtendedMessageListener {
-
-                    /*non-streaming callback methods ommitted for clarity*/
-
-                    void getState(OutputStream ostream); void getState(String state_id, OutputStream ostream); void
-                    setState(InputStream istream); void setState(String state_id, InputStream istream); }
-                </screen>
-            </para>
-
-            <para>For a pull mode (when application uses channel.receive() to fetch events) two new event classes will
-                be introduced:
+            <programlisting>
+                public void send(Message msg) throws Exception;
+                public void send(Address dst, Serializable obj) throws Exception;
+                public void send(Address dst, byte[] buf) throws Exception;
+                public void send(Address dst, byte[] buf, int offset, int length) throws Exception;
+            </programlisting>
+
+            <para>
+                The first <methodname>send()</methodname> method has only one argument, which is the message to be sent.
+                The message's destination should either be the address of the receiver (unicast) or null (multicast).
+                When the destination is null, the message will be sent to all members of the cluster (including itself).
             </para>
 
             <para>
-                <itemizedlist>
-                    <listitem>
-                        <para>StreamingGetStateEvent</para>
-                    </listitem>
-
-                    <listitem>
-                        <para>StreamingSetStateEvent</para>
-                    </listitem>
-                </itemizedlist>
-                These two events/classes are very similar to existing GetStateEvent and SetStateEvent but introduce a
-                new field; StreamingGetStateEvent has an OutputStream and StreamingSetStateEvent has an InputStream.
+                The remainaing <methodname>send()</methodname> methods are helper methods; they take either a byte[]
+                buffer or a serializable, create a Message and call send(Message).
             </para>
 
-            <para>The following code snippet demonstrates how to pull events from a channel, processing
-                StreamingGetStateEvent and sending hypothetical state through a provided OutputStream reference.
-                Handling of StreamingSetStateEvent is analogous to this example:
-                <screen>
-                    ... Object obj=channel.receive(0); if(obj instanceof StreamingGetStateEvent) {
-                    StreamingGetStateEvent evt=(StreamingGetStateEvent)obj; OutputStream oos = null; try { oos=new
-                    ObjectOutputStream(evt.getArg()); oos.writeObject(state); oos.flush(); } catch (Exception e) {}
-                    finally { try { oos.close(); } catch (IOException e) { System.err.println(e); } } }
-                </screen>
+            <para>
+                If the channel is not connected, or was closed, an exception will be thrown upon attempting to send a
+                message.
             </para>
 
-            <para>JGroups has a great flexibility with state transfer methodology by allowing application developers to
-                implement both byte based and streaming based state transfers. Application can, for example, implement
-                streaming and byte based state transfer callbacks and then interchange state transfer protocol in
-                channel configuration to use either streaming or byte based state transfer. However, one cannot
-                configure a channel with both state transfers at the same time and then in runtime choose which
-                particular state transfer type to use.
+            <para>Here's an example of sending a message to all members of a cluster:
+
+                <programlisting>
+                    Map data; // any serializable data
+                    channel.send(null, data);
+                </programlisting>
             </para>
+
+            <para>
+                The null value as destination address means that the message will be sent to all members in the cluster.
+                The payload is a hashmap, which will be serialized into the message's buffer and unserialized at the
+                receiver. Alternatively, any other means of generating a byte buffer and setting the message's buffer
+                to it (e.g. using Message.setBuffer()) also works.
+            </para>
+
+            <para>
+                Here's an example of sending a unicast message to the first member (coordinator) of a group:
+
+                <programlisting>
+                    Map data;
+                    Address receiver=channel.getView().getMembers().get(0);
+                    channel.send(receiver, "hello world");
+                </programlisting>
+            </para>
+
+            <para>
+                The sample code determines the coordinator (first member of the view) and sends it a "hello world"
+                message.
+            </para>
+
+            <section id="DiscardingOwnMessages">
+                <title>Discarding one's own messages</title>
+
+                <para>
+                    Sometimes, it is desirable not to have to deal with one's own messages, ie. messages sent by oneself.
+                    To do this, JChannel.setDiscardOwnMessages(boolean flag) can be set to true (false by default). This means
+                    that every cluster node will receive a message sent by P, but P itself won't.
+                </para>
+                <para>
+                    Note that this method replaces the old JChannel.setOpt(LOCAL, false) method, which was removed in 3.0.
+                </para>
+            </section>
         </section>
 
-        <section>
+
+
+        <section id="ReceivingMessages">
+            <title>Receiving messages</title>
+
+            <para>
+                Method <methodname>receive()</methodname> in ReceiverAdapter (or Receiver) can be overridden to
+                receive messages, views, and state transfer callbacks.
+            </para>
+
+            <programlisting>
+                public void receive(Message msg);
+            </programlisting>
+
+
+            <para>
+                A Receiver can be registered with a channel using JChannel.setReceiver(). All received messages, view
+                changes and state transfer requests will invoke callbacks on the registered Receiver:
+                <programlisting>
+                    JChannel ch=new JChannel();
+                    ch.setReceiver(new ReceiverAdapter() {
+                        public void receive(Message msg) {
+                            System.out.println("received message " + msg);
+                        }
+                        public void viewAccepted(View view) {
+                            System.out.println("received view " + new_view);
+                        }
+                    });
+                    ch.connect("MyCluster");
+                </programlisting>
+            </para>
+
+
+        </section>
+
+
+        <section id="StateTransfer">
+            <title>Getting the group's state</title>
+
+            <para>
+                A newly joined member may want to retrieve the state of the cluster before starting work. This is done
+                with <methodname>getState()</methodname>:
+                <programlisting>
+                    public void getState(Address target, long timeout) throws Exception;
+                </programlisting>
+            </para>
+            <para>
+                This method returns the state of one member (usually of the oldest member, the coordinator). The target
+                parameter can usually be null, to ask the current coordinator for the state. If a timeout (ms) elapses
+                before the state is fetched, an exception will be thrown. A timeout of 0 waits until the entire state
+                has been transferred.
+            </para>
+
+            <note>
+                <para>The reason for not directly returning the state as a result of
+                    <methodname>getState()</methodname> is that the state has to be returned in the correct position
+                    relative to other messages. Returning it directly would violate the FIFO properties of a channel,
+                    and state transfer would not be correct !
+                </para>
+            </note>
+
+            <para>
+                To participate in state transfer, both state provider and state requester have to implement the
+                following callbacks from ReceiverAdapter (Receiver):
+            </para>
+            
+            <programlisting>
+                    public void getState(OutputStream output) throws Exception;
+                    public void setState(InputStream input) throws Exception;
+            </programlisting>
+
+            <para>
+                Method getState() is invoked on the <emphasis>state provider</emphasis> (usually the coordinator). It
+                needs to write its state to the output stream given. Note that output doesn't need to be closed when
+                done (or when an exception is thrown); this is done by JGroups.
+            </para>
+
+            <para>
+                The setState() method is invoked on the <emphasis>state requester</emphasis>; this is the member
+                which called JChannel.getState(). It needs to read its state from the input stream and set its
+                internal state to it. Note that input doesn't need to be closed when
+                done (or when an exception is thrown); this is done by JGroups.
+            </para>
+
+            <para>
+                In a cluster consisting of A, B and C, with D joining the cluster and calling Channel.getState(), the
+                following sequence of callbacks happens:
+                <itemizedlist>
+                    <listitem>
+                        D calls JChannel.getState(). The state will be retrieved from the oldest member, A
+                    </listitem>
+
+                    <listitem>
+                        A's getState() callback is called. A writes its state to the output stream passed as a
+                        parameter to getState().
+                    </listitem>
+
+                    <listitem>
+                        D's setState() callback is called with an input stream as argument. D reads the state from the
+                        input stream and sets its internal state to it, overriding any previous data.
+                    </listitem>
+
+                    <listitem>
+                        D: JChannel.getState() returns. Note that this will only happen <emphasis>after</emphasis> the
+                        state has been transferred successfully, or a timeout elapsed, or either the state provider or
+                        requester throws an exception. Such an exception will be re-thrown by getState(). This could
+                        happen for instance if the state provider's getState() callback tries to stream a
+                        non-serializable class to the output stream.
+                    </listitem>
+                </itemizedlist>
+            </para>
+
+            
+
+            <para>The following code fragment shows how a group member participates in state transfers:
+                <programlisting>
+                  public void getState(OutputStream output) throws Exception {
+                      synchronized(state) {
+                          Util.objectToStream(state, new DataOutputStream(output));
+                      }
+                  }
+
+                  public void setState(InputStream input) throws Exception {
+                      List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
+                      synchronized(state) {
+                          state.clear();
+                          state.addAll(list);
+                      }
+                      System.out.println("received state (" + list.size() + " messages in chat history):");
+                      for(String str: list)
+                          System.out.println(str);
+                  }
+                </programlisting>
+            </para>
+
+            <para>
+                This code is the Chat example from the JGroups tutorial and the state here is a list of strings.
+            </para>
+
+            <para>
+                The getState() implementation synchronized on the state (so no incoming messages can modify it during
+                the state transfer), and uses the JGroups utility method objectToStream().
+            </para>
+
+            <note>
+                <title>Performance when writing to an output stream</title>
+                <para>
+                    If a lot of smaller fragments are written to an output stream, it is best to wrap the output stream
+                    into a BufferedOutputStream, e.g.
+                    <programlisting>
+                        Util.objectToState(state, new BufferedOutputStream(new DataOutputStream(output)));
+                    </programlisting>
+                </para>
+            </note>
+
+            <para>
+                The setState() implementation also uses the Util.objectFromStream() utility method to read the state from
+                the input stream and assign it to its internal list.
+            </para>
+
+
+            <section id="StateTransferProtocols">
+                <title>State transfer protocols</title>
+                <para>
+                    In order to use state transfer, a state transfer protocol has to be included in the configuration.
+                    This can either be STATE_TRANSFER, STATE, or STATE_SOCK. More details on the protocols can
+                    be found at <xref linkend="protlist"/>.
+                </para>
+
+                <section id="STATE_TRANSFER">
+                    <title>STATE_TRANSFER</title>
+                    <para>
+                        The is the original state transfer protocol, which used to transfer byte[] buffers. It still does
+                        that, but is internally converted to call the getState() and setState() callbacks which use
+                        input and output streams.
+                    </para>
+                    <para>
+                        Note that, because byte[] buffers are converted into input and output streams, this protocol
+                        should not be used for transfer of large states.
+                    </para>
+                </section>
+
+                <section id="STATE">
+                    <title>STATE</title>
+                    <para>
+                        This is the STREAMING_STATE_TRANSFER protocol, renamed in 3.0. It sends the entire state
+                        across from the provider to the requester in (configurable) chunks, so that memory consumption
+                        is minimal.
+                    </para>
+                </section>
+
+                <section id="STATE_SOCK">
+                    <title>STATE_SOCK</title>
+                    <para>
+                        Same as STREAMING_STATE_TRANSFER, but a TCP connection between provider and requester is
+                        used to transfer the state.
+                    </para>
+                </section>
+
+            </section>
+
+
+        </section>
+
+
+
+
+
+        
+        <section id="Disconnecting">
             <title>Disconnecting from a channel</title>
 
             <para>Disconnecting from a channel is done using the following method:
-                <screen>
+                <programlisting>
                     public void disconnect();
-                </screen>
+                </programlisting>
             </para>
 
-            <para>It will have no effect if the channel is already in the disconnected or closed state. If connected, it
-                will remove itself from the group membership. This is done (transparently for a channel user) by sending
-                a leave request to the current coordinator. The latter will subsequently remove the channel's address
-                from its local view and send the new view to all remaining members.
+            <para>
+                It will have no effect if the channel is already in the disconnected or closed state. If connected, it
+                will leave the cluster. This is done (transparently for a channel user) by sending
+                a leave request to the current coordinator. The latter will subsequently remove the leaving node
+                from the view and install a new view in all remaining members.
             </para>
 
-            <para>After a successful disconnect, the channel will be in the unconnected state, and may subsequently be
-                re-connected to.
+            <para>
+                After a successful disconnect, the channel will be in the unconnected state, and may subsequently be
+                reconnected.
             </para>
         </section>
 
         <section>
             <title>Closing a channel</title>
 
-            <para>To destroy a channel instance (destroy the associated protocol stack, and release all resources),
-                method
-                <methodname>close()</methodname>
-                is used:
-                <screen>
+            <para>
+                To destroy a channel instance (destroy the associated protocol stack, and release all resources),
+                method <methodname>close()</methodname> is used:
+                <programlisting>
                     public void close();
-                </screen>
+                </programlisting>
             </para>
 
-            <para>It moves the channel to the closed state, in which no further operations are allowed (most throw an
-                exception when invoked on a closed channel). In this state, a channel instance is not considered used
-                any longer by an application and -- when the reference to the instance is reset -- the channel
-                essentially only lingers around until it is garbage collected by the Java runtime system.
+            <para>
+                Closing a connected channel disconnects the channel first.
+            </para>
+
+            <para>
+                The close() method moves the channel to the closed state, in which no further operations are allowed
+                (most throw an exception when invoked on a closed channel). In this state, a channel instance is not
+                considered used any longer by an application and -- when the reference to the instance is reset --
+                the channel essentially only lingers around until it is garbage collected by the Java runtime system.
             </para>
         </section>
     </section>
