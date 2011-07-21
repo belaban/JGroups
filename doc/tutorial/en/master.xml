@@ -8,8 +8,8 @@
 <book>
 
     <bookinfo>
-        <title>JGroups tutorial</title>
-        <pubdate>2009</pubdate>
+        <title>JGroups 3.x tutorial</title>
+        <pubdate>2011</pubdate>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -29,7 +29,7 @@
             <holder>Bela Ban</holder>
         </copyright>
          <copyright>
-            <year>2006-2011</year>
+            <year>2006-2012</year>
             <holder>Red Hat Inc</holder>
         </copyright>
         <legalnotice>
@@ -49,7 +49,7 @@
             configure JGroups and how to write a simple application showing the major methods of the API.
         </para>
 
-        <para>Bela Ban, Kreuzlingen Switzerland August 2007</para>
+        <para>Bela Ban, Kreuzlingen, Switzerland August 2011</para>
 
     </preface>
 
