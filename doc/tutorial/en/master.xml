@@ -8,7 +8,7 @@
 <book>
 
     <bookinfo>
-        <title>JGroups 3.x tutorial</title>
+        <title>The JGroups 3.x tutorial</title>
         <pubdate>2011</pubdate>
         <authorgroup>
             <author>
@@ -16,7 +16,7 @@
                 <surname>Ban</surname>
                 <affiliation>
                     <orgname>
-                        <ulink url="http://www.jgroups.org/">JGroups Project</ulink>
+                        <ulink url="http://www.jgroups.org/">The JGroups Project</ulink>
                     </orgname>
                     <address>
                         <email>belaban@yahoo.com</email>
@@ -43,12 +43,10 @@
 
     <preface>
         <title>About the tutorial</title>
-
         <para>
             This is a short tutorial on how to install JGroups and write a simple application. The goal is to show how to
             configure JGroups and how to write a simple application showing the major methods of the API.
         </para>
-
         <para>Bela Ban, Kreuzlingen, Switzerland August 2011</para>
 
     </preface>

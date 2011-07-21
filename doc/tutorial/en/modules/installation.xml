@@ -74,7 +74,7 @@
         <para>2 whiteboard windows should appear as shown in <xref linkend="DrawScreenshotFig"/>.
 
             <figure id="DrawScreenshotFig"><title>Screenshot of 2 Draw instances</title>
-                <graphic fileref="images/DrawScreenshot.png" format="PNG" align="center"  />
+                <graphic fileref="images/DrawScreenshot.png" format="PNG" align="left"  />
             </figure>
 
             If you started them simultaneously, they could initially show a membership of 1 in

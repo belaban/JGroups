@@ -12,7 +12,7 @@
                 single point of failure.
             </listitem>
             <listitem>
-                A message is sent to all instances of the cluster.
+                A chat message is sent to all instances of the cluster.
             </listitem>
             <listitem>
                 An instance gets a notification callback when another instance leaves (or crashes) and when other
@@ -37,12 +37,12 @@
             a port.
         </para>
         <para>
-            The list of instances in a cluster is called a view (org.jgroups.View), and every instance contains
+            The list of instances in a cluster is called a View, and every instance contains
             exactly the same View. The list of the addresses of all instances can get retrieved by calling
             View.getMembers().
         </para>
         <para>
-            Instances can only send or receive messages when they've joined a cluster.
+            Instances can only send or receive messages after they've joined a cluster.
         </para>
         <para>
             When an instance wants to leave the cluster, methods JChannel.disconnect() or JChannel.close() can be called.
@@ -55,10 +55,10 @@
         <para>
             To join a cluster, we'll use a JChannel. An instance of JChannel is created with a configuration
             (e.g. an XML file) which defines the properties of the channel. To actually connect to the cluster, the
-            connect(String name) method is used. All channel instances which call connect() with the same argument will
+            connect(String clustername) method is used. All channel instances which call connect() with the same argument will
             join the same cluster. So, let's actually create a JChannel and connect to a cluster called "ChatCluster":
         </para>
-        <screen>
+        <programlisting>
 import org.jgroups.JChannel;
 
 public class SimpleChat {
@@ -66,7 +66,7 @@ public class SimpleChat {
     String user_name=System.getProperty("user.name", "n/a");
 
     private void start() throws Exception {
-        channel=new JChannel();
+        channel=new JChannel(); // use the default config, udp.xml
         channel.connect("ChatCluster");
     }
 
@@ -74,7 +74,7 @@ public class SimpleChat {
         new SimpleChat().start();
     }
 }
-        </screen>
+        </programlisting>
         <para>
             First we create a channel using the empty contructor. This configures the channel with the default properties.
             Alternatively, we could pass an XML file to configure the channel, e.g. new JChannel("/home/bela/udp.xml").
@@ -82,7 +82,7 @@ public class SimpleChat {
         <para>
             The connect() method joins cluster "ChatCluster". Note that we don't need to explicitly create a cluster
             beforehand; connect() creates the cluster if it is the first instance. All instances which join the same
-            cluster will be in the same cluster (of course!), for example if we have
+            cluster will be in the same cluster, for example if we have
             <itemizedlist>
                 <listitem>ch1 joining "cluster-one"</listitem>
                 <listitem>ch2 joining "cluster-two"</listitem>
@@ -102,7 +102,7 @@ public class SimpleChat {
             instances currently in the cluster. When "exit" or "quit" quit are entered, we fall out of the
             loop and close the channel.
         </para>
-        <screen>
+        <programlisting>
     private void start() throws Exception {
         channel=new JChannel();
         channel.connect("ChatCluster");
@@ -116,9 +116,8 @@ public class SimpleChat {
             try {
                 System.out.print("&gt; "); System.out.flush();
                 String line=in.readLine().toLowerCase();
-                if(line.startsWith("quit") || line.startsWith("exit")) {
+                if(line.startsWith("quit") || line.startsWith("exit"))
                     break;
-                }
                 line="[" + user_name + "] " + line;
                 Message msg=new Message(null, null, line);
                 channel.send(msg);
@@ -127,7 +126,7 @@ public class SimpleChat {
             }
         }
     }
-        </screen>
+        </programlisting>
         <para>
             We added the call to eventLoop() and the closing of the channel to the start() method, and we provided an
             implementation of eventLoop.
@@ -137,10 +136,9 @@ public class SimpleChat {
             This is done by creating a new Message and calling Channel.send() with it as argument.
         </para>
         <para>
-            The first argument
-            of the Message constructor is the destination address. A null destination address means send the message
-            to everyone in the cluster (a non-null address of an instance would send a message from us to only 1
-            instance).
+            The first argument of the Message constructor is the destination address. A null destination address
+            sends the message to everyone in the cluster (a non-null address of an instance would send the message
+            to only one instance).
         </para>
         <para>
             The second argument is our own address. This is null as well, as the stack will insert the
@@ -148,7 +146,7 @@ public class SimpleChat {
         </para>
         <para>
             The third argument is the line that we read from stdin, this uses Java
-            serialization to create a byte[] buffer and set the message's payload to it. Note that we could also
+            serialization to create a byte[] buffer and set the message's payload. Note that we could also
             serialize the object ourselves (which is actually the recommended way !) and use the Message contructor which
             takes a byte[] buffer as third argument.
         </para>
@@ -162,16 +160,16 @@ public class SimpleChat {
         <title>Receiving messages and view change notifications</title>
         <para>
             Let's now register as a Receiver to receive message and view changes. To this end, we could implement
-            org.jgroups.Receiver (with 6 methods), however, I chose to extend ReceiverAdapter which has default
+            org.jgroups.Receiver, however, I chose to extend ReceiverAdapter which has default
             implementations, and only override callbacks (receive() and viewChange()) we're interested in. We
             now need to extend ReceiverAdapter:
-            <screen>
+            <programlisting>
 public class SimpleChat extends ReceiverAdapter {
-            </screen>
+            </programlisting>
         </para>
         <para>
             , set the receiver in start():
-            <screen>
+            <programlisting>
     private void start() throws Exception {
         channel=new JChannel();
         <emphasis role="bold">channel.setReceiver(this);</emphasis>
@@ -179,19 +177,19 @@ public class SimpleChat extends ReceiverAdapter {
         eventLoop();
         channel.close();
     }
-            </screen>
+            </programlisting>
         </para>
         <para>
             , and implement receive() and viewAccepted():
-            <screen>
-   public void viewAccepted(View new_view) {
+            <programlisting>
+    public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
     }
 
     public void receive(Message msg) {
         System.out.println(msg.getSrc() + ": " + msg.getObject());
     }
-            </screen>
+            </programlisting>
         </para>
         <para>
             The viewAccepted() callback is called whenever a new instance joins the cluster, or an existing instance
@@ -214,31 +212,38 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             Now that the demo chat application is fully functional, let's try it out. Start an instances of SimpleChat:
             <screen>
-                [mac] /Users/bela$ java SimpleChat
-                -------------------------------------------------------
-                GMS: address is 192.168.0.6:49963
-                -------------------------------------------------------
-                ** view: [192.168.0.6:49963|0] [192.168.0.6:49963]
+                [linux]/home/bela$ java SimpleChat
+
+                -------------------------------------------------------------------
+                GMS: address=linux-48776, cluster=ChatCluster, physical address=192.168.1.5:42442
+                -------------------------------------------------------------------
+                ** view: [linux-48776|0] [linux-48776]
                 >
             </screen>
         </para>
         <para>
-            The address of this instance is 192.168.0.6:49963 (IP address:port). It is the only instance so far. So let's
-            start the second instance and type something:
+            The name of this instance is linux-48776 and the physical address is 192.168.1.5:42442 (IP address:port).
+            A name is generated by JGroups (using the hostname and a random short) if the user doesn't set it. The name
+            stays with an instance for its lifetime, and maps to an underlying UUID. The UUID then maps to a
+            physical address.
+        </para>
+        <para>
+            We started the first instance, let's start the second instance:
         </para>
         <para>
             <screen>
-                [mac] /Users/bela$ java SimpleChat
-                -------------------------------------------------------
-                GMS: address is 192.168.0.6:49964
-                -------------------------------------------------------
-                ** view: [192.168.0.6:49963|1] [192.168.0.6:49963, 192.168.0.6:49964]
+                [linux]/home/bela$ java SimpleChat
+
+                -------------------------------------------------------------------
+                GMS: address=linux-37238, cluster=ChatCluster, physical address=192.168.1.5:40710
+                -------------------------------------------------------------------
+                ** view: [linux-48776|1] [linux-48776, linux-37238]
                 >
             </screen>
         </para>
         <para>
-            The cluster list is now [192.168.0.6:49963, 192.168.0.6:49964], showing the first and second instance that
-            joined the cluster. Note that the first instance (192.168.0.6:49963) also received the same view, so both
+            The cluster list is now [linux-48776, linux-37238], showing the first and second instance that
+            joined the cluster. Note that the first instance (linux-48776) also received the same view, so both
             instances have the exact same view with the same ordering of its instances in the list. The instances are
             listed in order of joining the cluster, with the oldest instance as first element.
         </para>
@@ -247,7 +252,7 @@ public class SimpleChat extends ReceiverAdapter {
             be sent to the cluster and therefore it will be received by both instances, including the sender.
         </para>
         <para>
-            If the word "exit" or "quit" is entered, then the instance will leave the cluster gracefully. This means, a new
+            When "exit" or "quit" is entered, then the instance will leave the cluster. This means, a new
             view will be installed immediately.
         </para>
         <para>
@@ -260,10 +265,10 @@ public class SimpleChat extends ReceiverAdapter {
     <section>
         <title>Extra credits: maintaining shared cluster state</title>
         <para>
-            One of the uses of JGroups is for maintaining state that is replicated across a cluster. For example, state
-            could be all the HTTP sessions in a web server. If those sessions are replicated across a cluster, then clients
-            can access any server in the cluster after a server which hosted the client's session crashed, and the
-            user sessions will still be available.
+            One of the use cases of JGroups is to maintain state that is replicated across a cluster. For example, state
+            could be all the HTTP sessions in a web server. If those sessions are replicated across a cluster, then
+            clients can access any server in the cluster after a server which hosted the client's session crashed,
+            and the user sessions will still be available.
         </para>
         <para>
             Any update to a session is replicated across the cluster, e.g. by serializing the attribute that was
@@ -271,19 +276,19 @@ public class SimpleChat extends ReceiverAdapter {
             so that all servers have the same state.
         </para>
         <para>
-            However, what happens when a new server is started ? That server has to somehow get the existing state
+            However, what happens when a new server is started ? That server has to somehow get the state
             (e.g. all HTTP sessions) from an existing server in the cluster.
             This is called <emphasis>state transfer</emphasis>.
         </para>
         <para>
             State transfer in JGroups is done by implementing 2 (getState() and setState()) callbacks and
             calling the JChannel.getState() method.
-            method. Note that, in order to be able to use state transfer in an application, the protocol stack has
+            Note that, in order to be able to use state transfer in an application, the protocol stack has
             to have a state transfer protocol (the default stack used by the demo app does).
         </para>
         <para>
             The start() method is now modified to include the call to JChannel.getState():
-            <screen>
+            <programlisting>
     private void start() throws Exception {
         channel=new JChannel();
         channel.setReceiver(this);
@@ -292,74 +297,81 @@ public class SimpleChat extends ReceiverAdapter {
         eventLoop();
         channel.close();
     }
-            </screen>
+            </programlisting>
         </para>
         <para>
-            The getState() method actually returns a boolean, which is false for the first instance in a cluster, and
-            should be true for subsequent instances.
+            The getState() method's first argument is the target instance, and null means get the state from the first
+            instance (the coordinator). The second argument is the timeout; here's we're willing to wait for 10 secs
+            to transfer the state. If the state cannot be transferred within this time, then an exception will be
+            thrown. 0 means wait forever.
         </para>
         <para>
-            The Receiver interface defines a callback getState() which is called on an existing instance to fetch the
-            cluster state. In our demo application, we define the state to be the chat conversation. This is a simple
-            list, to the tail of which we add every message we receive. (Note that this is probably not the best example
-            for state, as this state always grows. As a workaround, we could have a bounded list, which is not done here though).
+            ReceiverAdapter defines a callback getState() which is called on an existing instance
+            (usually the coordinator) to fetch the cluster state. In our demo application, we define the state to be
+            the chat conversation. This is a simple list, to the tail of which we add every message we receive.
+            (Note that this is probably not the best example for state, as this state always grows. As a workaround,
+            we could have a bounded list, which is not done here though).
         </para>
         <para>
             The list is defined as an instance variable:
-            <screen>
+            <programlisting>
     final List&lt;String&gt; state=new LinkedList&lt;String&gt;();
-            </screen>
+            </programlisting>
         </para>
+
+        <para>
+            Of course, now we need to modify receive() to add each received message to our state:
+            <programlisting>
+    public void receive(Message msg) {
+        String line=msg.getSrc() + ": " + msg.getObject();
+        System.out.println(line);
+        <emphasis role="bold">synchronized(state) {
+            state.add(line);
+        }</emphasis>
+    }
+            </programlisting>
+        </para>
+
         <para>
             The getState() callback implementation is
-            <screen>
-    public byte[] getState() {
+            <programlisting>
+    public void getState(OutputStream output) throws Exception {
         synchronized(state) {
-            try {
-                return Util.objectToByteBuffer(state);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-                return null;
-            }
+            Util.objectToStream(state, new DataOutputStream(output));
         }
     }
-            </screen>
+            </programlisting>
         </para>
         <para>
             The getState() method is called in the <emphasis>state provider</emphasis>, ie. an existing instance, to
-            return the shared cluster state.
+            return the shared cluster state. It is passed an output stream to which the state has to be written. Note
+            that JGroups closes that stream automatically after the state has been written, even in the case of an
+            exception, so the stream doesn't need to be closed.
         </para>
         <para>
-            Since access to <code>state</code> may be concurrent, we synchronize it. Then we call Util.objectToByteBuffer()
-            which is a JGroups utility method using simple serialization to generate a byte buffer from an object.
+            Since access to <code>state</code> may be concurrent, we synchronize it. Then we call Util.objectToStream()
+            which is a JGroups utility method writing an object to an output stream.
         </para>
         <para>
             The setState() method is called on the <emphasis>state requester</emphasis>, ie. the instance
-            which called JChannel.getState(). Its task is to deserialize the byte buffer and set its state
+            which called JChannel.getState(). Its task is to read the state from the input stream and set it
             accordingly:
-            <screen>
-    public void setState(byte[] new_state) {
-        try {
-            List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromByteBuffer(new_state);
-            synchronized(state) {
-                state.clear();
-                state.addAll(list);
-            }
-            System.out.println("received state (" + list.size() + " messages in chat history):");
-            for(String str: list) {
-                System.out.println(str);
-            }
+            <programlisting>
+    public void setState(InputStream input) throws Exception {
+        List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
+        synchronized(state) {
+            state.clear();
+            state.addAll(list);
         }
-        catch(Exception e) {
-            e.printStackTrace();
+        System.out.println("received state (" + list.size() + " messages in chat history):");
+        for(String str: list) {
+            System.out.println(str);
         }
     }
-            </screen>
+            </programlisting>
         </para>
         <para>
-            We again call a JGroups utility method (Util.objectFromByteBuffer()) to create an object from a byte
-            buffer (using Java serialization).
+            We again call a JGroups utility method (Util.objectFromStream()) to create an object from an input stream.
         </para>
         <para>
             Then we synchronize on <code>state</code>, and set its contents from the received state.
@@ -381,15 +393,12 @@ public class SimpleChat extends ReceiverAdapter {
             JGroups has two more areas that weren't covered: building blocks and the protocol stack.
         </para>
         <para>
-            Building blocks are classes residing on top of a JChannel and provide a higher abstraction level, e.g.
+            Building blocks are classes residing on top of a JChannel that provide a higher abstraction level, e.g.
             request-response correlators, cluster-wide method calls, replicated hashmaps and so forth.
         </para>
         <para>
             The protocol stack allows for complete customization of JGroups: protocols can be configured, removed,
             replaced, enhanced, or new protocols can be written and added to the stack.
-        </para>
-        <para>
-            We'll cover the protocol stack and available protocols in a later article.
         </para>
         <para>
             The code for SimpleChat can be found <ulink url="../code/SimpleChat.java">here</ulink>.
@@ -404,7 +413,7 @@ public class SimpleChat extends ReceiverAdapter {
                     JGroups web site: <ulink url="http://www.jgroups.org">http://www.jgroups.org</ulink>
                 </listitem>
                 <listitem>
-                    Downloads: <ulink url="http://sourceforge.net/project/showfiles.php?group_id=6081">here</ulink>
+                    Downloads: <ulink url="http://sourceforge.net/projects/javagroups/files/JGroups/">here</ulink>
                 </listitem>
                 <listitem>
                     JIRA bug tracking: <ulink url="http://jira.jboss.com/jira/browse/JGRP">http://jira.jboss.com/jira/browse/JGRP</ulink>
