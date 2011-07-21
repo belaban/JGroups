@@ -1,79 +1,59 @@
 <chapter>
     <title>Installation and Configuration</title>
 
-    <para>The installation refers to version 2.8 of JGroups. Refer to the installation
-        instructions that are shipped with JGroups for details.</para>
-
-    <para>Note that these instructions are also available in the
-        JGroups distribution (<filename>INSTALL.HTML</filename>).
+    <para>The installation refers to version 3.x of JGroups. Refer to the installation
+        instructions (INSTALL.html) that are shipped with the JGroups version you downloaded for details.
     </para>
 
-    <para>JGroups comes in a binary and a source version: the binary
-        version is <filename>JGroups-2.x.x.bin.zip</filename>, the source
-        version is <filename>JGroups-2.x.x.src.zip</filename>. The binary
-        version contains the JGroups JAR file, plus a number of JARs needed
-        by JGroups. The source version contains all source files, plus
-        several JAR files needed by JGroups, e.g. ANT to build JGroups from
-        source.
+    <para>
+        The JGroups JAR can be downloaded from <ulink url="http://sourceforge.net/projects/javagroups/files/JGroups/">
+        SourceForge</ulink>. It is named jgroups-x.y.z, where x=major, y=minor and z=patch version, for example
+        jgroups-3.0.0.Final.jar.
+        The JAR is all that's needed to get started using JGroups; it contains all core, demo and (selected) test
+        classes, the sample XML configuration files and the schema.
     </para>
 
-    <section>
+    <para>
+        The source code is hosted on <ulink url="https://github.com/belaban/jgroups">GitHub</ulink>. To build JGroups,
+        ANT is currently used. In <xref linkend="BuildingJGroups"/> we'll show how to build JGroups from source.
+    </para>
+
+    <section id="Requirements">
         <title>Requirements</title>
 
         <itemizedlist>
             <listitem>
-                <para>JGroups 2.5 requires JDK 1.5 or higher. Version 2.9 requires JDK 1.6 or higher.</para>
+                JGroups 3.x requires JDK 6 or higher.
             </listitem>
             <listitem>
-                <para>There is no JNI code present so JGroups should run on all platforms.</para>
+                There is no JNI code present so JGroups should run on all platforms.
             </listitem>
             <listitem>
-                <para>If you want to generate HTML-based test reports from the
-                    unittests, then xalan.jar needs to be in the CLASSPATH (also
-                    available in the lib directory)</para>
+                If you want to generate HTML-based test reports from the
+                unittests, then xalan.jar needs to be in the CLASSPATH (also
+                available in the lib directory)
             </listitem>
         </itemizedlist>
 
     </section>
 
-    <section>
-        <title>Installing the binary distribution</title>
 
-        <para>The binary version contains</para>
-
-        <orderedlist>
-            <listitem>
-                <para>jgroups-all.jar: the JGroups library including the
-                    demos</para>
-            </listitem>
-            <listitem>
-                <para>CREDITS: list of contributors</para>
-            </listitem>
-            <listitem>
-                <para>INSTALL.html: this file</para>
-            </listitem>
-            <listitem>
-                <para>log4j.jar. This JAR is optional, for example if JDK logging is used, we don't need it. Note that
-                commons-logging is not a requirement any more since version 2.8.</para>
-            </listitem>
-        </orderedlist>
-
-        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>, and you're ready to start using JGroups.
-        </para>
-
-    </section>
-
-    <section>
-        <title>Installing the source distribution</title>
+    <section id="SourceStructure">
+        <title>Structure of the source version</title>
 
         <para>The source version consists of the following directories and files:</para>
 
-        <orderedlist>
+        <itemizedlist>
             <listitem>
                 <para>src: the sources</para>
             </listitem>
             <listitem>
-                <para>test: unit and stress tests</para>
+                <para>tests: unit and stress tests</para>
+            </listitem>
+            <listitem>
+                <para>lib: JARs needed to either run the unit tests, or build the manual etc. No JARs from here are
+                    required at runtime !
+                </para>
             </listitem>
             <listitem>
                 <para>conf: configuration files needed by JGroups, plus default protocol stack definitions</para>
@@ -81,57 +61,30 @@
             <listitem>
                 <para>doc: documentation</para>
             </listitem>
-            <listitem>
-                <para>lib: various JARs needed to build and run
-                    JGroups:</para>
-                <orderedlist>
-                    <listitem>
-                        <para>
-                            <ulink url="http://jakarta.apache.org/ant/">Ant
-                            </ulink>
-                            JARs: used to build JGroups. If you already have Ant installed, you won't need these files
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>
-                            <ulink url="http://xml.apache.org/">xalan.jar</ulink>: to format the output of
-                            the JUnit tests using an XSLT converter to HTML
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>log4j.jar</para>
-                    </listitem>
-                    <listitem>
-                        <para>etc</para>
-                    </listitem>
-                </orderedlist>
-            </listitem>
-        </orderedlist>
+        </itemizedlist>
 
     </section>
 
-    <section>
+    <section id="Building JGroups">
         <title>Building JGroups (source distribution only)</title>
 
         <orderedlist>
             <listitem>
-                <para>Unzip the source distribution, e.g. unzip
-                    JGroups-2.x.x.src.zip. This will create the JGroups-2.x.x
-                    directory (root directory) under the current directory.</para>
+                <para>
+                    Download the sources from <ulink url="https://github.com/belaban/jgroups">GitHub</ulink>, either
+                    via 'git clone', or the
+                    <ulink url="https://github.com/belaban/JGroups/archives/master">download link</ulink> into
+                    a directory "JGroups", e.g. /home/bela/JGroups.
+                </para>
             </listitem>
             <listitem>
-                <para>cd to the root directory</para>
-            </listitem>
-            <listitem>
-                <para>Modify build.properties if you want to use a Java
-                    compiler other than javac (e.g. jikes), or if you want to change the
-                interface JGroups uses for sending and receiving messages</para>
+                <para>Change to the JGroups directory</para>
             </listitem>
             <listitem>
                 <para>On UNIX systems use <filename>build.sh</filename>, on Windows
                     <filename>build.bat</filename>:
                     <userinput>$&gt;
-                        ./build.sh compile</userinput>
+                        ./build.sh</userinput>
                 </para>
             </listitem>
             <listitem>
@@ -150,40 +103,36 @@
                 <itemizedlist>
                     <listitem>
                         <para>
-                            <filename>jgroups-core.jar</filename>
-                            - the core JGroups library without unit tests and demos
+                            <filename>jgroups-3.x.y.jar</filename>
+                            - the JGroups JAR
                         </para>
                     </listitem>
                     <listitem>
                         <para>
-                            <filename>jgroups-all.jar</filename>
-                            - the complete JGroups library including demos and unit tests
+                            <filename>jgroups-sources.jar</filename>
+                            - the source code for the core classes and demos.
                         </para>
                     </listitem>
                 </itemizedlist>
             </listitem>
             <listitem>
-                <para>The
-                    <filename>CLASSPATH</filename>
-                    now has to be set accordingly: the following directories and/or JARs have to be included:
+                <para>
+                    Now add the following directories to the classpath:
                 </para>
                 <orderedlist>
                     <listitem>
                         <para>
-                            <filename>&lt;JGroups
-                                rootdir&gt;/classes</filename>
+                            <filename>JGroups/classes</filename>
                         </para>
                     </listitem>
                     <listitem>
                         <para>
-                            <filename>&lt;JGroups
-                                rootdir&gt;/conf</filename>
+                            <filename>JGroups/conf</filename>
                         </para>
                     </listitem>
                     <listitem>
                         <para>All needed JAR files in
-                            <filename>&lt;JGroups
-                                rootdir&gt;/lib</filename>
+                            <filename>JGroups/lib</filename>
                             . To build from sources, the two
                             Ant JARs are required. To run unit tests, the JUnit (and
                             possibly Xalan) JARs are needed.
@@ -195,9 +144,7 @@
                 <para>To generate JavaDocs simple run
                     <userinput>$&gt;
                         ./build.sh javadoc</userinput>
-                    and the Javadoc documentation will
-                    be generated in the
-                    <filename>dist/javadoc</filename>
+                    and the Javadoc documentation will be generated in the <filename>dist/javadoc</filename>
                     directory
                 </para>
             </listitem>
@@ -222,17 +169,17 @@
         </orderedlist>
     </section>
 
-    <section>
+    <section id="TestingTheSetup">
         <title>Testing your Setup</title>
 
-        <para>To see whether your system can find the JGroups classes,
-            execute the following command:</para>
+        <para>To see whether your system can find the JGroups classes, execute the following command:
+        </para>
 
         <screen>
             java org.jgroups.Version
         </screen>
 
-        <para>or (from JGroups 2.2.8 on)</para>
+        <para>or</para>
 
         <screen>
             java -jar jgroups-all.jar
@@ -240,24 +187,21 @@
 
         <para>You should see the following output (more or less) if the
             class is found:</para>
-
         <screen>
-            [mac] /Users/bela/JGroups$ java org.jgroups.Version
+            $  java org.jgroups.Version
 
-            Version:      2.8.0.GA
-            CVS:          $Id: installation.xml,v 1.10 2010/04/30 14:27:39 vlada Exp $
+               Version:      3.0.0.Beta1
         </screen>
-
     </section>
 
-    <section>
+    <section id="RunningTheDemo">
         <title>Running a Demo Program</title>
 
-        <para>To test whether JGroups works okay on your machine, run
-            the following command twice:</para>
+        <para>To test whether JGroups works okay on your machine, run the following command twice:
+        </para>
 
         <screen>
-            java org.jgroups.demos.Draw
+            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
         </screen>
 
         <para>2 whiteboard windows should appear as shown in <xref linkend="DrawScreenshotFig"/>.
@@ -266,24 +210,32 @@
                 <graphic fileref="images/DrawScreenshot.png" format="PNG" align="center"  />
             </figure>
 
-            Both windows should show 2 in their title bars. This means that the two instances found each other
-            and formed a group.</para>
+            If you started them simultaneously, they could initially show a membership of 1 in
+            their title bars. After some time, both windows should show 2. This means that the two instances found
+            each other and formed a cluster.</para>
 
-        <para>When drawing in one window, the second instance should also
-            be updated. As the default group transport uses IP multicast, make
-            sure that - if you want start the 2 instances in different subnets
-            - IP multicast is enabled. If this is not the case, the 2
-            instances won't find each other and the sample won't work.</para>
+        <para>When drawing in one window, the second instance should also be updated. As the default group transport
+            uses IP multicast, make sure that - if you want start the 2 instances in different subnets
+            - IP multicast is enabled. If this is not the case, the 2 instances won't 'find' each other and the
+            example won't work.
+        </para>
 
-        <para>You can change the properties of the demo to for example use
+         <para>You can change the properties of the demo to for example use
             a different transport if multicast doesn't work (it should always
-            work on the same machine). Please consult the documentation to see how to do this.</para>
+            work on the same machine). Please consult the documentation to see how to do this.
+         </para>
 
         <para>
-            State transfer (see the section in the API later) can also be tested by passing the -state flag to Draw. 
+            State transfer (see the section in the API later) can also be tested by passing the -state flag to Draw.
+        </para>
+
+        <para>
+            If the 2 instances find each other and form a cluster, you can skip ahead to the next chapter ("Writing
+            a simple application").
         </para>
 
     </section>
+
 
     <section>
         <title>Using IP Multicasting without a network connection</title>
@@ -360,63 +312,14 @@
 
     </section>
 
-<!--    <section>
-        <title>The instances still don't find each other !</title>
-
-        <para>In this case we have to use a sledgehammer (running only
-            under JDK 1.4. and higher): we can enable the above sender and
-            receiver test to use all available interfaces for sending and
-            receiving. One of them will certainly be the right one... Start
-            the receiver as follows:</para>
-
-        <screen>
-            java org.jgroups.tests.McastReceiverTest -mcast_addr 228.8.8.8
-        </screen>
-
-        <para>The multicast receiver uses JDK functionality to list
-            <emphasis>all available network interfaces and bind to all of
-                them</emphasis>
-            (including the loopback interface). This means
-            that whichever interface a packet comes in on, we will receive it.
-            Now start the sender:
-        </para>
-
-        <screen>
-            java org.jgroups.tests.McastSenderTest -mcast_addr 228.8.8.8
-        </screen>
-
-        <para>The sender will also determine the available network
-            interfaces and send each packet over all interfaces.</para>
-
-        <para>This test can be used to find out which network interface to
-            bind to when previously no packets were received. E.g. when you
-            see the following output in the receiver:</para>
-
-      <screen>
-          bash-2.03$ java org.jgroups.tests.McastReceiverTest -mcast_addr 228.8.8.8 -bind_addr 192.168.1.4
-          Socket=0.0.0.0/0.0.0.0:5555, bind interface=/192.168.168.4 dd [sender=192.168.168.4:5555] dd
-          [sender=192.168.168.1:5555] dd [sender=192.168.168.2:5555]
-      </screen>
-
-        <para>you know that you can bind to any of the 192.168.168.{1,2,4}
-            interfaces to receive your multicast packets. In this case you
-            would need to modify your protocol spec to include
-            bind_addr=192.168.168.2 in UDP, e.g.
-            <parameter>"UDP(mcast_addr=228.8.8.8;bind_addr=192.168.168.2):..."
-            </parameter>
-            .
-        </para>
-
-    </section>-->
-
-    <section>
+    <section id="IPv6Issues">
         <title>Problems with IPv6</title>
 
         <para>Another source of problems might be the use of IPv6, and/or misconfiguration of
             <filename>/etc/hosts</filename>. If you
             communicate between an IPv4 and an IPv6 host, and they are not
             able to find each other, try the
-            <parameter>java.net.preferIP4Stack=true</parameter>
+            <parameter>-Djava.net.preferIP4Stack=true</parameter>
             property,
             e.g.
         </para>
@@ -425,7 +328,7 @@
         java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/udp.xml
         </screen>
 
-        <para>JDK 1.4.1 uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.
+        <para>The JDK uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.
             <ulink url="http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/">Here's</ulink>
             more details on the subject.
         </para>
@@ -446,10 +349,8 @@
 
         <para>If you think that you discovered a bug, submit a bug report
             on
-            <ulink
-                    url="http://jira.jboss.com/jira/browse/JGRP">JIRA</ulink>
-            or send
-            email to javagroups-developers if you're unsure about it. Please
+            <ulink url="http://jira.jboss.com/jira/browse/JGRP">JIRA</ulink>
+            or send email to the jgroups-users mailing list if you're unsure about it. Please
             include the following information:
         </para>
 
@@ -473,23 +374,26 @@
         </itemizedlist>
 
     </section>
-    <section> <title>Supported classes</title>
-    <para>JGroups project has been around since 2001. Over this time, some of the JGroups classes 
-    have been used in experimental phases and have never been matured enough to be used in today's production 
-    releases. However, they were not removed since some people used them in their products.  </para>
+    <section id="SupportedClasses">
+        <title>Supported classes</title>
+        <para>
+            JGroups project has been around since 1998. Over this time, some of the JGroups classes
+            have been used in experimental phases and have never been matured enough to be used in today's production
+            releases. However, they were not removed since some people used them in their products.
+    </para>
     
-    <para>The following tables list unsupported and experimental classes. These classes are not actively maintained, and 
-    we will not work to resolve potential issues you might find. Their final faith is not yet determined; they 
-    might even be removed altogether in the next major release. Weight your risks if you decide to use them anyway.</para>
-    <section>
+    <para>
+        The following tables list unsupported and experimental classes. These classes are not actively maintained, and
+        we will not work to resolve potential issues you might find. Their final faith is not yet determined; they
+        might even be removed altogether in the next major release. Weight your risks if you decide to use them anyway.
+    </para>
+        <section id="ExperimentalClasses">
             <title>Experimental</title>          
-			${Experimental}           
-            <para></para>
-    </section>
-    <section>
+            ${Experimental}
+        </section>
+        <section id="UnsupportedClasses">
             <title>Unsupported</title>          
-			${Unsupported}           
-            <para></para>
-    </section>
+            ${Unsupported}
+        </section>
     </section>       
 </chapter>
