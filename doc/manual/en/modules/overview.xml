@@ -7,35 +7,33 @@
     </para>
     <para>
         A node is a process, residing on some host. A cluster can have one or more nodes belonging to it. There
-        can be multiple nodes on the same host, and all may or may not be part of the same cluster.
+        can be multiple nodes on the same host, and all may or may not be part of the same cluster. Nodes can of course
+        also run on different hosts.
     </para>
 
-  <para>JGroups is toolkit for reliable group
-  communication. Processes can join a group, send messages to all
-  members or single members and receive messages from members in the
-  group. The system keeps track of the members in every group, and
-  notifies group members when a new member joins, or an existing
-  member leaves or crashes. A group is identified by its name. Groups
-  do not have to be created explicitly; when a process joins a
-  non-existing group, that group will be created automatically. Member
-  processes of a group can be located on the same host, within the
-  same LAN, or across a WAN. A member can be part of multiple
-  groups.</para>
+    <para>JGroups is toolkit for reliable group communication. Processes can join a group, send messages to all
+        members or single members and receive messages from members in the group. The system keeps track of the
+        members in every group, and notifies group members when a new member joins, or an existing
+        member leaves or crashes. A group is identified by its name. Groups do not have to be created explicitly;
+        when a process joins a non-existing group, that group will be created automatically. Processes of a group can
+        be located on the same host, within the same LAN, or across a WAN. A member can be part of multiple groups.
+    </para>
 
-  <para>The architecture of JGroups is shown in <xref
-  linkend="ArchitectureFig"/>.</para>
-
+    <para>
+        The architecture of JGroups is shown in <xref linkend="ArchitectureFig"/>.
+    </para>
     <figure id="ArchitectureFig"><title>The architecture of JGroups</title>
         <graphic fileref="images/Architecture.png" format="PNG" align="center"  />
     </figure>
 
-
-  <para>It consists of 3 parts: (1) the Channel used by
-  application programmers to build reliable group communication
-  applications, (2) the building blocks, which are layered on top of
-  the channel and provide a higher abstraction level and (3) the
-  protocol stack, which implements the properties specified for a
-  given channel.</para>
+  <para>
+      It consists of 3 parts: (1) the Channel used by
+      application programmers to build reliable group communication
+      applications, (2) the building blocks, which are layered on top of
+      the channel and provide a higher abstraction level and (3) the
+      protocol stack, which implements the properties specified for a
+      given channel.
+  </para>
 
   <para>
       This document describes how to install and <emphasis>use</emphasis> JGroups, ie. the Channel API and the

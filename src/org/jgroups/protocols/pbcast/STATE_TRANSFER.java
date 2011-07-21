@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  * @see STATE
  * @see STATE_SOCK
- * @deprecated Use STATE or STATE_SOCK instead
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol {
