@@ -79,7 +79,7 @@ public abstract class Discovery extends Protocol {
 
     /** The largest cluster size found so far (gets reset on stop()) */
     @ManagedAttribute
-    private volatile int max_found_members=0;
+    protected volatile int max_found_members=0;
 
     @ManagedAttribute
     protected int rank=0;
@@ -87,7 +87,7 @@ public abstract class Discovery extends Protocol {
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    private volatile boolean is_server=false;
+    protected volatile boolean is_server=false;
     protected TimeScheduler timer=null;
 
     protected View view;
@@ -95,7 +95,7 @@ public abstract class Discovery extends Protocol {
     protected Address local_addr=null;
     protected String group_addr=null;
     protected final Set<Responses> ping_responses=new HashSet<Responses>();
-    private final PingSenderTask sender=new PingSenderTask();
+    protected final PingSenderTask sender=new PingSenderTask();
     
 
     
@@ -540,7 +540,7 @@ public abstract class Discovery extends Protocol {
 
 
     protected class PingSenderTask {
-        private Future<?>      senderFuture;
+        protected Future<?>      senderFuture;
 
         public PingSenderTask() {}
 
@@ -652,7 +652,7 @@ public abstract class Discovery extends Protocol {
             }
         }
 
-        private static int getNumServerResponses(Collection<PingData> rsps) {
+        protected static int getNumServerResponses(Collection<PingData> rsps) {
             int cnt=0;
             for(PingData rsp: rsps) {
                 if(rsp.isServer())
@@ -661,7 +661,7 @@ public abstract class Discovery extends Protocol {
             return cnt;
         }
 
-        private static boolean containsCoordinatorResponse(Collection<PingData> rsps) {
+        protected static boolean containsCoordinatorResponse(Collection<PingData> rsps) {
             if(rsps == null || rsps.isEmpty())
                 return false;
             for(PingData rsp: rsps) {
