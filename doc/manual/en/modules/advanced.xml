@@ -772,7 +772,7 @@
   </section>
 
 
-    <section>
+    <section id="ConcurrentStack">
         <title>The concurrent stack</title>
 
         <para>
@@ -1826,6 +1826,13 @@
             </para>
         </section>
 
+    </section>
+
+    <section id="MessageFlags">
+        <title>Using message flags to selectively bypass certain protocols</title>
+        <para>
+            TBD
+        </para>
     </section>
 
     <section>

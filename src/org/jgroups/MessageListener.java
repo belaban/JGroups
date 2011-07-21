@@ -24,7 +24,7 @@ public interface MessageListener {
      * re-throw them and let the caller know what happened
      * @see java.io.OutputStream#close()
      */
-    public void getState(OutputStream output) throws Exception;
+    void getState(OutputStream output) throws Exception;
 
 
     /**
@@ -36,5 +36,5 @@ public interface MessageListener {
      * catch them and thus know what happened
      * @see java.io.InputStream#close()
      */
-    public void setState(InputStream input) throws Exception;
+    void setState(InputStream input) throws Exception;
 }

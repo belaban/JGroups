@@ -3,30 +3,28 @@
     <title>API</title>
 
     <para>
-        This chapter explains the classes available in JGroups that will be used by applications to build reliable
-        group communication applications. The focus is on creating and using channels.
+        This chapter explains the classes available in JGroups that will be used by applications to build reliable group
+        communication applications. The focus is on creating and using channels.
     </para>
 
     <para>
-        Information in this document may not be up-to-date, but the nature of the classes in the JGroups toolkit
+        Information in this document may not be up-to-date, but the nature of the classes in JGroups
         described here is the same. For the most up-to-date information refer to the Javadoc-generated documentation in
         the <filename>doc/javadoc</filename> directory.
     </para>
 
-    <para>All of the classes discussed below reside in the
-        <classname>org.jgroups</classname>
-        package unless otherwise mentioned.
+    <para>All of the classes discussed here are in the <classname>org.jgroups</classname> package unless
+        otherwise mentioned.
     </para>
 
-    <section>
+    <section id="UtilityClasses">
         <title>Utility classes</title>
 
-        <para>The
-            <classname>org.jgroups.util.Util</classname>
-            class contains a collection of useful functionality which cannot be assigned to any particular package.
+        <para>The <classname>org.jgroups.util.Util</classname> class contains useful common functionality which
+            cannot be assigned to any other package.
         </para>
 
-        <section>
+        <section id="objectToByteBuffer">
             <title>objectToByteBuffer(), objectFromByteBuffer()</title>
 
             <para>The first method takes an object as argument and serializes it into a byte buffer (the object has to
@@ -35,178 +33,107 @@
                 from a buffer. Both methods throw an exception if the object cannot be serialized or unserialized.
             </para>
         </section>
+        <section id="objectToStream">
+            <title>objectToStream(), objectFromStream()</title>
+
+            <para>
+                The first method takes an object and writes it to an output stream. The second method takes an
+                input stream and reads an object from it.
+                Both methods throw an exception if the object cannot be serialized or unserialized.
+            </para>
+        </section>
     </section>
 
-    <section>
+    <section id="Interfaces">
         <title>Interfaces</title>
 
         <para>These interfaces are used with some of the APIs presented below, therefore they are listed first.</para>
 
-        <section>
+        <section id="MessageListener">
             <title>MessageListener</title>
 
-            <para>Contrary to the pull-style of channels, some building blocks (e.g.
-                <classname>PullPushAdapter</classname>
-                ) provide an event-like
-                <emphasis>push-style</emphasis>
-                message delivery model. In this case, the entity to be notified of message reception needs to provide a
-                callback to be invoked whenever a message has been received. The
-                <classname>MessageListener</classname>
-                interface below provides a method to do so:
-                <screen>
-                    public interface MessageListener { public void receive(Message msg); byte[] getState(); void
-                    setState(byte[] state); }
-                </screen>
-            </para>
-
-            <para>Method
-                <methodname>receive()</methodname>
-                will be called when a message is received. The
-                <methodname>getState()</methodname>
-                and
-                <methodname>setState()</methodname>
-                methods are used to fetch and set the group state (e.g. when joining). Refer to
-                <xref linkend="GetState"/>
-                for a discussion of state transfer.
-            </para>
-        </section>
-
-        <section>
-            <title>ExtendedMessageListener</title>
-
             <para>
-                JGroups release 2.3 introduced ExtendedMessageListener enabling partial state transfer (refer to
-                <xref linkend="PartialStateTransfer"/>
-                ) while release 2.4 further expands ExtendedMessageListener with streaming state transfer callbacks:
-
-                <screen>
-                    public interface ExtendedMessageListener extends MessageListener { byte[] getState(String state_id);
-                    void setState(String state_id, byte[] state);
-
-                    /*** since JGroups 2.4 *****/ void getState(OutputStream ostream); void getState(String state_id,
-                    OutputStream ostream); void setState(InputStream istream); void setState(String state_id,
-                    InputStream istream); }
-                </screen>
+                The <classname>MessageListener</classname> interface below provides callbacks for message reception and
+                for providing and setting the state:
+                <programlisting>
+                    public interface MessageListener {
+                        void receive(Message msg);
+                        void getState(OutputStream output) throws Exception;
+                        void setState(InputStream input) throws Exception;
+                    }
+                </programlisting>
             </para>
 
+            <para>Method <methodname>receive()</methodname> is be called whenever a message is received. The
+                <methodname>getState()</methodname> and <methodname>setState()</methodname>
+                methods are used to fetch and set the group state (e.g. when joining). Refer to
+                <xref linkend="GetState"/> for a discussion of state transfer.
+            </para>
         </section>
 
         <section id="MembershipListener">
             <title>MembershipListener</title>
 
             <para>
-                The
-                <classname>MembershipListener</classname>
-                interface is similar to the
-                <classname>MessageListener</classname>
-                interface above: every time a new view, a suspicion message, or a block event is received, the
-                corresponding method of the class implementing
-                <classname>MembershipListener</classname>
-                will be called.
+                The <classname>MembershipListener</classname> interface is similar to the
+                <classname>MessageListener</classname> interface above: every time a new view, a suspicion message,
+                or a block event is received, the corresponding method of the class implementing
+                <classname>MembershipListener</classname>  will be called.
 
-                <screen>
-                    public interface MembershipListener { public void viewAccepted(View new_view); public void
-                    suspect(Object suspected_mbr); public void block(); }
-                </screen>
+                <programlisting>
+                    public interface MembershipListener {
+                        public void viewAccepted(View new_view);
+                        public void suspect(Object suspected_mbr);
+                        public void block();
+                        public void unblock();
+                    }
+                </programlisting>
             </para>
 
-            <para>Oftentimes the only method containing any functionality will be
-                <methodname>viewAccepted()</methodname>
-                which notifies the receiver that a new member has joined the group or that an existing member has left
-                or crashed. The
-                <methodname>suspect()</methodname>
+            <para>
+                Oftentimes the only callback that needs to be implemented will be
+                <methodname>viewAccepted()</methodname> which notifies the receiver that a new member has joined the
+                group or that an existing member has left or crashed. The <methodname>suspect()</methodname>
                 callback is invoked by JGroups whenever a member if suspected of having crashed, but not yet excluded
                 <footnote>
                     <para>It could be that the member is suspected falsely, in which case the next view would still
-                        contain the suspected member (there is currently no
-                        <methodname>unsuspect()</methodname>
-                        method
+                        contain the suspected member (there is no <methodname>unsuspect()</methodname> method
                     </para>
-                </footnote>
-                .
+                </footnote>.
             </para>
+
             <para>
-                The
-                <methodname>block()</methodname>
-                method is called to notify the member that it will soon be blocked sending messages. This is done by the
-                FLUSH protocol, for example to ensure that nobody is sending messages while a state transfer is in
-                progress. When block() returns, any thread sending messages will be blocked, until FLUSH unblocks the
-                thread again, e.g. after the state has been transferred successfully.
+                The <methodname>block()</methodname> method is called to notify the member that it will soon be blocked
+                sending messages. This is done by the FLUSH protocol, for example to ensure that nobody is sending
+                messages while a state transfer or view installation is in progress. When block() returns, any thread
+                sending messages will be blocked, until FLUSH unblocks the thread again, e.g. after the state has been
+                transferred successfully.
             </para>
 
             <para>
                 Therefore, block() can be used to send pending messages or complete some other work.
-            </para>
-
-            <para>
                 Note that block() should be brief, or else the entire FLUSH protocol is blocked.
             </para>
-            <note>
-                <title>Sending messages in callbacks</title>
-                <para>
-                    Note that anything that could block should
-                    <emphasis>not</emphasis>
-                    be done in a callback. This includes sending of messages; if we have FLUSH on the stack, and send a
-                    message in a viewAccepted() callback, then the following happens: the FLUSH protocol blocks all
-                    (multicast) messages before installing a view, then installs the view, then unblocks. However,
-                    because installation of the view triggers the viewAccepted() callback, sending of messages inside of
-                    viewAccepted() will block. This in turn blocks the viewAccepted() thread, so the flush will never
-                    return !
-                </para>
-                <para>
-                    If we need to send a message in a callback, the sending should be done on a separate thread, or a
-                    timer task should be submitted to the timer.
-                </para>
-            </note>
-        </section>
-
-
-        <section id="ExtendedMembershipListener">
-            <title>ExtendedMembershipListener</title>
 
             <para>
-                The
-                <classname>ExtendedMembershipListener</classname>
-                interface extends
-                <classname>MembershipListener</classname>:
-
-                <screen>
-                    public interface ExtendedMembershipListener extends MembershipListener { public void unblock(); }
-                </screen>
-            </para>
-
-            <para>
-                The
-                <methodname>unblock()</methodname>
+                The <methodname>unblock()</methodname>
                 method is called to notify the member that the FLUSH protocol has completed and the member can resume
                 sending messages. If the member did not stop sending messages on block(), FLUSH simply blocked them and
                 will resume, so no action is required from a member. Implementation of the unblock() callback is
                 optional.
             </para>
 
+            <note id="UseOfReceiverAdapter">
+                <title>Use of MessageListener and MembershipListener</title>
+                <para>
+                    Note that it is oftentimes simpler to extend ReceiverAdapter (see below) and implement the needed
+                    callbacks than to implement all methods of both of these interfaces, as most callbacks are not needed.
+                </para>
+            </note>
+
         </section>
 
-
-        <section>
-            <title>ChannelListener</title>
-            <para>
-                <screen>
-                    public interface ChannelListener { void channelConnected(Channel channel); void
-                    channelDisconnected(Channel channel); void channelClosed(Channel channel); void channelShunned(); //
-                    deprecated in 2.8 void channelReconnected(Address addr); // deprecated in 2.8 }
-                </screen>
-            </para>
-
-            <para>A class implementing
-                <classname>ChannelListener</classname>
-                can use the
-                <methodname>Channel.setChannelListener()</methodname>
-                method to register with a channel to obtain information about state changes in a channel. Whenever a
-                channel is closed, disconnected or opened a callback will be invoked.
-            </para>
-        </section>
-
-        <section>
+        <section id="Receiver">
             <title>Receiver</title>
             <para>
                 <screen>
@@ -214,61 +141,81 @@
                 </screen>
             </para>
 
-            <para>A Receiver can be used to receive messages and view changes in push-style; rather than having to pull
-                these events from a channel, they will be dispatched to the receiver as soon as they have been received.
-                This saves one thread (application thread, pulling messages from a channel, or the PullPushAdapter
-                thread
-            </para>
             <para>
-                Note that
-                <methodname>JChannel.receive()</methodname>
-                has been deprecated and will be removed in 3.0. The preferred way of receiving messages is now via a
-                Receiver callback (push style).
+                A Receiver can be used to receive messages and view changes; receive() will be invoked as soon as a
+                message has been received, and viewAccepted() will be called whenever a new view is installed.
             </para>
         </section>
 
-        <section>
-            <title>ExtendedReceiver</title>
-            <para>
-                <screen>
-                    public interface ExtendedReceiver extends ExtendedMessageListener, MembershipListener { }
-                </screen>
-            </para>
 
-            <para>This is a receiver who will be able to handle partial state transfer</para>
-        </section>
-
-        <section>
-            <title>ReceiverAdapter and ExtendedReceiverAdapter</title>
+        <section id="ReceiverAdapter">
+            <title>ReceiverAdapter</title>
             <para>
-                These classes implement Receiver and ExtendedReceiver. When implementing a callback, one can simply
+                This class implements Receiver with no-op implementations. When implementing a callback, we can simply
                 extend ReceiverAdapter and overwrite receive() in order to not having to implement all callbacks of the
                 interface.
+            </para>
+            <para>
+                A ReceiverAdapter is the recommended way to implement callbacks.
             </para>
         </section>
 
         <note>
-            <title>Merging of Extended interfaces with their super interfaces</title>
-
-            <para>The Extended- interfaces (ExtendedMessageListener, ExtendedReceiver) will be merged with their parents
-                in the 3.0 release of JGroups. The reason is that this will create an API backwards incompatibility,
-                which we didn't want to introduce in the 2.x series.
+            <title>Sending messages in callbacks</title>
+            <para>
+                Note that anything that could block should <emphasis>not</emphasis>
+                be done in a callback. This includes sending of messages; if we have FLUSH on the stack, and send a
+                message in a viewAccepted() callback, then the following happens: the FLUSH protocol blocks all
+                (multicast) messages before installing a view, then installs the view, then unblocks. However,
+                because installation of the view triggers the viewAccepted() callback, sending of messages inside of
+                viewAccepted() will block. This in turn blocks the viewAccepted() thread, so the flush will never
+                return !
+            </para>
+            <para>
+                If we need to send a message in a callback, the sending should be done on a separate thread, or a
+                timer task should be submitted to the timer.
             </para>
         </note>
+
+        <section id="ChannelListener">
+            <title>ChannelListener</title>
+            <para>
+                <programlisting>
+                    public interface ChannelListener {
+                        void channelConnected(Channel channel);
+                        void channelDisconnected(Channel channel);
+                        void channelClosed(Channel channel);
+                    }
+                </programlisting>
+            </para>
+
+            <para>
+                A class implementing <classname>ChannelListener</classname> can use the
+                <methodname>Channel.addChannelListener()</methodname>
+                method to register with a channel to obtain information about state changes in a channel. Whenever a
+                channel is closed, disconnected or opened, the corresponding callback will be invoked.
+            </para>
+        </section>
+
     </section>
 
-    <section>
+    <section id="Address">
         <title>Address</title>
 
         <para>Each member of a group has an address, which uniquely identifies the member. The interface for such an
-            address is Address, which requires concrete implementations to provide methods for comparison and sorting of
-            addresses, and for determination whether the address is a multicast address. JGroups addresses have to
-            implement the following interface:
+            address is Address, which requires concrete implementations to provide methods such as comparison and
+            sorting of addresses. JGroups addresses have to implement the following interface:
 
-            <screen>
-                public interface Address extends Externalizable, Comparable, Cloneable { boolean isMulticastAddress();
-                int size(); }
-            </screen>
+            <programlisting>
+                public interface Address extends Externalizable, Comparable, Cloneable {
+                    int size();
+                }
+            </programlisting>
+        </para>
+
+        <para>
+            For marshalling purposes, size() needs to return the number of bytes an instance of an address implementation
+            takes up in serialized form.
         </para>
 
         <para>
@@ -277,56 +224,55 @@
             </emphasis>
         </para>
 
-        <para>Actual implementations of addresses are often generated by the bottommost protocol layer (e.g. UDP or
-            TCP). This allows for all possible sorts of addresses to be used with JGroups, e.g. ATM.
+        <para>
+            Actual implementations of addresses are often generated by the bottommost protocol layer (e.g. UDP or
+            TCP). This allows for all possible sorts of addresses to be used with JGroups.
         </para>
 
-        <para>In JChannel, it is the IP address of the host on which the stack is running and the port on which the
-            stack is receiving incoming messages; it is represented by the concrete class
-            <classname>org.jgroups.stack.IpAddress</classname>. Instances of this class are only used
-            <emphasis>within</emphasis>
-            the JChannel protocol stack;<emphasis>users of a channel see addresses (of any kind) only as
-                Addresses</emphasis>. Since an address uniquely identifies a channel, and therefore a group member, it
+        <para>
+            Since an address uniquely identifies a channel, and therefore a group member, it
             can be used to send messages to that group member, e.g. in Messages (see next section).
         </para>
         <para>
-            In 2.8, the default implementation of Address was changed from
-            <classname>IpAddress</classname>
-            to
-            <classname>org.jgroups.util.UUID</classname>.
+            The default implementation of Address is <classname>org.jgroups.util.UUID</classname>. It uniquely identifies
+            a node, and when disconnecting and reconnecting to a cluster, a node is given a new UUID on reconnection.
+        </para>
+        <para>
+            UUIDs are never shown directly, but are usually shown as a logical name (see <xref linkend="LogicalName"/>).
+            This is a name given to a node either via the user or via JGroups, and its sole purpose is to make logging
+            output a bit more readable.
+        </para>
+        <para>
+            UUIDs maps to IpAddresses, which are IP addresses and ports. These are eventually used by the transport
+            protocol to send a message.
         </para>
     </section>
 
     <section>
         <title>Message</title>
 
-        <para>Data is sent between members in the form of messages (
-            <classname>org.jgroups.Message</classname>
-            ). A message can be sent by a member to a
-            <emphasis>single member</emphasis>
-            , or to
-            <emphasis>all members</emphasis>
-            of the group of which the channel is an endpoint. The structure of a message is shown in
-            <xref linkend="MessageFig"/>
-            .
+        <para>
+            Data is sent between members in the form of messages (<classname>org.jgroups.Message</classname>).
+            A message can be sent by a member to a <emphasis>single member</emphasis>, or to
+            <emphasis>all members</emphasis> of the group of which the channel is an endpoint.
+            The structure of a message is shown in <xref linkend="MessageFig"/>.
         </para>
 
         <figure id="MessageFig">
             <title>Structure of a message</title>
-
             <graphic align="center" fileref="images/Message.png" format="PNG"/>
         </figure>
 
-        <para>A message contains 5 fields:</para>
+        <para>A message has 5 fields:</para>
 
         <variablelist>
             <varlistentry>
                 <term>Destination address</term>
 
                 <listitem>
-                    <para>The address of the receiver. If
-                        <literal>null</literal>
-                        , the message will be sent to all current group members
+                    <para>
+                        The address of the receiver. If <literal>null</literal>, the message will be sent to all
+                        current group members. Message.getDest() returns the destination address of a message.
                     </para>
                 </listitem>
             </varlistentry>
@@ -335,10 +281,10 @@
                 <term>Source address</term>
 
                 <listitem>
-                    <para>The address of the sender. Can be left
-                        <literal>null</literal>
-                        , and will be filled in by the transport protocol (e.g. UDP) before the message is put on the
-                        network
+                    <para>
+                        The address of the sender. Can be left <literal>null</literal>, and will be filled in by the
+                        transport protocol (e.g. UDP) before the message is put on the network.
+                        Message.getSrc() returns the source address, ie. the address of the sender of a message.
                     </para>
                 </listitem>
             </varlistentry>
@@ -347,8 +293,10 @@
                 <term>Flags</term>
 
                 <listitem>
-                    <para>This is one byte used for flags. The currently recognized flags are OOB, LOW_PRIO and
-                        HIGH_PRIO. See the discussion on the concurrent stack for OOB.
+                    <para>
+                        This is one byte used for flags. The currently recognized flags are OOB, DONT_BUNDLE, NO_FC,
+                        NO_RELIABILITY, NO_TOTAL_ORDER, NO_RELAY. For OOB, see the discussion on the concurrent stack
+                        (<xref linkend="ConcurrentStack"/>). For the use of flags see <xref linkend="MessageFlags"/>.
                     </para>
                 </listitem>
             </varlistentry>
@@ -359,7 +307,8 @@
                 <listitem>
                     <para>The actual data (as a byte buffer). The Message class contains convenience methods to set a
                         serializable object and to retrieve it again, using serialization to convert the object to/from
-                        a byte buffer.
+                        a byte buffer. A message also has an offset and a length, if the buffer is only a subrange
+                        of a larger buffer.
                     </para>
                 </listitem>
             </varlistentry>
@@ -369,40 +318,41 @@
 
                 <listitem>
                     <para>A list of headers that can be attached to a message. Anything that should not be in the
-                        payload can be attached to a message as a header. Methods
-                        <methodname>putHeader()</methodname>
-                        ,
-                        <methodname>getHeader()</methodname>
-                        and
-                        <methodname>removeHeader()</methodname>
+                        payload can be attached to a message as a header. Methods <methodname>putHeader()</methodname>
+                        , <methodname>getHeader()</methodname> and <methodname>removeHeader()</methodname>
                         of Message can be used to manipulate headers.
+                    </para>
+                    <para>
+                        Note that headers are only used by protocol implementers; headers should not be added or
+                        removed by application code !
                     </para>
                 </listitem>
             </varlistentry>
         </variablelist>
 
-        <para>A message is similar to an IP packet and consists of the payload (a byte buffer) and the addresses of the
+        <para>
+            A message is similar to an IP packet and consists of the payload (a byte buffer) and the addresses of the
             sender and receiver (as Addresses). Any message put on the network can be routed to its destination
             (receiver address), and replies can be returned to the sender's address.
         </para>
 
-        <para>A message usually does not need to fill in the sender's address when sending a message; this is done
+        <para>
+            A message usually does not need to fill in the sender's address when sending a message; this is done
             automatically by the protocol stack before a message is put on the network. However, there may be cases,
             when the sender of a message wants to give an address different from its own, so that for example, a
             response should be returned to some other member.
         </para>
 
-        <para>The destination address (receiver) can be an Address, denoting the address of a member, determined e.g.
-            from a message received previously, or it can be
-            <literal>null</literal>
-            , which means that the message will be sent to all members of the group. A typical multicast message,
-            sending string
-            <literal>"Hello"</literal>
-            to all members would look like this:
+        <para>
+            The destination address (receiver) can be an Address, denoting the address of a member, determined e.g.
+            from a message received previously, or it can be <literal>null</literal>, which means that the message
+            will be sent to all members of the group. A typical multicast message, sending string
+            <literal>"Hello"</literal> to all members would look like this:
 
-            <screen>
-                Message msg=new Message(null, null, "Hello"); channel.send(msg);
-            </screen>
+            <programlisting>
+                Message msg=new Message(null, "Hello");
+                channel.send(msg);
+            </programlisting>
         </para>
     </section>
 
@@ -424,6 +374,12 @@
             Events are means by which JGroups protcols can talk to each other. Contrary to Messages, which travel over
             the network between group members, events only travel up and down the stack.
         </para>
+        <note>
+            <title>Headers and events</title>
+            <para>
+                Headers and events are only used by protocol implementers; they are not needed by application code !
+            </para>
+        </note>
 
     </section>
 
@@ -783,7 +739,7 @@
 
         </section>
 
-        <section>
+        <section id="LogicalName">
             <title>Giving the channel a logical name</title>
             <para>
                 A channel can be given a logical name which is then used instead of the channel's address. A logical
