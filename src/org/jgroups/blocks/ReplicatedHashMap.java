@@ -51,7 +51,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         void entryRemoved(K key);
 
-        void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs);
+        void viewChange(View view, Vector<Address> mbrs_joined, Vector<Address> mbrs_left);
 
         void contentsSet(Map<K,V> new_entries);
 
