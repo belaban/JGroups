@@ -27,7 +27,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     /** Marshaller to marshal responses at the receiver(s) and unmarshal responses at the caller */
     protected Marshaller    rsp_marshaller=null;
-    protected final List<ChannelListener> additionalChannelListeners=new ArrayList<ChannelListener>();
+
     protected MethodLookup  method_lookup=null;
 
 
@@ -294,86 +294,5 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         return method_call.invoke(server_obj);
     }
 
-    /**
-     * Add a new channel listener to be notified on the channel's state change.
-     *
-     * @return true if the listener was added or false if the listener was already in the list.
-     */
-    public boolean addChannelListener(ChannelListener l) {
-        synchronized(additionalChannelListeners) {
-            if (additionalChannelListeners.contains(l)) {
-               return false;
-            }
-            additionalChannelListeners.add(l);
-            return true;
-        }
-    }
-
-
-    /**
-     *
-     * @return true if the channel was removed indeed.
-     */
-    public boolean removeChannelListener(ChannelListener l) {
-
-        synchronized(additionalChannelListeners) {
-            return additionalChannelListeners.remove(l);
-        }
-    }
-
-
-
-    /* --------------------- Interface ChannelListener ---------------------- */
-
-    public void channelConnected(Channel channel) {
-
-        synchronized(additionalChannelListeners) {
-            for(Iterator i = additionalChannelListeners.iterator(); i.hasNext(); ) {
-                ChannelListener l = (ChannelListener)i.next();
-                try {
-                    l.channelConnected(channel);
-                }
-                catch(Throwable t) {
-                    log.warn("channel listener failed", t);
-                }
-            }
-        }
-    }
-
-    public void channelDisconnected(Channel channel) {
-
-        stop();
-
-        synchronized(additionalChannelListeners) {
-            for(Iterator i = additionalChannelListeners.iterator(); i.hasNext(); ) {
-                ChannelListener l = (ChannelListener)i.next();
-                try {
-                    l.channelDisconnected(channel);
-                }
-                catch(Throwable t) {
-                    log.warn("channel listener failed", t);
-                }
-            }
-        }
-    }
-
-    public void channelClosed(Channel channel) {
-
-        stop();
-
-        synchronized(additionalChannelListeners) {
-            for(Iterator i = additionalChannelListeners.iterator(); i.hasNext(); ) {
-                ChannelListener l = (ChannelListener)i.next();
-                try {
-                    l.channelClosed(channel);
-                }
-                catch(Throwable t) {
-                    log.warn("channel listener failed", t);
-                }
-            }
-        }
-    }
-
-    /* ----------------------------------------------------------------------- */
 
 }

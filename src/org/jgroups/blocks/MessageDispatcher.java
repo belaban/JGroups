@@ -12,6 +12,7 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
@@ -33,7 +34,7 @@ import java.util.*;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements RequestHandler {
+public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected Channel channel=null;
     protected RequestCorrelator corr=null;
     protected MessageListener msg_listener=null;
@@ -45,6 +46,8 @@ public class MessageDispatcher implements RequestHandler {
     protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
+
+    protected final Set<ChannelListener> channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
 
 
     public MessageDispatcher() {
@@ -99,6 +102,21 @@ public class MessageDispatcher implements RequestHandler {
                 members.addAll(new_mbrs);
             }
         }
+    }
+
+
+    /**
+     * Adds a new channel listener to be notified on the channel's state change.
+     */
+    public void addChannelListener(ChannelListener l) {
+        if(l != null)
+            channel_listeners.add(l);
+    }
+
+
+    public void removeChannelListener(ChannelListener l) {
+        if(l != null)
+            channel_listeners.remove(l);
     }
 
 
@@ -392,6 +410,47 @@ public class MessageDispatcher implements RequestHandler {
     /* -------------------- End of RequestHandler Interface ------------------- */
 
 
+
+
+
+    /* --------------------- Interface ChannelListener ---------------------- */
+
+    public void channelConnected(Channel channel) {
+        for(ChannelListener l: channel_listeners) {
+            try {
+                l.channelConnected(channel);
+            }
+            catch(Throwable t) {
+                log.warn("notifying channel listener " + l + " failed", t);
+            }
+        }
+    }
+
+    public void channelDisconnected(Channel channel) {
+        stop();
+        for(ChannelListener l: channel_listeners) {
+            try {
+                l.channelDisconnected(channel);
+            }
+            catch(Throwable t) {
+                log.warn("notifying channel listener " + l + " failed", t);
+            }
+        }
+    }
+
+    public void channelClosed(Channel channel) {
+        stop();
+        for(ChannelListener l: channel_listeners) {
+            try {
+                l.channelClosed(channel);
+            }
+            catch(Throwable t) {
+                log.warn("notifying channel listener " + l + " failed", t);
+            }
+        }
+    }
+
+    /* ----------------------------------------------------------------------- */
 
 
 
