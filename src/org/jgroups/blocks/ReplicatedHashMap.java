@@ -36,7 +36,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
 
         void entryRemoved(K key);
 
-        void viewChange(View view, java.util.List<Address> new_mbrs, java.util.List<Address> old_mbrs);
+        void viewChange(View view, java.util.List<Address> mbrs_joined, java.util.List<Address> mbrs_left);
 
         void contentsSet(Map<K,V> new_entries);
 
