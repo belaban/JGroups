@@ -160,7 +160,7 @@ public class Deadlock2Test extends ChannelTestBase {
             this.disp = rpcDispatcher;
         }
 
-        public String outerMethod() {
+        public String outerMethod() throws Exception {
             log("**** outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupResponseMode.GET_ALL, 5000);

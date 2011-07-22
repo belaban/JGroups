@@ -137,7 +137,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
         verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
     }
 
-    public void testSendMessage() throws Throwable {
+    public void testSendMessage() throws Exception {
 
         final Address address = channels[1].getAddress();
         Message message = new Message(address);
@@ -211,7 +211,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
             this.name = name;
         }
 
-        public Object handle(Message msg) {
+        public Object handle(Message msg) throws Exception {
             return this.name;
         }
     }

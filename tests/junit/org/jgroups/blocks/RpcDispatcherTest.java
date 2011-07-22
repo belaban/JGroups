@@ -69,6 +69,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c3.connect(GROUP);
 
         System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1, c2, c3);
         View view=c3.getView();
         assert view.size() == 3 : "view=" + view;
     }
@@ -142,7 +143,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
 
-    public void testException() {
+    public void testException() throws Exception {
         RspList<Object> rsps=disp1.callRemoteMethods(null, "throwException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
         for(Rsp<Object> rsp: rsps.values()) {
             System.out.println(rsp);
@@ -153,7 +154,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
 
-    public void testExceptionAsReturnValue() {
+    public void testExceptionAsReturnValue() throws Exception {
         RspList<Object> rsps=disp1.callRemoteMethods(null, "returnException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
         for(Rsp<Object> rsp: rsps.values()) {
             System.out.println(rsp);
@@ -173,11 +174,31 @@ public class RpcDispatcherTest extends ChannelTestBase {
         }
     }
 
+    public void testUnicastExceptionWithFuture()  {
+        try {
+            MethodCall call=new MethodCall(ServerObject.class.getMethod("throwException"));
+            Future<Object> future=disp1.callRemoteMethodWithFuture(c2.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL, 5000));
+            Object val=future.get();
+            assert val == null;
+            assert false : " should not get here";
+        }
+        catch(Throwable throwable) {
+            System.out.println("received exception (as expected): " + throwable);
+        }
+    }
 
-    public void testUnicastExceptionAsReturnValue() throws Throwable {
+
+    public void testUnicastExceptionAsReturnValue() throws Exception {
         Object rsp=disp1.callRemoteMethod(c2.getAddress(), "returnException", null, null, new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("rsp = " + rsp);
         assert rsp != null && rsp instanceof Throwable;
+    }
+
+    public void testUnicastExceptionAsReturnValueWithFuture() throws Exception {
+        MethodCall call=new MethodCall(ServerObject.class.getMethod("returnException"));
+        Future<Object> future=disp1.callRemoteMethodWithFuture(c2.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL, 5000));
+        Object val=future.get();
+        assert val instanceof Exception;
     }
 
 
@@ -192,7 +213,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * from servers 2 and 3 are accepted.
      *
      */
-    public void testResponseFilter() {
+    public void testResponseFilter() throws Exception {
     	
     	final long timeout = 10 * 1000 ;
 
@@ -373,7 +394,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
-    public void testLargeReturnValue() {
+    public void testLargeReturnValue() throws Exception {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValue(SIZES[i]);
@@ -405,7 +426,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     /**
      * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
      */
-    public void testMethodInvocationToNonExistingMembers() {
+    public void testMethodInvocationToNonExistingMembers() throws Exception {
     	
     	final int timeout = 5 * 1000 ;
     	
@@ -445,7 +466,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
-    public void testLargeReturnValueUnicastCall() throws Throwable {
+    public void testLargeReturnValueUnicastCall() throws Exception {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValueUnicastCall(c1.getAddress(), SIZES[i]);
@@ -477,7 +498,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The method checks that each returned value is non-null and has the correct size. 
      *    
      */
-    void _testLargeValue(int size) {
+    void _testLargeValue(int size) throws Exception {
     	
     	// 20 second timeout 
     	final long timeout = 20 * 1000 ;
@@ -513,7 +534,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * reasonable values. 
      * 
      */
-    void _testHugeValue(int size) {
+    void _testHugeValue(int size) throws Exception {
     	
     	// 20 second timeout 
     	final long timeout = 20 * 1000 ;
@@ -563,9 +584,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * 
      * @param dst the group member
      * @param size the size of the byte array to be returned
-     * @throws Throwable
      */
-    void _testLargeValueUnicastCall(Address dst, int size) throws Throwable {
+    void _testLargeValueUnicastCall(Address dst, int size) throws Exception {
     	
     	// 20 second timeout
     	final long timeout = 20 * 1000 ;

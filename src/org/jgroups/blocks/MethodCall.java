@@ -10,7 +10,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -266,22 +269,19 @@ public class MethodCall implements Externalizable {
      * Invokes the method with the supplied arguments against the target object.
      * If a method lookup is provided, it will be used. Otherwise, the default
      * method lookup will be used.
+     *
      * @param target - the object that you want to invoke the method on
      * @return an object
      */
-    public Object invoke(Object target) throws Throwable {
-        Class  cl;
+    public Object invoke(Object target) throws Exception {
         Method meth=null;
-        Object retval;
-
 
         if(method_name == null || target == null) {
             if(log.isErrorEnabled()) log.error("method name or target is null");
             return null;
         }
-        cl=target.getClass();
-        try {
-            switch(mode) {
+        Class cl=target.getClass();
+        switch(mode) {
             case OLD:
                 meth=findMethod(cl);
                 break;
@@ -297,37 +297,26 @@ public class MethodCall implements Externalizable {
             default:
                 if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
                 break;
-            }
+        }
 
-            if(meth != null) {
-                retval=meth.invoke(target, args);
+        if(meth != null) {
+            try {
+                return meth.invoke(target, args);
             }
-            else {
-                throw new NoSuchMethodException(method_name);
+            catch(InvocationTargetException target_ex) {
+                Throwable exception=target_ex.getTargetException();
+                if(exception instanceof Error) throw (Error)exception;
+                else if(exception instanceof RuntimeException) throw (RuntimeException)exception;
+                else if(exception instanceof Exception) throw (Exception)exception;
+                else throw new RuntimeException(exception);
             }
-            return retval;
         }
-        catch(InvocationTargetException inv_ex) {
-            throw inv_ex.getTargetException();
-        }
-        catch(NoSuchMethodException no) {
-            StringBuilder sb=new StringBuilder();
-            sb.append("found no method called ").append(method_name).append(" in class ");
-            sb.append(cl.getName()).append(" with (");
-            if(args != null) {
-                for(int i=0; i < args.length; i++) {
-                    if(i > 0)
-                        sb.append(", ");
-                    sb.append((args[i] != null)? args[i].getClass().getName() : "null");
-                }
-            }
-            sb.append(") formal parameters");
-            log.error(sb.toString());
-            throw no;
+        else {
+            throw new NoSuchMethodException(method_name);
         }
     }
 
-    public Object invoke(Object target, Object[] args) throws Throwable {
+    public Object invoke(Object target, Object[] args) throws Exception {
         if(args != null)
             this.args=args;
         return invoke(target);

@@ -197,7 +197,12 @@ public class UnicastStressTest {
             }
 
             for(int i=0; i < num_msgs; i++) {
-                disp.callRemoteMethods(buddies, "receive", arg, types, new RequestOptions(ResponseMode.GET_NONE, 5000, true));
+                try {
+                    disp.callRemoteMethods(buddies, "receive", arg, types, new RequestOptions(ResponseMode.GET_NONE, 5000, true));
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

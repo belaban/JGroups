@@ -53,7 +53,7 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
 
 
 
-    public void testUnserializableValue() {
+    public void testUnserializableValue() throws Exception {
         List<Address> members=ch.getView().getMembers();
         System.out.println("members: " + members);
         assert members.size() > 1: "we should have more than 1 member";

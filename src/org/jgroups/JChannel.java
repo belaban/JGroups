@@ -1104,7 +1104,7 @@ public class JChannel extends Channel {
          * @param map
          * @param operation Protocol.OperationName[args], e.g. STABLE.foo[arg1 arg2 arg3]
          */
-        private void handleOperation(Map<String, String> map, String operation) throws Throwable {
+        private void handleOperation(Map<String, String> map, String operation) throws Exception {
             int index=operation.indexOf(".");
             if(index == -1)
                 throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");

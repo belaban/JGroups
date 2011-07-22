@@ -161,11 +161,23 @@ public class UnicastRequest<T> extends Request {
     }
 
 
+    public T getValue() throws ExecutionException {
+        if(!result.hasException())
+            return result.getValue();
+
+        Throwable exception=result.getException();
+        if(exception instanceof Error) throw (Error)exception;
+        else if(exception instanceof RuntimeException) throw (RuntimeException)exception;
+        else if(exception instanceof Exception) throw new ExecutionException(exception);
+        else throw new RuntimeException(exception);
+    }
+
+
     public T get() throws InterruptedException, ExecutionException {
         lock.lock();
         try {
             waitForResults(0);
-            return result.getValue();
+            return getValue();
         }
         finally {
             lock.unlock();
@@ -183,7 +195,7 @@ public class UnicastRequest<T> extends Request {
         }
         if(!ok)
             throw new TimeoutException();
-        return result.getValue();
+        return getValue();
     }
 
     public String toString() {

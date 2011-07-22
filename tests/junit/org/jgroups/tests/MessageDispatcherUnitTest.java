@@ -20,7 +20,6 @@ import org.testng.annotations.Test;
  * Tests return values from MessageDispatcher.castMessage()
  * 
  * @author Bela Ban
- *          belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
@@ -55,7 +54,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         }
     }
 
-    public void testNullMessageToSelf() {
+    public void testNullMessageToSelf() throws Exception {
         MyHandler handler=new MyHandler(null);
         d1.setRequestHandler(handler);
         RspList rsps=d1.castMessage(null, new Message(), new RequestOptions(ResponseMode.GET_ALL, 0));
@@ -66,15 +65,15 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         assert obj == null;
     }
 
-    public void test200ByteMessageToSelf() {
+    public void test200ByteMessageToSelf() throws Exception {
         sendMessage(200);
     }
 
-    public void test2000ByteMessageToSelf() {
+    public void test2000ByteMessageToSelf() throws Exception {
         sendMessage(2000);
     }
 
-    public void test20000ByteMessageToSelf() {
+    public void test20000ByteMessageToSelf() throws Exception {
         sendMessage(20000);
     }
 
@@ -124,7 +123,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         sendMessageToBothChannels(20000);
     }
 
-    private void sendMessage(int size) {
+    private void sendMessage(int size) throws Exception {
         long start, stop;
         MyHandler handler=new MyHandler(new byte[size]);
         d1.setRequestHandler(handler);
@@ -187,7 +186,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
             this.retval=retval;
         }
 
-        public Object handle(Message msg) {
+        public Object handle(Message msg) throws Exception {
             return retval;
         }
     }

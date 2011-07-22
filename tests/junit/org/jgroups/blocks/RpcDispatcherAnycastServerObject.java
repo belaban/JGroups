@@ -26,7 +26,7 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
         // System.out.println("Now i = " + i);
     }
 
-    public void callRemote(boolean useAnycast, boolean excludeSelf) {
+    public void callRemote(boolean useAnycast, boolean excludeSelf) throws Exception {
         // we need to copy the vector, otherwise the modification below will throw an exception because the underlying
         // vector is unmodifiable
         Vector<Address> v=new Vector<Address>(c.getView().getMembers());

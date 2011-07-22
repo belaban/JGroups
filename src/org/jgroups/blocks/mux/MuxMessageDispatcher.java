@@ -81,7 +81,8 @@ public class MuxMessageDispatcher extends MessageDispatcher {
     }
 
     @Override
-    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg, RequestOptions options, boolean blockForResults) {
+    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg,
+                                       RequestOptions options, boolean blockForResults) throws Exception {
         RspFilter filter=options.getRspFilter();
         RequestOptions newOptions = new RequestOptions(options.getMode(), options.getTimeout(), options.getAnycasting(),
                                                        (filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter(),

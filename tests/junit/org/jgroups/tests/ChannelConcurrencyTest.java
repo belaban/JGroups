@@ -196,7 +196,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
     }
     private static class MyHandler implements RequestHandler {
 
-        public Object handle(Message msg) {
+        public Object handle(Message msg) throws Exception {
             return msg.getObject();
         }
 

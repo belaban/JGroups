@@ -49,7 +49,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     }
 
 
-    public void testMethodCallWithTimeoutNoInterrupt() {
+    public void testMethodCallWithTimeoutNoInterrupt() throws Exception {
         long timeout, block_time;
         RspList rsps;
 
@@ -82,7 +82,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
             gms.setLogCollectMessages(false);
     }
 
-    private RspList call(long timeout, long block_time) {
+    private RspList call(long timeout, long block_time) throws Exception {
         long start, stop, diff;
         System.out.println("calling with timeout=" + timeout + ", block_time=" + block_time);
         start=System.currentTimeMillis();

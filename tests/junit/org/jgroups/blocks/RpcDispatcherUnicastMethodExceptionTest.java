@@ -55,7 +55,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     }
 
 
-    public void testMethodWithoutException() throws Throwable {
+    public void testMethodWithoutException() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "foo", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);
@@ -64,28 +64,28 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
 
     @Test(expectedExceptions=TimeoutException.class)
-    public void testMethodWithException() throws Throwable {
+    public void testMethodWithException() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "bar", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=IllegalArgumentException.class)
-    public void testMethodWithException2() throws Throwable {
+    public void testMethodWithException2() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "foobar", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=AssertionError.class)
-    public void testMethodWithError() throws Throwable {
+    public void testMethodWithError() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "foofoobar", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);
     }
 
     @Test(expectedExceptions=Throwable.class)
-    public void testMethodWithThrowable() throws Throwable {
+    public void testMethodWithThrowable() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "fooWithThrowable", null, null,
                                             new RequestOptions(ResponseMode.GET_ALL, 5000));
         System.out.println("retval: " + retval);

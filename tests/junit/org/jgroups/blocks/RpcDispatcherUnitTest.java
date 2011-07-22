@@ -72,14 +72,14 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     }
 
 
-    public void testInvocationOnEntireGroup() {
+    public void testInvocationOnEntireGroup() throws Exception {
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, RequestOptions.SYNC());
         System.out.println("rsps:\n" + rsps);
         assert rsps.size() == 3;
         assert o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
     }
 
-    public void testInvocationOnEntireGroupWithTargetList() {
+    public void testInvocationOnEntireGroupWithTargetList() throws Exception {
         RspList rsps=d1.callRemoteMethods(members, "foo", null, null, RequestOptions.SYNC());
         System.out.println("rsps:\n" + rsps);
         assert rsps.size() == 3;
@@ -88,7 +88,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
 
 
     /** Invoke a method on all but myself */
-    public void testInvocationWithExclusionOfSelf() {
+    public void testInvocationWithExclusionOfSelf() throws Exception {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a1);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);
@@ -98,7 +98,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
     }
 
-    public void testInvocationWithExclusionOfTwo() {
+    public void testInvocationWithExclusionOfTwo() throws Exception {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a2, a3);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);
@@ -108,7 +108,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         assert o1.wasCalled() && !o2.wasCalled() && !o3.wasCalled();
     }
 
-    public void testInvocationOnEmptyTargetSet() {
+    public void testInvocationOnEmptyTargetSet() throws Exception {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a1, a2, a3);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
         Util.sleep(500);

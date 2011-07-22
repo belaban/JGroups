@@ -38,6 +38,8 @@ API changes in 3.0.0
 
 - RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
 
+- MessageDispatcher: handle(Message) now throws Exception rather than Throwable
+
 - Removed partial state transfer (nobody ever used it !)
 
 - Removed ExtendedXXXAdapters: there is only Receiver, ReceiverAdapter, MessageListener and MembershipListener
@@ -93,6 +95,13 @@ API changes in 3.0.0
   catch(Throwable t) {
      // "foo" threw an exception
   }
+
+- In MessageDispatcher, sendMessage(), sendMessageWithFuture(), castMessage() and castMessageWithFuture() now
+  throw an exception (used to be a Throwable, or nothing)
+
+- In RpcDispatcher, callRemoteMethod(), callRemoteMethodWithFuture(), callRemoteMethods() and callRemoteMethodsWithFuture()
+  methods now throw an exception
+- Ditto for MuxRpcDispatcher, MuxMessageDispatcher.
 
 - ChannelNotConnectedException and ChannelClosedException have been replaced by IllegalStateException. This way,
   new exceptions can be thrown (and documented in the javadoc) without having to change the signature in the future.

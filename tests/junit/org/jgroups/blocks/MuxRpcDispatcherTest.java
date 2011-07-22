@@ -47,6 +47,8 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
 
             Util.sleep(1000);
         }
+
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
     }
 
     @AfterClass
@@ -135,7 +137,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
     }
 
-    public void testUnicastRPCs() throws Throwable {
+    public void testUnicastRPCs() throws Exception {
 
         MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
 

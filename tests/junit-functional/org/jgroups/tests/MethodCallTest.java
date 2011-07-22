@@ -2,16 +2,12 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
+import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.util.Util;
-import org.jgroups.Global;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 
 
@@ -52,142 +48,72 @@ public class MethodCallTest {
     final TargetClass target=new TargetClass();
 
 
-    public void testOld() {
-        try {
-            MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"}, new Class[]{int.class,String.class});
-            Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOld() throws Exception {
+        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"}, new Class[]{int.class,String.class});
+        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
     }
 
 
-    public void testOld2() {
-        try {
-            MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
-                                         new Class[]{String[].class, String.class});
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOld2() throws Exception {
+        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
 
-    public void testWithNull() {
-        try {
-            MethodCall mc=new MethodCall("foobar", null, null);
-            System.out.println("mc: " + mc);
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testWithNull() throws Exception {
+        new MethodCall("foobar", null, null).invoke(target);
     }
 
 
-    public void testOldWithNull() {
-        try {
-            MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
-                                         new Class[]{String[].class, String.class});
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOldWithNull() throws Exception {
+        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
 
-    public void testOldWithNull2() {
-        try {
-            MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"},
-                                         new Class[]{String[].class, String.class});
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOldWithNull2() throws Exception {
+        new MethodCall("bar", new Object[]{null, "Bela"},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
 
-    public void testOldWithNull3() {
-        try {
-            MethodCall mc=new MethodCall("foobar", null, null);
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOldWithNull3() throws Exception {
+        new MethodCall("foobar", null, null).invoke(target);
     }
 
 
-    public void testOldWithNull4() {
-        try {
-            MethodCall mc=new MethodCall("foobar", new Object[0], null);
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testOldWithNull4() throws Exception {
+        new MethodCall("foobar", new Object[0], null).invoke(target);
     }
 
 
-    public void testMethod() {
-        Method m;
-        try {
-            m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
-            MethodCall mc=new MethodCall(m, new Integer(22), "Bela");
-            Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testMethod() throws Exception {
+        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        MethodCall mc=new MethodCall(m, new Integer(22), "Bela");
+        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
     }
 
 
-    public void testTypes() {
-        MethodCall mc;
-        mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"}, new Class[]{int.class, String.class});
-        try {
-            Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypes() throws Exception {
+        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(35),"Bela"}, new Class[]{int.class,String.class});
+        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
     }
 
 
-
-    public void testTypesWithArray() {
-        MethodCall mc;
-        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
-                          new Class[]{String[].class, String.class});
-        try {
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypesWithArray() throws Exception {
+        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
 
-    public void testTypesWithNullArgument() {
-        MethodCall mc;
-        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
-                          new Class[]{String[].class, String.class});
-        try {
-            mc.invoke(target);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypesWithNullArgument() throws Exception {
+        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
-    public void testTypesWithNullArgument2() throws Throwable {
-        MethodCall mc;
-        mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
-                          new Class[]{String[].class, String.class});
+    public void testTypesWithNullArgument2() throws Exception {
+        MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
+                                     new Class[]{String[].class, String.class});
         try {
             mc.invoke(target);
             assert false: "we should not get here as there should be an argument mismatch exception";
@@ -198,86 +124,43 @@ public class MethodCallTest {
     }
 
 
-    public void testTypesWithNullArgument3() {
-        MethodCall mc;
-        mc=new MethodCall("foobar", new Object[]{}, new Class[]{});
-        try {
-            mc.invoke(target);
-        }
-        catch(IllegalArgumentException ex) {
-            assert true : "this was expected";
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypesWithNullArgument3() throws Exception {
+        new MethodCall("foobar", new Object[]{}, new Class[]{}).invoke(target);
     }
 
 
-    public void testTypesWithNullArgument4() {
-        MethodCall mc;
-        mc=new MethodCall("foobar", null, null);
-        try {
-            mc.invoke(target);
-        }
-        catch(IllegalArgumentException ex) {
-            assert true : "this was expected";
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypesWithNullArgument4() throws Exception {
+        new MethodCall("foobar", null, null).invoke(target);
     }
 
 
-    public void testTypesWithNullArgument5() {
-        MethodCall mc;
-        mc=new MethodCall("foobar", new Object[0], new Class[0]);
-        try {
-            mc.invoke(target);
-        }
-        catch(IllegalArgumentException ex) {
-            assert true : "this was expected";
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testTypesWithNullArgument5() throws Exception {
+        new MethodCall("foobar", new Object[0], new Class[0]).invoke(target);
     }
 
 
-
-    public void testSignature() {
-        MethodCall mc;
-        mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
-                          new Class[]{int.class, String.class});
-        try {
-            Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
-        }
-        catch(Throwable t) {
-            assert false : t.toString();
-        }
+    public void testSignature() throws Exception {
+        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
+                                     new Class[]{int.class, String.class});
+        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
     }
 
 
 
     public static void testBufferSize() throws Exception {
-        int a=10;
-        String b="Bela";
-        MethodCall m=new MethodCall("foo", new Object[]{new Integer(a),b}, new Class[]{int.class, String.class});
-        ByteArrayOutputStream msg_data=new ByteArrayOutputStream();
-        ObjectOutputStream msg_out=new ObjectOutputStream(msg_data);
-        m.writeExternal(msg_out);
-        msg_out.flush();
-        msg_out.close();
-        byte[] data=msg_data.toByteArray();
-        ByteArrayInputStream msg_in_data=new ByteArrayInputStream(data);
-        ObjectInputStream msg_in=new ObjectInputStream(msg_in_data);
-        MethodCall m2=new MethodCall();
-        m2.readExternal(msg_in);
-        System.out.println(m2.getName());
-        System.out.println(m2.getArgs().length);
+        MethodCall m=new MethodCall("foo", new Object[]{new Integer(10),"Bela"}, new Class[]{int.class, String.class});
+        byte[] data=Util.objectToByteBuffer(m);
+        
+        MethodCall m2=(MethodCall)Util.objectFromByteBuffer(data);
+        System.out.println(m2);
+        Object[] args=m2.getArgs();
+        assert args.length == 2;
+        assert args[0].equals(new Integer(10));
+        assert args[1].equals("Bela");
     }
 
 
-    public static void testOLD() throws Throwable {
+    public static void testOLD() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});
         Target target = new Target();
         Object result = methodCall.invoke(target);
@@ -285,7 +168,7 @@ public class MethodCallTest {
     }
 
 
-    public static void testInheritanceOLD() throws Throwable {
+    public static void testInheritanceOLD() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
@@ -293,46 +176,34 @@ public class MethodCallTest {
     }
 
 
-    public static void testMETHOD() throws Throwable {
-
+    public static void testMETHOD() throws Exception {
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
         MethodCall methodCall = new MethodCall(method, "abc");
-
         Target target = new Target();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
     }
 
 
-    public static void testInheritanceMETHOD() throws Throwable {
-
+    public static void testInheritanceMETHOD() throws Exception {
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
         MethodCall methodCall = new MethodCall(method, "abc");
-
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
     }
 
 
-    public static void testTYPES() throws Throwable {
-
-        MethodCall methodCall = new MethodCall("someMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] { String.class });
-
+    public static void testTYPES() throws Exception {
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] { String.class });
         Target target = new Target();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
     }
 
 
-    public static void testInheritanceTYPES() throws Throwable {
-
-        MethodCall methodCall = new MethodCall("someMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] { String.class });
-
+    public static void testInheritanceTYPES() throws Exception {
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] { String.class });
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
@@ -341,48 +212,33 @@ public class MethodCallTest {
     /**
      * This tests whether overriden methods are correctly identified and invoked.
      */
-    public static void testOverriddenForTYPES() throws Throwable  {
-
-        MethodCall methodCall = new MethodCall("overriddenMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] { String.class });
-
+    public static void testOverriddenForTYPES() throws Exception  {
+        MethodCall methodCall = new MethodCall("overriddenMethod", new Object[] { "abc" }, new Class[] { String.class });
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("TargetSubclassABC", result);
-
     }
 
 
-    public static void testNoArgumentMethodForTYPES() throws Throwable  {
-
+    public static void testNoArgumentMethodForTYPES() throws Exception  {
         MethodCall methodCall = new MethodCall("noArgumentMethod", new Object[0], new Class[0]);
-
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("noArgumentMethodResult", result);
-
     }
 
 
 
-    public static void testSIGNATURE() throws Throwable {
-
-        MethodCall methodCall = new MethodCall("someMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] {String.class});
-
+    public static void testSIGNATURE() throws Exception {
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] {String.class});
         Target target = new Target();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
     }
 
 
-    public static void testInheritanceSIGNATURE() throws Throwable {
-        MethodCall methodCall = new MethodCall("someMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] {String.class});
-
+    public static void testInheritanceSIGNATURE() throws Exception {
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[] {String.class});
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
         Assert.assertEquals("ABC", result);
@@ -391,12 +247,8 @@ public class MethodCallTest {
 
 
     public static void testMarshalling() throws Exception {
-        MethodCall methodCall = new MethodCall("someMethod",
-                                               new Object[] { "abc" },
-                                               new Class[] {String.class});
-
+        MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] {String.class});
         System.out.println("methodCall: " + methodCall);
-
         MethodCall m=marshalAndUnmarshal(methodCall);
         System.out.println("m: " + m);
     }
@@ -428,8 +280,5 @@ public class MethodCallTest {
         public String overriddenMethod(String arg) {
             return "TargetSubclass" + arg.toUpperCase();
         }
-
     }
-
-
 }

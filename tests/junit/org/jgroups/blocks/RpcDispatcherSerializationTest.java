@@ -45,23 +45,18 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         channel.close();
     }
 
-    public void testNonSerializableArgument() throws Throwable {
+    public void testNonSerializableArgument() throws Exception {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
                                    new RequestOptions(ResponseMode.GET_ALL, 5000));
             throw new IllegalStateException("should throw NotSerializableException");
         }
-        catch(Throwable t) {
-            Throwable cause=t.getCause();
-            if(cause != null && cause instanceof NotSerializableException) { // this needs to be changed once we change the signature
-                System.out.println("received RuntimeException with NotSerializableException as cause - this is expected");
-            }
-            else
-                throw t;
+        catch(Exception t) {
+            assert t instanceof NotSerializableException : "exception is not of expected type: " + t;
         }
     }
 
-    public void testTargetMethodNotFound() {
+    public void testTargetMethodNotFound() throws Exception {
         List<Address> members=channel.getView().getMembers();
         System.out.println("members are: " + members);
         RspList<Object> rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
@@ -74,7 +69,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
     }
 
-    public void testMarshaller() {
+    public void testMarshaller() throws Exception {
         RpcDispatcher.Marshaller m=new MyMarshaller();
         disp.setRequestMarshaller(m);
         disp.setResponseMarshaller(m);

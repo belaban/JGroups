@@ -28,7 +28,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
     }
 
 
-    public Object handle(Message msg) {
+    public Object handle(Message msg) throws Exception {
         received++;
         if(received % 1000 == 0)
             System.out.println("-- received " + received);

@@ -101,10 +101,20 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-
-
+    /**
+     * Invokes a method in all members contained in dests (or all members if dests is null).
+     * @param dests dests A list of addresses. If null, the method will be invoked on all cluster members
+     * @param method_name The name of the target method
+     * @param args The arguments to be passed
+     * @param types The types of the arguments
+     * @param options A collection of call options, e.g. sync versus async, timeout etc
+     * @return RspList<T> A response list with results, one for each member in dests
+     * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
+     *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
+     *                   object for the particular member in the RspList
+     */
     public <T> RspList<T> callRemoteMethods(Collection<Address> dests, String method_name, Object[] args,
-                                            Class[] types, RequestOptions options) {
+                                            Class[] types, RequestOptions options) throws Exception {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return callRemoteMethods(dests, method_call, options);
     }
@@ -117,31 +127,25 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
      * @param method_call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
      * @return RspList A list of return values and flags (suspected, not received) per member
+     * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
+     *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
+     *                   object for the particular member in the RspList
      * @since 2.9
      */
-    public <T> RspList<T> callRemoteMethods(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
+    public <T> RspList<T> callRemoteMethods(Collection<Address> dests,
+                                            MethodCall method_call,
+                                            RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
-                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
-                        append("() is empty: no need to send message"));
+                log.trace("destination list of " + method_call.getName() + "() is empty: no need to send message");
             return RspList.EMPTY_RSP_LIST;
         }
 
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
-                    append(", options=").append(options));
+              append(", options=").append(options));
 
-        Object buf;
-        try {
-            buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
-        }
-        catch(Exception e) {
-            // if(log.isErrorEnabled()) log.error("exception", e);
-            // we will change this in 3.0 to add the exception to the signature
-            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
-            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
-            throw new RuntimeException("failure to marshal argument(s)", e);
-        }
+        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
 
         Message msg=new Message();
         if(buf instanceof Buffer)
@@ -159,8 +163,19 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-
-    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests, MethodCall method_call, RequestOptions options) {
+    /**
+     * Invokes a method in all members contained in dests (or all members if dests is null).
+     * @param dests A list of addresses. If null, the method will be invoked on all cluster members
+     * @param method_call The method (plus args) to be invoked
+     * @param options A collection of call options, e.g. sync versus async, timeout etc
+     * @return NotifyingFuture A future from which the results can be fetched
+     * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
+     *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
+     *                   element for the particular member in the RspList
+     */
+    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
+                                                                       MethodCall method_call,
+                                                                       RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
@@ -172,17 +187,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
                     append(", options=").append(options));
 
-        Object buf;
-        try {
-            buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
-        }
-        catch(Exception e) {
-            // if(log.isErrorEnabled()) log.error("exception", e);
-            // we will change this in 2.4 to add the exception to the signature
-            // (see http://jira.jboss.com/jira/browse/JGRP-193). The reason for a RTE is that we cannot change the
-            // signature in 2.3, otherwise 2.3 would be *not* API compatible to prev releases
-            throw new RuntimeException("failure to marshal argument(s)", e);
-        }
+        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
 
         Message msg=new Message();
         if(buf instanceof Buffer)
@@ -199,14 +204,32 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
+    /**
+     * Invokes a method in a cluster member and - if blocking - returns the result
+     * @param dest The target member on which to invoke the method
+     * @param method_name The name of the method
+     * @param args The arguments
+     * @param types The types of the arguments
+     * @param options The options (e.g. blocking, timeout etc)
+     * @return The result
+     * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
+     */
     public <T> T callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, RequestOptions options) throws Throwable {
+                                   Class[] types, RequestOptions options) throws Exception {
         MethodCall method_call=new MethodCall(method_name, args, types);
         return (T)callRemoteMethod(dest, method_call, options);
     }
 
 
-    public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Throwable {
+    /**
+     * Invokes a method in a cluster member and - if blocking - returns the result
+     * @param dest The target member on which to invoke the method
+     * @param call The call to be invoked, including method are arguments
+     * @param options The options (e.g. blocking, timeout etc)
+     * @return The result
+     * @throws Exception Thrown if the method invocation threw an exception, either at the caller or the callee
+     */
+    public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
 
@@ -226,7 +249,16 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Throwable {
+    /**
+     * Invokes a method in a cluster member and - if blocking - returns the result
+     * @param dest The target member on which to invoke the method
+     * @param call The call to be invoked, including method are arguments
+     * @param options The options (e.g. blocking, timeout etc)
+     * @return A future from which the result can be fetched. If the callee threw an invocation, an ExecutionException
+     *         will be thrown on calling Future.get().
+     * @throws Exception Thrown if the method invocation threw an exception
+     */
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
 
@@ -253,7 +285,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
      * Message contains MethodCall. Execute it against *this* object and return result.
      * Use MethodCall.invoke() to do this. Return result.
      */
-    public Object handle(Message req) throws Throwable {
+    public Object handle(Message req) throws Exception {
         Object      body;
         MethodCall  method_call;
 
@@ -270,12 +302,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         body=req_marshaller != null?
           req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength()) : req.getObject();
 
-        if(!(body instanceof MethodCall)) {
-            if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
-            
-            // create an exception to represent this and return it
+        if(!(body instanceof MethodCall))
             throw new IllegalArgumentException("message does not contain a MethodCall object") ;
-        }
 
         method_call=(MethodCall)body;
 

@@ -168,9 +168,14 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 int tmp=sent.incrementAndGet();
                 if(tmp > num_msgs_to_send)
                     break;
-                disp.callRemoteMethods(null, call, options);
-                if(tmp > 0 && tmp % print == 0)
+                try {
+                    disp.callRemoteMethods(null, call, options);
+                    if(tmp > 0 && tmp % print == 0)
                     System.out.println(tmp);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
