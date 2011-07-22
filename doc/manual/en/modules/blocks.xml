@@ -1,164 +1,21 @@
 <chapter id="user-building-blocks"><title>Building Blocks</title>
 
-  <para>Building blocks are layered on top of channels. Most of them
-  do not even need a channel, all they need is a class that implements
-  interface <classname>Transport</classname> (channels do). This
-  enables them to work on any type of group transport that implements this
-  interface.  Building blocks can be used instead of channels whenever
-  a higher-level interface is required.</para>
+    <para>
+        Building blocks are layered on top of channels, and can be used instead of channels whenever
+        a higher-level interface is required.
+    </para>
 
-  <para>Whereas channels are simple
-  socket-like constructs, building blocks may offer a far more
-  sophisticated interface. In some cases, building blocks offer access
-  to the underlying channel, so that -- if the building block at hand
-  does not offer a certain functionality -- the channel can be
-  accessed directly.  Building blocks are located in the
-  <classname>org.jgroups.blocks</classname> package. Only the ones
-  that are relevant for application programmers are discussed
-  below.</para>
+    <para>
+        Whereas channels are simple socket-like constructs, building blocks may offer a far more sophisticated
+        interface. In some cases, building blocks offer access to the underlying channel, so that -- if the building
+        block at hand does not offer a certain functionality -- the channel can be accessed directly. Building blocks
+        are located in the <classname>org.jgroups.blocks</classname> package.
+    </para>
 
 
-  <section><title>PullPushAdapter</title>
 
-      <para>
-          <emphasis>Note that this building block has been deprecated and should not be used anymore !
-              Use a Receiver instead.
-          </emphasis>
-      </para>
-
-    <para>This class is a converter (or adapter, as used in <xref
-    linkend="Gamma:1995"/> between the pull-style of actively
-    receiving messages from the channel and the push-style where
-    clients register a callback which is invoked whenever a message
-    has been received. Clients of a channel do not have to allocate a
-    separate thread for message reception.</para>
-
-    <para>A <classname>PullPushAdapter</classname> is always created
-    on top of a class that implements interface
-    <classname>Transport</classname> (e.g. a channel). Clients
-    interested in being called when a message is received can register
-    with the <classname>PullPushAdapter</classname> using method
-    <methodname>setListener()</methodname>. They have to implement
-    interface <classname>MessageListener</classname>, whose
-    <methodname>receive()</methodname> method will be called when a
-    message arrives. When a client is interested in getting view,
-    suspicion messages and blocks, then it must additionally register
-    as a <classname>MembershipListener</classname> using method
-    <methodname>setMembershipListener()</methodname>. Whenever a view,
-    suspicion or block is received, the corresponding method will be
-    called.</para>
-
-    <para>Upon creation, an instance of
-    <classname>PullPushAdapter</classname> creates a thread which
-    constantly calls the <methodname>receive()</methodname> method of
-    the underlying <classname>Transport</classname> instance, blocking
-    until a message is available. When a message is received, if there
-    is a registered message listener, its
-    <methodname>receive()</methodname> method will be called.</para>
-
-    <para>As this class does not implement interface
-    <classname>Transport</classname>, but merely uses it for receiving
-    messages, an underlying object has to be used to send messages
-    (e.g. the channel on top of which an object of this class
-    resides). This is shown in <xref
-    linkend="PullPushAdapterFig"/>.</para>
-
-    <figure id="PullPushAdapterFig">
-      <title>Class <classname>PullPushAdapter</classname></title>
-      <mediaobject>
-	<!--imageobject>
-	  <imagedata align="center" fileref="PullPushAdapter.png"/>
-        </imageobject-->
-	<textobject>
-	  <phrase>A diagram representing the PullPushAdapter.</phrase>
-	</textobject>
-      </mediaobject>
-    </figure>
-
-    <para>As is shown, the thread constantly pulls messages from the
-    channel and forwards them to the registered listeners. An
-    application thus does not have to actively pull for messages, but
-    the <classname>PullPushAdapter</classname> does this for it. Note
-    however, that the application has to <emphasis>directly</emphasis>
-    access the channel if it wants to <emphasis>send</emphasis> a
-    message.</para>
-
-    <section><title>Example</title>
-
-      <para>This section shows sample code for using a
-      <classname>PullPushAdapter</classname>. The example has been
-      shortened for readability (error handling has been
-      removed).</para>
-
-      <screen>
-    public class PullPushTest implements MessageListener {
-        Channel          channel;
-        PullPushAdapter  adapter;
-        byte[]           data="Hello world".getBytes();
-        String           props; // fetch properties
-
-        public void receive(Message msg) {
-            System.out.println("Received msg: " + msg);
-        }
-
-        public void start() throws Exception {
-            channel=new JChannel(props);
-            channel.connect("PullPushTest");
-            adapter=new PullPushAdapter(channel);
-            adapter.setListener(this);
-
-            for(int i=0; i &lt; 10; i++) {
-                System.out.println("Sending msg #" + i);
-                channel.send(new Message(null, null, data));
-                Thread.currentThread().sleep(1000);
-            }
-            adapter.stop();
-            channel.close();
-        }
-
-
-        public static void main(String args[]) {
-            try {
-                new PullPushTest().start();
-            }
-            catch(Exception e) { /* error */ }
-        }
-    }
-      </screen>
-
-      <para>First a channel is created and connected to. Then an
-      instance of <classname>PullPushAdapter</classname> is created
-      with the channel as argument. The constructor of
-      <classname>PullPushAdapter</classname> starts its own thread
-      which continually reads on the channel. Then the
-      <classname>MessageListener</classname> is set, which causes all
-      messages received on the channel to be sent to
-      <methodname>receive()</methodname>. Then a number of messages
-      are sent via the channel to the entire group. As group messages
-      are also received by the sender, the
-      <methodname>receive()</methodname> method will be called every
-      time a message is received. Finally the
-      <classname>PullPushAdapter</classname> is stopped and the
-      channel closed. Note that explicitly stopping the
-      <classname>PullPushAdapter</classname> is not actually
-      necessary, a closing the channel would cause the
-      <classname>PullPushAdapter</classname> to terminate
-      anyway.</para>
-
-      <para>Note that, compared to the pull-style example, push-style
-      message reception is considerably easier (no separate thread
-      management) and requires less code to program.</para>
-
-        <note>
-            The PullPushAdapter has been deprecated, and will be removed in 3.0. Use a Receiver implementation
-            instead. The advantage of the Receiver-based (push) model is that we save 1 thread.
-        </note>
-
-    </section>
-    
-  </section>
-
-  <section><title>MessageDispatcher</title>
+  <section id="MessageDispatcher">
+      <title>MessageDispatcher</title>
 
     <para>Channels are simple patterns to
     <emphasis>asynchronously</emphasis> send a receive
@@ -365,7 +222,8 @@
     
   </section>
 
-  <section><title>RpcDispatcher</title>
+  <section id="RpcDispatcher">
+      <title>RpcDispatcher</title>
 
     <para>This class is derived from
     <classname>MessageDispatcher</classname>. It allows a programmer
@@ -558,137 +416,67 @@
   </section>
 
 
-  <section><title>ReplicatedHashMap</title>
+    <section id="ReplicatedHashMap">
+        <title>ReplicatedHashMap</title>
 
-      <para>
-          This class was written as a demo of how state can be shared between nodes of a cluster. It has never been
-          heavily tested and is therefore not meant to be used in production, and unsupported.
-      </para>
-
-      <para>A <classname>ReplicatedHashMap</classname> uses a concurrent hashmap internally
-          and allows to
-          create several instances of hashmaps in different processes. All
-          of these instances have exactly the same state at all times. When
-          creating such an instance, a group name determines which group of
-          replicated hashmaps will be joined. The new instance will then query the
-          state from existing members and update itself before starting to
-          service requests. If there are no existing members, it will simply
-          start with an empty state.
-      </para>
-
-      <para>Modifications such as <methodname>put()</methodname>,
-          <methodname>clear()</methodname> or
-          <methodname>remove()</methodname> will be propagated in orderly
-          fashion to all replicas. Read-only requests such as
-          <methodname>get()</methodname> will only be sent to the local
-          copy.
-      </para>
-
-      <para>Since both keys and values of a hashtable will be sent
-          across the network, both of them have to be
-          serializable. This allows for example to register remote RMI
-          objects with any local instance of a hashtable, which can
-          subsequently be looked up by another process which can then invoke
-          remote methods (remote RMI objects are serializable). Thus, a
-          distributed naming and registration service can be built in just a
-          couple of lines.
-      </para>
-
-      <para>A <classname>ReplicatedHashMap</classname> allows to
-          register for notifications, e.g. when a new item is set, or an
-          existing one removed. All registered listeners will notified when
-          such an event occurs. Notification is always local; for example in
-          the case of removing an element, first the element is removed in
-          all replicas, which then notify their listener(s) of the removal
-          (after the fact).
-      </para>
-
-      <para><classname>ReplicatedHashMap</classname> allow members in
-          a group to share common state across process and machine
-          boundaries.
-      </para>
-
-  </section>
-    
-
-
-
-  <section><title>NotificationBus</title>
-
-    <para>This class provides notification sending and handling
-    capability. Also, it allows an application programmer to maintain
-    a local cache which is replicated by all
-    instances. <classname>NotificationBus</classname> also sits on top
-    of a channel, however it creates its channel itself, so the
-    application programmers do not have to provide their own
-    channel. Notification consumers can subscribe to receive
-    notifications by calling <methodname>setConsumer()</methodname>
-    and implementing interface
-    <classname>NotificationBus.Consumer</classname>:</para>
-
-    <screen>
-    public interface Consumer {
-        void          handleNotification(Serializable n);
-        Serializable  getCache();
-        void          memberJoined(Address mbr);
-        void          memberLeft(Address mbr);
-    }
-    </screen>
-
-    <para>Method <methodname>handleNotification()</methodname> is
-    called whenever a notification is received from the channel. A
-    notification is any object that is serializable. Method
-    <methodname>getCache()</methodname> is called when someone wants
-    to retrieve our state; the state can be returned as a serializable
-    object. The <methodname>memberJoined()</methodname> and
-    <methodname>memberLeft()</methodname> callbacks are invoked
-    whenever a member joins or leaves (or crashes).</para>
-
-    <para>The most important methods of
-    <classname>NotificationBus</classname> are:</para>
-
-    <screen>
-    public class NotificationBus {
-         public void setConsumer(Consumer c);
-         public void start() throws Exception;
-         public void stop();
-         public void sendNotification(Serializable n);
-         public Serializable getCacheFromCoordinator(long timeout, int max_tries);
-         public Serializable getCacheFromMember(Address mbr, long timeout, int max_tries);
-    } 
-    </screen>
-
-    <para>Method <methodname>setConsumer()</methodname> allows a
-    consumer to register itself for notifications.</para>
-
-    <para>The <methodname>start()</methodname> and
-    <methodname>stop()</methodname> methods start and stop the
-    <classname>NotificationBus</classname>.</para>
-
-    <para>Method <methodname>sendNotification()</methodname> sends the
-    serializable object given as argument to all members of the group,
-    invoking their <methodname>handleNotification()</methodname>
-    methods on reception.</para>
-
-    <para>Methods <methodname>getCacheFromCoordinator()</methodname>
-    and <methodname>getCacheFromMember()</methodname> provide
-    functionality to fetch the group state from the coordinator (first
-    member in membership list) or any other member (if its address is
-    known). They take as arguments a timeout and a maximum number of
-    unsuccessful attempts until they return null. Typically one of
-    these methods would be called just after creating a new
-    <classname>NotificationBus</classname> to acquire the group
-    state. Note that if these methods are used, then the consumers
-    must implement <methodname>Consumer.getCache()</methodname>,
-    otherwise the two methods above would always return null.</para>
-    
-  </section>
-
-
-    <section>
-        <title>Distributed locking</title>
         <para>
-            In 2.12, a new distributed locking service was added, replacing DistributedLockManager. The new service is
+            This class was written as a demo of how state can be shared between nodes of a cluster. It has never been
+            heavily tested and is therefore not meant to be used in production, and unsupported.
+        </para>
+
+        <para>A
+            <classname>ReplicatedHashMap</classname>
+            uses a concurrent hashmap internally and allows to create several instances of hashmaps in different
+            processes. All of these instances have exactly the same state at all times. When creating such an instance,
+            a group name determines which group of replicated hashmaps will be joined. The new instance will then query
+            the state from existing members and update itself before starting to service requests. If there are no
+            existing members, it will simply start with an empty state.
+        </para>
+
+        <para>Modifications such as<methodname>put()</methodname>,
+            <methodname>clear()</methodname>
+            or
+            <methodname>remove()</methodname>
+            will be propagated in orderly fashion to all replicas. Read-only requests such as
+            <methodname>get()</methodname>
+            will only be sent to the local copy.
+        </para>
+
+        <para>Since both keys and values of a hashtable will be sent across the network, both of them have to be
+            serializable. This allows for example to register remote RMI objects with any local instance of a hashtable,
+            which can subsequently be looked up by another process which can then invoke remote methods (remote RMI
+            objects are serializable). Thus, a distributed naming and registration service can be built in just a couple
+            of lines.
+        </para>
+
+        <para>A
+            <classname>ReplicatedHashMap</classname>
+            allows to register for notifications, e.g. when a new item is set, or an existing one removed. All
+            registered listeners will notified when such an event occurs. Notification is always local; for example in
+            the case of removing an element, first the element is removed in all replicas, which then notify their
+            listener(s) of the removal (after the fact).
+        </para>
+
+        <para>
+            <classname>ReplicatedHashMap</classname>
+            allow members in a group to share common state across process and machine boundaries.
+        </para>
+
+    </section>
+
+
+    <section id="ReplCache">
+        <title>ReplCache</title>
+        <para>
+            TBD
+        </para>
+    </section>
+
+
+    <section id="LockService">
+        <title>Cluster wide locking</title>
+        <para>
+             In 2.12, a new distributed locking service was added, replacing DistributedLockManager. The new service is
             implemented as a protocol and is used via org.jgroups.blocks.locking.LockService.
         </para>
         <para>
@@ -699,18 +487,18 @@
         <para>
             Below is an example of how LockService is typically used:
             <screen>
-            // locking.xml needs to have a locking protocol
-            JChannel ch=new JChannel("/home/bela/locking.xml");
-            LockService lock_service=new LockService(ch);
-            ch.connect("lock-cluster");
-            Lock lock=lock_service.getLock("mylock");
-            lock.lock();
-            try {
+                // locking.xml needs to have a locking protocol
+                JChannel ch=new JChannel("/home/bela/locking.xml");
+                LockService lock_service=new LockService(ch);
+                ch.connect("lock-cluster");
+                Lock lock=lock_service.getLock("mylock");
+                lock.lock();
+                try {
                 // do something with the locked resource
-            }
-            finally {
+                }
+                finally {
                 lock.unlock();
-            }
+                }
             </screen>
         </para>
         <para>
@@ -743,7 +531,7 @@
                     <listitem>B successfully acquires "mylock" from A</listitem>
                     <listitem>D successfully acquires "mylock" from C</listitem>
                     <listitem>The partitions merge back into {A,B,C,D}. Now, only A is the coordinator, but C ceases
-                    to be a coordinator</listitem>
+                        to be a coordinator</listitem>
                     <listitem>Problem: D still holds a lock which should actually be invalid !</listitem>
                 </itemizedlist>
                 There is no easy way (via the Lock API) to 'remove' the lock from D. We could for example simply release
@@ -757,22 +545,23 @@
                     LockService lock_service;
                     ...
                     public void viewAccepted(View view) {
-                        if(view instanceof MergeView) {
-                            new Thread() {
-                                public void run() {
-                                    lock_service.unlockAll();
-                                    // stop all access to resources protected by l1, l2 or l3
-                                    // every thread needs to re-acquire the locks it holds
-                                }
-                            }.start
-                        }
+                    if(view instanceof MergeView) {
+                    new Thread() {
+                    public void run() {
+                    lock_service.unlockAll();
+                    // stop all access to resources protected by l1, l2 or l3
+                    // every thread needs to re-acquire the locks it holds
+                    }
+                    }.start
+                    }
                     }
                 </screen>
             </para>
         </section>
     </section>
-    <section>
-        <title>Distributed ExecutionService</title>
+
+    <section id="ExecutionService">
+        <title>Cluster wide task execution</title>
         <para>
             In 2.12, a distributed execution service was added. The new service is implemented as a protocol and is used
             via org.jgroups.blocks.executor.ExecutionService.
