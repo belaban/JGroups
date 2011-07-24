@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Bela Ban
  */
-public class ProtocolStack extends Protocol implements Transport {
+public class ProtocolStack extends Protocol {
     public static final int ABOVE = 1; // used by insertProtocol()
     public static final int BELOW = 2; // used by insertProtocol()
 

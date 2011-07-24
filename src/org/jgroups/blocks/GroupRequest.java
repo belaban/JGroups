@@ -3,13 +3,15 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -70,24 +72,16 @@ public class GroupRequest<T> extends Request {
      * @param options The request options to be used for this call
      */
     public GroupRequest(Message msg, RequestCorrelator corr, Collection<Address> targets, RequestOptions options) {
-        super(msg, corr, null, options);
+        super(msg, corr, options);
         int size=targets.size();
         requests=new HashMap<Address,Rsp<T>>(size);
         setTargets(targets);
     }
 
-    public GroupRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
-        super(m, corr, null, options);
+    public GroupRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
+        super(msg, corr, options);
         requests=new HashMap<Address,Rsp<T>>(1);
         setTarget(target);
-    }
-
-
-    public GroupRequest(Message m, Transport transport, Collection<Address> mbrs, RequestOptions options) {
-        super(m, null, transport, options);
-        int size=mbrs.size();
-        requests=new HashMap<Address,Rsp<T>>(size);
-        setTargets(mbrs);
     }
 
 
@@ -304,21 +298,7 @@ public class GroupRequest<T> extends Request {
 
     private void sendRequest(final Collection<Address> targetMembers, long requestId) throws Exception {
         try {
-            if(corr != null) {
-                corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
-            }
-            else {
-                if(options.getAnycasting()) {                                                          
-                    for(Address mbr: targetMembers) {
-                        Message copy=request_msg.copy(true);
-                        copy.setDest(mbr);
-                        transport.send(copy);
-                    }
-                }
-                else {
-                    transport.send(request_msg);
-                }
-            }
+            corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
         }
         catch(Exception ex) {
             if(corr != null)

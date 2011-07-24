@@ -15,6 +15,7 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.RspFilter;
+import org.jgroups.stack.Protocol;
 
 /**
  * A multiplexed message dispatcher.
@@ -71,7 +72,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
     }
 
     @Override
-    protected RequestCorrelator createRequestCorrelator(Object transport, RequestHandler handler, Address localAddr) {
+    protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address localAddr) {
         // We can't set the scope of the request correlator here
         // since this method is called from start() triggered in the
         // MessageDispatcher constructor, when this.scope is not yet defined

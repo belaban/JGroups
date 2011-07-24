@@ -11,10 +11,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * @author Bela Ban
@@ -71,9 +68,9 @@ public class GroupRequestTest {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
                 new Message(null, a3, new Long(3))};
-        MyTransport transport=new MyDelayedTransport(true, responses, 500);
+        MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(a3);
-        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
+        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -89,7 +86,7 @@ public class GroupRequestTest {
                 return num_rsps < 1;
             }
         });
-        transport.setGroupRequest(req);
+        corr.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
@@ -105,9 +102,9 @@ public class GroupRequestTest {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
                 new Message(null, a3, new Long(3))};
-        MyTransport transport=new MyDelayedTransport(true, responses, 500);
+        MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(a3);
-        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         req.setResponseFilter(new RspFilter() {
             int num_rsps=0;
 
@@ -124,7 +121,7 @@ public class GroupRequestTest {
                 return num_rsps < 2;
             }
         });
-        transport.setGroupRequest(req);
+        corr.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
@@ -137,7 +134,8 @@ public class GroupRequestTest {
 
     public void testAllNullResponsesWithFilter() {
         dests.add(a3);
-        GroupRequest<Boolean> req=new GroupRequest<Boolean>(new Message(), (Transport)null, dests, new RequestOptions(ResponseMode.GET_ALL, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<Boolean>(new Message(), null, dests,
+                                                            new RequestOptions(ResponseMode.GET_ALL, 10000));
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
@@ -151,7 +149,8 @@ public class GroupRequestTest {
 
     public void testAllNullResponsesWithFilterGetFirst() {
         dests.add(a3);
-        GroupRequest<Boolean> req=new GroupRequest<Boolean>(new Message(), (Transport)null, dests, new RequestOptions(ResponseMode.GET_FIRST, 10000));
+        GroupRequest<Boolean> req=new GroupRequest<Boolean>(new Message(), null, dests,
+                                                            new RequestOptions(ResponseMode.GET_FIRST, 10000));
         assert !req.isDone();
 
         req.setResponseFilter(new NonNullFilter());
@@ -208,11 +207,11 @@ public class GroupRequestTest {
             responses[i] = new Message(null, addr, new Long(i));
         }
         
-        MyDelayedTransport tp = new MyDelayedTransport(async, responses, delay);
+        MyCorrelator corr = new MyCorrelator(async, responses, delay);
         
         // instantiate request with dummy correlator
-        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), tp, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
-        tp.setGroupRequest(req);
+        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, timeout));
+        corr.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
         assert rc;
@@ -225,9 +224,9 @@ public class GroupRequestTest {
 
     private void _testMessageReception(boolean async) throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
-        MyTransport transport=new MyTransport(async, responses);
-        GroupRequest<Object> req=new GroupRequest<Object>(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
-        transport.setGroupRequest(req);
+        MyCorrelator corr=new MyCorrelator(async, responses, 0);
+        GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        corr.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
@@ -246,9 +245,9 @@ public class GroupRequestTest {
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
                                         new View(Util.createRandomAddress(), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
-        MyTransport transport=new MyTransport(async, responses);
-        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
-        transport.setGroupRequest(req);
+        MyCorrelator corr=new MyCorrelator(async, responses, 0);
+        GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        corr.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assert rc;
@@ -263,10 +262,10 @@ public class GroupRequestTest {
         new_dests.add(a2);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(Util.createRandomAddress(), 322649, new_dests)};
-        MyTransport transport=new MyTransport(async, responses);
-        GroupRequest<Object> req=new GroupRequest<Object>(new Message(), transport, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
+        MyCorrelator corr=new MyCorrelator(async, responses, 0);
+        GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
 
-        transport.setGroupRequest(req);
+        corr.setGroupRequest(req);
         System.out.println("group request before execution: " + req);
         boolean rc=req.execute();
         System.out.println("group request after execution: " + req);
@@ -279,22 +278,33 @@ public class GroupRequestTest {
 
 
 
+    protected static class MyCorrelator extends RequestCorrelator {
+        protected GroupRequest request;
+        protected boolean      async=true;
+        protected Object[]     responses=null;
+        protected long         delay=0;
 
-    protected static class MyTransport implements Transport {
-        GroupRequest request;
-        boolean      async=true;
-        Object[]     responses=null;
-
-        public MyTransport(boolean async, Object[] responses) {
+        public MyCorrelator(boolean async, Object[] responses, long delay) {
+            super(null, null, null);
             this.async=async;
             this.responses=responses;
+            this.delay=delay;
         }
 
         public void setGroupRequest(GroupRequest r) {
             request=r;
         }
 
-        public void send(Message msg) throws Exception {
+
+        public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
+            send();
+        }
+
+        public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
+            send();
+        }
+
+        protected void send() {
             if(async) {
                 new Thread() {
                     public void run() {
@@ -307,14 +317,12 @@ public class GroupRequestTest {
             }
         }
 
-        public Object receive(long timeout) throws Exception {
-            return null;
-        }
-
-        void sendResponses() {
+        protected void sendResponses() {
             if(responses != null) {
                 Object obj;
                 for(int i=0; i < responses.length; i++) {
+                    if(delay > 0)
+                        Util.sleep(delay);
                     obj=responses[i];
                     if(obj == null) {
                         System.err.println("object was null");
@@ -334,63 +342,6 @@ public class GroupRequestTest {
                     }
                     else if(obj instanceof View)
                         request.viewChange((View)obj);
-                    else
-                        System.err.println("Object needs to be Message, SuspectEvent or View");
-                }
-            }
-        }
-    }
-
-
-    /**
-     * transport with set delays between messages
-     *
-     * @author bgodfrey
-     *
-     */
-    private static final class MyDelayedTransport extends MyTransport {
-        long delay;
-
-        public MyDelayedTransport(boolean async, Object[] responses) {
-            super(async, responses);
-        }
-
-        public MyDelayedTransport(boolean async, Object[] responses, long delay) {
-            super(async, responses);
-            this.delay = delay;
-        }
-
-
-        void sendResponses() {
-            if (responses != null) {
-                Object obj;
-                for (int i = 0; i < responses.length; i++) {
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-
-                    obj = responses[i];
-                    if (obj == null) {
-                        System.err.println("object was null");
-                        continue;
-                    }
-                    if (obj instanceof Message) {
-                        Message msg = (Message) obj;
-                        Address sender = msg.getSrc();
-                        Object retval = null;
-                        try {
-                            retval = Util.objectFromByteBuffer(msg.getBuffer());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        request.receiveResponse(retval, sender, false);
-                    }
-                    else if (obj instanceof View)
-                        request.viewChange((View) obj);
-                    else
-                        System.err.println("Object needs to be Message, SuspectEvent or View");
                 }
             }
         }

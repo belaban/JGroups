@@ -140,7 +140,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
         }
     }
 
-    protected RequestCorrelator createRequestCorrelator(Object transport, RequestHandler handler, Address local_addr) {
+    protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
         return new RequestCorrelator(transport, handler, local_addr);
     }
 

@@ -17,53 +17,121 @@
   <section id="MessageDispatcher">
       <title>MessageDispatcher</title>
 
-    <para>Channels are simple patterns to
-    <emphasis>asynchronously</emphasis> send a receive
-    messages. However, a significant number of communication patterns
-    in group communication require <emphasis>synchronous
-    communication</emphasis>. For example, a sender would like to send
-    a message to the group and wait for all responses. Or another
-    application would like to send a message to the group and wait
-    only until the majority of the receivers have sent a response, or
-    until a timeout occurred.</para>
+      <para>
+          Channels are simple patterns to <emphasis>asynchronously</emphasis>
+          send and receive messages. However, a significant number of communication patterns in group communication
+          require <emphasis>synchronous</emphasis> communication. For example, a sender would like to send a message to
+          the group and wait for all responses. Or another application would like to send a message to the group and
+          wait only until the majority of the receivers have sent a response, or until a timeout occurred.
+      </para>
 
-    <para><classname>MessageDispatcher</classname> offers a
-    combination of the above pattern with other patterns. It provides
-    synchronous (as well as asynchronous) message sending with
-    request-response correlation, e.g. matching responses with the
-    original request. It also offers push-style message reception (by
-    internally using the
-    <classname>PullPushAdapter</classname>).</para>
+      <para>
+          <classname>MessageDispatcher</classname> provides blocking (and non-blocking) request sending and response
+          correlation. It offers synchronous (as well as asynchronous) message sending with request-response
+          correlation, e.g. matching one or multiple responses with the original request.
+      </para>
 
-    <para>An instance of <classname>MessageDispatcher</classname> is
-    created with a channel as argument. It can now be used in both
-    <emphasis>client and server role</emphasis>: a client sends
-    requests and receives responses and a server receives requests and
-    send responses. <classname>MessageDispatcher</classname> allows a
-    application to be both at the same time. To be able to serve
-    requests, the <methodname>RequestHandler.handle()</methodname>
-    method has to be implemented:</para>
+      <para>
+          An example of using this class would be to send a request message to all cluster members, and block until all
+          responses have been received, or until a timeout has elapsed.
+      </para>
 
-    <screen>
-    Object handle(Message msg);
-    </screen>
+      <para>
+          Contrary to <xref linkend="RpcDispatcher">RpcDispatcher</xref>, MessageDispatcher deals with
+          <emphasis>sending message requests and correlating message responses</emphasis>, while RpcDispatcher deals
+          with <emphasis>invoking method calls and correlating responses</emphasis>. RpcDispatcher extends
+          MessageDispatcher, and offers an even higher level of abstraction over MessageDispatcher.
+      </para>
 
-    <para>The <methodname>handle()</methodname> method is called any
-    time a request is received. It must return a return value (must be
-    serializable, but can be null) or throw an exception. The return
-    value will be returned to the sender (as a null response, see
-    below). The exception will also be propagated to the
-    requester.</para>
+      <para>
+          An instance of <classname>MessageDispatcher</classname> is created with a channel as argument. It can now be
+          used in both <emphasis>client and server role</emphasis>: a client sends requests and receives responses and
+          a server receives requests and sends responses. <classname>MessageDispatcher</classname> allows for an
+          application to be both at the same time. To be able to serve requests, the
+          <methodname>RequestHandler.handle()</methodname> method has to be implemented:
+          <programlisting>
+              Object handle(Message msg) throws Exception;
+          </programlisting>
+      </para>
 
-    <para>The two methods to send requests are:</para>
+      <para>
+          The <methodname>handle()</methodname> method is called whenever a request is received. It must return a value
+          (must be serializable, but can be null) or throw an exception. The returned value will be sent to the sender,
+          and exceptions are also propagated to the sender.
+      </para>
 
-    <screen>
-    public RspList castMessage(Vector dests, Message msg, int mode, long timeout);
-    public Object sendMessage(Message msg, int mode, long timeout)
-        throws TimeoutException;
-    </screen>
+      <para>
+          Before looking at the methods of MessageDispatcher, let's take a look at RequestOptions first.
+      </para>
 
-    <para>The <methodname>castMessage()</methodname> method sends a
+      <section id="RequestOptions">
+          <title>RequestOptions</title>
+          <para>
+              Every message sending in MessageDispatcher or request invocation in RpcDispatcher is governed by an
+              instance of RequestOptions. This is a class which can be passed to a call to define the various
+              options related to the call, e.g. a timeout, whether the call should block or not, the flags (see
+              <xref linkend="MessageFlags"/>) etc.
+          </para>
+          <para>
+              The various options are:
+              <itemizedlist>
+                  <listitem>
+                      response mode: this determines whether the call is blocking and - if yes - how long
+                      it should block. The modes are:
+                      <itemizedlist>
+                          <listitem>GET_ALL: block until responses from all members (minus the suspected ones) have
+                              been received.
+                          </listitem>
+                          <listitem>GET_NONE: wait for none. This makes the call non-blocking</listitem>
+                          <listitem>GET_FIRST: block until the first response (from anyone) has been received</listitem>
+                          <listitem>GET_MAJORITY: block until a majority of members have responded</listitem>
+                      </itemizedlist>
+                  </listitem>
+                  <listitem>
+                      timeout: number of milliseconds we're willing to block. If the call hasn't terminated after the
+                      timeout elapsed, a TimeoutException will be thrown. A timeout of 0 means to wait forever. The
+                      timeout is ignored if the call is non-blocking (mode=GET_NONE)
+                  </listitem>
+                  <listitem>
+                      anycasting: if set to true, this means we'll use unicasts to individual members rather than sending
+                      multicasts. For example, if we have have TCP as transport, and the cluster is {A,B,C,D,E}, and we
+                      send a message through MessageDispatcher where dests={C,D}, and we do <em>not</em> want to send
+                      the request to everyone, and everyone except C and D discard the message, then we'd set
+                      anycasting=true. This will send the request to C and D only, as unicasts, which is better if
+                      we use a transport such as TCP which cannot use IP multicasting (sending 1 packet to reach all
+                      members).
+                  </listitem>
+                  <listitem>
+                      response filter: TDB
+                  </listitem>
+                  <listitem>
+                      scope: TDB
+                  </listitem>
+                  <listitem>
+                      flags: the various flags to be passed to the message, see <xref linkend="MessageFlags"/> for details.
+                  </listitem>
+                  <listitem>
+                      exclusion list: here we can pass a list of members (addresses) that should be excluded. For example,
+                      if the view is A,B,C,D,E, and we set exclusion list to A,C then the caller will wait for responses
+                      from everyone except A and C.
+                  </listitem>
+              </itemizedlist>
+          </para>
+      </section>
+
+      <para>The methods to send requests are:</para>
+
+      <programlisting>
+          public &lt;T&gt; RspList&lt;T&gt; castMessage(final Collection&lt;Address&gt; dests,
+                                      Message msg, RequestOptions options) throws Exception;
+          public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; castMessageWithFuture(final Collection&lt;Address&gt; dests,
+                                                                 Message msg, RequestOptions options) throws Exception;
+          public &lt;T&gt; T sendMessage(Message msg, RequestOptions opts) throws Exception;
+          public &lt;T&gt; NotifyingFuture&lt;T&gt; sendMessageWithFuture(Message msg, RequestOptions options) throws Exception;
+
+      </programlisting>
+
+      <para>The <methodname>castMessage()</methodname> method sends a
     message to all members defined in <parameter>dests</parameter>. If
     <parameter>dests</parameter> is null the message will be sent to
     all members of the current group. Note that a possible destination

@@ -3,7 +3,6 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
@@ -37,7 +36,6 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
     protected final  Message          request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
-    protected final Transport         transport;    // Transport (one of them has to be non-null)
 
     protected final RequestOptions    options;
 
@@ -49,10 +47,9 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
 
     
-    public Request(Message request, RequestCorrelator corr, Transport transport, RequestOptions options) {
+    public Request(Message request, RequestCorrelator corr, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
-        this.transport=transport;
         this.options=options;
         this.req_id=getRequestId();
     }
@@ -78,8 +75,8 @@ public abstract class Request implements RspCollector, NotifyingFuture {
     }
 
     public boolean execute() throws Exception {
-        if(corr == null && transport == null) {
-            if(log.isErrorEnabled()) log.error("both corr and transport are null, cannot send group request");
+        if(corr == null) {
+            if(log.isErrorEnabled()) log.error("corr is null, cannot send request");
             return false;
         }
 

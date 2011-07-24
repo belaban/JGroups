@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 public class RequestCorrelator {
 
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
-    protected Object transport=null;
+    protected Protocol transport=null;
 
     /**
      * The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>)
@@ -73,13 +73,12 @@ public class RequestCorrelator {
      * (e.g. in different protocol layers). Has to be unique if multiple
      * request correlators are used.
      *
-     * @param transport Used to send/pass up requests. Can be either a Transport (only send() will be
-     *                  used then), or a Protocol (up_prot.up()/down_prot.down() will be used)
+     * @param transport Used to send/pass up requests. Is a Protocol (up_prot.up()/down_prot.down() will be used)
      *
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
      */
-    public RequestCorrelator(short id, Object transport, RequestHandler handler, Address local_addr) {
+    public RequestCorrelator(short id, Protocol transport, RequestHandler handler, Address local_addr) {
         this.id         = id;
         this.transport  = transport;
         this.local_addr = local_addr;
@@ -87,7 +86,7 @@ public class RequestCorrelator {
         start();
     }
 
-    public RequestCorrelator(Object transport, RequestHandler handler, Address local_addr) {
+    public RequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
         this.transport  = transport;
         this.local_addr = local_addr;
         request_handler = handler;
@@ -148,32 +147,15 @@ public class RequestCorrelator {
         if(coll != null)
             addEntry(hdr.id, coll);
 
-        if(transport instanceof Protocol) {
-            if(options.getAnycasting()) {
-                for(Address mbr: dest_mbrs) {
-                    Message copy=msg.copy(true);
-                    copy.setDest(mbr);
-                    ((Protocol)transport).down(new Event(Event.MSG, copy));
-                }
-            }
-            else {
-                ((Protocol)transport).down(new Event(Event.MSG, msg));
-            }
-        }
-        else if(transport instanceof Transport) {
-            if(options.getAnycasting()) {
-                for(Address mbr: dest_mbrs) {
-                    Message copy=msg.copy(true);
-                    copy.setDest(mbr);
-                    ((Transport)transport).send(copy);
-                }
-            }
-            else {
-                ((Transport)transport).send(msg);
+        if(options.getAnycasting()) {
+            for(Address mbr: dest_mbrs) {
+                Message copy=msg.copy(true);
+                copy.setDest(mbr);
+                transport.down(new Event(Event.MSG, copy));
             }
         }
         else
-            throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " + transport.getClass());
+            transport.down(new Event(Event.MSG, msg));
     }
 
     /**
@@ -200,15 +182,7 @@ public class RequestCorrelator {
         if(coll != null)
             addEntry(hdr.id, coll);
 
-        if(transport instanceof Protocol) {
-            ((Protocol)transport).down(new Event(Event.MSG, msg));
-        }
-        else if(transport instanceof Transport) {
-            ((Transport)transport).send(msg);
-        }
-        else
-            throw new IllegalStateException("transport has to be either a Transport or a Protocol, however it is a " +
-                    transport.getClass());
+        transport.down(new Event(Event.MSG, msg));
     }
 
 
@@ -522,18 +496,7 @@ public class RequestCorrelator {
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
 
-        try {
-            if(transport instanceof Protocol)
-                ((Protocol)transport).down(new Event(Event.MSG, rsp));
-            else if(transport instanceof Transport)
-                ((Transport)transport).send(rsp);
-            else
-                if(log.isErrorEnabled()) log.error("transport object has to be either a " +
-                                                   "Transport or a Protocol, however it is a " + transport.getClass());
-        }
-        catch(Throwable e) {
-            if(log.isErrorEnabled()) log.error("failed sending the response", e);
-        }
+        transport.down(new Event(Event.MSG, rsp));
     }
 
     protected void prepareResponse(Message rsp) {

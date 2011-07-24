@@ -9,6 +9,7 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.blocks.RspCollector;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.stack.Protocol;
 
 /**
  * A request correlator that adds a mux header to incoming and outgoing messages.
@@ -21,7 +22,7 @@ public class MuxRequestCorrelator extends RequestCorrelator {
     protected final static short MUX_ID = ClassConfigurator.getProtocolId(MuxRequestCorrelator.class);
     private final org.jgroups.Header header;
     
-    public MuxRequestCorrelator(short id, Object transport, RequestHandler handler, Address localAddr) {
+    public MuxRequestCorrelator(short id, Protocol transport, RequestHandler handler, Address localAddr) {
         super(ClassConfigurator.getProtocolId(RequestCorrelator.class), transport, handler, localAddr);
         this.header = new MuxHeader(id);
     }

@@ -3,7 +3,6 @@ package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.Transport;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Rsp;
@@ -25,14 +24,14 @@ public class UnicastRequest<T> extends Request {
 
 
 
-    public UnicastRequest(Message m, RequestCorrelator corr, Address target, RequestOptions options) {
-        super(m, corr, null, options);
+    public UnicastRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
+        super(msg, corr, options);
         this.target=target;
         result=new Rsp<T>(target);
     }
 
-    public UnicastRequest(Message m, Transport transport, Address target, RequestOptions options) {
-        super(m, null, transport, options);
+    public UnicastRequest(Message msg, Address target, RequestOptions options) {
+        super(msg, null, options);
         this.target=target;
         result=new Rsp<T>(target);
     }
@@ -41,12 +40,7 @@ public class UnicastRequest<T> extends Request {
     protected void sendRequest() throws Exception {
         try {
             if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
-            if(corr != null) {
-                corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
-            }
-            else {
-                transport.send(request_msg);
-            }
+            corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
         }
         catch(Exception ex) {
             if(corr != null)
