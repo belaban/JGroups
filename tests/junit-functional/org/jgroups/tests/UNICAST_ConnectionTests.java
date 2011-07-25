@@ -1,19 +1,21 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.protocols.UNICAST;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
 
 /**
- * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design.UNICAST.new.txt.
+ * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design/UNICAST2.txt
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
@@ -21,7 +23,7 @@ public class UNICAST_ConnectionTests {
     private JChannel a, b;
     private Address a_addr, b_addr;
     private MyReceiver r1, r2;
-    private UNICAST u1, u2;
+    private Protocol u1, u2;
     private static final String props="SHARED_LOOPBACK:UNICAST";
     private static final String CLUSTER="UNICAST_ConnectionTests";
 
@@ -31,15 +33,17 @@ public class UNICAST_ConnectionTests {
         r1=new MyReceiver("A");
         r2=new MyReceiver("B");
         a=new JChannel(props);
+        a.setName("A");
         a.connect(CLUSTER);
         a_addr=a.getAddress();
         a.setReceiver(r1);
-        u1=(UNICAST)a.getProtocolStack().findProtocol(UNICAST.class);
+        u1=a.getProtocolStack().findProtocol(UNICAST.class);
         b=new JChannel(props);
+        b.setName("B");
         b.connect(CLUSTER);
         b_addr=b.getAddress();
         b.setReceiver(r2);
-        u2=(UNICAST)b.getProtocolStack().findProtocol(UNICAST.class);
+        u2=b.getProtocolStack().findProtocol(UNICAST.class);
         System.out.println("A=" + a_addr + ", B=" + b_addr);
     }
 
@@ -65,8 +69,8 @@ public class UNICAST_ConnectionTests {
         
         // now close the connections to each other
         System.out.println("==== Closing the connections on both sides");
-        u1.removeConnection(b_addr);
-        u2.removeConnection(a_addr);
+        removeConnection(u1, b_addr);
+        removeConnection(u2, a_addr);
         r1.clear(); r2.clear();
 
         // causes new connection establishment
@@ -82,7 +86,7 @@ public class UNICAST_ConnectionTests {
 
         // now close connection on A unilaterally
         System.out.println("==== Closing the connection on A");
-        u1.removeConnection(b_addr);
+        removeConnection(u1, b_addr);
 
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
@@ -96,7 +100,7 @@ public class UNICAST_ConnectionTests {
 
         // now close connection on A unilaterally
         System.out.println("==== Closing the connection on B");
-        u2.removeConnection(a_addr);
+        removeConnection(u2, a_addr);
 
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
@@ -108,11 +112,11 @@ public class UNICAST_ConnectionTests {
      * but loses the first message
      */
     public void testAClosingUnilaterallyButLosingFirstMessage() throws Exception {
-        sendToEachOtherAndCheck(10);
+        sendAndCheck(a, b_addr, 10, r2);
 
         // now close connection on A unilaterally
         System.out.println("==== Closing the connection on A");
-        u1.removeConnection(b_addr);
+        removeConnection(u1, b_addr);
 
         // add a Drop protocol to drop the first unicast message
         Drop drop=new Drop(true);
@@ -120,6 +124,58 @@ public class UNICAST_ConnectionTests {
 
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
+    }
+
+    /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.jboss.org/browse/JGRP-1347) */
+    public void testMultipleConcurrentResets() throws Exception {
+        sendAndCheck(a, b_addr, 1, r2);
+
+        // now close connection on A unilaterally
+        System.out.println("==== Closing the connection on A");
+        removeConnection(u1, b_addr);
+
+        r2.clear();
+
+        final UNICAST unicast=(UNICAST)b.getProtocolStack().findProtocol(UNICAST.class);
+
+        int NUM=10;
+
+        final List<Message> msgs=new ArrayList<Message>(NUM);
+
+        for(int i=1; i <= NUM; i++) {
+            Message msg=new Message(b_addr, a_addr, "m" + i);
+            UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(1, (short)2, true);
+            msg.putHeader(unicast.getId(), hdr);
+            msgs.add(msg);
+        }
+
+
+        Thread[] threads=new Thread[NUM];
+        final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
+        for(int i=0; i < NUM; i++) {
+            final int index=i;
+            threads[i]=new Thread() {
+                public void run() {
+                    try {
+                        barrier.await();
+                        unicast.up(new Event(Event.MSG, msgs.get(index)));
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            threads[i].start();
+        }
+
+        barrier.await();
+        for(Thread thread: threads)
+            thread.join();
+
+        List<Message> list=r2.getMessages();
+        System.out.println("list = " + print(list));
+
+        assert list.size() == 1 : "list must have 1 element but has " + list.size() + ": " + print(list);
     }
 
 
@@ -152,14 +208,27 @@ public class UNICAST_ConnectionTests {
         for(int i=1; i <= num; i++)
             channel.send(dest, "m" + i);
         List<Message> list=receiver.getMessages();
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(list.size() == num)
                 break;
             Util.sleep(500);
         }
         System.out.println("list = " + print(list));
         int size=list.size();
-        assert size == num : "list has " + size + " elements";
+        assert size == num : "list has " + size + " elements: " + list;
+    }
+
+    protected void removeConnection(Protocol prot, Address target) {
+        if(prot instanceof UNICAST) {
+            UNICAST unicast=(UNICAST)prot;
+            unicast.removeConnection(target);
+        }
+        else if(prot instanceof UNICAST2) {
+            UNICAST2 unicast=(UNICAST2)prot;
+            unicast.removeConnection(target);
+        }
+        else
+            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST or UNICAST2");
     }
 
 

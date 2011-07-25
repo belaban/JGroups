@@ -67,6 +67,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
     private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
+    protected final ReentrantLock recv_table_lock=new ReentrantLock();
+
     private final List<Address> members=new ArrayList<Address>(11);
 
     private Address local_addr=null;
@@ -496,7 +498,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    private void handleDataReceived(Address sender, long seqno, long conn_id,  boolean first, Message msg, Event evt) {
+    protected void handleDataReceived(Address sender, long seqno, long conn_id,  boolean first, Message msg, Event evt) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -506,36 +508,45 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             log.trace(sb);
         }
 
-        ReceiverEntry entry=recv_table.get(sender);
-        AckReceiverWindow win=entry != null? entry.received_msgs : null;
+        AckReceiverWindow win;
 
-        if(first) {
-            if(entry == null) {
-                entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
-                win=entry.received_msgs;
-            }
-            else {  // entry != null && win != null
-                if(conn_id != entry.recv_conn_id) {
-                    if(log.isTraceEnabled())
-                        log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
-
-                    ReceiverEntry entry2=recv_table.remove(sender);
-                    if(entry2 != null)
-                        entry2.received_msgs.reset();
-                    
+        recv_table_lock.lock();
+        try {
+            ReceiverEntry entry=recv_table.get(sender);
+            win=entry != null? entry.received_msgs : null;
+            if(first) {
+                if(entry == null) {
                     entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
                     win=entry.received_msgs;
                 }
-                else {
-                    ;
+                else {  // entry != null && win != null
+                    if(conn_id != entry.recv_conn_id) {
+                        if(log.isTraceEnabled())
+                            log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
+
+                        ReceiverEntry entry2=recv_table.remove(sender);
+                        if(entry2 != null)
+                            entry2.received_msgs.reset();
+                    
+                        entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
+                        win=entry.received_msgs;
+                    }
+                    else {
+                        ;
+                    }
+                }
+            }
+            else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
+                if(win == null || entry.recv_conn_id != conn_id) {
+                    recv_table_lock.unlock();
+                    sendRequestForFirstSeqno(sender); // drops the message and returns (see below)
+                    return;
                 }
             }
         }
-        else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
-            if(win == null || entry.recv_conn_id != conn_id) {
-                sendRequestForFirstSeqno(sender); // drops the message and returns (see below)
-                return;
-            }
+        finally {
+            if(recv_table_lock.isHeldByCurrentThread())
+                recv_table_lock.unlock();
         }
 
         byte result=win.add2(seqno, msg); // win is guaranteed to be non-null if we get here

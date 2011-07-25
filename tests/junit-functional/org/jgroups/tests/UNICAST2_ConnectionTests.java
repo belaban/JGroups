@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
 
 /**
  * Tests unilateral closings of UNICAST2 connections. The test scenarios are described in doc/design.UNICAST.new.txt.
@@ -122,6 +123,58 @@ public class UNICAST2_ConnectionTests {
         sendAndCheck(a, b_addr, 10, r2);
     }
 
+
+    /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.jboss.org/browse/JGRP-1347) */
+    public void testMultipleConcurrentResets() throws Exception {
+        sendAndCheck(a, b_addr, 1, r2);
+
+        // now close connection on A unilaterally
+        System.out.println("==== Closing the connection on A");
+        u1.removeConnection(b_addr);
+
+        r2.clear();
+
+        final UNICAST2 unicast=(UNICAST2)b.getProtocolStack().findProtocol(UNICAST2.class);
+
+        int NUM=10;
+
+        final List<Message> msgs=new ArrayList<Message>(NUM);
+
+        for(int i=1; i <= NUM; i++) {
+            Message msg=new Message(b_addr, a_addr, "m" + i);
+            UNICAST2.Unicast2Header hdr=UNICAST2.Unicast2Header.createDataHeader(1, (short)2, true);
+            msg.putHeader(unicast.getId(), hdr);
+            msgs.add(msg);
+        }
+
+
+        Thread[] threads=new Thread[NUM];
+        final CyclicBarrier barrier=new CyclicBarrier(NUM+1);
+        for(int i=0; i < NUM; i++) {
+            final int index=i;
+            threads[i]=new Thread() {
+                public void run() {
+                    try {
+                        barrier.await();
+                        unicast.up(new Event(Event.MSG, msgs.get(index)));
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            threads[i].start();
+        }
+
+        barrier.await();
+        for(Thread thread: threads)
+            thread.join();
+
+        List<Message> list=r2.getMessages();
+        System.out.println("list = " + print(list));
+
+        assert list.size() == 1 : "list must have 1 element but has " + list.size() + ": " + print(list);
+    }
 
 
     /**
