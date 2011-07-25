@@ -44,10 +44,15 @@
       </para>
 
       <para>
-          An instance of <classname>MessageDispatcher</classname> is created with a channel as argument. It can now be
+          RpcDispatcher is essentially a way to invoke remote procedure calls (RCs) across a cluster.
+      </para>
+
+      <para>
+          Both MessageDispatcher and RpcDispatcher sit on top of a channel; therefore an instance of
+          <classname>MessageDispatcher</classname> is created with a channel as argument. It can now be
           used in both <emphasis>client and server role</emphasis>: a client sends requests and receives responses and
           a server receives requests and sends responses. <classname>MessageDispatcher</classname> allows for an
-          application to be both at the same time. To be able to serve requests, the
+          application to be both at the same time. To be able to serve requests in the server role, the
           <methodname>RequestHandler.handle()</methodname> method has to be implemented:
           <programlisting>
               Object handle(Message msg) throws Exception;
@@ -76,7 +81,7 @@
               The various options are:
               <itemizedlist>
                   <listitem>
-                      response mode: this determines whether the call is blocking and - if yes - how long
+                      Response mode: this determines whether the call is blocking and - if yes - how long
                       it should block. The modes are:
                       <itemizedlist>
                           <listitem>GET_ALL: block until responses from all members (minus the suspected ones) have
@@ -88,35 +93,51 @@
                       </itemizedlist>
                   </listitem>
                   <listitem>
-                      timeout: number of milliseconds we're willing to block. If the call hasn't terminated after the
+                      Timeout: number of milliseconds we're willing to block. If the call hasn't terminated after the
                       timeout elapsed, a TimeoutException will be thrown. A timeout of 0 means to wait forever. The
                       timeout is ignored if the call is non-blocking (mode=GET_NONE)
                   </listitem>
                   <listitem>
-                      anycasting: if set to true, this means we'll use unicasts to individual members rather than sending
+                      Anycasting: if set to true, this means we'll use unicasts to individual members rather than sending
                       multicasts. For example, if we have have TCP as transport, and the cluster is {A,B,C,D,E}, and we
-                      send a message through MessageDispatcher where dests={C,D}, and we do <em>not</em> want to send
-                      the request to everyone, and everyone except C and D discard the message, then we'd set
-                      anycasting=true. This will send the request to C and D only, as unicasts, which is better if
+                      send a message through MessageDispatcher where dests={C,D}, and we do <emphasis>not</emphasis>
+                      want to send the request to everyone, and everyone except C and D discard the message, then we'd
+                      set anycasting=true. This will send the request to C and D only, as unicasts, which is better if
                       we use a transport such as TCP which cannot use IP multicasting (sending 1 packet to reach all
                       members).
                   </listitem>
                   <listitem>
-                      response filter: TDB
+                      Response filter: A RspFilter allows for filtering of responses and user-defined termination of
+                      a call. For example, if we expect responses from 10 members, but can return after having
+                      received 3 non-null responses, a RspFilter could be used. See <xref linkend="RspFilter"/> for
+                      a discussion on response filters.
                   </listitem>
                   <listitem>
-                      scope: TDB
+                      Scope: a short, defining a scope. This allows for concurrent delivery of messages from the same
+                      sender. See <xref linkend="Scopes"/> for a discussion on scopes.
                   </listitem>
                   <listitem>
-                      flags: the various flags to be passed to the message, see <xref linkend="MessageFlags"/> for details.
+                      Flags: the various flags to be passed to the message, see <xref linkend="MessageFlags"/> for details.
                   </listitem>
                   <listitem>
-                      exclusion list: here we can pass a list of members (addresses) that should be excluded. For example,
+                      Exclusion list: here we can pass a list of members (addresses) that should be excluded. For example,
                       if the view is A,B,C,D,E, and we set exclusion list to A,C then the caller will wait for responses
                       from everyone except A and C.
                   </listitem>
               </itemizedlist>
           </para>
+
+          <para>
+          An example of how to use RequestOptions is:
+          </para>
+
+          <programlisting>
+              RpcDispatcher disp;
+              RequestOptions opts=new RequestOptions(Request.GET_ALL)
+                                      .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+              Object val=disp.callRemoteMethod(target, method_call, opts);
+          </programlisting>
+
       </section>
 
       <para>The methods to send requests are:</para>
@@ -131,103 +152,82 @@
 
       </programlisting>
 
-      <para>The <methodname>castMessage()</methodname> method sends a
-    message to all members defined in <parameter>dests</parameter>. If
-    <parameter>dests</parameter> is null the message will be sent to
-    all members of the current group. Note that a possible destination
-    set in the message will be overridden. If a message is sent
-    synchronously then the <parameter>timeout</parameter> argument
-    defines the maximum amount of time in milliseconds to wait for the
-    responses.</para>
+      <para>
+          <methodname>castMessage()</methodname> sends a message to all members defined in
+          <parameter>dests</parameter>. If <parameter>dests</parameter> is null, the message will be sent to all
+          members of the current cluster. Note that a possible destination set in the message will be overridden.
+          If a message is sent synchronously (defined by options.mode) then <parameter>options.timeout</parameter>
+          defines the maximum amount of time (in milliseconds) to wait for the responses.
+      </para>
 
-    <para>The <parameter>mode</parameter> parameter defines whether
-    the message will be sent synchronously or asynchronously. The
-    following values are valid (from
-    <classname>org.jgroups.blocks.GroupRequest</classname>):</para>
+      <para>
+          <methodname>castMessage()</methodname> returns a RspList, which contains a map of addresses and Rsps;
+          there's one Rsp per member listed in <parameter>dests</parameter>.
+      </para>
 
-    <variablelist>
-      <varlistentry>
-	<term>GET_FIRST</term> 
-    	<listitem><para>Returns the first response
-    	received.</para></listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>GET_ALL</term>
-    	<listitem><para>Waits for all responses (minus the ones from
-        suspected members)</para></listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>GET_MAJORITY</term>
-    	<listitem><para>Waits for a majority of all responses
-        (relative to the group size)</para></listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>GET_ABS_MAJORITY</term>
-    	<listitem><para>Waits for the majority (absolute, computed
-        once)</para></listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>GET_N</term>
-    	<listitem><para>Wait for n responses (may block if n > group
-        size)</para></listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>GET_NONE</term>
-    	<listitem><para>Wait for no responses, return immediately
-        (non-blocking). This make the call
-        asynchronous.</para></listitem>
-      </varlistentry>
-    </variablelist>
+      <para>
+          A Rsp instance contains the response value (or null), an exception if the target handle() method threw
+          an exception, whether the target member was suspected, or not, and so on. See the example below for
+          more details.
+      </para>
 
+      <para>
+          <methodname>castMessageWithFuture()</methodname> returns immediately, with a future. The future
+          can be used to fetch the response list (now or later), and it also allows for installation of a callback
+          which will be invoked whenever the future is done.
+          See <xref linkend="NotifyingFuture"/> for details on how to use NotifyingFutures.
+      </para>
+
+
+      <para>
+          <methodname>sendMessage()</methodname> allows an application programmer to send a unicast message to a
+          single cluster member and receive the response. The destination of the message has to be non-null (valid
+          address of a member). The <parameter>mode</parameter> argument is ignored (it is by default set to
+          <constant>ResponseMode.GET_FIRST</constant>) unless it is set to <constant>GET_NONE</constant> in which case
+          the request becomes asynchronous, ie. we will not wait for the response.
+      </para>
+
+      <para>
+          <methodname>sendMessageWithFuture()</methodname> returns immediately with a future, which can be used to
+          fetch the result.
+      </para>
+
+      <para>
+          One advantage of using this building block is that failed members are removed from the set of expected
+          responses. For example, when sending a message to 10 members and waiting for all responses, and 2 members
+          crash before being able to send a response, the call will return with 8 valid responses and 2 marked as
+          failed. The return value of <methodname>castMessage()</methodname> is a <classname>RspList</classname>
+          which contains all responses (not all methods shown):
+      </para>
+
+      <programlisting>
+          public class RspList implements Map&lt;Address,Rsp&gt; {
+              public boolean isReceived(Address sender);
+              public int     numSuspectedMembers();
+              public Vector  getResults();
+              public Vector  getSuspectedMembers();
+              public boolean isSuspected(Address sender);
+              public Object  get(Address sender);
+              public int     size();
+          }
+    </programlisting>
+
+      <para>
+          <methodname>isReceived()</methodname> checks whether a response from <parameter>sender</parameter>
+          has already been received. Note that this is only true as long as no response has yet been received, and the
+          member has not been marked as failed. <methodname>numSuspectedMembers()</methodname> returns the number of
+          members that failed (e.g. crashed) during the wait for responses. <methodname>getResults()</methodname>
+          returns a list of return values. <methodname>get()</methodname> returns the return value for a specific member.
+      </para>
+
+    <section id="MessageDispatcherExample">
+        <title>Example</title>
+
+      <para>
+          This section shows an example of how to use a <classname>MessageDispatcher</classname>.
+      </para>
     
-    <para>The <methodname>sendMessage()</methodname> method allows an
-    application programmer to send a unicast message to a receiver and
-    optionally receive the response. The destination of the message
-    has to be non-null (valid address of a receiver). The
-    <parameter>mode</parameter> argument is ignored (it is by default
-    set to <constant>GroupRequest.GET_FIRST</constant>) unless it is
-    set to <constant>GET_NONE</constant> in which case the request
-    becomes asynchronous, ie. we will not wait for the
-    response.</para>
-
-    <para>One advantage of using this building block is that failed
-    members are removed from the set of expected responses. For
-    example, when sending a message to 10 members and waiting for all
-    responses, and 2 members crash before being able to send a
-    response, the call will return with 8 valid responses and 2 marked
-    as failed. The return value of
-    <methodname>castMessage()</methodname> is a
-    <classname>RspList</classname> which contains all responses (not
-    all methods shown):</para>
-
-    <screen>
-    public class RspList implements Map&lt;Address,Rsp&gt; {
-        public boolean isReceived(Address sender);
-        public int     numSuspectedMembers();
-        public Vector  getResults();
-        public Vector  getSuspectedMembers();
-        public boolean isSuspected(Address sender);
-        public Object  get(Address sender);
-        public int     size();
-    }
-    </screen>
-
-    <para>Method <methodname>isReceived()</methodname> checks whether
-    a response from <parameter>sender</parameter> has already been
-    received. Note that this is only true as long as no response has
-    yet been received, and the member has not been marked as
-    failed. <methodname>numSuspectedMembers()</methodname> returns the
-    number of members that failed (e.g. crashed) during the wait for
-    responses. <methodname>getResults()</methodname> returns a list of
-    return values. <methodname>get()</methodname> returns the return
-    value for a specific member.</para>
-
-    <section><title>Example</title>
-
-      <para>This section describes an example of how to use a
-      <classname>MessageDispatcher</classname>.</para>
-    
-      <screen>
+      <programlisting>
     public class MessageDispatcherTest implements RequestHandler {
         Channel            channel;
         MessageDispatcher  disp;
@@ -244,16 +244,16 @@
                 System.out.println("Casting message #" + i);
                 rsp_list=disp.castMessage(null,
                     new Message(null, null, new String("Number #" + i)),
-                    GroupRequest.GET_ALL, 0);
+                    ResponseMode.GET_ALL, 0);
                 System.out.println("Responses:\n" +rsp_list);
             }
             channel.close();
             disp.stop();
         }
 
-        public Object handle(Message msg) {
+        public Object handle(Message msg) throws Exception {
             System.out.println("handle(): " + msg);
-            return new String("Success !");
+            return "Success !";
         }
 
         public static void main(String[] args) {
@@ -265,185 +265,171 @@
             }
         }
     }
-      </screen>
-    
-      <para>The example starts with the creation of a channel. Next,
-      an instance of <classname>MessageDispatcher</classname> is
-      created on top of the channel. Then the channel is
-      connected. The <classname>MessageDispatcher</classname> will
-      from now on send requests, receive matching responses (client
-      role) and receive requests and send responses (server
-      role).</para>
+      </programlisting>
 
-      <para>We then send 10 messages to the group and wait for all
-      responses. The <parameter>timeout</parameter> argument is 0,
-      which causes the call to block until all responses have been
-      received.</para>
+        <para>
+            The example starts with the creation of a channel. Next, an instance of
+            <classname>MessageDispatcher</classname> is created on top of the channel. Then the channel is connected. The
+            <classname>MessageDispatcher</classname> will from now on send requests, receive matching responses
+            (client role) and receive requests and send responses (server role).
+        </para>
 
-      <para>The <methodname>handle()</methodname> method simply prints
-      out a message and returns a string.</para>
+        <para>
+            We then send 10 messages to the group and wait for all responses. The <parameter>timeout</parameter>
+            argument is 0, which causes the call to block until all responses have been received.
+        </para>
 
-      <para>Finally both the <classname>MessageDispatcher</classname>
-      and channel are closed.</para>
+        <para>
+            The <methodname>handle()</methodname> method simply prints out a message and returns a string. This will
+            be sent back to the caller as a response value (in Rsp.value). Has the call thrown an exception,
+            Rsp.exception would be set instead.
+        </para>
+
+        <para>
+            Finally both the <classname>MessageDispatcher</classname> and channel are closed.
+        </para>
 
     </section>
     
   </section>
 
+    
+
   <section id="RpcDispatcher">
       <title>RpcDispatcher</title>
 
-    <para>This class is derived from
-    <classname>MessageDispatcher</classname>. It allows a programmer
-    to invoke remote methods in all (or single) group members and
-    optionally wait for the return value(s). An application will
-    typically create a channel and layer the
-    <classname>RpcDispatcher</classname> building block on top of it,
-    which allows it to dispatch remote methods (client role) and at
-    the same time be called by other members (server role).</para>
+      <para>
+          <classname>RpcDispatcher</classname> is derived from <classname>MessageDispatcher</classname>. It allows a
+          programmer to invoke remote methods in all (or single) cluster members and optionally wait for the return
+          value(s). An application will typically create a channel first, and then create an
+          <classname>RpcDispatcher</classname> on top of it. RpcDispatcher can be used to invoke remote methods
+          (client role) and at the same time be called by other members (server role).
+      </para>
 
-    <para>Compared to <classname>MessageDispatcher</classname>, no
-    <methodname>handle()</methodname> method needs to be
-    implemented. Instead the methods to be called can be placed
-    directly in the class using regular method definitions (see
-    example below). The invoke remote method calls (unicast and
-    multicast) the following methods are used (not all methods
-    shown):</para>
+      <para>
+          Compared to<classname>MessageDispatcher</classname>, no <methodname>handle()</methodname>
+          method needs to be implemented. Instead the methods to be called can be placed directly in the class using
+          regular method definitions (see example below). The methods will get invoked using reflection.
+      </para>
 
-    <screen>
-    public RspList callRemoteMethods(Vector dests, String method_name, int mode, long timeout);
-    public RspList callRemoteMethods(Vector dests, String method_name, Object arg1, int mode,
-                                     long timeout);
-    public Object callRemoteMethod(Address dest, String method_name, int mode, long timeout);
-    public Object callRemoteMethod(Address dest, String method_name, Object arg1, int mode,
-                                   long timeout);
-    </screen>
+      <para>
+          To invoke remote method calls (unicast and multicast) the following methods are used:
+      </para>
 
-    <para>The family of <methodname>callRemoteMethods()</methodname>
-    is invoked with a list of receiver addresses. If null, the method
-    will be invoked in all group members (including the sender). Each
-    call takes the name of the method to be invoked and the
-    <parameter>mode</parameter> and <parameter>timeout</parameter>
-    parameters, which are the same as for
-    <classname>MessageDispatcher</classname>. Additionally, each
-    method takes zero or more parameters: there are
-    <methodname>callRemoteMethods()</methodname> methods with up to 3
-    arguments. As shown in the example above, the first 2 methods take
-    zero and one parameters respectively.</para>
+    <programlisting>
+        public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
+                                            Class[] types, RequestOptions options) throws Exception;
+        public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests,
+                                            MethodCall method_call,
+                                            RequestOptions options) throws Exception;
+        public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                                       MethodCall method_call,
+                                                                       RequestOptions options) throws Exception;
+        public &lt;T&gt; T callRemoteMethod(Address dest, String method_name, Object[] args,
+                                   Class[] types, RequestOptions options) throws Exception;
+        public &lt;T&gt; T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception;
+        public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+                                                                             RequestOptions options) throws Exception;
+    </programlisting>
 
-    <para>The family of <methodname>callRemoteMethod()</methodname>
-    methods takes almost the same parameters, except that there is
-    only one destination address instead of a list. If the
-    <parameter>dest</parameter> argument is null, the call will
-    fail.</para>
+      <para>
+          The family of <methodname>callRemoteMethods()</methodname> methods is invoked with a list of receiver
+          addresses. If null, the method will be invoked in all cluster members (including the sender). Each call takes
+          the target members to invoke it on (null mean invoke on all cluster members), a method and a RequestOption.
+      </para>
 
-    <para>If a sender needs to use more than 3 arguments, it can use
-    the generic versions of
-    <methodname>callRemoteMethod()</methodname> and
-    <methodname>callRemoteMethods()</methodname> which use a
-    <classname>MethodCall</classname><footnote><para>See the
-    Programmer's Guide and the Javadoc documentation for more
-    information about this class.</para></footnote> instance rather
-    than explicit arguments.</para>
+      <para>
+          The method can be given as (1) the method name, (2) the arguments and (3) the argument types, or a
+          <classname>MethodCall</classname> (containing a java.lang.reflect.Method and argument) can be given instead.
+      </para>
 
-    <para>Java's Reflection API is used to find the correct method in
-    the receiver according to the method name and number and types of
-    supplied arguments. There is a runtime exception if a method
-    cannot be resolved.</para>
+      <para>
+          As with <classname>MessageDispatcher</classname>, a RspList or a future to a RspList is returned.
+      </para>
 
-    <para><emphasis>(* Update: these methods are deprecated; must use
-    MethodCall argument now *)</emphasis></para>
+      <para>
+          The family of <methodname>callRemoteMethod()</methodname> methods takes almost the same parameters, except
+          that there is only one destination address instead of a list. If the <parameter>dest</parameter>
+          argument is null, the call will fail.
+      </para>
 
-    <section><title>Example</title>
+      <para>
+          The <methodname>callRemoteMethod()</methodname> calls return the actual result (or type T), or throw an
+          exception if the method threw an exception on the target member.
+      </para>
 
-      <para>The code below shows an example:</para>
+      <para>
+          Java's Reflection API is used to find the correct method in the target member according to the method name and
+          number and types of supplied arguments. There is a runtime exception if a method cannot be resolved.
+      </para>
 
-      <screen>
+      <para>
+          Note that we could also use method IDs and the <classname>MethodLookup</classname> interface to resolve
+          methods, which is faster and has every RPC carry less data across the wire. To see how this is done,
+          have a look at some of the MethodLookup implementations, e.g. in RpcDispatcherSpeedTest.
+      </para>
+
+
+    <section id="RpcDispatcherExample">
+        <title>Example</title>
+
+      <para>The code below shows an example of using RpcDispatcher:</para>
+
+      <programlisting>
     public class RpcDispatcherTest {
-        Channel            channel;
-        RpcDispatcher      disp;
-        RspList            rsp_list;
-        String             props; // set by application
+          JChannel           channel;
+          RpcDispatcher      disp;
+          RspList            rsp_list;
+          String             props; // set by application
 
-        public int print(int number) throws Exception {
-            return number * 2;
-        }
+          public static int print(int number) throws Exception {
+              return number * 2;
+          }
 
-        public void start() throws Exception {
-            channel=new JChannel(props);
-            disp=new RpcDispatcher(channel, null, null, this);
-            channel.connect("RpcDispatcherTestGroup");
+          public void start() throws Exception {
+              MethodCall call=new MethodCall(getClass().getMethod("print", int.class));
+              RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000);
+              channel=new JChannel(props);
+              disp=new RpcDispatcher(channel, null, null, this);
+              channel.connect("RpcDispatcherTestGroup");
 
-            for(int i=0; i &lt; 10; i++) {
-                Util.sleep(100);
-                rsp_list=disp.callRemoteMethods(null, "print",
-                     new Integer(i), GroupRequest.GET_ALL, 0);
-                System.out.println("Responses: " +rsp_list);
-            }
-            channel.close();
-            disp.stop();
-         }
+              for(int i=0; i &lt; 10; i++) {
+                  Util.sleep(100);
+                  rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
+                  // Alternative: use a (prefabricated) MethodCall:
+                  // call.setArgs(i);
+                  // rsp_list=disp.callRemoteMethods(null, call, opts);
+                  System.out.println("Responses: " + rsp_list);
+              }
+              channel.close();
+              disp.stop();
+          }
 
-        public static void main(String[] args) {
-            try {
-                new RpcDispatcherTest().start();
-            }
-            catch(Exception e) {
-                System.err.println(e);
-            }
-        }
+          public static void main(String[] args) throws Exception {
+              new RpcDispatcherTest().start();
+          }
+
     }
-     </screen>
+     </programlisting>
 
-      <para>Class <classname>RpcDispatcher</classname> defines method
-      <methodname>print()</methodname> which will be called
-      subsequently. The entry point <methodname>start()</methodname>
-      method creates a channel and an
-      <classname>RpcDispatcher</classname> which is layered on
-      top. Method <methodname>callRemoteMethods()</methodname> then
-      invokes the remote <methodname>print()</methodname> method in
-      all group members (also in the caller). When all responses have
-      been received, the call returns and the responses are
-      printed.</para>
 
-      <para>As can be seen, the <classname>RpcDispatcher</classname>
-      building block reduces the amount of code that needs to be
-      written to implement RPC-based group communication applications
-      by providing a higher abstraction level between the application
-      and the primitive channels.</para>
+        <para>
+            Class <classname>RpcDispatcher</classname> defines method <methodname>print()</methodname> which will be
+            called subsequently. The entry point <methodname>start()</methodname> creates a channel and an
+            <classname>RpcDispatcher</classname> which is layered on top. Method
+            <methodname>callRemoteMethods()</methodname> then invokes the remote <methodname>print()</methodname>
+            in all cluster members (also in the caller). When all responses have been received, the call returns
+            and the responses are printed.
+        </para>
 
-        <section><title>RequestOptions</title>
-            <para>
-                RequestOptions is a collection of options that can be passed into a call, e.g. the mode (GET_ALL, GET_NONE),
-                timeout, flags etc. It is an alternative to passing multiple arguments to a method.
-            </para>
+        <para>
+            As can be seen, the <classname>RpcDispatcher</classname> building block reduces the amount of code that
+            needs to be written to implement RPC-based group communication applications by providing a higher
+            abstraction level between the application and the primitive channels.
+        </para>
 
-            <para>
-                All calls with individual parameters have been deprecated in 2.9 and the new calls with RequestOptions
-                are:
-      <screen>
-      public RspList callRemoteMethods(Collection&lt;Address&gt; dests, String method_name,
-                                       Object[] args,Class[] types, RequestOptions options);
-      public RspList callRemoteMethods(Collection&lt;Address&gt; dests, MethodCall method_call,
-                                       RequestOptions options);
-      public Object callRemoteMethod(Address dest, String method_name, Object[] args,
-                                     Class[] types, RequestOptions options);
-      public Object callRemoteMethod(Address dest, MethodCall call, RequestOptions options);
-      </screen>
-            </para>
 
-            <para>
-                An example of how to use RequestOptions is:
-      <screen>
-        RpcDispatcher disp;
-        RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                                .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
-        Object val=disp.callRemoteMethod(target, method_call, opts);
-      </screen>
-            </para>
-        </section>
-
-        <section><title>Asynchronous calls with futures</title>
+        <section id="NotifyingFuture"><title>Asynchronous calls with futures</title>
 
             <para>
                 When invoking a synchronous call, the calling thread is blocked until the response (or responses) has
@@ -453,34 +439,112 @@
             <para>
                 A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
-                <screen>
+                <programlisting>
         public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                   MethodCall method_call, RequestOptions options);
+                                                   MethodCall method_call, RequestOptions options) throws Exception;
         public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                                     RequestOptions options);
-                </screen>
+                                                     RequestOptions options) throws Exception;
+                </programlisting>
             </para>
 
             <para>
                 A NotifyingFuture extends java.util.concurrent.Future, with its regular methods such as isDone(),
                 get() and cancel(). NotifyingFuture adds setListener&lt;FutureListener&gt; to get notified when
                 the result is available. This is shown in the following code:
-      <screen>
+                <programlisting>
         NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
         future.setListener(new FutureListener() {
             void futureDone(Future&lt;T&gt; future) {
                 System.out.println("result is " + future.get());
             }
-        }
-        );
-      </screen>
+        });
+                </programlisting>
             </para>
 
         </section>
 
 
     </section>
-    
+
+      <section id="RspFilter">
+          <title>Response filters</title>
+          <para>
+              Response filters allow application code to hook into the reception of responses from cluster members and
+              can let the request-response execution and correlation code know (1) wether a response is acceptable and
+              (2) whether more responses are needed, or whether the call (if blocking) can return. The
+              <classname>RspFilter</classname> interface looks as follows:
+          </para>
+          <programlisting>
+              public interface RspFilter {
+                  boolean isAcceptable(Object response, Address sender);
+                  boolean needMoreResponses();
+              }
+          </programlisting>
+
+          <para>
+              <methodname>isAcceptable()</methodname> is given a response value and the address of the member which sent
+              the response, and needs to decide whether the response is valid (should return true) or not
+              (should return false).
+          </para>
+
+          <para>
+              <methodname>needMoreResponses()</methodname> determine whether a call returns or not.
+          </para>
+          <para>
+              The sample code below shows how to use a RspFilter:
+              <programlisting>
+    public void testResponseFilter() throws Exception {
+        final long timeout = 10 * 1000 ;
+
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, timeout, false,
+                                                  new RspFilter() {
+                                                      int num=0;
+                                                      public boolean isAcceptable(Object response, Address sender) {
+                                                          boolean retval=((Integer)response).intValue() &gt; 1;
+                                                          if(retval)
+                                                              num++;
+                                                          return retval;
+                                                      }
+
+                                                      public boolean needMoreResponses() {
+                                                          return num &lt; 2;
+                                                      }
+                                                  });
+
+        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
+        System.out.println("responses are:\n" + rsps);
+        assertEquals("there should be three response values", 3, rsps.size());
+        assertEquals("number of responses received should be 2", 2, rsps.numReceived());
+    }
+              </programlisting>
+          </para>
+
+          <para>
+              Here, we invoke a cluster wide RPC (dests=null), which blocks (mode=GET_ALL) for 10 seconds max
+              (timeout=10000), but also pass an instance of RspFilter to the call (in options).
+          </para>
+          <para>
+              The filter accepts all responses whose value is greater than 2, and returns as soon as it has received
+              2 responses which satisfy the above condition.
+          </para>
+
+          <note>
+              <title>Be careful with RspFilters</title>
+              <para>
+                  If we have a RspFilter which doesn't terminate the call even if responses from all members have
+                  been received, we might block forever (if no timeout was given) ! For example, if we have 10 members,
+                  and every member returns 1 or 2 as return value of foo() in the above code, then
+                  <methodname>isAcceptable()</methodname> would always return false, therefore never incrementing 'num',
+                  and <methodname>needMoreResponses()</methodname> would always return true; this would never terminate
+                  the call if it wasn't for the timeout of 10 seconds !
+              </para>
+              <para>
+                  This will be fixed in 3.1; a blocking call will always return if we've received as many responses as
+                  we have members in 'dests', regardless of what the RspFilter says.
+              </para>
+          </note>
+      </section>
+
   </section>
 
 

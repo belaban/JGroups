@@ -139,9 +139,8 @@ public class MethodCall implements Externalizable {
         return args;
     }
 
-    public void setArgs(Object[] args) {
-        if(args != null)
-            this.args=args;
+    public void setArgs(Object...args) {
+        this.args=args;
     }
 
     public Method getMethod() {
