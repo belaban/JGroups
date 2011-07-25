@@ -723,8 +723,15 @@
         </para>
 
         <para>
+            <classname>ExecutionService</classname> extends java.util.concurrent.ExecutorService and distributes tasks
+            submitted to it across the cluster, trying to distribute the tasks to the cluster members as evenly as
+            possible. When a cluster member leaves or dies, the tasks is was processing are re-distributed to other
+            members in the cluster.
+        </para>
+
+        <para>
             ExecutionService talks to the executing protocol via events. The main abstraction is an implementation of
-            java.util.concurrent.locks.ExecutorService. All methods are supported. The restrictions are however that
+            java.util.concurrent.ExecutorService. All methods are supported. The restrictions are however that
             the Callable or Runnable must be Serializable, Externalizable or Streamable.  Also the result produced
             from the future needs to be Serializable, Externalizable or Streamable.  If the Callable or Runnable are not,
             then an IllegalArgumentException is immediately thrown.  If a result is not, then a NotSerializableException
