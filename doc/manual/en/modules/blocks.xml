@@ -521,7 +521,7 @@
 
           <para>
               Here, we invoke a cluster wide RPC (dests=null), which blocks (mode=GET_ALL) for 10 seconds max
-              (timeout=10000), but also pass an instance of RspFilter to the call (in options).
+              (timeout=10000), but also passes an instance of RspFilter to the call (in options).
           </para>
           <para>
               The filter accepts all responses whose value is greater than 2, and returns as soon as it has received
@@ -553,45 +553,38 @@
 
         <para>
             This class was written as a demo of how state can be shared between nodes of a cluster. It has never been
-            heavily tested and is therefore not meant to be used in production, and unsupported.
+            heavily tested and is therefore not meant to be used in production.
         </para>
 
         <para>A
-            <classname>ReplicatedHashMap</classname>
-            uses a concurrent hashmap internally and allows to create several instances of hashmaps in different
-            processes. All of these instances have exactly the same state at all times. When creating such an instance,
-            a group name determines which group of replicated hashmaps will be joined. The new instance will then query
-            the state from existing members and update itself before starting to service requests. If there are no
-            existing members, it will simply start with an empty state.
-        </para>
-
-        <para>Modifications such as<methodname>put()</methodname>,
-            <methodname>clear()</methodname>
-            or
-            <methodname>remove()</methodname>
-            will be propagated in orderly fashion to all replicas. Read-only requests such as
-            <methodname>get()</methodname>
-            will only be sent to the local copy.
-        </para>
-
-        <para>Since both keys and values of a hashtable will be sent across the network, both of them have to be
-            serializable. This allows for example to register remote RMI objects with any local instance of a hashtable,
-            which can subsequently be looked up by another process which can then invoke remote methods (remote RMI
-            objects are serializable). Thus, a distributed naming and registration service can be built in just a couple
-            of lines.
-        </para>
-
-        <para>A
-            <classname>ReplicatedHashMap</classname>
-            allows to register for notifications, e.g. when a new item is set, or an existing one removed. All
-            registered listeners will notified when such an event occurs. Notification is always local; for example in
-            the case of removing an element, first the element is removed in all replicas, which then notify their
-            listener(s) of the removal (after the fact).
+            <classname>ReplicatedHashMap</classname> uses a concurrent hashmap internally and allows to create several
+            instances of hashmaps in different processes. All of these instances have exactly the same state at all
+            times. When creating such an instance, a cluster name determines which cluster of replicated hashmaps will
+            be joined. The new instance will then query the state from existing members and update itself before
+            starting to service requests. If there are no existing members, it will simply start with an empty state.
         </para>
 
         <para>
-            <classname>ReplicatedHashMap</classname>
-            allow members in a group to share common state across process and machine boundaries.
+            Modifications such as<methodname>put()</methodname>, <methodname>clear()</methodname> or
+            <methodname>remove()</methodname> will be propagated in orderly fashion to all replicas. Read-only requests
+            such as <methodname>get()</methodname> will only be invoked on the local hashmap.
+        </para>
+
+        <para>
+            Since both keys and values of a hashtable will be sent across the network, they have to be
+            serializable. Putting a non-serializable value in the map will result in an exception at marshalling time.
+        </para>
+
+        <para>
+            A <classname>ReplicatedHashMap</classname> allows to register for notifications, e.g. when data is
+            added removed. All listeners will get notified when such an event occurs. Notification is always local;
+            for example in the case of removing an element, first the element is removed in all replicas, which then
+            notify their listener(s) of the removal (after the fact).
+        </para>
+
+        <para>
+            <classname>ReplicatedHashMap</classname> allow members in a group to share common state across process
+            and machine boundaries.
         </para>
 
     </section>
@@ -600,7 +593,27 @@
     <section id="ReplCache">
         <title>ReplCache</title>
         <para>
-            TBD
+            ReplCache is a distributed cache which - contrary to ReplicatedHashMap - doesn't replicate its values to
+            all cluster members, but just to selected backups.
+        </para>
+        <para>
+            A <methodname>put(K,V,R)</methodname> method has a <emphasis>replication count R</emphasis> which determines
+            on how many cluster members key K and value V should be stored. When we have 10 cluster members, and R=3,
+            then K and V will be stored on 3 members. If one of those members goes down, or leaves the cluster, then a
+            different member will be told to store K and V. ReplCache tries to always have R cluster members store K
+            and V.
+        </para>
+        <para>
+            A replication count of -1 means that a given key and value should be stored on <emphasis>all</emphasis>
+            cluster members.
+        </para>
+        <para>
+            The mapping between a key K and the cluster member(s) on which K will be stored is always deterministic, and
+            is computed using a <emphasis>consistent hash function</emphasis>.
+        </para>
+        <para>
+            Note that this class was written as a demo of how state can be shared between nodes of a cluster. It has
+            never been heavily tested and is therefore not meant to be used in production.
         </para>
     </section>
 
@@ -614,11 +627,11 @@
         <para>
             LockService talks to the locking protocol via events. The main abstraction of a distributed lock is an
             implementation of java.util.concurrent.locks.Lock. All lock methods are supported, however, conditions
-            are not yet supported. (Based on feedback, they might be added later).
+            are not fully supported, and still need some more testing (as of July 2011).
         </para>
         <para>
             Below is an example of how LockService is typically used:
-            <screen>
+            <programlisting>
                 // locking.xml needs to have a locking protocol
                 JChannel ch=new JChannel("/home/bela/locking.xml");
                 LockService lock_service=new LockService(ch);
@@ -626,38 +639,46 @@
                 Lock lock=lock_service.getLock("mylock");
                 lock.lock();
                 try {
-                // do something with the locked resource
+                    // do something with the locked resource
                 }
                 finally {
-                lock.unlock();
+                    lock.unlock();
                 }
-            </screen>
+            </programlisting>
         </para>
+
         <para>
-            In the example, we create a channel, then a LockService, then connect the channel. Then we grab a lock
-            named "mylock", which we lock and subsequently unlock.
+            In the example, we create a channel, then a LockService, then connect the channel. If the channel's
+            configuration doesn't include a locking protocol, an exception will be thrown.
+            Then we grab a lock named "mylock", which we lock and subsequently unlock. If another member P had already
+            acquired "mylock", we'd block until P released the lock, or P left the cluster or crashed.
         </para>
+
         <para>
             Note that the owner of a lock is always a given thread in a cluster, so the owner is the JGroups address and
             the thread ID. This means that different threads inside the same JVM trying to access the same named lock
             will compete for it. If thread-22 grabs the lock first, then thread-5 will block until thread-23
             releases the lock.
         </para>
+
         <para>
             JGroups includes a demo (org.jgroups.demos.LockServiceDemo), which can be used to interactively experiment
             with distributed locks. LockServiceDemo -h dumps all command line options.
         </para>
+        
         <para>
             Currently (Jan 2011), there are 2 protocols which provide locking:
             <xref linkend="PEER_LOCK">PEER_LOCK</xref> and <xref linkend="CENTRAL_LOCK">CENTRAL_LOCK</xref>. The locking
             protocol has to be placed at or towards the top of the stack (close to the channel).
         </para>
-        <section>
+        
+        <section id="LockingAndMerges">
             <title>Locking and merges</title>
+
             <para>
-                The following scenario is susceptible to merging: we have a cluster view of {A,B,C,D} and then the cluster
-                splits into {A,B} and {C,D}. Assume that B and D now acquire a lock "mylock".
-                This is what happens (with the locking protocol being CENTRAL_LOCK):
+                The following scenario is susceptible to network partitioning and subsequent merging: we have a cluster
+                view of {A,B,C,D} and then the cluster splits into {A,B} and {C,D}. Assume that B and D now acquire a
+                lock "mylock". This is what happens (with the locking protocol being CENTRAL_LOCK):
                 <itemizedlist>
                     <listitem>There are 2 coordinators: A for {A,B} and C for {C,D}</listitem>
                     <listitem>B successfully acquires "mylock" from A</listitem>
@@ -669,28 +690,30 @@
                 There is no easy way (via the Lock API) to 'remove' the lock from D. We could for example simply release
                 D's lock on "mylock", but then there's no way telling D that the lock it holds is actually stale !
             </para>
+            
             <para>
                 Therefore the recommended solution here is for nodes to listen to MergeView changes if they expect
                 merging to occur, and re-acquire all of their locks after a merge, e.g.:
-                <screen>
+                <programlisting>
                     Lock l1, l2, l3;
                     LockService lock_service;
                     ...
                     public void viewAccepted(View view) {
-                    if(view instanceof MergeView) {
-                    new Thread() {
-                    public void run() {
-                    lock_service.unlockAll();
-                    // stop all access to resources protected by l1, l2 or l3
-                    // every thread needs to re-acquire the locks it holds
+                        if(view instanceof MergeView) {
+                            new Thread() {
+                                public void run() {
+                                    lock_service.unlockAll();
+                                    // stop all access to resources protected by l1, l2 or l3
+                                    // every thread needs to re-acquire the locks it holds
+                                }
+                            }.start
+                        }
                     }
-                    }.start
-                    }
-                    }
-                </screen>
+                </programlisting>
             </para>
         </section>
     </section>
+    
 
     <section id="ExecutionService">
         <title>Cluster wide task execution</title>
@@ -698,17 +721,19 @@
             In 2.12, a distributed execution service was added. The new service is implemented as a protocol and is used
             via org.jgroups.blocks.executor.ExecutionService.
         </para>
+
         <para>
             ExecutionService talks to the executing protocol via events. The main abstraction is an implementation of
             java.util.concurrent.locks.ExecutorService. All methods are supported. The restrictions are however that
             the Callable or Runnable must be Serializable, Externalizable or Streamable.  Also the result produced
-            from the future needs to be Serializable, Externalizable or Streamable.  If the Callable or Runnable are not
-            then an IllegalArgumentException is immediately thrown.  If a result is not then a NotSerializableException
+            from the future needs to be Serializable, Externalizable or Streamable.  If the Callable or Runnable are not,
+            then an IllegalArgumentException is immediately thrown.  If a result is not, then a NotSerializableException
             with the name of the class will be returned to the Future as an exception cause.
         </para>
+        
         <para>
             Below is an example of how ExecutionService is typically used:
-            <screen>
+            <programlisting>
             // locking.xml needs to have a locking protocol
             JChannel ch=new JChannel("/home/bela/executing.xml");
             ExecutionService exec_service =new ExecutionService(ch);
@@ -724,13 +749,15 @@
             catch (ExecutionException e) {
                 e.getCause().printStackTrace();
             }
-            </screen>
+            </programlisting>
         </para>
+
         <para>
             In the example, we create a channel, then an ExecutionService, then connect the channel. Then we submit
             our callable giving us a Future.  Then we wait for the future to finish returning our value and do something
             with it.  If any exception occurs we print the stack trace of that exception.
         </para>
+        
         <para>
             JGroups includes a demo (org.jgroups.demos.ExecutionServiceDemo), which can be used to interactively
             experiment with a distributed sort algorithm and performance.  This is for demonstration purposes and
@@ -738,7 +765,7 @@
             ExecutionServiceDemo -h dumps all command line options.
         </para>
         <para>
-            Currently (March 2011), there is 1 protocol which provide executions:
+            Currently (July 2011), there is 1 protocol which provide executions:
             <xref linkend="CENTRAL_EXECUTOR">CENTRAL_EXECUTOR</xref>. The executing protocol has to be placed at or
             towards the top of the stack (close to the channel).
         </para>
