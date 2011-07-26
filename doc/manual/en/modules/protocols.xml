@@ -558,7 +558,10 @@
     <section>
         <title>Security</title>
 
-        <para></para>
+        <para>
+
+        </para>
+
         <section>
             <title>ENCRYPT</title>
             
@@ -570,226 +573,111 @@
         </section>
     </section>
 
-    <section>
+    <section id="StateTransferProtocolDetails">
         <title>State Transfer</title>
 
-        <section>
+        <section id="pbcast.STATE_TRANSFER">
             <title>pbcast.STATE_TRANSFER</title>
 
-            <para></para>
+            <para>
+                STATE_TRANSFER is the existing transfer protocol, which transfers byte[] buffers around. However, at the
+                state provider's side, JGroups creates an output stream over the byte[] buffer, and passes the
+                ouput stream to the <methodname>getState(OutputStream)</methodname> callback, and at the state
+                requester's side, an input stream is created and passed to the
+                <methodname>setState(InputStream)</methodname> callback.
+            </para>
+
+            <para>
+                This allows us to continue using STATE_TRANSFER, until the new state transfer protocols are going to
+                replace it (perhaps in 4.0).
+            </para>
+
+            <para>
+                In order to transfer application state to a joining member of a cluster, STATE_TRANSFER has to load
+                entire state into memory and send it to a joining member. The major limitation of this approach is that
+                for state transfers that are very large this would likely result in memory exhaustion.
+            </para>
+
+            <para>
+                For large state transfer use either the STATE or STATE_SOCK protocol. However, if the state is small,
+                STATE_TRANSFER is okay.
+            </para>
+            
+            ${STATE_TRANSFER}
         </section>
 
-        <section>
+
+        <section id="pbcast.STATE">
             <title>pbcast.STATE</title>
 
             <section>
                 <title>Overview</title>
 
-                <para>In order to transfer application state to a joining member of a
-                    group pbcast.STATE_TRANSFER has to load entire state into memory and
-                    send it to a joining member. Major limitation of this approach is that
-                    the state transfer that is very large (&gt;1Gb) would likely result in
-                    OutOfMemoryException. In order to alleviate this problem a new state
-                    transfer methodology, based on a streaming state transfer, was
-                    introduced in JGroups 2.4
-                </para>
-
-                <para>Streaming state transfer supports both partial and full state
-                    transfer.
-                </para>
-
-                <para>Streaming state transfer provides an InputStream to a state
-                    reader and an OutputStream to a state writer. OutputStream and
-                    InputStream abstractions enable state transfer in byte chunks thus
-                    resulting in smaller memory requirements. For example, if application
-                    state consists a huge DOM tree, whose aggregate size is 2GB (and which
-                    has partly been passivated to disk), then the state provider (ie. the
-                    coordinator) can simply iterate over the DOM tree (activating the
-                    parts which have been passivated out to disk), and write to the
-                    OutputStream as it traverses the tree. The state receiver will simply
-                    read from the InputStream and reconstruct the tree on its side,
-                    possibly again passivating parts to disk.
-                </para>
-
-                <para>Rather than having to provide a 2GB byte[] buffer, streaming
-                    state transfer transfers the state in chunks of N bytes where N is
-                    user configurable.
-                </para>
-                
-                <para>Prior to 2.6.9 and 2.8 releases streaming state transfer relied 
-                	exclusively on its own tcp sockets to transfer state between members. 
-                	The downside of tcp socket approach is that it is not firewall friendly. If 
-                	use_default_transport property of pbcast.STATE is
-                	set to true streaming state transfer will use normal messages to transfer 
-                	state. This approach besides being completely transparent to application is also 
-                	firewall friendly. However, as expected, tcp sockets have better performance. 
-                </para>
-            </section>
-
-            <section>
-                <title>API</title>
-
-                <para>Streaming state transfer, just as regular byte based state
-                    transfer, can be used in both pull and push mode. Similarly to the
-                    current getState and setState methods of org.jgroups.MessageListener,
-                    application interested in streaming state transfer in a push mode
-                    would implement streaming getState method(s) by sending/writing state
-                    through a provided OutputStream reference and setState method(s) by
-                    receiving/reading state through a provided InputStream reference. In
-                    order to use streaming state transfer in a push mode, existing
-                    ExtendedMessageListener has been expanded to include additional four
-                    methods:
+                <para>
+                    STATE was renamed from (2.x) STREAMING_STATE_TRANSFER, and refactored to extend a common superclass
+                    <classname>StreamingStateTransfer</classname>. The other state transfer protocol extending
+                    <classname>StreamingStateTransfer</classname> is STATE_SOCK (see <xref linkend="STATE_SOCK"/>).
                 </para>
 
                 <para>
-                    <screen>
-                        public interface ExtendedMessageListener
-                        {
-
-                        /*non-streaming callback methods ommitted for clarity*/
-
-
-                        /**
-                        * Allows an application to write a state through a provided OutputStream.
-                        * An application is obligated to always close the given OutputStream reference.
-                        *
-                        * @param ostream the OutputStream
-                        * @see OutputStream#close()
-                        */
-                        public void getState(OutputStream ostream);
-
-                        /**
-                        * Allows an application to write a partial state through a provided OutputStream.
-                        * An application is obligated to always close the given OutputStream reference.
-                        *
-                        * @param state_id id of the partial state requested
-                        * @param ostream the OutputStream
-                        *
-                        * @see OutputStream#close()
-                        */
-                        public void getState(String state_id, OutputStream ostream);
-
-
-                        /**
-                        * Allows an application to read a state through a provided InputStream.
-                        * An application is obligated to always close the given InputStream reference.
-                        *
-                        * @param istream the InputStream
-                        * @see InputStream#close()
-                        */
-                        public void setState(InputStream istream);
-
-                        /**
-                        * Allows an application to read a partial state through a provided InputStream.
-                        * An application is obligated to always close the given InputStream reference.
-                        *
-                        * @param state_id id of the partial state requested
-                        * @param istream the InputStream
-                        *
-                        * @see InputStream#close()
-                        */
-                        public void setState(String state_id, InputStream istream);
-
-                        }
-                    </screen>
-                </para>
-
-                <para>For a pull mode (when application uses channel.receive() to
-                    fetch events) two new event classes will be introduced:
+                    <classname>STATE</classname> uses a <emphasis>streaming approach</emphasis> to state transfer; the
+                    state provider writes its state to the output stream passed to it in the
+                    <methodname>getState(OutputStream)</methodname> callback, which chunks the stream up into chunks
+                    that are sent to the state requester in separate messages.
                 </para>
 
                 <para>
-                    <itemizedlist>
-                        <listitem>
-                            <para>StreamingGetStateEvent</para>
-                        </listitem>
-
-                        <listitem>
-                            <para>StreamingSetStateEvent</para>
-                        </listitem>
-                    </itemizedlist>
-                    These two events/classes are very similar to
-                    existing GetStateEvent and SetStateEvent but introduce a new field;
-                    StreamingGetStateEvent has an OutputStream and StreamingSetStateEvent
-                    has an InputStream.
-                </para>
-
-                <para>The following code snippet demonstrates how to pull events from
-                    a channel, processing StreamingGetStateEvent and sending hypothetical
-                    state through a provided OutputStream reference. Handling of
-                    StreamingSetStateEvent is analogous to this example:
-                </para>
-
-                <screen>...
-                    Object obj=channel.receive(0);
-                    if(obj instanceof StreamingGetStateEvent) {
-                    StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
-                    OutputStream oos = null;
-                    try {
-                    oos = new ObjectOutputStream(evt.getArg());
-                    oos.writeObject(state);
-                    oos.flush();
-                    } catch (Exception e) {}
-                    finally{
-                    try {
-                    oos.close();
-                    } catch (IOException e) {
-                    System.err.println(e);
-                    }
-                    }
-                    }
-                    ...
-                </screen>
-
-                <para>API that initiates state transfer on a JChannel level has the
-                    following methods:
+                    The state requester receives those chunks and feeds them into the input stream from which the
+                    state is read by the <methodname>setState(InputStream)</methodname> callback.
                 </para>
 
                 <para>
-                    <screen>public boolean getState(Address target, long timeout) throws
-                        Exception;
-                    </screen>
-                    Introduction of STATE does
-                    <emphasis>not</emphasis> change the current API.
+                    The advantage compared to STATE_TRANSFER is that state provider and requester only need small
+                    (transfer) buffers to keep a part of the state in memory, whereas STATE_TRANSFER needs to copy
+                    the <emphasis>entire</emphasis> state into memory.
                 </para>
+
+                <para>
+                    If we for example have a list of 1 million elements, then STATE_TRANSFER would have to create a
+                    byte[] buffer out of it, and return the byte[] buffer, whereas a streaming approach could iterate
+                    through the list and write each list element to the output stream. Whenever the buffer capacity is
+                    reached, we'd then send a message and the buffer would be reused to receive more data.
+                </para>
+
             </section>
 
             <section>
                 <title>Configuration</title>
 
-                <para>State transfer type choice is static, implicit and mutually
-                    exclusive. JChannel cannot use both STATE and
-                    STATE_TRANSFER in one JChannel configuration.
+                <para>
+                    STATE allows for the following confguration parameters:
                 </para>
-
-                <para>STATE allows the following confguration
-                    parameters:
-                </para>
-
 				${STATE}
             </section>
-
-            <section>
-                <title>Other considerations</title>
-
-                <para>Threading model used for state writing in a member providing
-                    state and state reading in a member receiving a state is tunable. For
-                    state provider thread pool is used to spawn threads providing state.
-                    Thus member providing state, in a push mode, will be able to
-                    concurrently serve N state requests where N is max_threads
-                    configuration parameter of the thread pool. If there are no further
-                    state transfer requests pool threads will be automatically reaped
-                    after configurable "pool_thread_keep_alive" timeout expires. For a
-                    channel operating in the push mode state reader channel can read state
-                    by piggybacking on jgroups protocol stack thread or optionally use a
-                    separate thread. State reader should use a separate thread if state
-                    reading is expensive (eg. large state, serialization) thus potentially
-                    affecting liveness of jgroups protocol thread. Since most state
-                    transfers are very short (&lt;2-3 sec) by default we do not use a
-                    separate thread.
-                </para>
-            </section>
         </section>
+
+        <section id="pbcast.STATE_SOCK">
+            <title>STATE_SOCK</title>
+            <para>
+                STATE_SOCK is also a streaming state transfer protocol, but compared to STATE, it doesn't send the chunks
+                as messages, but uses a TCP socket connection between state provider and requester to transfer the state.
+            </para>
+            <para>
+                The state provider creates a server socket at a configurable bind address and port, and the address
+                and port are sent back to a state requester in the state response. The state requester then establishes
+                a socket connection to the server socket and passes the socket's input stream to the
+                <methodname>setState(InputStream)</methodname> callback.
+            </para>
+            <section>
+                <title>Configuration</title>
+                <para>
+                    The configuration options of STATE_SOCK are listed below:
+                </para>
+                ${STATE_SOCK}
+            </section>
+
+        </section>
+
     </section>
 
 

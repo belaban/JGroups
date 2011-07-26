@@ -1149,6 +1149,9 @@
                         Note that, because byte[] buffers are converted into input and output streams, this protocol
                         should not be used for transfer of large states.
                     </para>
+                    <para>
+                        For details see <xref linkend="pbcast.STATE_TRANSFER"/>.
+                    </para>
                 </section>
 
                 <section id="STATE">
@@ -1158,6 +1161,9 @@
                         across from the provider to the requester in (configurable) chunks, so that memory consumption
                         is minimal.
                     </para>
+                    <para>
+                        For details see <xref linkend="pbcast.STATE"/>.
+                    </para>
                 </section>
 
                 <section id="STATE_SOCK">
@@ -1165,6 +1171,9 @@
                     <para>
                         Same as STREAMING_STATE_TRANSFER, but a TCP connection between provider and requester is
                         used to transfer the state.
+                    </para>
+                    <para>
+                        For details see <xref linkend="pbcast.STATE_SOCK"/>.
                     </para>
                 </section>
 
