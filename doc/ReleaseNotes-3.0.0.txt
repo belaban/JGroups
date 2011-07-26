@@ -6,8 +6,12 @@ Release Notes JGroups 3.0.0
 
 Author: Bela Ban
 
-JGroups 3.0.0 is *not* API-backwards compatible with 2.x releases. For a list of API changes see
-./doc/API_Changes.txt (** add GitHub URL **).
+***********************************************************************
+!! JGroups 3.0.0 is *not* API-backwards compatible with 2.x releases !!
+***********************************************************************
+
+For a list of API changes from 2.x to 3.0.0 see ./doc/API_Changes.txt at
+https://github.com/belaban/JGroups/blob/master/doc/API_Changes.txt.
 
 Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
 
@@ -18,34 +22,13 @@ New features
 ============
 
 
-
-RELAY: connecting local (autonomous) clusters into a large virtual cluster
---------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-747]
-
-A new protocol to connect 2 geographically separate sites into 1 large virtual cluster. The local clusters are
-completely autonomous, but RELAY makes them appear as if they were one.
-
-This can for example be used to implement geographic failover
-
-Blog: http://belaban.blogspot.com/2010/11/clustering-between-different-sites.html
-
-
-
+*** No new feature, mainly API changes and bug fixes, see API_Changes.txt above ***
 
 
 
 
 Optimizations
 =============
-
-
-NAKACK: retransmitted messages don't need to be wrapped
--------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1266]
-
-Not serializing retransmitted messages at the retransmitter and deserializing them at the requester saves
-1 serialization and 1 deserialization per retransmitted message.
 
 
 
@@ -57,12 +40,29 @@ Not serializing retransmitted messages at the retransmitter and deserializing th
 Bug fixes
 =========
 
+UNICAST/UNICAST2: message can get delivered multiple times
+----------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1347]
 
-NAKACK: incorrect digest on merge and state transfer
-----------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1251]
+Edge case, happened very infrequently when a participant of a unicast connection closed its end of the connection
+unilaterally.
 
-When calling JChannel.getState() on a merge, the fetched state would overwrite the digest incorrectly.
+
+Race condition in RspFilter
+---------------------------
+[https://issues.jboss.org/browse/JGRP-1193]
+
+
+Incorrect state transfer with STREAMING_STATE_TRANSFER is use_default_transport=true
+------------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1339]
+
+This was renamed to STATE and JGRP-1339 was fixed.
+
+
+BARRIER should not block unicast messages
+-----------------------------------------
+[https://issues.jboss.org/browse/JGRP-1341]
 
 
 
@@ -71,7 +71,8 @@ When calling JChannel.getState() on a merge, the fetched state would overwrite t
 Manual
 ======
 
-The manual is online at http://www.jgroups.org/manual/html/index.html
+The 3.x manual is at http://www.jgroups.org/manual-3.x/html/index.html.
+The 2.x manual is at http://www.jgroups.org/manual/html/index.html.
 
 
 
@@ -83,5 +84,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-XXX 2011
+July 2011
 
