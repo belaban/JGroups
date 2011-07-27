@@ -531,186 +531,179 @@
             </section>
         </section>
 
-    <section>
-      <title>TUNNEL</title>
+        <section>
+            <title>TUNNEL</title>
 
-      <section>
-        <title>Using TUNNEL to tunnel a firewall</title>
 
-        <para>Firewalls are usually placed at the connection to the internet.
-        They shield local networks from outside attacks by screening incoming
-        traffic and rejecting connection attempts to host inside the firewalls
-        by outside machines. Most firewall systems allow hosts inside the
-        firewall to connect to hosts outside it (outgoing traffic), however,
-        incoming traffic is most often disabled entirely.</para>
+            <para>
+                Firewalls are usually placed at the connection to the internet. They shield local networks from outside
+                attacks by screening incoming traffic and rejecting connection attempts to host inside the firewalls by
+                outside machines. Most firewall systems allow hosts inside the firewall to connect to hosts outside it
+                (outgoing traffic), however, incoming traffic is most often disabled entirely.
+            </para>
 
-        <para><emphasis>Tunnels</emphasis> are host protocols which
-        encapsulate other protocols by multiplexing them at one end and
-        demultiplexing them at the other end. Any protocol can be tunneled by
-        a tunnel protocol.</para>
+            <para>
+                <emphasis>Tunnels</emphasis> are host protocols which encapsulate other protocols by multiplexing them
+                at one end and demultiplexing them at the other end. Any protocol can be tunneled by a tunnel protocol.
+            </para>
 
-        <para>The most restrictive setups of firewalls usually disable
-        <emphasis>all</emphasis> incoming traffic, and only enable a few
-        selected ports for outgoing traffic. In the solution below, it is
-        assumed that one TCP port is enabled for outgoing connections to the GossipRouter.</para>
+            <para>
+                The most restrictive setups of firewalls usually disable <emphasis>all</emphasis> incoming traffic, and
+                only enable a few selected ports for outgoing traffic. In the solution below, it is
+                assumed that one TCP port is enabled for outgoing connections to the GossipRouter.
+            </para>
 
-        <para>JGroups has a mechanism that allows a programmer to tunnel a
-        firewall. The solution involves a GossipRouter, which has to be outside of the firewall,
-        so other members (possibly also behind firewalls) can access it.</para>
+            <para>
+                JGroups has a mechanism that allows a programmer to tunnel a firewall. The solution involves a
+                GossipRouter, which has to be outside of the firewall, so other members (possibly also behind firewalls)
+                can access it.
+            </para>
 
-        <para>The solution works as follows. A channel inside a firewall has
-        to use protocol TUNNEL instead of UDP or TCP as bottommost layer. Recommended 
-        discovery protocol is PING, starting with 2.8 release, you do not have to specify 
-        any gossip routers in PING.
-          <screen>
-              &lt;TUNNEL gossip_router_hosts="127.0.0.1[12001]" /&gt;
+            <para>
+                The solution works as follows. A channel inside a firewall has to use protocol TUNNEL instead of UDP or
+                TCP as transport. The recommended discovery protocol is PING. Here's a configuration:
+                <programlisting>
+              &lt;TUNNEL gossip_router_hosts="HostA[12001]" /&gt;
               &lt;PING /&gt;
-          </screen>
-          </para>
+                </programlisting>
+            </para>
 
-        <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
-        the firewall) at port <literal>12001</literal> to register its address
-        (periodically) and to retrieve the initial membership for its
-        group. It is not recommended to use TCPGOSSIP for discovery if TUNNEL is 
-        already used. TCPGOSSIP might be used in rare scenarios when registration and 
-        initial member discovery <emphasis>has to be done </emphasis>through gossip 
-        router indepedent of transport protocol being used. Starting with 2.8 release 
-        TCPGOSSIP accepts one or multiple router hosts as a comma delimited list 
-        of host[port] elements specified in a property initial_hosts.</para>
+            <para>
+                <classname>TUNNEL</classname> uses a GossipRouter (outside the firewall) running on HostA at port
+                <literal>12001</literal> for tunneling. Note that it is not recommended to use TCPGOSSIP for discovery if
+                TUNNEL is used (use PING instead). TUNNEL accepts one or multiple GossipRouters tor tunneling;
+                they can be listed as a comma delimited list of host[port] elements specified in property
+                gossip_router_hosts.
+            </para>
 
-        <para><classname>TUNNEL</classname> establishes a TCP connection to the
-        <emphasis>GossipRouter</emphasis> process (also outside the firewall) that
-        accepts messages from members and passes them on to other members.
-        This connection is initiated by the host inside the firewall and
-        persists as long as the channel is connected to a group. GossipRouter will
-        use the <emphasis>same connection</emphasis> to send incoming messages
-        to the channel that initiated the connection. This is perfectly legal,
-        as TCP connections are fully duplex. Note that, if GossipRouter tried to
-        establish its own TCP connection to the channel behind the firewall,
-        it would fail. But it is okay to reuse the existing TCP connection,
-        established by the channel.</para>
+            <para>
+                <classname>TUNNEL</classname> establishes a TCP connection to the <emphasis>GossipRouter</emphasis>
+                process (outside the firewall) that accepts messages from members and passes them on to other
+                members. This connection is initiated by the host inside the firewall and persists as long as the channel
+                is connected to a group. A GossipRouter will use the <emphasis>same connection</emphasis>
+                to send incoming messages to the channel that initiated the connection. This is perfectly legal, as TCP
+                connections are fully duplex. Note that, if GossipRouter tried to establish its own TCP connection to the
+                channel behind the firewall, it would fail. But it is okay to reuse the existing TCP connection,
+                established by the channel.
+            </para>
 
-        <para>Note that <classname>TUNNEL</classname> has to be given the
-        hostname and port of the GossipRouter process. This example assumes a GossipRouter
-        is running on the local host at port <literal>12001</literal>. Both
-        TUNNEL and TCPGOSSIP (or PING) access the same GossipRouter. 
-        Starting with 2.8 release TUNNEL transport layer accepts one or multiple router 
-        hosts as a comma delimited list of host[port] elements specified in a 
-        property gossip_router_hosts.</para>
+            <para>
+                Note that <classname>TUNNEL</classname> has to be given the hostname and port of the GossipRouter process.
+                This example assumes a GossipRouter is running on HostA at port<literal>12001</literal>.
+                TUNNEL accepts one or multiple router hosts as a comma delimited list of host[port] elements specified in
+                property gossip_router_hosts.
+            </para>
 
-        <para>Any time a message has to be sent, TUNNEL forwards the message
-        to GossipRouter, which distributes it to its destination: if the message's
-        destination field is null (send to all group members), then GossipRouter
-        looks up the members that belong to that group and forwards the
-        message to all of them via the TCP connection they established when
-        connecting to GossipRouter. If the destination is a valid member address,
-        then that member's TCP connection is looked up, and the message is
-        forwarded to it <footnote>
-            <para>To do so, GossipRouter has to maintain a table between groups,
-            member addresses and TCP connections.</para>
-          </footnote> .</para>
-         
-         <para> 
-          Starting with 2.8 release, gossip router is no longer a single 
-		  point of failure. In a set-up with multiple gossip routers, routers do 
-		  not communicate among themselves, and single point of failure is avoided 
-		  by having each channel simply connect to multiple available routers. In 
-          case one or more routers go down, cluster members are still able to 
-          exchange message through remaining available router instances, if there 
-          are any.
+            <para>
+                Any time a message has to be sent, TUNNEL forwards the message to GossipRouter, which distributes it to
+                its destination: if the message's destination field is null (send to all group members), then GossipRouter
+                looks up the members that belong to that group and forwards the message to all of them via the TCP
+                connections they established when connecting to GossipRouter. If the destination is a valid member address,
+                then that member's TCP connection is looked up, and the message is forwarded to it
+                <footnote>
+                    <para>To do so, GossipRouter maintains a mapping between cluster names and member addresses, and TCP
+                        connections.
+                    </para>
+                </footnote>
+                .
+            </para>
 
-          For each send invocation, a channel goes through a list of available 
-          connections to routers and attempts to send a message on each connection 
-          until it succeeds. If a message could not be sent on any of the 
-          connections – an exception is raised. Default policy for connection 
-          selection is random. However, we also provide an plug-in interface for 
-          other policies as well.
+            <para>
+                A GossipRouter is not a single point of failure. In a setup with multiple gossip routers, the routers do
+                not communicate among themselves, and a single point of failure is avoided by having each channel simply
+                connect to multiple available routers. In case one or more routers go down, the cluster members are still
+                able to exchange messages through any of the remaining available router instances, if there are any.
+            </para>
 
-          Gossip router configuration is static and is not updated for the 
-          lifetime of the channel. A list of available routers has to be provided 
-          in channel configuration file.</para>
-
+            <para>
+                For each send invocation, a channel goes through a list of available connections to routers and attempts
+                to send the message on each connection until it succeeds. If a message can not be sent on any of the
+                connections, an exception is raised. The default policy for connection selection is random. However, we
+                provide an plug-in interface for other policies as well.
+            </para>
           
-
-        <para>To tunnel a firewall using JGroups, the following steps have to
-        be taken:</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Check that a TCP port (e.g. 12001) is enabled in
-            the firewall for outgoing traffic</para>
-          </listitem>
-
-          <listitem>
-            <para>Start the GossipRouter:
-              <screen>
-                  start org.jgroups.stack.GossipRouter -port 12001
-              </screen>
-              </para>
-          </listitem>
+            <para>
+                The GossipRouter configuration is static and is not updated for the lifetime of the channel. A list of
+                available routers has to be provided in the channel's configuration file.
+            </para>
 
 
-          <listitem>
-            <para>Configure the TUNNEL protocol layer as instructed
-            above.</para>
-          </listitem>
+            <para>
+                To tunnel a firewall using JGroups, the following steps have to be taken:
+            </para>
 
-          <listitem>
-            <para>Create a channel</para>
-          </listitem>
-        </orderedlist>
+            <orderedlist>
+                <listitem>
+                    <para>Check that a TCP port (e.g. 12001) is enabled in the firewall for outgoing traffic</para>
+                </listitem>
 
-        <para>The general setup is shown in <xref linkend="TunnelingFig" />
-        .</para>
+                <listitem>
+                    <para>Start the GossipRouter:
+                        <screen>
+                    java org.jgroups.stack.GossipRouter -port 12001
+                        </screen>
+                    </para>
+                </listitem>
 
-        <figure id="TunnelingFig">
-          <title>Tunneling a firewall</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata align="center" fileref="images/Tunneling.png" />
-            </imageobject>
+                <listitem>
+                    <para>Configure the TUNNEL protocol layer as instructed above.</para>
+                </listitem>
 
-            <textobject>
-              <phrase>A diagram representing tunneling a firewall.</phrase>
-            </textobject>
-          </mediaobject>
-        </figure>
+                <listitem>
+                    <para>Create a channel</para>
+                </listitem>
+            </orderedlist>
 
-        <para>First, the GossipRouter process is created on host
-        B. Note that host B should be outside the firewall, and all channels in
-        the same group should use the same GossipRouter process.
-        When a channel on host A is created, its
-        <classname>TCPGOSSIP</classname> protocol will register its address
-        with the GossipRouter and retrieve the initial membership (assume this
-        is C). Now, a TCP connection with the GossipRouter is established by A; this
-        will persist until A crashes or voluntarily leaves the group. When A
-        multicasts a message to the group, GossipRouter looks up all group members
-        (in this case, A and C) and forwards the message to all members, using
-        their TCP connections. In the example, A would receive its own copy of
-        the multicast message it sent, and another copy would be sent to
-        C.</para>
+            <para>The general setup is shown in
+                <xref linkend="TunnelingFig"/>
+                .
+            </para>
 
-        <para>This scheme allows for example <emphasis>Java applets</emphasis>
-        , which are only allowed to connect back to the host from which they
-        were downloaded, to use JGroups: the HTTP server would be located on
-        host B and the gossip and GossipRouter daemon would also run on that host.
-        An applet downloaded to either A or C would be allowed to make a TCP
-        connection to B. Also, applications behind a firewall would be able to
-        talk to each other, joining a group.</para>
+            <figure id="TunnelingFig">
+                <title>Tunneling a firewall</title>
 
-        <para>However, there are several drawbacks: first, having to maintain a TCP connection for the
-        duration of the connection might use up resources in the host system
-        (e.g. in the GossipRouter), leading to scalability problems, second, this
-        scheme is inappropriate when only a few channels are located behind
-        firewalls, and the vast majority can indeed use IP multicast to
-        communicate, and finally, it is not always possible to enable outgoing
-        traffic on 2 ports in a firewall, e.g. when a user does not 'own' the
-        firewall.</para>
-        
-      </section>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata align="center" fileref="images/Tunneling.png"/>
+                    </imageobject>
+
+                    <textobject>
+                        <phrase>A diagram representing tunneling a firewall.</phrase>
+                    </textobject>
+                </mediaobject>
+            </figure>
+
+            <para>
+                First, the GossipRouter process is created on host B. Note that host B should be outside the firewall,
+                and all channels in the same group should use the same GossipRouter process. When a channel on host A is
+                created, its <classname>TCPGOSSIP</classname>
+                protocol will register its address with the GossipRouter and retrieve the initial membership (assume this
+                is C). Now, a TCP connection with the GossipRouter is established by A; this will persist until A crashes
+                or voluntarily leaves the group. When A multicasts a message to the cluster, GossipRouter looks up all cluster
+                members (in this case, A and C) and forwards the message to all members, using their TCP connections. In
+                the example, A would receive its own copy of the multicast message it sent, and another copy would be sent
+                to C.
+            </para>
+
+            <para>
+                This scheme allows for example
+                <emphasis>Java applets</emphasis>
+                , which are only allowed to connect back to the host from which they were downloaded, to use JGroups: the
+                HTTP server would be located on host B and the gossip and GossipRouter daemon would also run on that host.
+                An applet downloaded to either A or C would be allowed to make a TCP connection to B. Also, applications
+                behind a firewall would be able to talk to each other, joining a group.
+            </para>
+
+            <para>However, there are several drawbacks: first, having to maintain a TCP connection for the duration of the
+                connection might use up resources in the host system (e.g. in the GossipRouter), leading to scalability
+                problems, second, this scheme is inappropriate when only a few channels are located behind firewalls, and
+                the vast majority can indeed use IP multicast to communicate, and finally, it is not always possible to
+                enable outgoing traffic on 2 ports in a firewall, e.g. when a user does not 'own' the firewall.
+            </para>
+
+        </section>
     </section>
-  </section>
 
 
     <section id="ConcurrentStack">
