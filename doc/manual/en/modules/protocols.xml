@@ -60,7 +60,7 @@
         </section>       
     </section>
 
-    <section>
+    <section id="DiscoveryProtocols">
         <title>Initial membership discovery</title>
 
         The task of the discovery is to find an initial membership, which is used to determine the current

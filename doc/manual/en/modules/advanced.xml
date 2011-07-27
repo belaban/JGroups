@@ -1,59 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="user-advanced">
-  <title>Advanced Concepts</title>
+    <title>Advanced Concepts</title>
 
-  <para>This chapter discusses some of the more advanced concepts of JGroups
-  with respect to using it and setting it up correctly.</para>
-
-  <section>
-    <title>Using multiple channels</title>
-
-    <para>When using a fully virtual synchronous protocol stack, the
-    performance may not be great because of the larger number of protocols
-    present. For certain applications, however, throughput is more important
-    than ordering, e.g. for video/audio streams or airplane tracking. In the
-    latter case, it is important that airplanes are handed over between
-    control domains correctly, but if there are a (small) number of radar
-    tracking messages (which determine the exact location of the plane)
-    missing, it is not a problem. The first type of messages do not occur very
-    often (typically a number of messages per hour), whereas the second type
-    of messages would be sent at a rate of 10-30 messages/second. The same
-    applies for a distributed whiteboard: messages that represent a video or
-    audio stream have to be delivered as quick as possible, whereas messages
-    that represent figures drawn on the whiteboard, or new participants
-    joining the whiteboard have to be delivered according to a certain
-    order.</para>
-
-    <para>The requirements for such applications can be solved by using two
-    separate stacks: one for control messages such as group membership, floor
-    control etc and the other one for data messages such as video/audio
-    streams (actually one might consider using one channel for audio and one
-    for video). The control channel might use virtual synchrony, which is
-    relatively slow, but enforces ordering and retransmission, and the data
-    channel might use a simple UDP channel, possibly including a fragmentation
-    layer, but no retransmission layer (losing packets is preferred to costly
-    retransmission).</para>
-
-    <para>The <classname>Draw2Channels</classname> demo program (in the
-    <classname>org.jgroups.demos</classname> package) demonstrates how to use
-    two different channels.</para>
-  </section>
-
+    <para>
+        This chapter discusses some of the more advanced concepts of JGroups with respect to using it and setting it
+        up correctly.
+    </para>
 
     <section>
-        <title id="SharedTransport">The shared transport: sharing a transport between multiple channels in a JVM</title>
+        <title>Using multiple channels</title>
 
         <para>
-            To save resources (threads, sockets and CPU cycles), transports of channels residing within the same
-            JVM can be shared. If we have 4 channels inside of a JVM (as is the case in an application server
-            such as JBoss), then we have 4 separate thread pools and sockets (1 per transport, and there are 4
-            transports (1 per channel)).
+            When using a fully virtual synchronous protocol stack, the performance may not be great because of the
+            larger number of protocols present. For certain applications, however, throughput is more important than
+            ordering, e.g. for video/audio streams or airplane tracking. In the latter case, it is important that
+            airplanes are handed over between control domains correctly, but if there are a (small) number of radar
+            tracking messages (which determine the exact location of the plane) missing, it is not a problem. The first
+            type of messages do not occur very often (typically a number of messages per hour), whereas the second type of
+            messages would be sent at a rate of 10-30 messages/second. The same applies for a distributed whiteboard:
+            messages that represent a video or audio stream have to be delivered as quick as possible, whereas messages
+            that represent figures drawn on the whiteboard, or new participants joining the whiteboard have to be
+            delivered according to a certain order.
         </para>
 
         <para>
-            If those transport happen to be the same (all 4 channels use UDP, for example), then we can share them and
-            only create 1 instance of UDP. That transport instance is created and started only once, when the first
+            The requirements for such applications can be solved by using two separate channels: one for control messages
+            such as group membership, floor control etc and the other one for data messages such as video/audio streams
+            (actually one might consider using one channel for audio and one for video). The control channel might use
+            virtual synchrony, which is relatively slow, but enforces ordering and retransmission, and the data channel
+            might use a simple UDP channel, possibly including a fragmentation layer, but no retransmission layer (losing
+            packets is preferred to costly retransmission).
+        </para>
+
+    </section>
+
+
+    <section id="SharedTransport">
+        <title>Sharing a transport between multiple channels in a JVM</title>
+
+        <para>
+            A transport protocol (UDP, TCP) has all the resources of a stack: the default thread pool, the OOB thread
+            pool and the timer thread pool. If we run multiple channels in the same JVM, instead of creating 4
+            separate stacks with a separate transport each, we can create the transport protocol as a
+            <emphasis>singleton</emphasis> protocol, shared by all 4 stacks.
+        </para>
+
+        <para>
+            If those transports happen to be the same (all 4 channels use UDP, for example), then we can share them and
+            only create 1 instance of UDP. That transport instance is created and started only once; when the first
             channel is created, and is deleted when the last channel is closed.
+        </para>
+
+        <para>
+            If we have 4 channels inside of a JVM (as is the case in an application server such as JBoss), then we
+            have 12 separate thread pools (3 per transport, 4 transports). Sharing the transport reduces this to 3.
         </para>
 
         <para>
@@ -63,8 +63,9 @@
         </para>
 
         <para>
-            When we have 3 channels (C1 connected to "cluster-1", C2 connected to "cluster-2" and C3 connected to
-            "cluster-3") sending messages over the same shared transport, the cluster name
+            This is needed to multiplex and de-multiplex messages between the shared transport and the different stacks
+            running over it; when we have 3 channels (C1 connected to "cluster-1", C2 connected to "cluster-2" and C3
+            connected to "cluster-3") sending messages over the same shared transport, the cluster name
             with which the channel connected is used to multiplex messages over the shared transport: a header with
             the cluster name ("cluster-1") is added when C1 sends a message.
         </para>
@@ -91,23 +92,45 @@
         </para>
 
         <para>
+            The "tp_two" transport is used by the application on the right side.
+        </para>
+
+        <para>
+            Note that the physical address of a shared channel is the same for all connected channels, so all
+            applications sharing the first transport have physical address 192.168.2.5:35181.
+        </para>
+
+        <para>
             To use shared transports, all we need to do is to add a property "singleton_name" to the transport
-            configuration. All channels with the same singleton name will be shared.
+            configuration. All channels with the same singleton name will be shared:
+            <programlisting>
+                &lt;UDP ...
+                    singleton_name="tp_one" ...
+                /&gt;
+            </programlisting>
+        </para>
+
+        <para>
+            All channels using this configuration will now shared transport "tp_one". The channel on the right will
+            have a different configuration, with singleton_name="tp_two".
         </para>
     </section>
 
-  <section>
-    <title>Transport protocols</title>
+    <section>
+        <title>Transport protocols</title>
 
-    <para>A <emphasis>transport protocol</emphasis> refers to the protocol at
-    the bottom of the protocol stack which is responsible for sending and
-    receiving messages to/from the network. There are a number of transport
-    protocols in JGroups. They are discussed in the following sections.</para>
+        <para>
+            A <emphasis>transport protocol</emphasis> refers to the protocol at the bottom of the protocol stack which is
+            responsible for sending messages to and receiving messages from the network. There are a number of transport
+            protocols in JGroups. They are discussed in the following sections.
+        </para>
 
-    <para>A typical protocol stack configuration using UDP is:</para>
+        <para>
+            A typical protocol stack configuration using UDP is:
+        </para>
 
-      <screen>
-                    &lt;config&gt;
+        <programlisting>
+                  &lt;config&gt;
                         &lt;UDP
                              mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
                              mcast_port="${jgroups.udp.mcast_port:45588}"
@@ -151,266 +174,196 @@
                                         min_threshold="0.10"/&gt;
                         &lt;FRAG2 frag_size="60000"  /&gt;
                         &lt;pbcast.STATE_TRANSFER  /&gt;
-                    &lt;/config&gt;
-                </screen>
+                  &lt;/config&gt;
+        </programlisting>
     
 
-    <para>In a nutshell the properties of the protocols are:</para>
-
-    <variablelist>
-      <varlistentry>
-        <term>UDP</term>
-
-        <listitem>
-          <para>This is the transport protocol. It uses IP multicasting to send messages to the entire cluster, or
-          individual nodes. Other transports include TCP, TCP_NIO and TUNNEL.</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>PING</term>
-
-        <listitem>
-          <para>Uses IP multicast (by default) to find initial members. Once
-          found, the current coordinator can be determined and a unicast JOIN
-          request will be sent to it in order to join the cluster.</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>MERGE2</term>
-
-        <listitem>
-          <para>Will merge subgroups back into one group, kicks in after a cluster partition.</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>FD_SOCK</term>
-
-        <listitem>
-          <para>Failure detection based on sockets (in a ring form between
-          members). Generates notification if a member fails</para>
-        </listitem>
-      </varlistentry>
-
-        <varlistentry>
-        <term>FD</term>
-
-        <listitem>
-          <para>Failure detection based on heartbeats and are-you-alive messages (in a ring form between
-          members). Generates notification if a member fails</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>VERIFY_SUSPECT</term>
-
-        <listitem>
-          <para>Double-checks whether a suspected member is really dead,
-          otherwise the suspicion generated from protocol below is discarded</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>pbcast.NAKACK</term>
-
-        <listitem>
-          <para>Ensures (a) message reliability and (b) FIFO. Message
-          reliability guarantees that a message will be received. If not,
-          the receiver(s) will request retransmission. FIFO guarantees that all
-          messages from sender P will be received in the order P sent them</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term>UNICAST</term>
-
-        <listitem>
-          <para>Same as NAKACK for unicast messages: messages from sender P
-          will not be lost (retransmission if necessary) and will be in FIFO
-          order (conceptually the same as TCP in TCP/IP)</para>
-        </listitem>
-      </varlistentry>
-
-           <varlistentry>
-        <term>pbcast.STABLE</term>
-
-        <listitem>
-          <para>Deletes messages that have been seen by all members (distributed message garbage collection)</para>
-        </listitem>
-      </varlistentry>
-
-        <varlistentry>
-            <term>pbcast.GMS</term>
-
-            <listitem>
-                <para>Membership protocol. Responsible for joining/leaving members and installing new views.</para>
-            </listitem>
-        </varlistentry>
-
-      <varlistentry>
-        <term>FRAG2</term>
-
-        <listitem>
-          <para>Fragments large messages into smaller ones and reassembles
-          them back at the receiver side. For both multicast and unicast messages</para>
-        </listitem>
-      </varlistentry>
-
-         <varlistentry>
-        <term>STATE_TRANSFER</term>
-
-        <listitem>
-          <para>
-              Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
-              new member.
-          </para>
-        </listitem>
-      </varlistentry>
-
-
-    </variablelist>
-
-    <section>
-      <title>UDP</title>
-
-      <para>UDP uses IP multicast for sending messages to all members of a
-      group and UDP datagrams for unicast messages (sent to a single member).
-      When started, it opens a unicast and multicast socket: the unicast
-      socket is used to send/receive unicast messages, whereas the multicast
-      socket sends/receives multicast messages. The channel's address will be
-      the address and port number of the <emphasis>unicast</emphasis>
-      socket.</para>
-
-      <section>
-        <title>Using UDP and plain IP multicasting</title>
-
-        <para>A protocol stack with UDP as transport protocol is typically
-        used with groups whose members run on the same host or are distributed
-        across a LAN. Before running such a stack a programmer has to ensure
-        that IP multicast is enabled across subnets. It is often the case that
-        IP multicast is not enabled across subnets. Refer to section <xref
-        linkend="ItDoesntWork" /> for running a test program that determines
-        whether members can reach each other via IP multicast. If this does
-        not work, the protocol stack cannot use UDP with IP multicast as
-        transport. In this case, the stack has to either use UDP without IP
-        multicasting or other transports such as TCP.</para>
-      </section>
-
-      <section id="IpNoMulticast">
-        <title>Using UDP without IP multicasting</title>
-
-        <para>The protocol stack with UDP and PING as the bottom protocols use
-        IP multicasting by default to send messages to all members (UDP) and
-        for discovery of the initial members (PING). However, if multicasting
-        cannot be used, the UDP and PING protocols can be configured to send
-        multiple unicast messages instead of one multicast message <footnote>
-            <para>Although not as efficient (and using more bandwidth), it is
-            sometimes the only possibility to reach group members.</para>
-          </footnote> (UDP) and to access a well-known server (
-        <emphasis>GossipRouter</emphasis> ) for initial membership information
-        (PING).</para>
-
-        <para>To configure UDP to use multiple unicast messages to send a
-        group message instead of using IP multicasting, the
-        <parameter>ip_mcast</parameter> property has to be set to
-        <literal>false</literal> .</para>
-
-        <para>To configure PING to access a GossipRouter instead of using IP
-        multicast the following properties have to be set:</para>
+    <para>
+        In a nutshell the properties of the protocols are:
+    </para>
 
         <variablelist>
-          <varlistentry>
-            <term>gossip_host</term>
+            <varlistentry>
+                <term>UDP</term>
 
-            <listitem>
-              <para>The name of the host on which GossipRouter is
-              started</para>
-            </listitem>
-          </varlistentry>
+                <listitem>
+                    <para>
+                        This is the transport protocol. It uses IP multicasting to send messages to the entire cluster,
+                        or individual nodes. Other transports include TCP and TUNNEL.
+                    </para>
+                </listitem>
+            </varlistentry>
 
-          <varlistentry>
-            <term>gossip_port</term>
+            <varlistentry>
+                <term>PING</term>
 
-            <listitem>
-              <para>The port on which GossipRouter is listening</para>
-            </listitem>
-          </varlistentry>
+                <listitem>
+                    <para>
+                        Uses IP multicast (by default) to find initial members. Once found, the current coordinator can
+                        be determined and a unicast JOIN request will be sent to it in order to join the cluster.
+                    </para>
+                </listitem>
+            </varlistentry>
 
-          <varlistentry>
-            <term>gossip_refresh</term>
+            <varlistentry>
+                <term>MERGE2</term>
+                <listitem>
+                    <para>Will merge sub-clusters back into one cluster, kicks in after a network partition healed.</para>
+                </listitem>
+            </varlistentry>
 
-            <listitem>
-              <para>The number of milliseconds to wait until refreshing our
-              address entry with the GossipRouter</para>
-            </listitem>
-          </varlistentry>
+            <varlistentry>
+                <term>FD_SOCK</term>
+                <listitem>
+                    <para>
+                        Failure detection based on sockets (in a ring form between members). Generates notification
+                        if a member fails
+                    </para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>FD</term>
+                <listitem>
+                    <para>Failure detection based on heartbeat are-you-alive messages (in a ring form between
+                        members). Generates notification if a member fails</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>VERIFY_SUSPECT</term>
+                <listitem>
+                    <para>Double-checks whether a suspected member is really dead,
+                        otherwise the suspicion generated from protocol below is discarded</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>pbcast.NAKACK</term>
+                <listitem>
+                    <para>Ensures (a) message reliability and (b) FIFO. Message
+                        reliability guarantees that a message will be received. If not,
+                        the receiver(s) will request retransmission. FIFO guarantees that all
+                        messages from sender P will be received in the order P sent them</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>UNICAST</term>
+                <listitem>
+                    <para>Same as NAKACK for unicast messages: messages from sender P
+                        will not be lost (retransmission if necessary) and will be in FIFO
+                        order (conceptually the same as TCP in TCP/IP)</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>pbcast.STABLE</term>
+                <listitem>
+                    <para>Deletes messages that have been seen by all members (distributed message garbage collection)</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>pbcast.GMS</term>
+                <listitem>
+                    <para>Membership protocol. Responsible for joining/leaving members and installing new views.</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>FRAG2</term>
+                <listitem>
+                    <para>Fragments large messages into smaller ones and reassembles
+                        them back at the receiver side. For both multicast and unicast messages</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>STATE_TRANSFER</term>
+                <listitem>
+                    <para>
+                        Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
+                        new member.
+                    </para>
+                </listitem>
+            </varlistentry>
         </variablelist>
 
-        <para>Before any members are started the GossipRouter has to be
-        started, e.g.</para>
+        <section>
+            <title>UDP</title>
 
-          <screen>
-              java org.jgroups.stack.GossipRouter -port 5555 -bindaddress localhost
-          </screen>
+            <para>
+                UDP uses <emphasis>IP multicast</emphasis> for sending messages to all members of a cluster, and
+                <emphasis>UDP datagrams</emphasis> for unicast messages (sent to a single member). When started, it
+                opens a unicast and multicast socket: the unicast socket is used to send/receive unicast messages,
+                while the multicast socket sends/receives multicast messages. The physical address of the channel will
+                be the address and port number of the <emphasis>unicast</emphasis> socket.
+            </para>
 
-        <para>This starts the GossipRouter on the local host on port 5555. The
-        GossipRouter is essentially a lookup service for groups and members.
-        It is a process that runs on a well-known host and port and accepts
-        GET(group) and REGISTER(group, member) requests. The REGISTER request
-        registers a member's address and group with the GossipRouter. The GET
-        request retrieves all member addresses given a group name. Each member
-        has to periodically ( <parameter>gossip_refresh</parameter> )
-        re-register their address with the GossipRouter, otherwise the entry
-        for that member will be removed (accommodating for crashed
-        members).</para>
+            <section>
+                <title>Using UDP and plain IP multicasting</title>
 
-        <para>The following example shows how to disable the use of IP
-        multicasting and use a GossipRouter instead. Only the bottom two
-        protocols are shown, the rest of the stack is the same as in the
-        previous example:
-        <screen>
-            &lt;UDP ip_mcast="false" mcast_addr="224.0.0.35" mcast_port="45566" ip_ttl="32"
-                mcast_send_buf_size="150000" mcast_recv_buf_size="80000"/&gt;
-            &lt;PING gossip_host="localhost" gossip_port="5555" gossip_refresh="15000"
-                timeout="2000" num_initial_members="3"/&gt;
-        </screen>
-        </para>
+                <para>
+                    A protocol stack with UDP as transport protocol is typically used with clusters whose members run on
+                    the same host or are distributed across a LAN. Note that before running instances
+                    <emphasis>in different subnets</emphasis>, an admin has to make sure that IP multicast is enabled
+                    across subnets. It is often the case that IP multicast is not enabled across subnets.
+                    Refer to section <xref linkend="ItDoesntWork"/> for running a test program that determines whether
+                    members can reach each other via IP multicast. If this does not work, the protocol stack cannot use
+                    UDP with IP multicast as transport. In this case, the stack has to either use UDP without IP
+                    multicasting, or use a different transport such as TCP.
+                </para>
+            </section>
 
-        <para>The property <parameter>ip_mcast</parameter> is set to
-        <literal>false</literal> in <classname>UDP</classname> and the gossip
-        properties in <classname>PING</classname> define the GossipRouter to
-        be on the local host at port 5555 with a refresh rate of 15 seconds.
-        If PING is parameterized with the GossipRouter's address
-        <emphasis>and</emphasis> port, then gossiping is enabled, otherwise it
-        is disabled. If only one parameter is given, gossiping will be
-        <emphasis>disabled</emphasis> .</para>
+            <section id="IpNoMulticast">
+                <title>Using UDP without IP multicasting</title>
 
-        <para>Make sure to run the GossipRouter before starting any members,
-        otherwise the members will not find each other and each member will
-        form its own group <footnote>
-            <para>This can actually be used to test the MERGE2 protocol: start
-            two members (forming two singleton groups because they don't find
-            each other), then start the GossipRouter. After some time, the two
-            members will merge into one group</para>
-          </footnote> .</para>
-      </section>
-    </section>
+                <para>
+                    The protocol stack with UDP and PING as the bottom protocols use IP multicasting by default to
+                    send messages to all members (UDP) and for discovery of the initial members (PING). However, if
+                    multicasting cannot be used, the UDP and PING protocols can be configured to send multiple unicast
+                    messages instead of one multicast message
+                    <footnote>
+                        <para>Although not as efficient (and using more bandwidth), it is sometimes the only possibility
+                            to reach group members.
+                        </para>
+                    </footnote>.
+                </para>
 
-    <section>
-      <title>TCP</title>
+                <para>
+                    To configure UDP to use multiple unicast messages to send a group message instead of using IP
+                    multicasting, the <parameter>ip_mcast</parameter> property has to be set to <literal>false</literal>.
+                </para>
 
-      <para>TCP is a replacement of UDP as bottom layer in cases where IP
-      Multicast based on UDP is not desired. This may be the case when
-      operating over a WAN, where routers will discard IP MCAST. As a rule of
-      thumb UDP is used as transport for LANs, whereas TCP is used for
-      WANs.</para>
+                <para>
+                    If we disable ip_mcast, we now also have to change the discovery protocol (PING). Because PING
+                    requires IP multicasting to be enabled in the transport, we cannot use it. Some of the alternatives
+                    are TCPPING (static list of member addresses), TCPGOSSIP (external lookup service), FILE_PING
+                    (shared directory), BPING (using broadcasts) or JDBC_PING (using a shared database).
+                </para>
+                <para>
+                    See <xref linkend="DiscoveryProtocols"/> for details on configuration of different discovery
+                    protocols.
+                </para>
 
-      <para>The properties for a typical stack based on TCP might look like
-      this (edited/protocols removed for brevity):
-      <screen>
-    &lt;TCP start_port="7800" /&gt;
+            </section>
+
+        </section>
+
+        <section>
+            <title>TCP</title>
+
+            <para>
+                TCP is a replacement for UDP as transport in cases where IP multicast cannot be used.
+                This may be the case when operating over a WAN, where routers might discard IP multicast packets.
+                Usually, UDP is used as transport in LANs, while TCP is used for clusters spanning WANs.
+            </para>
+
+            <para>
+                The properties for a typical stack based on TCP might look like this (edited for brevity):
+      <programlisting>
+    &lt;TCP bind_port="7800" /&gt;
     &lt;TCPPING timeout="3000"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="1"
@@ -425,170 +378,158 @@
     &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
                 shun="true"
                 view_bundling="true"/&gt;
-      </screen>
-      </para>
+      </programlisting>
+            </para>
 
-      <variablelist>
-        <varlistentry>
-          <term>TCP</term>
+            <variablelist>
+                <varlistentry>
+                    <term>TCP</term>
 
-          <listitem>
-            <para>The transport protocol, uses TCP (from TCP/IP) to send
-            unicast and multicast messages. In the latter case, it sends
-            multiple unicast messages.</para>
-          </listitem>
-        </varlistentry>
+                    <listitem>
+                        <para>The transport protocol, uses TCP (from TCP/IP) to send
+                            unicast and multicast messages. In the latter case, it sends
+                            multiple unicast messages.</para>
+                    </listitem>
+                </varlistentry>
 
-        <varlistentry>
-          <term>TCPPING</term>
+                <varlistentry>
+                    <term>TCPPING</term>
 
-          <listitem>
-            <para>Discovers the initial membership to determine coordinator.
-            Join request will then be sent to coordinator.</para>
-          </listitem>
-        </varlistentry>
+                    <listitem>
+                        <para>Discovers the initial membership to determine coordinator.
+                            Join request will then be sent to coordinator.</para>
+                    </listitem>
+                </varlistentry>
 
-        <varlistentry>
-          <term>VERIFY_SUSPECT</term>
+                <varlistentry>
+                    <term>VERIFY_SUSPECT</term>
 
-          <listitem>
-            <para>Double checks that a suspected member is really dead</para>
-          </listitem>
-        </varlistentry>
+                    <listitem>
+                        <para>Double checks that a suspected member is really dead</para>
+                    </listitem>
+                </varlistentry>
 
-        <varlistentry>
-          <term>pbcast.NAKACK</term>
+                <varlistentry>
+                    <term>pbcast.NAKACK</term>
 
-          <listitem>
-            <para>Reliable and FIFO message delivery</para>
-          </listitem>
-        </varlistentry>
+                    <listitem>
+                        <para>Reliable and FIFO message delivery</para>
+                    </listitem>
+                </varlistentry>
 
-          <varlistentry>
-          <term>pbcast.STABLE</term>
+                <varlistentry>
+                    <term>pbcast.STABLE</term>
 
-          <listitem>
-            <para>Distributed garbage collection of messages seen by all
-            members</para>
-          </listitem>
-        </varlistentry>
+                    <listitem>
+                        <para>Distributed garbage collection of messages seen by all
+                            members</para>
+                    </listitem>
+                </varlistentry>
 
-        <varlistentry>
-          <term>pbcast.GMS</term>
+                <varlistentry>
+                    <term>pbcast.GMS</term>
 
-          <listitem>
-            <para>Membership services. Takes care of joining and removing
-            new/old members, emits view changes</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
+                    <listitem>
+                        <para>Membership services. Takes care of joining and removing
+                            new/old members, emits view changes</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
 
-      <para>Since TCP already offers some of the reliability guarantees that
-      UDP doesn't, some protocols (e.g. FRAG and UNICAST) are not needed on
-      top of TCP.</para>
+            <para>
+                When using TCP, each message to all of the cluster members is sent as multiple unicast messages
+                (one to each member). Due to the fact that IP multicasting cannot be used to discover the initial
+                members, another mechanism has to be used to find the initial membership. There are a number of
+                alternatives (see <xref linkend="DiscoveryProtocols"/> for a discussion of all discovery protocols):
+            </para>
 
-      <para>When using TCP, each message to the group is sent as multiple
-      unicast messages (one to each member). Due to the fact that IP
-      multicasting cannot be used to discover the initial members, another
-      mechanism has to be used to find the initial membership. There are a
-      number of alternatives:</para>
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        TCPPING: uses a list of well-known group members that it solicits for initial membership
+                    </para>
+                </listitem>
 
-      <itemizedlist>
-        <listitem>
-          <para>PING with GossipRouter: same solution as described in <xref
-          linkend="IpNoMulticast" /> . The <parameter>ip_mcast</parameter>
-          property has to be set to <literal>false</literal> . GossipRouter
-          has to be started before the first member is started.</para>
-        </listitem>
+                <listitem>
+                    <para>TCPGOSSIP: this requires a GossipRouter (see below), which is an external process, acting
+                        as a lookup service. Cluster members register with under their cluster name, and new members
+                        query the GossipRouter for initial cluster membership information.
+                    </para>
+                </listitem>
+            </itemizedlist>
 
-        <listitem>
-          <para>TCPPING: uses a list of well-known group members that it
-          solicits for initial membership</para>
-        </listitem>
+            <para>
+                The next two section illustrate the use of TCP with both TCPPING and TCPGOSSIP.
+            </para>
 
-        <listitem>
-          <para>TCPGOSSIP: essentially the same as the above PING <footnote>
-              <para>PING and TCPGOSSIP will be merged in the future.</para>
-            </footnote> . The only difference is that TCPGOSSIP allows for
-          multiple GossipRouters instead of only one.</para>
-        </listitem>
-        
-        <listitem>
-          <para>JDBC_PING: using a shared database via JDBC or DataSource.</para>
-        </listitem>
-      </itemizedlist>
+            <section id="TCPPING">
+                <title>Using TCP and TCPPING</title>
 
-      <para>The next two section illustrate the use of TCP with both TCPPING
-      and TCPGOSSIP.</para>
+                <para>
+                    A protocol stack using TCP and TCPPING looks like this (other protocols omitted):
+                    <programlisting>
+            &lt;TCP bind_port="7800" /&gt; +
+            &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="2"
+                   timeout="3000" num_initial_members="3" /&gt;
+                    </programlisting>
+                </para>
 
-      <section>
-        <title>Using TCP and TCPPING</title>
+                <para>
+                    The concept behind TCPPING is that some selected cluster members assume the role of well-known hosts
+                    from which the initial membership information can be retrieved. In the example,
+                    <parameter>HostA</parameter> and <parameter>HostB</parameter> are designated members that will be
+                    used by TCPPING to lookup the initial membership. The property <parameter>bin_port</parameter>
+                    in <classname>TCP</classname> means that each member should try to assign port 7800 for itself.
+                    If this is not possible it will try the next higher port (<literal>7801</literal>) and so on, until
+                    it finds an unused port.
+                </para>
 
-        <para>A protocol stack using TCP and TCPPING looks like this (other
-          protocols omitted):
-        <screen>
-            &lt;TCP start_port="7800" /&gt; +
-            &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="5"
-            timeout="3000" num_initial_members="3" /&gt;
-        </screen>
-        </para>
+                <para>
+                    <classname>TCPPING</classname> will try to contact both <parameter>HostA</parameter> and
+                    <parameter>HostB</parameter>, starting at port <literal>7800</literal> and ending at port
+                    <literal>7800 + port_range</literal>, in the above example ports <literal>7800</literal> -
+                    <literal>7804</literal>. Assuming that at least one of <parameter>HostA</parameter> or
+                    <parameter>HostB</parameter> is up, a response will be received. To be absolutely sure to receive
+                    a response, it is recommended to add all the hosts on which members of the cluster will be running
+                    to the configuration.
+                </para>
+            </section>
 
-        <para>The concept behind TCPPING is that no external daemon such as
-        GossipRouter is needed. Instead some selected group members assume the
-        role of well-known hosts from which initial membership information can
-        be retrieved. In the example <parameter>HostA</parameter> and
-        <parameter>HostB</parameter> are designated members that will be used
-        by TCPPING to lookup the initial membership. The property
-        <parameter>start_port</parameter> in <classname>TCP</classname> means
-        that each member should try to assign port 7800 for itself. If this is
-        not possible it will try the next higher port (
-        <literal>7801</literal> ) and so on, until it finds an unused
-        port.</para>
+            <section id="TCPGOSSIP">
+                <title>Using TCP and TCPGOSSIP</title>
 
-        <para><classname>TCPPING</classname> will try to contact both
-        <parameter>HostA</parameter> and <parameter>HostB</parameter> ,
-        starting at port <literal>7800</literal> and ending at port
-        <literal>7800 + port_range</literal> , in the above example ports
-        <literal>7800</literal> - <literal>7804</literal> . Assuming that at
-        least one of <parameter>HostA</parameter> or
-        <parameter>HostB</parameter> is up, a response will be received. To be
-        absolutely sure to receive a response all the hosts on which members
-        of the group will be running can be added to the configuration
-        string.</para>
-      </section>
-
-      <section>
-        <title>Using TCP and TCPGOSSIP</title>
-
-        <para>As mentioned before <classname>TCPGOSSIP</classname> is
-        essentially the same as <classname>PING</classname> with properties
-        <parameter>gossip_host</parameter> ,
-        <parameter>gossip_port</parameter> and
-        <parameter>gossip_refresh</parameter> set. However, in TCPGOSSIP these
-        properties are called differently as shown below (only the bottom two
-        protocols are shown):
-          <screen>
+                <para>
+                    <classname>TCPGOSSIP</classname> uses one or more GossipRouters to (1) register itself and (2)
+                    fetch information about already registered cluster members. A configuration looks like this:
+                    <programlisting>
               &lt;TCP /&gt;
-              &lt;TCPGOSSIP initial_hosts="localhost[5555],localhost[5556]" gossip_refresh_rate="10000"
-              num_initial_members="3" /&gt;
-          </screen>
-          </para>
+              &lt;TCPGOSSIP initial_hosts="HostA[5555],HostB[5555]" num_initial_members="3" /&gt;
+                    </programlisting>
+                </para>
 
-        <para>The <parameter>initial_hosts</parameter> properties combines
-        both the host and port of a GossipRouter, and it is possible to
-        specify more than one GossipRouter. In the example there are two
-        GossipRouters at ports <literal>5555</literal> and
-        <literal>5556</literal> on the local host. Also,
-        <parameter>gossip_refresh_rate</parameter> defines how many
-        milliseconds to wait between refreshing the entry with the
-        GossipRouters.</para>
+                <para>
+                    The <parameter>initial_hosts</parameter> property is a comma-delimited list of GossipRouters.
+                    In the example there are two GossipRouters on HostA and HostB, at port <literal>5555</literal>.
+                </para>
 
-        <para>The advantage of having multiple GossipRouters is that, as long
-        as at least one is running, new members will always be able to
-        retrieve the initial membership. Note that the GossipRouter should be
-        started before any of the members.</para>
-      </section>
-    </section>
+                <para>
+                    A member always registers with all GossipRouters listed, but fetches information from the first
+                    available GossipRouter. If a GossipRouter cannot be accessed, it will be marked as failed and removed
+                    from the list. A task is then started, which tries to periodically reconnect to the failed process.
+                    On reconnection, the failed GossipRouter is marked as OK, and re-inserted into the list.
+                </para>
+
+                <para>
+                    The advantage of having multiple GossipRouters is that, as long as at least one is running,
+                    new members will always be able to retrieve the initial membership.
+                </para>
+                
+                <para>
+                    Note that the GossipRouter should be started before any of the members.
+                </para>
+
+            </section>
+        </section>
 
     <section>
       <title>TUNNEL</title>
