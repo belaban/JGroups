@@ -18,7 +18,7 @@ public interface MembershipListener {
     
     /**
      * Called when a change in membership has occurred.
-     * <b>No long running actions or sending of messages should be done in this callback.</b>
+     * <b>No long running actions, sending of messages or anything that could block should be done in this callback.</b>
      * If some long running action needs to be performed, it should be done in a separate thread.<p/>
      * Note that on reception of the first view (a new member just joined), the channel will not yet be
      * in the connected state. This only happens when {@link Channel#connect(String)} returns.
