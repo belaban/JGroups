@@ -185,20 +185,7 @@
                     <instructions>
                         <Export-Package>
                             schema;version=${project.version},
-                            org.jgroups;version=${project.version},
-                            org.jgroups.annotations;version=${project.version},
-                            org.jgroups.auth;version=${project.version},
-                            org.jgroups.blocks;version=${project.version},
-                            org.jgroups.conf;version=${project.version},
-                            org.jgroups.debug;version=${project.version},
-                            org.jgroups.jmx;version=${project.version},
-                            org.jgroups.logging;version=${project.version},
-                            org.jgroups.mux;version=${project.version},
-                            org.jgroups.persistence;version=${project.version},
-                            org.jgroups.protocols;version=${project.version},
-                            org.jgroups.protocols.pbcast;version=${project.version},
-                            org.jgroups.stack;version=${project.version},
-                            org.jgroups.util;version=${project.version}
+                            {project.groupId}.*;version=${project.version}
                         </Export-Package>
 			<Import-Package>
 			    !bsh.*,*
