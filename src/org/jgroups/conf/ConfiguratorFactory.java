@@ -45,6 +45,10 @@ public class ConfiguratorFactory {
         return XmlConfigurator.getInstance(input);
     }
 
+    public static ProtocolStackConfigurator getStackConfigurator(InputStream input) throws Exception {
+        return XmlConfigurator.getInstance(input);
+    }
+
     /**
      * Returns a protocol stack configurator based on the XML configuration provided at the specified URL.
      *

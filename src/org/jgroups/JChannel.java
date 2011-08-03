@@ -153,6 +153,15 @@ public class JChannel extends Channel {
     }
 
     /**
+     * Creates a channel with a configurtation based on an input stream.
+     * @param input An input stream, pointing to a streamed configurtaion
+     * @throws Exception
+     */
+    public JChannel(InputStream input) throws Exception {
+        this(ConfiguratorFactory.getStackConfigurator(input));
+    }
+
+    /**
      * Constructs a JChannel with the protocol stack configuration contained by the protocol stack configurator parameter.
      * <p>
      * All of the public constructors of this class eventually delegate to this method.
