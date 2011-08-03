@@ -185,7 +185,7 @@
                     <instructions>
                         <Export-Package>
                             schema;version=${project.version},
-                            {project.groupId}.*;version=${project.version}
+                            ${project.groupId}.*;version=${project.version}
                         </Export-Package>
 			<Import-Package>
 			    !bsh.*,*
