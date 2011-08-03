@@ -160,7 +160,7 @@
             </para>
         </section>
 
-        <note>
+        <warning>
             <title>Sending messages in callbacks</title>
             <para>
                 Note that anything that could block should <emphasis>not</emphasis>
@@ -175,7 +175,7 @@
                 If we need to send a message in a callback, the sending should be done on a separate thread, or a
                 timer task should be submitted to the timer.
             </para>
-        </note>
+        </warning>
 
         <section id="ChannelListener">
             <title>ChannelListener</title>
@@ -207,9 +207,9 @@
             sorting of addresses. JGroups addresses have to implement the following interface:
 
             <programlisting>
-                public interface Address extends Externalizable, Comparable, Cloneable {
-                    int size();
-                }
+              public interface Address extends Externalizable, Comparable, Cloneable {
+                  int size();
+              }
             </programlisting>
         </para>
 

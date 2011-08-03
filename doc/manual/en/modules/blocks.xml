@@ -528,7 +528,7 @@
               2 responses which satisfy the above condition.
           </para>
 
-          <note>
+          <warning>
               <title>Be careful with RspFilters</title>
               <para>
                   If we have a RspFilter which doesn't terminate the call even if responses from all members have
@@ -542,7 +542,7 @@
                   This will be fixed in 3.1; a blocking call will always return if we've received as many responses as
                   we have members in 'dests', regardless of what the RspFilter says.
               </para>
-          </note>
+          </warning>
       </section>
 
   </section>
